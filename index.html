@@ -7,93 +7,135 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0A0B14;--surface:#111220;--card:#181929;
-  --border:rgba(255,255,255,0.08);
-  --glow:#7C6FFF;--pulse:#00E5C4;
-  --text:#F0EEF8;--muted:#8B8AA0;--dim:#4A4963;--faint:#22233A;
-}
+:root{--bg:#0A0B14;--surface:#111220;--card:#181929;--border:rgba(255,255,255,0.08);--glow:#7C6FFF;--pulse:#00E5C4;--text:#F0EEF8;--muted:#8B8AA0;--dim:#4A4963;--faint:#22233A}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;overflow:hidden}
-.shell{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* SETUP SCREEN */
+#setup{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:0}
+.setup-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px;width:100%;max-width:480px;text-align:center}
+.setup-logo{font-size:32px;font-weight:700;background:linear-gradient(135deg,#7C6FFF,#00E5C4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.setup-sub{font-size:14px;color:var(--muted);margin-bottom:32px}
+.setup-label{font-size:12px;color:var(--muted);text-align:left;margin-bottom:8px;font-weight:500}
+.setup-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:8px}
+.setup-input:focus{border-color:rgba(124,111,255,0.5)}
+.setup-input::placeholder{color:var(--dim)}
+.setup-hint{font-size:12px;color:var(--dim);margin-bottom:24px;text-align:left}
+.setup-hint a{color:var(--glow);text-decoration:none}
+.setup-btn{width:100%;padding:16px;border-radius:12px;border:none;background:var(--glow);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:opacity 0.2s;font-family:inherit}
+.setup-btn:hover{opacity:0.9}
+.setup-error{font-size:13px;color:#FF7B7B;margin-top:12px;display:none}
+
+/* MAIN APP */
+#app{display:none;flex-direction:column;height:100vh;width:100vw}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-.logo{font-size:24px;font-weight:700;background:linear-gradient(135deg,#7C6FFF,#00E5C4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px}
+.logo{font-size:22px;font-weight:700;background:linear-gradient(135deg,#7C6FFF,#00E5C4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px}
 .topbar-right{display:flex;align-items:center;gap:10px}
-.status-dot{width:8px;height:8px;border-radius:50%;background:var(--pulse);animation:pulsedot 2s infinite}
-@keyframes pulsedot{0%,100%{box-shadow:0 0 0 0 rgba(0,229,196,0.4)}70%{box-shadow:0 0 0 8px rgba(0,229,196,0)}}
-.badge{font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px;background:rgba(124,111,255,0.12);border:1px solid rgba(124,111,255,0.25);color:var(--glow)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--pulse);animation:pulsedot 2s infinite}
+@keyframes pulsedot{0%,100%{box-shadow:0 0 0 0 rgba(0,229,196,0.4)}70%{box-shadow:0 0 0 7px rgba(0,229,196,0)}}
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;background:rgba(124,111,255,0.12);border:1px solid rgba(124,111,255,0.25);color:var(--glow)}
+.signout{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit}
+.signout:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
 .body{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* SIDEBAR */
 .sidebar{width:200px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
-.sidebar-section{padding:16px 14px 6px;font-size:10px;font-weight:600;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase}
-.mode-btn{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-radius:8px;margin:2px 8px;transition:background 0.15s;font-size:13px;color:var(--muted);border:none;background:transparent;width:calc(100% - 16px);text-align:left}
+.sidebar-section{padding:14px 14px 5px;font-size:10px;font-weight:600;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase}
+.mode-btn{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-radius:8px;margin:2px 8px;transition:background 0.15s;font-size:13px;color:var(--muted);border:none;background:transparent;width:calc(100% - 16px);text-align:left}
 .mode-btn:hover{background:var(--faint);color:var(--text)}
 .mode-btn.active{background:rgba(124,111,255,0.15);color:var(--text)}
-.mode-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.mode-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
 .mode-btn.active .mode-icon{background:rgba(124,111,255,0.25)}
 .mode-btn:not(.active) .mode-icon{background:var(--faint)}
 .mode-label{font-size:13px;font-weight:500;display:block}
 .mode-sub{font-size:10px;color:var(--dim);display:block}
-.sidebar-divider{height:1px;background:var(--border);margin:10px 14px}
+.sidebar-divider{height:1px;background:var(--border);margin:8px 14px}
 .stat-row{display:flex;justify-content:space-between;padding:5px 14px;font-size:12px}
 .stat-label{color:var(--dim)}.stat-val{color:var(--pulse);font-weight:600}
+
+/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-height:0}
-.mode-header{padding:14px 24px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
-.mode-title{font-size:16px;font-weight:600}
+.mode-header{padding:13px 20px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.mode-title{font-size:15px;font-weight:600}
 .mode-desc{font-size:12px;color:var(--muted);margin-top:2px}
 .tags{display:flex;gap:6px}
-.tag{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+.tag{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:500}
 .tag-glow{background:rgba(124,111,255,0.12);color:var(--glow);border:1px solid rgba(124,111,255,0.2)}
 .tag-pulse{background:rgba(0,229,196,0.08);color:var(--pulse);border:1px solid rgba(0,229,196,0.15)}
-.output{flex:1;overflow-y:auto;padding:28px 32px;display:flex;flex-direction:column;gap:20px;min-height:0}
-.output::-webkit-scrollbar{width:5px}
-.output::-webkit-scrollbar-thumb{background:var(--faint);border-radius:3px}
-.bubble{max-width:85%;padding:20px 26px;border-radius:16px;font-size:18px;line-height:1.9;animation:bubIn 0.2s ease}
+
+/* OUTPUT */
+.output{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:18px;min-height:0}
+.output::-webkit-scrollbar{width:4px}
+.output::-webkit-scrollbar-thumb{background:var(--faint);border-radius:2px}
+.bubble{max-width:88%;padding:18px 22px;border-radius:14px;font-size:17px;line-height:1.85;animation:bubIn 0.2s ease}
 .bubble.user{align-self:flex-end;background:rgba(124,111,255,0.18);border:1px solid rgba(124,111,255,0.25);border-bottom-right-radius:4px}
 .bubble.ai{align-self:flex-start;background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px;max-width:92%}
-.bubble.system{align-self:center;background:rgba(0,229,196,0.06);border:1px solid rgba(0,229,196,0.15);border-radius:10px;font-size:14px;color:var(--pulse);padding:10px 20px;max-width:100%;text-align:center}
-.bubble-label{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;opacity:0.6}
+.bubble.system{align-self:center;background:rgba(0,229,196,0.06);border:1px solid rgba(0,229,196,0.15);border-radius:8px;font-size:13px;color:var(--pulse);padding:8px 16px;max-width:100%;text-align:center}
+.bubble-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;opacity:0.6}
 .bubble.ai .bubble-label{color:var(--glow)}
 .bubble.user .bubble-label{color:var(--pulse);text-align:right}
-@keyframes bubIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.thinking{display:flex;align-items:center;gap:10px;padding:18px 22px;background:var(--card);border:1px solid var(--border);border-radius:16px;border-bottom-left-radius:4px;align-self:flex-start;animation:bubIn 0.2s ease}
-.dots{display:flex;gap:5px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--glow);animation:bounce 1.2s infinite}
+@keyframes bubIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.thinking{display:flex;align-items:center;gap:8px;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:14px;border-bottom-left-radius:4px;align-self:flex-start;animation:bubIn 0.2s ease}
+.dots{display:flex;gap:4px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--glow);animation:bounce 1.2s infinite}
 .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
 @keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
-.thinking-txt{font-size:15px;color:var(--muted)}
-.sug-bar{padding:10px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;min-height:46px}
+
+/* SUGGESTIONS */
+.sug-bar{padding:8px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:7px;flex-wrap:wrap;flex-shrink:0;min-height:44px}
 .sug-label{font-size:10px;color:var(--dim);font-weight:600;letter-spacing:1px;text-transform:uppercase}
-.sug{font-size:13px;padding:5px 14px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--faint);color:var(--muted);transition:all 0.15s;white-space:nowrap}
-.sug:hover{border-color:var(--glow);color:var(--text);background:rgba(124,111,255,0.08)}
+.sug{font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--faint);color:var(--muted);transition:all 0.15s}
+.sug:hover{border-color:var(--glow);color:var(--text)}
 .sug.top{border-color:rgba(124,111,255,0.3);background:rgba(124,111,255,0.08);color:var(--glow)}
-.input-area{padding:16px 20px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
-.input-row{display:flex;align-items:flex-end;gap:12px}
+
+/* INPUT */
+.input-area{padding:14px 18px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.input-row{display:flex;align-items:flex-end;gap:10px}
 .input-wrap{flex:1;position:relative}
-textarea#inp{width:100%;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 50px 14px 18px;color:var(--text);font-size:16px;font-family:inherit;resize:none;outline:none;min-height:54px;max-height:160px;transition:border-color 0.2s;line-height:1.5}
+textarea#inp{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 46px 12px 16px;color:var(--text);font-size:16px;font-family:inherit;resize:none;outline:none;min-height:50px;max-height:150px;transition:border-color 0.2s;line-height:1.5}
 textarea#inp::placeholder{color:var(--dim)}
 textarea#inp:focus{border-color:rgba(124,111,255,0.5)}
-.char-count{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--dim);pointer-events:none}
-.send-btn{width:48px;height:48px;border-radius:12px;border:none;background:var(--glow);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s,opacity 0.15s;font-size:18px;color:#fff}
+.char-count{position:absolute;right:10px;bottom:8px;font-size:10px;color:var(--dim);pointer-events:none}
+.send-btn{width:46px;height:46px;border-radius:11px;border:none;background:var(--glow);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:#fff;transition:transform 0.15s,opacity 0.15s}
 .send-btn:hover{transform:scale(1.07)}
 .send-btn:active{transform:scale(0.94)}
 .send-btn:disabled{opacity:0.35;cursor:not-allowed}
-.action-btns{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
-.act-btn{font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.15s;font-family:inherit}
+.action-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.act-btn{font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:all 0.15s}
 .act-btn:hover{border-color:var(--glow);color:var(--glow);background:rgba(124,111,255,0.06)}
-.copy-btn{margin-top:10px;font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:color 0.15s}
+.copy-btn{margin-top:8px;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit}
 .copy-btn:hover{color:var(--glow)}
-.toast{position:fixed;bottom:28px;right:28px;background:var(--glow);color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;z-index:999}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--glow);color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;z-index:9999}
 .toast.show{opacity:1;transform:translateY(0)}
-@media(max-width:600px){.sidebar{display:none}.output{padding:16px}.bubble{font-size:15px;padding:14px 16px}}
+@media(max-width:600px){.sidebar{display:none}.output{padding:14px}.bubble{font-size:15px;padding:14px 16px}}
 </style>
 </head>
 <body>
-<div class="shell">
+
+<!-- SETUP SCREEN -->
+<div id="setup">
+  <div class="setup-box">
+    <div class="setup-logo">SAIRNtype</div>
+    <div class="setup-sub">Enter your Anthropic API key to get started</div>
+    <div class="setup-label">Anthropic API Key</div>
+    <input class="setup-input" type="password" id="keyInput" placeholder="sk-ant-api03-..." autocomplete="off">
+    <div class="setup-hint">
+      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.<br>
+      Your key is saved locally on your device only — never sent anywhere else.
+    </div>
+    <button class="setup-btn" onclick="startApp()">Launch SAIRNtype</button>
+    <div class="setup-error" id="setupError">Invalid key. Please check and try again.</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
   <div class="topbar">
     <div class="logo">SAIRNtype</div>
     <div class="topbar-right">
       <span class="status-dot"></span>
-      <span style="font-size:13px;color:var(--muted)">Claude connected</span>
+      <span style="font-size:12px;color:var(--muted)">Claude connected</span>
       <span class="badge">Live AI</span>
+      <button class="signout" onclick="signOut()">Change key</button>
     </div>
   </div>
   <div class="body">
@@ -135,10 +177,10 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.5)}
           <span class="tag tag-pulse">Live</span>
         </div>
       </div>
-      <div id="dropZone" style="display:none;margin:16px 20px;padding:32px;border:2px dashed rgba(124,111,255,0.4);border-radius:16px;text-align:center;cursor:pointer;transition:all 0.2s;background:rgba(124,111,255,0.04)" ondragover="event.preventDefault();this.style.borderColor='#7C6FFF';this.style.background='rgba(124,111,255,0.1)'" ondragleave="this.style.borderColor='rgba(124,111,255,0.4)';this.style.background='rgba(124,111,255,0.04)'" ondrop="handleFileDrop(event)">
-        <div style="font-size:36px;margin-bottom:12px">🗂️</div>
-        <div style="font-size:16px;font-weight:500;color:#7C6FFF;margin-bottom:6px">Drop your folder here</div>
-        <div style="font-size:13px;color:var(--muted)">Or click to select files — Claude will analyze everything</div>
+      <div id="dropZone" style="display:none;margin:14px 18px;padding:28px;border:2px dashed rgba(124,111,255,0.4);border-radius:14px;text-align:center;cursor:pointer;background:rgba(124,111,255,0.04)" ondragover="event.preventDefault();this.style.borderColor='#7C6FFF'" ondragleave="this.style.borderColor='rgba(124,111,255,0.4)'" ondrop="handleFileDrop(event)" onclick="document.getElementById('fileInput').click()">
+        <div style="font-size:32px;margin-bottom:10px">🗂️</div>
+        <div style="font-size:15px;font-weight:500;color:#7C6FFF;margin-bottom:4px">Drop your folder here</div>
+        <div style="font-size:12px;color:var(--muted)">Or click to select files — Claude analyzes everything</div>
         <input type="file" id="fileInput" multiple webkitdirectory style="display:none" onchange="handleFileInput(event)">
       </div>
       <div class="output" id="output">
@@ -153,10 +195,10 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.5)}
       <div class="input-area">
         <div class="input-row">
           <div class="input-wrap">
-            <textarea id="inp" rows="1" placeholder="Start typing... Claude is listening" autocorrect="on" autocomplete="on" spellcheck="true"></textarea>
+            <textarea id="inp" rows="1" placeholder="Start typing... Claude is listening" autocorrect="on" spellcheck="true"></textarea>
             <span class="char-count" id="cc">0</span>
           </div>
-          <button class="send-btn" id="sendBtn" onclick="send()" title="Send (Enter)">&#10148;</button>
+          <button class="send-btn" id="sendBtn" onclick="send()">&#10148;</button>
         </div>
         <div class="action-btns" id="actBtns"></div>
       </div>
@@ -164,107 +206,279 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.5)}
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
 <script>
-const API_KEY='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';
-const MODEL='claude-haiku-4-5-20251001';
 const MODES={
   compose:{title:'Compose Mode',desc:'Type anything — Claude drafts emails, messages, documents in real time.',ph:'What would you like to write? (e.g. "draft a follow-up email to my client")',tags:[{t:'AI-Powered',c:'tag-glow'},{t:'Live',c:'tag-pulse'}],actions:['📧 Email','📝 Message','📄 Document','🗒️ Note'],sugs:['Make it shorter','Add more detail','Change to bullet points'],sys:'You are SAIRNtype, an AI writing assistant. COMPOSE MODE: Help draft text — emails, messages, documents, notes. Be concise but complete. If given a brief prompt, write the full draft. Never explain what you are doing — just deliver the content. For emails, include Subject: line.'},
   ghost:{title:'Ghost Completion',desc:'Type the start of a sentence. Claude finishes your thought perfectly.',ph:'Start your sentence and let Claude finish it...',tags:[{t:'Predictive',c:'tag-glow'},{t:'Instant',c:'tag-pulse'}],actions:['📬 Email opener','💼 Professional','😊 Casual','🔥 Persuasive'],sugs:['Give me more options','Make it more formal','Make it warmer'],sys:'You are SAIRNtype Ghost Completion. Continue EXACTLY from where the user left off — do not repeat their words. 1-2 sentences max. Match their tone. If ambiguous, give 3 options: Option A:, Option B:, Option C:. No commentary.'},
   tone:{title:'Tone Shift Mode',desc:'Paste any text, pick a tone. Claude rewrites it instantly in any voice.',ph:'Paste your text here, then choose a tone below...',tags:[{t:'Rewrite',c:'tag-glow'},{t:'Any Voice',c:'tag-pulse'}],actions:['🏛️ Formal','😎 Casual','💪 Persuasive','💛 Warm','⚡ Concise','🎯 Direct'],sugs:['Try persuasive tone','Make it more concise','Rewrite as casual'],sys:'You are SAIRNtype Tone Shift. Rewrite the given text in exactly the requested tone. Preserve core meaning. Output ONLY the rewritten text — no preamble. If no tone given, list 5 options and say "Choose a tone to transform this text."'},
   reply:{title:'Smart Reply Mode',desc:'Paste a message you received. Claude drafts 3 perfect replies instantly.',ph:'Paste the message you want to reply to...',tags:[{t:'3 Options',c:'tag-glow'},{t:'Context-Aware',c:'tag-pulse'}],actions:['✅ Accept','🤝 Negotiate','⏰ Defer','❌ Decline'],sugs:['Make Reply A shorter','Mix tone of A and B','Add alternative ending'],sys:'You are SAIRNtype Smart Reply. Draft exactly 3 reply options:\n\nREPLY A — [tone 2-3 words]:\n[reply]\n\nREPLY B — [tone 2-3 words]:\n[reply]\n\nREPLY C — [tone 2-3 words]:\n[reply]\n\nEach reply complete and ready to send. Vary the tone. No commentary outside the format.'},
-  files:{title:'File Manager',desc:'Drag a folder in — Claude analyzes, declutters, and organizes everything.',ph:'Describe what you want to do with your files, or drop a folder above...',tags:[{t:'AI Organizer',c:'tag-glow'},{t:'Declutter',c:'tag-pulse'}],actions:['🗑️ Find duplicates','📦 Large files','🕰️ Old files','✨ Organize'],sugs:['What can I delete?','Show largest files','Suggest folder structure'],sys:'You are SAIRNtype File Manager. The user has shared a list of their files. Analyze them and provide: 1) FILES TO DELETE — duplicates, junk, temp files, files not opened in 6+ months. 2) LARGE FILES — anything over 100MB worth reviewing. 3) ORGANIZE — suggest a clean folder structure. 4) SPACE SAVED — estimate how much space they would free up. Be specific with file names. Be decisive — tell them exactly what to do.'}
+  files:{title:'File Manager',desc:'Drag a folder in — Claude analyzes, declutters, and organizes everything.',ph:'Describe what you want to do with your files, or drop a folder above...',tags:[{t:'AI Organizer',c:'tag-glow'},{t:'Declutter',c:'tag-pulse'}],actions:['🗑️ Find duplicates','📦 Large files','🕰️ Old files','✨ Organize'],sugs:['What can I delete?','Show largest files','Suggest folder structure'],sys:'You are SAIRNtype File Manager. The user has shared a list of their files. Analyze them and provide: 1) FILES TO DELETE — duplicates, junk, temp files, old files. 2) LARGE FILES — anything over 100MB. 3) ORGANIZE — suggest a clean folder structure. 4) SPACE SAVED — estimate how much space they free up. Be specific and decisive.'}
 };
-const QUICK={'Email':'Write a professional email to my client following up on our project discussion.','Message':'Write a friendly message to my colleague about rescheduling our meeting.','Document':'Write an executive summary for our Q2 performance report.','Note':'Write a quick note about the key action items from today.','Formal':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite formally]','Casual':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite casually]','Persuasive':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite persuasively]','Warm':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite warmly]','Concise':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite concisely]','Direct':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite directly]','Email opener':'I wanted to reach out because','Professional':'Following our recent discussion, I would like to','Accept':()=>document.getElementById('inp').value.trim()||'Thank you — confirming our Thursday meeting.','Negotiate':()=>document.getElementById('inp').value.trim()||'We appreciate your offer but would like to discuss the timeline.','Defer':()=>document.getElementById('inp').value.trim()||'Can we revisit this next week?','Decline':()=>document.getElementById('inp').value.trim()||'Unfortunately I will not be able to participate at this time.'};
-let mode='compose',localHistory=[],loading=false,msgCount=0;
-function switchMode(m){mode=m;localHistory=[];document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));document.getElementById('btn-'+m).classList.add('active');const cfg=MODES[m];document.getElementById('modeTitle').textContent=cfg.title;document.getElementById('modeDesc').textContent=cfg.desc;document.getElementById('inp').placeholder=cfg.ph;document.getElementById('statMode').textContent=cfg.title.replace(' Mode','');document.getElementById('modeTags').innerHTML=cfg.tags.map(t=>`<span class="tag ${t.c}">${t.t}</span>`).join('');renderActions(m);document.getElementById('sugBar').style.display='none';const dz=document.getElementById('dropZone');if(dz){dz.style.display=m==='files'?'block':'none';dz.onclick=()=>document.getElementById('fileInput').click();}document.getElementById('inp').focus();}
-function renderActions(m){document.getElementById('actBtns').innerHTML=MODES[m].actions.map(a=>`<button class="act-btn" onclick="quickAct('${a}')">${a}</button>`).join('');}
-function quickAct(label){const clean=label.replace(/^\S+\s*/,'').trim();const q=QUICK[clean];const val=typeof q==='function'?q():(q||`Help me write something ${clean.toLowerCase()}.`);const el=document.getElementById('inp');el.value=val;el.dispatchEvent(new Event('input'));send();}
-function useSug(i){const el=document.getElementById('s'+i);if(el&&el.textContent&&el.textContent!=='...'){addBubble('user',el.textContent);callClaude(el.textContent);}}
-function addBubble(role,text){const out=document.getElementById('output');const welcome=out.querySelector('.bubble.system');if(welcome&&role!=='system')welcome.remove();const d=document.createElement('div');d.className='bubble '+role;if(role!=='system'){const lbl=document.createElement('div');lbl.className='bubble-label';lbl.textContent=role==='ai'?'✦ SAIRNtype':'You';d.appendChild(lbl);}const txt=document.createElement('div');txt.style.cssText='white-space:pre-wrap;word-break:break-word';txt.textContent=text;d.appendChild(txt);if(role==='ai'&&text.length>60){const btn=document.createElement('button');btn.className='copy-btn';btn.textContent='⧉ Copy';btn.onclick=()=>{navigator.clipboard.writeText(text).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});showToast('Copied!');};d.appendChild(btn);}out.appendChild(d);out.scrollTop=out.scrollHeight;}
-function showThinking(){const out=document.getElementById('output');const old=document.getElementById('thinking');if(old)old.remove();const d=document.createElement('div');d.className='thinking';d.id='thinking';d.innerHTML='<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-txt">Claude is writing...</span>';out.appendChild(d);out.scrollTop=out.scrollHeight;}
+
+const QUICK={
+  'Email':'Write a professional email to my client following up on our project discussion.',
+  'Message':'Write a friendly message to my colleague about rescheduling our meeting.',
+  'Document':'Write an executive summary for our Q2 performance report.',
+  'Note':'Write a quick note about the key action items from today.',
+  'Formal':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite formally]',
+  'Casual':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite casually]',
+  'Persuasive':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite persuasively]',
+  'Warm':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite warmly]',
+  'Concise':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite concisely]',
+  'Direct':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite directly]',
+  'Email opener':'I wanted to reach out because',
+  'Professional':'Following our recent discussion, I would like to',
+  'Accept':()=>document.getElementById('inp').value.trim()||'Thank you — confirming our Thursday meeting.',
+  'Negotiate':()=>document.getElementById('inp').value.trim()||'We appreciate your offer but would like to discuss the timeline.',
+  'Defer':()=>document.getElementById('inp').value.trim()||'Can we revisit this next week?',
+  'Decline':()=>document.getElementById('inp').value.trim()||'Unfortunately I will not be able to participate at this time.'
+};
+
+let API_KEY='', MODEL='claude-haiku-4-5-20251001';
+let mode='compose', localHistory=[], loading=false, msgCount=0;
+
+// ── SETUP ─────────────────────────────────────────────────────────
+function startApp(){
+  const key=document.getElementById('keyInput').value.trim();
+  if(!key.startsWith('sk-ant-')){
+    document.getElementById('setupError').style.display='block';
+    return;
+  }
+  API_KEY=key;
+  localStorage.setItem('sairn_key', key);
+  document.getElementById('setup').style.display='none';
+  document.getElementById('app').style.display='flex';
+  renderActions('compose');
+  document.getElementById('inp').focus();
+}
+
+function signOut(){
+  localStorage.removeItem('sairn_key');
+  API_KEY='';
+  document.getElementById('keyInput').value='';
+  document.getElementById('setup').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+
+// Auto-load saved key
+window.addEventListener('load',()=>{
+  const saved=localStorage.getItem('sairn_key');
+  if(saved&&saved.startsWith('sk-ant-')){
+    API_KEY=saved;
+    document.getElementById('setup').style.display='none';
+    document.getElementById('app').style.display='flex';
+    renderActions('compose');
+    setTimeout(()=>document.getElementById('inp').focus(),100);
+  }
+  document.getElementById('keyInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter') startApp();
+  });
+});
+
+// ── MODES ─────────────────────────────────────────────────────────
+function switchMode(m){
+  mode=m; localHistory=[];
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+m).classList.add('active');
+  const cfg=MODES[m];
+  document.getElementById('modeTitle').textContent=cfg.title;
+  document.getElementById('modeDesc').textContent=cfg.desc;
+  document.getElementById('inp').placeholder=cfg.ph;
+  document.getElementById('statMode').textContent=cfg.title.replace(' Mode','');
+  document.getElementById('modeTags').innerHTML=cfg.tags.map(t=>`<span class="tag ${t.c}">${t.t}</span>`).join('');
+  renderActions(m);
+  document.getElementById('sugBar').style.display='none';
+  const dz=document.getElementById('dropZone');
+  dz.style.display=m==='files'?'block':'none';
+  document.getElementById('inp').focus();
+}
+
+function renderActions(m){
+  document.getElementById('actBtns').innerHTML=MODES[m].actions.map(a=>`<button class="act-btn" onclick="quickAct('${a}')">${a}</button>`).join('');
+}
+
+function quickAct(label){
+  const clean=label.replace(/^\S+\s*/,'').trim();
+  const q=QUICK[clean];
+  const val=typeof q==='function'?q():(q||`Help me write something ${clean.toLowerCase()}.`);
+  const el=document.getElementById('inp');
+  el.value=val; el.dispatchEvent(new Event('input')); send();
+}
+
+function useSug(i){
+  const el=document.getElementById('s'+i);
+  if(el&&el.textContent&&el.textContent!=='...'){addBubble('user',el.textContent);callClaude(el.textContent);}
+}
+
+// ── BUBBLES ───────────────────────────────────────────────────────
+function addBubble(role,text){
+  const out=document.getElementById('output');
+  const welcome=out.querySelector('.bubble.system');
+  if(welcome&&role!=='system') welcome.remove();
+  const d=document.createElement('div');
+  d.className='bubble '+role;
+  if(role!=='system'){
+    const lbl=document.createElement('div');
+    lbl.className='bubble-label';
+    lbl.textContent=role==='ai'?'✦ SAIRNtype':'You';
+    d.appendChild(lbl);
+  }
+  const txt=document.createElement('div');
+  txt.style.cssText='white-space:pre-wrap;word-break:break-word';
+  txt.textContent=text;
+  d.appendChild(txt);
+  if(role==='ai'&&text.length>60){
+    const btn=document.createElement('button');
+    btn.className='copy-btn';
+    btn.textContent='⧉ Copy';
+    btn.onclick=()=>{
+      navigator.clipboard.writeText(text).catch(()=>{
+        const ta=document.createElement('textarea');
+        ta.value=text;document.body.appendChild(ta);ta.select();
+        document.execCommand('copy');document.body.removeChild(ta);
+      });
+      showToast('Copied!');
+    };
+    d.appendChild(btn);
+  }
+  out.appendChild(d);
+  out.scrollTop=out.scrollHeight;
+}
+
+function showThinking(){
+  const out=document.getElementById('output');
+  const old=document.getElementById('thinking');
+  if(old) old.remove();
+  const d=document.createElement('div');
+  d.className='thinking'; d.id='thinking';
+  d.innerHTML='<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span style="font-size:14px;color:var(--muted)">Claude is writing...</span>';
+  out.appendChild(d);
+  out.scrollTop=out.scrollHeight;
+}
+
 function removeThinking(){const t=document.getElementById('thinking');if(t)t.remove();}
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg||'Done!';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
-function updateSugs(){const s=MODES[mode].sugs;document.getElementById('sugBar').style.display='flex';s.forEach((txt,i)=>{const el=document.getElementById('s'+i);if(el){el.textContent=txt;el.className=i===0?'sug top':'sug';}});}
-async function correctSpelling(text){
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function updateSugs(){
+  const s=MODES[mode].sugs;
+  document.getElementById('sugBar').style.display='flex';
+  s.forEach((txt,i)=>{
+    const el=document.getElementById('s'+i);
+    if(el){el.textContent=txt; el.className=i===0?'sug top':'sug';}
+  });
+}
+
+// ── CLAUDE API ────────────────────────────────────────────────────
+async function callClaude(userMsg){
+  if(loading) return;
+  loading=true;
+  document.getElementById('sendBtn').disabled=true;
+  showThinking();
+  localHistory.push({role:'user',content:userMsg});
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:MODEL,max_tokens:200,messages:[{role:'user',content:'Fix any spelling and grammar mistakes in this text. Return ONLY the corrected text, nothing else, no explanation: '+text}]})
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':API_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({model:MODEL,max_tokens:1000,system:MODES[mode].sys,messages:localHistory})
     });
     const data=await res.json();
-    if(data.content&&data.content[0]&&data.content[0].text) return data.content[0].text.trim();
-  }catch(e){}
-  return text;
+    removeThinking();
+    if(data.error){
+      const msg='API error: '+data.error.message;
+      addBubble('system',msg);
+      if(data.error.type==='authentication_error'){
+        setTimeout(()=>{
+          if(confirm('API key invalid. Would you like to enter a new one?')) signOut();
+        },500);
+      }
+    } else {
+      const aiText=data.content[0].text;
+      localHistory.push({role:'assistant',content:aiText});
+      addBubble('ai',aiText);
+      msgCount++;
+      document.getElementById('statMsgs').textContent=msgCount;
+      updateSugs();
+    }
+  }catch(err){
+    removeThinking();
+    addBubble('system','Network error. Check your connection and try again.');
+  }
+  loading=false;
+  document.getElementById('sendBtn').disabled=false;
 }
 
-async function callClaude(userMsg){if(loading)return;loading=true;document.getElementById('sendBtn').disabled=true;showThinking();
-const corrected=await correctSpelling(userMsg);
-if(corrected!==userMsg){
-  const lastBubble=document.getElementById('output').querySelector('.bubble.user:last-of-type');
-  if(lastBubble){const txtEl=lastBubble.querySelector('div[style]');if(txtEl)txtEl.textContent=corrected;}
+function send(){
+  const el=document.getElementById('inp');
+  const txt=el.value.trim();
+  if(!txt||loading) return;
+  addBubble('user',txt);
+  el.value=''; el.style.height='auto';
+  document.getElementById('cc').textContent='0';
+  callClaude(txt);
 }
-localHistory.push({role:'user',content:corrected});try{const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:MODEL,max_tokens:1000,system:MODES[mode].sys,messages:localHistory})});const data=await res.json();removeThinking();const aiText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:(data.error?'API error: '+data.error.message:'Something went wrong. Please try again.');localHistory.push({role:'assistant',content:aiText});addBubble('ai',aiText);msgCount++;document.getElementById('statMsgs').textContent=msgCount;updateSugs();}catch(err){removeThinking();addBubble('system','Network error. Check your connection and try again.');}loading=false;document.getElementById('sendBtn').disabled=false;}
-function send(){const el=document.getElementById('inp');const txt=el.value.trim();if(!txt||loading)return;addBubble('user',txt);el.value='';el.style.height='auto';document.getElementById('cc').textContent='0';callClaude(txt);}
+
+// ── INPUT ─────────────────────────────────────────────────────────
 const inpEl=document.getElementById('inp');
-inpEl.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px';document.getElementById('cc').textContent=this.value.length;});
-inpEl.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
-renderActions('compose');inpEl.focus();
+inpEl.addEventListener('input',function(){
+  this.style.height='auto';
+  this.style.height=Math.min(this.scrollHeight,150)+'px';
+  document.getElementById('cc').textContent=this.value.length;
+});
+inpEl.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
+});
 
-// ── FILE MANAGER DROP ZONE HANDLED IN switchMode ──────────────────
-
-function handleFileDrop(e) {
+// ── FILE MANAGER ──────────────────────────────────────────────────
+function handleFileDrop(e){
   e.preventDefault();
-  const dz = document.getElementById('dropZone');
-  dz.style.borderColor = 'rgba(124,111,255,0.4)';
-  dz.style.background = 'rgba(124,111,255,0.04)';
-  const items = e.dataTransfer.items;
-  const files = [];
-  for(let i = 0; i < items.length; i++) {
-    const entry = items[i].webkitGetAsEntry ? items[i].webkitGetAsEntry() : null;
-    if(entry) readEntry(entry, files, () => { if(files.length > 0) analyzeFiles(files); });
-    else if(items[i].getAsFile) files.push(items[i].getAsFile());
+  const items=e.dataTransfer.items;
+  const files=[];
+  let pending=0;
+  for(let i=0;i<items.length;i++){
+    const entry=items[i].webkitGetAsEntry?items[i].webkitGetAsEntry():null;
+    if(entry){pending++;readEntry(entry,files,()=>{pending--;if(pending===0&&files.length>0)analyzeFiles(files);});}
+    else if(items[i].getAsFile){files.push(items[i].getAsFile());}
   }
-  if(files.length > 0) setTimeout(() => analyzeFiles(files), 500);
+  if(pending===0&&files.length>0) analyzeFiles(files);
 }
 
-function readEntry(entry, files, done) {
-  if(entry.isFile) {
-    entry.file(f => { files.push(f); done(); });
-  } else if(entry.isDirectory) {
-    const reader = entry.createReader();
-    reader.readEntries(entries => {
-      entries.forEach(e => readEntry(e, files, done));
-      done();
+function readEntry(entry,files,done){
+  if(entry.isFile){entry.file(f=>{files.push(f);done();});}
+  else if(entry.isDirectory){
+    const reader=entry.createReader();
+    reader.readEntries(entries=>{
+      let p=entries.length;
+      if(p===0){done();return;}
+      entries.forEach(e=>readEntry(e,files,()=>{p--;if(p===0)done();}));
     });
-  }
+  } else done();
 }
 
-function handleFileInput(e) {
-  const files = Array.from(e.target.files);
-  if(files.length > 0) analyzeFiles(files);
+function handleFileInput(e){
+  const files=Array.from(e.target.files);
+  if(files.length>0) analyzeFiles(files);
 }
 
-function analyzeFiles(files) {
-  const fileList = files.map(f => {
-    const size = f.size > 1073741824 ? (f.size/1073741824).toFixed(1)+'GB' :
-                 f.size > 1048576 ? (f.size/1048576).toFixed(1)+'MB' :
-                 f.size > 1024 ? (f.size/1024).toFixed(0)+'KB' : f.size+'B';
-    const modified = f.lastModified ? new Date(f.lastModified).toLocaleDateString() : 'Unknown';
-    return `${f.name} | ${size} | Modified: ${modified} | Path: ${f.webkitRelativePath||f.name}`;
-  }).join('
-');
-
-  const totalSize = files.reduce((a,f) => a+f.size, 0);
-  const totalMB = (totalSize/1048576).toFixed(1);
-
-  const summary = `I have ${files.length} files totaling ${totalMB}MB. Here is the complete file list:
-
-${fileList}
-
-Please analyze these files and tell me: what to delete, what to keep, duplicates, large files, old files, and suggest an organized folder structure. Estimate how much space I can free up.`;
-
-  addBubble('user', `📁 Dropped ${files.length} files (${totalMB}MB) for analysis`);
+function analyzeFiles(files){
+  const fileList=files.map(f=>{
+    const size=f.size>1073741824?(f.size/1073741824).toFixed(1)+'GB':f.size>1048576?(f.size/1048576).toFixed(1)+'MB':f.size>1024?(f.size/1024).toFixed(0)+'KB':f.size+'B';
+    const mod=f.lastModified?new Date(f.lastModified).toLocaleDateString():'Unknown';
+    return `${f.name} | ${size} | Modified: ${mod}`;
+  }).join('\n');
+  const totalMB=(files.reduce((a,f)=>a+f.size,0)/1048576).toFixed(1);
+  const summary=`I have ${files.length} files totaling ${totalMB}MB:\n\n${fileList}\n\nAnalyze: what to delete, duplicates, large files, old files, suggested folder structure, estimated space saved.`;
+  addBubble('user',`📁 ${files.length} files (${totalMB}MB) dropped for analysis`);
   callClaude(summary);
 }
 </script>
