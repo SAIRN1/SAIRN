@@ -176,7 +176,7 @@ const MODES={
 };
 const QUICK={'Email':'Write a professional email to my client following up on our project discussion.','Message':'Write a friendly message to my colleague about rescheduling our meeting.','Document':'Write an executive summary for our Q2 performance report.','Note':'Write a quick note about the key action items from today.','Formal':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite formally]','Casual':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite casually]','Persuasive':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite persuasively]','Warm':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite warmly]','Concise':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite concisely]','Direct':()=>(document.getElementById('inp').value.trim()||'Let us confirm the meeting.')+' [Rewrite directly]','Email opener':'I wanted to reach out because','Professional':'Following our recent discussion, I would like to','Accept':()=>document.getElementById('inp').value.trim()||'Thank you — confirming our Thursday meeting.','Negotiate':()=>document.getElementById('inp').value.trim()||'We appreciate your offer but would like to discuss the timeline.','Defer':()=>document.getElementById('inp').value.trim()||'Can we revisit this next week?','Decline':()=>document.getElementById('inp').value.trim()||'Unfortunately I will not be able to participate at this time.'};
 let mode='compose',localHistory=[],loading=false,msgCount=0;
-function switchMode(m){mode=m;localHistory=[];document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));document.getElementById('btn-'+m).classList.add('active');const cfg=MODES[m];document.getElementById('modeTitle').textContent=cfg.title;document.getElementById('modeDesc').textContent=cfg.desc;document.getElementById('inp').placeholder=cfg.ph;document.getElementById('statMode').textContent=cfg.title.replace(' Mode','');document.getElementById('modeTags').innerHTML=cfg.tags.map(t=>`<span class="tag ${t.c}">${t.t}</span>`).join('');renderActions(m);document.getElementById('sugBar').style.display='none';document.getElementById('inp').focus();}
+function switchMode(m){mode=m;localHistory=[];document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));document.getElementById('btn-'+m).classList.add('active');const cfg=MODES[m];document.getElementById('modeTitle').textContent=cfg.title;document.getElementById('modeDesc').textContent=cfg.desc;document.getElementById('inp').placeholder=cfg.ph;document.getElementById('statMode').textContent=cfg.title.replace(' Mode','');document.getElementById('modeTags').innerHTML=cfg.tags.map(t=>`<span class="tag ${t.c}">${t.t}</span>`).join('');renderActions(m);document.getElementById('sugBar').style.display='none';const dz=document.getElementById('dropZone');if(dz){dz.style.display=m==='files'?'block':'none';dz.onclick=()=>document.getElementById('fileInput').click();}document.getElementById('inp').focus();}
 function renderActions(m){document.getElementById('actBtns').innerHTML=MODES[m].actions.map(a=>`<button class="act-btn" onclick="quickAct('${a}')">${a}</button>`).join('');}
 function quickAct(label){const clean=label.replace(/^\S+\s*/,'').trim();const q=QUICK[clean];const val=typeof q==='function'?q():(q||`Help me write something ${clean.toLowerCase()}.`);const el=document.getElementById('inp');el.value=val;el.dispatchEvent(new Event('input'));send();}
 function useSug(i){const el=document.getElementById('s'+i);if(el&&el.textContent&&el.textContent!=='...'){addBubble('user',el.textContent);callClaude(el.textContent);}}
@@ -211,18 +211,7 @@ inpEl.addEventListener('input',function(){this.style.height='auto';this.style.he
 inpEl.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
 renderActions('compose');inpEl.focus();
 
-// ── FILE MANAGER ──────────────────────────────────────────────────
-const origSwitchMode = switchMode;
-switchMode = function(m) {
-  origSwitchMode(m);
-  const dz = document.getElementById('dropZone');
-  if(m === 'files') {
-    dz.style.display = 'block';
-    dz.onclick = () => document.getElementById('fileInput').click();
-  } else {
-    dz.style.display = 'none';
-  }
-};
+// ── FILE MANAGER DROP ZONE HANDLED IN switchMode ──────────────────
 
 function handleFileDrop(e) {
   e.preventDefault();
