@@ -1,0 +1,26 @@
+{
+  "name": "SAIRNtype",
+  "short_name": "SAIRNtype",
+  "description": "AI-powered keyboard for smarter typing",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0B14",
+  "theme_color": "#0A0B14",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%230A0B14'/><rect x='20' y='20' width='152' height='152' rx='28' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237C6FFF'/><stop offset='1' stop-color='%2300E5C4'/></linearGradient></defs><text x='96' y='120' font-size='80' text-anchor='middle' fill='white' font-family='system-ui' font-weight='bold'>S</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%230A0B14'/><rect x='40' y='40' width='432' height='432' rx='70' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237C6FFF'/><stop offset='1' stop-color='%2300E5C4'/></linearGradient></defs><text x='256' y='330' font-size='220' text-anchor='middle' fill='white' font-family='system-ui' font-weight='bold'>S</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": []
+}
