@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAIRNtype — AI Keyboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SAIRNtype">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0A0B14">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0A0B14;--surface:#111220;--card:#181929;--border:rgba(255,255,255,0.08);--glow:#7C6FFF;--pulse:#00E5C4;--text:#F0EEF8;--muted:#8B8AA0;--dim:#4A4963;--faint:#22233A}
@@ -480,6 +487,94 @@ function analyzeFiles(files){
   const summary=`I have ${files.length} files totaling ${totalMB}MB:\n\n${fileList}\n\nAnalyze: what to delete, duplicates, large files, old files, suggested folder structure, estimated space saved.`;
   addBubble('user',`📁 ${files.length} files (${totalMB}MB) dropped for analysis`);
   callClaude(summary);
+}
+</script>
+
+<!-- INSTALL BANNER -->
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#7C6FFF,#00E5C4);padding:16px 20px;z-index:9999;display:none;align-items:center;justify-content:space-between;gap:12px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:42px;height:42px;border-radius:10px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">⌨️</div>
+    <div>
+      <div style="font-size:14px;font-weight:600;color:#fff">Add SAIRNtype to Home Screen</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.8)">Use it like a native app — always one tap away</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button onclick="installApp()" style="background:#fff;color:#7C6FFF;border:none;padding:8px 18px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">Install</button>
+    <button onclick="dismissBanner()" style="background:rgba(0,0,0,0.2);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">✕</button>
+  </div>
+</div>
+
+<!-- iOS INSTALL HINT -->
+<div id="iosBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;border-top:1px solid rgba(124,111,255,0.3);padding:16px 20px;z-index:9999">
+  <div style="display:flex;align-items:flex-start;gap:12px">
+    <div style="font-size:28px;flex-shrink:0">⌨️</div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:4px">Add SAIRNtype to your Home Screen</div>
+      <div style="font-size:13px;color:#8B8AA0;line-height:1.5">Tap the <strong style="color:#7C6FFF">Share button</strong> <span style="font-size:16px">⬆️</span> at the bottom of your browser, then tap <strong style="color:#7C6FFF">"Add to Home Screen"</strong></div>
+    </div>
+    <button onclick="dismissIOS()" style="background:transparent;border:none;color:#8B8AA0;font-size:20px;cursor:pointer;padding:0;flex-shrink:0">✕</button>
+  </div>
+  <div style="width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:12px solid #1a1a2e;position:absolute;bottom:-12px;left:50%;transform:translateX(-50%)"></div>
+</div>
+
+<script>
+// PWA Install Logic
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install banner for Android/Desktop
+  if (!isIOS() && !isInstalled()) {
+    setTimeout(() => {
+      document.getElementById('installBanner').style.display = 'flex';
+    }, 3000);
+  }
+});
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(result => {
+      if (result.outcome === 'accepted') {
+        dismissBanner();
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+
+function dismissBanner() {
+  document.getElementById('installBanner').style.display = 'none';
+  localStorage.setItem('sairn_install_dismissed', '1');
+}
+
+function dismissIOS() {
+  document.getElementById('iosBanner').style.display = 'none';
+  localStorage.setItem('sairn_ios_dismissed', '1');
+}
+
+// Show iOS hint after 3 seconds on iOS Safari
+if (isIOS() && !isInstalled() && !localStorage.getItem('sairn_ios_dismissed')) {
+  setTimeout(() => {
+    document.getElementById('iosBanner').style.display = 'block';
+  }, 3000);
+}
+
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
 }
 </script>
 </body>
