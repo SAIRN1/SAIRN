@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIRtype — Synced</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SETUP INSTRUCTIONS (read before opening):
+
+     1. Go to https://console.firebase.google.com
+     2. Click "Add project" → name it "sairtype" → Create
+     3. Click "Realtime Database" in the left menu → Create database
+        → Start in TEST MODE → Enable
+     4. Click the gear icon → Project settings → scroll to
+        "Your apps" → click </> (Web) → register app → copy the
+        firebaseConfig object values below
+     5. Replace the PASTE_YOUR_... placeholders with your real values
+     6. Host this file on Netlify (drag-drop at netlify.com/drop)
+     7. Open the Netlify URL on BOTH your phone and computer
+     8. They will auto-sync in real time — same session, same history
+
+     That's it. Free Firebase tier handles ~100K reads/day.
+═══════════════════════════════════════════════════════════════════ -->
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, push, onValue, set, serverTimestamp, onDisconnect, remove }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ─── PASTE YOUR FIREBASE CONFIG HERE ────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyCQcRfXyV4d5clzUwCqxj8t73I7YlrhcRM",
+  authDomain:        "sarintype-6e070.firebaseapp.com",
+  databaseURL:       "https://sarintype-6e070-default-rtdb.firebaseio.com",
+  projectId:         "sarintype-6e070",
+  storageBucket:     "sarintype-6e070.firebasestorage.app",
+  messagingSenderId: "42510044034",
+  appId:             "1:42510044034:web:042eddf5f17ef9a81b9d9b",
+  measurementId:     "G-9RSVCGHG1D"
+};
+// ────────────────────────────────────────────────────────────────────
+
+const CONFIGURED = !firebaseConfig.apiKey.startsWith('PASTE');
+
+let db, msgsRef, presenceRef, deviceId, deviceName;
+
+if (CONFIGURED) {
+  const app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+
+  // Stable device ID stored in localStorage
+  deviceId = localStorage.getItem('st_device_id');
+  if (!deviceId) {
+    deviceId = 'dev_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('st_device_id', deviceId);
+  }
+
+  // Detect device type for presence display
+  const isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+  deviceName = isMobile ? '📱 Phone' : '💻 Computer';
+
+  msgsRef = ref(db, 'sairtype/messages');
+
+  // Presence — write online, remove on disconnect
+  presenceRef = ref(db, 'sairtype/presence/' + deviceId);
+  set(presenceRef, { name: deviceName, online: true, ts: serverTimestamp() });
+  onDisconnect(presenceRef).remove();
+
+  // Listen for presence changes
+  onValue(ref(db, 'sairtype/presence'), snap => {
+    const devices = [];
+    snap.forEach(child => {
+      const d = child.val();
+      if (d && d.name) devices.push(d.name);
+    });
+    updatePresence(devices);
+  });
+
+  // Listen for new messages — render them live
+  onValue(msgsRef, snap => {
+    const msgs = [];
+    snap.forEach(child => msgs.push({ key: child.key, ...child.val() }));
+    renderSyncedMessages(msgs);
+  });
+}
+
+// ─── Expose to window so non-module code can call ───────────────────
+window._fbConfigured = CONFIGURED;
+window._fbPush = async (role, text, mode) => {
+  if (!CONFIGURED || !msgsRef) return;
+  await push(msgsRef, {
+    role, text, mode,
+    device: deviceName,
+    ts: serverTimestamp()
+  });
+};
+window._fbClear = async () => {
+  if (!CONFIGURED || !msgsRef) return;
+  await set(msgsRef, null);
+};
+
+function updatePresence(devices) {
+  const el = document.getElementById('presenceBar');
+  if (!el) return;
+  if (devices.length === 0) {
+    el.textContent = 'No devices connected';
+    el.style.color = 'var(--dim)';
+  } else {
+    el.textContent = devices.join('  ·  ') + '  — synced live';
+    el.style.color = 'var(--pulse)';
+  }
+}
+
+function renderSyncedMessages(msgs) {
+  const out = document.getElementById('output');
+  if (!out) return;
+
+  // Keep the welcome bubble if no messages yet
+  if (msgs.length === 0) {
+    out.innerHTML = '<div class="bubble system">SAIRtype is live — synced across your devices. Start typing.</div>';
+    return;
+  }
+
+  // Diff: only add messages we haven't rendered
+  const rendered = new Set([...out.querySelectorAll('[data-key]')].map(el => el.dataset.key));
+  msgs.forEach(msg => {
+    if (rendered.has(msg.key)) return;
+    appendBubble(msg.role, msg.text, msg.device, msg.key);
+  });
+  out.scrollTop = out.scrollHeight;
+}
+
+function appendBubble(role, text, device, key) {
+  const out = document.getElementById('output');
+  if (!out) return;
+
+  // Remove welcome message on first real message
+  const welcome = out.querySelector('.bubble.system');
+  if (welcome) welcome.remove();
+
+  const d = document.createElement('div');
+  d.className = 'bubble ' + role;
+  if (key) d.dataset.key = key;
+
+  if (role !== 'system') {
+    const lbl = document.createElement('div');
+    lbl.className = 'bubble-label';
+    lbl.textContent = role === 'ai'
+      ? '✦ SAIRtype'
+      : ('You' + (device ? ' · ' + device : ''));
+    d.appendChild(lbl);
+  }
+
+  const txt = document.createElement('div');
+  txt.style.cssText = 'white-space:pre-wrap;word-break:break-word';
+  txt.textContent = text;
+  d.appendChild(txt);
+
+  if (role === 'ai' && text.length > 60) {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '⧉ Copy';
+    btn.onclick = () => {
+      navigator.clipboard.writeText(text).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      });
+      showToast('Copied!');
+    };
+    d.appendChild(btn);
+  }
+
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+}
+
+window._appendBubble = appendBubble;
+</script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0A0B14;--surface:#111220;--card:#181929;
+  --border:rgba(255,255,255,0.08);
+  --glow:#7C6FFF;--pulse:#00E5C4;--spark:#FF7B7B;
+  --text:#F0EEF8;--muted:#8B8AA0;--dim:#4A4963;--faint:#22233A;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;font-size:15px;line-height:1.5}
+body{display:flex;flex-direction:column;align-items:center;padding:20px 14px 40px;min-height:100vh}
+
+/* ── SETUP BANNER ── */
+.setup-banner{
+  width:100%;max-width:980px;
+  background:rgba(255,183,71,0.08);
+  border:1px solid rgba(255,183,71,0.25);
+  border-radius:12px;padding:14px 18px;
+  margin-bottom:16px;font-size:13px;
+  color:#FFB347;line-height:1.7;
+  display:none;
+}
+.setup-banner.show{display:block}
+.setup-banner strong{color:#FFD700}
+.setup-banner code{
+  background:rgba(255,255,255,0.08);
+  padding:1px 6px;border-radius:4px;
+  font-family:monospace;font-size:12px;
+}
+
+/* ── TOP BAR ── */
+.topbar{width:100%;max-width:980px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.logo{font-size:22px;font-weight:700;background:linear-gradient(135deg,#7C6FFF,#00E5C4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--pulse);animation:pulsedot 2s infinite;flex-shrink:0}
+@keyframes pulsedot{0%,100%{box-shadow:0 0 0 0 rgba(0,229,196,0.4)}70%{box-shadow:0 0 0 6px rgba(0,229,196,0)}}
+.status-txt{font-size:12px;color:var(--muted)}
+.model-badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;background:rgba(124,111,255,0.12);border:1px solid rgba(124,111,255,0.25);color:var(--glow)}
+.sync-badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;background:rgba(0,229,196,0.08);border:1px solid rgba(0,229,196,0.2);color:var(--pulse)}
+
+/* ── PRESENCE BAR ── */
+.presence-bar{
+  width:100%;max-width:980px;
+  background:rgba(0,229,196,0.04);
+  border:1px solid rgba(0,229,196,0.12);
+  border-radius:10px;padding:8px 16px;
+  font-size:12px;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+}
+.presence-dot{width:6px;height:6px;border-radius:50%;background:var(--pulse);flex-shrink:0;animation:pulsedot 2s infinite}
+#presenceBar{color:var(--dim)}
+
+/* ── APP ── */
+.app{width:100%;max-width:980px;display:grid;grid-template-columns:220px 1fr;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--bg);height:580px}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-section{padding:14px 14px 4px;font-size:10px;font-weight:600;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase}
+.mode-btn{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-radius:8px;margin:2px 8px;transition:background 0.15s;font-size:13px;color:var(--muted);border:none;background:transparent;width:calc(100% - 16px);text-align:left}
+.mode-btn:hover{background:var(--faint);color:var(--text)}
+.mode-btn.active{background:rgba(124,111,255,0.12);color:var(--text)}
+.mode-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.mode-btn.active .mode-icon{background:rgba(124,111,255,0.2)}
+.mode-btn:not(.active) .mode-icon{background:var(--faint)}
+.mode-label{font-size:13px;font-weight:500;display:block}
+.mode-sub{font-size:10px;color:var(--dim);display:block;margin-top:1px}
+.sidebar-divider{height:1px;background:var(--border);margin:10px 14px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 14px;font-size:12px}
+.stat-label{color:var(--dim)}
+.stat-val{color:var(--pulse);font-weight:600}
+.clear-btn{margin:8px;padding:8px;border-radius:8px;border:1px solid rgba(255,123,123,0.2);background:rgba(255,123,123,0.05);color:var(--spark);font-size:12px;cursor:pointer;font-family:inherit;transition:all 0.15s;width:calc(100% - 16px)}
+.clear-btn:hover{background:rgba(255,123,123,0.12);border-color:rgba(255,123,123,0.4)}
+
+/* ── MAIN ── */
+.main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.mode-header{padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mode-title{font-size:15px;font-weight:600}
+.mode-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.mode-tags{display:flex;gap:6px;flex-shrink:0}
+.tag{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
+.tag-glow{background:rgba(124,111,255,0.12);color:var(--glow);border:1px solid rgba(124,111,255,0.2)}
+.tag-pulse{background:rgba(0,229,196,0.08);color:var(--pulse);border:1px solid rgba(0,229,196,0.15)}
+.tag-sync{background:rgba(0,229,196,0.08);color:var(--pulse);border:1px solid rgba(0,229,196,0.2)}
+
+/* ── OUTPUT ── */
+.compose-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.output{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.output::-webkit-scrollbar{width:4px}
+.output::-webkit-scrollbar-thumb{background:var(--faint);border-radius:2px}
+
+.bubble{max-width:90%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.65;animation:bubIn 0.2s ease}
+.bubble.user{align-self:flex-end;background:rgba(124,111,255,0.15);border:1px solid rgba(124,111,255,0.2);border-bottom-right-radius:3px}
+.bubble.ai{align-self:flex-start;background:var(--card);border:1px solid var(--border);border-bottom-left-radius:3px}
+.bubble.system{align-self:center;background:rgba(0,229,196,0.06);border:1px solid rgba(0,229,196,0.15);border-radius:8px;font-size:12px;color:var(--pulse);padding:6px 14px;max-width:100%;text-align:center}
+.bubble-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;opacity:0.6}
+.bubble.ai .bubble-label{color:var(--glow)}
+.bubble.user .bubble-label{color:var(--pulse);text-align:right}
+@keyframes bubIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+.thinking{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;border-bottom-left-radius:3px;align-self:flex-start;animation:bubIn 0.2s ease}
+.dots{display:flex;gap:4px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--glow);animation:bounce 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+.thinking-txt{font-size:12px;color:var(--muted)}
+
+/* ── SUGGESTIONS ── */
+.sug-bar{padding:8px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:42px;flex-shrink:0}
+.sug-label{font-size:10px;color:var(--dim);font-weight:600;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.sug{font-size:12px;padding:4px 11px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--faint);color:var(--muted);transition:all 0.15s;white-space:nowrap}
+.sug:hover{border-color:var(--glow);color:var(--text);background:rgba(124,111,255,0.08)}
+.sug.top{border-color:rgba(124,111,255,0.3);background:rgba(124,111,255,0.08);color:var(--glow)}
+
+/* ── INPUT ── */
+.input-area{padding:12px 14px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.input-row{display:flex;align-items:flex-end;gap:10px}
+.input-wrap{flex:1;position:relative}
+textarea#inp{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 44px 10px 14px;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none;min-height:42px;max-height:110px;transition:border-color 0.2s;line-height:1.5}
+textarea#inp::placeholder{color:var(--dim)}
+textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
+.char-count{position:absolute;right:10px;bottom:8px;font-size:10px;color:var(--dim);pointer-events:none}
+.send-btn{width:40px;height:40px;border-radius:10px;border:none;background:var(--glow);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s,opacity 0.15s;font-size:15px;color:#fff}
+.send-btn:hover{transform:scale(1.06)}
+.send-btn:active{transform:scale(0.94)}
+.send-btn:disabled{opacity:0.35;cursor:not-allowed}
+.action-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.act-btn{font-size:11px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.15s;font-family:inherit}
+.act-btn:hover{border-color:var(--glow);color:var(--glow);background:rgba(124,111,255,0.06)}
+
+/* ── COPY BTN ── */
+.copy-btn{margin-top:8px;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:color 0.15s}
+.copy-btn:hover{color:var(--glow)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--glow);color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .app{grid-template-columns:1fr;height:auto;min-height:75vh}
+  .sidebar{display:none}
+  body{padding:10px 8px 32px}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP BANNER (shows when Firebase not yet configured) -->
+<div class="setup-banner" id="setupBanner">
+  <strong>⚡ One-time Firebase setup needed to enable sync</strong><br>
+  1. Go to <strong>console.firebase.google.com</strong> → Add project → name it <code>sairtype</code><br>
+  2. Realtime Database → Create database → Start in <strong>Test Mode</strong> → Enable<br>
+  3. Gear icon → Project settings → Your apps → click <code>&lt;/&gt;</code> → Register app<br>
+  4. Copy the <code>firebaseConfig</code> values into this file (lines 28–36)<br>
+  5. Host on <strong>netlify.com/drop</strong> → open same URL on phone + computer → synced!<br><br>
+  <strong>Demo mode active</strong> — full AI works now, sync activates after Firebase setup.
+</div>
+
+<div class="topbar">
+  <div class="logo">SAIRtype</div>
+  <div class="topbar-right">
+    <span class="status-dot"></span>
+    <span class="status-txt" id="claudeStatus">Claude connected</span>
+    <span class="sync-badge" id="syncBadge">⚡ Sync ready</span>
+    <span class="model-badge">claude-sonnet-4-20250514</span>
+  </div>
+</div>
+
+<!-- PRESENCE BAR -->
+<div class="presence-bar">
+  <span class="presence-dot"></span>
+  <span id="presenceBar">Configure Firebase to see connected devices here</span>
+</div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">Modes</div>
+    <button class="mode-btn active" onclick="switchMode('compose')" id="btn-compose">
+      <div class="mode-icon">✍️</div>
+      <div><span class="mode-label">Compose</span><span class="mode-sub">Write anything</span></div>
+    </button>
+    <button class="mode-btn" onclick="switchMode('ghost')" id="btn-ghost">
+      <div class="mode-icon">👻</div>
+      <div><span class="mode-label">Ghost Complete</span><span class="mode-sub">Finish your thought</span></div>
+    </button>
+    <button class="mode-btn" onclick="switchMode('tone')" id="btn-tone">
+      <div class="mode-icon">🎭</div>
+      <div><span class="mode-label">Tone Shift</span><span class="mode-sub">Rewrite any voice</span></div>
+    </button>
+    <button class="mode-btn" onclick="switchMode('reply')" id="btn-reply">
+      <div class="mode-icon">⚡</div>
+      <div><span class="mode-label">Smart Reply</span><span class="mode-sub">Draft responses</span></div>
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">Session</div>
+    <div class="stat-row"><span class="stat-label">Messages</span><span class="stat-val" id="statMsgs">0</span></div>
+    <div class="stat-row"><span class="stat-label">Mode</span><span class="stat-val" id="statMode">Compose</span></div>
+    <div class="stat-row"><span class="stat-label">Sync</span><span class="stat-val" id="statSync">—</span></div>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">Session</div>
+    <button class="clear-btn" onclick="clearSession()">🗑 Clear all messages</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="mode-header">
+      <div>
+        <div class="mode-title" id="modeTitle">Compose Mode</div>
+        <div class="mode-desc" id="modeDesc">Type anything — Claude drafts with you in real time, synced across devices.</div>
+      </div>
+      <div class="mode-tags" id="modeTags">
+        <span class="tag tag-glow">AI-Powered</span>
+        <span class="tag tag-sync">Live Sync</span>
+      </div>
+    </div>
+
+    <div class="compose-wrap">
+      <div class="output" id="output">
+        <div class="bubble system">SAIRtype is live — synced across your devices. Start typing.</div>
+      </div>
+
+      <div class="sug-bar" id="sugBar" style="display:none">
+        <span class="sug-label">Quick</span>
+        <span class="sug top" id="s0" onclick="useSug(0)">...</span>
+        <span class="sug" id="s1" onclick="useSug(1)">...</span>
+        <span class="sug" id="s2" onclick="useSug(2)">...</span>
+      </div>
+
+      <div class="input-area">
+        <div class="input-row">
+          <div class="input-wrap">
+            <textarea id="inp" rows="1" placeholder="Start typing... synced across all your devices"></textarea>
+            <span class="char-count" id="cc">0</span>
+          </div>
+          <button class="send-btn" id="sendBtn" onclick="send()" title="Send (Enter)">&#10148;</button>
+        </div>
+        <div class="action-btns" id="actBtns"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Show setup banner if Firebase not configured ───────────────────
+window.addEventListener('load', () => {
+  if (!window._fbConfigured) {
+    document.getElementById('setupBanner').classList.add('show');
+    document.getElementById('syncBadge').textContent = '⚠ Sync: setup needed';
+    document.getElementById('syncBadge').style.background = 'rgba(255,183,71,0.08)';
+    document.getElementById('syncBadge').style.borderColor = 'rgba(255,183,71,0.25)';
+    document.getElementById('syncBadge').style.color = '#FFB347';
+    document.getElementById('statSync').textContent = 'Not set up';
+  } else {
+    document.getElementById('syncBadge').textContent = '✓ Live Sync';
+    document.getElementById('statSync').textContent = 'Active';
+  }
+});
+
+// ─── Mode configs ───────────────────────────────────────────────────
+const MODES = {
+  compose:{
+    title:'Compose Mode',
+    desc:'Type anything — Claude drafts with you in real time, synced across devices.',
+    ph:'What would you like to write? (e.g. "draft a follow-up email to my client")',
+    tags:[{t:'AI-Powered',c:'tag-glow'},{t:'Live Sync',c:'tag-sync'}],
+    actions:['📧 Email','📝 Message','📄 Document','🗒️ Note'],
+    sugs:['Make it shorter','Add more detail','Change to bullet points'],
+    sys:'You are SAIRtype, an AI writing assistant. COMPOSE MODE: Help draft text — emails, messages, documents, notes. Be concise but complete. If given a brief prompt, write the full draft. Never explain what you are doing — just deliver the content. For emails, include Subject: line.'
+  },
+  ghost:{
+    title:'Ghost Completion',
+    desc:'Type the start of a sentence. Claude finishes your thought, synced instantly.',
+    ph:'Start your sentence and let Claude finish it...',
+    tags:[{t:'Predictive',c:'tag-glow'},{t:'Live Sync',c:'tag-sync'}],
+    actions:['📬 Email opener','💼 Professional','😊 Casual','🔥 Persuasive'],
+    sugs:['Give me more options','Make it more formal','Make it warmer'],
+    sys:'You are SAIRtype Ghost Completion. Continue EXACTLY from where the user left off — do not repeat their words. 1-2 sentences max. Match their tone. If ambiguous, give 3 options: Option A:, Option B:, Option C:. No commentary.'
+  },
+  tone:{
+    title:'Tone Shift Mode',
+    desc:'Paste any text, pick a tone. Rewrite synced to all your devices instantly.',
+    ph:'Paste your text here, then choose a tone below...',
+    tags:[{t:'Rewrite',c:'tag-glow'},{t:'Live Sync',c:'tag-sync'}],
+    actions:['🏛️ Formal','😎 Casual','💪 Persuasive','💛 Warm','⚡ Concise','🎯 Direct'],
+    sugs:['Try persuasive tone','Make it more concise','Rewrite as casual'],
+    sys:'You are SAIRtype Tone Shift. Rewrite the given text in exactly the requested tone. Preserve core meaning. Output ONLY the rewritten text — no preamble. If no tone given, list 5 options and say "Choose a tone to transform this text."'
+  },
+  reply:{
+    title:'Smart Reply Mode',
+    desc:'Paste a received message. Claude drafts 3 replies, synced across devices.',
+    ph:'Paste the message you want to reply to...',
+    tags:[{t:'3 Options',c:'tag-glow'},{t:'Live Sync',c:'tag-sync'}],
+    actions:['✅ Accept','🤝 Negotiate','⏰ Defer','❌ Decline'],
+    sugs:['Make Reply A shorter','Mix tone of A and B','Add alternative ending'],
+    sys:'You are SAIRtype Smart Reply. Draft exactly 3 reply options:\n\nREPLY A — [tone 2-3 words]:\n[reply]\n\nREPLY B — [tone 2-3 words]:\n[reply]\n\nREPLY C — [tone 2-3 words]:\n[reply]\n\nEach reply complete and ready to send. Vary the tone. No commentary outside the format.'
+  }
+};
+
+const QUICK = {
+  'Email':'Write a professional email to my client following up on our project discussion.',
+  'Message':'Write a friendly message to my colleague about rescheduling our meeting.',
+  'Document':'Write an executive summary for our Q2 performance report.',
+  'Note':'Write a quick note about the key action items from today.',
+  'Formal':() => (document.getElementById('inp').value.trim()||'Let us confirm the meeting schedule.')+' [Rewrite formally]',
+  'Casual':() => (document.getElementById('inp').value.trim()||'Let us confirm the meeting schedule.')+' [Rewrite casually]',
+  'Persuasive':() => (document.getElementById('inp').value.trim()||'Let us confirm the meeting schedule.')+' [Rewrite persuasively]',
+  'Warm':() => (document.getElementById('inp').value.trim()||'Let us confirm the meeting schedule.')+' [Rewrite warmly]',
+  'Concise':() => (document.getElementById('inp').value.trim()||'Let us confirm the meeting schedule.')+' [Rewrite concisely]',
+  'Direct':() => (document.getElementById('inp').value.trim()||'Let us confirm the meeting schedule.')+' [Rewrite directly]',
+  'Email opener':'I wanted to reach out because',
+  'Professional':'Following our recent discussion, I would like to',
+  'Accept':() => document.getElementById('inp').value.trim()||'Thank you — confirming our Thursday meeting.',
+  'Negotiate':() => document.getElementById('inp').value.trim()||'We appreciate your offer but would like to discuss the timeline.',
+  'Defer':() => document.getElementById('inp').value.trim()||'Can we revisit this next week?',
+  'Decline':() => document.getElementById('inp').value.trim()||'Unfortunately I will not be able to participate at this time.'
+};
+
+let mode = 'compose';
+let localHistory = []; // local only for Claude context (not synced — only final messages sync)
+let loading = false;
+let msgCount = 0;
+
+function switchMode(m) {
+  mode = m;
+  localHistory = [];
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+m).classList.add('active');
+  const cfg = MODES[m];
+  document.getElementById('modeTitle').textContent = cfg.title;
+  document.getElementById('modeDesc').textContent = cfg.desc;
+  document.getElementById('inp').placeholder = cfg.ph;
+  document.getElementById('statMode').textContent = cfg.title.replace(' Mode','');
+  document.getElementById('modeTags').innerHTML = cfg.tags.map(t=>`<span class="tag ${t.c}">${t.t}</span>`).join('');
+  renderActions(m);
+  // Don't wipe output — synced messages persist
+  document.getElementById('sugBar').style.display = 'none';
+  document.getElementById('inp').focus();
+}
+
+function renderActions(m) {
+  document.getElementById('actBtns').innerHTML = MODES[m].actions.map(a =>
+    `<button class="act-btn" onclick="quickAct('${a}')">${a}</button>`
+  ).join('');
+}
+
+function quickAct(label) {
+  const clean = label.replace(/^\S+\s*/, '').trim();
+  const q = QUICK[clean];
+  const val = typeof q === 'function' ? q() : (q || `Help me write something ${clean.toLowerCase()}.`);
+  const el = document.getElementById('inp');
+  el.value = val;
+  el.dispatchEvent(new Event('input'));
+  send();
+}
+
+function useSug(i) {
+  const el = document.getElementById('s'+i);
+  if(el && el.textContent && el.textContent !== '...') {
+    // Push to Firebase + local
+    if(window._fbConfigured && window._fbPush) window._fbPush('user', el.textContent, mode);
+    else if(window._appendBubble) window._appendBubble('user', el.textContent, null, null);
+    callClaude(el.textContent);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg || 'Done!';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function showThinking() {
+  const out = document.getElementById('output');
+  // Remove stale thinking indicator
+  const old = document.getElementById('thinking');
+  if(old) old.remove();
+  const d = document.createElement('div');
+  d.className = 'thinking'; d.id = 'thinking';
+  d.innerHTML = '<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-txt">Claude is writing...</span>';
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+}
+
+function removeThinking() {
+  const t = document.getElementById('thinking');
+  if(t) t.remove();
+}
+
+function updateSugs() {
+  const s = MODES[mode].sugs;
+  document.getElementById('sugBar').style.display = 'flex';
+  s.forEach((txt,i) => {
+    const el = document.getElementById('s'+i);
+    if(el){ el.textContent = txt; el.className = i===0?'sug top':'sug'; }
+  });
+}
+
+async function callClaude(userMsg) {
+  if(loading) return;
+  loading = true;
+  document.getElementById('sendBtn').disabled = true;
+  showThinking();
+  localHistory.push({role:'user', content: userMsg});
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: MODES[mode].sys,
+        messages: localHistory
+      })
+    });
+    const data = await res.json();
+    removeThinking();
+
+    const aiText = (data.content && data.content[0] && data.content[0].text)
+      ? data.content[0].text
+      : (data.error ? 'API error: '+data.error.message : 'Something went wrong. Please try again.');
+
+    localHistory.push({role:'assistant', content: aiText});
+    msgCount++;
+    document.getElementById('statMsgs').textContent = msgCount;
+    updateSugs();
+
+    // Push AI response to Firebase (syncs to all devices)
+    // or fall back to local render if Firebase not configured
+    if(window._fbConfigured && window._fbPush) {
+      await window._fbPush('ai', aiText, mode);
+    } else {
+      if(window._appendBubble) window._appendBubble('ai', aiText, null, null);
+    }
+
+  } catch(err) {
+    removeThinking();
+    const errMsg = 'Network error. Check your connection and try again.';
+    if(window._appendBubble) window._appendBubble('system', errMsg, null, null);
+  }
+
+  loading = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function send() {
+  const el = document.getElementById('inp');
+  const txt = el.value.trim();
+  if(!txt || loading) return;
+
+  // Push user message — Firebase (syncs) or local
+  if(window._fbConfigured && window._fbPush) {
+    window._fbPush('user', txt, mode);
+  } else {
+    if(window._appendBubble) window._appendBubble('user', txt, null, null);
+  }
+
+  el.value = '';
+  el.style.height = 'auto';
+  document.getElementById('cc').textContent = '0';
+  callClaude(txt);
+}
+
+async function clearSession() {
+  if(!confirm('Clear all messages from this session? This clears all synced devices.')) return;
+  if(window._fbConfigured && window._fbClear) {
+    await window._fbClear();
+    showToast('Session cleared across all devices');
+  } else {
+    document.getElementById('output').innerHTML = '<div class="bubble system">Session cleared.</div>';
+    localHistory = [];
+    msgCount = 0;
+    document.getElementById('statMsgs').textContent = '0';
+    showToast('Session cleared');
+  }
+}
+
+// ─── Input auto-resize + char count ────────────────────────────────
+const inpEl = document.getElementById('inp');
+inpEl.addEventListener('input', function(){
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 110)+'px';
+  document.getElementById('cc').textContent = this.value.length;
+});
+inpEl.addEventListener('keydown', function(e){
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+});
+
+renderActions('compose');
+inpEl.focus();
+</script>
+</body>
+</html>
