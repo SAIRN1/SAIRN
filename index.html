@@ -11,6 +11,94 @@
 <meta name="theme-color" content="#0A0B14">
 <link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, push, onValue, set, serverTimestamp, onDisconnect }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// Load Firebase config from secure backend
+let db = null, msgsRef = null, deviceId = null, deviceName = null;
+
+async function initFirebase() {
+  try {
+    const res = await fetch('/api/firebase-config');
+    if (!res.ok) return;
+    const config = await res.json();
+    if (!config || !config.apiKey) return;
+
+    const app = initializeApp(config);
+    db = getDatabase(app);
+
+    deviceId = localStorage.getItem('sairn_device_id');
+    if (!deviceId) {
+      deviceId = 'dev_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('sairn_device_id', deviceId);
+    }
+
+    const isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+    deviceName = isMobile ? '📱 Phone' : '💻 Computer';
+
+    msgsRef = ref(db, 'sairntype/messages');
+
+    // Presence
+    const presenceRef = ref(db, 'sairntype/presence/' + deviceId);
+    set(presenceRef, { name: deviceName, online: true, ts: serverTimestamp() });
+    onDisconnect(presenceRef).remove();
+
+    // Show presence bar
+    onValue(ref(db, 'sairntype/presence'), snap => {
+      const devices = [];
+      snap.forEach(child => { const d = child.val(); if (d && d.name) devices.push(d.name); });
+      const bar = document.getElementById('presenceBar');
+      if (bar) {
+        bar.textContent = devices.length > 0
+          ? devices.join('  ·  ') + '  — synced live'
+          : 'No other devices connected';
+        bar.style.color = devices.length > 1 ? 'var(--pulse)' : 'var(--dim)';
+      }
+      document.getElementById('syncIndicator').textContent = devices.length > 1 ? '⚡ Synced' : '○ Sync';
+      document.getElementById('syncIndicator').style.color = devices.length > 1 ? 'var(--pulse)' : 'var(--dim)';
+    });
+
+    // Listen for new messages from other devices
+    let initialized = false;
+    onValue(msgsRef, snap => {
+      if (!initialized) { initialized = true; return; } // skip initial load
+      snap.forEach(child => {
+        const key = child.key;
+        const msg = child.val();
+        if (!msg || msg.deviceId === deviceId) return; // skip own messages
+        if (document.querySelector(`[data-key="${key}"]`)) return; // skip already rendered
+        window._appendSyncedBubble(msg.role, msg.text, msg.device, key);
+      });
+    });
+
+    console.log('SAIRNtype sync active —', deviceName);
+  } catch(e) {
+    console.log('Sync not available:', e.message);
+  }
+}
+
+// Expose sync functions to global scope
+window._fbPush = async (role, text, deviceLabel) => {
+  if (!db || !msgsRef) return;
+  await push(msgsRef, {
+    role, text,
+    device: deviceLabel || deviceName,
+    deviceId: deviceId,
+    ts: serverTimestamp()
+  });
+};
+
+window._fbClear = async () => {
+  if (!db || !msgsRef) return;
+  await set(msgsRef, null);
+};
+
+window._getDeviceName = () => deviceName;
+
+initFirebase();
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0A0B14;--surface:#111220;--card:#181929;--border:rgba(255,255,255,0.08);--glow:#7C6FFF;--pulse:#00E5C4;--text:#F0EEF8;--muted:#8B8AA0;--dim:#4A4963;--faint:#22233A}
@@ -126,9 +214,11 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.5)}
       <span class="status-dot"></span>
       <span style="font-size:12px;color:var(--muted)">Claude connected</span>
       <span class="badge">Live AI</span>
+      <span id="syncIndicator" style="font-size:11px;color:var(--dim)">○ Sync</span>
     </div>
   </div>
 
+  <div id="presenceBar" style="text-align:center;padding:5px 20px;font-size:11px;color:var(--dim);background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">Connecting to sync...</div>
   <div class="body">
     <div class="sidebar">
       <div class="sidebar-section">Modes</div>
@@ -156,6 +246,8 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.5)}
       <div class="sidebar-section">Session</div>
       <div class="stat-row"><span class="stat-label">Messages</span><span class="stat-val" id="statMsgs">0</span></div>
       <div class="stat-row"><span class="stat-label">Mode</span><span class="stat-val" id="statMode">Compose</span></div>
+      <div class="sidebar-divider"></div>
+      <button onclick="clearSession()" style="margin:8px;padding:8px;border-radius:8px;border:1px solid rgba(255,123,123,0.2);background:rgba(255,123,123,0.05);color:#FF7B7B;font-size:12px;cursor:pointer;font-family:inherit;width:calc(100% - 16px)">🗑 Clear session</button>
     </div>
 
     <div class="main">
@@ -385,6 +477,28 @@ function addBubble(role, text) {
   out.scrollTop = out.scrollHeight;
 }
 
+// Append a bubble from another device (no Firebase push)
+window._appendSyncedBubble = function(role, text, device, key) {
+  const out = document.getElementById('output');
+  const welcome = out.querySelector('.bubble.system');
+  if (welcome && role !== 'system') welcome.remove();
+  const d = document.createElement('div');
+  d.className = 'bubble ' + role;
+  if (key) d.dataset.key = key;
+  if (role !== 'system') {
+    const lbl = document.createElement('div');
+    lbl.className = 'bubble-label';
+    lbl.textContent = role === 'ai' ? '✦ SAIRNtype' : ('You · ' + (device || 'Other device'));
+    d.appendChild(lbl);
+  }
+  const txt = document.createElement('div');
+  txt.style.cssText = 'white-space:pre-wrap;word-break:break-word';
+  txt.textContent = text;
+  d.appendChild(txt);
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+};
+
 function showThinking() {
   const out = document.getElementById('output');
   const old = document.getElementById('thinking');
@@ -396,6 +510,28 @@ function showThinking() {
   out.appendChild(d);
   out.scrollTop = out.scrollHeight;
 }
+
+// Append a bubble from another device (no Firebase push)
+window._appendSyncedBubble = function(role, text, device, key) {
+  const out = document.getElementById('output');
+  const welcome = out.querySelector('.bubble.system');
+  if (welcome && role !== 'system') welcome.remove();
+  const d = document.createElement('div');
+  d.className = 'bubble ' + role;
+  if (key) d.dataset.key = key;
+  if (role !== 'system') {
+    const lbl = document.createElement('div');
+    lbl.className = 'bubble-label';
+    lbl.textContent = role === 'ai' ? '✦ SAIRNtype' : ('You · ' + (device || 'Other device'));
+    d.appendChild(lbl);
+  }
+  const txt = document.createElement('div');
+  txt.style.cssText = 'white-space:pre-wrap;word-break:break-word';
+  txt.textContent = text;
+  d.appendChild(txt);
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+};
 
 function removeThinking() {
   const t = document.getElementById('thinking');
@@ -447,6 +583,8 @@ async function callClaude(userMsg) {
       const aiText = data.content[0].text;
       localHistory.push({ role: 'assistant', content: aiText });
       addBubble('ai', aiText);
+      // Push AI response to Firebase so other devices see it
+      if (window._fbPush) window._fbPush('ai', aiText, 'SAIRNtype');
       msgCount++;
       document.getElementById('statMsgs').textContent = msgCount;
       updateSugs();
@@ -465,6 +603,8 @@ function send() {
   const txt = el.value.trim();
   if (!txt || loading) return;
   addBubble('user', txt);
+  // Push to Firebase so other devices see it
+  if (window._fbPush) window._fbPush('user', txt, window._getDeviceName ? window._getDeviceName() : null);
   el.value = '';
   el.style.height = 'auto';
   document.getElementById('cc').textContent = '0';
@@ -565,6 +705,16 @@ if (isIOS() && !isInstalled() && !localStorage.getItem('sairn_ios_dismissed')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}
+
+function clearSession() {
+  if (!confirm('Clear all messages? This clears all synced devices.')) return;
+  document.getElementById('output').innerHTML = '<div class="bubble system">Session cleared.</div>';
+  localHistory = [];
+  msgCount = 0;
+  document.getElementById('statMsgs').textContent = '0';
+  if (window._fbClear) window._fbClear().then(() => showToast('Cleared on all devices'));
+  else showToast('Session cleared');
 }
 
 // Init
