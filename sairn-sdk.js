@@ -3,7 +3,7 @@
 //  Drop-in for every SAIRN app. Handles everything:
 //    auth · sessions · subscriptions · claude calls
 //    storage · conversation history · style memory · privacy
-//  Michael L. Dibert · HONEY COMB Platform · 2026
+//  Michael L. Dibert · SAIRN NEXUS Platform · 2026
 // ═══════════════════════════════════════════════════════════════════
 
 (function(global) {
@@ -195,7 +195,7 @@ class SAIRNClient {
     if (s.detailed)  p.push('prefers detailed responses');
     else if (s.brief) p.push('prefers concise responses');
     if (s.technical) p.push('has technical background');
-    return p.length ? `HONEY COMB style memory: User ${p.join(', ')}.` : '';
+    return p.length ? `SAIRN NEXUS style memory: User ${p.join(', ')}.` : '';
   }
 
   _learn(u, _a) {
@@ -237,7 +237,7 @@ class SAIRNClient {
       <input id="_sm_pw" type="password" placeholder="Password (min 8 characters)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none;margin-bottom:16px;box-sizing:border-box">
       <button id="_sm_b" onclick="_smc.submit()" style="width:100%;padding:14px;background:${a};color:#000;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">Sign In</button>
       <div style="text-align:center;margin-top:11px"><button onclick="_smc.forgot()" style="font-size:12px;color:rgba(255,255,255,0.22);background:none;border:none;cursor:pointer">Forgot password?</button></div>
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.18);text-align:center;line-height:1.6">🔒 Supabase encrypted · HONEY COMB Privacy Firewall<br>Your conversations are yours. SAIRN Technologies.</div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.18);text-align:center;line-height:1.6">🔒 Supabase encrypted · SAIRN NEXUS Privacy Firewall<br>Your conversations are yours. SAIRN Technologies.</div>
     </div>`;
     document.body.appendChild(m);
     m.addEventListener('click', e => { if (e.target===m) m.style.display='none'; });

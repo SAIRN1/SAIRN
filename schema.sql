@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════
 --  SAIRN Technologies — Complete Supabase Schema
---  Michael L. Dibert · HONEY COMB Platform · 2026
+--  Michael L. Dibert · SAIRN NEXUS Platform · 2026
 --
 --  Run this entire file in Supabase SQL Editor once.
 --  It creates every table, policy, index, and function needed
@@ -20,7 +20,7 @@ create table public.profiles (
   created_at    timestamptz default now(),
   updated_at    timestamptz default now(),
 
-  -- Style learning (HONEY COMB core)
+  -- Style learning (SAIRN NEXUS core)
   style_data    jsonb default '{}'::jsonb,
 
   -- Preferences

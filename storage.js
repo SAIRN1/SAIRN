@@ -2,7 +2,7 @@
 //  SAIRN Technologies — /api/storage
 //  Per-user, per-app key-value + conversation history
 //  Privacy: RLS enforced at DB level — users can only read own data
-//  Michael L. Dibert · HONEY COMB Platform · 2026
+//  Michael L. Dibert · SAIRN NEXUS Platform · 2026
 // ═══════════════════════════════════════════════════════════════════
 
 import { createClient } from '@supabase/supabase-js';

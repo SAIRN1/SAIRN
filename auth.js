@@ -2,7 +2,7 @@
 //  SAIRN Technologies — /api/auth
 //  signup · signin · signout · refresh · me · forgot · update_profile
 //  Privacy: passwords never stored by SAIRN (Supabase handles hashing)
-//  Michael L. Dibert · HONEY COMB Platform · 2026
+//  Michael L. Dibert · SAIRN NEXUS Platform · 2026
 // ═══════════════════════════════════════════════════════════════════
 
 import { createClient } from '@supabase/supabase-js';

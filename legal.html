@@ -12,7 +12,7 @@
 <style>
 /* ═══════════════════════════════════════════════════════════════
    SAIRN Legal — Cell 11
-   HONEY COMB Platform · Michael L. Dibert · SAIRN Technologies
+   SAIRN NEXUS Platform · Michael L. Dibert · SAIRN Technologies
    
    The legal intelligence layer every person on earth needs
    and almost none of them can afford.
@@ -302,7 +302,7 @@ textarea#inp:focus{border-color:rgba(37,99,235,0.45)}
     <div class="nav-name">SAIRN<span>Legal</span></div>
   </div>
   <div class="nav-right">
-    <span class="nav-badge">HONEY COMB · Cell 11</span>
+    <span class="nav-badge">SAIRN NEXUS · Cell 11</span>
     <button class="nav-btn outline" onclick="showPage('home')">Home</button>
     <button class="nav-btn primary" onclick="showPage('app')">Launch App →</button>
   </div>
@@ -425,8 +425,8 @@ textarea#inp:focus{border-color:rgba(37,99,235,0.45)}
         <div class="feature-card" style="background:linear-gradient(160deg,rgba(37,99,235,0.08),var(--card));border-color:rgba(37,99,235,0.2)">
           <div class="feature-num">Built on</div>
           <div class="feature-icon" style="background:rgba(124,111,255,0.1);border-color:rgba(124,111,255,0.2)">⬡</div>
-          <h3 class="feature-title">HONEY COMB Core</h3>
-          <p class="feature-body">SAIRN Legal inherits the full HONEY COMB platform — style learning that remembers how you communicate, 8-language support, cross-device sync, and the 6-layer privacy firewall protecting everything you share.</p>
+          <h3 class="feature-title">SAIRN NEXUS Core</h3>
+          <p class="feature-body">SAIRN Legal inherits the full SAIRN NEXUS platform — style learning that remembers how you communicate, 8-language support, cross-device sync, and the 6-layer privacy firewall protecting everything you share.</p>
           <div class="feature-example" style="border-left-color:var(--glow)"><strong>Your documents are private</strong>Nothing you paste is stored, shared, or sold. Claude reads and forgets.</div>
         </div>
       </div>
@@ -541,7 +541,7 @@ textarea#inp:focus{border-color:rgba(37,99,235,0.45)}
 
   <!-- PAYWALL -->
   <div id="paywall">
-    <div class="pw-eyebrow">SAIRN Legal · Cell 11 · HONEY COMB Platform</div>
+    <div class="pw-eyebrow">SAIRN Legal · Cell 11 · SAIRN NEXUS Platform</div>
     <h2 class="pw-headline">Legal intelligence for everyone.</h2>
     <p class="pw-sub">Understand every document. Know every risk. Draft anything.</p>
     <div class="pw-card">
@@ -676,7 +676,7 @@ textarea#inp:focus{border-color:rgba(37,99,235,0.45)}
      JAVASCRIPT
 ══════════════════════════════════════════════════ -->
 <script>
-// ── HONEY COMB CORE CONNECTION ────────────────────────────────────
+// ── SAIRN NEXUS CORE CONNECTION ────────────────────────────────────
 const CORE_API = 'https://sairn.vercel.app/api/claude';
 const MODEL    = 'claude-haiku-4-5-20251001';
 const PRICE_ID = 'price_LEGAL_MONTHLY'; // Set your Stripe Price ID here
@@ -852,7 +852,7 @@ let localHistory = [];
 let loading = false;
 let questionCount = 0;
 
-// HONEY COMB Core — Style Learning
+// SAIRN NEXUS Core — Style Learning
 let styleMemory = JSON.parse(localStorage.getItem('sairn_style') || '{"messages":[],"patterns":{}}');
 function getStyleContext() {
   const count = styleMemory.patterns.count || 0;
@@ -1032,7 +1032,7 @@ function updateSugs() {
   });
 }
 
-// ── CLAUDE (via HONEY COMB Core) ──────────────────────────────────
+// ── CLAUDE (via SAIRN NEXUS Core) ──────────────────────────────────
 async function callClaude(userMsg) {
   if (loading) return;
   loading = true;
@@ -1241,7 +1241,7 @@ window.addEventListener('load', () => {
         <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:24px;letter-spacing:1px;text-transform:uppercase">Cancel anytime · Secured by Stripe</div>
         <a href="${STRIPE_URL}?prefilled_email=${encodeURIComponent(sairn.getUser()?.email||'')}" target="_blank" style="display:block;padding:15px;background:${ACCENT};color:#000;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none;margin-bottom:12px">Subscribe — $19.99/month</a>
         <button onclick="document.getElementById('_sairn_paywall_overlay').remove()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer">Continue with limited demo access</button>
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.15);line-height:1.6">HONEY COMB Platform · SAIRN Technologies<br>After subscribing, refresh this page to activate.</div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.15);line-height:1.6">SAIRN NEXUS Platform · SAIRN Technologies<br>After subscribing, refresh this page to activate.</div>
       </div>`;
     document.body.appendChild(overlay);
   }

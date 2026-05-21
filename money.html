@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>SAIRN Money — Your Claude-powered personal financial intelligence.</title>
-<meta name="description" content="Your Claude-powered personal financial intelligence. Powered by Claude. Part of the SAIRN Technologies HONEY COMB platform.">
+<meta name="description" content="Your Claude-powered personal financial intelligence. Powered by Claude. Part of the SAIRN Technologies SAIRN NEXUS platform.">
 <meta name="theme-color" content="#0A0B14">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cal+Sans&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   SAIRN Money · HONEY COMB Cell 9
+   SAIRN Money · SAIRN NEXUS Cell 9
    Michael L. Dibert · SAIRN Technologies · 2026
    2026 Design Standard: Glassmorphism · Vivid Gradients · Animated
 ═══════════════════════════════════════════════════════════════ */
@@ -478,7 +478,7 @@ textarea#inp:focus{border-color:var(--ab);background:rgba(255,255,255,0.05)}
     <div class="nav-brand">SAIRN <span>Money</span></div>
   </a>
   <div class="nav-r">
-    <span class="nav-pill">HONEY COMB · Cell 9</span>
+    <span class="nav-pill">SAIRN NEXUS · Cell 9</span>
     <button class="nav-cta" onclick="showPage('app')">Launch Free →</button>
   </div>
 </nav>
@@ -635,7 +635,7 @@ textarea#inp:focus{border-color:var(--ab);background:rgba(255,255,255,0.05)}
         <ul class="price-features">
           <li><span class="ck">✓</span>Plain English Financial Q&A</li><li><span class="ck">✓</span>Real Budget Intelligence</li><li><span class="ck">✓</span>Investment Education</li><li><span class="ck">✓</span>Debt Elimination Strategy</li><li><span class="ck">✓</span>Financial Document Translation</li>
           <li><span class="ck">✓</span>8 languages + voice recognition</li>
-          <li><span class="ck">✓</span>Cross-device sync (HONEY COMB)</li>
+          <li><span class="ck">✓</span>Cross-device sync (SAIRN NEXUS)</li>
           <li><span class="ck">✓</span>Style learning — gets smarter with you</li>
           <li><span class="ck">✓</span>6-layer privacy firewall</li>
           <li><span class="ck">✓</span>Works on any device, no app store</li>
@@ -655,7 +655,7 @@ textarea#inp:focus{border-color:var(--ab);background:rgba(255,255,255,0.05)}
 
   <footer>
     <div class="footer-logo">SAIRN <span>Money</span></div>
-    <div class="footer-info">© 2026 SAIRN Technologies · Michael L. Dibert<br>HONEY COMB Cell 9 · Powered by Claude (Anthropic)</div>
+    <div class="footer-info">© 2026 SAIRN Technologies · Michael L. Dibert<br>SAIRN NEXUS Cell 9 · Powered by Claude (Anthropic)</div>
   </footer>
 </div>
 
@@ -664,7 +664,7 @@ textarea#inp:focus{border-color:var(--ab);background:rgba(255,255,255,0.05)}
 ══════════════════════════════════════ -->
 <div class="page" id="appPage">
   <div id="paywall">
-    <div class="pw-eyebrow">SAIRN Money · Cell 9 · HONEY COMB</div>
+    <div class="pw-eyebrow">SAIRN Money · Cell 9 · SAIRN NEXUS</div>
     <h2 class="pw-h">Your Claude-powered personal financial intelligence.</h2>
     <p class="pw-s">Powered by Claude · SAIRN Technologies</p>
     <div class="pw-card">
@@ -760,7 +760,7 @@ textarea#inp:focus{border-color:var(--ab);background:rgba(255,255,255,0.05)}
 <div class="toast" id="toast"></div>
 
 <script>
-// ── HONEY COMB CORE ───────────────────────────────────────────────
+// ── SAIRN NEXUS CORE ───────────────────────────────────────────────
 const CORE='https://sairn.vercel.app/api/claude';
 const MODEL='claude-haiku-4-5-20251001';
 const CO_API='https://sairn.vercel.app/api/checkout';
@@ -1046,7 +1046,7 @@ window.addEventListener('load',()=>{const p=new URLSearchParams(window.location.
         <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:24px;letter-spacing:1px;text-transform:uppercase">Cancel anytime · Secured by Stripe</div>
         <a href="${STRIPE_URL}?prefilled_email=${encodeURIComponent(sairn.getUser()?.email||'')}" target="_blank" style="display:block;padding:15px;background:${ACCENT};color:#000;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none;margin-bottom:12px">Subscribe — $9.99/month</a>
         <button onclick="document.getElementById('_sairn_paywall_overlay').remove()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer">Continue with limited demo access</button>
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.15);line-height:1.6">HONEY COMB Platform · SAIRN Technologies<br>After subscribing, refresh this page to activate.</div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.15);line-height:1.6">SAIRN NEXUS Platform · SAIRN Technologies<br>After subscribing, refresh this page to activate.</div>
       </div>`;
     document.body.appendChild(overlay);
   }
