@@ -1,15 +1,11 @@
 {
   "rewrites": [
-    { "source": "/api/claude", "destination": "/api/claude" }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
-      ]
-    }
+    { "source": "/lingual",    "destination": "/lingual.html" },
+    { "source": "/health",     "destination": "/health.html"  },
+    { "source": "/money",      "destination": "/money.html"   },
+    { "source": "/legal",      "destination": "/legal.html"   },
+    { "source": "/study",      "destination": "/study.html"   },
+    { "source": "/roam",       "destination": "/roam.html"    },
+    { "source": "/senior",     "destination": "/senior.html"  }
   ]
 }

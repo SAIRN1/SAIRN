@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRN Health — Your Claude-powered personal health intelligence.</title>
+<meta name="description" content="Your Claude-powered personal health intelligence. Powered by Claude. Part of the SAIRN Technologies HONEY COMB platform.">
+<meta name="theme-color" content="#0A0B14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cal+Sans&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   SAIRN Health · HONEY COMB Cell 8
+   Michael L. Dibert · SAIRN Technologies · 2026
+   2026 Design Standard: Glassmorphism · Vivid Gradients · Animated
+═══════════════════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+:root{
+  --bg:#060810;--s1:#0D0F1E;--s2:#141628;--card:#1A1C32;
+  --glass:rgba(255,255,255,0.04);--glass-b:rgba(255,255,255,0.08);
+  --a:#F87171;--a2:#DC2626;--grad:linear-gradient(135deg,#DC2626,#B91C1C);
+  --ar:rgba(248,113,113,0.15);--ab:rgba(248,113,113,0.3);
+  --w:#F0F0FF;--m:#9090B0;--d:#404060;
+  --pulse:#00E5C4;--spark:#FF6B6B;--honey:#FFB800;
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+
+/* ── PARTICLES ── */
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,0.15)}90%{opacity:var(--o,0.15)}50%{transform:translateY(-60px) scale(1.3)}}
+
+/* ── NAV ── */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:56px;padding:0 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(6,8,16,0.8);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
+.nav-gem{
+  width:32px;height:32px;border-radius:10px;
+  background:var(--grad);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+  box-shadow:0 0 20px rgba(248,113,113,0.4);
+  transition:box-shadow 0.3s;
+}
+.nav-logo:hover .nav-gem{box-shadow:0 0 32px rgba(248,113,113,0.6)}
+.nav-brand{font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--w)}
+.nav-brand span{color:var(--a)}
+.nav-r{display:flex;align-items:center;gap:10px}
+.nav-pill{
+  font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  padding:4px 12px;border-radius:100px;
+  background:var(--ar);border:1px solid var(--ab);color:var(--a);
+}
+.nav-cta{
+  padding:9px 22px;border-radius:100px;font-size:13px;font-weight:600;
+  background:var(--grad);color:#fff;border:none;cursor:pointer;
+  font-family:'Inter',sans-serif;
+  box-shadow:0 4px 20px rgba(248,113,113,0.35);
+  transition:all 0.2s;
+}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(248,113,113,0.5)}
+
+/* ── PAGES ── */
+.page{display:none;min-height:100vh;padding-top:56px;position:relative;z-index:1}
+.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:56px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+
+/* ── HERO ── */
+.hero{
+  min-height:calc(100vh - 56px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:80px 24px 60px;position:relative;overflow:hidden;
+}
+.hero-glow{
+  position:absolute;
+  width:800px;height:500px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(248,113,113,0.12) 0%,transparent 70%);
+  top:10%;left:50%;transform:translateX(-50%);
+  pointer-events:none;
+  animation:pulse-glow 4s ease-in-out infinite;
+}
+@keyframes pulse-glow{0%,100%{opacity:0.7;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.1)}}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 18px;border-radius:100px;
+  background:var(--glass);
+  border:1px solid var(--glass-b);
+  backdrop-filter:blur(10px);
+  font-size:11px;font-weight:600;letter-spacing:1px;color:var(--a);
+  margin-bottom:32px;
+  animation:fadeUp 0.6s ease both;
+}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--pulse);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,196,0.5)}50%{opacity:0.4}70%{box-shadow:0 0 0 6px rgba(0,229,196,0)}}
+
+.hero-h1{
+  font-size:clamp(52px,8.5vw,106px);
+  font-weight:700;
+  letter-spacing:-3px;
+  line-height:0.92;
+  margin-bottom:24px;
+  animation:fadeUp 0.6s 0.1s ease both;
+}
+.hero-h1 em{font-style:normal;color:var(--a)}
+.hero-sub{
+  font-size:clamp(16px,2.2vw,21px);
+  color:var(--m);font-weight:300;
+  max-width:620px;line-height:1.7;
+  margin-bottom:48px;
+  animation:fadeUp 0.6s 0.15s ease both;
+}
+.hero-sub em{font-style:normal;color:var(--a);font-weight:500}
+
+.hero-btns{
+  display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:56px;
+  animation:fadeUp 0.6s 0.2s ease both;
+}
+.btn-main{
+  padding:17px 40px;border-radius:100px;font-size:16px;font-weight:600;
+  border:none;cursor:pointer;font-family:'Inter',sans-serif;
+  background:var(--grad);color:#fff;
+  box-shadow:0 8px 32px rgba(248,113,113,0.4);
+  transition:all 0.2s;
+}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(248,113,113,0.55)}
+.btn-ghost{
+  padding:17px 36px;border-radius:100px;font-size:16px;font-weight:500;
+  border:1px solid rgba(255,255,255,0.12);background:var(--glass);
+  backdrop-filter:blur(10px);color:var(--w);cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all 0.2s;
+}
+.btn-ghost:hover{border-color:var(--ab);background:rgba(255,255,255,0.07)}
+
+/* ── LIVE DEMO ── */
+.demo-section{
+  width:100%;max-width:800px;
+  animation:fadeUp 0.6s 0.25s ease both;
+}
+.demo-label{
+  font-size:11px;font-weight:600;letter-spacing:2px;color:var(--m);
+  text-transform:uppercase;text-align:center;margin-bottom:16px;
+}
+.demo-prompts{
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px;
+}
+.demo-btn{
+  padding:8px 16px;border-radius:100px;font-size:12px;font-weight:500;
+  border:1px solid rgba(255,255,255,0.1);background:var(--glass);
+  backdrop-filter:blur(8px);color:var(--m);cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all 0.2s;
+  max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.demo-btn:hover{border-color:var(--ab);color:var(--a);background:var(--ar)}
+
+/* DEMO PANEL — glassmorphism */
+.demo-panel{
+  background:rgba(20,22,40,0.6);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.demo-panel-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;
+  background:rgba(255,255,255,0.03);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.demo-dot{width:10px;height:10px;border-radius:50%;background:var(--spark);opacity:0.7}
+.demo-dot:nth-child(2){background:#FFB800}
+.demo-dot:nth-child(3){background:var(--pulse)}
+.demo-panel-title{font-size:11px;color:var(--d);margin-left:8px;font-weight:500}
+.demo-output{min-height:120px;max-height:200px;overflow-y:auto;padding:16px 18px}
+.demo-output::-webkit-scrollbar{width:3px}
+.demo-output::-webkit-scrollbar-thumb{background:var(--d);border-radius:2px}
+.demo-user{font-size:13px;color:var(--m);margin-bottom:12px;opacity:0.8}
+.demo-user::before{content:'You  ';color:var(--pulse);font-size:10px;font-weight:700;letter-spacing:1px;vertical-align:middle;margin-right:4px}
+.demo-ai{font-size:14px;color:var(--w);line-height:1.75;white-space:pre-wrap}
+.demo-ai::before{content:'❤️ SAIRN Health  ';color:var(--a);font-size:10px;font-weight:700;letter-spacing:1px;vertical-align:middle;margin-right:4px}
+.demo-cursor{display:inline-block;width:2px;height:15px;background:var(--a);vertical-align:middle;margin-left:2px;animation:cursor 1s infinite}
+@keyframes cursor{0%,50%{opacity:1}51%,100%{opacity:0}}
+.demo-thinking{display:none;align-items:center;gap:8px;padding:14px 18px}
+.demo-thinking.show{display:flex}
+.demo-dots{display:flex;gap:4px}
+.demo-dot-a{width:6px;height:6px;border-radius:50%;background:var(--a);animation:bounce 1.2s infinite}
+.demo-dot-a:nth-child(2){animation-delay:.2s}.demo-dot-a:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(0.5);opacity:0.3}40%{transform:scale(1);opacity:1}}
+
+/* ── STATS ── */
+.stats-wrap{background:var(--s1);border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);padding:48px 24px}
+.stats-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px}
+.stat-item{text-align:center}
+.stat-val{font-size:52px;font-weight:700;letter-spacing:-2px;line-height:1;margin-bottom:6px;color:var(--a)}
+.stat-lbl{font-size:13px;color:var(--m);line-height:1.4}
+
+/* ── TRUST ── */
+.trust-row{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;padding:16px 24px;background:var(--s1);border-bottom:1px solid rgba(255,255,255,0.04)}
+.trust-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--m)}
+.trust-item::before{content:'✓';color:var(--pulse);font-weight:700;font-size:12px}
+
+/* ── SECTIONS ── */
+.sect{padding:96px 24px;max-width:1100px;margin:0 auto}
+.sect-label{font-size:11px;font-weight:600;color:var(--a);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;text-align:center}
+.sect-title{
+  font-size:clamp(36px,5vw,60px);font-weight:700;letter-spacing:-1.5px;
+  text-align:center;margin-bottom:16px;line-height:1.02;
+}
+.sect-sub{text-align:center;color:var(--m);font-size:18px;font-weight:300;max-width:560px;margin:0 auto 56px;line-height:1.7}
+
+/* ── PAIN CARDS ── */
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.pain-card{
+  background:var(--glass);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:18px;padding:28px;
+  transition:all 0.3s;
+  position:relative;overflow:hidden;
+}
+.pain-card::before{
+  content:'';position:absolute;inset:0;border-radius:18px;
+  background:linear-gradient(135deg,rgba(248,113,113,0.05),transparent);
+  opacity:0;transition:opacity 0.3s;pointer-events:none;
+}
+.pain-card:hover{border-color:rgba(255,255,255,0.12);transform:translateY(-4px)}
+.pain-card:hover::before{opacity:1}
+.pain-icon{font-size:32px;margin-bottom:14px}
+.pain-title{font-size:16px;font-weight:600;margin-bottom:8px}
+.pain-body{font-size:13px;color:var(--m);line-height:1.75}
+.pain-cost{display:inline-block;margin-top:14px;font-size:11px;font-weight:600;padding:4px 12px;border-radius:100px;background:rgba(255,107,107,0.1);color:var(--spark);border:1px solid rgba(255,107,107,0.2)}
+
+/* ── FEATURE CARDS ── */
+.feat-bg{background:var(--s1);border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);padding:96px 24px}
+.feat-inner{max-width:1100px;margin:0 auto}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-top:56px}
+.feat-card{
+  background:var(--s2);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:20px;padding:32px;
+  position:relative;overflow:hidden;
+  transition:all 0.3s;
+}
+.feat-card::after{
+  content:'';position:absolute;
+  top:0;left:0;right:0;height:2px;
+  background:var(--grad);
+  opacity:0;transition:opacity 0.3s;
+}
+.feat-card:hover{border-color:rgba(248,113,113,0.25);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+.feat-card:hover::after{opacity:1}
+.feat-num{font-size:10px;font-weight:700;color:var(--a);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+.feat-icon-wrap{
+  width:56px;height:56px;border-radius:16px;
+  background:var(--ar);border:1px solid var(--ab);
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;margin-bottom:20px;
+}
+.feat-title{font-size:20px;font-weight:600;margin-bottom:10px;letter-spacing:-0.3px}
+.feat-body{font-size:13px;color:var(--m);line-height:1.75;margin-bottom:16px}
+.feat-ex{
+  background:rgba(255,255,255,0.03);
+  border-radius:10px;padding:12px 14px;
+  border-left:3px solid var(--a);
+  font-size:12px;color:var(--m);line-height:1.6;
+}
+.feat-ex-label{font-size:9px;font-weight:700;color:var(--a);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+
+/* ── PRICING ── */
+.price-sect{padding:96px 24px;text-align:center}
+.price-inner{max-width:500px;margin:0 auto}
+.price-card{
+  background:rgba(20,22,40,0.8);
+  backdrop-filter:blur(24px);
+  border:1px solid rgba(248,113,113,0.35);
+  border-radius:24px;padding:44px;
+  position:relative;margin-top:48px;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.04), 0 32px 80px rgba(0,0,0,0.5), 0 0 80px rgba(248,113,113,0.08);
+}
+.price-top{
+  position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  background:var(--grad);color:#fff;font-size:11px;font-weight:600;
+  padding:5px 20px;border-radius:100px;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(248,113,113,0.4);
+}
+.price-val{font-size:72px;font-weight:700;letter-spacing:-4px;line-height:1;margin:20px 0 4px}
+.price-val sup{font-size:28px;font-weight:500;vertical-align:top;margin-top:14px;display:inline-block}
+.price-per{color:var(--m);font-size:14px;margin-bottom:32px}
+.price-features{list-style:none;margin-bottom:32px;text-align:left}
+.price-features li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--m);padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.price-features li:last-child{border-bottom:none}
+.price-features li .ck{color:var(--pulse);font-weight:700;flex-shrink:0;margin-top:1px;font-size:13px}
+.price-btn{
+  width:100%;padding:17px;border-radius:100px;border:none;
+  background:var(--grad);color:#fff;font-size:16px;font-weight:600;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  box-shadow:0 8px 32px rgba(248,113,113,0.4);
+  transition:all 0.2s;
+}
+.price-btn:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(248,113,113,0.55)}
+.price-note{font-size:12px;color:var(--d);margin-top:14px}
+
+/* ── CTA ── */
+.cta-sect{
+  padding:140px 24px;text-align:center;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 700px 400px at 50% 50%,rgba(248,113,113,0.08) 0%,transparent 70%);
+}
+.cta-h{font-size:clamp(48px,7vw,88px);font-weight:700;letter-spacing:-2.5px;margin-bottom:20px;line-height:0.95}
+.cta-s{color:var(--m);font-size:19px;font-weight:300;margin-bottom:44px;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.7}
+
+/* ── FOOTER ── */
+footer{padding:36px 40px;border-top:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;position:relative;z-index:1}
+.footer-logo{font-size:18px;font-weight:700;color:var(--w)}
+.footer-logo span{color:var(--a)}
+.footer-info{font-size:12px;color:var(--d);text-align:right;line-height:1.7}
+
+/* ── PAYWALL ── */
+#paywall{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px;text-align:center;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 600px 400px at 50% 40%,rgba(248,113,113,0.07) 0%,transparent 70%);
+}
+.pw-eyebrow{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--a);text-transform:uppercase;margin-bottom:8px}
+.pw-h{font-size:30px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
+.pw-s{font-size:14px;color:var(--m);margin-bottom:36px}
+.pw-card{
+  background:rgba(20,22,40,0.85);
+  backdrop-filter:blur(24px);
+  border:1px solid rgba(248,113,113,0.3);
+  border-radius:24px;padding:40px;
+  max-width:440px;width:100%;
+  box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 60px rgba(248,113,113,0.06);
+  position:relative;
+}
+.pw-tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:11px;font-weight:600;padding:4px 18px;border-radius:100px;white-space:nowrap;box-shadow:0 4px 16px rgba(248,113,113,0.4)}
+.pw-price{font-size:72px;font-weight:700;letter-spacing:-4px;line-height:1;margin-bottom:4px}
+.pw-price sup{font-size:26px;font-weight:500;vertical-align:top;margin-top:14px;display:inline-block}
+.pw-per{color:var(--m);font-size:13px;margin-bottom:28px}
+.pw-feats{list-style:none;margin-bottom:28px;text-align:left}
+.pw-feats li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--m);padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.pw-feats li:last-child{border-bottom:none}
+.pw-feats li .ck{color:var(--pulse);font-weight:700;flex-shrink:0;margin-top:1px}
+.pw-email{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:14px 22px;color:var(--w);font-size:14px;font-family:'Inter',sans-serif;outline:none;margin-bottom:12px;transition:border-color 0.2s}
+.pw-email:focus{border-color:rgba(248,113,113,0.5)}
+.pw-email::placeholder{color:var(--d)}
+.pw-btn{width:100%;padding:17px;border-radius:100px;border:none;background:var(--grad);color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 8px 32px rgba(248,113,113,0.4);transition:all 0.2s;margin-bottom:12px}
+.pw-btn:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(248,113,113,0.55)}
+.pw-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.pw-note{font-size:11px;color:var(--d)}
+.pw-err{color:var(--spark);font-size:12px;margin-top:8px;display:none}
+
+/* ── APP SHELL ── */
+#appShell{display:none;flex-direction:column;flex:1;overflow:hidden}
+#appShell.show{display:flex}
+.app-tb{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:46px;background:rgba(13,15,30,0.95);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;backdrop-filter:blur(12px)}
+.app-logo{display:flex;align-items:center;gap:8px;cursor:pointer}
+.app-gem{width:26px;height:26px;border-radius:7px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:13px}
+.app-name{font-size:15px;font-weight:700;color:var(--w)}
+.app-name span{color:var(--a)}
+.app-tbr{display:flex;align-items:center;gap:8px}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--pulse);animation:sdot 2s infinite}
+@keyframes sdot{0%,100%{box-shadow:0 0 0 0 rgba(0,229,196,0.4)}70%{box-shadow:0 0 0 6px rgba(0,229,196,0)}}
+.tb-chip{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.tb-btn{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--m);cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s}
+.tb-btn:hover{color:var(--w);border-color:rgba(255,255,255,0.2)}
+.app-body{display:flex;flex:1;overflow:hidden;min-height:0}
+.sidebar{width:196px;flex-shrink:0;background:var(--s1);border-right:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;overflow-y:auto}
+.sb-sect{padding:12px 14px 4px;font-size:9px;font-weight:700;color:var(--d);letter-spacing:2px;text-transform:uppercase}
+.sb-btn{
+  display:flex;align-items:center;gap:9px;padding:9px 12px;
+  cursor:pointer;border-radius:10px;margin:2px 6px;
+  transition:all 0.15s;font-size:12px;color:var(--m);
+  border:none;background:transparent;width:calc(100% - 12px);text-align:left;font-family:'Inter',sans-serif;
+}
+.sb-btn:hover{background:rgba(255,255,255,0.04);color:var(--w)}
+.sb-btn.active{background:var(--ar);color:var(--w);border:1px solid var(--ab)}
+.sb-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:rgba(255,255,255,0.05)}
+.sb-btn.active .sb-icon{background:rgba(248,113,113,0.2)}
+.sb-label{font-size:12px;font-weight:500}
+.sb-sub{font-size:10px;color:var(--d)}
+.sb-div{height:1px;background:rgba(255,255,255,0.05);margin:8px 12px}
+.sb-stat{display:flex;justify-content:space-between;padding:4px 14px;font-size:11px}
+.sb-stat-l{color:var(--d)}
+.sb-stat-v{color:var(--a);font-weight:600}
+.sb-clr{margin:6px 8px;padding:7px;border-radius:8px;border:1px solid rgba(255,107,107,0.15);background:rgba(255,107,107,0.04);color:var(--spark);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;width:calc(100% - 16px)}
+.app-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-height:0}
+.mode-hdr{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between}
+.mode-h3{font-size:15px;font-weight:600;margin-bottom:2px}
+.mode-p{font-size:11px;color:var(--m)}
+.mode-chips{display:flex;gap:5px;flex-shrink:0}
+.chip{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;background:var(--ar);color:var(--a);border:1px solid var(--ab)}
+.chip-ai{background:rgba(0,229,196,0.06);color:var(--pulse);border-color:rgba(0,229,196,0.15)}
+.output{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:13px;min-height:0}
+.output::-webkit-scrollbar{width:3px}
+.output::-webkit-scrollbar-thumb{background:var(--s2);border-radius:2px}
+.bub{max-width:92%;padding:14px 18px;border-radius:16px;font-size:14px;line-height:1.8;animation:popIn 0.2s ease}
+.bub.user{align-self:flex-end;background:var(--ar);border:1px solid var(--ab);border-bottom-right-radius:4px}
+.bub.ai{align-self:flex-start;background:var(--s2);border:1px solid rgba(255,255,255,0.06);border-bottom-left-radius:4px;max-width:96%}
+.bub.sys{align-self:center;background:var(--ar);border:1px solid var(--ab);border-radius:10px;font-size:12px;color:var(--a);padding:8px 16px;text-align:center}
+.blbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;opacity:0.6}
+.bub.ai .blbl{color:var(--a)}
+.bub.user .blbl{color:var(--pulse);text-align:right}
+@keyframes popIn{from{opacity:0;transform:translateY(5px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.thinking-bub{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--s2);border:1px solid rgba(255,255,255,0.06);border-radius:16px;border-bottom-left-radius:4px;align-self:flex-start;animation:popIn 0.2s ease}
+.th-dots{display:flex;gap:4px}
+.th-dot{width:5px;height:5px;border-radius:50%;background:var(--a);animation:bounce 1.2s infinite}
+.th-dot:nth-child(2){animation-delay:.2s}.th-dot:nth-child(3){animation-delay:.4s}
+.copy-btn{margin-top:8px;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.07);background:transparent;color:var(--m);cursor:pointer;font-family:'Inter',sans-serif;transition:color 0.15s}
+.copy-btn:hover{color:var(--a)}
+.sug-row{padding:7px 12px;background:var(--s1);border-top:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;min-height:38px}
+.sug{font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--m);transition:all 0.12s;white-space:nowrap}
+.sug:hover{border-color:var(--ab);color:var(--w)}
+.sug.top{border-color:var(--ab);background:var(--ar);color:var(--a)}
+.inp-area{padding:10px 14px;background:var(--s1);border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0}
+.inp-row{display:flex;gap:8px;align-items:flex-end}
+.inp-wrap{flex:1;position:relative}
+textarea#inp{
+  width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);
+  border-radius:14px;padding:12px 42px 12px 14px;color:var(--w);font-size:14px;
+  font-family:'Inter',sans-serif;resize:none;outline:none;min-height:46px;max-height:140px;
+  transition:border-color 0.2s;line-height:1.5;
+  backdrop-filter:blur(8px);
+}
+textarea#inp::placeholder{color:var(--d)}
+textarea#inp:focus{border-color:var(--ab);background:rgba(255,255,255,0.05)}
+.cc{position:absolute;right:10px;bottom:9px;font-size:9px;color:var(--d);pointer-events:none}
+.send-btn{width:42px;height:42px;border-radius:12px;border:none;background:var(--grad);cursor:pointer;font-size:17px;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;box-shadow:0 4px 16px rgba(248,113,113,0.35)}
+.send-btn:hover{transform:scale(1.07);box-shadow:0 6px 24px rgba(248,113,113,0.5)}
+.send-btn:active{transform:scale(0.93)}
+.send-btn:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none}
+.act-row{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.act-btn{font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--m);cursor:pointer;transition:all 0.12s;font-family:'Inter',sans-serif}
+.act-btn:hover{border-color:var(--ab);color:var(--a);background:var(--ar)}
+.disc-bar{background:rgba(255,184,0,0.05);border-bottom:1px solid rgba(255,184,0,0.12);padding:7px 18px;font-size:11px;color:var(--honey);text-align:center;flex-shrink:0;display:block}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--grad);color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;z-index:9999;box-shadow:0 8px 24px rgba(248,113,113,0.4)}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── SCROLL REVEAL ── */
+[data-reveal]{opacity:0;transform:translateY(24px);transition:opacity 0.6s ease,transform 0.6s ease}
+[data-reveal].revealed{opacity:1;transform:translateY(0)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+@media(max-width:768px){
+  .sidebar{display:none}
+  .hero-h1{letter-spacing:-1.5px}
+  .output{padding:12px}
+  .bub{font-size:13px;padding:11px 14px}
+  .nav{padding:0 20px}
+  .feat-grid,.pain-grid{grid-template-columns:1fr}
+  .demo-prompts{gap:6px}
+  .demo-btn{font-size:11px;padding:6px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- PARTICLES -->
+<div id="particles"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="#" onclick="showPage('home');return false">
+    <div class="nav-gem">❤️</div>
+    <div class="nav-brand">SAIRN <span>Health</span></div>
+  </a>
+  <div class="nav-r">
+    <span class="nav-pill">HONEY COMB · Cell 8</span>
+    <button class="nav-cta" onclick="showPage('app')">Launch Free →</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════
+     HOME PAGE
+══════════════════════════════════════ -->
+<div class="page active" id="homePage">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-badge"><span class="badge-dot"></span>Powered by Claude · SAIRN Technologies · Cell 8</div>
+    <h1 class="hero-h1">Your health.<br><em>Finally makes sense.</em></h1>
+    <p class="hero-sub">SAIRN Health gives you a patient, knowledgeable companion that explains your symptoms, translates medical documents, and prepares you for every doctor's appointment.</p>
+    <div class="hero-btns">
+      <button class="btn-main" onclick="showPage('app')">Launch SAIRN Health — free</button>
+      <button class="btn-ghost" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">See all features ↓</button>
+    </div>
+
+    <!-- LIVE DEMO -->
+    <div class="demo-section">
+      <div class="demo-label">Ask a health question — free, private, instant</div>
+      <div class="demo-prompts"><button class="demo-btn" onclick="runDemo(0)">I've had headaches every morning for two weeks</button><button class="demo-btn" onclick="runDemo(1)">Explain this lab result: TSH 4.8, T4 0.9</button><button class="demo-btn" onclick="runDemo(2)">My doctor prescribed metformin. What is it?</button><button class="demo-btn" onclick="runDemo(3)">Help me prepare questions for my blood pressure …</button><button class="demo-btn" onclick="runDemo(4)">I am 45 and sit at a desk all day. What's the on…</button></div>
+      <div class="demo-panel">
+        <div class="demo-panel-bar">
+          <div class="demo-dot"></div>
+          <div class="demo-dot"></div>
+          <div class="demo-dot"></div>
+          <span class="demo-panel-title">SAIRN Health · Live Claude Demo · No signup required</span>
+        </div>
+        <div class="demo-thinking" id="demoThinking">
+          <div class="demo-dots">
+            <div class="demo-dot-a"></div>
+            <div class="demo-dot-a"></div>
+            <div class="demo-dot-a"></div>
+          </div>
+          <span style="font-size:12px;color:var(--m)">Claude is thinking...</span>
+        </div>
+        <div class="demo-output" id="demoOutput">
+          <div style="font-size:13px;color:var(--d);text-align:center;padding:20px 0">Choose a question above to see Claude respond in real time — no signup, no credit card.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-wrap">
+    <div class="stats-inner">
+      <div class="stat-item" data-reveal>
+        <div class="stat-val">12min</div>
+        <div class="stat-lbl">Average doctor appointment</div>
+      </div>
+      <div class="stat-item" data-reveal>
+        <div class="stat-val">$200</div>
+        <div class="stat-lbl">Per urgent care visit</div>
+      </div>
+      <div class="stat-item" data-reveal>
+        <div class="stat-val">Claude</div>
+        <div class="stat-lbl">Explains it clearly every time</div>
+      </div></div>
+  </div>
+
+  <!-- TRUST -->
+  <div class="trust-row"><span class="trust-item">Symptom intelligence</span><span class="trust-item">Medical document translation</span><span class="trust-item">Medication guidance</span><span class="trust-item">Doctor prep</span><span class="trust-item">Wellness coaching</span><span class="trust-item">100% private</span></div>
+
+  <!-- PAIN -->
+  <div class="sect">
+    <div class="sect-label">The Problem</div>
+    <h2 class="sect-title">Why existing tools<br>keep letting you down.</h2>
+    <p class="sect-sub">SAIRN Health was built to fix what everyone else ignored.</p>
+    <div class="pain-grid">
+        <div class="pain-card" data-reveal>
+          <div class="pain-icon">⏰</div>
+          <div class="pain-title">Doctors have 12 minutes</div>
+          <div class="pain-body">The average primary care appointment lasts 12 minutes. That's not enough time to understand your situation, ask all your questions, and leave feeling informed about your own health.</div>
+          <span class="pain-cost">Doctor visit: $150–$300 + 3 weeks wait</span>
+        </div>
+        <div class="pain-card" data-reveal>
+          <div class="pain-icon">🔍</div>
+          <div class="pain-title">Google says it is cancer</div>
+          <div class="pain-body">Search any symptom online and the algorithm surfaces the most alarming possibility first. Reliable, contextualized health information that doesn't terrify you is nearly impossible to find.</div>
+          <span class="pain-cost">Your anxiety: immeasurable</span>
+        </div>
+        <div class="pain-card" data-reveal>
+          <div class="pain-icon">📋</div>
+          <div class="pain-title">Medical documents are impenetrable</div>
+          <div class="pain-body">Lab results, discharge summaries, insurance EOBs — written in medical shorthand for professionals. Patients sign and receive documents they fundamentally cannot understand.</div>
+          <span class="pain-cost">Confusion and poor health decisions: daily</span>
+        </div></div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="feat-bg" id="features">
+    <div class="feat-inner">
+      <div class="sect-label">What SAIRN Health Does</div>
+      <h2 class="sect-title" style="text-align:center">5 modes.<br>One subscription.</h2>
+      <p class="sect-sub">Every mode powered by Claude — the world's most capable writing and reasoning AI.</p>
+      <div class="feat-grid">
+        <div class="feat-card" data-reveal style="--i:0">
+          <div class="feat-num">01</div>
+          <div class="feat-icon-wrap"><div class="feat-icon">🩺</div></div>
+          <h3 class="feat-title">Symptom Intelligence</h3>
+          <p class="feat-body">Describe how you feel in plain language. Claude provides measured, informed context about possible causes, urgency indicators, and whether and how quickly to seek care — without diagnosing you or sending you into a panic spiral.</p>
+          <div class="feat-ex"><div class="feat-ex-label">Try it</div>"I've had a headache every morning for two weeks. What should I know before calling my doctor?"</div>
+        </div>
+        <div class="feat-card" data-reveal style="--i:1">
+          <div class="feat-num">02</div>
+          <div class="feat-icon-wrap"><div class="feat-icon">📋</div></div>
+          <h3 class="feat-title">Medical Document Translation</h3>
+          <p class="feat-body">Paste any lab result, doctor's note, discharge summary, or EOB. Claude translates every number, abbreviation, and medical term into language you can actually understand — and tells you what matters.</p>
+          <div class="feat-ex"><div class="feat-ex-label">Try it</div>"My TSH is 4.8 and T4 is 0.9. What does this mean in plain English?"</div>
+        </div>
+        <div class="feat-card" data-reveal style="--i:2">
+          <div class="feat-num">03</div>
+          <div class="feat-icon-wrap"><div class="feat-icon">💊</div></div>
+          <h3 class="feat-title">Medication Intelligence</h3>
+          <p class="feat-body">Understand what any medication does, why it was prescribed, what side effects to watch for, what to avoid while taking it, and what signs that it is working — before you take the first pill.</p>
+          <div class="feat-ex"><div class="feat-ex-label">Try it</div>"My doctor prescribed lisinopril. What is it, why would she prescribe it, and what should I watch for?"</div>
+        </div>
+        <div class="feat-card" data-reveal style="--i:3">
+          <div class="feat-num">04</div>
+          <div class="feat-icon-wrap"><div class="feat-icon">🏥</div></div>
+          <h3 class="feat-title">Doctor Appointment Preparation</h3>
+          <p class="feat-body">Tell Claude what is going on and Claude helps you articulate it clearly, prepares 10-15 relevant questions to ask, and makes sure you do not leave the appointment without the answers you actually need.</p>
+          <div class="feat-ex"><div class="feat-ex-label">Try it</div>"I have a cardiology appointment tomorrow about irregular heartbeat. Help me prepare."</div>
+        </div>
+        <div class="feat-card" data-reveal style="--i:4">
+          <div class="feat-num">05</div>
+          <div class="feat-icon-wrap"><div class="feat-icon">🥗</div></div>
+          <h3 class="feat-title">Evidence-Based Wellness</h3>
+          <p class="feat-body">Personalized guidance on sleep, nutrition, exercise, and stress management — grounded in evidence, adapted to your specific situation, and prioritized so you know what change to make first.</p>
+          <div class="feat-ex"><div class="feat-ex-label">Try it</div>"I am 50, have pre-diabetes, and work from home. What should I focus on first?"</div>
+        </div>
+        <div class="feat-card" data-reveal style="--i:5">
+          <div class="feat-num">06</div>
+          <div class="feat-icon-wrap"><div class="feat-icon">✉️</div></div>
+          <h3 class="feat-title">Healthcare Communication</h3>
+          <p class="feat-body">Draft messages to your doctor, appeal insurance denials, write patient portal messages, and request records — in the language that gets you the response you need.</p>
+          <div class="feat-ex"><div class="feat-ex-label">Try it</div>"Draft a message to my doctor requesting a specialist referral based on these symptoms."</div>
+        </div></div>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <div class="price-sect">
+    <div class="price-inner">
+      <div class="sect-label">Pricing</div>
+      <h2 class="sect-title">Simple and honest.</h2>
+      <div class="price-card">
+        <div class="price-top">Everything included · Cancel anytime</div>
+        <div class="price-val"><sup>$</sup>9.99</div>
+        <div class="price-per">per month · unlimited access</div>
+        <ul class="price-features">
+          <li><span class="ck">✓</span>Symptom Intelligence</li><li><span class="ck">✓</span>Medical Document Translation</li><li><span class="ck">✓</span>Medication Intelligence</li><li><span class="ck">✓</span>Doctor Appointment Preparation</li><li><span class="ck">✓</span>Evidence-Based Wellness</li>
+          <li><span class="ck">✓</span>8 languages + voice recognition</li>
+          <li><span class="ck">✓</span>Cross-device sync (HONEY COMB)</li>
+          <li><span class="ck">✓</span>Style learning — gets smarter with you</li>
+          <li><span class="ck">✓</span>6-layer privacy firewall</li>
+          <li><span class="ck">✓</span>Works on any device, no app store</li>
+        </ul>
+        <button class="price-btn" onclick="showPage('app')">Start for $9.99/month</button>
+        <div class="price-note">🔒 Secured by Stripe · Cancel anytime · No hidden fees</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-sect">
+    <h2 class="cta-h">SAIRN Health.<br>Start today.</h2>
+    <p class="cta-s">Your Claude-powered personal health intelligence.</p>
+    <button class="btn-main" onclick="showPage('app')" style="font-size:18px;padding:18px 44px">Launch SAIRN Health — free</button>
+  </div>
+
+  <footer>
+    <div class="footer-logo">SAIRN <span>Health</span></div>
+    <div class="footer-info">© 2026 SAIRN Technologies · Michael L. Dibert<br>HONEY COMB Cell 8 · Powered by Claude (Anthropic)</div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════
+     APP PAGE
+══════════════════════════════════════ -->
+<div class="page" id="appPage">
+  <div id="paywall">
+    <div class="pw-eyebrow">SAIRN Health · Cell 8 · HONEY COMB</div>
+    <h2 class="pw-h">Your Claude-powered personal health intelligence.</h2>
+    <p class="pw-s">Powered by Claude · SAIRN Technologies</p>
+    <div class="pw-card">
+      <div class="pw-tag">Everything included · Cancel anytime</div>
+      <div class="pw-price"><sup>$</sup>9.99</div>
+      <div class="pw-per">per month · unlimited access to all 5 modes</div>
+      <ul class="pw-feats">
+        <li><span class="ck">✓</span>Symptom Intelligence</li><li><span class="ck">✓</span>Medical Document Translation</li><li><span class="ck">✓</span>Medication Intelligence</li><li><span class="ck">✓</span>Doctor Appointment Preparation</li><li><span class="ck">✓</span>Evidence-Based Wellness</li>
+        <li><span class="ck">✓</span>8 languages + voice recognition</li>
+        <li><span class="ck">✓</span>6-layer privacy firewall</li>
+        <li><span class="ck">✓</span>Cross-device sync</li>
+      </ul>
+      <input class="pw-email" type="email" id="pwEmail" placeholder="your@email.com (optional)">
+      <button class="pw-btn" id="subBtn" onclick="startCheckout()">Start for $9.99/month</button>
+      <div class="pw-err" id="pwErr"></div>
+      <div class="pw-note">🔒 Secured by Stripe · Cancel anytime</div>
+    </div>
+  </div>
+
+  <div id="appShell">
+    <div class="disc-bar">⚠️ ⚠️ SAIRN Health provides health information — not medical advice. Always consult a licensed healthcare provider for medical decisions.</div>
+    <div class="app-tb">
+      <div class="app-logo" onclick="showPage('home')">
+        <div class="app-gem">❤️</div>
+        <div class="app-name">SAIRN <span>Health</span></div>
+      </div>
+      <div class="app-tbr">
+        <span class="sdot"></span>
+        <span class="tb-chip">PRO</span>
+        <button class="tb-btn" onclick="showAccount()">Account</button>
+        <button class="tb-btn" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+    <div class="app-body">
+      <div class="sidebar">
+        <div class="sb-sect">Modes</div>
+        
+        <button class="sb-btn active" id="btn-symptoms" onclick="switchMode('symptoms')">
+          <div class="sb-icon">🩺</div>
+          <div><div class="sb-label">Symptoms</div><div class="sb-sub">Understand them</div></div>
+        </button>
+        <button class="sb-btn " id="btn-documents" onclick="switchMode('documents')">
+          <div class="sb-icon">📋</div>
+          <div><div class="sb-label">Documents</div><div class="sb-sub">Translate results</div></div>
+        </button>
+        <button class="sb-btn " id="btn-meds" onclick="switchMode('meds')">
+          <div class="sb-icon">💊</div>
+          <div><div class="sb-label">Medications</div><div class="sb-sub">Know yours</div></div>
+        </button>
+        <button class="sb-btn " id="btn-prep" onclick="switchMode('prep')">
+          <div class="sb-icon">🏥</div>
+          <div><div class="sb-label">Doctor Prep</div><div class="sb-sub">Get ready</div></div>
+        </button>
+        <button class="sb-btn " id="btn-wellness" onclick="switchMode('wellness')">
+          <div class="sb-icon">🥗</div>
+          <div><div class="sb-label">Wellness</div><div class="sb-sub">Evidence-based</div></div>
+        </button>
+        <div class="sb-div"></div>
+        <div class="sb-sect">Session</div>
+        <div class="sb-stat"><span class="sb-stat-l">Questions</span><span class="sb-stat-v" id="statN">0</span></div>
+        <div class="sb-stat"><span class="sb-stat-l">Plan</span><span class="sb-stat-v">Pro</span></div>
+        <div class="sb-div"></div>
+        <button class="sb-clr" onclick="clearSess()">🗑 Clear session</button>
+      </div>
+      <div class="app-main">
+        <div class="mode-hdr">
+          <div><div class="mode-h3" id="modeTitle">Symptom Intelligence</div><div class="mode-p" id="modeDesc">Contextualize any symptom without panic or false diagnosis</div></div>
+          <div class="mode-chips"><span class="chip">❤️ Health</span><span class="chip chip-ai">Claude</span></div>
+        </div>
+        <div class="output" id="output">
+          <div class="bub sys">❤️ SAIRN Health is ready. Tell me what's going on — I'll help you understand it, prepare for your doctor, translate any medical document, or guide you toward better health. Everything you share is completely private.</div>
+        </div>
+        <div class="sug-row" id="sugRow" style="display:none">
+          <span class="sug top" id="s0" onclick="useSug(0)"></span>
+          <span class="sug" id="s1" onclick="useSug(1)"></span>
+          <span class="sug" id="s2" onclick="useSug(2)"></span>
+        </div>
+        <div class="inp-area">
+          <div class="inp-row">
+            <div class="inp-wrap">
+              <textarea id="inp" rows="1" placeholder="Ask Health anything..."></textarea>
+              <span class="cc" id="cc">0</span>
+            </div>
+            <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
+          </div>
+          <div class="act-row" id="actRow"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HONEY COMB CORE ───────────────────────────────────────────────
+const CORE='https://sairn.vercel.app/api/claude';
+const MODEL='claude-haiku-4-5-20251001';
+const CO_API='https://sairn.vercel.app/api/checkout';
+const VR_API='https://sairn.vercel.app/api/verify';
+const CELL_KEY='sairn_health_sub';
+const DEFAULT_MSG='❤️ SAIRN Health is ready. Tell me what\'s going on — I\'ll help you understand it, prepare for your doctor, translate any medical document, or guide you toward better health. Everything you share is completely private.';
+const MODES={"symptoms":{"title":"Symptom Intelligence","desc":"Contextualize any symptom without panic or false diagnosis","ph":"Ask about symptoms...","sugs":["What questions should I ask my doctor?","Is this something to worry about?","What should I track?"],"sys":"You are SAIRN Health, a Claude-powered health intelligence assistant. SYMPTOM MODE.\n\nCRITICAL: You are NOT a doctor. Do NOT diagnose. Be measured, not alarming. Do NOT minimize serious symptoms.\n\nWhen someone describes symptoms:\n1. Acknowledge with empathy\n2. Provide context: what systems involved, common patterns\n3. URGENCY: Emergency (911) / Urgent same-day / Soon within a week / Routine / Monitor\n4. Questions their doctor will ask — so they can prepare\n5. What to track before the appointment\n6. End: \"Please consult a healthcare provider. This is health information, not medical advice.\""},"documents":{"title":"Medical Document Translation","desc":"Lab results and medical records in plain English","ph":"Ask about documents...","sugs":["What questions should I ask my doctor?","Is this something to worry about?","What should I track?"],"sys":"You are SAIRN Health Medical Translator. DOCUMENT MODE.\n\nTranslate medical documents:\n1. Two-sentence plain English summary of the overall document\n2. Section by section: [TERM] → [Plain English] → [Result meaning] → [Normal range]\n3. Flag anything outside normal range clearly but calmly\n4. What follow-up is typically done for abnormal values\n5. End: \"Discuss with your healthcare provider who has your full medical history.\""},"meds":{"title":"Medication Intelligence","desc":"What you are taking, why, and what to watch for","ph":"Ask about medications...","sugs":["What questions should I ask my doctor?","Is this something to worry about?","What should I track?"],"sys":"You are SAIRN Health Medication Guide. MEDICATION MODE.\n\nFor any medication:\n1. What it is (drug class, how it works simply)\n2. What it treats\n3. How to take it (timing, with food, what to avoid)\n4. Side effects: common / uncommon / rare but serious\n5. Key interactions\n6. Signs it's working / not working\n7. What to do if you miss a dose\nAlways: \"Follow your prescriber's instructions. This is general information, not medical advice.\""},"prep":{"title":"Appointment Preparation","desc":"Questions to ask and how to articulate your situation","ph":"Ask about doctor prep...","sugs":["What questions should I ask my doctor?","Is this something to worry about?","What should I track?"],"sys":"You are SAIRN Health Appointment Coach. PREP MODE.\n\n1. Ask what appointment is for\n2. Help articulate the chief complaint clearly\n3. Generate 10-15 relevant questions to ask\n4. What to bring: records, medication list, symptoms log\n5. What the doctor will likely do\n6. Brief written summary they can hand the doctor\n7. Patient rights they should know"},"wellness":{"title":"Wellness Coaching","desc":"Personalized, science-backed lifestyle guidance","ph":"Ask about wellness...","sugs":["What questions should I ask my doctor?","Is this something to worry about?","What should I track?"],"sys":"You are SAIRN Health Wellness Coach. WELLNESS MODE.\n\nEvidence-based, personalized guidance:\n1. Ask: age, activity level, goals, conditions, constraints\n2. ONE change with biggest impact first\n3. The science: why this works (briefly)\n4. Account for their constraints\n5. 30-day realistic starting plan\n6. Honest expectations: 30/90/180 days\nAlways: \"Consult your healthcare provider before starting any new health regimen.\""}};
+const DEMO_PROMPTS=["I've had headaches every morning for two weeks","Explain this lab result: TSH 4.8, T4 0.9","My doctor prescribed metformin. What is it?","Help me prepare questions for my blood pressure appointment","I am 45 and sit at a desk all day. What's the one change that matters most?"];
+const DEMO_SYS="You are SAIRN Health, a Claude-powered health intelligence assistant. SYMPTOM MODE.  CRITICAL: You are NOT a doctor. Do NOT diagnose. Be measured, not alarming. Do NOT minimize serious symptoms.  When...";
+
+// ── PARTICLES ────────────────────────────────────────────────────
+(function(){
+  const el=document.getElementById('particles');
+  for(let i=0;i<24;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const sz=Math.random()*4+2;
+    const left=Math.random()*100;
+    const top=Math.random()*100+20;
+    const dur=Math.random()*8+6;
+    const del=Math.random()*8;
+    const op=Math.random()*0.2+0.05;
+    p.style.cssText=`width:${sz}px;height:${sz}px;left:${left}%;top:${top}%;background:#F87171;--d:${dur}s;--del:${del}s;--o:${op}`;
+    el.appendChild(p);
+  }
+})();
+
+// ── SCROLL REVEAL ─────────────────────────────────────────────────
+const ro=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('revealed');}});
+},{threshold:0.1});
+document.querySelectorAll('[data-reveal]').forEach(el=>ro.observe(el));
+
+// ── LIVE DEMO (no signup required) ────────────────────────────────
+let demoRunning=false;
+async function runDemo(idx){
+  if(demoRunning) return;
+  demoRunning=true;
+  const prompt=DEMO_PROMPTS[idx];
+  const out=document.getElementById('demoOutput');
+  const thinking=document.getElementById('demoThinking');
+  out.innerHTML=`<div class="demo-user">${prompt}</div>`;
+  thinking.classList.add('show');
+  try{
+    const res=await fetch(CORE,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:MODEL,max_tokens:400,system:DEMO_SYS,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await res.json();
+    thinking.classList.remove('show');
+    if(data.content&&data.content[0]){
+      const text=data.content[0].text;
+      const ai=document.createElement('div');
+      ai.className='demo-ai';
+      out.appendChild(ai);
+      // Stream effect
+      let i=0;
+      const cursor=document.createElement('span');
+      cursor.className='demo-cursor';
+      ai.appendChild(cursor);
+      const iv=setInterval(()=>{
+        if(i<text.length){
+          ai.insertBefore(document.createTextNode(text[i]||''),cursor);
+          i++;
+          out.scrollTop=out.scrollHeight;
+        }else{clearInterval(iv);cursor.remove();}
+      },8);
+    }else{
+      thinking.classList.remove('show');
+      out.innerHTML+='<div style="font-size:13px;color:var(--spark)">Deploy the app to see live responses.</div>';
+    }
+  }catch(e){
+    thinking.classList.remove('show');
+    out.innerHTML+='<div style="font-size:13px;color:var(--m)">Deploy to sairn.vercel.app to enable live demos.</div>';
+  }
+  setTimeout(()=>demoRunning=false,1000);
+}
+
+// ── NAV ──────────────────────────────────────────────────────────
+function showPage(p){
+  document.querySelectorAll('.page').forEach(x=>{x.classList.remove('active');if(x.id==='appPage')x.style.display='none';});
+  if(p==='app'){
+    document.getElementById('appPage').classList.add('active');
+    document.getElementById('appPage').style.display='flex';
+    initApp();return;
+  }
+  const el=document.getElementById(p+'Page');
+  if(el){el.classList.add('active');window.scrollTo(0,0);}
+}
+
+// ── AUTH ─────────────────────────────────────────────────────────
+function getSub(){try{return JSON.parse(localStorage.getItem(CELL_KEY)||'null');}catch{return null;}}
+function saveSub(d){localStorage.setItem(CELL_KEY,JSON.stringify({...d,at:Date.now()}));}
+function getToken(){const s=getSub();return s?s.token:null;}
+function isSub(){const s=getSub();if(!s||!s.valid)return false;if(Date.now()-s.at>35*24*60*60*1000)return false;return true;}
+
+async function startCheckout(){
+  const btn=document.getElementById('subBtn');const err=document.getElementById('pwErr');
+  const email=document.getElementById('pwEmail').value.trim();
+  btn.disabled=true;btn.textContent='Redirecting...';err.style.display='none';
+  try{
+    const res=await fetch(CO_API,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,priceId:'SAIRN_HEALTH_MONTHLY',productName:'SAIRN Health Pro'})});
+    const data=await res.json();
+    if(data.url){window.location.href=data.url;}else{throw new Error(data.error||'Could not start checkout');}
+  }catch(e){err.textContent=e.message;err.style.display='block';btn.disabled=false;btn.textContent='Start for $9.99/month';}
+}
+
+async function handleReturn(){
+  const p=new URLSearchParams(window.location.search);
+  const sid=p.get('session_id');
+  if(p.get('cancelled')){window.history.replaceState({},'','/');return false;}
+  if(sid){try{const res=await fetch(VR_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid})});const data=await res.json();if(data.valid){saveSub({...data});window.history.replaceState({},'','/');return true;}}catch(e){}window.history.replaceState({},'','/');}
+  return false;
+}
+
+async function initApp(){
+  const paid=await handleReturn();
+  if(paid||isSub()){document.getElementById('paywall').style.display='none';document.getElementById('appShell').classList.add('show');renderActs(mode);setTimeout(()=>document.getElementById('inp').focus(),100);}
+  else{document.getElementById('paywall').style.display='flex';document.getElementById('appShell').classList.remove('show');}
+}
+
+function showAccount(){const s=getSub();if(s)alert('SAIRN Health Pro\n\nEmail: '+(s.email||'N/A')+'\nPrice: $9.99/month\n\nManage at stripe.com');}
+function signOut(){if(confirm('Sign out?')){localStorage.removeItem(CELL_KEY);location.reload();}}
+
+// ── MODES ────────────────────────────────────────────────────────
+let mode='symptoms';
+let hist=[],loading=false,qn=0;
+let styleM=JSON.parse(localStorage.getItem('sairn_style')||'{"messages":[],"patterns":{}}');
+
+function getStyleCtx(){const ct=styleM.patterns.count||0;if(ct<10)return '';let s='User style: ';if(styleM.patterns.formal)s+='formal preferred. ';else if(styleM.patterns.casual)s+='casual preferred. ';return s;}
+function learnMsg(u){styleM.messages.push({u:u.substring(0,100),t:Date.now()});if(styleM.messages.length>50)styleM.messages.shift();styleM.patterns.count=(styleM.patterns.count||0)+1;localStorage.setItem('sairn_style',JSON.stringify(styleM));}
+
+function switchMode(m){
+  mode=m;hist=[];
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+m).classList.add('active');
+  const cfg=MODES[m];
+  document.getElementById('modeTitle').textContent=cfg.title;
+  document.getElementById('modeDesc').textContent=cfg.desc;
+  document.getElementById('inp').placeholder=cfg.ph||'Ask anything...';
+  document.getElementById('sugRow').style.display='none';
+  renderActs(m);
+  document.getElementById('inp').focus();
+}
+
+function renderActs(m){
+  const cfg=MODES[m];if(!cfg)return;
+  document.getElementById('actRow').innerHTML=(cfg.sugs||[]).slice(0,4).map(function(s){
+    return '<button class="act-btn" onclick="quickActSafe(this)">' + s + '</button>';
+  }).join('');
+}
+
+function quickActSafe(btn){
+  const s=btn.textContent.trim();
+  const el=document.getElementById('inp');
+  el.value=s;el.dispatchEvent(new Event('input'));el.focus();
+}
+
+function quickAct(s){const el=document.getElementById('inp');el.value=s;el.dispatchEvent(new Event('input'));el.focus();}
+function useSug(i){const el=document.getElementById('s'+i);if(el&&el.textContent){addBub('user',el.textContent);callClaude(el.textContent);}}
+
+// ── BUBBLES ──────────────────────────────────────────────────────
+function addBub(role,text){
+  const out=document.getElementById('output');
+  const welcome=out.querySelector('.bub.sys');if(welcome&&role!=='sys')welcome.remove();
+  const d=document.createElement('div');d.className='bub '+role;
+  if(role!=='sys'){const lb=document.createElement('div');lb.className='blbl';lb.textContent=role==='ai'?'❤️ SAIRN Health':'You';d.appendChild(lb);}
+  const t=document.createElement('div');t.style.cssText='white-space:pre-wrap;word-break:break-word';t.textContent=text;d.appendChild(t);
+  if(role==='ai'&&text.length>60){const btn=document.createElement('button');btn.className='copy-btn';btn.textContent='⧉ Copy';btn.onclick=()=>{navigator.clipboard.writeText(text).catch(()=>{});showToast('Copied!');};d.appendChild(btn);}
+  out.appendChild(d);out.scrollTop=out.scrollHeight;
+}
+function showThink(){const out=document.getElementById('output');const old=document.getElementById('thk');if(old)old.remove();const d=document.createElement('div');d.className='thinking-bub';d.id='thk';d.innerHTML='<div class="th-dots"><div class="th-dot"></div><div class="th-dot"></div><div class="th-dot"></div></div><span style="font-size:12px;color:var(--m)">Claude thinking...</span>';out.appendChild(d);out.scrollTop=out.scrollHeight;}
+function removeThink(){const t=document.getElementById('thk');if(t)t.remove();}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function updateSugs(){const s=(MODES[mode]&&MODES[mode].sugs)||[];document.getElementById('sugRow').style.display='flex';s.forEach((txt,i)=>{const el=document.getElementById('s'+i);if(el){el.textContent=txt;el.className=i===0?'sug top':'sug';}});}
+
+// ── CLAUDE ───────────────────────────────────────────────────────
+async function callClaude(userMsg){
+  if(loading)return;loading=true;document.getElementById('sendBtn').disabled=true;showThink();
+  const sc=getStyleCtx();
+  const sys=(MODES[mode]&&MODES[mode].sys)||'You are SAIRN Health, a helpful AI assistant.';
+  const fullSys=(sc?sc+'\n\n':'')+sys;
+  hist.push({role:'user',content:userMsg});
+  const tok=getToken();const hdrs={'Content-Type':'application/json'};if(tok)hdrs['Authorization']='Bearer '+tok;
+  try{
+    const res=await fetch(CORE,{method:'POST',headers:hdrs,body:JSON.stringify({model:MODEL,max_tokens:1200,system:fullSys,messages:hist})});
+    const data=await res.json();removeThink();
+    if(data.error){if(res.status===401||res.status===403){localStorage.removeItem(CELL_KEY);showToast('Session expired');setTimeout(()=>location.reload(),2000);}else{addBub('sys','⚠️ '+data.error.message);}}
+    else{const ai=data.content[0].text;hist.push({role:'assistant',content:ai});addBub('ai',ai);learnMsg(userMsg);qn++;document.getElementById('statN').textContent=qn;updateSugs();}
+  }catch(e){removeThink();addBub('sys','⚠️ Network error. Check your connection.');}
+  loading=false;document.getElementById('sendBtn').disabled=false;
+}
+
+function send(){const el=document.getElementById('inp');const txt=el.value.trim();if(!txt||loading)return;addBub('user',txt);el.value='';el.style.height='auto';document.getElementById('cc').textContent='0';callClaude(txt);}
+function clearSess(){if(!confirm('Clear session?'))return;document.getElementById('output').innerHTML='<div class="bub sys">'+DEFAULT_MSG+'</div>';hist=[];qn=0;document.getElementById('statN').textContent='0';document.getElementById('sugRow').style.display='none';}
+
+const inpEl=document.getElementById('inp');
+inpEl.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px';document.getElementById('cc').textContent=this.value.length;});
+inpEl.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+
+window.addEventListener('load',()=>{const p=new URLSearchParams(window.location.search);if(p.get('session_id')||p.get('cancelled'))showPage('app');});
+</script>
+
+<!-- ═══ SAIRN AUTH + STORAGE SDK ═══════════════════════════════════ -->
+<script src="/sairn-sdk.js"></script>
+<script>
+(async function() {
+  const APP_ID     = 'health';
+  const ACCENT     = '#00D4AA';
+  const APP_NAME   = 'SAIRN Health';
+  const PRICE_ID   = 'price_1TYlEuPAZMGVs7fE08F60j7B';
+  const STRIPE_URL = 'https://buy.stripe.com/eVq28t5GQ29MgLw7KtefC03';
+
+  // Boot SDK
+  const sairn = SAIRNClient.create(APP_ID, ACCENT);
+  window._sairn = sairn;
+
+  const state = await sairn.init();
+
+  if (state.authenticated) {
+    sairn.showAccountBar();
+    // If no subscription, show upgrade prompt on first message
+    if (!sairn.hasSubscription()) {
+      window._sairn_needs_sub = true;
+    }
+  }
+
+  // Listen for sign-in events
+  window.addEventListener('sairn:signed_in', async (e) => {
+    sairn.showAccountBar();
+    // Check if they now have a subscription
+    if (sairn.hasSubscription()) {
+      document.getElementById('sairn-paywall')?.remove();
+      document.getElementById('sairn-app-shell')?.removeAttribute('style');
+    }
+  });
+
+  // Listen for subscription-required
+  sairn.on('subscription_required', () => {
+    showPaywall();
+  });
+
+  // Listen for session expiry
+  sairn.on('session_expired', () => {
+    sairn.showAuthModal(APP_NAME);
+  });
+
+  // Expose helper for apps to call
+  window._sairmAsk = async function(userMessage, system, isDemo) {
+    if (!isDemo && !sairn.isAuthenticated()) {
+      sairn.showAuthModal(APP_NAME);
+      throw new Error('AUTH_REQUIRED');
+    }
+    if (!isDemo && !sairn.hasSubscription()) {
+      showPaywall();
+      throw new Error('SUB_REQUIRED');
+    }
+    return sairn.ask({ userMessage, system, isDemo });
+  };
+
+  window._sairmStore    = (k, v)  => sairn.store(k, v);
+  window._sairmRetrieve = (k)     => sairn.retrieve(k);
+  window._sairmSave     = ()      => sairn.store('_style', sairn._style);
+  window._sairmAuth     = ()      => sairn.showAuthModal(APP_NAME);
+  window._sairmSubs     = ()      => sairn.getSubscriptions();
+  window._sairmConvs    = ()      => sairn.getConversations();
+  window._sairmLoad     = (id)    => sairn.loadConversation(id);
+  window._sairmNewThread = ()     => sairn.newThread();
+
+  function showPaywall() {
+    // Don't duplicate
+    if (document.getElementById('_sairn_paywall_overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = '_sairn_paywall_overlay';
+    overlay.style.cssText = `position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);backdrop-filter:blur(12px);font-family:system-ui,sans-serif`;
+    overlay.innerHTML = `
+      <div style="background:#111;border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:40px;max-width:420px;width:100%;margin:16px;text-align:center">
+        <div style="font-size:36px;margin-bottom:14px">🔒</div>
+        <div style="font-size:20px;font-weight:600;color:#fff;margin-bottom:8px">${APP_NAME} Pro</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:6px">Subscribe to save conversations, access all modes, and sync across devices.</div>
+        <div style="font-size:42px;font-weight:600;color:${ACCENT};margin:20px 0 4px;letter-spacing:-2px">$9.99<sup style="font-size:20px;vertical-align:top;margin-top:12px;display:inline-block;letter-spacing:0">/mo</sup></div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:24px;letter-spacing:1px;text-transform:uppercase">Cancel anytime · Secured by Stripe</div>
+        <a href="${STRIPE_URL}?prefilled_email=${encodeURIComponent(sairn.getUser()?.email||'')}" target="_blank" style="display:block;padding:15px;background:${ACCENT};color:#000;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none;margin-bottom:12px">Subscribe — $9.99/month</a>
+        <button onclick="document.getElementById('_sairn_paywall_overlay').remove()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer">Continue with limited demo access</button>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.15);line-height:1.6">HONEY COMB Platform · SAIRN Technologies<br>After subscribing, refresh this page to activate.</div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+})();
+</script>
+<!-- ═══ END SAIRN AUTH SDK ══════════════════════════════════════ -->
+
+</body>
+</html>
