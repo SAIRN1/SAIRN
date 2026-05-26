@@ -2300,6 +2300,8 @@ window.addEventListener('load', () => {
   const p = new URLSearchParams(window.location.search);
   if(p.get('session_id') || p.get('cancelled')) showPage('app');
 });
+
+const APP_ICON = '✈️';
 </script>
 
 <!-- Fix act strip to use correct ID -->
@@ -2397,6 +2399,102 @@ if(origActRow) origActRow.id = 'act-strip-inner';
   }
 })();
 </script>
+
+<script>
+const GUIDED_FLOWS=[{id:"trip",emoji:"✈️",label:"Plan My Trip",intro:`Where are you thinking of going, and roughly when?`,steps:[`How many people, and what's your approximate budget?`,`Adventure, relaxation, culture, food, or family?`],finish:`Building your personalized itinerary now.`}];
+let activeFlow=null,flowStep=0;
+function startFlow(id){
+  const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
+  activeFlow=f;flowStep=0;
+  document.querySelectorAll('.flow-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  addBub('ai',f.intro);
+  hist.push({role:'assistant',content:f.intro});
+  document.getElementById('inp').placeholder='Reply to continue...';
+  document.getElementById('inp').focus();
+}
+function checkFlow(txt){
+  if(!activeFlow)return false;
+  if(flowStep<activeFlow.steps.length){
+    const nxt=activeFlow.steps[flowStep++];
+    setTimeout(()=>{addBub('ai',nxt);hist.push({role:'assistant',content:nxt});},700);
+    return true;
+  }else if(flowStep===activeFlow.steps.length){
+    flowStep++;
+    setTimeout(()=>{addBub('ai',activeFlow.finish);hist.push({role:'assistant',content:activeFlow.finish});activeFlow=null;},700);
+    return true;
+  }
+  return false;
+}
+</script>
+
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch('https://sairn.vercel.app/api/greeting', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay() })
+    });
+    const data = await res.json();
+    if (!data.greeting) return;
+    const area = document.getElementById('chatArea') || document.getElementById('output');
+    if (!area) return;
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.innerHTML = '<div class="msg-avatar">✈️</div><div class="msg-bubble"><p>' + data.greeting + '</p></div>';
+    div.style.cssText = 'opacity:0;transform:translateY(10px)';
+    area.insertBefore(div, area.firstChild);
+    requestAnimationFrame(()=>{ div.style.transition='opacity .5s,transform .5s'; div.style.opacity='1'; div.style.transform='translateY(0)'; });
+  } catch(e) {}
+}
+
+
+async function loadUserMemory() {
+  const token = localStorage.getItem('sairn_token');
+  if (!token) return '';
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/memory', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const { memory } = await res.json();
+    if (!memory || !memory.facts || !memory.facts.length) return '';
+    const facts = memory.facts.slice(-20).map(f => '- ' + f.fact).join('\n');
+    const summary = memory.summary ? '\nWho they are: ' + memory.summary : '';
+    return '\n\nWHAT YOU ALREADY KNOW ABOUT THIS USER (learned across all SAIRN apps):\n' + facts + summary + '\n\nUse this naturally — just let it make your help more personal.';
+  } catch(e) { return ''; }
+}
+
+async function extractMemoryOrig() {
+  const token = localStorage.getItem('sairn_token');
+  if (!token || !hist || hist.length < 2) return;
+  try {
+    fetch('https://sairn.vercel.app/api/memory', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({action:'extract',messages:hist.slice(-10),app_id:APP_ID||'unknown'})
+    });
+  } catch(e) {}
+}
+window.addEventListener('beforeunload', extractMemoryOrig);
+
+
+let lastBubText = '';
+
+function showSaveBar(content) {
+  const existing = document.getElementById('sairn-save-bar');
+  if (existing) existing.remove();
+  lastBubText = content;
+  const bar = document.createElement('div');
+  bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+  bar.innerHTML = '<button onclick="navigator.clipboard.writeText(lastBubText).then(()=>{this.textContent=\'✓ Copied!\';setTimeout(()=>this.textContent=\'📋 Copy\',2000)})" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'
+    + '<button onclick="const s=JSON.parse(localStorage.getItem(\'sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
+    + '<button onclick="document.getElementById(\'sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
+  document.body.appendChild(bar);
+  setTimeout(()=>{ const b=document.getElementById('sairn-save-bar'); if(b)b.remove(); }, 8000);
+}
+
 <!-- ═══ END SAIRN AUTH SDK ══════════════════════════════════════ -->
 
 </body>

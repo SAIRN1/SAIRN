@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNvet — AI-powered veterinary practice management. Built for how vets actually work.</title>
+<meta name="description" content="SOAP note generation from voice, drug interaction checks, client communication, insurance pre-authorization, and full practice management — powered by Claude AI.">
+<meta name="theme-color" content="#0A0B14">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#06B6D4;--a2:#0891B2;--grad:linear-gradient(135deg,#06B6D4,#0891B2);--ar:rgba(6,182,212,0.15);--ab:rgba(6,182,212,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(6,182,212,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(6,182,212,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(6,182,212,0.55)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(6,182,212,0.1) 0%,transparent 60%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(6,182,212,0.5))}
+.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#06B6D4 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,21px);color:var(--m);max-width:680px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:rgba(6,182,212,0.9);font-weight:600;letter-spacing:0.5px;margin-bottom:48px}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(6,182,212,0.45);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px);box-shadow:0 14px 44px rgba(6,182,212,0.6)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.btn-outline:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.3)}
+.hero-stats{display:flex;gap:48px;justify-content:center;flex-wrap:wrap}
+.hero-stat-val{font-size:30px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
+.hero-stat-lbl{font-size:12px;color:var(--m)}
+.section{padding:100px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:580px;margin:0 auto 56px;line-height:1.7}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.feat-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s}
+.feat-card:hover{border-color:rgba(6,182,212,0.3);transform:translateY(-3px);box-shadow:0 16px 40px rgba(6,182,212,0.1)}
+.feat-n{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--a);margin-bottom:12px}
+.feat-e{font-size:32px;margin-bottom:14px}
+.feat-t{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.feat-d{font-size:14px;color:var(--m);line-height:1.65}
+.pricing-section{padding:100px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:980px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:36px 28px;text-align:left;position:relative}
+.pc.featured{border-color:rgba(6,182,212,0.4);background:rgba(6,182,212,0.04)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 16px;border-radius:100px}
+.pt{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:54px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:15px;color:var(--m);margin-bottom:4px}
+.pd{font-size:13px;color:var(--d);margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:28px}
+.pf-item{display:flex;align-items:flex-start;gap:10px;padding:6px 0;font-size:13px;color:var(--m)}
+.pf-item::before{content:"✓";color:var(--a);font-weight:700;flex-shrink:0;margin-top:1px}
+.pb{width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff;box-shadow:0 4px 16px rgba(6,182,212,0.35)}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(6,182,212,0.3)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:7px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 0 12px rgba(6,182,212,0.3)}
+.msg-bubble{max-width:70%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble strong{color:var(--a)}.msg-bubble ul{padding-left:16px;margin:6px 0}.msg-bubble li{margin-bottom:4px}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(6,182,212,0.5);background:rgba(255,255,255,0.07)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 4px 16px rgba(6,182,212,0.4);transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px;filter:drop-shadow(0 0 16px rgba(6,182,212,0.35))}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:380px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:460px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:rgba(6,182,212,0.35);color:var(--w);background:rgba(6,182,212,0.06)}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:20px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:13px;color:var(--d);margin-bottom:20px}
+.footer-links{display:flex;gap:24px;justify-content:center}
+.footer-link{font-size:12px;color:var(--d);text-decoration:none;transition:color 0.2s}
+.footer-link:hover{color:var(--a)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🐾</div>
+    <div class="nav-brand">SAIRNvet</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">SAIRN Technologies · B2B</div>
+    <button class="nav-cta" onclick="showPage('app')">Open Free Trial</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="hero-eyebrow">✦ AI-Native · Claude Powered · Patents Pending</div>
+    <div class="hero-icon">🐾</div>
+    <h1 class="hero-title">SAIRNvet</h1>
+    <p class="hero-sub">AI-powered veterinary practice management. Built for how vets actually work.</p>
+    <p class="hero-market">$2.1B · 30,000+ US clinics · 21% CAGR</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">Start Free Trial — No Card Required</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View Pricing</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="hero-stat-val">0</div><div class="hero-stat-lbl">AI competitors in this space</div></div>
+      <div><div class="hero-stat-val">Claude</div><div class="hero-stat-lbl">AI engine — world class</div></div>
+      <div><div class="hero-stat-val">14 day</div><div class="hero-stat-lbl">Free trial — full access</div></div>
+    </div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">Built for vet professionals</div>
+    <div class="sec-title">Everything you need.<br>AI that actually understands your work.</div>
+    <div class="sec-sub">SOAP note generation from voice, drug interaction checks, client communication, insurance pre-authorization, and full practice management — powered by Claude AI.</div>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-n">01</div><div class="feat-e">🎙️</div><div class="feat-t">SOAP Notes</div><div class="feat-d">Generate SOAP notes from my exam notes or voice transcript</div></div><div class="feat-card"><div class="feat-n">02</div><div class="feat-e">💊</div><div class="feat-t">Drug Check</div><div class="feat-d">Check drug interactions and dosing for this patient</div></div><div class="feat-card"><div class="feat-n">03</div><div class="feat-e">📞</div><div class="feat-t">Client Communication</div><div class="feat-d">Write a message or follow-up for a client</div></div><div class="feat-card"><div class="feat-n">04</div><div class="feat-e">📋</div><div class="feat-t">Insurance Pre-Auth</div><div class="feat-d">Help me pre-authorize this procedure</div></div><div class="feat-card"><div class="feat-n">05</div><div class="feat-e">📊</div><div class="feat-t">Practice Report</div><div class="feat-d">How is my practice performing?</div></div>
+      <div class="feat-card"><div class="feat-n">06</div><div class="feat-e">🧠</div><div class="feat-t">Memory across every client</div><div class="feat-d">Claude remembers every patient, property, case, and client. The more you use SAIRNvet, the smarter it gets — and the more it knows about your practice.</div></div>
+    </div>
+  </div>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:16px">Flat monthly. No per-user games.</div>
+    <div class="sec-sub">One price covers your whole team. Cancel anytime.</div>
+    <div class="pricing-grid">
+      <div class="pc">
+        <div class="pt">Starter</div>
+        <div class="pa">$199</div>
+        <div class="pp">/month</div>
+        <div class="pd">Solo practitioners and small teams</div>
+        <div class="pf">
+          <div class="pf-item">Full Claude AI — all modes and features</div>
+          <div class="pf-item">Guided flows — step-by-step intelligence</div>
+          <div class="pf-item">Memory — gets smarter every session</div>
+          <div class="pf-item">Up to 3 users</div>
+          <div class="pf-item">14-day free trial</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Start Free Trial</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Professional</div>
+        <div class="pa">$349</div>
+        <div class="pp">/month</div>
+        <div class="pd">Growing practices with multiple staff</div>
+        <div class="pf">
+          <div class="pf-item">Everything in Starter</div>
+          <div class="pf-item">Unlimited users</div>
+          <div class="pf-item">Advanced reporting and analytics</div>
+          <div class="pf-item">Priority support</div>
+          <div class="pf-item">QuickBooks integration</div>
+          <div class="pf-item">API access</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Start Free Trial</button>
+      </div>
+      <div class="pc">
+        <div class="pt">Business</div>
+        <div class="pa">$499</div>
+        <div class="pp">/month</div>
+        <div class="pd">Multi-location and high-volume operations</div>
+        <div class="pf">
+          <div class="pf-item">Everything in Professional</div>
+          <div class="pf-item">Custom AI training on your workflows</div>
+          <div class="pf-item">Dedicated onboarding and support</div>
+          <div class="pf-item">SLA and uptime guarantee</div>
+          <div class="pf-item">Enterprise data agreement</div>
+        </div>
+        <button class="pb pb-out" onclick="alert('Contact us at support@sairntechnologies.com for enterprise pricing')">Contact Sales</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNvet</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · © 2026 Michael L. Dibert · Patents Pending · Veterinary clinics · Solo to multi-doctor practices · Replaces outdated practice management systems</div>
+    <div class="footer-links">
+      <a class="footer-link" href="mailto:support@sairntechnologies.com">Support</a>
+      <a class="footer-link" href="https://sairn.vercel.app">SAIRN Platform</a>
+      <a class="footer-link" href="https://sairn.vercel.app/legal">Legal</a>
+    </div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNvet <span style="color:var(--m);font-weight:400;font-size:13px">· Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">← Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('SOAP Notes','Generate SOAP notes from my exam notes or voice transcript')"><span class="mode-icon">🎙️</span><span class="mode-label">SOAP Notes</span></button><button class="mode-btn" onclick="setMode('Drug Check','Check drug interactions and dosing for this patient')"><span class="mode-icon">💊</span><span class="mode-label">Drug Check</span></button><button class="mode-btn" onclick="setMode('Client Communication','Write a message or follow-up for a client')"><span class="mode-icon">📞</span><span class="mode-label">Client Communication</span></button><button class="mode-btn" onclick="setMode('Insurance Pre-Auth','Help me pre-authorize this procedure')"><span class="mode-icon">📋</span><span class="mode-label">Insurance Pre-Auth</span></button><button class="mode-btn" onclick="setMode('Practice Report','How is my practice performing?')"><span class="mode-icon">📊</span><span class="mode-label">Practice Report</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="soap" onclick="startFlow('soap')"><span class="mode-icon">🎙️</span><span class="mode-label">SOAP Note</span></button><button class="flow-btn mode-btn" data-flow="drug" onclick="startFlow('drug')"><span class="mode-icon">💊</span><span class="mode-label">Interaction Check</span></button><button class="flow-btn mode-btn" data-flow="preauth" onclick="startFlow('preauth')"><span class="mode-icon">📋</span><span class="mode-label">Pre-Authorization</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🐾</div>
+      <div class="empty-title">Welcome to SAIRNvet</div>
+      <div class="empty-sub">AI-powered veterinary practice management. Built for how vets actually work.</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">Generate SOAP notes from my exam notes or voice transcript</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Check drug interactions and dosing for this patient</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Write a message or follow-up for a client</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNvet anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNvet, an AI-powered veterinary practice management platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve veterinary practices of all sizes — solo practitioners, group practices, emergency clinics, and specialty hospitals.\n\nYOUR EXPERTISE:\n- SOAP note generation: structured clinical documentation from exam notes, voice transcripts, or dictation\n- Pharmacology: drug interactions, species-specific dosing, contraindications across companion and exotic animals\n- Client communication: discharge instructions, appointment reminders, follow-up messages, difficult conversations\n- Insurance: pre-authorization requests, claim documentation, denial appeals\n- Diagnostic reasoning: differential diagnoses, diagnostic plan suggestions, case analysis\n- Practice management: scheduling, inventory, financial reporting, staff communication\n\nCRITICAL GUIDELINES:\n- You are an AI assistant for licensed veterinarians — you support clinical decisions, never replace them\n- Always recommend veterinary professional judgment for final diagnoses and treatment decisions\n- Drug dosing must be verified against current formularies — always note this\n- SOAP notes you generate are drafts for the veterinarian to review and approve\n- Be precise with medical terminology — vets are professionals\n- Species-specific knowledge matters: cat physiology ≠ dog physiology ≠ exotic\n\nCLINICAL KNOWLEDGE:\n- Common drug classes: NSAIDs, antibiotics, antifungals, antiparasitics, sedatives, analgesics\n- Toxic drug combinations: NSAIDs + corticosteroids (GI risk), certain antibiotics + hepatotoxic drugs\n- Never extrapolate human drug dosing to animals without species-specific validation\n- SOAP format: Subjective (history/complaint), Objective (exam findings), Assessment (diagnosis), Plan (treatment)";
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
+const APP_ID = 'sairnvet';
+const APP_ICON = '🐾';
+let messages = [], isLoading = false, lastResponse = '';
+const GUIDED_FLOWS = [{id:"soap",emoji:"🎙️",label:"Generate SOAP Note",intro:"Let's build your SOAP note. What species and breed are we working with, and what brought them in today?",steps:["What did you find on physical exam — vitals, abnormalities, relevant findings?","What is your assessment and differential diagnoses?","What is your treatment plan — medications, dosing, follow-up instructions?"],finish:"Here is your complete SOAP note formatted for your records. Review and adjust as needed."},{id:"drug",emoji:"💊",label:"Drug Interaction Check",intro:"Let's check this medication. What drug are you considering, and what species and weight is the patient?",steps:["Is the patient on any current medications? List them all.","Any known allergies, liver or kidney disease, or other contraindications?"],finish:"Here is the interaction analysis, safe dosing range, and any contraindications to watch for."},{id:"preauth",emoji:"📋",label:"Insurance Pre-Authorization",intro:"Let's build your pre-auth request. What procedure needs authorization, and which insurance carrier?",steps:["What is the diagnosis code and clinical justification?","Has this patient had prior treatment for this condition?"],finish:"Here is your complete pre-authorization request ready to submit."}];
+let activeFlow = null, flowStep = 0;
+
+(function() {
+  const c = document.getElementById('particles');
+  for(let i=0;i<20;i++) {
+    const p = document.createElement('div'); p.className = 'particle';
+    const s = 3 + Math.random()*8;
+    p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:rgba(6,182,212,0.5);--d:${7+Math.random()*9}s;--del:${Math.random()*6}s;--o:${0.05+Math.random()*0.1}`;
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ['homePage','appPage'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('active'); el.style.display = 'none';
+  });
+  if(page === 'home') {
+    const h = document.getElementById('homePage');
+    h.classList.add('active'); h.style.display = '';
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById('appPage');
+    a.classList.add('active'); a.style.display = 'flex';
+    setTimeout(() => document.getElementById('userInput').focus(), 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('userInput').placeholder = ph;
+  document.getElementById('userInput').focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(x => x.id === id); if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b => b.classList.add('active'));
+  const area = document.getElementById('chatArea');
+  const empty = document.getElementById('emptyState'); if(empty) empty.remove();
+  addMsg('ai', f.intro); messages.push({role:'assistant', content:f.intro});
+  document.getElementById('userInput').placeholder = 'Reply to continue the guided flow...';
+  document.getElementById('userInput').focus();
+}
+function useSuggestion(el) { document.getElementById('userInput').value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById('chatArea');
+  const empty = document.getElementById('emptyState'); if(empty) empty.remove();
+  const div = document.createElement('div'); div.className = `msg ${role}`;
+  const fmt = content
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>');
+  if(role === 'ai') {
+    div.innerHTML = `<div class="msg-avatar">🐾</div><div class="msg-bubble"><p>${fmt}</p></div>`;
+    lastResponse = content;
+    setTimeout(() => showSaveBar(), 600);
+  } else {
+    div.innerHTML = `<div class="msg-bubble">${content}</div>`;
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div'); div.className = 'msg ai'; div.id = 'typing-indicator';
+  div.innerHTML = `<div class="msg-avatar">🐾</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  inp.value = ''; inp.style.height = '';
+
+  if(activeFlow !== null) {
+    addMsg('user', text);
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(() => { addMsg('ai', nxt); messages.push({role:'assistant',content:nxt}); }, 700);
+      return;
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(() => { addMsg('ai', activeFlow.finish); messages.push({role:'assistant',content:activeFlow.finish}); activeFlow = null; }, 700);
+      return;
+    }
+    activeFlow = null;
+  }
+
+  isLoading = true; document.getElementById('sendBtn').disabled = true;
+  addMsg('user', text); messages.push({role:'user', content:text}); showTyping();
+
+  try {
+    const token = localStorage.getItem('sairn_token');
+    const memCtx = await loadUserMemory();
+    const sys = SYSTEM + (memCtx || '');
+
+    const headers = {'Content-Type': 'application/json'};
+    if(token) headers['Authorization'] = 'Bearer ' + token;
+
+    const res = await fetch(SAIRN_API, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        max_tokens: 1200,
+        system: sys,
+        messages: messages.slice(-24),
+        app_id: APP_ID,
+        is_demo: !token, // demo only if not logged in
+      })
+    });
+    const data = await res.json();
+    document.getElementById('typing-indicator')?.remove();
+
+    if(res.status === 429) {
+      if(data.error === 'token_budget_reached') {
+        // Enterprise-grade token exhaustion — never a crash, always helpful
+        const upgradeMsg = data.upgrade_options
+          ? '\n\nUpgrade options:\n' + data.upgrade_options.map(o => `• ${o.name}: ${o.tokens} — ${o.price}`).join('\n')
+          : '';
+        addMsg('ai', `Your organization has reached its monthly token limit.${upgradeMsg}\n\nContact us at ${data.support || 'support@sairntechnologies.com'} to add tokens or upgrade instantly.`);
+        showUpgradeBar(data);
+      } else {
+        addMsg('ai', (data.message || 'Limit reached.') + '\n\nSign up at sairn.vercel.app for full access.');
+      }
+    } else if(res.ok) {
+      const reply = data.content?.[0]?.text || 'Sorry, please try again.';
+      messages.push({role:'assistant', content:reply});
+      addMsg('ai', reply);
+      // Show token usage bar if near limit
+      if(data.usage_info && !data.usage_info.unlimited && data.usage_info.pct >= 80) {
+        showTokenBar(data.usage_info);
+      }
+    } else {
+      addMsg('ai', 'Something went wrong. Please try again.');
+    }
+  } catch(e) {
+    document.getElementById('typing-indicator')?.remove();
+    addMsg('ai', 'Connection issue. Please check your connection and try again.');
+  }
+  isLoading = false; document.getElementById('sendBtn').disabled = false;
+  document.getElementById('userInput').focus();
+}
+
+function showTokenBar(usage) {
+  const existing = document.getElementById('sairn-token-bar');
+  if(existing) existing.remove();
+  const bar = document.createElement('div');
+  bar.id = 'sairn-token-bar';
+  const pct = usage.pct;
+  const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
+  bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
+  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
+  document.body.appendChild(bar);
+}
+
+function showUpgradeBar(data) {
+  const existing = document.getElementById('sairn-upgrade-bar');
+  if(existing) existing.remove();
+  const bar = document.createElement('div');
+  bar.id = 'sairn-upgrade-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
+  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
+  document.body.appendChild(bar);
+}
+async function loadUserMemory() {
+  const token = localStorage.getItem('sairn_token'); if(!token) return '';
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/memory', {headers:{'Authorization':'Bearer '+token}});
+    const {memory} = await res.json();
+    if(!memory?.facts?.length) return '';
+    return '\n\nClient and case history on record:\n' + memory.facts.slice(-20).map(f => '- ' + f.fact).join('\n');
+  } catch(e) { return ''; }
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch('https://sairn.vercel.app/api/greeting', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json(); if(!data.greeting) return;
+    const area = document.getElementById('chatArea');
+    const empty = document.getElementById('emptyState'); if(empty) empty.remove();
+    const div = document.createElement('div'); div.className = 'msg ai';
+    div.innerHTML = `<div class="msg-avatar">🐾</div><div class="msg-bubble"><p>${data.greeting}</p></div>`;
+    div.style.cssText = 'opacity:0;transform:translateY(10px)';
+    area.appendChild(div); messages.push({role:'assistant', content:data.greeting});
+    requestAnimationFrame(() => { div.style.transition = 'opacity .5s,transform .5s'; div.style.opacity = '1'; div.style.transform = 'translateY(0)'; });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById('sairn-save-bar'); if(existing) existing.remove();
+  const bar = document.createElement('div'); bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;animation:slideUp .2s ease';
+  const copyBtn = document.createElement('button'); copyBtn.textContent = '📋 Copy';
+  copyBtn.style.cssText = 'background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+  copyBtn.onclick = () => navigator.clipboard.writeText(lastResponse).then(() => { copyBtn.textContent = '✓ Copied!'; setTimeout(() => copyBtn.textContent = '📋 Copy', 2000); });
+  const saveBtn = document.createElement('button'); saveBtn.textContent = '💾 Save';
+  saveBtn.style.cssText = 'background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+  saveBtn.onclick = () => { const s = JSON.parse(localStorage.getItem('sairn_library')||'[]'); s.unshift({content:lastResponse, app:APP_ID, date:new Date().toLocaleDateString()}); localStorage.setItem('sairn_library', JSON.stringify(s.slice(0,50))); saveBtn.textContent = '✓ Saved!'; setTimeout(() => saveBtn.textContent = '💾 Save', 2000); };
+  const closeBtn = document.createElement('button'); closeBtn.textContent = '×';
+  closeBtn.style.cssText = 'background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px';
+  closeBtn.onclick = () => bar.remove();
+  bar.appendChild(copyBtn); bar.appendChild(saveBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(() => { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 8000);
+}
+window.addEventListener('beforeunload', () => {
+  const token = localStorage.getItem('sairn_token');
+  if(token && messages.length >= 2) {
+    try { fetch('https://sairn.vercel.app/api/memory', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({action:'extract', messages:messages.slice(-10), app_id:APP_ID})}); } catch(e) {}
+  }
+});
+document.getElementById('userInput').addEventListener('input', function() { this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 140) + 'px'; });
+document.getElementById('userInput').addEventListener('keydown', function(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>

@@ -1,19 +1,25 @@
-json{
+{
   "rewrites": [
-    { "source": "/lingual",  "destination": "/lingual.html"  },
-    { "source": "/health",   "destination": "/health.html"   },
-    { "source": "/money",    "destination": "/money.html"    },
-    { "source": "/legal",    "destination": "/legal.html"    },
-    { "source": "/study",    "destination": "/study.html"    },
-    { "source": "/roam",     "destination": "/roam.html"     },
-    { "source": "/senior",   "destination": "/senior.html"   },
-    { "source": "/mind",     "destination": "/mind.html"     },
-    { "source": "/kitchen",  "destination": "/kitchen.html"  },
-    { "source": "/family",   "destination": "/family.html"   },
-    { "source": "/career",   "destination": "/career.html"   },
-    { "source": "/home-app", "destination": "/home.html"     },
-    { "source": "/shield",   "destination": "/shield.html"   },
-    { "source": "/daily",    "destination": "/daily.html"    }
-  ]
+    { "source": "/lingual",    "destination": "/lingual.html"    },
+    { "source": "/health",     "destination": "/health.html"     },
+    { "source": "/money",      "destination": "/money.html"      },
+    { "source": "/legal",      "destination": "/legal.html"      },
+    { "source": "/study",      "destination": "/study.html"      },
+    { "source": "/roam",       "destination": "/roam.html"       },
+    { "source": "/senior",     "destination": "/senior.html"     },
+    { "source": "/mind",       "destination": "/mind.html"       },
+    { "source": "/kitchen",    "destination": "/kitchen.html"    },
+    { "source": "/family",     "destination": "/family.html"     },
+    { "source": "/career",     "destination": "/career.html"     },
+    { "source": "/home-app",   "destination": "/home.html"       },
+    { "source": "/shield",     "destination": "/shield.html"     },
+    { "source": "/daily",      "destination": "/daily.html"      },
+    { "source": "/contractor", "destination": "/contractor.html" },
+    { "source": "/biz",        "destination": "/biz.html"        },
+    { "source": "/pay",        "destination": "/pay.html"        },
+    { "source": "/hr",         "destination": "/hr.html"         },
+    { "source": "/memory",     "destination": "/memory_settings.html" }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
 }
-

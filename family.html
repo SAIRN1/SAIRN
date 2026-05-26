@@ -87,7 +87,7 @@ footer{padding:60px 20px;text-align:center;border-top:1px solid rgba(255,255,255
 .mode-bar{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.04);scrollbar-width:none}
 .mode-bar::-webkit-scrollbar{display:none}
 .mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:'Inter',sans-serif}
-.mode-btn:hover,.mode-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
 .mode-icon{font-size:14px}
 .chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent}
 .msg{display:flex;gap:10px;animation:msgIn 0.25s ease-out}
@@ -121,6 +121,9 @@ textarea#userInput::placeholder{color:var(--d)}
 .empty-suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px}
 .suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:'Inter',sans-serif}
 .suggestion:hover{border-color:rgba(52,211,153,0.3);color:var(--w);background:rgba(52,211,153,0.06)}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
 </style>
 </head>
 <body>
@@ -235,6 +238,11 @@ textarea#userInput::placeholder{color:var(--d)}
           <span class="mode-icon">✉️</span>
           <span class="mode-label">School Communication</span>
         </button>
+
+        <span style="width:1px;background:rgba(255,255,255,0.08);margin:4px 4px;flex-shrink:0"></span>
+        <span style="font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px">Guided</span>
+        <button class="flow-btn mode-btn" data-flow="homework" onclick="startFlow('homework')"><span class="mode-icon">📚</span><span class="mode-label">Homework Help</span></button>
+        <button class="flow-btn mode-btn" data-flow="conversation" onclick="startFlow('conversation')"><span class="mode-icon">💬</span><span class="mode-label">Tough Conversation</span></button>
   </div>
   <div class="chat-area" id="chatArea">
     <div class="empty-state" id="emptyState">
@@ -280,6 +288,7 @@ HOW YOU WORK:
 You make family life a little easier, a little warmer, and a little more connected.`;
 const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'family';
+const APP_ICON = '👨‍👩‍👧‍👦';
 let messages = [];
 let isLoading = false;
 let currentMode = '';
@@ -309,6 +318,7 @@ function showPage(page) {
     document.getElementById('appPage').classList.add('active');
     document.getElementById('appPage').style.display='flex';
     setTimeout(()=>document.getElementById('userInput').focus(),100);
+    if(!messages.length) loadFirstMessage();
   }
 }
 
@@ -345,6 +355,7 @@ function addMsg(role, content) {
   }
   area.appendChild(div);
   area.scrollTop = area.scrollHeight;
+  if(role==='ai'){lastResponse=content;showSaveBar(content);}
 }
 
 function showTyping() {
@@ -360,6 +371,11 @@ async function sendMessage() {
   const inp = document.getElementById('userInput');
   const text = inp.value.trim();
   if(!text || isLoading) return;
+  if(activeFlow !== null && advanceFlow(text)) {
+    addMsg('user', text);
+    inp.value=''; inp.style.height='';
+    return;
+  }
   inp.value='';inp.style.height='';
   isLoading=true;
   document.getElementById('sendBtn').disabled=true;
@@ -372,7 +388,7 @@ async function sendMessage() {
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         max_tokens:1000,
-        system: SYSTEM,
+        system: await buildSystemWithMemory(SYSTEM),
         messages: messages.slice(-20),
         app_id: APP_ID,
         is_demo: true
@@ -395,6 +411,176 @@ async function sendMessage() {
   isLoading=false;
   document.getElementById('sendBtn').disabled=false;
   document.getElementById('userInput').focus();
+}
+
+
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch('https://sairn.vercel.app/api/greeting', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(localStorage.getItem('sairn_token') ? { 'Authorization': `Bearer ${localStorage.getItem('sairn_token')}` } : {})
+      },
+      body: JSON.stringify({
+        app_id: APP_ID,
+        client_hour: now.getHours(),
+        client_day: now.getDay(),
+      })
+    });
+    const data = await res.json();
+    const greeting = data.greeting;
+    if (!greeting) return;
+    const area = document.getElementById('chatArea');
+    const empty = document.getElementById('emptyState');
+    if (empty) empty.remove();
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.innerHTML = `<div class="msg-avatar">${APP_ICON}</div><div class="msg-bubble"><p>${greeting}</p></div>`;
+    div.style.opacity = '0';
+    div.style.transform = 'translateY(10px)';
+    area.appendChild(div);
+    messages.push({ role: 'assistant', content: greeting });
+    requestAnimationFrame(() => {
+      div.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      div.style.opacity = '1';
+      div.style.transform = 'translateY(0)';
+    });
+  } catch(e) {}
+}
+
+
+const GUIDED_FLOWS = [
+    {
+      id: 'homework',
+      label: '📚 Homework Help',
+      emoji: '📚',
+      intro: `Let's work through this together. How old is the student, and what subject and topic are we tackling?`,
+      steps: ["What specifically are they stuck on — is it a concept they don"t understand, or a specific problem or question?", "What have they already tried or what do they already understand about this?"],
+      currentStep: 0,
+      finish: `Perfect — let me explain this at exactly the right level and work through it step by step.`
+    },
+    {
+      id: 'conversation',
+      label: '💬 Tough Conversation',
+      emoji: '💬',
+      intro: `These conversations matter so much. What do you need to talk to your child about — and how old are they?`,
+      steps: ["What"s your biggest concern about how they"ll react or what they"ll think?", "Have you tried talking about this before, or is this the first time?"],
+      currentStep: 0,
+      finish: `Here's how I'd approach this conversation — including what to say, what to listen for, and how to keep the door open.`
+    }
+];
+
+let activeFlow = null;
+let flowStep = 0;
+
+function startFlow(flowId) {
+  const flow = GUIDED_FLOWS.find(f => f.id === flowId);
+  if (!flow) return;
+  activeFlow = flow;
+  flowStep = 0;
+  document.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.flow-btn[data-flow="' + flowId + '"]').forEach(b => b.classList.add('active'));
+  const area = document.getElementById('chatArea');
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+  addMsg('ai', flow.intro);
+  messages.push({role:'assistant', content: flow.intro});
+  document.getElementById('userInput').placeholder = 'Reply to continue the guided flow...';
+  document.getElementById('userInput').focus();
+}
+
+function advanceFlow(userReply) {
+  if (!activeFlow) return false;
+  if (flowStep < activeFlow.steps.length) {
+    const nextPrompt = activeFlow.steps[flowStep];
+    flowStep++;
+    setTimeout(() => {
+      addMsg('ai', nextPrompt);
+      messages.push({role:'assistant', content: nextPrompt});
+    }, 800);
+    return true;
+  } else if (flowStep === activeFlow.steps.length) {
+    flowStep++;
+    setTimeout(() => {
+      addMsg('ai', activeFlow.finish);
+      messages.push({role:'assistant', content: activeFlow.finish});
+      activeFlow = null;
+    }, 800);
+    return true;
+  }
+  return false;
+}
+
+
+async function loadUserMemory() {
+  const token = localStorage.getItem('sairn_token');
+  if (!token) return null;
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/memory', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const { memory } = await res.json();
+    return memory;
+  } catch(e) { return null; }
+}
+
+async function buildSystemWithMemory(baseSystem) {
+  const memory = await loadUserMemory();
+  if (!memory || !memory.facts || !memory.facts.length) return baseSystem;
+  const facts = memory.facts.slice(-20).map(f => '- ' + f.fact).join('\n');
+  const summary = memory.summary ? '\nWho they are: ' + memory.summary : '';
+  return baseSystem + '\n\nWHAT YOU ALREADY KNOW ABOUT THIS USER (learned across all SAIRN apps):\n' + facts + summary + '\n\nUse this naturally — don\'t announce you remember things, just let it make your help more personal.';
+}
+
+async function extractMemoryAfterChat() {
+  const token = localStorage.getItem('sairn_token');
+  if (!token || messages.length < 2) return;
+  try {
+    navigator.sendBeacon
+      ? navigator.sendBeacon('/api/memory', new Blob([JSON.stringify({action:'extract',messages:messages.slice(-10),app_id:APP_ID})], {type:'application/json'}))
+      : fetch('https://sairn.vercel.app/api/memory', {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({action:'extract',messages:messages.slice(-10),app_id:APP_ID})});
+  } catch(e) {}
+}
+window.addEventListener('beforeunload', extractMemoryAfterChat);
+
+
+function showSaveBar(content) {
+  const existing = document.getElementById('sairn-save-bar');
+  if (existing) existing.remove();
+  const bar = document.createElement('div');
+  bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:slideUp .2s ease';
+  bar.innerHTML = `
+    <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>
+    <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>
+    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#60A5FA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔗 Share</button>
+    <button onclick="document.getElementById('sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>`;
+  document.body.appendChild(bar);
+  setTimeout(() => { if(document.getElementById('sairn-save-bar')) document.getElementById('sairn-save-bar').remove(); }, 8000);
+}
+
+let lastResponse = '';
+
+function copyLastResponse() {
+  navigator.clipboard.writeText(lastResponse).then(() => {
+    const btn = document.querySelector('#sairn-save-bar button');
+    if(btn) { btn.textContent = '✓ Copied!'; setTimeout(()=>btn.textContent='📋 Copy',2000); }
+  });
+}
+
+function saveToLibrary() {
+  const saved = JSON.parse(localStorage.getItem('sairn_library') || '[]');
+  saved.unshift({ app: APP_ID, content: lastResponse, date: new Date().toLocaleDateString(), id: Date.now() });
+  localStorage.setItem('sairn_library', JSON.stringify(saved.slice(0, 50)));
+  const btn = document.querySelectorAll('#sairn-save-bar button')[1];
+  if(btn) { btn.textContent = '✓ Saved!'; setTimeout(()=>btn.textContent='💾 Save',2000); }
+}
+
+function shareResponse() {
+  const text = encodeURIComponent(lastResponse.slice(0, 280) + '...\n\nGenerated by SAIRN ' + APP_ID + ' — sairn.vercel.app');
+  window.open('https://twitter.com/intent/tweet?text=' + text, '_blank');
 }
 
 // Auto-resize textarea
