@@ -1,4 +1,3 @@
-
 json{
   "rewrites": [
     { "source": "/lingual",  "destination": "/lingual.html"  },
@@ -17,3 +16,4 @@ json{
     { "source": "/daily",    "destination": "/daily.html"    }
   ]
 }
+
