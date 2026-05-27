@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/lingual",    "destination": "/lingual.html"    },
+   
     { "source": "/health",     "destination": "/health.html"     },
     { "source": "/money",      "destination": "/money.html"      },
     { "source": "/legal",      "destination": "/legal.html"      },
