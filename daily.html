@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SAIRN Daily — Your family's command center. Every morning.</title>
+<title>SAIRN Daily — Your family's command center. Every day.</title>
 <meta name="description" content="Morning briefings, day planning, family schedules, reminders, to-do lists, and the AI that ties your whole family together — powered by Claude. Part of the SAIRN Technologies SAIRN NEXUS platform.">
 <meta name="theme-color" content="#0A0B14">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -145,7 +145,7 @@ textarea#userInput::placeholder{color:var(--d)}
     <div class="hero-badge">✦ SAIRN NEXUS · Cell 25</div>
     <div class="hero-icon">📱</div>
     <h1 class="hero-title">SAIRN Daily</h1>
-    <p class="hero-sub">Your family's command center. Every morning.</p>
+    <p class="hero-sub">Your family's command center. Every day.</p>
     <div class="hero-btns">
       <button class="btn-primary" onclick="showPage('app')">Try SAIRN Daily Free</button>
       <button class="btn-secondary" onclick="document.querySelector('.pricing').scrollIntoView({behavior:'smooth'})">See Pricing</button>
@@ -155,7 +155,7 @@ textarea#userInput::placeholder{color:var(--d)}
   <section class="features">
     <h2 class="features-title">Everything you need</h2>
     <div class="feat-grid">
-      <div class="feat-card"><div class="feat-emoji">🌅</div><div class="feat-title">Morning Briefing</div><div class="feat-desc">Give me my family's morning briefing</div></div>
+      <div class="feat-card"><div class="feat-emoji">🌅</div><div class="feat-title">Morning Briefing</div><div class="feat-desc">Give me my family's day briefing</div></div>
       <div class="feat-card"><div class="feat-emoji">✅</div><div class="feat-title">Daily Planner</div><div class="feat-desc">Help me plan and prioritize my day</div></div>
       <div class="feat-card"><div class="feat-emoji">📝</div><div class="feat-title">To-Do Lists</div><div class="feat-desc">Help me organize my tasks and reminders</div></div>
       <div class="feat-card"><div class="feat-emoji">👨‍👩‍👧</div><div class="feat-title">Family Coordination</div><div class="feat-desc">Help coordinate schedules for my family</div></div>
@@ -218,7 +218,7 @@ textarea#userInput::placeholder{color:var(--d)}
     <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:'Inter',sans-serif">← Back</button>
   </div>
   <div class="mode-bar">
-        <button class="mode-btn" onclick="setMode('Morning Briefing',`Give me my family's morning briefing`)">
+        <button class="mode-btn" onclick="setMode('Morning Briefing',`Give me my family's day briefing`)">
           <span class="mode-icon">🌅</span>
           <span class="mode-label">Morning Briefing</span>
         </button>
@@ -247,9 +247,9 @@ textarea#userInput::placeholder{color:var(--d)}
     <div class="empty-state" id="emptyState">
       <div class="empty-icon">📱</div>
       <div class="empty-title">Welcome to SAIRN Daily</div>
-      <div class="empty-sub">Your family's command center. Every morning.</div>
+      <div class="empty-sub">Your family's command center. Every day.</div>
       <div class="empty-suggestions">
-        <button class="suggestion" onclick="useSuggestion(this)">Give me my family's morning briefing</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Give me my family's day briefing</button>
         <button class="suggestion" onclick="useSuggestion(this)">Help me plan and prioritize my day</button>
         <button class="suggestion" onclick="useSuggestion(this)">Help me organize my tasks and reminders</button>
       </div>
@@ -264,7 +264,7 @@ textarea#userInput::placeholder{color:var(--d)}
 <script>
 const SYSTEM = `You are SAIRN Daily, the family command center AI powered by Claude. You are part of the SAIRN NEXUS platform built by Michael L. Dibert of SAIRN Technologies.
 
-You are the first thing families open every morning and the last thing they check before bed. You are the connective tissue that makes family life run smoothly.
+You are the first thing families open every day and the last thing they check before bed. You are the connective tissue that makes family life run smoothly.
 
 YOUR ROLE:
 - Morning briefings: organize the day, highlight important tasks, set the tone
@@ -275,7 +275,7 @@ YOUR ROLE:
 - Reminders and follow-ups: help people remember what matters
 
 YOUR STYLE:
-- Warm and energizing in the morning — set a positive tone
+- Warm and energizing in the day — set a positive tone
 - Efficient and focused during the day — no fluff
 - Calm and reflective in the evening — help people decompress
 - Know that families are busy — be concise and actionable
@@ -432,7 +432,7 @@ async function loadFirstMessage() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(localStorage.getItem('sairn_token') ? { 'Authorization': `Bearer ${localStorage.getItem('sairn_token')}` } : {})
+        ...(localStorage.getItem('sairn_token') ? { 'Authorization': 'Bearer ' + localStorage.getItem('sairn_token') } : {})
       },
       body: JSON.stringify({
         app_id: APP_ID,

@@ -426,7 +426,7 @@ async function loadFirstMessage() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(localStorage.getItem('sairn_token') ? { 'Authorization': `Bearer ${localStorage.getItem('sairn_token')}` } : {})
+        ...(localStorage.getItem('sairn_token') ? { 'Authorization': 'Bearer ' + localStorage.getItem('sairn_token') } : {})
       },
       body: JSON.stringify({
         app_id: APP_ID,
