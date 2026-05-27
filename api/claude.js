@@ -60,7 +60,9 @@ export default async function handler(req, res) {
   const cap = Math.min(max_tokens || 1000, 2000);
 
   // ── DEMO PATH — no Supabase needed ──────────────────────────────
-  if (is_demo) {
+  // Always use demo mode if no auth token provided
+  const hasToken = req.headers.authorization?.startsWith('Bearer ');
+  if (is_demo || !hasToken) {
     const key = getDemoKey(req);
     const count = demoCallsToday.get(key) || 0;
 
@@ -93,6 +95,19 @@ export default async function handler(req, res) {
   }
 
   // ── AUTHENTICATED PATH — use full enterprise engine ──────────────
-  // For now return auth required — full auth coming with user accounts
-  return res.status(401).json({ error: 'auth_required', message: 'Please sign in for full access.' });
+  // Full auth engine coming with user accounts — for now use demo mode
+  const key2 = getDemoKey(req);
+  const count2 = demoCallsToday.get(key2) || 0;
+  if (count2 >= DEMO_LIMIT) {
+    return res.status(429).json({ error: 'demo_limit', message: 'Daily limit reached. Sign up at sairn.vercel.app for unlimited access.', upgrade: true });
+  }
+  demoCallsToday.set(key2, count2 + 1);
+  const params2 = { model: MODEL, max_tokens: Math.min(max_tokens || 1000, 500), messages: messages.slice(-6) };
+  if (system) params2.system = system.slice(0, 3000);
+  try {
+    const response2 = await anthropic.messages.create(params2);
+    return res.status(200).json(response2);
+  } catch (err) {
+    return res.status(err.status || 500).json({ error: { message: err.message } });
+  }
 }
