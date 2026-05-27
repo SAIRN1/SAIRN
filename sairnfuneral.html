@@ -290,7 +290,7 @@ function startFlow(id) {
   const f = GUIDED_FLOWS.find(x => x.id === id); if(!f) return;
   activeFlow = f; flowStep = 0;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b => b.classList.add( active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b => b.classList.add('active'));
   const area = document.getElementById('chatArea');
   const empty = document.getElementById('emptyState'); if(empty) empty.remove();
   addMsg('ai', f.intro); messages.push({role:'assistant', content:f.intro});
@@ -322,7 +322,7 @@ function showTyping() {
   area.appendChild(div); area.scrollTop = area.scrollHeight;
 }
 async function sendMessage() {
-  const inp = document.getElementById( userInput');
+  const inp = document.getElementById('userInput');
   const text = inp.value.trim(); if(!text || isLoading) return;
   inp.value = ''; inp.style.height = '';
 

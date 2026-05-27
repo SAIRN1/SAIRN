@@ -841,7 +841,7 @@ async function runDemo(idx){
 
 // ── NAV ──────────────────────────────────────────────────────────
 function showPage(p){
-  document.querySelectorAll('.page').forEach(x=>{x.classList.remove( active');if(x.id==='appPage')x.style.display='none';});
+  document.querySelectorAll('.page').forEach(x=>{x.classList.remove('active');if(x.id==='appPage')x.style.display='none';});
   if(p==='app'){
     document.getElementById('appPage').classList.add('active');
     document.getElementById('appPage').style.display='flex';
@@ -1059,13 +1059,13 @@ const APP_ICON = '💰';
 </script>
 
 <script>
-const GUIDED_FLOWS=[{id:"budget",emoji:"💰",label:"Build My Budget",intro:`Let us build a real budget. What's your monthly take-home after taxes?`,steps:[`Fixed monthly expenses — rent, car, insurance, subscriptions?`,`Roughly how much on food, gas, and entertainment?`,`Any debt — credit cards, student loans, medical bills?`],finish:`Here's your complete budget breakdown.`}];
+const GUIDED_FLOWS=[{id:"budget",emoji:"💰",label:"Build My Budget",intro:`Let us build a real budget. What is your monthly take-home after taxes?`,steps:[`Fixed monthly expenses — rent, car, insurance, subscriptions?`,`Roughly how much on food, gas, and entertainment?`,`Any debt — credit cards, student loans, medical bills?`],finish:`Here is your complete budget breakdown.`}];
 let activeFlow=null,flowStep=0;
 function startFlow(id){
   const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
   activeFlow=f;flowStep=0;
   document.querySelectorAll('.flow-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add( active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
   addBub('ai',f.intro);
   hist.push({role:'assistant',content:f.intro});
   document.getElementById('inp').placeholder='Reply to continue...';
@@ -1128,7 +1128,7 @@ function showSaveBar(content) {
     + '<button onclick="const s=JSON.parse(localStorage.getItem(\ sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
     + '<button onclick="document.getElementById(\ sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
   document.body.appendChild(bar);
-  setTimeout(()=>{ const b=document.getElementById( sairn-save-bar'); if(b)b.remove(); }, 8000);
+  setTimeout(()=>{ const b=document.getElementById('sairn-save-bar'); if(b)b.remove(); }, 8000);
 }
 
 <!-- ═══ END SAIRN AUTH SDK ══════════════════════════════════════ -->
