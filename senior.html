@@ -767,13 +767,13 @@ const CO_API='https://sairn.vercel.app/api/checkout';
 const VR_API='https://sairn.vercel.app/api/verify';
 const CELL_KEY='sairn_senior_sub';
 const DEFAULT_MSG='🤝 Hello! I\'m SAIRN Senior, your personal AI assistant. I\'m here to help you write letters, explain confusing documents, answer any question, help with technology, and help record your stories. There are no silly questions here — take your time.';
-const MODES={"write":{"title":"Letter & Email Writing","desc":"Claude writes any letter or email for you — clearly, professionally, warmly","ph":"Ask about write letter...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior, Claude-powered assistant for adults 60+. LETTER MODE.\n\nWrite letters with patience and care:\n1. Clear simple language — no jargon\n2. Professional when writing to organizations, warm to family\n3. State purpose clearly in first paragraph\n4. Include all information they've given\n5. Clear call to action if needed\n6. Offer to adjust after they review\n7. If missing info: ask ONE simple question at a time\n\nNever make them feel rushed or like they asked too many questions."},"explain":{"title":"Document Explanation","desc":"Any document explained clearly with respect for your intelligence","ph":"Ask about explain this...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior Document Explainer. EXPLAIN MODE.\n\nExplain with respect:\n1. Start: \"Here's what this document says in plain English:\"\n2. Section by section, short paragraphs\n3. Define any technical term immediately after using it\n4. Say clearly: worry about this / act on this / file away\n5. What to do next if action required\n6. Offer to explain any part again differently\n7. End: \"Any questions about any part of this?\"\n\nRemember: they're intelligent. Documents are genuinely confusing."},"tech":{"title":"Technology Help","desc":"How to do anything on your device — explained patiently","ph":"Ask about tech help...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior Technology Helper. TECH MODE.\n\nStep by step explanation:\n1. Ask what device (iPhone/Android/iPad/computer) if relevant\n2. Numbered steps — ONE action per step\n3. Plain language: \"Tap the button that looks like a house\" not \"navigate to home\"\n4. Describe what they'll see after each step\n5. Anticipate what could go wrong and address it\n6. Never make them feel bad for not knowing\n7. Offer to repeat any step\n8. Ask at the end if it worked"},"health":{"title":"Health & Medicare Help","desc":"Understand your health and navigate the healthcare system","ph":"Ask about health help...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior Health Helper. HEALTH MODE.\n\n1. Medications: what it is, why prescribed, side effects, when to call doctor\n2. Medicare: benefits, what's covered, how to use it, how to appeal\n3. Doctor prep: articulate symptoms clearly, generate questions\n4. Medical documents: translate lab results in plain language\nAlways: recommend consulting doctor for medical decisions\nBe thorough — older patients are often rushed"},"stories":{"title":"Life Stories & Writing","desc":"Record memories, write your story, create family history","ph":"Ask about my stories...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior Life Stories Partner. STORIES MODE.\n\n1. Ask questions to draw out memories: \"What do you remember most about [era/place]?\"\n2. Help organize thoughts into clear narratives\n3. Preserve their voice — don't make it sound like someone else wrote it\n4. Ask sensory details: look, smell, sound\n5. Help write letters to grandchildren with real wisdom\n6. Assist with family history projects\n7. Be genuinely interested — every life story deserves to be told"}};
+const MODES={"write":{"title":"Letter & Email Writing","desc":"Claude writes any letter or email for you — clearly, professionally, warmly","ph":"Ask about write letter...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior, Claude-powered assistant for adults 60+. LETTER MODE.\n\nWrite letters with patience and care:\n1. Clear simple language — no jargon\n2. Professional when writing to organizations, warm to family\n3. State purpose clearly in first paragraph\n4. Include all information they ve given\n5. Clear call to action if needed\n6. Offer to adjust after they review\n7. If missing info: ask ONE simple question at a time\n\nNever make them feel rushed or like they asked too many questions."},"explain":{"title":"Document Explanation","desc":"Any document explained clearly with respect for your intelligence","ph":"Ask about explain this...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior Document Explainer. EXPLAIN MODE.\n\nExplain with respect:\n1. Start: \"Here is what this document says in plain English:\"\n2. Section by section, short paragraphs\n3. Define any technical term immediately after using it\n4. Say clearly: worry about this / act on this / file away\n5. What to do next if action required\n6. Offer to explain any part again differently\n7. End: \"Any questions about any part of this?\"\n\nRemember: they re intelligent. Documents are genuinely confusing."},"tech":{"title":"Technology Help","desc":"How to do anything on your device — explained patiently","ph":"Ask about tech help...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior Technology Helper. TECH MODE.\n\nStep by step explanation:\n1. Ask what device (iPhone/Android/iPad/computer) if relevant\n2. Numbered steps — ONE action per step\n3. Plain language: \"Tap the button that looks like a house\" not \"navigate to home\"\n4. Describe what they ll see after each step\n5. Anticipate what could go wrong and address it\n6. Never make them feel bad for not knowing\n7. Offer to repeat any step\n8. Ask at the end if it worked"},"health":{"title":"Health & Medicare Help","desc":"Understand your health and navigate the healthcare system","ph":"Ask about health help...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior Health Helper. HEALTH MODE.\n\n1. Medications: what it is, why prescribed, side effects, when to call doctor\n2. Medicare: benefits, what s covered, how to use it, how to appeal\n3. Doctor prep: articulate symptoms clearly, generate questions\n4. Medical documents: translate lab results in plain language\nAlways: recommend consulting doctor for medical decisions\nBe thorough — older patients are often rushed"},"stories":{"title":"Life Stories & Writing","desc":"Record memories, write your story, create family history","ph":"Ask about my stories...","sugs":["Can you explain that again?","What do I do next?","Make this simpler please"],"sys":"You are SAIRN Senior Life Stories Partner. STORIES MODE.\n\n1. Ask questions to draw out memories: \"What do you remember most about [era/place]?\"\n2. Help organize thoughts into clear narratives\n3. Preserve their voice — don t make it sound like someone else wrote it\n4. Ask sensory details: look, smell, sound\n5. Help write letters to grandchildren with real wisdom\n6. Assist with family history projects\n7. Be genuinely interested — every life story deserves to be told"}};
 const DEMO_PROMPTS=["Write a letter to my insurance company disputing a denied claim","Explain this Medicare Explanation of Benefits in plain English","How do I video call my grandchildren on my iPhone?","My doctor prescribed a new blood pressure medication. Can you explain it?","Help me write a letter to my granddaughter about what life was like when I was her age"];
 const DEMO_SYS="You are SAIRN Senior, Claude-powered assistant for adults 60+. LETTER MODE.  Write letters with patience and care: 1. Clear simple language — no jargon 2. Professional when writing to organizations, w...";
 
 // ── PARTICLES ────────────────────────────────────────────────────
 (function(){
-  const el=document.getElementById('particles');
+  const el=document.getElementById( particles');
   for(let i=0;i<24;i++){
     const p=document.createElement('div');
     p.className='particle';
@@ -803,7 +803,7 @@ async function runDemo(idx){
   const out=document.getElementById('demoOutput');
   const thinking=document.getElementById('demoThinking');
   out.innerHTML=`<div class="demo-user">${prompt}</div>`;
-  thinking.classList.add('show');
+  thinking.classList.add( show');
   try{
     const res=await fetch(CORE,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -833,7 +833,7 @@ async function runDemo(idx){
       out.innerHTML+='<div style="font-size:13px;color:var(--spark)">Deploy the app to see live responses.</div>';
     }
   }catch(e){
-    thinking.classList.remove('show');
+    thinking.classList.remove( show');
     out.innerHTML+='<div style="font-size:13px;color:var(--m)">Deploy to sairn.vercel.app to enable live demos.</div>';
   }
   setTimeout(()=>demoRunning=false,1000);
@@ -841,7 +841,7 @@ async function runDemo(idx){
 
 // ── NAV ──────────────────────────────────────────────────────────
 function showPage(p){
-  document.querySelectorAll('.page').forEach(x=>{x.classList.remove('active');if(x.id==='appPage')x.style.display='none';});
+  document.querySelectorAll('.page').forEach(x=>{x.classList.remove( active');if(x.id==='appPage')x.style.display='none';});
   if(p==='app'){
     document.getElementById('appPage').classList.add('active');
     document.getElementById('appPage').style.display='flex';
@@ -893,7 +893,7 @@ let mode='write';
 let hist=[],loading=false,qn=0;
 let styleM=JSON.parse(localStorage.getItem('sairn_style')||'{"messages":[],"patterns":{}}');
 
-function getStyleCtx(){const ct=styleM.patterns.count||0;if(ct<10)return '';let s='User style: ';if(styleM.patterns.formal)s+='formal preferred. ';else if(styleM.patterns.casual)s+='casual preferred. ';return s;}
+function getStyleCtx(){const ct=styleM.patterns.count||0;if(ct<10)return '';let s='User style: ';if(styleM.patterns.formal)s+= formal preferred. ';else if(styleM.patterns.casual)s+='casual preferred. ';return s;}
 function learnMsg(u){styleM.messages.push({u:u.substring(0,100),t:Date.now()});if(styleM.messages.length>50)styleM.messages.shift();styleM.patterns.count=(styleM.patterns.count||0)+1;localStorage.setItem('sairn_style',JSON.stringify(styleM));}
 
 function switchMode(m){
@@ -918,7 +918,7 @@ function renderActs(m){
 
 function quickActSafe(btn){
   const s=btn.textContent.trim();
-  const el=document.getElementById('inp');
+  const el=document.getElementById( inp');
   el.value=s;el.dispatchEvent(new Event('input'));el.focus();
 }
 
@@ -936,7 +936,7 @@ function addBub(role,text){ if(role==='ai'){lastBubText=text;setTimeout(()=>show
   out.appendChild(d);out.scrollTop=out.scrollHeight;
 }
 function showThink(){const out=document.getElementById('output');const old=document.getElementById('thk');if(old)old.remove();const d=document.createElement('div');d.className='thinking-bub';d.id='thk';d.innerHTML='<div class="th-dots"><div class="th-dot"></div><div class="th-dot"></div><div class="th-dot"></div></div><span style="font-size:12px;color:var(--m)">Claude thinking...</span>';out.appendChild(d);out.scrollTop=out.scrollHeight;}
-function removeThink(){const t=document.getElementById('thk');if(t)t.remove();}
+function removeThink(){const t=document.getElementById( thk');if(t)t.remove();}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 function updateSugs(){const s=(MODES[mode]&&MODES[mode].sugs)||[];document.getElementById('sugRow').style.display='flex';s.forEach((txt,i)=>{const el=document.getElementById('s'+i);if(el){el.textContent=txt;el.className=i===0?'sug top':'sug';}});}
 
@@ -959,7 +959,7 @@ async function callClaude(userMsg){
 
 function send(){const el=document.getElementById('inp');const txt=el.value.trim();if(!txt||loading)return;addBub('user',txt);el.value='';el.style.height='auto';
 if(checkFlow(txt)){document.getElementById('cc')&&(document.getElementById('cc').textContent='0');return;}document.getElementById('cc').textContent='0';callClaude(txt);}
-function clearSess(){if(!confirm('Clear session?'))return;document.getElementById('output').innerHTML='<div class="bub sys">'+DEFAULT_MSG+'</div>';hist=[];qn=0;document.getElementById('statN').textContent='0';document.getElementById('sugRow').style.display='none';}
+function clearSess(){if(!confirm('Clear session?'))return;document.getElementById('output').innerHTML='<div class="bub sys">'+DEFAULT_MSG+'</div>';hist=[];qn=0;document.getElementById( statN').textContent='0';document.getElementById('sugRow').style.display='none';}
 
 const inpEl=document.getElementById('inp');
 inpEl.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px';document.getElementById('cc').textContent=this.value.length;});
@@ -974,7 +974,7 @@ const APP_ICON = '🤝';
 <script src="/sairn-sdk.js"></script>
 <script>
 (async function() {
-  const APP_ID     = 'senior';
+  const APP_ID     =  senior';
   const ACCENT     = '#6EE7B7';
   const APP_NAME   = 'SAIRN Senior';
   const PRICE_ID   = 'price_1TYlFFPAZMGVs7fE7zeWHKzE';
@@ -1059,13 +1059,13 @@ const APP_ICON = '🤝';
 </script>
 
 <script>
-const GUIDED_FLOWS=[{id:"help",emoji:"🤝",label:"Walk Me Through It",intro:`I'm here to help. What would you like help with? Take your time.`,steps:[`Can you tell me a little more? I want to make sure I understand.`],finish:`Thank you. Let me help you with that right now.`}];
+const GUIDED_FLOWS=[{id:"help",emoji:"🤝",label:"Walk Me Through It",intro:`I m here to help. What would you like help with? Take your time.`,steps:[`Can you tell me a little more? I want to make sure I understand.`],finish:`Thank you. Let me help you with that right now.`}];
 let activeFlow=null,flowStep=0;
 function startFlow(id){
   const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
   activeFlow=f;flowStep=0;
   document.querySelectorAll('.flow-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add( active'));
   addBub('ai',f.intro);
   hist.push({role:'assistant',content:f.intro});
   document.getElementById('inp').placeholder='Reply to continue...';
@@ -1125,10 +1125,10 @@ function showSaveBar(content) {
   bar.id = 'sairn-save-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
   bar.innerHTML = '<button onclick="navigator.clipboard.writeText(lastBubText).then(()=>{this.textContent=\'✓ Copied!\';setTimeout(()=>this.textContent=\'📋 Copy\',2000)})" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'
-    + '<button onclick="const s=JSON.parse(localStorage.getItem(\'sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
-    + '<button onclick="document.getElementById(\'sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
+    + '<button onclick="const s=JSON.parse(localStorage.getItem(\ sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
+    + '<button onclick="document.getElementById(\ sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
   document.body.appendChild(bar);
-  setTimeout(()=>{ const b=document.getElementById('sairn-save-bar'); if(b)b.remove(); }, 8000);
+  setTimeout(()=>{ const b=document.getElementById( sairn-save-bar'); if(b)b.remove(); }, 8000);
 }
 
 <!-- ═══ END SAIRN AUTH SDK ══════════════════════════════════════ -->

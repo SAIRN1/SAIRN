@@ -1924,7 +1924,7 @@ const DEFAULT_MSG = "✈️ SAIRN Roam is ready. Tell me where you want to go, y
 
 // ── AMBIENT CANVAS ───────────────────────────────────────────────
 (function(){
-  const canvas = document.getElementById('canvas');
+  const canvas = document.getElementById( canvas');
   const ctx = canvas.getContext('2d');
   let w, h, particles = [];
 
@@ -1984,10 +1984,10 @@ async function runDemo(idx){
   if(demoRunning) return;
   demoRunning = true;
   const prompt = DEMO_PROMPTS[idx];
-  const body = document.getElementById('demoBody');
+  const body = document.getElementById( demoBody');
   const thinking = document.getElementById('demoThink');
   body.innerHTML = `<div class="demo-q">${prompt}</div>`;
-  thinking.classList.add('show');
+  thinking.classList.add( show');
   try{
     const res = await fetch(CORE, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -2012,7 +2012,7 @@ async function runDemo(idx){
       body.innerHTML += '<div style="font-size:13px;color:var(--m);padding:8px 0;text-align:center">Deploy to sairn.vercel.app to enable live demos.</div>';
     }
   } catch(e){
-    thinking.classList.remove('show');
+    thinking.classList.remove( show');
     body.innerHTML += '<div style="font-size:13px;color:var(--m);padding:8px 0;text-align:center">Deploy to sairn.vercel.app for live responses.</div>';
   }
   setTimeout(() => demoRunning = false, 1200);
@@ -2020,7 +2020,7 @@ async function runDemo(idx){
 
 // ── NAVIGATION ────────────────────────────────────────────────────
 function showPage(p){
-  document.querySelectorAll('.page').forEach(x => { x.classList.remove('active'); if(x.id === 'appPage') x.style.display = 'none'; });
+  document.querySelectorAll('.page').forEach(x => { x.classList.remove( active'); if(x.id === 'appPage') x.style.display = 'none'; });
   if(p === 'app'){
     document.getElementById('appPage').classList.add('active');
     document.getElementById('appPage').style.display = 'flex';
@@ -2092,7 +2092,7 @@ let styleM = JSON.parse(localStorage.getItem('sairn_style') || '{"messages":[],"
 function getStyleCtx(){
   const c = styleM.patterns.count || 0; if(c < 10) return '';
   let s = 'Traveler style: ';
-  if(styleM.patterns.luxury) s += 'prefers luxury travel. ';
+  if(styleM.patterns.luxury) s +=  prefers luxury travel. ';
   else if(styleM.patterns.budget) s += 'prefers budget travel. ';
   if(styleM.patterns.adventure) s += 'enjoys adventure and off-the-beaten-path. ';
   if(styleM.patterns.food) s += 'food-focused traveler. ';
@@ -2150,7 +2150,7 @@ function qa(s){
     'Cultural tips':'Which country are you visiting? I will give you deep cultural intelligence that most guides never cover.',
     'Scam alerts':'Which city or country? I will tell you every active scam targeting tourists and exactly how to recognize and avoid each one.',
   };
-  const el = document.getElementById('inp');
+  const el = document.getElementById( inp');
   el.value = prompts[s] || s.replace(/^[^\s]+\s/,'');
   el.dispatchEvent(new Event('input'));
   el.focus();
@@ -2206,7 +2206,7 @@ function addDealCard(){
   out.appendChild(card); out.scrollTop = out.scrollHeight;
   // Update savings estimate
   const saved = relevant.length * 35;
-  document.getElementById('statSave').textContent = '$' + saved + '+';
+  document.getElementById( statSave').textContent = '$' + saved + '+';
 }
 
 function showThink(){
@@ -2216,7 +2216,7 @@ function showThink(){
   d.innerHTML = '<div class="th-d"><div class="t-d"></div><div class="t-d"></div><div class="t-d"></div></div><span style="font-size:12px;color:var(--m)">Claude planning...</span>';
   out.appendChild(d); out.scrollTop = out.scrollHeight;
 }
-function removeThink(){ const t = document.getElementById('thk'); if(t) t.remove(); }
+function removeThink(){ const t = document.getElementById( thk'); if(t) t.remove(); }
 function showToast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2400); }
 function updateSugs(){
   const s = (MODES[mode] && MODES[mode].sugs) || [];
@@ -2264,7 +2264,7 @@ function clearSess(){
   if(!confirm('Clear this session?')) return;
   document.getElementById('output').innerHTML = `<div class="msg sys">${DEFAULT_MSG}</div>`;
   hist = []; qn = 0;
-  document.getElementById('statN').textContent = '0';
+  document.getElementById( statN').textContent = '0';
   document.getElementById('statSave').textContent = '$0';
   document.getElementById('sugStrip').style.display = 'none';
 }
@@ -2287,7 +2287,7 @@ function renderActs(m){
 }
 
 function qaBtn(btn){
-  const el = document.getElementById('inp');
+  const el = document.getElementById( inp');
   el.value = btn.textContent.trim().replace(/^[^\s]+\s/,'');
   el.dispatchEvent(new Event('input')); el.focus();
 }
@@ -2316,7 +2316,7 @@ if(origActRow) origActRow.id = 'act-strip-inner';
 <script src="/sairn-sdk.js"></script>
 <script>
 (async function() {
-  const APP_ID     = 'roam';
+  const APP_ID     =  roam';
   const ACCENT     = '#38BDF8';
   const APP_NAME   = 'SAIRN Roam';
   const PRICE_ID   = 'price_1TYkz7PAZMGVs7fEFSoi6api';
@@ -2401,13 +2401,13 @@ if(origActRow) origActRow.id = 'act-strip-inner';
 </script>
 
 <script>
-const GUIDED_FLOWS=[{id:"trip",emoji:"✈️",label:"Plan My Trip",intro:`Where are you thinking of going, and roughly when?`,steps:[`How many people, and what's your approximate budget?`,`Adventure, relaxation, culture, food, or family?`],finish:`Building your personalized itinerary now.`}];
+const GUIDED_FLOWS=[{id:"trip",emoji:"✈️",label:"Plan My Trip",intro:`Where are you thinking of going, and roughly when?`,steps:[`How many people, and what s your approximate budget?`,`Adventure, relaxation, culture, food, or family?`],finish:`Building your personalized itinerary now.`}];
 let activeFlow=null,flowStep=0;
 function startFlow(id){
   const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
   activeFlow=f;flowStep=0;
   document.querySelectorAll('.flow-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add( active'));
   addBub('ai',f.intro);
   hist.push({role:'assistant',content:f.intro});
   document.getElementById('inp').placeholder='Reply to continue...';
@@ -2443,7 +2443,7 @@ async function loadFirstMessage() {
     const div = document.createElement('div');
     div.className = 'msg ai';
     div.innerHTML = '<div class="msg-avatar">✈️</div><div class="msg-bubble"><p>' + data.greeting + '</p></div>';
-    div.style.cssText = 'opacity:0;transform:translateY(10px)';
+    div.style.cssText =  opacity:0;transform:translateY(10px)';
     area.insertBefore(div, area.firstChild);
     requestAnimationFrame(()=>{ div.style.transition='opacity .5s,transform .5s'; div.style.opacity='1'; div.style.transform='translateY(0)'; });
   } catch(e) {}
@@ -2489,10 +2489,10 @@ function showSaveBar(content) {
   bar.id = 'sairn-save-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
   bar.innerHTML = '<button onclick="navigator.clipboard.writeText(lastBubText).then(()=>{this.textContent=\'✓ Copied!\';setTimeout(()=>this.textContent=\'📋 Copy\',2000)})" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'
-    + '<button onclick="const s=JSON.parse(localStorage.getItem(\'sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
-    + '<button onclick="document.getElementById(\'sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
+    + '<button onclick="const s=JSON.parse(localStorage.getItem(\ sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
+    + '<button onclick="document.getElementById(\ sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
   document.body.appendChild(bar);
-  setTimeout(()=>{ const b=document.getElementById('sairn-save-bar'); if(b)b.remove(); }, 8000);
+  setTimeout(()=>{ const b=document.getElementById( sairn-save-bar'); if(b)b.remove(); }, 8000);
 }
 
 <!-- ═══ END SAIRN AUTH SDK ══════════════════════════════════════ -->

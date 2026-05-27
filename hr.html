@@ -167,15 +167,15 @@ textarea#userInput:focus{border-color:rgba(236,72,153,0.5)}textarea#userInput::p
 </div>
 <script>
 const SYSTEM = "You are SAIRN HR, an AI people operations advisor for small businesses powered by Claude AI, part of SAIRN NEXUS by Michael L. Dibert. You serve business owners with 1-50 employees who have no HR department. Expert in hiring, onboarding, performance management, employee relations, HR compliance, compensation, and HR documents. Always ask what state they are in for compliance questions — employment law varies significantly by state. Document everything — that is the single most important HR advice. You are not an employment attorney — recommend consulting one for serious legal matters. Underpaying costs more in turnover than paying market rate.";
-const SAIRN_API = 'https://sairn.vercel.app/api/claude';
+const SAIRN_API =  https://sairn.vercel.app/api/claude';
 const APP_ID = 'hr';
 const APP_ICON = '👥';
 let messages = [], isLoading = false, lastResponse = '';
-const GUIDED_FLOWS = [{id:"hire",emoji:"🔍",label:"Hire the Right Person",intro:"Let's get you the right hire. What role are you filling and what is the most important thing this person needs to do well?",steps:["What is your budget — hourly or salary range?","Have you had this role before? What went wrong last time?","How soon do you need someone?"],finish:"Here is your hiring plan: job description, interview questions, red flags to watch for, and what to pay."},{id:"issue",emoji:"😤",label:"Handle an Employee Issue",intro:"Tell me what is happening — what is the situation with this employee?",steps:["How long has this been going on and have you addressed it before?","Is this performance, conduct, attendance, or something else?"],finish:"Here is how to handle this — what to say, how to document it, and what your options are."}];
+const GUIDED_FLOWS = [{id:"hire",emoji:"🔍",label:"Hire the Right Person",intro:"Let us get you the right hire. What role are you filling and what is the most important thing this person needs to do well?",steps:["What is your budget — hourly or salary range?","Have you had this role before? What went wrong last time?","How soon do you need someone?"],finish:"Here is your hiring plan: job description, interview questions, red flags to watch for, and what to pay."},{id:"issue",emoji:"😤",label:"Handle an Employee Issue",intro:"Tell me what is happening — what is the situation with this employee?",steps:["How long has this been going on and have you addressed it before?","Is this performance, conduct, attendance, or something else?"],finish:"Here is how to handle this — what to say, how to document it, and what your options are."}];
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById('particles');
+  const c = document.getElementById( particles');
   for(let i=0;i<18;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 4 + Math.random()*10;
@@ -200,7 +200,7 @@ function startFlow(id) {
   const f=GUIDED_FLOWS.find(x=>x.id===id); if(!f) return;
   activeFlow=f; flowStep=0;
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add( active'));
   const area=document.getElementById('chatArea');
   const empty=document.getElementById('emptyState'); if(empty) empty.remove();
   addMsg('ai',f.intro); messages.push({role:'assistant',content:f.intro});
@@ -218,13 +218,13 @@ function addMsg(role,content) {
   area.appendChild(div); area.scrollTop=area.scrollHeight;
 }
 function showTyping() {
-  const area=document.getElementById('chatArea');
+  const area=document.getElementById( chatArea');
   const div=document.createElement('div'); div.className='msg ai'; div.id='typing-indicator';
   div.innerHTML=`<div class="msg-avatar">👥</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
   area.appendChild(div); area.scrollTop=area.scrollHeight;
 }
 async function sendMessage() {
-  const inp=document.getElementById('userInput');
+  const inp=document.getElementById( userInput');
   const text=inp.value.trim(); if(!text||isLoading) return;
   inp.value=''; inp.style.height='';
   if(activeFlow!==null) {
@@ -259,7 +259,7 @@ async function loadFirstMessage() {
     const area=document.getElementById('chatArea'); const empty=document.getElementById('emptyState'); if(empty) empty.remove();
     const div=document.createElement('div'); div.className='msg ai';
     div.innerHTML=`<div class="msg-avatar">👥</div><div class="msg-bubble"><p>${data.greeting}</p></div>`;
-    div.style.cssText='opacity:0;transform:translateY(10px)'; area.appendChild(div);
+    div.style.cssText= opacity:0;transform:translateY(10px)'; area.appendChild(div);
     messages.push({role:'assistant',content:data.greeting});
     requestAnimationFrame(()=>{div.style.transition='opacity .5s,transform .5s';div.style.opacity='1';div.style.transform='translateY(0)';});
   } catch(e) {}

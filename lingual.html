@@ -767,13 +767,13 @@ const CO_API='https://sairn.vercel.app/api/checkout';
 const VR_API='https://sairn.vercel.app/api/verify';
 const CELL_KEY='sairn_lingual_sub';
 const DEFAULT_MSG='🎓 SAIRN Lingual is ready. What language would you like to practice today? Tell me the language and your level and we ll start a real conversation immediately.';
-const MODES={"converse":{"title":"Live Conversation","desc":"Real conversations with Claude — corrections built in","ph":"Ask about converse...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual, a Claude-powered language tutor. CONVERSATION MODE.\n\nYou are having a real conversation with the user in their target language.\n\nRules:\n1. Respond primarily in the TARGET language\n2. Keep it natural — not textbook perfect\n3. After each exchange, add: \"✏️ Correction:\" if they made errors (explain in English)\n4. Keep conversation flowing — ask follow-up questions\n5. Match their level: beginner = simple vocabulary; advanced = natural native speech\n6. Feel like a friendly native speaker, not a teacher\n\nStart: ask what language they want to practice and suggest a realistic scenario (café, job interview, travel situation, etc)."},"grammar":{"title":"Grammar Coach","desc":"Understand any rule, drill it until it sticks","ph":"Ask about grammar...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual Grammar Coach. GRAMMAR MODE.\n\nExplain and drill grammar rules:\n1. State the rule in ONE clear sentence\n2. Show 3 examples: easy → medium → complex\n3. Show the most common mistake and why it's wrong\n4. Give a memory trick\n5. Create a 5-question fill-in-the-blank drill\n6. Grade answers and explain mistakes\n\nFor drilling: 10 questions, grade each, explain errors, give score and next steps."},"vocab":{"title":"Vocabulary Builder","desc":"Learn words through stories, not lists","ph":"Ask about vocab...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual Vocabulary Builder. VOCAB MODE.\n\nTeach vocabulary through context:\n1. Never just list words with translations\n2. Introduce each word in 2-3 example sentences\n3. Tell a short story using all words naturally\n4. Create recall exercise: sentence with word missing\n5. Group word families and synonyms\n6. Flag false friends (looks like English but isn't)\n7. Focus on words people actually use in real conversation"},"quiz":{"title":"Adaptive Quiz","desc":"Targets your weak spots automatically","ph":"Ask about quiz me...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual Quiz Master. QUIZ MODE.\n\nAdaptive quizzing:\n1. Ask: topic, grammar area, difficulty level\n2. Start at their stated level\n3. ✅ Correct → increase difficulty slightly\n4. ❌ Incorrect → explain 3 different ways, ask similar question\n5. After 10 questions: score, weak areas identified, what to practice next\n6. Drill weak areas until mastered"},"culture":{"title":"Cultural Intelligence","desc":"What locals say — not what textbooks teach","ph":"Ask about culture...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual Cultural Intelligence. CULTURE MODE.\n\nTeach real language as actually used:\n1. Idioms: literal vs actual meaning\n2. Register: formal vs informal vs slang — when each is appropriate\n3. What's considered rude that visitors do accidentally\n4. Common expressions for specific situations\n5. Contrast with American English\n6. Regional differences within the same language\n7. Things that will surprise a first-time visitor"}};
-const DEMO_PROMPTS=["Let's practice Spanish. I am intermediate level.","Teach me 5 Japanese phrases for a restaurant","What do French people actually say vs what textbooks teach?","Quiz me on German past tense","Explain the difference between ser and estar in Spanish"];
+const MODES={"converse":{"title":"Live Conversation","desc":"Real conversations with Claude — corrections built in","ph":"Ask about converse...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual, a Claude-powered language tutor. CONVERSATION MODE.\n\nYou are having a real conversation with the user in their target language.\n\nRules:\n1. Respond primarily in the TARGET language\n2. Keep it natural — not textbook perfect\n3. After each exchange, add: \"✏️ Correction:\" if they made errors (explain in English)\n4. Keep conversation flowing — ask follow-up questions\n5. Match their level: beginner = simple vocabulary; advanced = natural native speech\n6. Feel like a friendly native speaker, not a teacher\n\nStart: ask what language they want to practice and suggest a realistic scenario (café, job interview, travel situation, etc)."},"grammar":{"title":"Grammar Coach","desc":"Understand any rule, drill it until it sticks","ph":"Ask about grammar...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual Grammar Coach. GRAMMAR MODE.\n\nExplain and drill grammar rules:\n1. State the rule in ONE clear sentence\n2. Show 3 examples: easy → medium → complex\n3. Show the most common mistake and why it s wrong\n4. Give a memory trick\n5. Create a 5-question fill-in-the-blank drill\n6. Grade answers and explain mistakes\n\nFor drilling: 10 questions, grade each, explain errors, give score and next steps."},"vocab":{"title":"Vocabulary Builder","desc":"Learn words through stories, not lists","ph":"Ask about vocab...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual Vocabulary Builder. VOCAB MODE.\n\nTeach vocabulary through context:\n1. Never just list words with translations\n2. Introduce each word in 2-3 example sentences\n3. Tell a short story using all words naturally\n4. Create recall exercise: sentence with word missing\n5. Group word families and synonyms\n6. Flag false friends (looks like English but isn t)\n7. Focus on words people actually use in real conversation"},"quiz":{"title":"Adaptive Quiz","desc":"Targets your weak spots automatically","ph":"Ask about quiz me...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual Quiz Master. QUIZ MODE.\n\nAdaptive quizzing:\n1. Ask: topic, grammar area, difficulty level\n2. Start at their stated level\n3. ✅ Correct → increase difficulty slightly\n4. ❌ Incorrect → explain 3 different ways, ask similar question\n5. After 10 questions: score, weak areas identified, what to practice next\n6. Drill weak areas until mastered"},"culture":{"title":"Cultural Intelligence","desc":"What locals say — not what textbooks teach","ph":"Ask about culture...","sugs":["Correct that response","Make it harder","Explain that rule again"],"sys":"You are SAIRN Lingual Cultural Intelligence. CULTURE MODE.\n\nTeach real language as actually used:\n1. Idioms: literal vs actual meaning\n2. Register: formal vs informal vs slang — when each is appropriate\n3. What s considered rude that visitors do accidentally\n4. Common expressions for specific situations\n5. Contrast with American English\n6. Regional differences within the same language\n7. Things that will surprise a first-time visitor"}};
+const DEMO_PROMPTS=["Let us practice Spanish. I am intermediate level.","Teach me 5 Japanese phrases for a restaurant","What do French people actually say vs what textbooks teach?","Quiz me on German past tense","Explain the difference between ser and estar in Spanish"];
 const DEMO_SYS="You are SAIRN Lingual, a Claude-powered language tutor. CONVERSATION MODE.  You are having a real conversation with the user in their target language.  Rules: 1. Respond primarily in the TARGET langua...";
 
 // ── PARTICLES ────────────────────────────────────────────────────
 (function(){
-  const el=document.getElementById('particles');
+  const el=document.getElementById( particles');
   for(let i=0;i<24;i++){
     const p=document.createElement('div');
     p.className='particle';
@@ -803,7 +803,7 @@ async function runDemo(idx){
   const out=document.getElementById('demoOutput');
   const thinking=document.getElementById('demoThinking');
   out.innerHTML=`<div class="demo-user">${prompt}</div>`;
-  thinking.classList.add('show');
+  thinking.classList.add( show');
   try{
     const res=await fetch(CORE,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -833,7 +833,7 @@ async function runDemo(idx){
       out.innerHTML+='<div style="font-size:13px;color:var(--spark)">Deploy the app to see live responses.</div>';
     }
   }catch(e){
-    thinking.classList.remove('show');
+    thinking.classList.remove( show');
     out.innerHTML+='<div style="font-size:13px;color:var(--m)">Deploy to sairn.vercel.app to enable live demos.</div>';
   }
   setTimeout(()=>demoRunning=false,1000);
@@ -841,7 +841,7 @@ async function runDemo(idx){
 
 // ── NAV ──────────────────────────────────────────────────────────
 function showPage(p){
-  document.querySelectorAll('.page').forEach(x=>{x.classList.remove('active');if(x.id==='appPage')x.style.display='none';});
+  document.querySelectorAll('.page').forEach(x=>{x.classList.remove( active');if(x.id==='appPage')x.style.display='none';});
   if(p==='app'){
     document.getElementById('appPage').classList.add('active');
     document.getElementById('appPage').style.display='flex';
@@ -893,7 +893,7 @@ let mode='converse';
 let hist=[],loading=false,qn=0;
 let styleM=JSON.parse(localStorage.getItem('sairn_style')||'{"messages":[],"patterns":{}}');
 
-function getStyleCtx(){const ct=styleM.patterns.count||0;if(ct<10)return '';let s='User style: ';if(styleM.patterns.formal)s+='formal preferred. ';else if(styleM.patterns.casual)s+='casual preferred. ';return s;}
+function getStyleCtx(){const ct=styleM.patterns.count||0;if(ct<10)return '';let s='User style: ';if(styleM.patterns.formal)s+= formal preferred. ';else if(styleM.patterns.casual)s+='casual preferred. ';return s;}
 function learnMsg(u){styleM.messages.push({u:u.substring(0,100),t:Date.now()});if(styleM.messages.length>50)styleM.messages.shift();styleM.patterns.count=(styleM.patterns.count||0)+1;localStorage.setItem('sairn_style',JSON.stringify(styleM));}
 
 function switchMode(m){
@@ -918,7 +918,7 @@ function renderActs(m){
 
 function quickActSafe(btn){
   const s=btn.textContent.trim();
-  const el=document.getElementById('inp');
+  const el=document.getElementById( inp');
   el.value=s;el.dispatchEvent(new Event('input'));el.focus();
 }
 
@@ -936,7 +936,7 @@ function addBub(role,text){ if(role==='ai'){lastBubText=text;setTimeout(()=>show
   out.appendChild(d);out.scrollTop=out.scrollHeight;
 }
 function showThink(){const out=document.getElementById('output');const old=document.getElementById('thk');if(old)old.remove();const d=document.createElement('div');d.className='thinking-bub';d.id='thk';d.innerHTML='<div class="th-dots"><div class="th-dot"></div><div class="th-dot"></div><div class="th-dot"></div></div><span style="font-size:12px;color:var(--m)">Claude thinking...</span>';out.appendChild(d);out.scrollTop=out.scrollHeight;}
-function removeThink(){const t=document.getElementById('thk');if(t)t.remove();}
+function removeThink(){const t=document.getElementById( thk');if(t)t.remove();}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 function updateSugs(){const s=(MODES[mode]&&MODES[mode].sugs)||[];document.getElementById('sugRow').style.display='flex';s.forEach((txt,i)=>{const el=document.getElementById('s'+i);if(el){el.textContent=txt;el.className=i===0?'sug top':'sug';}});}
 
@@ -959,7 +959,7 @@ async function callClaude(userMsg){
 
 function send(){const el=document.getElementById('inp');const txt=el.value.trim();if(!txt||loading)return;addBub('user',txt);el.value='';el.style.height='auto';
 if(checkFlow(txt)){document.getElementById('cc')&&(document.getElementById('cc').textContent='0');return;}document.getElementById('cc').textContent='0';callClaude(txt);}
-function clearSess(){if(!confirm('Clear session?'))return;document.getElementById('output').innerHTML='<div class="bub sys">'+DEFAULT_MSG+'</div>';hist=[];qn=0;document.getElementById('statN').textContent='0';document.getElementById('sugRow').style.display='none';}
+function clearSess(){if(!confirm('Clear session?'))return;document.getElementById('output').innerHTML='<div class="bub sys">'+DEFAULT_MSG+'</div>';hist=[];qn=0;document.getElementById( statN').textContent='0';document.getElementById('sugRow').style.display='none';}
 
 const inpEl=document.getElementById('inp');
 inpEl.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px';document.getElementById('cc').textContent=this.value.length;});
@@ -974,7 +974,7 @@ const APP_ICON = '🌍';
 <script src="/sairn-sdk.js"></script>
 <script>
 (async function() {
-  const APP_ID     = 'lingual';
+  const APP_ID     =  lingual';
   const ACCENT     = '#FF6B35';
   const APP_NAME   = 'SAIRN Lingual';
   const PRICE_ID   = 'price_1TYkzNPAZMGVs7fEBwtr2DNO';
@@ -1059,13 +1059,13 @@ const APP_ICON = '🌍';
 </script>
 
 <script>
-const GUIDED_FLOWS=[{id:"practice",emoji:"🗣️",label:"Practice Conversation",intro:`Which language, and what's your current level?`,steps:[`Goal — travel, work, family, or general fluency?`,`Focus — vocabulary, grammar, or conversational flow?`],finish:`Let's start. I'll respond in your target language.`}];
+const GUIDED_FLOWS=[{id:"practice",emoji:"🗣️",label:"Practice Conversation",intro:`Which language, and what s your current level?`,steps:[`Goal — travel, work, family, or general fluency?`,`Focus — vocabulary, grammar, or conversational flow?`],finish:`Let's start. I'll respond in your target language.`}];
 let activeFlow=null,flowStep=0;
 function startFlow(id){
   const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
   activeFlow=f;flowStep=0;
   document.querySelectorAll('.flow-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add( active'));
   addBub('ai',f.intro);
   hist.push({role:'assistant',content:f.intro});
   document.getElementById('inp').placeholder='Reply to continue...';
@@ -1125,10 +1125,10 @@ function showSaveBar(content) {
   bar.id = 'sairn-save-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
   bar.innerHTML = '<button onclick="navigator.clipboard.writeText(lastBubText).then(()=>{this.textContent=\'✓ Copied!\';setTimeout(()=>this.textContent=\'📋 Copy\',2000)})" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'
-    + '<button onclick="const s=JSON.parse(localStorage.getItem(\'sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
-    + '<button onclick="document.getElementById(\'sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
+    + '<button onclick="const s=JSON.parse(localStorage.getItem(\ sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
+    + '<button onclick="document.getElementById(\ sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
   document.body.appendChild(bar);
-  setTimeout(()=>{ const b=document.getElementById('sairn-save-bar'); if(b)b.remove(); }, 8000);
+  setTimeout(()=>{ const b=document.getElementById( sairn-save-bar'); if(b)b.remove(); }, 8000);
 }
 
 <!-- ═══ END SAIRN AUTH SDK ══════════════════════════════════════ -->

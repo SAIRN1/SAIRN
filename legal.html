@@ -711,7 +711,7 @@ Format with clear headers and bullet points for easy reading.`
     title: 'Risk Identification',
     desc: 'Claude identifies every clause that could harm you — rated by severity',
     ph: 'Paste your document and Claude will find every risk, red flag, and dangerous clause...',
-    actions: ['🔴 Critical risks', '🟡 Watch list', '💰 Hidden costs', '⏰ Time traps', '🔒 Rights you\'re waiving'],
+    actions: ['🔴 Critical risks', '🟡 Watch list', '💰 Hidden costs', '⏰ Time traps', '🔒 Rights you\ re waiving'],
     sugs: ['Which risk is most urgent?', 'How do I protect myself?', 'Is this normal for this type of contract?'],
     sys: `You are SAIRN Legal Risk Analyzer powered by Claude. RISK MODE: Find every clause that could harm the user.
 
@@ -740,7 +740,7 @@ Always add: "This is legal information, not legal advice."`
     desc: 'Know exactly what to push back on and how to negotiate it',
     ph: 'Paste the contract you want to negotiate — Claude tells you what to push back on and how...',
     actions: ['💬 Exact language to use', '🎯 Their likely response', '🛡️ Non-negotiables to keep', '⚖️ Compromise positions'],
-    sugs: ['What\'s standard in this industry?', 'Draft my counter-proposal', 'What if they say no?'],
+    sugs: ['What\ s standard in this industry?', 'Draft my counter-proposal', 'What if they say no?'],
     sys: `You are SAIRN Legal Negotiation Advisor powered by Claude. NEGOTIATION MODE: Help the user negotiate this contract.
 
 Analyze the document and provide:
@@ -798,7 +798,7 @@ Always note: "Review this draft carefully and consider having a licensed attorne
     desc: 'Ask any legal question — Claude answers in plain language, not legalese',
     ph: 'Ask any legal question. "Can my landlord do this?" "Is this enforceable?" "What are my rights?"...',
     actions: ['🏠 Tenant rights', '💼 Employee rights', '💰 Consumer rights', '🤝 Contract law', '⚖️ Small claims'],
-    sugs: ['What should I do next?', 'What evidence do I need?', 'What\'s the time limit to act?'],
+    sugs: ['What should I do next?', 'What evidence do I need?', 'What\ s the time limit to act?'],
     sys: `You are SAIRN Legal Q&A assistant powered by Claude. Q&A MODE: Answer legal questions in plain English.
 
 Rules:
@@ -830,7 +830,7 @@ const QUICK_PROMPTS = {
   'Watch list':         'What should I watch out for in this document? [PASTE DOCUMENT HERE]',
   'Hidden costs':       'Find all hidden costs, fees, and financial obligations in this document: [PASTE DOCUMENT HERE]',
   'Time traps':         'Find all deadlines, auto-renewals, and time-sensitive clauses in this document: [PASTE DOCUMENT HERE]',
-  "Rights you're waiving": 'What rights am I giving up by signing this document? [PASTE DOCUMENT HERE]',
+  "Rights you re waiving": 'What rights am I giving up by signing this document? [PASTE DOCUMENT HERE]',
   'Exact language to use':  'Give me the exact language to use when requesting changes to this contract: [PASTE CONTRACT HERE]',
   "Their likely response":  'How will they likely respond to my negotiation requests? [PASTE CONTRACT AND YOUR REQUESTS HERE]',
   'NDA':                'Draft a mutual NDA between [YOUR NAME/COMPANY] and [OTHER PARTY] covering discussions about [TOPIC]. Effective [DATE].',
@@ -847,7 +847,7 @@ const QUICK_PROMPTS = {
 };
 
 // ── STATE ─────────────────────────────────────────────────────────
-let mode = 'translate';
+let mode =  translate';
 let localHistory = [];
 let loading = false;
 let questionCount = 0;
@@ -858,7 +858,7 @@ function getStyleContext() {
   const count = styleMemory.patterns.count || 0;
   if (count < 10) return '';
   let s = 'User communication style: ';
-  if (styleMemory.patterns.formal) s += 'prefers formal professional language. ';
+  if (styleMemory.patterns.formal) s +=  prefers formal professional language. ';
   else if (styleMemory.patterns.casual) s += 'prefers plain casual language. ';
   return s;
 }
@@ -974,7 +974,7 @@ function renderActions(m) {
 function quickAct(label) {
   const clean = label.replace(/^[\S]+\s/, '').trim();
   const prompt = QUICK_PROMPTS[clean] || `Help me with: ${clean}`;
-  const el = document.getElementById('inp');
+  const el = document.getElementById( inp');
   el.value = prompt; el.dispatchEvent(new Event('input')); el.focus();
 }
 
@@ -1018,7 +1018,7 @@ function showThinking() {
   d.innerHTML = '<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span style="font-size:12px;color:var(--muted)">Reading document...</span>';
   out.appendChild(d); out.scrollTop = out.scrollHeight;
 }
-function removeThinking() { const t = document.getElementById('thinking'); if (t) t.remove(); }
+function removeThinking() { const t = document.getElementById( thinking'); if (t) t.remove(); }
 function showToast(msg) {
   const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
@@ -1094,7 +1094,7 @@ function clearSession() {
   if (!confirm('Clear this session?')) return;
   document.getElementById('output').innerHTML = '<div class="bubble system">⚖️ Session cleared. Ready for a new document or question.</div>';
   localHistory = []; questionCount = 0;
-  document.getElementById('statCount').textContent = '0';
+  document.getElementById( statCount').textContent = '0';
   document.getElementById('sugBar').style.display = 'none';
 }
 
@@ -1138,7 +1138,7 @@ function readFile(file) {
 // ── PWA ───────────────────────────────────────────────────────────
 let deferredPrompt = null;
 function initPWA() {
-  window.addEventListener('beforeinstallprompt', e => {
+  window.addEventListener( beforeinstallprompt', e => {
     e.preventDefault(); deferredPrompt = e;
     if (!isIOS() && !isInstalled() && !localStorage.getItem('sairn_legal_b'))
       setTimeout(() => { document.getElementById('installBanner').style.display = 'flex'; }, 3000);
@@ -1166,7 +1166,7 @@ const APP_ICON = '⚖️';
 <script src="/sairn-sdk.js"></script>
 <script>
 (async function() {
-  const APP_ID     = 'legal';
+  const APP_ID     =  legal';
   const ACCENT     = '#B8A36E';
   const APP_NAME   = 'SAIRN Legal';
   const PRICE_ID   = 'price_1TYlF4PAZMGVs7fEZVPqfl1L';
@@ -1251,13 +1251,13 @@ const APP_ICON = '⚖️';
 </script>
 
 <script>
-const GUIDED_FLOWS=[{id:"document",emoji:"📋",label:"Review a Document",intro:`What type of document — lease, contract, notice, or something else?`,steps:[`Who are the parties and what is it asking you to agree to?`,`Any specific section that concerns you?`],finish:`Paste the text and I'll flag anything unusual and explain what you're agreeing to.`}];
+const GUIDED_FLOWS=[{id:"document",emoji:"📋",label:"Review a Document",intro:`What type of document — lease, contract, notice, or something else?`,steps:[`Who are the parties and what is it asking you to agree to?`,`Any specific section that concerns you?`],finish:`Paste the text and I ll flag anything unusual and explain what you're agreeing to.`}];
 let activeFlow=null,flowStep=0;
 function startFlow(id){
   const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
   activeFlow=f;flowStep=0;
   document.querySelectorAll('.flow-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add( active'));
   addBub('ai',f.intro);
   hist.push({role:'assistant',content:f.intro});
   document.getElementById('inp').placeholder='Reply to continue...';
@@ -1293,7 +1293,7 @@ async function loadFirstMessage() {
     const div = document.createElement('div');
     div.className = 'msg ai';
     div.innerHTML = '<div class="msg-avatar">⚖️</div><div class="msg-bubble"><p>' + data.greeting + '</p></div>';
-    div.style.cssText = 'opacity:0;transform:translateY(10px)';
+    div.style.cssText =  opacity:0;transform:translateY(10px)';
     area.insertBefore(div, area.firstChild);
     requestAnimationFrame(()=>{ div.style.transition='opacity .5s,transform .5s'; div.style.opacity='1'; div.style.transform='translateY(0)'; });
   } catch(e) {}
@@ -1339,10 +1339,10 @@ function showSaveBar(content) {
   bar.id = 'sairn-save-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
   bar.innerHTML = '<button onclick="navigator.clipboard.writeText(lastBubText).then(()=>{this.textContent=\'✓ Copied!\';setTimeout(()=>this.textContent=\'📋 Copy\',2000)})" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'
-    + '<button onclick="const s=JSON.parse(localStorage.getItem(\'sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
-    + '<button onclick="document.getElementById(\'sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
+    + '<button onclick="const s=JSON.parse(localStorage.getItem(\ sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
+    + '<button onclick="document.getElementById(\ sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
   document.body.appendChild(bar);
-  setTimeout(()=>{ const b=document.getElementById('sairn-save-bar'); if(b)b.remove(); }, 8000);
+  setTimeout(()=>{ const b=document.getElementById( sairn-save-bar'); if(b)b.remove(); }, 8000);
 }
 
 <!-- ═══ END SAIRN AUTH SDK ══════════════════════════════════════ -->

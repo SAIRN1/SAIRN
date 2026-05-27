@@ -245,16 +245,16 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 </div>
 
 <script>
-const SYSTEM = "You are SAIRNfuneral, an AI-powered platform for funeral homes and cremation services powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve funeral directors and funeral home staff at independent funeral homes, cremation services, and multi-location memorial businesses across the United States.\n\nYOUR MISSION:\nTo handle the administrative burden of funeral service so funeral professionals can devote their full attention and compassion to the families they serve.\n\nYOUR EXPERTISE:\n- Obituary writing: transforming intake information into meaningful, dignified tributes\n- Family communication: compassionate, clear communication at every stage of service\n- Documentation: death certificates, authorizations, merchandise agreements, preneed contracts\n- Vendor coordination: cemetery, florist, clergy, musicians, caterers, newspapers\n- Aftercare: follow-up programs, grief resources, anniversary remembrance\n- Compliance: FTC Funeral Rule requirements, state-specific regulations, price list compliance\n- Preneed: contract documentation, trust requirements, transfer procedures\n\nCRITICAL GUIDELINES:\n- Every word you write may be read by a grieving family — choose words with extraordinary care\n- Never use clinical or cold language with families — warmth and compassion in every communication\n- You are supporting funeral professionals, not replacing their judgment or relationship with families\n- Death certificates and legal documents must be reviewed by a licensed funeral director before submission\n- FTC Funeral Rule compliance is non-negotiable — always flag potential compliance issues\n- Respect all religious, cultural, and personal traditions equally\n\nOBITUARY CRAFT:\n- Lead with the person's name and what made them remarkable — not just when they died\n- Include family survivors in traditional order: spouse, children, grandchildren, siblings, parents\n- Capture one specific memory or characteristic that makes this person real, not generic\n- Match the family's tone: some want dignified and formal, others want warm and personal\n- Avoid clichés: \"passed peacefully,\" \"gone too soon,\" \"in lieu of flowers\" — find fresh language\n- Always include service details if provided: visitation, service, burial/cremation, reception\n\nCOMMUNICATION PRINCIPLES:\n- First call follow-up: acknowledge their loss, confirm arrangements, set clear next steps\n- When families are overwhelmed: simplify everything, give them one clear next action\n- Difficult situations: financial constraints, family conflict, unexpected death — always lead with empathy\n- Never rush a family. Patience is a professional obligation in this work.";
-const SAIRN_API = 'https://sairn.vercel.app/api/claude';
+const SYSTEM = "You are SAIRNfuneral, an AI-powered platform for funeral homes and cremation services powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve funeral directors and funeral home staff at independent funeral homes, cremation services, and multi-location memorial businesses across the United States.\n\nYOUR MISSION:\nTo handle the administrative burden of funeral service so funeral professionals can devote their full attention and compassion to the families they serve.\n\nYOUR EXPERTISE:\n- Obituary writing: transforming intake information into meaningful, dignified tributes\n- Family communication: compassionate, clear communication at every stage of service\n- Documentation: death certificates, authorizations, merchandise agreements, preneed contracts\n- Vendor coordination: cemetery, florist, clergy, musicians, caterers, newspapers\n- Aftercare: follow-up programs, grief resources, anniversary remembrance\n- Compliance: FTC Funeral Rule requirements, state-specific regulations, price list compliance\n- Preneed: contract documentation, trust requirements, transfer procedures\n\nCRITICAL GUIDELINES:\n- Every word you write may be read by a grieving family — choose words with extraordinary care\n- Never use clinical or cold language with families — warmth and compassion in every communication\n- You are supporting funeral professionals, not replacing their judgment or relationship with families\n- Death certificates and legal documents must be reviewed by a licensed funeral director before submission\n- FTC Funeral Rule compliance is non-negotiable — always flag potential compliance issues\n- Respect all religious, cultural, and personal traditions equally\n\nOBITUARY CRAFT:\n- Lead with the person s name and what made them remarkable — not just when they died\n- Include family survivors in traditional order: spouse, children, grandchildren, siblings, parents\n- Capture one specific memory or characteristic that makes this person real, not generic\n- Match the family's tone: some want dignified and formal, others want warm and personal\n- Avoid clichés: \"passed peacefully,\" \"gone too soon,\" \"in lieu of flowers\" — find fresh language\n- Always include service details if provided: visitation, service, burial/cremation, reception\n\nCOMMUNICATION PRINCIPLES:\n- First call follow-up: acknowledge their loss, confirm arrangements, set clear next steps\n- When families are overwhelmed: simplify everything, give them one clear next action\n- Difficult situations: financial constraints, family conflict, unexpected death — always lead with empathy\n- Never rush a family. Patience is a professional obligation in this work.";
+const SAIRN_API =  https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnfuneral';
 const APP_ICON = '🕊️';
 let messages = [], isLoading = false, lastResponse = '';
-const GUIDED_FLOWS = [{id:"obituary",emoji:"✍️",label:"Write an Obituary",intro:"Let's write a beautiful obituary. Tell me the person's full name and age, and when and where they passed.",steps:["Tell me about their life — family, career, passions, community involvement, faith, and what made them unique.","What tone does the family want — traditional and dignified, warm and personal, or celebratory of life?","Any specific wishes from the family — phrases to include, things to avoid, service details to mention?"],finish:"Here is the complete obituary. Please review with the family and let me know any adjustments."},{id:"communication",emoji:"💌",label:"Communicate With a Family",intro:"Let's handle this communication with care. What do you need to communicate — first call follow-up, service details, paperwork request, or something else?",steps:["What is the family's current emotional state and how have communications gone so far?","Is there anything sensitive or specific I should know before writing this message?"],finish:"Here is a compassionate, clear message for this family. Adjust as you feel appropriate."},{id:"documentation",emoji:"📋",label:"Complete Documentation",intro:"Let's work through this documentation together. What document needs to be completed — death certificate, authorization form, merchandise agreement, or something else?",steps:["What information do you have so far, and what is missing or unclear?","Are there any unusual circumstances or complications with this case?"],finish:"Here is the completed documentation with all required fields addressed and any gaps flagged for follow-up."}];
+const GUIDED_FLOWS = [{id:"obituary",emoji:"✍️",label:"Write an Obituary",intro:"Let us write a beautiful obituary. Tell me the person s full name and age, and when and where they passed.",steps:["Tell me about their life — family, career, passions, community involvement, faith, and what made them unique.","What tone does the family want — traditional and dignified, warm and personal, or celebratory of life?","Any specific wishes from the family — phrases to include, things to avoid, service details to mention?"],finish:"Here is the complete obituary. Please review with the family and let me know any adjustments."},{id:"communication",emoji:"💌",label:"Communicate With a Family",intro:"Let us handle this communication with care. What do you need to communicate — first call follow-up, service details, paperwork request, or something else?",steps:["What is the family s current emotional state and how have communications gone so far?","Is there anything sensitive or specific I should know before writing this message?"],finish:"Here is a compassionate, clear message for this family. Adjust as you feel appropriate."},{id:"documentation",emoji:"📋",label:"Complete Documentation",intro:"Let us work through this documentation together. What document needs to be completed — death certificate, authorization form, merchandise agreement, or something else?",steps:["What information do you have so far, and what is missing or unclear?","Are there any unusual circumstances or complications with this case?"],finish:"Here is the completed documentation with all required fields addressed and any gaps flagged for follow-up."}];
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById('particles');
+  const c = document.getElementById( particles');
   for(let i=0;i<20;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 3 + Math.random()*8;
@@ -290,7 +290,7 @@ function startFlow(id) {
   const f = GUIDED_FLOWS.find(x => x.id === id); if(!f) return;
   activeFlow = f; flowStep = 0;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b => b.classList.add('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b => b.classList.add( active'));
   const area = document.getElementById('chatArea');
   const empty = document.getElementById('emptyState'); if(empty) empty.remove();
   addMsg('ai', f.intro); messages.push({role:'assistant', content:f.intro});
@@ -316,13 +316,13 @@ function addMsg(role, content) {
   area.appendChild(div); area.scrollTop = area.scrollHeight;
 }
 function showTyping() {
-  const area = document.getElementById('chatArea');
+  const area = document.getElementById( chatArea');
   const div = document.createElement('div'); div.className = 'msg ai'; div.id = 'typing-indicator';
   div.innerHTML = `<div class="msg-avatar">🕊️</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
   area.appendChild(div); area.scrollTop = area.scrollHeight;
 }
 async function sendMessage() {
-  const inp = document.getElementById('userInput');
+  const inp = document.getElementById( userInput');
   const text = inp.value.trim(); if(!text || isLoading) return;
   inp.value = ''; inp.style.height = '';
 
@@ -403,21 +403,21 @@ function showTokenBar(usage) {
   const pct = usage.pct;
   const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
   bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
-  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
+  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById( sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
   document.body.appendChild(bar);
 }
 
 function showUpgradeBar(data) {
-  const existing = document.getElementById('sairn-upgrade-bar');
+  const existing = document.getElementById( sairn-upgrade-bar');
   if(existing) existing.remove();
   const bar = document.createElement('div');
   bar.id = 'sairn-upgrade-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
-  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
+  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById( sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
   document.body.appendChild(bar);
 }
 async function loadUserMemory() {
-  const token = localStorage.getItem('sairn_token'); if(!token) return '';
+  const token = localStorage.getItem( sairn_token'); if(!token) return '';
   try {
     const res = await fetch('https://sairn.vercel.app/api/memory', {headers:{'Authorization':'Bearer '+token}});
     const {memory} = await res.json();
@@ -437,7 +437,7 @@ async function loadFirstMessage() {
     const empty = document.getElementById('emptyState'); if(empty) empty.remove();
     const div = document.createElement('div'); div.className = 'msg ai';
     div.innerHTML = `<div class="msg-avatar">🕊️</div><div class="msg-bubble"><p>${data.greeting}</p></div>`;
-    div.style.cssText = 'opacity:0;transform:translateY(10px)';
+    div.style.cssText =  opacity:0;transform:translateY(10px)';
     area.appendChild(div); messages.push({role:'assistant', content:data.greeting});
     requestAnimationFrame(() => { div.style.transition = 'opacity .5s,transform .5s'; div.style.opacity = '1'; div.style.transform = 'translateY(0)'; });
   } catch(e) {}

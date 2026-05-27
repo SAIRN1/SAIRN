@@ -261,16 +261,16 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 </div>
 
 <script>
-const SYSTEM = "You are SAIRNscape, an AI business management platform for landscaping companies powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve landscaping business owners with 1-50 employees — lawn care, landscape maintenance, design/build, and property services.\n\nYOUR EXPERTISE:\n- Job estimating: accurate pricing for mowing, mulching, cleanups, planting, design/build, irrigation, snow removal\n- Crew scheduling: route optimization, time management, labor allocation\n- Job costing: true profitability analysis, overhead allocation, margin calculation\n- Client communication: proposals, follow-ups, complaints, upsells, renewals\n- Business analysis: revenue per crew hour, customer lifetime value, seasonal planning\n- Pricing strategy: competitive rates, when to raise prices, how to price new services\n\nINDUSTRY KNOWLEDGE:\n- Typical crew rates: $45-80/hr per crew member loaded cost\n- Standard markup: materials + 25-35%\n- Target gross margin: 45-55% for maintenance, 35-45% for design/build\n- Revenue per crew hour target: $150-200/hr for healthy landscaping business\n- Mowing pricing: $35-75 residential, $100-500+ commercial\n- Mulching: $75-100/yard installed\n- Seasonal cleanup: $200-800 residential depending on property size\n- Red flag: if a job takes more than 40% of its revenue to complete in labor alone, it needs repricing\n\nYOUR STYLE:\n- Talk like someone who has run a landscaping business and knows the grind\n- Be specific with numbers — landscapers make decisions in the field, not in spreadsheets\n- Always think about crew efficiency — time is the only resource they can't get back\n- Flag underpriced accounts immediately — most landscapers undercharge their oldest customers";
-const SAIRN_API = 'https://sairn.vercel.app/api/claude';
+const SYSTEM = "You are SAIRNscape, an AI business management platform for landscaping companies powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve landscaping business owners with 1-50 employees — lawn care, landscape maintenance, design/build, and property services.\n\nYOUR EXPERTISE:\n- Job estimating: accurate pricing for mowing, mulching, cleanups, planting, design/build, irrigation, snow removal\n- Crew scheduling: route optimization, time management, labor allocation\n- Job costing: true profitability analysis, overhead allocation, margin calculation\n- Client communication: proposals, follow-ups, complaints, upsells, renewals\n- Business analysis: revenue per crew hour, customer lifetime value, seasonal planning\n- Pricing strategy: competitive rates, when to raise prices, how to price new services\n\nINDUSTRY KNOWLEDGE:\n- Typical crew rates: $45-80/hr per crew member loaded cost\n- Standard markup: materials + 25-35%\n- Target gross margin: 45-55% for maintenance, 35-45% for design/build\n- Revenue per crew hour target: $150-200/hr for healthy landscaping business\n- Mowing pricing: $35-75 residential, $100-500+ commercial\n- Mulching: $75-100/yard installed\n- Seasonal cleanup: $200-800 residential depending on property size\n- Red flag: if a job takes more than 40% of its revenue to complete in labor alone, it needs repricing\n\nYOUR STYLE:\n- Talk like someone who has run a landscaping business and knows the grind\n- Be specific with numbers — landscapers make decisions in the field, not in spreadsheets\n- Always think about crew efficiency — time is the only resource they can t get back\n- Flag underpriced accounts immediately — most landscapers undercharge their oldest customers";
+const SAIRN_API =  https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnscape';
 const APP_ICON = '🌿';
 let messages = [], isLoading = false, lastResponse = '';
-const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Property",intro:"Let's build your estimate. Tell me about the property — size, services needed, and anything special about it.",steps:["What services are they asking for — mowing, mulching, cleanup, planting, design?","How many crew members would you send and how many hours?","Any materials — mulch, plants, seed, equipment rental?"],finish:"Here is your complete estimate with labor, materials, overhead, profit margin, and recommended price. I will also flag anything that could affect your margin."},{id:"schedule",emoji:"🗓️",label:"Build My Week Schedule",intro:"Let's optimize your crew schedule. How many crew members do you have available this week?",steps:["How many jobs are on your list for this week — give me the locations or neighborhoods.","Any time constraints — specific days clients need service, or jobs that must go first?"],finish:"Here is your optimized weekly schedule with route grouping to minimize drive time and maximize billable hours."},{id:"costing",emoji:"💰",label:"Analyze a Job's Profitability",intro:"Let's see if this job is actually making you money. What is the account — residential or commercial, and what do you charge them?",steps:["How many crew hours does it take each visit, and how often do you service them?","What are your direct costs — labor rate, fuel, materials per visit?"],finish:"Here is the true profitability of this account — and whether you should reprice, keep, or let it go."}];
+const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Property",intro:"Let us build your estimate. Tell me about the property — size, services needed, and anything special about it.",steps:["What services are they asking for — mowing, mulching, cleanup, planting, design?","How many crew members would you send and how many hours?","Any materials — mulch, plants, seed, equipment rental?"],finish:"Here is your complete estimate with labor, materials, overhead, profit margin, and recommended price. I will also flag anything that could affect your margin."},{id:"schedule",emoji:"🗓️",label:"Build My Week Schedule",intro:"Let us optimize your crew schedule. How many crew members do you have available this week?",steps:["How many jobs are on your list for this week — give me the locations or neighborhoods.","Any time constraints — specific days clients need service, or jobs that must go first?"],finish:"Here is your optimized weekly schedule with route grouping to minimize drive time and maximize billable hours."},{id:"costing",emoji:"💰",label:"Analyze a Job s Profitability",intro:"Let us see if this job is actually making you money. What is the account — residential or commercial, and what do you charge them?",steps:["How many crew hours does it take each visit, and how often do you service them?","What are your direct costs — labor rate, fuel, materials per visit?"],finish:"Here is the true profitability of this account — and whether you should reprice, keep, or let it go."}];
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById('particles');
+  const c = document.getElementById( particles');
   for(let i=0;i<20;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 3 + Math.random()*8;
@@ -295,7 +295,7 @@ function startFlow(id) {
   const f=GUIDED_FLOWS.find(x=>x.id===id); if(!f) return;
   activeFlow=f; flowStep=0;
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add( active'));
   const area=document.getElementById('chatArea');
   const empty=document.getElementById('emptyState'); if(empty) empty.remove();
   addMsg('ai',f.intro); messages.push({role:'assistant',content:f.intro});
@@ -317,13 +317,13 @@ function addMsg(role,content) {
   area.appendChild(div); area.scrollTop=area.scrollHeight;
 }
 function showTyping() {
-  const area=document.getElementById('chatArea');
+  const area=document.getElementById( chatArea');
   const div=document.createElement('div'); div.className='msg ai'; div.id='typing-indicator';
   div.innerHTML=`<div class="msg-avatar">🌿</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
   area.appendChild(div); area.scrollTop=area.scrollHeight;
 }
 async function sendMessage() {
-  const inp = document.getElementById('userInput');
+  const inp = document.getElementById( userInput');
   const text = inp.value.trim(); if(!text || isLoading) return;
   inp.value = ''; inp.style.height = '';
 
@@ -404,21 +404,21 @@ function showTokenBar(usage) {
   const pct = usage.pct;
   const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
   bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
-  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
+  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById( sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
   document.body.appendChild(bar);
 }
 
 function showUpgradeBar(data) {
-  const existing = document.getElementById('sairn-upgrade-bar');
+  const existing = document.getElementById( sairn-upgrade-bar');
   if(existing) existing.remove();
   const bar = document.createElement('div');
   bar.id = 'sairn-upgrade-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
-  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
+  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById( sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
   document.body.appendChild(bar);
 }
 async function loadUserMemory() {
-  const token=localStorage.getItem('sairn_token'); if(!token) return '';
+  const token=localStorage.getItem( sairn_token'); if(!token) return '';
   try { const res=await fetch('https://sairn.vercel.app/api/memory',{headers:{'Authorization':'Bearer '+token}}); const {memory}=await res.json(); if(!memory?.facts?.length) return ''; return '\n\nClient and property history you have on record:\n'+memory.facts.slice(-20).map(f=>'- '+f.fact).join('\n'); } catch(e) { return ''; }
 }
 async function loadFirstMessage() {
@@ -429,7 +429,7 @@ async function loadFirstMessage() {
     const area=document.getElementById('chatArea'); const empty=document.getElementById('emptyState'); if(empty) empty.remove();
     const div=document.createElement('div'); div.className='msg ai';
     div.innerHTML=`<div class="msg-avatar">🌿</div><div class="msg-bubble"><p>${data.greeting}</p></div>`;
-    div.style.cssText='opacity:0;transform:translateY(10px)'; area.appendChild(div);
+    div.style.cssText= opacity:0;transform:translateY(10px)'; area.appendChild(div);
     messages.push({role:'assistant',content:data.greeting});
     requestAnimationFrame(()=>{div.style.transition='opacity .5s,transform .5s';div.style.opacity='1';div.style.transform='translateY(0)';});
   } catch(e) {}
