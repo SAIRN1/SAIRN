@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
+
    SAIRN Mind · SAIRN NEXUS Cell 19
    Michael L. Dibert · SAIRN Technologies · 2026
 ═══════════════════════════════════════════════════════════════ */
@@ -157,7 +158,7 @@ textarea#userInput::placeholder{color:var(--d)}
     <div class="feat-grid">
       <div class="feat-card"><div class="feat-emoji">💭</div><div class="feat-title">Reflect</div><div class="feat-desc">Help me process something on my mind</div></div>
       <div class="feat-card"><div class="feat-emoji">😮‍💨</div><div class="feat-title">Breathe</div><div class="feat-desc">Guide me through a breathing or grounding exercise</div></div>
-      <div class="feat-card"><div class="feat-emoji">😟</div><div class="feat-title">Anxiety</div><div class="feat-desc">I'm feeling anxious or overwhelmed</div></div>
+      <div class="feat-card"><div class="feat-emoji">😟</div><div class="feat-title">Anxiety</div><div class="feat-desc">I am feeling anxious or overwhelmed</div></div>
       <div class="feat-card"><div class="feat-emoji">😴</div><div class="feat-title">Sleep</div><div class="feat-desc">Help me wind down and sleep better</div></div>
       <div class="feat-card"><div class="feat-emoji">🌱</div><div class="feat-title">Growth</div><div class="feat-desc">Help me build a healthier mental habit</div></div>
       <div class="feat-card"><div class="feat-emoji">⚡</div><div class="feat-title">Powered by Claude AI</div><div class="feat-desc">The most capable AI assistant in the world — tuned specifically for Mind. Not a chatbot. Not a search engine. An expert.</div></div>
@@ -226,7 +227,7 @@ textarea#userInput::placeholder{color:var(--d)}
           <span class="mode-icon">😮‍💨</span>
           <span class="mode-label">Breathe</span>
         </button>
-        <button class="mode-btn" onclick="setMode('Anxiety',`I'm feeling anxious or overwhelmed`)">
+        <button class="mode-btn" onclick="setMode('Anxiety',`I am feeling anxious or overwhelmed`)">
           <span class="mode-icon">😟</span>
           <span class="mode-label">Anxiety</span>
         </button>
@@ -252,7 +253,7 @@ textarea#userInput::placeholder{color:var(--d)}
       <div class="empty-suggestions">
         <button class="suggestion" onclick="useSuggestion(this)">Help me process something on my mind</button>
         <button class="suggestion" onclick="useSuggestion(this)">Guide me through a breathing or grounding exercise</button>
-        <button class="suggestion" onclick="useSuggestion(this)">I'm feeling anxious or overwhelmed</button>
+        <button class="suggestion" onclick="useSuggestion(this)">I am feeling anxious or overwhelmed</button>
       </div>
     </div>
   </div>
@@ -450,7 +451,7 @@ const GUIDED_FLOWS = [
       id: 'anxious',
       label: '😟 Work Through Anxiety',
       emoji: '😟',
-      intro: `I am here. Let's work through this together. On a scale of 1-10, how anxious are you feeling right now?`,
+      intro: `I am here. Let us work through this together. On a scale of 1-10, how anxious are you feeling right now?`,
       steps: ["Where do you feel it in your body — chest, stomach, shoulders, somewhere else?", "Is there a specific situation or thought that is driving this, or does it feel more general?"],
       currentStep: 0,
       finish: `Thank you for sharing that. Let us work through this together — I will guide you step by step.`
@@ -459,8 +460,8 @@ const GUIDED_FLOWS = [
       id: 'breathe',
       label: '😮‍💨 Guided Breathing',
       emoji: '😮‍💨',
-      intro: `Let's do this together. Find a comfortable position — sitting or lying down, whatever feels right. When you are ready, tell me and we will start.`,
-      steps: ["Good. Close your eyes if that feels comfortable. We"re going to do box breathing — inhale for 4 counts, hold for 4, exhale for 4, hold for 4. Ready to begin?", "Inhale slowly... 2... 3... 4. Now hold... 2... 3... 4. Exhale slowly... 2... 3... 4. Hold... 2... 3... 4. How do you feel?", "Let us do two more rounds. You"re doing great. Inhale... 2... 3... 4..."],
+      intro: `Let us do this together. Find a comfortable position — sitting or lying down, whatever feels right. When you are ready, tell me and we will start.`,
+      steps: ["Good. Close your eyes if that feels comfortable. We are going to do box breathing — inhale for 4 counts, hold for 4, exhale for 4, hold for 4. Ready to begin?", "Inhale slowly... 2... 3... 4. Now hold... 2... 3... 4. Exhale slowly... 2... 3... 4. Hold... 2... 3... 4. How do you feel?", "Let us do two more rounds. You"re doing great. Inhale... 2... 3... 4..."],
       currentStep: 0,
       finish: `Well done. Take a moment. Notice how your body feels compared to a few minutes ago.`
     }
