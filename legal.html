@@ -830,7 +830,7 @@ const QUICK_PROMPTS = {
   'Watch list':         'What should I watch out for in this document? [PASTE DOCUMENT HERE]',
   'Hidden costs':       'Find all hidden costs, fees, and financial obligations in this document: [PASTE DOCUMENT HERE]',
   'Time traps':         'Find all deadlines, auto-renewals, and time-sensitive clauses in this document: [PASTE DOCUMENT HERE]',
-  "Rights you re waiving": 'What rights am I giving up by signing this document? [PASTE DOCUMENT HERE]',
+  "Rights you are waiving": 'What rights am I giving up by signing this document? [PASTE DOCUMENT HERE]',
   'Exact language to use':  'Give me the exact language to use when requesting changes to this contract: [PASTE CONTRACT HERE]',
   "Their likely response":  'How will they likely respond to my negotiation requests? [PASTE CONTRACT AND YOUR REQUESTS HERE]',
   'NDA':                'Draft a mutual NDA between [YOUR NAME/COMPANY] and [OTHER PARTY] covering discussions about [TOPIC]. Effective [DATE].',
@@ -857,7 +857,7 @@ let styleMemory = JSON.parse(localStorage.getItem('sairn_style') || '{"messages"
 function getStyleContext() {
   const count = styleMemory.patterns.count || 0;
   if (count < 10) return '';
-  let s = 'User communication style: ';
+  let us = 'User communication style: ';
   if (styleMemory.patterns.formal) s +=  prefers formal professional language. ';
   else if (styleMemory.patterns.casual) s += 'prefers plain casual language. ';
   return s;
@@ -1251,7 +1251,7 @@ const APP_ICON = '⚖️';
 </script>
 
 <script>
-const GUIDED_FLOWS=[{id:"document",emoji:"📋",label:"Review a Document",intro:`What type of document — lease, contract, notice, or something else?`,steps:[`Who are the parties and what is it asking you to agree to?`,`Any specific section that concerns you?`],finish:`Paste the text and I ll flag anything unusual and explain what you're agreeing to.`}];
+const GUIDED_FLOWS=[{id:"document",emoji:"📋",label:"Review a Document",intro:`What type of document — lease, contract, notice, or something else?`,steps:[`Who are the parties and what is it asking you to agree to?`,`Any specific section that concerns you?`],finish:`Paste the text and I will flag anything unusual and explain what you're agreeing to.`}];
 let activeFlow=null,flowStep=0;
 function startFlow(id){
   const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;

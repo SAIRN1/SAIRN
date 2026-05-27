@@ -271,7 +271,7 @@ YOUR ROLE:
 - Day planning: prioritize tasks, schedule blocks, identify conflicts
 - Family coordination: help manage multiple people's schedules
 - To-do management: capture, organize, and prioritize everything that needs doing
-- Evening reviews: reflect on the day, prep for tomorrow, identify what didn't get done
+- Evening reviews: reflect on the day, prep for tomorrow, identify what did not get done
 - Reminders and follow-ups: help people remember what matters
 
 YOUR STYLE:
@@ -292,7 +292,7 @@ MORNING BRIEFING FORMAT:
 
 EVENING REVIEW FORMAT:
 1. What went well today
-2. What didn't get done (no judgment)
+2. What did not get done (no judgment)
 3. Top 3 priorities for tomorrow
 4. Wind-down thought
 
@@ -366,7 +366,7 @@ function addMsg(role, content) {
   }
   area.appendChild(div);
   area.scrollTop = area.scrollHeight;
-  if(role==='ai'){lastResponse=content;showSaveBar(content);}
+  if(role=== ai'){lastResponse=content;showSaveBar(content);}
 }
 
 function showTyping() {
@@ -379,7 +379,7 @@ function showTyping() {
 }
 
 async function sendMessage() {
-  const inp = document.getElementById('userInput');
+  const inp = document.getElementById( userInput');
   const text = inp.value.trim();
   if(!text || isLoading) return;
   if(activeFlow !== null && advanceFlow(text)) {
@@ -450,7 +450,7 @@ async function loadFirstMessage() {
     div.className = 'msg ai';
     div.innerHTML = `<div class="msg-avatar">${APP_ICON}</div><div class="msg-bubble"><p>${greeting}</p></div>`;
     div.style.opacity = '0';
-    div.style.transform = 'translateY(10px)';
+    div.style.transform =  translateY(10px)';
     area.appendChild(div);
     messages.push({ role: 'assistant', content: greeting });
     requestAnimationFrame(() => {
@@ -468,9 +468,9 @@ const GUIDED_FLOWS = [
       label: '✅ Plan My Day',
       emoji: '✅',
       intro: `Let's get today organized. What are all the things on your plate today — work, personal, errands, everything? Brain dump it all.`,
-      steps: ["Are there any hard deadlines or time-sensitive items in that list?", "What"s the one thing that absolutely has to get done today no matter what?"],
+      steps: ["Are there any hard deadlines or time-sensitive items in that list?", "What is the one thing that absolutely has to get done today no matter what?"],
       currentStep: 0,
-      finish: `Here's your prioritized day plan — what to do first, what to batch, and what can wait.`
+      finish: `Here is your prioritized day plan — what to do first, what to batch, and what can wait.`
     }
 ];
 
@@ -483,7 +483,7 @@ function startFlow(flowId) {
   activeFlow = flow;
   flowStep = 0;
   document.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.flow-btn[data-flow="' + flowId + '"]').forEach(b => b.classList.add('active'));
+  document.querySelectorAll('.flow-btn[data-flow="' + flowId + '"]').forEach(b => b.classList.add( active'));
   const area = document.getElementById('chatArea');
   const empty = document.getElementById('emptyState');
   if (empty) empty.remove();
@@ -558,9 +558,9 @@ function showSaveBar(content) {
     <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>
     <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>
     <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#60A5FA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔗 Share</button>
-    <button onclick="document.getElementById('sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>`;
+    <button onclick="document.getElementById( sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>`;
   document.body.appendChild(bar);
-  setTimeout(() => { if(document.getElementById('sairn-save-bar')) document.getElementById('sairn-save-bar').remove(); }, 8000);
+  setTimeout(() => { if(document.getElementById( sairn-save-bar')) document.getElementById('sairn-save-bar').remove(); }, 8000);
 }
 
 let lastResponse = '';

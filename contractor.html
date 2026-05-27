@@ -167,15 +167,15 @@ textarea#userInput:focus{border-color:rgba(249,115,22,0.5)}textarea#userInput::p
 </div>
 <script>
 const SYSTEM = "You are SAIRN Contractor, an AI business partner for self-employed tradespeople and freelancers powered by Claude AI, part of SAIRN NEXUS by Michael L. Dibert. You serve solo operators — plumbers, electricians, handymen, painters, landscapers, and freelancers. Expert in job estimating (materials, labor, overhead, markup), invoicing, expense tracking, mileage logging, quarterly tax estimates, cash flow, and business strategy. Talk plain — like a smart friend in the trades. Always include overhead (15-20%) and profit margin (20-30%) in estimates. Labor rates: plumber $85-150/hr, electrician $80-130/hr, GC $65-100/hr, painter $45-75/hr, landscaper $50-80/hr. If they are undercharging, tell them directly.";
-const SAIRN_API = 'https://sairn.vercel.app/api/claude';
+const SAIRN_API =  https://sairn.vercel.app/api/claude';
 const APP_ID = 'contractor';
 const APP_ICON = '🔧';
 let messages = [], isLoading = false, lastResponse = '';
-const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Job",intro:"Let's build your estimate. What's the job — describe it or tell me what you saw.",steps:["What materials will you need and roughly how much?","How many hours do you think it will take?","Any travel or equipment costs?"],finish:"Here's your complete estimate with labor, materials, overhead, and recommended price."},{id:"invoice",emoji:"🧾",label:"Create an Invoice",intro:"Let's get you paid. What's the client's name and what did you do for them?",steps:["What's the total and do you want to itemize it?","What's their email or phone number?"],finish:"Your invoice is ready. Want me to write the message to send with it?"}];
+const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Job",intro:"Let us build your estimate. What is the job — describe it or tell me what you saw.",steps:["What materials will you need and roughly how much?","How many hours do you think it will take?","Any travel or equipment costs?"],finish:"Here is your complete estimate with labor, materials, overhead, and recommended price."},{id:"invoice",emoji:"🧾",label:"Create an Invoice",intro:"Let us get you paid. What is the client's name and what did you do for them?",steps:["What is the total and do you want to itemize it?","What is their email or phone number?"],finish:"Your invoice is ready. Want me to write the message to send with it?"}];
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById('particles');
+  const c = document.getElementById( particles');
   for(let i=0;i<18;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 4 + Math.random()*10;
@@ -200,7 +200,7 @@ function startFlow(id) {
   const f=GUIDED_FLOWS.find(x=>x.id===id); if(!f) return;
   activeFlow=f; flowStep=0;
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add( active'));
   const area=document.getElementById('chatArea');
   const empty=document.getElementById('emptyState'); if(empty) empty.remove();
   addMsg('ai',f.intro); messages.push({role:'assistant',content:f.intro});
@@ -218,13 +218,13 @@ function addMsg(role,content) {
   area.appendChild(div); area.scrollTop=area.scrollHeight;
 }
 function showTyping() {
-  const area=document.getElementById('chatArea');
+  const area=document.getElementById( chatArea');
   const div=document.createElement('div'); div.className='msg ai'; div.id='typing-indicator';
   div.innerHTML=`<div class="msg-avatar">🔧</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
   area.appendChild(div); area.scrollTop=area.scrollHeight;
 }
 async function sendMessage() {
-  const inp=document.getElementById('userInput');
+  const inp=document.getElementById( userInput');
   const text=inp.value.trim(); if(!text||isLoading) return;
   inp.value=''; inp.style.height='';
   if(activeFlow!==null) {
@@ -259,7 +259,7 @@ async function loadFirstMessage() {
     const area=document.getElementById('chatArea'); const empty=document.getElementById('emptyState'); if(empty) empty.remove();
     const div=document.createElement('div'); div.className='msg ai';
     div.innerHTML=`<div class="msg-avatar">🔧</div><div class="msg-bubble"><p>${data.greeting}</p></div>`;
-    div.style.cssText='opacity:0;transform:translateY(10px)'; area.appendChild(div);
+    div.style.cssText= opacity:0;transform:translateY(10px)'; area.appendChild(div);
     messages.push({role:'assistant',content:data.greeting});
     requestAnimationFrame(()=>{div.style.transition='opacity .5s,transform .5s';div.style.opacity='1';div.style.transform='translateY(0)';});
   } catch(e) {}

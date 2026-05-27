@@ -2091,7 +2091,7 @@ let styleM = JSON.parse(localStorage.getItem('sairn_style') || '{"messages":[],"
 
 function getStyleCtx(){
   const c = styleM.patterns.count || 0; if(c < 10) return '';
-  let s = 'Traveler style: ';
+  let us = 'Traveler style: ';
   if(styleM.patterns.luxury) s +=  prefers luxury travel. ';
   else if(styleM.patterns.budget) s += 'prefers budget travel. ';
   if(styleM.patterns.adventure) s += 'enjoys adventure and off-the-beaten-path. ';
@@ -2401,7 +2401,7 @@ if(origActRow) origActRow.id = 'act-strip-inner';
 </script>
 
 <script>
-const GUIDED_FLOWS=[{id:"trip",emoji:"✈️",label:"Plan My Trip",intro:`Where are you thinking of going, and roughly when?`,steps:[`How many people, and what s your approximate budget?`,`Adventure, relaxation, culture, food, or family?`],finish:`Building your personalized itinerary now.`}];
+const GUIDED_FLOWS=[{id:"trip",emoji:"✈️",label:"Plan My Trip",intro:`Where are you thinking of going, and roughly when?`,steps:[`How many people, and what is your approximate budget?`,`Adventure, relaxation, culture, food, or family?`],finish:`Building your personalized itinerary now.`}];
 let activeFlow=null,flowStep=0;
 function startFlow(id){
   const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;

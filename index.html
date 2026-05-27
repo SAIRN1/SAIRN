@@ -109,7 +109,7 @@ body{background:#080808;color:#F5F2EB;font-family:'DM Sans',sans-serif;min-heigh
 </footer>
 
 <script>
-const GUIDED_FLOWS=[{id:"write",emoji:"✍️",label:"Write Something",intro:`What are you writing — email, essay, social post, or letter?`,steps:[`Who is the audience and what s the goal?`,`What's the core message you want to get across?`],finish:`Here's a draft. Tell me what to adjust.`}];
+const GUIDED_FLOWS=[{id:"write",emoji:"✍️",label:"Write Something",intro:`What are you writing — email, essay, social post, or letter?`,steps:[`Who is the audience and what is the goal?`,`What's the core message you want to get across?`],finish:`Here's a draft. Tell me what to adjust.`}];
 let activeFlow=null,flowStep=0;
 function startFlow(id){
   const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
