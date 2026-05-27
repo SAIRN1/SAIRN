@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIRN Legal — AI Legal Intelligence Powered by Claude</title>
+<meta name="description" content="SAIRN Legal understands every contract, lease, and legal document you'll ever sign. Plain English explanations, risk identification, and document drafting — for $19.99/month.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0A0B14">
+<link rel="manifest" href="/manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   SAIRN Legal — Cell 11
+   SAIRN NEXUS Platform · Michael L. Dibert · SAIRN Technologies
+   
+   The legal intelligence layer every person on earth needs
+   and almost none of them can afford.
+═══════════════════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#0A0B14;--surface:#111220;--card:#181929;--faint:#1A1B2E;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --legal:#2563EB;--legal2:#1D4ED8;--legal-glow:rgba(37,99,235,0.15);
+  --gold:#F59E0B;--gold2:#D97706;
+  --pulse:#00E5C4;--spark:#FF7B7B;--glow:#7C6FFF;
+  --text:#F0EEF8;--muted:#8B8AA0;--dim:#4A4963;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;overflow-x:hidden}
+
+/* ── NAV ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:58px;background:rgba(10,11,20,0.95);backdrop-filter:blur(24px);border-bottom:1px solid var(--border)}
+.nav-brand{display:flex;align-items:center;gap:10px;cursor:pointer}
+.nav-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--legal),var(--legal2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.nav-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text)}
+.nav-name span{color:var(--legal);margin-left:1px}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-badge{font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.3);color:var(--legal);letter-spacing:0.5px}
+.nav-btn{padding:8px 20px;border-radius:100px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+.nav-btn.outline{background:transparent;color:var(--text);border:1px solid var(--border2)}
+.nav-btn.outline:hover{border-color:rgba(37,99,235,0.5)}
+.nav-btn.primary{background:var(--legal);color:#fff}
+.nav-btn.primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(37,99,235,0.35)}
+
+/* ── PAGES ── */
+.page{display:none;min-height:100vh;padding-top:58px}
+.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:58px;flex-direction:column}
+#appPage.active{display:flex}
+
+/* ══════════════════════════════════════════════════════════
+   MARKETING WEBSITE
+══════════════════════════════════════════════════════════ */
+
+/* HERO */
+.hero{padding:90px 24px 80px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 500px at 50% 30%,rgba(37,99,235,0.08) 0%,transparent 70%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);border-radius:100px;padding:6px 18px;font-size:11px;color:var(--legal);font-weight:600;margin-bottom:28px;letter-spacing:1px}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--pulse);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero-title{font-family:'Syne',sans-serif;font-size:clamp(44px,7vw,88px);font-weight:800;letter-spacing:-2px;line-height:0.95;margin-bottom:24px}
+.hero-title em{font-style:normal;color:var(--legal)}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--muted);max-width:600px;margin:0 auto 48px;font-weight:300;line-height:1.7}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-hero{padding:16px 36px;border-radius:100px;font-size:16px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+.btn-hero.primary{background:var(--legal);color:#fff}
+.btn-hero.primary:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(37,99,235,0.4)}
+.btn-hero.ghost{background:transparent;color:var(--text);border:1px solid var(--border2)}
+.btn-hero.ghost:hover{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.04)}
+.hero-disclaimer{font-size:11px;color:var(--dim);margin-top:16px}
+.hero-disclaimer strong{color:var(--muted)}
+
+/* TRUST STRIP */
+.trust-strip{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;justify-content:center;gap:40px;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.trust-item::before{content:'✓';color:var(--pulse);font-weight:700}
+
+/* PAIN SECTION */
+.pain-section{padding:80px 24px;max-width:1100px;margin:0 auto;text-align:center}
+.section-label{font-size:11px;font-weight:600;color:var(--legal);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-1px;margin-bottom:16px;line-height:1.05}
+.section-sub{color:var(--muted);font-size:17px;font-weight:300;max-width:560px;margin:0 auto 52px;line-height:1.7}
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.pain-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;text-align:left;transition:all 0.3s}
+.pain-card:hover{border-color:rgba(37,99,235,0.2);transform:translateY(-3px)}
+.pain-icon{font-size:28px;margin-bottom:14px}
+.pain-title{font-size:15px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.pain-body{font-size:13px;color:var(--muted);line-height:1.7}
+.pain-cost{display:inline-block;margin-top:12px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(255,123,123,0.1);color:var(--spark);border:1px solid rgba(255,123,123,0.2)}
+
+/* FEATURES */
+.features-section{background:var(--faint);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:80px 24px}
+.features-inner{max-width:1100px;margin:0 auto}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:52px}
+.feature-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:32px;position:relative;overflow:hidden;transition:all 0.3s}
+.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--legal),transparent);opacity:0;transition:opacity 0.3s}
+.feature-card:hover{border-color:rgba(37,99,235,0.25);transform:translateY(-4px)}
+.feature-card:hover::before{opacity:1}
+.feature-num{font-size:11px;font-weight:600;color:var(--legal);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+.feature-icon{width:52px;height:52px;border-radius:14px;background:var(--legal-glow);border:1px solid rgba(37,99,235,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
+.feature-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:10px;letter-spacing:-0.3px}
+.feature-body{font-size:13px;color:var(--muted);line-height:1.75}
+.feature-example{margin-top:14px;background:var(--faint);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);border-left:3px solid var(--legal)}
+.feature-example strong{color:var(--legal);display:block;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+
+/* COMPARISON */
+.comparison-section{padding:80px 24px;max-width:900px;margin:0 auto;text-align:center}
+.comparison-table{width:100%;border-collapse:collapse;margin-top:48px;font-size:14px}
+.comparison-table th{padding:12px 16px;text-align:center;font-size:11px;font-weight:600;color:var(--dim);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.comparison-table td{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:center;color:var(--muted)}
+.comparison-table td:first-child{text-align:left;color:var(--text);font-weight:500}
+.comparison-table tr.highlight td{background:rgba(37,99,235,0.07);color:var(--text)}
+.comparison-table tr.highlight td:first-child{color:var(--legal);font-weight:600}
+.check{color:var(--pulse);font-weight:700;font-size:16px}
+.cross{color:var(--spark);font-size:16px}
+.price-big{color:var(--legal);font-weight:700;font-size:18px}
+
+/* PRICING */
+.pricing-section{background:var(--faint);border-top:1px solid var(--border);padding:80px 24px}
+.pricing-inner{max-width:960px;margin:0 auto;text-align:center}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:52px}
+.plan{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;position:relative;text-align:left}
+.plan.featured{border-color:var(--legal);background:linear-gradient(160deg,rgba(37,99,235,0.08),var(--card))}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--legal);color:#fff;font-size:11px;font-weight:600;padding:4px 18px;border-radius:100px;white-space:nowrap}
+.plan-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px}
+.plan-price{font-family:'Syne',sans-serif;font-size:52px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+.plan-price sup{font-size:22px;font-weight:500;vertical-align:top;margin-top:12px;display:inline-block}
+.plan-period{color:var(--muted);font-size:13px;margin-bottom:28px}
+.plan-features{list-style:none;margin-bottom:28px}
+.plan-features li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.plan-features li:last-child{border-bottom:none}
+.plan-features li span{color:var(--pulse);font-weight:700;flex-shrink:0;margin-top:2px}
+.plan-btn{width:100%;padding:14px;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;border:none}
+.plan-btn.outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.plan-btn.outline:hover{border-color:var(--legal);color:var(--legal)}
+.plan-btn.solid{background:var(--legal);color:#fff}
+.plan-btn.solid:hover{box-shadow:0 8px 28px rgba(37,99,235,0.4);transform:translateY(-1px)}
+
+/* CTA */
+.cta-section{padding:120px 24px;text-align:center;position:relative;overflow:hidden}
+.cta-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 700px 400px at 50% 50%,rgba(37,99,235,0.08) 0%,transparent 70%);pointer-events:none}
+.cta-title{font-family:'Syne',sans-serif;font-size:clamp(40px,6vw,72px);font-weight:800;letter-spacing:-2px;margin-bottom:20px;line-height:1}
+.cta-sub{color:var(--muted);font-size:18px;font-weight:300;margin-bottom:40px;max-width:520px;margin-left:auto;margin-right:auto}
+
+/* FOOTER */
+footer{padding:32px 40px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.footer-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--text)}
+.footer-brand span{color:var(--legal)}
+.footer-copy{font-size:12px;color:var(--dim)}
+.footer-legal{font-size:11px;color:var(--dim);text-align:right;line-height:1.6}
+
+/* ══════════════════════════════════════════════════════════
+   PAYWALL
+══════════════════════════════════════════════════════════ */
+#paywall{min-height:calc(100vh - 58px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;position:relative;overflow:hidden}
+#paywall::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 700px 500px at 50% 40%,rgba(37,99,235,0.08) 0%,transparent 70%)}
+.pw-eyebrow{font-size:11px;font-weight:600;color:var(--legal);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;text-align:center}
+.pw-headline{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:6px;text-align:center;letter-spacing:-0.5px}
+.pw-sub{font-size:14px;color:var(--muted);margin-bottom:36px;text-align:center}
+.pw-card{background:var(--card);border:1px solid rgba(37,99,235,0.3);border-radius:22px;padding:40px;max-width:440px;width:100%;position:relative}
+.pw-popular{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--legal),#4F46E5);color:#fff;font-size:11px;font-weight:600;padding:4px 20px;border-radius:100px;white-space:nowrap}
+.pw-price{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;letter-spacing:-3px;line-height:1;margin-bottom:4px;text-align:center}
+.pw-price sup{font-size:24px;font-weight:500;vertical-align:top;margin-top:12px;display:inline-block}
+.pw-period{color:var(--muted);font-size:13px;margin-bottom:28px;text-align:center}
+.pw-compare{background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.15);border-radius:10px;padding:12px 16px;margin-bottom:24px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6}
+.pw-compare strong{color:var(--legal)}
+.pw-features{list-style:none;margin-bottom:28px}
+.pw-features li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.pw-features li:last-child{border-bottom:none}
+.pw-features li .ck{color:var(--pulse);font-weight:700;flex-shrink:0;margin-top:1px}
+.pw-email{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:13px 20px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:12px;transition:border-color 0.2s}
+.pw-email:focus{border-color:rgba(37,99,235,0.5)}
+.pw-email::placeholder{color:var(--dim)}
+.pw-btn{width:100%;padding:16px;border-radius:100px;border:none;background:linear-gradient(135deg,var(--legal),#4F46E5);color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-bottom:12px}
+.pw-btn:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(37,99,235,0.4)}
+.pw-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.pw-note{font-size:11px;color:var(--dim);text-align:center}
+.pw-error{color:var(--spark);font-size:12px;margin-top:8px;text-align:center;display:none}
+
+/* ══════════════════════════════════════════════════════════
+   THE APP
+══════════════════════════════════════════════════════════ */
+#appShell{display:none;flex-direction:column;flex:1;overflow:hidden}
+#appShell.show{display:flex}
+.app-topbar{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:46px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.app-brand{display:flex;align-items:center;gap:8px;cursor:pointer}
+.app-brand-icon{width:26px;height:26px;background:linear-gradient(135deg,var(--legal),#4F46E5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px}
+.app-brand-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--text)}
+.app-brand-name span{color:var(--legal)}
+.app-topbar-right{display:flex;align-items:center;gap:8px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--pulse);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,196,0.4)}70%{box-shadow:0 0 0 6px rgba(0,229,196,0)}}
+.tb-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.2);color:var(--legal)}
+.tb-btn{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.tb-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
+
+.app-body{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* SIDEBAR */
+.sidebar{width:200px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sb-section{padding:12px 14px 4px;font-size:10px;font-weight:600;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;border-radius:8px;margin:2px 6px;transition:background 0.15s;font-size:12px;color:var(--muted);border:none;background:transparent;width:calc(100% - 12px);text-align:left;font-family:'DM Sans',sans-serif}
+.sb-btn:hover{background:var(--faint);color:var(--text)}
+.sb-btn.active{background:rgba(37,99,235,0.12);color:var(--text);border:1px solid rgba(37,99,235,0.15)}
+.sb-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sb-btn.active .sb-icon{background:rgba(37,99,235,0.2)}
+.sb-btn:not(.active) .sb-icon{background:var(--faint)}
+.sb-label{font-size:12px;font-weight:500}
+.sb-sub{font-size:10px;color:var(--dim)}
+.sb-divider{height:1px;background:var(--border);margin:8px 12px}
+.sb-stat{display:flex;justify-content:space-between;padding:4px 14px;font-size:11px}
+.sb-stat-label{color:var(--dim)}
+.sb-stat-val{color:var(--legal);font-weight:600}
+.sb-clear{margin:6px 8px;padding:7px;border-radius:8px;border:1px solid rgba(255,123,123,0.2);background:rgba(255,123,123,0.05);color:var(--spark);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;width:calc(100% - 16px)}
+
+/* MAIN */
+.app-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-height:0}
+.mode-header{padding:12px 18px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between}
+.mode-info h3{font-size:15px;font-weight:600;margin-bottom:2px}
+.mode-info p{font-size:11px;color:var(--muted)}
+.mode-tags{display:flex;gap:5px;flex-shrink:0}
+.mtag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500}
+.mtag-legal{background:rgba(37,99,235,0.1);color:var(--legal);border:1px solid rgba(37,99,235,0.2)}
+.mtag-ai{background:rgba(0,229,196,0.08);color:var(--pulse);border:1px solid rgba(0,229,196,0.15)}
+
+/* DROP ZONE */
+#dropZone{margin:12px 16px;padding:24px;border:2px dashed rgba(37,99,235,0.35);border-radius:14px;text-align:center;cursor:pointer;background:rgba(37,99,235,0.04);transition:all 0.2s;flex-shrink:0}
+#dropZone:hover,#dropZone.over{border-color:var(--legal);background:rgba(37,99,235,0.08)}
+#dropZone.hidden{display:none}
+
+/* OUTPUT */
+.output{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:13px;min-height:0}
+.output::-webkit-scrollbar{width:3px}
+.output::-webkit-scrollbar-thumb{background:var(--faint);border-radius:2px}
+.bubble{max-width:92%;padding:14px 18px;border-radius:14px;font-size:14px;line-height:1.8;animation:bubIn 0.2s ease}
+.bubble.user{align-self:flex-end;background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.25);border-bottom-right-radius:4px}
+.bubble.ai{align-self:flex-start;background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px;max-width:96%}
+.bubble.system{align-self:center;background:rgba(37,99,235,0.07);border:1px solid rgba(37,99,235,0.15);border-radius:10px;font-size:12px;color:var(--legal);padding:8px 16px;text-align:center}
+.blabel{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;opacity:0.6}
+.bubble.ai .blabel{color:var(--legal)}
+.bubble.user .blabel{color:var(--pulse);text-align:right}
+@keyframes bubIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.thinking{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;border-bottom-left-radius:4px;align-self:flex-start;animation:bubIn 0.2s ease}
+.dots{display:flex;gap:3px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--legal);animation:bounce 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+.copy-btn{margin-top:8px;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:color 0.15s;margin-right:6px}
+.copy-btn:hover{color:var(--legal)}
+.risk-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;margin-top:8px;margin-right:4px}
+.risk-high{background:rgba(255,123,123,0.1);color:var(--spark);border:1px solid rgba(255,123,123,0.2)}
+.risk-med{background:rgba(245,158,11,0.1);color:var(--gold);border:1px solid rgba(245,158,11,0.2)}
+.risk-low{background:rgba(0,229,196,0.08);color:var(--pulse);border:1px solid rgba(0,229,196,0.15)}
+
+/* SUGGESTIONS */
+.sug-bar{padding:7px 12px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;flex-wrap:wrap;flex-shrink:0;min-height:38px}
+.sug{font-size:11px;padding:4px 11px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--faint);color:var(--muted);transition:all 0.12s;white-space:nowrap}
+.sug:hover{border-color:var(--legal);color:var(--text)}
+.sug.top{border-color:rgba(37,99,235,0.3);background:rgba(37,99,235,0.08);color:var(--legal)}
+
+/* INPUT */
+.input-area{padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.input-wrap{flex:1;position:relative}
+textarea#inp{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 40px 11px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;resize:none;outline:none;min-height:44px;max-height:140px;transition:border-color 0.2s;line-height:1.5}
+textarea#inp::placeholder{color:var(--dim)}
+textarea#inp:focus{border-color:rgba(37,99,235,0.45)}
+.cc{position:absolute;right:10px;bottom:8px;font-size:9px;color:var(--dim);pointer-events:none}
+.send-btn{width:42px;height:42px;border-radius:11px;border:none;background:var(--legal);cursor:pointer;font-size:16px;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s,opacity 0.15s}
+.send-btn:hover{transform:scale(1.07)}
+.send-btn:active{transform:scale(0.93)}
+.send-btn:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.act-btns{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.act-btn{font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.12s;font-family:'DM Sans',sans-serif}
+.act-btn:hover{border-color:var(--legal);color:var(--legal);background:rgba(37,99,235,0.06)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--legal);color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* DISCLAIMER BAR */
+.disclaimer-bar{background:rgba(245,158,11,0.06);border-bottom:1px solid rgba(245,158,11,0.15);padding:7px 18px;font-size:11px;color:var(--gold);text-align:center;flex-shrink:0}
+
+/* INSTALL BANNERS */
+#installBanner{display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1a1535,#0d1f3c);border-top:1px solid rgba(37,99,235,0.3);padding:14px 18px;z-index:9998;align-items:center;justify-content:space-between;gap:12px}
+#iosBanner{display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;border-top:1px solid rgba(37,99,235,0.3);padding:14px 18px;z-index:9998}
+
+@media(max-width:640px){
+  .sidebar{display:none}
+  .hero-title{letter-spacing:-1px}
+  .output{padding:12px}
+  .bubble{font-size:13px;padding:11px 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand" onclick="showPage('home')">
+    <div class="nav-icon">⚖️</div>
+    <div class="nav-name">SAIRN<span>Legal</span></div>
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge">SAIRN NEXUS · Cell 11</span>
+    <button class="nav-btn outline" onclick="showPage('home')">Home</button>
+    <button class="nav-btn primary" onclick="showPage('app')">Launch App →</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     HOME PAGE
+══════════════════════════════════════════════════ -->
+<div class="page active" id="homePage">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge"><span class="hero-badge-dot"></span>Powered by Claude · No lawyers required</div>
+    <h1 class="hero-title">Every contract.<br><em>Finally understood.</em></h1>
+    <p class="hero-sub">SAIRN Legal reads every lease, contract, and legal document you'll ever sign — and tells you in plain English exactly what it means, what could hurt you, and what to do about it.</p>
+    <div class="hero-actions">
+      <button class="btn-hero primary" onclick="showPage('app')">Start for free — no credit card</button>
+      <button class="btn-hero ghost" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">See what it does</button>
+    </div>
+    <div class="hero-disclaimer"><strong>Not legal advice.</strong> SAIRN Legal is AI-powered legal intelligence — not a licensed attorney. For complex matters, consult a qualified lawyer.</div>
+  </section>
+
+  <!-- TRUST -->
+  <div class="trust-strip">
+    <span class="trust-item">Plain English translations</span>
+    <span class="trust-item">Risk identification</span>
+    <span class="trust-item">Negotiation tactics</span>
+    <span class="trust-item">Document drafting</span>
+    <span class="trust-item">Instant answers</span>
+    <span class="trust-item">Claude AI — best-in-class</span>
+  </div>
+
+  <!-- PAIN -->
+  <div class="pain-section">
+    <div class="section-label">The Problem</div>
+    <h2 class="section-title">Legal documents are written<br>to confuse you on purpose.</h2>
+    <p class="section-sub">Attorneys charge $300–$600/hour to explain what you just signed. Most people sign without understanding. That ends today.</p>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-icon">🏠</div>
+        <div class="pain-title">Lease agreements</div>
+        <div class="pain-body">Hidden fees, automatic renewal clauses, maintenance responsibilities buried in paragraph 14. Most tenants discover these after it's too late.</div>
+        <span class="pain-cost">Attorney review: $500–$800</span>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">💼</div>
+        <div class="pain-title">Employment contracts</div>
+        <div class="pain-body">Non-compete clauses that follow you for years, IP assignment language that claims your side projects, severance conditions designed to favor the employer.</div>
+        <span class="pain-cost">Attorney review: $600–$1,200</span>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">📱</div>
+        <div class="pain-title">Terms of service</div>
+        <div class="pain-body">You click "I agree" without reading 47 pages that grant companies rights to your data, your content, and your legal recourse. Every time.</div>
+        <span class="pain-cost">You: $0 · Your data: priceless</span>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">🏥</div>
+        <div class="pain-title">Medical & insurance forms</div>
+        <div class="pain-body">Consent forms, insurance policies, and billing agreements written in language designed to minimize what providers owe you and maximize what you owe them.</div>
+        <span class="pain-cost">Attorney review: $400–$700</span>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">🤝</div>
+        <div class="pain-title">Business contracts</div>
+        <div class="pain-body">Vendor agreements, partnership contracts, and client agreements with liability clauses, indemnification language, and payment terms that can destroy small businesses.</div>
+        <span class="pain-cost">Attorney review: $800–$2,000</span>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">⚖️</div>
+        <div class="pain-title">Demand letters & disputes</div>
+        <div class="pain-body">When someone wrongs you, a well-drafted demand letter is often all it takes. Most people never send one because they don't know how to write it.</div>
+        <span class="pain-cost">Attorney drafting: $400–$600</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="features-section" id="features">
+    <div class="features-inner">
+      <div class="section-label">What SAIRN Legal Does</div>
+      <h2 class="section-title" style="text-align:center">Five legal superpowers.<br>One subscription.</h2>
+      <p class="section-sub">Each mode powered by Claude — the most sophisticated legal text AI ever built.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-num">Mode 01</div>
+          <div class="feature-icon">📖</div>
+          <h3 class="feature-title">Plain English Translation</h3>
+          <p class="feature-body">Paste any legal document. SAIRN Legal reads the entire thing and rewrites every section in language a normal person understands — without losing any meaning.</p>
+          <div class="feature-example"><strong>Example prompt</strong>"Translate this lease into plain English section by section."</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">Mode 02</div>
+          <div class="feature-icon">🚨</div>
+          <h3 class="feature-title">Risk Identification</h3>
+          <p class="feature-body">Claude identifies every clause that could harm you — automatic renewals, hidden fees, liability exposure, unfair termination conditions — and explains exactly why each one is a risk.</p>
+          <div class="feature-example"><strong>Example prompt</strong>"What are the risky clauses in this employment contract?"</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">Mode 03</div>
+          <div class="feature-icon">🤝</div>
+          <h3 class="feature-title">Negotiation Intelligence</h3>
+          <p class="feature-body">Know what you can push back on, what language to use, what they'll likely accept, and what red lines to hold. Walk into every contract negotiation knowing more than the other side expects.</p>
+          <div class="feature-example"><strong>Example prompt</strong>"What can I negotiate in this vendor contract and how?"</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">Mode 04</div>
+          <div class="feature-icon">✍️</div>
+          <h3 class="feature-title">Document Drafting</h3>
+          <p class="feature-body">NDAs, demand letters, cease and desist notices, small claims filings, lease termination letters, contractor agreements, simple wills — drafted in minutes, not hours.</p>
+          <div class="feature-example"><strong>Example prompt</strong>"Draft a demand letter to my landlord for the $1,200 security deposit they're refusing to return."</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">Mode 05</div>
+          <div class="feature-icon">💬</div>
+          <h3 class="feature-title">Legal Q&A</h3>
+          <p class="feature-body">Ask any legal question in plain English. "Can my employer do this?" "Is this clause enforceable?" "What are my rights here?" Claude answers in language you understand — not legalese.</p>
+          <div class="feature-example"><strong>Example prompt</strong>"My landlord entered my apartment without notice. Is that legal?"</div>
+        </div>
+        <div class="feature-card" style="background:linear-gradient(160deg,rgba(37,99,235,0.08),var(--card));border-color:rgba(37,99,235,0.2)">
+          <div class="feature-num">Built on</div>
+          <div class="feature-icon" style="background:rgba(124,111,255,0.1);border-color:rgba(124,111,255,0.2)">⬡</div>
+          <h3 class="feature-title">SAIRN NEXUS Core</h3>
+          <p class="feature-body">SAIRN Legal inherits the full SAIRN NEXUS platform — style learning that remembers how you communicate, 8-language support, cross-device sync, and the 6-layer privacy firewall protecting everything you share.</p>
+          <div class="feature-example" style="border-left-color:var(--glow)"><strong>Your documents are private</strong>Nothing you paste is stored, shared, or sold. Claude reads and forgets.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARISON -->
+  <div class="comparison-section">
+    <div class="section-label">The Math</div>
+    <h2 class="section-title">$19.99/month vs $400/hour.</h2>
+    <p class="section-sub">One contract review at a law firm costs more than a full year of SAIRN Legal.</p>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th style="text-align:left">What you need</th>
+          <th>Law Firm</th>
+          <th>LegalZoom</th>
+          <th>SAIRN Legal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="highlight">
+          <td>SAIRN Legal Pro</td>
+          <td>—</td>
+          <td>—</td>
+          <td class="price-big">$19.99/mo</td>
+        </tr>
+        <tr><td>Lease review</td><td>$500–$800</td><td>$150</td><td class="check">✓ Included</td></tr>
+        <tr><td>Employment contract review</td><td>$600–$1,200</td><td>$200</td><td class="check">✓ Included</td></tr>
+        <tr><td>NDA drafting</td><td>$400–$600</td><td>$149</td><td class="check">✓ Included</td></tr>
+        <tr><td>Demand letter</td><td>$400–$600</td><td>$179</td><td class="check">✓ Included</td></tr>
+        <tr><td>Unlimited questions</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓ Unlimited</td></tr>
+        <tr><td>Plain English translation</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓ Any document</td></tr>
+        <tr><td>Negotiation guidance</td><td>$300+/hr</td><td class="cross">✗</td><td class="check">✓ Included</td></tr>
+        <tr><td>Risk identification</td><td>$300+/hr</td><td class="cross">✗</td><td class="check">✓ Included</td></tr>
+        <tr><td>Available 24/7</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓ Always</td></tr>
+        <tr><td>Annual cost</td><td>$2,000–$10,000+</td><td>Per document</td><td class="check price-big">$239.88</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PRICING -->
+  <div class="pricing-section">
+    <div class="pricing-inner">
+      <div class="section-label">Pricing</div>
+      <h2 class="section-title">Less than one hour<br>with a paralegal.</h2>
+      <div class="pricing-grid">
+        <div class="plan">
+          <div class="plan-name">Starter</div>
+          <div class="plan-price"><sup>$</sup>0</div>
+          <div class="plan-period">forever free</div>
+          <ul class="plan-features">
+            <li><span>✓</span>10 legal questions per day</li>
+            <li><span>✓</span>Plain English translation</li>
+            <li><span>✓</span>Basic risk identification</li>
+            <li><span>✓</span>Up to 2,000 word documents</li>
+          </ul>
+          <button class="plan-btn outline" onclick="showPage('app')">Start free</button>
+        </div>
+        <div class="plan featured">
+          <div class="plan-badge">Most popular · Best value</div>
+          <div class="plan-name">Pro</div>
+          <div class="plan-price"><sup>$</sup>19<span style="font-size:26px">.99</span></div>
+          <div class="plan-period">per month · cancel anytime</div>
+          <ul class="plan-features">
+            <li><span>✓</span>Unlimited legal questions</li>
+            <li><span>✓</span>All 5 modes — full access</li>
+            <li><span>✓</span>Unlimited document length</li>
+            <li><span>✓</span>Full document drafting</li>
+            <li><span>✓</span>Negotiation intelligence</li>
+            <li><span>✓</span>8-language support</li>
+            <li><span>✓</span>Cross-device sync</li>
+            <li><span>✓</span>6-layer privacy firewall</li>
+          </ul>
+          <button class="plan-btn solid" onclick="showPage('app')">Get Pro — $19.99/mo</button>
+        </div>
+        <div class="plan">
+          <div class="plan-name">Business</div>
+          <div class="plan-price"><sup>$</sup>49<span style="font-size:26px">.99</span></div>
+          <div class="plan-period">per month · 5 users included</div>
+          <ul class="plan-features">
+            <li><span>✓</span>Everything in Pro</li>
+            <li><span>✓</span>5 team members</li>
+            <li><span>✓</span>Shared document library</li>
+            <li><span>✓</span>Priority Claude processing</li>
+            <li><span>✓</span>Dedicated support</li>
+          </ul>
+          <button class="plan-btn outline">Talk to us</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <h2 class="cta-title">Stop signing things<br>you don't understand.</h2>
+    <p class="cta-sub">SAIRN Legal is free to start. No credit card. No commitment. Just finally understanding what you're agreeing to.</p>
+    <button class="btn-hero primary" onclick="showPage('app')" style="font-size:18px;padding:18px 44px">Launch SAIRN Legal — free</button>
+  </div>
+
+  <footer>
+    <div class="footer-brand">SAIRN<span>Legal</span></div>
+    <div class="footer-copy">© 2026 SAIRN Technologies · Michael L. Dibert · All rights reserved</div>
+    <div class="footer-legal">Not legal advice. AI-powered legal intelligence only.<br>For complex matters, consult a licensed attorney.</div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     APP PAGE
+══════════════════════════════════════════════════ -->
+<div class="page" id="appPage">
+
+  <!-- PAYWALL -->
+  <div id="paywall">
+    <div class="pw-eyebrow">SAIRN Legal · Cell 11 · SAIRN NEXUS Platform</div>
+    <h2 class="pw-headline">Legal intelligence for everyone.</h2>
+    <p class="pw-sub">Understand every document. Know every risk. Draft anything.</p>
+    <div class="pw-card">
+      <div class="pw-popular">Most popular · Cancel anytime</div>
+      <div class="pw-price"><sup>$</sup>19<span style="font-size:30px">.99</span></div>
+      <div class="pw-period">per month · unlimited legal intelligence</div>
+      <div class="pw-compare">One attorney consultation costs <strong>$300–$600/hour</strong>.<br>SAIRN Legal costs <strong>$19.99/month</strong> for unlimited access.</div>
+      <ul class="pw-features">
+        <li><span class="ck">✓</span>Unlimited questions — any legal topic</li>
+        <li><span class="ck">✓</span>Plain English translation of any document</li>
+        <li><span class="ck">✓</span>Risk identification and red flag alerts</li>
+        <li><span class="ck">✓</span>Negotiation intelligence and tactics</li>
+        <li><span class="ck">✓</span>Document drafting — NDAs, demand letters, more</li>
+        <li><span class="ck">✓</span>Legal Q&A in plain language</li>
+        <li><span class="ck">✓</span>8-language support including voice</li>
+        <li><span class="ck">✓</span>6-layer privacy firewall — documents stay private</li>
+      </ul>
+      <input class="pw-email" type="email" id="pwEmail" placeholder="your@email.com (optional)">
+      <button class="pw-btn" id="subBtn" onclick="startCheckout()">Start for $19.99/month</button>
+      <div class="pw-error" id="pwError"></div>
+      <p class="pw-note">🔒 Secured by Stripe · Cancel anytime · No hidden fees</p>
+    </div>
+  </div>
+
+  <!-- APP SHELL -->
+  <div id="appShell">
+    <div class="disclaimer-bar">⚠️ <strong>Legal information only — not legal advice.</strong> For complex legal matters, always consult a licensed attorney in your jurisdiction.</div>
+    <div class="app-topbar">
+      <div class="app-brand" onclick="showPage('home')">
+        <div class="app-brand-icon">⚖️</div>
+        <div class="app-brand-name">SAIRN<span>Legal</span></div>
+      </div>
+      <div class="app-topbar-right">
+        <span class="status-dot"></span>
+        <span class="tb-badge">PRO</span>
+        <span class="tb-badge" id="langBadge" style="display:none">EN</span>
+        <button class="tb-btn" onclick="showAccount()">Account</button>
+        <button class="tb-btn" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="sb-section">Modes</div>
+        <button class="sb-btn active" id="btn-translate" onclick="switchMode('translate')">
+          <div class="sb-icon">📖</div>
+          <div><div class="sb-label">Translate</div><div class="sb-sub">Plain English</div></div>
+        </button>
+        <button class="sb-btn" id="btn-risk" onclick="switchMode('risk')">
+          <div class="sb-icon">🚨</div>
+          <div><div class="sb-label">Risk Finder</div><div class="sb-sub">Identify dangers</div></div>
+        </button>
+        <button class="sb-btn" id="btn-negotiate" onclick="switchMode('negotiate')">
+          <div class="sb-icon">🤝</div>
+          <div><div class="sb-label">Negotiate</div><div class="sb-sub">Push back smart</div></div>
+        </button>
+        <button class="sb-btn" id="btn-draft" onclick="switchMode('draft')">
+          <div class="sb-icon">✍️</div>
+          <div><div class="sb-label">Draft Doc</div><div class="sb-sub">Create documents</div></div>
+        </button>
+        <button class="sb-btn" id="btn-qa" onclick="switchMode('qa')">
+          <div class="sb-icon">💬</div>
+          <div><div class="sb-label">Legal Q&A</div><div class="sb-sub">Ask anything</div></div>
+        </button>
+        <div class="sb-divider"></div>
+        <div class="sb-section">Session</div>
+        <div class="sb-stat"><span class="sb-stat-label">Questions</span><span class="sb-stat-val" id="statCount">0</span></div>
+        <div class="sb-stat"><span class="sb-stat-label">Plan</span><span class="sb-stat-val">Pro</span></div>
+        <div class="sb-divider"></div>
+        <button class="sb-clear" onclick="clearSession()">🗑 Clear session</button>
+      </div>
+
+      <!-- MAIN -->
+      <div class="app-main">
+        <div class="mode-header">
+          <div class="mode-info">
+            <h3 id="modeTitle">Document Translation</h3>
+            <p id="modeDesc">Paste any legal document — Claude rewrites it in plain English</p>
+          </div>
+          <div class="mode-tags" id="modeTags">
+            <span class="mtag mtag-legal">Claude AI</span>
+            <span class="mtag mtag-ai">Live</span>
+          </div>
+        </div>
+
+        <!-- DROP ZONE -->
+        <div id="dropZone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="handleDrop(event)" onclick="document.getElementById('fileInput').click()">
+          <div style="font-size:28px;margin-bottom:8px">📄</div>
+          <div style="font-size:14px;font-weight:600;color:var(--legal);margin-bottom:3px">Drop your document here</div>
+          <div style="font-size:12px;color:var(--muted)">PDF, Word, or plain text · Claude reads everything</div>
+          <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" style="display:none" onchange="handleFile(event)">
+        </div>
+
+        <div class="output" id="output">
+          <div class="bubble system">⚖️ SAIRN Legal is ready. Paste a document, drop a file, or ask any legal question. Everything you share is private and protected by our 6-layer firewall.</div>
+        </div>
+
+        <div class="sug-bar" id="sugBar" style="display:none">
+          <span class="sug top" id="s0" onclick="useSug(0)"></span>
+          <span class="sug" id="s1" onclick="useSug(1)"></span>
+          <span class="sug" id="s2" onclick="useSug(2)"></span>
+        </div>
+
+        <div class="input-area">
+          <div class="input-row">
+            <div class="input-wrap">
+              <textarea id="inp" rows="1" placeholder="Paste your document or ask a legal question..."></textarea>
+              <span class="cc" id="cc">0</span>
+            </div>
+            <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
+          </div>
+          <div class="act-btns" id="actBtns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PWA BANNERS -->
+  <div id="installBanner">
+    <div style="display:flex;align-items:center;gap:12px"><div style="font-size:24px">⚖️</div><div><div style="font-size:13px;font-weight:600;color:#fff">Add SAIRN Legal to Home Screen</div><div style="font-size:11px;color:rgba(255,255,255,0.6)">One tap away — always</div></div></div>
+    <div style="display:flex;gap:8px;flex-shrink:0"><button onclick="installApp()" style="background:var(--legal);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Install</button><button onclick="dismissBanner()" style="background:rgba(255,255,255,0.1);color:#fff;border:none;padding:8px 10px;border-radius:8px;font-size:12px;cursor:pointer">✕</button></div>
+  </div>
+  <div id="iosBanner">
+    <div style="display:flex;align-items:flex-start;gap:12px"><div style="font-size:24px">⚖️</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px">Add SAIRN Legal to Home Screen</div><div style="font-size:12px;color:#8B8AA0;line-height:1.5">Tap <strong style="color:var(--legal)">Share ⬆️</strong> then <strong style="color:var(--legal)">"Add to Home Screen"</strong></div></div><button onclick="dismissIOS()" style="background:transparent;border:none;color:#8B8AA0;font-size:18px;cursor:pointer">✕</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+// ── SAIRN NEXUS CORE CONNECTION ────────────────────────────────────
+const CORE_API = 'https://sairn.vercel.app/api/claude';
+const MODEL    = 'claude-haiku-4-5-20251001';
+const PRICE_ID = 'price_LEGAL_MONTHLY'; // Set your Stripe Price ID here
+const CHECKOUT_API = 'https://sairn.vercel.app/api/checkout';
+const VERIFY_API   = 'https://sairn.vercel.app/api/verify';
+
+// ── MODES ─────────────────────────────────────────────────────────
+const MODES = {
+  translate: {
+    title: 'Document Translation',
+    desc: 'Paste any legal document — Claude rewrites it in plain English',
+    ph: 'Paste your contract, lease, terms of service, or any legal document here...',
+    actions: ['🏠 Lease', '💼 Employment', '📱 Terms of Service', '🏥 Medical', '🤝 Business Contract'],
+    sugs: ['What are the most important sections?', 'Summarize in 3 sentences', 'What should I focus on?'],
+    sys: `You are SAIRN Legal, an AI legal intelligence assistant powered by Claude. TRANSLATION MODE: Translate legal documents into plain English.
+
+When given a legal document:
+1. Start with a SUMMARY (2-3 sentences: what this document is, who the parties are, what it does)
+2. Go section by section using headers
+3. For each section: write the plain English version, then note anything unusual
+4. End with KEY POINTS: 3-5 most important things to know
+
+Rules:
+- Never use legal jargon without immediately explaining it
+- Be direct and honest, not diplomatic
+- Flag anything unusual or potentially harmful
+- Always add: "This is legal information, not legal advice. Consult a licensed attorney for your specific situation."
+
+Format with clear headers and bullet points for easy reading.`
+  },
+  risk: {
+    title: 'Risk Identification',
+    desc: 'Claude identifies every clause that could harm you — rated by severity',
+    ph: 'Paste your document and Claude will find every risk, red flag, and dangerous clause...',
+    actions: ['🔴 Critical risks', '🟡 Watch list', '💰 Hidden costs', '⏰ Time traps', '🔒 Rights you\ re waiving'],
+    sugs: ['Which risk is most urgent?', 'How do I protect myself?', 'Is this normal for this type of contract?'],
+    sys: `You are SAIRN Legal Risk Analyzer powered by Claude. RISK MODE: Find every clause that could harm the user.
+
+Analyze the document and output:
+
+🔴 CRITICAL RISKS (could cause significant harm or financial loss)
+For each: [Clause location] → [What it says] → [Why it is dangerous] → [What could happen]
+
+🟡 WATCH ITEMS (worth negotiating or understanding fully)  
+For each: [Clause] → [Concern] → [Recommendation]
+
+💰 HIDDEN COSTS (fees, penalties, or financial obligations not obvious upfront)
+
+⏰ TIME TRAPS (deadlines, auto-renewals, notice requirements that could catch you off guard)
+
+🔒 RIGHTS YOU'RE WAIVING (what you are giving up by signing)
+
+✅ WHAT'S REASONABLE (clauses that are standard and fair — so you know what to keep)
+
+End with: RISK SCORE: [Low/Medium/High/Critical] and ONE most important action to take.
+
+Always add: "This is legal information, not legal advice."`
+  },
+  negotiate: {
+    title: 'Negotiation Intelligence',
+    desc: 'Know exactly what to push back on and how to negotiate it',
+    ph: 'Paste the contract you want to negotiate — Claude tells you what to push back on and how...',
+    actions: ['💬 Exact language to use', '🎯 Their likely response', '🛡️ Non-negotiables to keep', '⚖️ Compromise positions'],
+    sugs: ['What\ s standard in this industry?', 'Draft my counter-proposal', 'What if they say no?'],
+    sys: `You are SAIRN Legal Negotiation Advisor powered by Claude. NEGOTIATION MODE: Help the user negotiate this contract.
+
+Analyze the document and provide:
+
+WHAT YOU CAN NEGOTIATE (most contracts have these items):
+For each negotiable clause:
+• [The current clause]
+• [Why they included it / what they want]
+• [What you should ask for instead]
+• [Exact language to request]
+• [Their likely response and your reply]
+
+WHAT IS NON-NEGOTIABLE (standard clauses they will not change and why)
+
+YOUR OPENING POSITION: [2-3 most important changes to request first]
+
+FALLBACK POSITIONS: [What to accept if they push back]
+
+THE SCRIPT: Step by step how to open the negotiation conversation
+
+LEVERAGE POINTS: What you have going for you in this negotiation
+
+Always add: "This is legal information, not legal advice. A licensed attorney can provide jurisdiction-specific guidance."`
+  },
+  draft: {
+    title: 'Document Drafting',
+    desc: 'Claude drafts NDAs, demand letters, contracts, and any legal document you need',
+    ph: 'Describe what you need drafted. Include the relevant facts, parties involved, and what you want it to accomplish...',
+    actions: ['📝 NDA', '⚠️ Demand letter', '🛑 Cease & desist', '📋 Simple contract', '🏠 Lease termination', '💼 Contractor agreement'],
+    sugs: ['Make it more formal', 'Add a deadline', 'Make it stronger'],
+    sys: `You are SAIRN Legal Document Drafter powered by Claude. DRAFTING MODE: Draft professional legal documents.
+
+When drafting:
+1. Ask for any missing information before drafting (parties' names, dates, amounts, jurisdiction if relevant)
+2. If you have enough info, draft immediately
+3. Use professional legal language but keep it readable
+4. Include all standard elements for the document type
+5. Add [FILL IN: description] placeholders for any information you need from the user
+6. After the draft, note: what to check before sending, and whether an attorney review is recommended
+
+Document types you can draft:
+- Demand letters (unpaid invoices, security deposits, property damage)
+- Cease and desist letters  
+- Non-disclosure agreements (NDAs)
+- Simple contractor/freelance agreements
+- Lease termination notices
+- Letter of intent
+- Basic bills of sale
+- Simple partnership agreements
+
+Always note: "Review this draft carefully and consider having a licensed attorney review before sending for significant matters."`
+  },
+  qa: {
+    title: 'Legal Q&A',
+    desc: 'Ask any legal question — Claude answers in plain language, not legalese',
+    ph: 'Ask any legal question. "Can my landlord do this?" "Is this enforceable?" "What are my rights?"...',
+    actions: ['🏠 Tenant rights', '💼 Employee rights', '💰 Consumer rights', '🤝 Contract law', '⚖️ Small claims'],
+    sugs: ['What should I do next?', 'What evidence do I need?', 'What\ s the time limit to act?'],
+    sys: `You are SAIRN Legal Q&A assistant powered by Claude. Q&A MODE: Answer legal questions in plain English.
+
+Rules:
+1. Answer clearly and directly in plain language — no unnecessary jargon
+2. Give the general legal principle and the most common real-world answer
+3. Note when state/country law varies significantly
+4. Tell them what their options are and what each option involves
+5. Tell them what to do NEXT — concrete action steps
+6. Note when a situation definitely requires a licensed attorney
+
+Structure your answer:
+• The direct answer (1-2 sentences)
+• Why / the legal principle
+• Your options
+• What to do next
+• When to get a lawyer (be honest about this)
+
+Always end with: "Laws vary by location. This is general legal information, not advice for your specific situation. For important matters, consult a licensed attorney in your jurisdiction."`
+  }
+};
+
+const QUICK_PROMPTS = {
+  'Lease':              'Please translate this standard residential lease agreement into plain English: [PASTE YOUR LEASE HERE]',
+  'Employment':         'Please translate this employment contract into plain English: [PASTE YOUR CONTRACT HERE]',
+  'Terms of Service':   'Please translate these terms of service into plain English and identify the most important things I should know: [PASTE TERMS HERE]',
+  'Medical':            'Please translate this medical consent form / insurance document into plain English: [PASTE DOCUMENT HERE]',
+  'Business Contract':  'Please translate this business contract into plain English: [PASTE CONTRACT HERE]',
+  'Critical risks':     'Identify all critical risks in this document: [PASTE DOCUMENT HERE]',
+  'Watch list':         'What should I watch out for in this document? [PASTE DOCUMENT HERE]',
+  'Hidden costs':       'Find all hidden costs, fees, and financial obligations in this document: [PASTE DOCUMENT HERE]',
+  'Time traps':         'Find all deadlines, auto-renewals, and time-sensitive clauses in this document: [PASTE DOCUMENT HERE]',
+  "Rights you are waiving": 'What rights am I giving up by signing this document? [PASTE DOCUMENT HERE]',
+  'Exact language to use':  'Give me the exact language to use when requesting changes to this contract: [PASTE CONTRACT HERE]',
+  "Their likely response":  'How will they likely respond to my negotiation requests? [PASTE CONTRACT AND YOUR REQUESTS HERE]',
+  'NDA':                'Draft a mutual NDA between [YOUR NAME/COMPANY] and [OTHER PARTY] covering discussions about [TOPIC]. Effective [DATE].',
+  'Demand letter':      'Draft a demand letter to [RECIPIENT] demanding payment of $[AMOUNT] for [REASON]. They have until [DATE] to respond.',
+  'Cease & desist':     'Draft a cease and desist letter to [RECIPIENT] demanding they stop [ACTION] immediately.',
+  'Simple contract':    'Draft a simple [SERVICE] agreement between [YOUR NAME] and [CLIENT NAME] for [DESCRIPTION OF WORK] at $[AMOUNT].',
+  'Lease termination':  'Draft a lease termination letter to my landlord [NAME] at [ADDRESS] giving [X] days notice as required by my lease.',
+  'Contractor agreement': 'Draft a freelance contractor agreement for [YOUR NAME] providing [SERVICES] to [CLIENT] for $[AMOUNT] due [PAYMENT TERMS].',
+  'Tenant rights':      'What are my rights as a tenant if my landlord [ISSUE]?',
+  'Employee rights':    'As an employee, what are my rights regarding [ISSUE]?',
+  'Consumer rights':    'What are my rights as a consumer if [COMPANY] [ISSUE]?',
+  'Contract law':       'Is a contract enforceable if [SITUATION]?',
+  'Small claims':       'How do I file a small claims court case against [PARTY] for $[AMOUNT]?',
+};
+
+// ── STATE ─────────────────────────────────────────────────────────
+let mode =  translate';
+let localHistory = [];
+let loading = false;
+let questionCount = 0;
+
+// SAIRN NEXUS Core — Style Learning
+let styleMemory = JSON.parse(localStorage.getItem('sairn_style') || '{"messages":[],"patterns":{}}');
+function getStyleContext() {
+  const count = styleMemory.patterns.count || 0;
+  if (count < 10) return '';
+  let us = 'User communication style: ';
+  if (styleMemory.patterns.formal) s +=  prefers formal professional language. ';
+  else if (styleMemory.patterns.casual) s += 'prefers plain casual language. ';
+  return s;
+}
+function learnFromMessage(userMsg, aiResp) {
+  styleMemory.messages.push({ u: userMsg.substring(0,100), t: Date.now() });
+  if (styleMemory.messages.length > 50) styleMemory.messages.shift();
+  styleMemory.patterns.count = (styleMemory.patterns.count || 0) + 1;
+  styleMemory.patterns.formal = userMsg.match(/\b(pursuant|regarding|aforementioned|herein)\b/gi) ? true : styleMemory.patterns.formal;
+  localStorage.setItem('sairn_style', JSON.stringify(styleMemory));
+}
+
+// ── SUBSCRIPTION ─────────────────────────────────────────────────
+function getSub() { try { return JSON.parse(localStorage.getItem('sairn_legal_sub') || 'null'); } catch { return null; } }
+function saveSub(d) { localStorage.setItem('sairn_legal_sub', JSON.stringify({ ...d, at: Date.now() })); }
+function getToken() { const s = getSub(); return s ? s.token : null; }
+function isSubscribed() { const s = getSub(); if (!s || !s.valid) return false; if (Date.now() - s.at > 35*24*60*60*1000) return false; return true; }
+
+async function startCheckout() {
+  const btn = document.getElementById('subBtn');
+  const err = document.getElementById('pwError');
+  const email = document.getElementById('pwEmail').value.trim();
+  btn.disabled = true; btn.textContent = 'Redirecting to Stripe...'; err.style.display = 'none';
+  try {
+    const res = await fetch(CHECKOUT_API, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, priceId: PRICE_ID, productName: 'SAIRN Legal Pro' })
+    });
+    const data = await res.json();
+    if (data.url) { window.location.href = data.url; }
+    else { throw new Error(data.error || 'Could not start checkout'); }
+  } catch (e) {
+    err.textContent = e.message; err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Start for $19.99/month';
+  }
+}
+
+async function handleStripeReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const sid = params.get('session_id');
+  if (params.get('cancelled')) { window.history.replaceState({}, '', '/'); return false; }
+  if (sid) {
+    try {
+      const res = await fetch(VERIFY_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }) });
+      const data = await res.json();
+      if (data.valid) { saveSub({ ...data }); window.history.replaceState({}, '', '/'); return true; }
+    } catch(e) {}
+    window.history.replaceState({}, '', '/');
+  }
+  return false;
+}
+
+function showAccount() {
+  const s = getSub();
+  if (s) alert(`SAIRN Legal Pro\n\nEmail: ${s.email||'N/A'}\nPlan: ${s.plan||'Pro'}\nPrice: $19.99/month\n\nManage subscription at stripe.com`);
+}
+function signOut() {
+  if (confirm('Sign out of SAIRN Legal?')) { localStorage.removeItem('sairn_legal_sub'); location.reload(); }
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); if (p.id === 'appPage') p.style.display = 'none'; });
+  if (page === 'app') {
+    document.getElementById('appPage').classList.add('active');
+    document.getElementById('appPage').style.display = 'flex';
+    initApp();
+    initPWA();
+    return;
+  }
+  const el = document.getElementById(page + 'Page');
+  if (el) { el.classList.add('active'); window.scrollTo(0,0); }
+}
+
+async function initApp() {
+  const justPaid = await handleStripeReturn();
+  if (justPaid || isSubscribed()) {
+    document.getElementById('paywall').style.display = 'none';
+    document.getElementById('appShell').classList.add('show');
+    renderActions('translate');
+    setTimeout(() => document.getElementById('inp').focus(), 100);
+  } else {
+    document.getElementById('paywall').style.display = 'flex';
+    document.getElementById('appShell').classList.remove('show');
+  }
+}
+
+// ── MODE SWITCHING ────────────────────────────────────────────────
+function switchMode(m) {
+  mode = m; localHistory = [];
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + m).classList.add('active');
+  const cfg = MODES[m];
+  document.getElementById('modeTitle').textContent = cfg.title;
+  document.getElementById('modeDesc').textContent = cfg.desc;
+  document.getElementById('inp').placeholder = cfg.ph;
+  document.getElementById('dropZone').className = m === 'translate' || m === 'risk' || m === 'negotiate' ? 'dropzone' : 'dropzone hidden';
+  // Show drop zone for document-heavy modes
+  const dz = document.getElementById('dropZone');
+  dz.className = (m === 'translate' || m === 'risk' || m === 'negotiate') ? '' : 'hidden';
+  document.getElementById(m === 'translate' || m === 'risk' || m === 'negotiate' ? 'dropZone' : 'dropZone').style.display =
+    (m === 'translate' || m === 'risk' || m === 'negotiate') ? 'block' : 'none';
+  document.getElementById('sugBar').style.display = 'none';
+  renderActions(m);
+  document.getElementById('inp').focus();
+}
+
+function renderActions(m) {
+  document.getElementById('actBtns').innerHTML = MODES[m].actions.map(a =>
+    `<button class="act-btn" onclick="quickAct('${a.replace(/'/g,"\\'")}')">  ${a}</button>`
+  ).join('');
+}
+
+function quickAct(label) {
+  const clean = label.replace(/^[\S]+\s/, '').trim();
+  const prompt = QUICK_PROMPTS[clean] || `Help me with: ${clean}`;
+  const el = document.getElementById( inp');
+  el.value = prompt; el.dispatchEvent(new Event('input')); el.focus();
+}
+
+function useSug(i) {
+  const el = document.getElementById('s' + i);
+  if (el && el.textContent) { addBubble('user', el.textContent); callClaude(el.textContent); }
+}
+
+// ── BUBBLES ───────────────────────────────────────────────────────
+function addBubble(role, text) {
+  const out = document.getElementById('output');
+  const welcome = out.querySelector('.bubble.system');
+  if (welcome && role !== 'system') welcome.remove();
+  const d = document.createElement('div');
+  d.className = 'bubble ' + role;
+  if (role !== 'system') {
+    const lbl = document.createElement('div');
+    lbl.className = 'blabel';
+    lbl.textContent = role === 'ai' ? '⚖️ SAIRN Legal' : 'You';
+    d.appendChild(lbl);
+  }
+  const txt = document.createElement('div');
+  txt.style.cssText = 'white-space:pre-wrap;word-break:break-word';
+  txt.textContent = text;
+  d.appendChild(txt);
+  if (role === 'ai' && text.length > 60) {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '⧉ Copy';
+    btn.onclick = () => { navigator.clipboard.writeText(text).catch(()=>{}); showToast('Copied!'); };
+    d.appendChild(btn);
+  }
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+}
+
+function showThinking() {
+  const out = document.getElementById('output');
+  const old = document.getElementById('thinking'); if (old) old.remove();
+  const d = document.createElement('div'); d.className = 'thinking'; d.id = 'thinking';
+  d.innerHTML = '<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span style="font-size:12px;color:var(--muted)">Reading document...</span>';
+  out.appendChild(d); out.scrollTop = out.scrollHeight;
+}
+function removeThinking() { const t = document.getElementById( thinking'); if (t) t.remove(); }
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function updateSugs() {
+  const s = MODES[mode].sugs;
+  document.getElementById('sugBar').style.display = 'flex';
+  s.forEach((txt, i) => {
+    const el = document.getElementById('s' + i);
+    if (el) { el.textContent = txt; el.className = i === 0 ? 'sug top' : 'sug'; }
+  });
+}
+
+// ── CLAUDE (via SAIRN NEXUS Core) ──────────────────────────────────
+async function callClaude(userMsg) {
+  if (loading) return;
+  loading = true;
+  document.getElementById('sendBtn').disabled = true;
+  showThinking();
+
+  const styleCtx = getStyleContext();
+  const fullSys = (styleCtx ? styleCtx + '\n\n' : '') + MODES[mode].sys;
+  localHistory.push({ role: 'user', content: userMsg });
+
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+
+  try {
+    const res = await fetch(CORE_API, {
+      method: 'POST', headers,
+      body: JSON.stringify({ model: MODEL, max_tokens: 1500, system: fullSys, messages: localHistory })
+    });
+    const data = await res.json();
+    removeThinking();
+
+    if (data.error) {
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('sairn_legal_sub');
+        showToast('Session expired — please resubscribe');
+        setTimeout(() => location.reload(), 2000);
+      } else {
+        addBubble('system', '⚠️ ' + data.error.message);
+      }
+    } else {
+      const aiText = data.content[0].text;
+      localHistory.push({ role: 'assistant', content: aiText });
+      addBubble('ai', aiText);
+      learnFromMessage(userMsg, aiText);
+      questionCount++;
+      document.getElementById('statCount').textContent = questionCount;
+      updateSugs();
+    }
+  } catch (err) {
+    removeThinking();
+    addBubble('system', '⚠️ Network error. Please check your connection and try again.');
+  }
+  loading = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function send() {
+  const el = document.getElementById('inp');
+  const txt = el.value.trim();
+  if (!txt || loading) return;
+  addBubble('user', txt);
+  el.value = ''; el.style.height = 'auto';
+  document.getElementById('cc').textContent = '0';
+  callClaude(txt);
+}
+
+function clearSession() {
+  if (!confirm('Clear this session?')) return;
+  document.getElementById('output').innerHTML = '<div class="bubble system">⚖️ Session cleared. Ready for a new document or question.</div>';
+  localHistory = []; questionCount = 0;
+  document.getElementById( statCount').textContent = '0';
+  document.getElementById('sugBar').style.display = 'none';
+}
+
+// ── INPUT ─────────────────────────────────────────────────────────
+const inpEl = document.getElementById('inp');
+inpEl.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  document.getElementById('cc').textContent = this.value.length;
+});
+inpEl.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+
+// ── FILE DROP ─────────────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('over');
+  const file = e.dataTransfer.files[0];
+  if (file) readFile(file);
+}
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (file) readFile(file);
+}
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const preview = text.substring(0, 50);
+    document.getElementById('inp').value = text.substring(0, 12000);
+    document.getElementById('inp').dispatchEvent(new Event('input'));
+    showToast(`✓ ${file.name} loaded — ${Math.round(file.size/1024)}KB`);
+    addBubble('user', `📄 Document uploaded: "${file.name}" (${Math.round(file.size/1024)}KB)\n\n${preview}...`);
+    callClaude(text.substring(0, 12000));
+  };
+  reader.onerror = () => showToast('Could not read file. Try copying and pasting the text.');
+  reader.readAsText(file);
+}
+
+// ── PWA ───────────────────────────────────────────────────────────
+let deferredPrompt = null;
+function initPWA() {
+  window.addEventListener( beforeinstallprompt', e => {
+    e.preventDefault(); deferredPrompt = e;
+    if (!isIOS() && !isInstalled() && !localStorage.getItem('sairn_legal_b'))
+      setTimeout(() => { document.getElementById('installBanner').style.display = 'flex'; }, 3000);
+  });
+  if (isIOS() && !isInstalled() && !localStorage.getItem('sairn_legal_ios'))
+    setTimeout(() => { document.getElementById('iosBanner').style.display = 'block'; }, 3000);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
+function isInstalled() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone; }
+function installApp() { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { dismissBanner(); deferredPrompt = null; }); } }
+function dismissBanner() { document.getElementById('installBanner').style.display = 'none'; localStorage.setItem('sairn_legal_b', '1'); }
+function dismissIOS() { document.getElementById('iosBanner').style.display = 'none'; localStorage.setItem('sairn_legal_ios', '1'); }
+
+// ── INIT ─────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('session_id') || params.get('cancelled')) showPage('app');
+});
+
+const APP_ICON = '⚖️';
+</script>
+
+<!-- ═══ SAIRN AUTH + STORAGE SDK ═══════════════════════════════════ -->
+<script src="/sairn-sdk.js"></script>
+<script>
+(async function() {
+  const APP_ID     =  legal';
+  const ACCENT     = '#B8A36E';
+  const APP_NAME   = 'SAIRN Legal';
+  const PRICE_ID   = 'price_1TYlF4PAZMGVs7fEZVPqfl1L';
+  const STRIPE_URL = 'https://buy.stripe.com/dRmfZjedm15Ibrcc0JefC05';
+
+  // Boot SDK
+  const sairn = SAIRNClient.create(APP_ID, ACCENT);
+  window._sairn = sairn;
+
+  const state = await sairn.init();
+
+  if (state.authenticated) {
+    sairn.showAccountBar();
+    // If no subscription, show upgrade prompt on first message
+    if (!sairn.hasSubscription()) {
+      window._sairn_needs_sub = true;
+    }
+  }
+
+  // Listen for sign-in events
+  window.addEventListener('sairn:signed_in', async (e) => {
+    sairn.showAccountBar();
+    // Check if they now have a subscription
+    if (sairn.hasSubscription()) {
+      document.getElementById('sairn-paywall')?.remove();
+      document.getElementById('sairn-app-shell')?.removeAttribute('style');
+    }
+  });
+
+  // Listen for subscription-required
+  sairn.on('subscription_required', () => {
+    showPaywall();
+  });
+
+  // Listen for session expiry
+  sairn.on('session_expired', () => {
+    sairn.showAuthModal(APP_NAME);
+  });
+
+  // Expose helper for apps to call
+  window._sairmAsk = async function(userMessage, system, isDemo) {
+    if (!isDemo && !sairn.isAuthenticated()) {
+      sairn.showAuthModal(APP_NAME);
+      throw new Error('AUTH_REQUIRED');
+    }
+    if (!isDemo && !sairn.hasSubscription()) {
+      showPaywall();
+      throw new Error('SUB_REQUIRED');
+    }
+    return sairn.ask({ userMessage, system, isDemo });
+  };
+
+  window._sairmStore    = (k, v)  => sairn.store(k, v);
+  window._sairmRetrieve = (k)     => sairn.retrieve(k);
+  window._sairmSave     = ()      => sairn.store('_style', sairn._style);
+  window._sairmAuth     = ()      => sairn.showAuthModal(APP_NAME);
+  window._sairmSubs     = ()      => sairn.getSubscriptions();
+  window._sairmConvs    = ()      => sairn.getConversations();
+  window._sairmLoad     = (id)    => sairn.loadConversation(id);
+  window._sairmNewThread = ()     => sairn.newThread();
+
+  function showPaywall() {
+    // Don't duplicate
+    if (document.getElementById('_sairn_paywall_overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = '_sairn_paywall_overlay';
+    overlay.style.cssText = `position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);backdrop-filter:blur(12px);font-family:system-ui,sans-serif`;
+    overlay.innerHTML = `
+      <div style="background:#111;border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:40px;max-width:420px;width:100%;margin:16px;text-align:center">
+        <div style="font-size:36px;margin-bottom:14px">🔒</div>
+        <div style="font-size:20px;font-weight:600;color:#fff;margin-bottom:8px">${APP_NAME} Pro</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:6px">Subscribe to save conversations, access all modes, and sync across devices.</div>
+        <div style="font-size:42px;font-weight:600;color:${ACCENT};margin:20px 0 4px;letter-spacing:-2px">$19.99<sup style="font-size:20px;vertical-align:top;margin-top:12px;display:inline-block;letter-spacing:0">/mo</sup></div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:24px;letter-spacing:1px;text-transform:uppercase">Cancel anytime · Secured by Stripe</div>
+        <a href="${STRIPE_URL}?prefilled_email=${encodeURIComponent(sairn.getUser()?.email||'')}" target="_blank" style="display:block;padding:15px;background:${ACCENT};color:#000;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none;margin-bottom:12px">Subscribe — $19.99/month</a>
+        <button onclick="document.getElementById('_sairn_paywall_overlay').remove()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer">Continue with limited demo access</button>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.15);line-height:1.6">SAIRN NEXUS Platform · SAIRN Technologies<br>After subscribing, refresh this page to activate.</div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+})();
+</script>
+
+<script>
+const GUIDED_FLOWS=[{id:"document",emoji:"📋",label:"Review a Document",intro:`What type of document — lease, contract, notice, or something else?`,steps:[`Who are the parties and what is it asking you to agree to?`,`Any specific section that concerns you?`],finish:`Paste the text and I will flag anything unusual and explain what you are agreeing to.`}];
+let activeFlow=null,flowStep=0;
+function startFlow(id){
+  const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
+  activeFlow=f;flowStep=0;
+  document.querySelectorAll('.flow-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
+  addBub('ai',f.intro);
+  hist.push({role:'assistant',content:f.intro});
+  document.getElementById('inp').placeholder='Reply to continue...';
+  document.getElementById('inp').focus();
+}
+function checkFlow(txt){
+  if(!activeFlow)return false;
+  if(flowStep<activeFlow.steps.length){
+    const nxt=activeFlow.steps[flowStep++];
+    setTimeout(()=>{addBub('ai',nxt);hist.push({role:'assistant',content:nxt});},700);
+    return true;
+  }else if(flowStep===activeFlow.steps.length){
+    flowStep++;
+    setTimeout(()=>{addBub('ai',activeFlow.finish);hist.push({role:'assistant',content:activeFlow.finish});activeFlow=null;},700);
+    return true;
+  }
+  return false;
+}
+</script>
+
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch('https://sairn.vercel.app/api/greeting', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay() })
+    });
+    const data = await res.json();
+    if (!data.greeting) return;
+    const area = document.getElementById('chatArea') || document.getElementById('output');
+    if (!area) return;
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.innerHTML = '<div class="msg-avatar">⚖️</div><div class="msg-bubble"><p>' + data.greeting + '</p></div>';
+    div.style.cssText =  opacity:0;transform:translateY(10px)';
+    area.insertBefore(div, area.firstChild);
+    requestAnimationFrame(()=>{ div.style.transition='opacity .5s,transform .5s'; div.style.opacity='1'; div.style.transform='translateY(0)'; });
+  } catch(e) {}
+}
+
+
+async function loadUserMemory() {
+  const token = localStorage.getItem('sairn_token');
+  if (!token) return '';
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/memory', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const { memory } = await res.json();
+    if (!memory || !memory.facts || !memory.facts.length) return '';
+    const facts = memory.facts.slice(-20).map(f => '- ' + f.fact).join('\n');
+    const summary = memory.summary ? '\nWho they are: ' + memory.summary : '';
+    return '\n\nWHAT YOU ALREADY KNOW ABOUT THIS USER (learned across all SAIRN apps):\n' + facts + summary + '\n\nUse this naturally — just let it make your help more personal.';
+  } catch(e) { return ''; }
+}
+
+async function extractMemoryOrig() {
+  const token = localStorage.getItem('sairn_token');
+  if (!token || !hist || hist.length < 2) return;
+  try {
+    fetch('https://sairn.vercel.app/api/memory', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({action:'extract',messages:hist.slice(-10),app_id:APP_ID||'unknown'})
+    });
+  } catch(e) {}
+}
+window.addEventListener('beforeunload', extractMemoryOrig);
+
+
+let lastBubText = '';
+
+function showSaveBar(content) {
+  const existing = document.getElementById('sairn-save-bar');
+  if (existing) existing.remove();
+  lastBubText = content;
+  const bar = document.createElement('div');
+  bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+  bar.innerHTML = '<button onclick="navigator.clipboard.writeText(lastBubText).then(()=>{this.textContent=\'✓ Copied!\';setTimeout(()=>this.textContent=\'📋 Copy\',2000)})" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'
+    + '<button onclick="const s=JSON.parse(localStorage.getItem(\ sairn_library\')||\'[]\');s.unshift({content:lastBubText,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>'
+    + '<button onclick="document.getElementById(\ sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
+  document.body.appendChild(bar);
+  setTimeout(()=>{ const b=document.getElementById('sairn-save-bar'); if(b)b.remove(); }, 8000);
+}
+
+<!-- ═══ END SAIRN AUTH SDK ══════════════════════════════════════ -->
+
+</body>
+</html>
