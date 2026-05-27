@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════════════════════════
+#  SAIRN Technologies — Automated Quality Gate
+#  Runs on every push to main BEFORE Vercel deploys
+#  Sequence: Lint (auto-fix) → Validate (block if errors remain)
+#  Michael L. Dibert · SAIRN Technologies · 2026
+# ═══════════════════════════════════════════════════════════════════
+
+name: SAIRN Quality Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-check:
+    name: Lint + Validate All Apps
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run SAIRN Linter (auto-fix)
+        run: python3 .github/scripts/lint.py
+        continue-on-error: true
+
+      - name: Run SAIRN Validator (block if errors)
+        run: python3 .github/scripts/validate.py
+
+      - name: Commit auto-fixes if any
+        if: success()
+        run: |
+          git config --local user.email "sairn-bot@sairntechnologies.com"
+          git config --local user.name "SAIRN Quality Bot"
+          git diff --quiet || (git add -A && git commit -m "auto: SAIRN quality fixes applied")
+          git push || echo "Nothing to push"
+        continue-on-error: true
