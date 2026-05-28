@@ -20,6 +20,7 @@
     { "source": "/hr",         "destination": "/hr.html"         },
     { "source": "/memory",     "destination": "/memory_settings.html" }
   ],
+{ "source": "/sairnlaw", "destination": "/sairnlaw.html" },
   "cleanUrls": true,
   "trailingSlash": false
 }
