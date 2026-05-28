@@ -736,10 +736,7 @@ function addMsg(role, content) {
   const empty = document.getElementById("emptyState"); if(empty) empty.remove();
   const div = document.createElement("div");
   div.className = "msg " + role;
-  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/
-
-/g,"</p><p>").replace(/
-/g,"<br>");
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
   if(role === "ai") {
     div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><p>` + formatted + `</p></div>`;
     lastResponse = content;
@@ -805,7 +802,7 @@ async function loadFirstMessage() {
     const area = document.getElementById("chatArea");
     const empty = document.getElementById("emptyState"); if(empty) empty.remove();
     const div = document.createElement("div"); div.className = "msg ai";
-    div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><p>` + data.greeting + `</p></div>`;
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + "</p></div>";
     div.style.opacity = "0"; div.style.transform = "translateY(10px)";
     area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
     requestAnimationFrame(function() {
