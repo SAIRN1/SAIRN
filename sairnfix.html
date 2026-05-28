@@ -471,6 +471,94 @@ window.addEventListener('beforeunload', () => {
 });
 document.getElementById('userInput').addEventListener('input', function() { this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 140) + 'px'; });
 document.getElementById('userInput').addEventListener('keydown', function(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+// ─── Organization Intelligence Layer ─────────────────────────────────────────
+const ORG_ID = localStorage.getItem('sairn_org_id') || null;
+const LOCATION_ID = localStorage.getItem('sairn_location_id') || null;
+const LOCATION_NAME = localStorage.getItem('sairn_location_name') || 'Main Office';
+
+async function getOrgIntelligence(query) {
+  if (!ORG_ID) return '';
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/org-intel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: 'query',
+        org_id: ORG_ID,
+        app_id: APP_ID,
+        query: query
+      })
+    });
+    const data = await res.json();
+    if (!data.insights || !data.insights.length) return '';
+    return '\n\nWhat your other locations know about this:\n' +
+      data.insights.map(i => '- [' + i.location + '] ' + i.insight).join('\n');
+  } catch(e) { return ''; }
+}
+
+async function saveOrgIntelligence(insight, category) {
+  if (!ORG_ID || !insight) return;
+  try {
+    await fetch('https://sairn.vercel.app/api/org-intel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: 'save',
+        org_id: ORG_ID,
+        location_id: LOCATION_ID,
+        location_name: LOCATION_NAME,
+        app_id: APP_ID,
+        insight: insight,
+        category: category || 'general'
+      })
+    });
+  } catch(e) {}
+}
+
+function showOILBadge() {
+  if (!ORG_ID) return;
+  const existing = document.getElementById('oil-badge');
+  if (existing) return;
+  const badge = document.createElement('div');
+  badge.id = 'oil-badge';
+  badge.style.cssText = 'position:fixed;top:68px;right:16px;background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;color:#F0B429;z-index:998;cursor:pointer';
+  badge.textContent = '🏢 ' + LOCATION_NAME;
+  badge.onclick = function() { showLocationSwitcher(); };
+  document.body.appendChild(badge);
+}
+
+function showLocationSwitcher() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = '<div style="background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:28px;max-width:360px;width:90%">' +
+    '<div style="font-size:16px;font-weight:700;color:#F0F0FF;margin-bottom:8px">Organization Setup</div>' +
+    '<div style="font-size:13px;color:#9090B0;margin-bottom:20px">Connect to your organization to share intelligence across locations.</div>' +
+    '<input id="oil-org-input" placeholder="Organization ID" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:10px;outline:none">' +
+    '<input id="oil-loc-input" placeholder="Location name (e.g. Columbus Office)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:16px;outline:none">' +
+    '<div style="display:flex;gap:10px">' +
+    '<button onclick="saveOILSettings()" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#F0B429,#E09900);border:none;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Connect</button>' +
+    '<button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9090B0;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>' +
+    '</div></div>';
+  document.body.appendChild(modal);
+  document.getElementById('oil-org-input').value = ORG_ID || '';
+  document.getElementById('oil-loc-input').value = LOCATION_NAME || '';
+}
+
+function saveOILSettings() {
+  const orgId = document.getElementById('oil-org-input').value.trim();
+  const locName = document.getElementById('oil-loc-input').value.trim();
+  if (orgId) {
+    localStorage.setItem('sairn_org_id', orgId);
+    localStorage.setItem('sairn_location_name', locName || 'Main Office');
+    location.reload();
+  }
+}
+
+// Show badge on load if org is set
+setTimeout(function() { showOILBadge(); }, 1500);
+// ─────────────────────────────────────────────────────────────────────────────
+
 </script>
 </body>
 </html>
