@@ -213,99 +213,129 @@ function startFlow(id) {
 }
 function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
 function addMsg(role, content) {
-  const area = document.getElementById("chatArea");
-  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
-  const div = document.createElement("div"); div.className = "msg " + role;
-  const fmt = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/
-
-/g,"</p><p>").replace(/
-/g,"<br>");
-  if(role === "ai") {
-    div.innerHTML = "<div class="msg-avatar">🌟</div><div class="msg-bubble"><p>" + fmt + "</p></div>";
-    lastResponse = content;
-    setTimeout(function() { showSaveBar(); }, 600);
+  const area = document.getElementById('chatArea');
+  const empty = document.getElementById('emptyState');
+  if(empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const formatted = content
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    .replace(/^- (.+)/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s,'<ul>$1</ul>');
+  if(role==='ai') {
+    div.innerHTML=`<div class="msg-avatar">🌟</div><div class="msg-bubble"><p>${formatted}</p></div>`;
   } else {
-    div.innerHTML = "<div class="msg-bubble">" + content + "</div>";
+    div.innerHTML=`<div class="msg-bubble">${content}</div>`;
   }
-  area.appendChild(div); area.scrollTop = area.scrollHeight;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  if(role==='ai'){lastResponse=content;showSaveBar(content);}
 }
 function showTyping() {
-  const area = document.getElementById("chatArea");
-  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
-  div.innerHTML = "<div class="msg-avatar">🌟</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>";
-  area.appendChild(div); area.scrollTop = area.scrollHeight;
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className='msg ai';div.id='typing-indicator';
+  div.innerHTML=`<div class="msg-avatar">🌟</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
 }
 async function sendMessage() {
-  const inp = document.getElementById("userInput");
-  const text = inp.value.trim(); if(!text || isLoading) return;
-  inp.value = ""; inp.style.height = "";
-  if(activeFlow !== null) {
-    addMsg("user", text);
-    if(flowStep < activeFlow.steps.length) {
-      const nxt = activeFlow.steps[flowStep++];
-      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
-      return;
-    } else if(flowStep === activeFlow.steps.length) {
-      flowStep++;
-      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
-      return;
-    }
-    activeFlow = null;
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim();
+  if(!text || isLoading) return;
+  if(activeFlow !== null && advanceFlow(text)) {
+    addMsg('user', text);
+    inp.value=''; inp.style.height='';
+    return;
   }
-  isLoading = true; document.getElementById("sendBtn").disabled = true;
-  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  inp.value='';inp.style.height='';
+  isLoading=true;
+  document.getElementById('sendBtn').disabled=true;
+  addMsg('user', text);
+  messages.push({role:'user',content:text});
+  showTyping();
   try {
-    const sys = SYSTEM;
     const res = await fetch(SAIRN_API, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({max_tokens:1000, system:sys, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        max_tokens:1000,
+        system: SYSTEM,
+        messages: messages.slice(-20),
+        app_id: APP_ID,
+        is_demo: true
+      })
     });
     const data = await res.json();
-    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
-    if(res.status === 429) {
-      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for unlimited access.");
+    document.getElementById('typing-indicator')?.remove();
+    if(res.status===429) {
+      const msg = data.message || 'Daily demo limit reached. Sign up for unlimited access.';
+      addMsg('ai', msg + '\n\nGet unlimited access at sairn.vercel.app');
     } else {
-      const reply = data.content && data.content[0] && data.content[0].text || "Sorry, please try again.";
-      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+      const reply = data.content?.[0]?.text || 'Sorry, I had trouble with that. Please try again.';
+      messages.push({role:'assistant',content:reply});
+      addMsg('ai', reply);
     }
   } catch(e) {
-    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
-    addMsg("ai", "Connection issue. Please try again.");
+    document.getElementById('typing-indicator')?.remove();
+    addMsg('ai','Connection issue. Please check your connection and try again.');
   }
-  isLoading = false; document.getElementById("sendBtn").disabled = false;
-  document.getElementById("userInput").focus();
+  isLoading=false;
+  document.getElementById('sendBtn').disabled=false;
+  document.getElementById('userInput').focus();
 }
 async function loadFirstMessage() {
   try {
     const now = new Date();
-    const res = await fetch("https://sairn.vercel.app/api/greeting", {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    const res = await fetch('https://sairn.vercel.app/api/greeting', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(localStorage.getItem('sairn_token') ? { 'Authorization': 'Bearer ' + localStorage.getItem('sairn_token') } : {})
+      },
+      body: JSON.stringify({
+        app_id: APP_ID,
+        client_hour: now.getHours(),
+        client_day: now.getDay(),
+      })
     });
-    const data = await res.json(); if(!data.greeting) return;
-    const area = document.getElementById("chatArea");
-    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
-    const div = document.createElement("div"); div.className = "msg ai";
-    div.innerHTML = "<div class="msg-avatar">🌟</div><div class="msg-bubble"><p>" + data.greeting + "</p></div>";
-    div.style.cssText = "opacity:0;transform:translateY(10px)";
-    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
-    requestAnimationFrame(function() { div.style.transition = "opacity .5s,transform .5s"; div.style.opacity = "1"; div.style.transform = "translateY(0)"; });
-  } catch(e) {}
+    const data = await res.json();
+    const greeting = data.greeting;
+    if (!greeting) return;
+    const area = document.getElementById('chatArea');
+    const empty = document.getElementById('emptyState');
+    if (empty) empty.remove();
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.innerHTML = `<div class="msg-avatar">🌟</div><div class="msg-bubble"><p>${greeting}</p></div>`;
+    div.style.opacity = '0';
+    div.style.transform = 'translateY(10px)';
+    area.appendChild(div);
+    messages.push({ role: 'assistant', content: greeting });
+    requestAnimationFrame(() => {
+      div.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      div.style.opacity = '1';
+      div.style.transform = 'translateY(0)';
+    });
+  } catch(e) {
+    // Silently fail — app works fine without the greeting
+  }
 }
-function showSaveBar() {
-  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
-  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
-  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;animation:slideUp .2s ease";
-  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
-  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
-  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
-  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
-  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
-  closeBtn.onclick = function() { bar.remove(); };
-  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+function showSaveBar(content) {
+  const existing = document.getElementById('sairn-save-bar');
+  if (existing) existing.remove();
+  const bar = document.createElement('div');
+  bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:slideUp .2s ease';
+  bar.innerHTML = `
+    <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>
+    <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>
+    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#60A5FA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔗 Share</button>
+    <button onclick="document.getElementById('sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>`;
   document.body.appendChild(bar);
-  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+  setTimeout(() => { if(document.getElementById('sairn-save-bar')) document.getElementById('sairn-save-bar').remove(); }, 8000);
 }
 document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
 document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });

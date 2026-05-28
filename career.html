@@ -354,7 +354,7 @@ function addMsg(role, content) {
     .replace(/^- (.+)/gm,'<li>$1</li>')
     .replace(/(<li>.*<\/li>)/s,'<ul>$1</ul>');
   if(role==='ai') {
-    div.innerHTML=`<div class="msg-avatar">💼</div><div class="msg-bubble"><p>${formatted}</p></div>`;
+    div.innerHTML=`<div class="msg-avatar">🤖</div><div class="msg-bubble"><p>${formatted}</p></div>`;
   } else {
     div.innerHTML=`<div class="msg-bubble">${content}</div>`;
   }
@@ -367,7 +367,7 @@ function showTyping() {
   const area = document.getElementById('chatArea');
   const div = document.createElement('div');
   div.className='msg ai';div.id='typing-indicator';
-  div.innerHTML=`<div class="msg-avatar">💼</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  div.innerHTML=`<div class="msg-avatar">🤖</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
   area.appendChild(div);
   area.scrollTop=area.scrollHeight;
 }
@@ -393,7 +393,7 @@ async function sendMessage() {
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         max_tokens:1000,
-        system: await buildSystemWithMemory(SYSTEM),
+        system: SYSTEM,
         messages: messages.slice(-20),
         app_id: APP_ID,
         is_demo: true
@@ -442,7 +442,7 @@ async function loadFirstMessage() {
     if (empty) empty.remove();
     const div = document.createElement('div');
     div.className = 'msg ai';
-    div.innerHTML = `<div class="msg-avatar">${APP_ICON}</div><div class="msg-bubble"><p>${greeting}</p></div>`;
+    div.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble"><p>${greeting}</p></div>`;
     div.style.opacity = '0';
     div.style.transform = 'translateY(10px)';
     area.appendChild(div);
@@ -452,7 +452,9 @@ async function loadFirstMessage() {
       div.style.opacity = '1';
       div.style.transform = 'translateY(0)';
     });
-  } catch(e) {}
+  } catch(e) {
+    // Silently fail — app works fine without the greeting
+  }
 }
 
 

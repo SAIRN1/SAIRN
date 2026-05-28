@@ -380,7 +380,7 @@ async function sendMessage() {
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         max_tokens:1000,
-        system: await buildSystemWithMemory(SYSTEM),
+        system: SYSTEM,
         messages: messages.slice(-20),
         app_id: APP_ID,
         is_demo: true
