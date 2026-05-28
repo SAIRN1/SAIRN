@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNlearn — District Intelligence Platform. Built for Ohio.</title>
+<meta name="description" content="The complete AI brain for your school district. Classroom tools, district-wide spending, nutrition, bond optimization, efficiency, and superintendent communication — all in one platform.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#10B981;--a2:#059669;--grad:linear-gradient(135deg,#10B981,#059669);--ar:rgba(16,185,129,0.15);--ab:rgba(16,185,129,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(16,185,129,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(16,185,129,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(16,185,129,0.1) 0%,transparent 60%)}
+.mandate-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:100px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);font-size:12px;font-weight:700;color:#FCA5A5;margin-bottom:20px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(16,185,129,0.5))}
+.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#10B981 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:720px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:rgba(16,185,129,0.9);font-weight:600;margin-bottom:48px}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(16,185,129,0.45);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
+.stat-lbl{font-size:12px;color:var(--m)}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:620px;margin:0 auto 48px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s;border-left:4px solid var(--a)}
+.module-card:hover{border-color:rgba(16,185,129,0.4);transform:translateY(-2px)}
+.module-card.finance{border-left-color:#F59E0B}
+.module-card.nutrition{border-left-color:#EF4444}
+.module-card.bond{border-left-color:#8B5CF6}
+.module-card.efficiency{border-left-color:#06B6D4}
+.module-card.super{border-left-color:#F0B429}
+.module-emoji{font-size:32px;margin-bottom:12px}
+.module-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.module-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.module-features{display:flex;flex-direction:column;gap:4px}
+.module-feature{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.module-feature::before{content:"checkmark";font-size:0;width:6px;height:6px;border-radius:50%;background:var(--a);flex-shrink:0}
+.module-card.finance .module-feature::before{background:#F59E0B}
+.module-card.nutrition .module-feature::before{background:#EF4444}
+.module-card.bond .module-feature::before{background:#8B5CF6}
+.module-card.efficiency .module-feature::before{background:#06B6D4}
+.module-card.super .module-feature::before{background:#F0B429}
+.ohio-section{padding:64px 24px;background:rgba(239,68,68,0.04);border-top:1px solid rgba(239,68,68,0.15);border-bottom:1px solid rgba(239,68,68,0.15)}
+.ohio-inner{max-width:900px;margin:0 auto;text-align:center}
+.ohio-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin:32px 0}
+.ohio-stat{background:var(--card);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:20px;text-align:center}
+.ohio-num{font-size:28px;font-weight:800;color:#FCA5A5;letter-spacing:-1px;margin-bottom:4px}
+.ohio-lbl{font-size:11px;color:var(--m);line-height:1.4}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:1000px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.04)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 14px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:44px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:4px}
+.pd{font-size:12px;color:var(--d);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--m)}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(16,185,129,0.3)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(16,185,129,0.5)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:420px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:500px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:rgba(16,185,129,0.35);color:var(--w)}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🎓</div>
+    <div class="nav-brand">SAIRNlearn</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">District Intelligence · FERPA Compliant</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="mandate-badge">🏫 Ohio AI Mandate — July 2026 · Every District Needs This Now</div>
+    <div class="hero-eyebrow">AI-Native · Claude Powered · FERPA Compliant · Patents Pending</div>
+    <div class="hero-icon">🎓</div>
+    <h1 class="hero-title">SAIRNlearn</h1>
+    <p class="hero-sub">The complete AI brain for your school district. Classroom tools, district spending, student nutrition, bond optimization, efficiency monitoring, and superintendent communication — all in one platform.</p>
+    <p class="hero-market">13,500 US districts · Ohio mandate July 2026 · Zero AI competitors built for K-12 administration</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.querySelector('.ohio-section').scrollIntoView({behavior:'smooth'})">Ohio Mandate Details</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-val">26</div><div class="stat-lbl">District intelligence modules</div></div>
+      <div><div class="stat-val">4.2h</div><div class="stat-lbl">Saved per staff per week</div></div>
+      <div><div class="stat-val">0</div><div class="stat-lbl">AI competitors in K-12 admin</div></div>
+      <div><div class="stat-val">July</div><div class="stat-lbl">Ohio AI mandate deadline</div></div>
+    </div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">8 district intelligence modules</div>
+    <div class="sec-title">Every part of your district.<br>One intelligence platform.</div>
+    <div class="sec-sub">SAIRNlearn is not just a teacher tool. It is the AI brain for your entire district — from every classroom to the superintendent office.</div>
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="module-emoji">📚</div>
+        <div class="module-title">Classroom Intelligence</div>
+        <div class="module-desc">AI for every teacher — lesson planning, student feedback, IEP documentation, parent communication, and Ohio standards alignment.</div>
+        <div class="module-features">
+          <div class="module-feature">Lesson plans aligned to Ohio Learning Standards</div>
+          <div class="module-feature">Personalized student feedback in minutes</div>
+          <div class="module-feature">IEP goal writing under IDEA standards</div>
+          <div class="module-feature">Parent newsletters and progress updates</div>
+        </div>
+      </div>
+      <div class="module-card nutrition">
+        <div class="module-emoji">🥗</div>
+        <div class="module-title">Student Nutrition Intelligence</div>
+        <div class="module-desc">AI-powered cafeteria management that ensures every student has access to healthy, nutritious meals while optimizing food costs and reducing waste district-wide.</div>
+        <div class="module-features">
+          <div class="module-feature">Nutritional analysis of every menu item</div>
+          <div class="module-feature">USDA compliance monitoring and reporting</div>
+          <div class="module-feature">Food cost optimization across all schools</div>
+          <div class="module-feature">Allergy and dietary restriction tracking</div>
+          <div class="module-feature">Waste reduction recommendations</div>
+        </div>
+      </div>
+      <div class="module-card finance">
+        <div class="module-emoji">💰</div>
+        <div class="module-title">District Spending Intelligence</div>
+        <div class="module-desc">Checks and balances across every dollar in the district. Real-time spending monitoring, budget variance alerts, vendor analysis, and cross-school equity reporting.</div>
+        <div class="module-features">
+          <div class="module-feature">Real-time budget monitoring across all schools</div>
+          <div class="module-feature">Automated spending alerts and anomaly detection</div>
+          <div class="module-feature">Vendor contract analysis and optimization</div>
+          <div class="module-feature">Per-student funding equity analysis</div>
+          <div class="module-feature">Monthly financial briefings for board review</div>
+        </div>
+      </div>
+      <div class="module-card bond">
+        <div class="module-emoji">🏗️</div>
+        <div class="module-title">Bond Money Optimization</div>
+        <div class="module-desc">Maximize every dollar of bond funding. AI-assisted project prioritization, contractor analysis, schedule optimization, and transparency reporting to the community.</div>
+        <div class="module-features">
+          <div class="module-feature">Capital project prioritization by impact</div>
+          <div class="module-feature">Contractor bid analysis and comparison</div>
+          <div class="module-feature">Bond spending timeline optimization</div>
+          <div class="module-feature">Community transparency reports</div>
+          <div class="module-feature">Compliance documentation for audits</div>
+        </div>
+      </div>
+      <div class="module-card efficiency">
+        <div class="module-emoji">⚡</div>
+        <div class="module-title">School Efficiency Intelligence</div>
+        <div class="module-desc">Every school running at optimum. Staffing ratios, energy usage, attendance patterns, maintenance scheduling, and performance benchmarking across all buildings.</div>
+        <div class="module-features">
+          <div class="module-feature">Staffing ratio analysis and optimization</div>
+          <div class="module-feature">Energy and facility cost benchmarking</div>
+          <div class="module-feature">Attendance pattern analysis and intervention alerts</div>
+          <div class="module-feature">Maintenance scheduling and cost tracking</div>
+          <div class="module-feature">Cross-school performance comparison</div>
+        </div>
+      </div>
+      <div class="module-card super">
+        <div class="module-emoji">🏛️</div>
+        <div class="module-title">Superintendent Communication Hub</div>
+        <div class="module-desc">Every school principal communicates through one intelligent hub. Feedback rolls up to the superintendent automatically with AI-generated summaries, trend analysis, and action items.</div>
+        <div class="module-features">
+          <div class="module-feature">Principal feedback aggregated and summarized</div>
+          <div class="module-feature">Cross-district trend identification</div>
+          <div class="module-feature">AI-generated weekly district briefings</div>
+          <div class="module-feature">Board meeting preparation and materials</div>
+          <div class="module-feature">Multi-district superintendent network</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="module-emoji">🎯</div>
+        <div class="module-title">Curriculum and Standards</div>
+        <div class="module-desc">District-wide curriculum alignment to Ohio Learning Standards. Gap analysis across schools, professional development recommendations, and grant writing support.</div>
+        <div class="module-features">
+          <div class="module-feature">Ohio Learning Standards gap analysis</div>
+          <div class="module-feature">Professional development content generation</div>
+          <div class="module-feature">Education technology grant writing</div>
+          <div class="module-feature">Differentiated instruction guidance</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="module-emoji">🤝</div>
+        <div class="module-title">District Network Intelligence</div>
+        <div class="module-desc">Every district in the network shares what is working. Best practices, vendor recommendations, curriculum innovations, and efficiency improvements shared automatically.</div>
+        <div class="module-features">
+          <div class="module-feature">Cross-district best practice sharing</div>
+          <div class="module-feature">Shared vendor and contract intelligence</div>
+          <div class="module-feature">Collaborative curriculum development</div>
+          <div class="module-feature">Statewide superintendent briefing network</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#EC4899">
+        <div class="module-emoji">💙</div>
+        <div class="module-title">Student Counseling Intelligence</div>
+        <div class="module-desc">Every student who needs support gets it faster. Counselor caseload management, mental health trend tracking, crisis documentation, and intervention workflows across every school.</div>
+        <div class="module-features">
+          <div class="module-feature">Counselor caseload balancing across schools</div>
+          <div class="module-feature">Mental health trend identification by school</div>
+          <div class="module-feature">Crisis intervention documentation</div>
+          <div class="module-feature">Referral workflow and follow-up tracking</div>
+          <div class="module-feature">Confidential case note assistance</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#22C55E">
+        <div class="module-emoji">📈</div>
+        <div class="module-title">School Financial Health</div>
+        <div class="module-desc">Every school running profitably. Per-school cost analysis, state funding maximization, grant opportunity identification, and financial benchmarking against top-performing Ohio districts.</div>
+        <div class="module-features">
+          <div class="module-feature">Per-student cost benchmarking vs Ohio averages</div>
+          <div class="module-feature">State and federal funding optimization</div>
+          <div class="module-feature">Grant opportunity identification and writing</div>
+          <div class="module-feature">Revenue diversification recommendations</div>
+          <div class="module-feature">Monthly financial health score per school</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#F97316">
+        <div class="module-emoji">🏫</div>
+        <div class="module-title">Ohio Statewide Integration</div>
+        <div class="module-desc">SAIRNlearn connects every Ohio district into one intelligence network. When Columbus City Schools solves a problem, every other district learns from it automatically.</div>
+        <div class="module-features">
+          <div class="module-feature">All 610 Ohio districts on one platform</div>
+          <div class="module-feature">Ohio DOE compliance reporting automated</div>
+          <div class="module-feature">State mandate tracking and documentation</div>
+          <div class="module-feature">Shared curriculum library across districts</div>
+          <div class="module-feature">Statewide spending benchmarks and alerts</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#7C3AED">
+        <div class="module-emoji">👩‍🏫</div>
+        <div class="module-title">Teacher Retention and Recruitment Intelligence</div>
+        <div class="module-desc">61% of districts face teacher shortages in 2026. SAIRNlearn predicts which teachers are at risk of leaving before they resign, identifies what drives them away, and builds targeted retention strategies — because losing a teacher costs a district $20,000 to replace and costs students an entire year.</div>
+        <div class="module-features">
+          <div class="module-feature">Early warning system for teacher burnout and attrition risk</div>
+          <div class="module-feature">Exit interview analysis and retention pattern identification</div>
+          <div class="module-feature">Competitive compensation benchmarking by subject and grade</div>
+          <div class="module-feature">Job posting optimization for hard-to-fill roles</div>
+          <div class="module-feature">New teacher mentorship and onboarding support</div>
+          <div class="module-feature">Workload analysis — identify who is overloaded before they quit</div>
+          <div class="module-feature">Recruitment pipeline from Ohio university education programs</div>
+          <div class="module-feature">Career pathway planning to keep great teachers in schools</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#F97316">
+        <div class="module-emoji">📅</div>
+        <div class="module-title">Chronic Absenteeism Early Warning System</div>
+        <div class="module-desc">18% of students are chronically absent nationwide — but districts with targeted support bring that to 14%. SAIRNlearn identifies at-risk students before they miss too many days, connects families to support, and triggers the right intervention at the right time.</div>
+        <div class="module-features">
+          <div class="module-feature">Real-time absence pattern detection per student</div>
+          <div class="module-feature">Early alert at 3 absences — catch it before it becomes a pattern</div>
+          <div class="module-feature">Root cause identification — medical, family, transportation, disengagement</div>
+          <div class="module-feature">Automated family outreach in preferred language</div>
+          <div class="module-feature">Intervention recommendation by root cause type</div>
+          <div class="module-feature">Truancy officer workflow and documentation</div>
+          <div class="module-feature">Cross-school absenteeism pattern analysis</div>
+          <div class="module-feature">Ohio compulsory attendance law compliance tracking</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#10B981">
+        <div class="module-emoji">📱</div>
+        <div class="module-title">Daily Parent Communication Intelligence</div>
+        <div class="module-desc">Parents are the most underutilized resource in every school. SAIRNlearn keeps every parent informed every single day — tardiness, absences, grade changes, test scores, behavior incidents, and achievements — in their language, on their device, at the right moment.</div>
+        <div class="module-features">
+          <div class="module-feature">Same-day tardy and absence notification to parents</div>
+          <div class="module-feature">Grade slip alerts — notified the moment a grade drops</div>
+          <div class="module-feature">Test score delivery with context and next steps</div>
+          <div class="module-feature">Positive achievement notifications — celebrate every win</div>
+          <div class="module-feature">Behavior incident same-day parent notification</div>
+          <div class="module-feature">Assignment missing alerts before grades are impacted</div>
+          <div class="module-feature">Weekly progress summary every Friday</div>
+          <div class="module-feature">Multilingual delivery — any language, any device</div>
+          <div class="module-feature">Channel 1 — Email: full detail, attachments, grade reports</div>
+          <div class="module-feature">Channel 2 — Text SMS: instant alert, one tap to respond</div>
+          <div class="module-feature">Channel 3 — Direct phone call: AI-generated voice message in parent language</div>
+          <div class="module-feature">Parent sets preferred channel — all three used for critical alerts</div>
+          <div class="module-feature">Two-way communication — parents reply directly to teachers</div>
+          <div class="module-feature">Escalation path — 3 unanswered notices across all channels triggers counselor outreach</div>
+          <div class="module-feature">Parent engagement score per school and district</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#1E293B">
+        <div class="module-emoji">🔐</div>
+        <div class="module-title">Cybersecurity Intelligence</div>
+        <div class="module-desc">Cybersecurity is the number one concern of school district leaders for three years running. School districts hold the most sensitive data of any public institution — student Social Security numbers, medical records, IEPs, family financial data. SAIRNlearn monitors, alerts, and protects.</div>
+        <div class="module-features">
+          <div class="module-feature">Student data breach risk assessment and monitoring</div>
+          <div class="module-feature">FERPA data handling compliance audit</div>
+          <div class="module-feature">Ransomware vulnerability identification and prevention</div>
+          <div class="module-feature">Staff cybersecurity training content generation</div>
+          <div class="module-feature">Vendor data sharing agreement review</div>
+          <div class="module-feature">Incident response plan documentation</div>
+          <div class="module-feature">CIPA internet safety compliance monitoring</div>
+          <div class="module-feature">State data privacy law compliance tracking</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#DC2626">
+        <div class="module-emoji">🌍</div>
+        <div class="module-title">Race, Equity, and Inclusion Intelligence</div>
+        <div class="module-desc">Every student — regardless of race, ethnicity, language, religion, or background — belongs, is valued, and has equal access to every opportunity. SAIRNlearn monitors equity gaps, supports culturally responsive teaching, ensures legal compliance, and helps every school become a place where every student sees themselves reflected and respected.</div>
+        <div class="module-features">
+          <div class="module-feature">Achievement gap monitoring by race and ethnicity</div>
+          <div class="module-feature">Discipline disparity analysis — ensure equitable enforcement</div>
+          <div class="module-feature">English Language Learner support and ELL compliance</div>
+          <div class="module-feature">Culturally responsive curriculum recommendations</div>
+          <div class="module-feature">Gifted program access equity by demographic</div>
+          <div class="module-feature">Advanced course enrollment equity analysis</div>
+          <div class="module-feature">Civil Rights Act Title VI compliance monitoring</div>
+          <div class="module-feature">Diversity in hiring pipeline recommendations</div>
+          <div class="module-feature">Restorative justice practice documentation</div>
+          <div class="module-feature">Multilingual family communication support</div>
+          <div class="module-feature">Implicit bias awareness content for professional development</div>
+          <div class="module-feature">Community engagement with underrepresented families</div>
+          <div class="module-feature">Safe and inclusive school climate reporting</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#14B8A6">
+        <div class="module-emoji">♾️</div>
+        <div class="module-title">Special Needs and Accessibility Intelligence</div>
+        <div class="module-desc">Every student — regardless of ability, diagnosis, or disability — deserves full access to education, support, and opportunity. SAIRNlearn ensures every legal requirement is met, every accommodation is delivered, and every special needs student has exactly what they need to thrive.</div>
+        <div class="module-features">
+          <div class="module-feature">IEP creation, tracking, and annual review management</div>
+          <div class="module-feature">504 plan documentation and accommodation monitoring</div>
+          <div class="module-feature">IDEA compliance across all schools and programs</div>
+          <div class="module-feature">ADA physical accessibility audit and improvement planning</div>
+          <div class="module-feature">Speech, occupational, and physical therapy scheduling</div>
+          <div class="module-feature">Assistive technology identification and procurement</div>
+          <div class="module-feature">Paraprofessional assignment and caseload management</div>
+          <div class="module-feature">Transition planning for students aging out of services</div>
+          <div class="module-feature">Parent rights notification and meeting documentation</div>
+          <div class="module-feature">Due process risk identification and compliance alerts</div>
+          <div class="module-feature">Least restrictive environment analysis per student</div>
+          <div class="module-feature">Special education budget tracking and funding optimization</div>
+          <div class="module-feature">Cross-district special education resource sharing</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#A855F7">
+        <div class="module-emoji">🚀</div>
+        <div class="module-title">Student Advancement Intelligence</div>
+        <div class="module-desc">Every student learns at their own pace. SAIRNlearn continuously monitors performance across all subjects, identifies when a student is ready for the next level, and automatically advances curriculum — so no student is ever held back by a calendar or bored because the system underestimates them.</div>
+        <div class="module-features">
+          <div class="module-feature">Continuous performance monitoring across all subjects</div>
+          <div class="module-feature">Advancement readiness alerts — when a student is ready for more</div>
+          <div class="module-feature">Personalized learning pathway generation per student</div>
+          <div class="module-feature">Automatic curriculum advancement recommendations to teachers</div>
+          <div class="module-feature">Early identification of gifted and high-potential students</div>
+          <div class="module-feature">Acceleration options — grade skip, subject acceleration, AP early</div>
+          <div class="module-feature">Intervention alerts when advancement stalls unexpectedly</div>
+          <div class="module-feature">Parent notification when their child is ready for more</div>
+          <div class="module-feature">Curriculum gap analysis — what needs to be filled before advancing</div>
+          <div class="module-feature">Cross-subject readiness — math-ready for science advancement</div>
+          <div class="module-feature">District-wide gifted program pipeline identification</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#0284C7">
+        <div class="module-emoji">🚌</div>
+        <div class="module-title">Transportation and Busing Intelligence</div>
+        <div class="module-desc">Safe, efficient, and equitable transportation for every student. Route optimization, driver management, cost analysis, special needs compliance, and real-time safety monitoring — all in one place.</div>
+        <div class="module-features">
+          <div class="module-feature">Bus route optimization — reduce miles and fuel costs</div>
+          <div class="module-feature">Driver scheduling, certification tracking, and shortage alerts</div>
+          <div class="module-feature">Special needs transportation compliance and IEP coordination</div>
+          <div class="module-feature">McKinney-Vento transportation rights for homeless students</div>
+          <div class="module-feature">Cost per rider analysis across all routes</div>
+          <div class="module-feature">Fleet maintenance scheduling and cost tracking</div>
+          <div class="module-feature">Safety incident documentation and reporting</div>
+          <div class="module-feature">Parent communication for delays and route changes</div>
+          <div class="module-feature">Transportation equity analysis by neighborhood</div>
+          <div class="module-feature">Ohio DOE transportation reimbursement optimization</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#F59E0B">
+        <div class="module-emoji">🤲</div>
+        <div class="module-title">Low-Income Student Support Intelligence</div>
+        <div class="module-desc">Every child deserves the same opportunity regardless of zip code. SAIRNlearn identifies every available resource, benefit, and support program for low-income students and families — and makes sure nothing falls through the cracks.</div>
+        <div class="module-features">
+          <div class="module-feature">Title I funding optimization and compliance reporting</div>
+          <div class="module-feature">Free and reduced lunch program management</div>
+          <div class="module-feature">McKinney-Vento homeless student identification and support</div>
+          <div class="module-feature">Community resource connections — food, housing, utilities</div>
+          <div class="module-feature">After-school and summer program access coordination</div>
+          <div class="module-feature">Technology access gap identification — devices and internet</div>
+          <div class="module-feature">Family engagement strategies for hard-to-reach households</div>
+          <div class="module-feature">Early intervention alerts for at-risk student identification</div>
+          <div class="module-feature">Scholarship and college access support for first-generation students</div>
+          <div class="module-feature">Grant identification specifically for Title I schools</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#0EA5E9">
+        <div class="module-emoji">📣</div>
+        <div class="module-title">Individual School Marketing Intelligence</div>
+        <div class="module-desc">Every school has a unique story worth telling. AI-powered marketing for each building — social media content, enrollment campaigns, community outreach, achievement spotlights, and brand identity — so every school competes for families, funding, and community pride.</div>
+        <div class="module-features">
+          <div class="module-feature">School-specific social media content calendar</div>
+          <div class="module-feature">Enrollment campaign materials for open enrollment season</div>
+          <div class="module-feature">Student and teacher achievement spotlights</div>
+          <div class="module-feature">Community newsletter and event announcements</div>
+          <div class="module-feature">School brand identity and messaging guide</div>
+          <div class="module-feature">Local business partnership outreach templates</div>
+          <div class="module-feature">Press release generation for milestones and awards</div>
+          <div class="module-feature">Ohio school choice competitive positioning</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#EF4444">
+        <div class="module-emoji">🏆</div>
+        <div class="module-title">Sports and Extracurricular Intelligence</div>
+        <div class="module-desc">Keep every program alive and funded. Booster club management, outside donation tracking, fundraising optimization, compliance documentation, and program viability analysis — so no sport or activity gets cut for lack of resources.</div>
+        <div class="module-features">
+          <div class="module-feature">Booster club financial tracking and compliance</div>
+          <div class="module-feature">Outside donation management and donor communication</div>
+          <div class="module-feature">Fundraising campaign planning and optimization</div>
+          <div class="module-feature">Program viability analysis — cost per participant</div>
+          <div class="module-feature">Activity participation tracking across schools</div>
+          <div class="module-feature">Grant opportunities for arts and athletic programs</div>
+          <div class="module-feature">OHSAA compliance documentation and eligibility tracking</div>
+          <div class="module-feature">Cross-school equity in extracurricular access</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#6366F1">
+        <div class="module-emoji">📝</div>
+        <div class="module-title">State and National Testing Intelligence</div>
+        <div class="module-desc">Ohio State Tests, AIR assessments, ACT, SAT, AP exams, and all mandated testing — tracked, analyzed, and turned into actionable improvement plans for every school and every student cohort.</div>
+        <div class="module-features">
+          <div class="module-feature">Ohio State Test prep alignment by grade and subject</div>
+          <div class="module-feature">AIR assessment trend analysis and intervention alerts</div>
+          <div class="module-feature">ACT and SAT score gap analysis by school and demographic</div>
+          <div class="module-feature">AP exam pass rate optimization strategies</div>
+          <div class="module-feature">Mandated testing calendar management and reminders</div>
+          <div class="module-feature">State report card score prediction and improvement plans</div>
+          <div class="module-feature">Cross-district testing benchmark comparisons</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#F59E0B;border-width:3px">
+        <div class="module-emoji">🌟</div>
+        <div class="module-title">Student Career and Workforce Intelligence <span style="font-size:11px;color:#F59E0B;font-weight:700;margin-left:8px">GROUNDBREAKING</span></div>
+        <div class="module-desc">No school system in the world does this. SAIRNlearn watches every student from kindergarten through graduation — tracking what they are exceptional at, what ignites them, and what the labor market needs — then builds a living career pathway that evolves with them. Not a one-time career test. A lifelong intelligence.</div>
+        <div class="module-features">
+          <div class="module-feature">Strength pattern identification from K through 12</div>
+          <div class="module-feature">Real-time Ohio and national labor market demand mapping</div>
+          <div class="module-feature">Career pathway recommendations updated each semester</div>
+          <div class="module-feature">Local employer partnership and internship connections</div>
+          <div class="module-feature">College major alignment based on actual student strengths</div>
+          <div class="module-feature">Trade and vocational pathway identification</div>
+          <div class="module-feature">First-generation college student guidance and support</div>
+          <div class="module-feature">Scholarship matching based on student profile</div>
+          <div class="module-feature">Workforce credential and microcredential recommendations</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#EC4899;border-width:3px">
+        <div class="module-emoji">💚</div>
+        <div class="module-title">Student Wellbeing and Stress Intelligence <span style="font-size:11px;color:#EC4899;font-weight:700;margin-left:8px">GROUNDBREAKING</span></div>
+        <div class="module-desc">Japan just recorded its highest-ever number of school refusals — students the system crushed before they disappeared. No district anywhere monitors academic stress load across a student full schedule. SAIRNlearn does. When a student is being overwhelmed before they break, the system sees it first.</div>
+        <div class="module-features">
+          <div class="module-feature">Academic stress load analysis across all subjects simultaneously</div>
+          <div class="module-feature">Test and deadline collision detection — too much at once</div>
+          <div class="module-feature">Workload equity across classrooms in the same grade</div>
+          <div class="module-feature">Early withdrawal and school refusal pattern detection</div>
+          <div class="module-feature">Student engagement trend monitoring over time</div>
+          <div class="module-feature">Teacher-student relationship health indicators</div>
+          <div class="module-feature">Recess, physical activity, and recovery time adequacy</div>
+          <div class="module-feature">Wellbeing check-in prompts for counselors at key stress points</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#EF4444;border-width:3px">
+        <div class="module-emoji">📖</div>
+        <div class="module-title">Learning Poverty Detection and Elimination <span style="font-size:11px;color:#EF4444;font-weight:700;margin-left:8px">GROUNDBREAKING</span></div>
+        <div class="module-desc">The World Bank defines learning poverty as passing grades without actual comprehension. It affects millions of American students. A student can get a C and not be able to read at grade level. SAIRNlearn detects the gap between certificate and comprehension — and closes it before graduation.</div>
+        <div class="module-features">
+          <div class="module-feature">Reading comprehension level vs grade level gap detection</div>
+          <div class="module-feature">Math fluency vs grade placement discrepancy identification</div>
+          <div class="module-feature">Students passing classes without mastery — flagged immediately</div>
+          <div class="module-feature">Foundational literacy intervention recommendations</div>
+          <div class="module-feature">Grade inflation detection across teachers and schools</div>
+          <div class="module-feature">Real learning measurement vs assessment score comparison</div>
+          <div class="module-feature">Targeted tutoring and intervention matching</div>
+          <div class="module-feature">No student graduates without functional literacy guaranteed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="ohio-section">
+    <div class="ohio-inner">
+      <div class="mandate-badge">Ohio AI Mandate — Action Required by July 2026</div>
+      <h2 style="font-size:clamp(24px,4vw,40px);font-weight:800;color:var(--w);margin:16px 0;letter-spacing:-1px">Columbus City Schools already adopted their AI policy. Is your district ready?</h2>
+      <p style="font-size:16px;color:var(--m);line-height:1.75;margin-bottom:28px">The Ohio Department of Education requires AI literacy integration in every district by July 2026. SAIRNlearn is the only platform built specifically for Ohio K-12 — FERPA-compliant, standards-aligned, and ready to deploy in 24 hours.</p>
+      <div class="ohio-stats">
+        <div class="ohio-stat"><div class="ohio-num">610</div><div class="ohio-lbl">Ohio districts that need a compliant AI solution by July 2026</div></div>
+        <div class="ohio-stat"><div class="ohio-num">50K+</div><div class="ohio-lbl">Columbus City Schools students — first district opportunity</div></div>
+        <div class="ohio-stat"><div class="ohio-num">$500K</div><div class="ohio-lbl">Estimated Columbus pilot contract value</div></div>
+        <div class="ohio-stat"><div class="ohio-num">$10M+</div><div class="ohio-lbl">Ohio statewide if Columbus becomes the reference district</div></div>
+      </div>
+      <button class="btn-grad" onclick="showPage('app')">See SAIRNlearn in action</button>
+    </div>
+  </section>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">Per-student pricing. All 8 modules included.</div>
+    <div class="sec-sub">Simple district licensing. FERPA BAA included. Cancel anytime.</div>
+    <div class="pricing-grid">
+      <div class="pc">
+        <div class="pt">School</div>
+        <div class="pa">$5</div>
+        <div class="pp">/student/year</div>
+        <div class="pd">Single school — up to 800 students</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Classroom intelligence tools</div>
+          <div class="pf-item"><span class="pck">+</span>Student nutrition monitoring</div>
+          <div class="pf-item"><span class="pck">+</span>Ohio standards alignment</div>
+          <div class="pf-item"><span class="pck">+</span>FERPA-compliant data handling</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Try Free</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">District</div>
+        <div class="pa">$8</div>
+        <div class="pp">/student/year</div>
+        <div class="pd">Full district — all schools, all modules</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 8 intelligence modules</div>
+          <div class="pf-item"><span class="pck">+</span>District spending and bond optimization</div>
+          <div class="pf-item"><span class="pck">+</span>Superintendent communication hub</div>
+          <div class="pf-item"><span class="pck">+</span>School efficiency monitoring</div>
+          <div class="pf-item"><span class="pck">+</span>Cross-district network access</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Request Demo</button>
+      </div>
+      <div class="pc">
+        <div class="pt">State Network</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual contract</div>
+        <div class="pd">Multi-district or statewide deployment</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in District plan</div>
+          <div class="pf-item"><span class="pck">+</span>Statewide superintendent network</div>
+          <div class="pf-item"><span class="pck">+</span>Ohio DOE compliance reporting</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated implementation team</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Contact Sales</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNlearn</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · FERPA Compliant · Ohio AI Mandate Ready · Patents Pending · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNlearn <span style="color:var(--m);font-weight:400;font-size:13px">· District Intelligence · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Classroom','Build a lesson plan, write student feedback, or draft IEP documentation')"><span class="mode-icon">📚</span><span class="mode-label">Classroom</span></button>
+    <button class="mode-btn" onclick="setMode('Nutrition','Analyze cafeteria menus, check USDA compliance, or optimize food costs')"><span class="mode-icon">🥗</span><span class="mode-label">Nutrition</span></button>
+    <button class="mode-btn" onclick="setMode('Spending','Monitor district budget, analyze spending, or generate financial reports')"><span class="mode-icon">💰</span><span class="mode-label">Spending</span></button>
+    <button class="mode-btn" onclick="setMode('Bond Money','Optimize bond spending, analyze contractor bids, or generate community reports')"><span class="mode-icon">🏗️</span><span class="mode-label">Bond</span></button>
+    <button class="mode-btn" onclick="setMode('Efficiency','Analyze school performance, staffing ratios, or facility costs')"><span class="mode-icon">⚡</span><span class="mode-label">Efficiency</span></button>
+    <button class="mode-btn" onclick="setMode('Superintendent','Aggregate principal feedback, prepare board materials, or draft district communications')"><span class="mode-icon">🏛️</span><span class="mode-label">Superintendent</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="lesson" onclick="startFlow('lesson')"><span class="mode-icon">📚</span><span class="mode-label">Lesson Plan</span></button>
+    <button class="flow-btn mode-btn" data-flow="budget" onclick="startFlow('budget')"><span class="mode-icon">💰</span><span class="mode-label">Budget Review</span></button>
+    <button class="flow-btn mode-btn" data-flow="super" onclick="startFlow('super')"><span class="mode-icon">🏛️</span><span class="mode-label">District Brief</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🎓</div>
+      <div class="empty-title">SAIRNlearn — District Intelligence</div>
+      <div class="empty-sub">The complete AI brain for your school district. Select a module above or ask anything.</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">Analyze our cafeteria menus for USDA nutritional compliance and suggest healthier alternatives at similar cost</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our bond measure passed for $45M. How should we prioritize spending across 12 schools for maximum student impact?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Generate a weekly district briefing summarizing key issues from principals for the superintendent</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our 8th grade Ohio State Test math scores dropped 12 points. What are the most likely causes and what should we do immediately?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Build an ACT preparation strategy for our 11th graders to improve composite scores by at least 2 points this year</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our football booster club raised $45,000 last year but we have no tracking system. How do we set up proper financial controls and maximize fundraising?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Create a social media content calendar for our elementary school to boost enrollment during open enrollment season</button>
+        <button class="suggestion" onclick="useSuggestion(this)">We have 340 Title I students. What federal and Ohio state programs are we potentially leaving money on the table for?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our transportation budget is $4.2M annually. Analyze where we can reduce costs without reducing access for students in low-income neighborhoods</button>
+        <button class="suggestion" onclick="useSuggestion(this)">A 4th grade student has straight As and scored at 7th grade level on math assessments. What advancement options should we explore and how do we talk to the parents?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">How do we identify gifted students in our Title I schools who may be underperforming due to circumstance not capability?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">We have 847 students with IEPs across 12 schools. How do we ensure every annual review is on time and every accommodation is being delivered consistently?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">A parent is threatening due process. What steps do we take immediately to protect the district and ensure the student gets what they need?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our data shows Black students receive out-of-school suspensions at 3x the rate of white students for similar infractions. What do we do?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">We have 400 English Language Learners across 8 schools. Are we meeting our Title III obligations and what more can we do?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Design a daily parent notification system for our district that covers attendance, grades, test scores, and achievements in both English and Spanish</button>
+        <button class="suggestion" onclick="useSuggestion(this)">A 7th grade student loves building things, scores highest in spatial reasoning, and lives in a family that cannot afford college. What career pathway should we build for them starting now?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">We have students passing with Cs and Ds who cannot read at grade level. How do we identify them, intervene, and make sure no student graduates without functional literacy?</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNlearn anything about your district..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNlearn, a complete district intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve K-12 school districts — from individual teachers to superintendents — across Ohio and the United States. FERPA-compliant: never reference specific student names or personally identifying information. Ohio AI mandate July 2026 makes your deployment urgent for every Ohio district. YOUR 8 MODULES: 1. CLASSROOM INTELLIGENCE: Lesson planning aligned to Ohio Learning Standards, student feedback, IEP documentation under IDEA, parent communication. 2. STUDENT NUTRITION: USDA compliance, menu nutritional analysis, food cost optimization, waste reduction, allergy tracking. Every student deserves access to healthy nutritious meals — this is a health equity issue. 3. DISTRICT SPENDING: Real-time budget monitoring, spending anomaly detection, vendor analysis, per-student equity analysis, financial reporting for board. 4. BOND MONEY OPTIMIZATION: Capital project prioritization, contractor bid analysis, schedule optimization, community transparency reporting, audit compliance. 5. SCHOOL EFFICIENCY: Staffing ratios, energy costs, attendance patterns, maintenance scheduling, cross-school performance benchmarking. 6. SUPERINTENDENT HUB: Aggregate principal feedback, generate weekly district briefings, prepare board materials, identify cross-district trends. 7. CURRICULUM AND STANDARDS: Ohio Learning Standards gap analysis, professional development, grant writing, differentiated instruction. 8. DISTRICT NETWORK: Cross-district best practice sharing, vendor intelligence, statewide superintendent briefing network. CRITICAL: You serve superintendents, principals, teachers, nutrition directors, facilities managers, and finance officers. Know your audience and calibrate your response. Always be specific with numbers and actionable recommendations. Never be vague. ADDITIONAL MODULES: 9. STUDENT COUNSELING: Counselor caseload management, mental health trend tracking, crisis intervention documentation, referral workflows, student wellness monitoring. Never reference specific student names. 10. SCHOOL FINANCIAL HEALTH: Per-school cost analysis, state funding maximization, grant identification, revenue diversification, monthly financial health scoring. 11. OHIO STATEWIDE INTEGRATION: All 610 Ohio districts connected, Ohio DOE compliance automation, state mandate tracking, shared curriculum library, statewide spending benchmarks. You help Ohio become the model state for AI-powered education administration. MODULE 24 - CAREER AND WORKFORCE INTELLIGENCE: Track student strengths from K through 12. Map to Ohio and national labor market demand in real time. Build living career pathways updated each semester. Connect to local employers, internships, trade programs, and scholarships. Help first-generation students navigate college. MODULE 25 - STUDENT WELLBEING AND STRESS: Monitor academic stress load across all subjects simultaneously. Detect test and deadline collisions. Identify students being overwhelmed before they withdraw. Track engagement trends. Monitor workload equity across classrooms. MODULE 26 - LEARNING POVERTY DETECTION: Detect the gap between grades and actual comprehension. Identify students passing classes without mastery. Detect reading comprehension vs grade level discrepancies. Flag grade inflation. Ensure no student graduates without functional literacy. This is groundbreaking — no school system in the world does this systematically. MODULE 23 - DAILY PARENT COMMUNICATION: Same-day tardy and absence notifications. Grade slip alerts the moment a grade drops. Test score delivery with context. Positive achievement celebrations. Behavior incident same-day notification. Missing assignment alerts. Weekly Friday progress summaries. Multilingual delivery in any language. Three contact channels: Email (full detail and reports), SMS text (instant alerts), and direct AI-generated voice calls in the parent language. All three used for critical alerts. Parent sets preferred channel for routine notifications. Two-way communication so parents can reply to teachers. Escalation when 3 notices go unanswered. Parent engagement scoring by school. You believe parents are the most underutilized resource in education. Research consistently shows that when parents are informed and engaged, student outcomes improve dramatically. No parent should learn about a problem at the end of the semester — they should know on day one. MODULE 20 - TEACHER RETENTION: Early warning system for teacher burnout and attrition risk. Exit interview analysis. Competitive compensation benchmarking. Job posting optimization for hard-to-fill roles. New teacher mentorship. Workload analysis. Recruitment pipeline from Ohio universities. MODULE 21 - CHRONIC ABSENTEEISM: Real-time absence pattern detection. Early alert at 3 absences. Root cause identification. Automated family outreach. Intervention recommendations. Truancy documentation. Ohio compulsory attendance law compliance. MODULE 22 - CYBERSECURITY: Student data breach risk assessment. FERPA compliance audit. Ransomware vulnerability identification. Staff cybersecurity training. Vendor data sharing agreement review. Incident response planning. CIPA compliance. You know that cybersecurity is the number one concern of district leaders for three consecutive years and that school districts are the top target for ransomware attacks. MODULE 19 - RACE, EQUITY, AND INCLUSION: Achievement gap monitoring by race and ethnicity with intervention recommendations. Discipline disparity analysis to ensure Black, Hispanic, and other minority students are not disproportionately disciplined. English Language Learner support and Title III compliance. Culturally responsive curriculum recommendations so every student sees themselves in their education. Gifted program and advanced course enrollment equity analysis. Civil Rights Act Title VI compliance monitoring. Diversity in hiring pipeline recommendations. Restorative justice practice documentation. Multilingual family communication in any language. Safe and inclusive school climate reporting. Anti-bullying and harassment documentation. You believe every student deserves to walk into school knowing they belong there and that the system was built for them. You approach equity not as politics but as law, as morality, and as the foundation of a functioning democracy. MODULE 18 - SPECIAL NEEDS AND ACCESSIBILITY: IEP creation, tracking, and annual review management. 504 plan documentation and accommodation delivery monitoring. IDEA compliance across all programs. ADA physical accessibility audit and improvement planning. Speech, occupational, and physical therapy scheduling and caseload management. Assistive technology identification and procurement. Paraprofessional assignment and supervision. Transition planning for students aging out of special education services at 21. Parent rights notification under IDEA. Due process risk identification and compliance alerts before they become lawsuits. Least restrictive environment analysis per student. Special education budget optimization and IDEA Part B funding maximization. You believe with absolute conviction that a child with a disability has the same right to an excellent education as any other child. You know every IDEA requirement, every Ohio special education rule, and every accommodation strategy. You make sure no IEP deadline is missed, no accommodation is forgotten, and no student is placed incorrectly. MODULE 17 - STUDENT ADVANCEMENT INTELLIGENCE: This is the most transformative module in SAIRNlearn. You continuously monitor student performance across all subjects and identify when a student is ready for the next level before the calendar says so. When grades, assessment scores, and engagement patterns indicate a student can handle more, you generate an advancement recommendation to the teacher immediately. You create personalized learning pathways for every student. You identify gifted and high-potential students early — especially in low-income schools where gifted students are often overlooked. You recommend specific advancement options: subject acceleration, grade skip consideration, early AP enrollment, dual enrollment. You believe every student has unlimited potential and the job of education is to find that ceiling and push through it, not wait for the calendar to catch up. You never hold a capable student back. MODULE 16 - TRANSPORTATION AND BUSING: Bus route optimization to reduce miles and fuel costs, driver scheduling and CDL certification tracking, special needs transportation compliance with IEP requirements, McKinney-Vento transportation rights for homeless students, cost per rider analysis, fleet maintenance scheduling, safety incident documentation, parent communication for delays and route changes, transportation equity analysis ensuring low-income neighborhoods have equal access, Ohio DOE transportation reimbursement optimization. You know that transportation is often the second largest budget item after personnel. You find every efficiency and every reimbursement opportunity. MODULE 15 - LOW-INCOME STUDENT SUPPORT: Title I funding optimization and compliance, free and reduced lunch program management, McKinney-Vento homeless student identification and services, community resource connections for food banks, housing assistance, and utility programs, after-school and summer program coordination, technology access gap identification, family engagement strategies for hard-to-reach households, early intervention alerts for chronic absenteeism and at-risk identification, scholarship and college access for first-generation students, grant identification specifically for Title I and high-poverty schools. You believe with absolute conviction that a child born into poverty deserves the exact same educational opportunity as a child born into wealth. You know every federal and Ohio state program available to support low-income students and you make sure districts leave no money on the table and no student unsupported. MODULE 14 - INDIVIDUAL SCHOOL MARKETING: Every school has a unique story worth telling. You create school-specific social media content calendars, enrollment campaign materials for Ohio open enrollment season, student and teacher achievement spotlights, community newsletters, press releases for milestones, local business partnership templates, and competitive positioning against charter and private schools. You understand that in Ohio school choice means schools compete for enrollment and families. You help every school build a brand identity that attracts and retains students, earns community trust, and generates local business support. MODULE 13 - SPORTS AND EXTRACURRICULAR: Booster club financial tracking and OHSAA compliance, outside donation management and donor stewardship, fundraising campaign planning, program viability analysis by cost per participant, activity participation tracking across schools, grant opportunities for arts and athletic programs, cross-school equity in extracurricular access. You believe every student deserves access to sports and activities regardless of which school they attend or how wealthy the neighborhood is. You help keep programs alive through smart fundraising, donor cultivation, and grant identification. You know OHSAA eligibility rules and compliance requirements. MODULE 12 - STATE AND NATIONAL TESTING: Ohio State Tests (OST), AIR assessments, ACT, SAT, PSAT, AP exams, and all mandated testing. You analyze score trends by school, grade, subject, and demographic. You build targeted intervention plans for underperforming cohorts. You align curriculum to tested standards. You predict state report card ratings and recommend specific improvements. You manage the testing calendar and ensure every school is prepared. You compare performance across districts and identify what top-performing schools do differently.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "study";
+const APP_ICON = "🎓";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [
+  {id:"lesson",emoji:"📚",label:"Build a Full Lesson Plan",
+   intro:"Let us build your lesson plan. What subject and grade level are you teaching?",
+   steps:["What is the specific topic or learning objective for this lesson?","How long is the class period and are there any Ohio Learning Standards this must address?"],
+   finish:"Here is your complete lesson plan with objectives, activities, assessment, and Ohio standards alignment."},
+  {id:"budget",emoji:"💰",label:"District Budget Review",
+   intro:"Let us review your district budget. What is your total annual budget and how many students does your district serve?",
+   steps:["Which spending areas are you most concerned about — personnel, facilities, nutrition, technology, or transportation?","What is your biggest budget challenge right now?"],
+   finish:"Here is your budget analysis with specific recommendations for spending optimization, equity considerations, and areas to investigate further."},
+  {id:"super",emoji:"🏛️",label:"Generate District Briefing",
+   intro:"Let us prepare your superintendent briefing. How many schools are in your district and what is the current reporting period?",
+   steps:["What are the top 3 issues principals have raised this week?","Any specific areas you want the briefing to cover — academic, financial, facilities, or community?"],
+   finish:"Here is your weekly superintendent briefing with executive summary, key issues, recommended actions, and board-ready talking points."}
+];
+let activeFlow = null, flowStep = 0;
+
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(16,185,129,0.5);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.1);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/
+
+/g,"</p><p>").replace(/
+/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><p>` + formatted + `</p></div>`;
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML=`<div class="msg-bubble">` + content + `</div>`;
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for unlimited access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><p>` + data.greeting + `</p></div>`;
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;animation:slideUp .2s ease";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+}
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>
