@@ -472,7 +472,7 @@ window.addEventListener('beforeunload', () => {
 document.getElementById('userInput').addEventListener('input', function() { this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 140) + 'px'; });
 document.getElementById('userInput').addEventListener('keydown', function(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 
-// ─── Organization Intelligence Layer ─────────────────────────────────────────
+// === Organization Intelligence Layer ===
 const ORG_ID = localStorage.getItem('sairn_org_id') || null;
 const LOCATION_ID = localStorage.getItem('sairn_location_id') || null;
 const LOCATION_NAME = localStorage.getItem('sairn_location_name') || 'Main Office';
@@ -557,7 +557,7 @@ function saveOILSettings() {
 
 // Show badge on load if org is set
 setTimeout(function() { showOILBadge(); }, 1500);
-// ─────────────────────────────────────────────────────────────────────────────
+// =======================================================================
 
 </script>
 </body>
