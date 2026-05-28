@@ -536,13 +536,18 @@ function showLocationSwitcher() {
     '<input id="oil-loc-input" placeholder="Location name (e.g. Columbus Office)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:16px;outline:none">' +
     '<div style="display:flex;gap:10px">' +
     '<button onclick="saveOILSettings()" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#F0B429,#E09900);border:none;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Connect</button>' +
-    '<button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9090B0;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>' +
+    '<button onclick="closeOILModal()" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9090B0;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>' +
     '</div></div>';
   document.body.appendChild(modal);
   document.getElementById('oil-org-input').value = ORG_ID || '';
   document.getElementById('oil-loc-input').value = LOCATION_NAME || '';
 }
 
+
+function closeOILModal() {
+  const modals = document.querySelectorAll('[style*="position:fixed"][style*="inset:0"]');
+  modals.forEach(function(m) { m.remove(); });
+}
 function saveOILSettings() {
   const orgId = document.getElementById('oil-org-input').value.trim();
   const locName = document.getElementById('oil-loc-input').value.trim();
