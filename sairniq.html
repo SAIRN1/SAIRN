@@ -302,7 +302,7 @@ textarea#userInput::placeholder{color:var(--d)}
 </nav>
 
 <!-- HOME PAGE -->
-<div id="homePage">
+<div id="homePage" class="page active">
 
 <section class="hero">
   <div class="hero-badge">
@@ -594,12 +594,7 @@ function addMsg(role, content) {
   const div = document.createElement("div");
   div.className = `msg ${role}`;
   const formatted = content
-    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
-    .replace(/
-
-/g,"</p><p>")
-    .replace(/
-/g,"<br>")
+    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")
 ;
   if(role === "ai") {
     div.innerHTML=`<div class="msg-avatar">⚡</div><div class="msg-bubble"><p>${formatted}</p></div>`;
