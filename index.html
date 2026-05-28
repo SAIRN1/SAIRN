@@ -1,185 +1,314 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SAIRN Technologies — SAIRN NEXUS Platform</title>
-<meta name="description" content="SAIRN Technologies — 9 Claude-powered AI apps. Michael L. Dibert.">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNtype — Write anything. Better. Faster. With AI that understands intent.</title>
+<meta name="theme-color" content="#0A0B14">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
-body{background:#080808;color:#F5F2EB;font-family:'DM Sans',sans-serif;min-height:100vh}
-.nav{padding:20px 40px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:'DM Mono',monospace;font-size:16px;letter-spacing:3px;color:#C8FF00}
-.nav-sub{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:2px}
-.hero{padding:80px 40px 60px;text-align:center}
-.hero h1{font-size:clamp(48px,8vw,96px);font-weight:600;letter-spacing:-2px;line-height:0.92;margin-bottom:20px}
-.hero h1 span{color:#C8FF00}
-.hero p{font-size:18px;color:rgba(255,255,255,0.45);font-weight:300;max-width:520px;margin:0 auto 60px;line-height:1.7}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2px;max-width:1100px;margin:0 auto;padding:0 40px 80px}
-.card{background:#111;border:1px solid rgba(255,255,255,0.07);padding:28px;text-decoration:none;display:block;transition:all 0.2s;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--c);opacity:0;transition:opacity 0.2s}
-.card:hover{border-color:rgba(255,255,255,0.14);transform:translateY(-3px)}
-.card:hover::before{opacity:1}
-.card-icon{font-size:32px;margin-bottom:14px}
-.card-cell{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
-.card-name{font-size:20px;font-weight:600;color:#F5F2EB;margin-bottom:6px}
-.card-name span{color:var(--c)}
-.card-tag{font-size:13px;color:rgba(255,255,255,0.4);font-weight:300;margin-bottom:16px;line-height:1.5}
-.card-price{font-family:'DM Mono',monospace;font-size:13px;color:var(--c)}
-.footer{border-top:1px solid rgba(255,255,255,0.07);padding:24px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.footer-l{font-family:'DM Mono',monospace;font-size:11px;color:rgba(255,255,255,0.2)}
-.footer-r{font-family:'DM Mono',monospace;font-size:11px;color:rgba(255,255,255,0.15);text-align:right;line-height:1.7}
-@media(max-width:640px){.nav,.hero,.grid,.footer{padding-left:20px;padding-right:20px}}
-
+:root{--bg:#060810;--card:#1A1C32;--a:#6366F1;--a2:#4F46E5;--grad:linear-gradient(135deg,#6366F1,#4F46E5);--ar:rgba(99,102,241,0.15);--ab:rgba(99,102,241,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+html{scroll-behavior:smooth;background:var(--bg)}body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:36px;height:36px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px rgba(99,102,241,0.4)}
+.nav-brand{font-size:19px;font-weight:800;color:var(--w)}.nav-brand span{color:var(--a)}
+.nav-r{display:flex;align-items:center;gap:10px}
+.nav-pill{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 24px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(99,102,241,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(99,102,241,0.1) 0%,transparent 60%)}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.hero-icon{font-size:72px;margin-bottom:24px;filter:drop-shadow(0 0 24px rgba(99,102,241,0.5))}
+.hero-title{font-size:clamp(40px,8vw,80px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#6366F1 60%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:640px;line-height:1.75;margin-bottom:48px}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(99,102,241,0.45);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.features{padding:80px 24px;max-width:1100px;margin:0 auto}
+.feat-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:48px;background:linear-gradient(135deg,#F0F0FF,#6366F1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.feat-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:24px;transition:all 0.3s}
+.feat-card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px)}
+.feat-emoji{font-size:28px;margin-bottom:12px}.feat-name{font-size:16px;font-weight:700;color:var(--w);margin-bottom:6px}.feat-desc{font-size:13px;color:var(--m);line-height:1.6}
+.pricing{padding:80px 24px;text-align:center}
+.price-card{max-width:420px;margin:0 auto;background:var(--card);border:1px solid rgba(99,102,241,0.25);border-radius:24px;padding:40px 32px}
+.price-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:14px}
+.price-amount{font-size:64px;font-weight:800;letter-spacing:-3px;color:var(--w);line-height:1}
+.price-period{font-size:16px;color:var(--m);margin-bottom:4px}.price-sub{font-size:12px;color:var(--d);margin-bottom:28px}
+.price-features{text-align:left;margin-bottom:28px}
+.price-feature{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px;color:var(--m);border-bottom:1px solid rgba(255,255,255,0.04)}
+.price-feature:last-child{border-bottom:none}.price-feature::before{content:"checkmark";content:"✓";color:var(--a);font-weight:700;flex-shrink:0}
+footer{padding:48px 24px;text-align:center;border-top:1px solid rgba(255,255,255,0.06)}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}.footer-sub{font-size:12px;color:var(--d)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:7px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:70%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(99,102,241,0.5)}textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:52px;margin-bottom:16px}.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:360px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:440px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:rgba(99,102,241,0.35);color:var(--w)}
 @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-
 </style>
 </head>
 <body>
+<div id="particles"></div>
 <nav class="nav">
-  <div class="logo">SAIRN TECHNOLOGIES</div>
-  <div class="nav-sub">SAIRN NEXUS PLATFORM · CELL 1–17</div>
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">⌨️</div>
+    <div class="nav-brand">SAIRN<span> SAIRNtype</span></div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-pill">SAIRN NEXUS · Cell 1</div>
+    <button class="nav-cta" onclick="showPage('app')">Open App</button>
+  </div>
 </nav>
-<div class="hero">
-  <h1>Nine AI apps.<br><span>One platform.</span></h1>
-  <p>Claude at the core of every product. SAIRN NEXUS architecture. Built by Michael L. Dibert.</p>
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="hero-badge">SAIRN NEXUS · Cell 1</div>
+    <div class="hero-icon">⌨️</div>
+    <h1 class="hero-title">SAIRNtype</h1>
+    <p class="hero-sub">Write anything. Better. Faster. With AI that understands intent.</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">Try Free</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing').scrollIntoView({behavior:'smooth'})">Pricing</button>
+    </div>
+  </section>
+  <section class="features">
+    <div class="feat-title">What SAIRNtype does</div>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-emoji">✍️</div><div class="feat-name">Write Something</div><div class="feat-desc">What do you need to write?</div></div><div class="feat-card"><div class="feat-emoji">📧</div><div class="feat-name">Write an Email</div><div class="feat-desc">Help me write a professional email</div></div><div class="feat-card"><div class="feat-emoji">📱</div><div class="feat-name">Social Post</div><div class="feat-desc">Write a social media post for me</div></div><div class="feat-card"><div class="feat-emoji">📝</div><div class="feat-name">Edit My Writing</div><div class="feat-desc">Improve something I already wrote</div></div><div class="feat-card"><div class="feat-emoji">🎯</div><div class="feat-name">Match a Tone</div><div class="feat-desc">Help me hit the right tone</div></div>
+    </div>
+  </section>
+  <section class="pricing">
+    <div class="price-card">
+      <div class="price-label">SAIRNtype</div>
+      <div class="price-amount">19.99<span style="font-size:24px;color:var(--m)">/mo</span></div>
+      <div class="price-period" style="margin-top:4px">or included in SAIRN NEXUS Family Plan $19.99/mo</div>
+      <div class="price-sub">Cancel anytime · Secured by Stripe</div>
+      <div class="price-features">
+        <div class="price-feature">Full Claude AI — all features</div>
+        <div class="price-feature">Guided flows — step by step</div>
+        <div class="price-feature">Memory — gets smarter every session</div>
+        <div class="price-feature">19 NEXUS apps — one subscription</div>
+      </div>
+      <button class="btn-grad" style="width:100%" onclick="showPage('app')">Start Free</button>
+    </div>
+  </section>
+  <footer>
+    <div class="footer-brand">SAIRN Technologies</div>
+    <div class="footer-sub">Powered by Claude · SAIRN NEXUS · 2026 Michael L. Dibert · Patents Pending</div>
+  </footer>
 </div>
-<div class="grid">
-  <a class="card" href="/lingual" style="--c:#FF6B35">
-    <div class="card-icon">🌍</div>
-    <div class="card-cell">Cell 07</div>
-    <div class="card-name">SAIRN <span>Lingual</span></div>
-    <div class="card-tag">Speak any language. Sound like a local.</div>
-    <div class="card-price">$12.99 / month</div>
-  </a>
-  <a class="card" href="/health" style="--c:#00D4AA">
-    <div class="card-icon">❤️</div>
-    <div class="card-cell">Cell 08</div>
-    <div class="card-name">SAIRN <span>Health</span></div>
-    <div class="card-tag">Your health, finally explained.</div>
-    <div class="card-price">$9.99 / month</div>
-  </a>
-  <a class="card" href="/money" style="--c:#F5C542">
-    <div class="card-icon">💰</div>
-    <div class="card-cell">Cell 09</div>
-    <div class="card-name">SAIRN <span>Money</span></div>
-    <div class="card-tag">Your money, finally working for you.</div>
-    <div class="card-price">$9.99 / month</div>
-  </a>
-  <a class="card" href="/legal" style="--c:#B8A36E">
-    <div class="card-icon">⚖️</div>
-    <div class="card-cell">Cell 11</div>
-    <div class="card-name">SAIRN <span>Legal</span></div>
-    <div class="card-tag">Every contract, finally understood.</div>
-    <div class="card-price">$19.99 / month</div>
-  </a>
-  <a class="card" href="/study" style="--c:#A78BFA">
-    <div class="card-icon">📚</div>
-    <div class="card-cell">Cell 13</div>
-    <div class="card-name">SAIRN <span>Study</span></div>
-    <div class="card-tag">Study smarter. Learn forever.</div>
-    <div class="card-price">$9.99 / month</div>
-  </a>
-  <a class="card" href="/roam" style="--c:#38BDF8">
-    <div class="card-icon">✈️</div>
-    <div class="card-cell">Cell 14</div>
-    <div class="card-name">SAIRN <span>Roam</span></div>
-    <div class="card-tag">Go anywhere. Know everything. Pay less.</div>
-    <div class="card-price">$4.99 / month</div>
-  </a>
-  <a class="card" href="/senior" style="--c:#6EE7B7">
-    <div class="card-icon">🤝</div>
-    <div class="card-cell">Cell 17</div>
-    <div class="card-name">SAIRN <span>Senior</span></div>
-    <div class="card-tag">Technology that respects you.</div>
-    <div class="card-price">$9.99 / month</div>
-  </a>
-  <a class="card" href="https://sairn.vercel.app" style="--c:#C8FF00" target="_blank" rel="noopener">
-    <div class="card-icon">⌨️</div>
-    <div class="card-cell">Cell 01 · LIVE NOW</div>
-    <div class="card-name">SAIRN<span style="color:#C8FF00">type</span></div>
-    <div class="card-tag">The world's only Claude-powered AI keyboard.</div>
-    <div class="card-price">$9.99 / month ↗</div>
-  </a>
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title"><div class="app-dot"></div>SAIRNtype <span style="color:var(--m);font-weight:400;font-size:13px">· Claude AI</span></div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Write Something','What do you need to write?')"><span class="mode-icon">✍️</span><span class="mode-label">Write Something</span></button><button class="mode-btn" onclick="setMode('Write an Email','Help me write a professional email')"><span class="mode-icon">📧</span><span class="mode-label">Write an Email</span></button><button class="mode-btn" onclick="setMode('Social Post','Write a social media post for me')"><span class="mode-icon">📱</span><span class="mode-label">Social Post</span></button><button class="mode-btn" onclick="setMode('Edit My Writing','Improve something I already wrote')"><span class="mode-icon">📝</span><span class="mode-label">Edit My Writing</span></button><button class="mode-btn" onclick="setMode('Match a Tone','Help me hit the right tone')"><span class="mode-icon">🎯</span><span class="mode-label">Match a Tone</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="write" onclick="startFlow('write')"><span class="mode-icon">✍️</span><span class="mode-label">Something</span></button><button class="flow-btn mode-btn" data-flow="edit" onclick="startFlow('edit')"><span class="mode-icon">📝</span><span class="mode-label">My Writing</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">⌨️</div>
+      <div class="empty-title">Welcome to SAIRNtype</div>
+      <div class="empty-sub">Write anything. Better. Faster. With AI that understands intent.</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">What do you need to write?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Help me write a professional email</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Write a social media post for me</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNtype anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
 </div>
-<footer class="footer">
-  <div class="footer-l">SAIRN TECHNOLOGIES · MICHAEL L. DIBERT · 2026</div>
-  <div class="footer-r">SAIRN NEXUS Platform · Powered by Claude (Anthropic)<br>All rights reserved · SAIRN Technologies</div>
-</footer>
-
 <script>
-const GUIDED_FLOWS=[{id:"write",emoji:"✍️",label:"Write Something",intro:`What are you writing — email, essay, social post, or letter?`,steps:[`Who is the audience and what is the goal?`,`What is the core message you want to get across?`],finish:`Here is a draft. Tell me what to adjust.`}];
-let activeFlow=null,flowStep=0;
-function startFlow(id){
-  const f=GUIDED_FLOWS.find(x=>x.id===id);if(!f)return;
-  activeFlow=f;flowStep=0;
-  document.querySelectorAll('.flow-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b=>b.classList.add('active'));
-  addBub('ai',f.intro);
-  hist.push({role:'assistant',content:f.intro});
-  document.getElementById('inp').placeholder='Reply to continue...';
-  document.getElementById('inp').focus();
-}
-function checkFlow(txt){
-  if(!activeFlow)return false;
-  if(flowStep<activeFlow.steps.length){
-    const nxt=activeFlow.steps[flowStep++];
-    setTimeout(()=>{addBub('ai',nxt);hist.push({role:'assistant',content:nxt});},700);
-    return true;
-  }else if(flowStep===activeFlow.steps.length){
-    flowStep++;
-    setTimeout(()=>{addBub('ai',activeFlow.finish);hist.push({role:'assistant',content:activeFlow.finish});activeFlow=null;},700);
-    return true;
-  }
-  return false;
-}
+const SYSTEM = "You are SAIRNtype, an AI writing assistant powered by Claude AI, part of SAIRN NEXUS built by Michael L. Dibert of SAIRN Technologies. You help people write better — emails, essays, social posts, letters, reports, scripts, and anything else. You match tone precisely, write at the right reading level, and always produce clean copy. Give the final piece first, then offer brief notes on choices made. Do not use contractions.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "sairntype";
+const APP_ICON = "⌨️";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [{id:"write",emoji:"✍️",label:"Write Something",intro:"What are you writing today — email, essay, post, letter, or something else?",steps:["Who is the audience and what is the goal?","What tone do you want — professional, casual, persuasive, or something else?"],finish:"Here is your complete piece. Let me know if you want any adjustments to tone, length, or style."},{id:"edit",emoji:"📝",label:"Edit My Writing",intro:"Paste what you have written and I will improve it.",steps:["What is the main thing you want fixed — clarity, tone, grammar, or length?","Who will read this and what do you want them to feel or do?"],finish:"Here is your improved version with tracked changes explained below."}];
+let activeFlow = null, flowStep = 0;
 
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(99,102,241,0.5);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.1);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div"); div.className = "msg " + role;
+  const fmt = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/
+
+/g,"</p><p>").replace(/
+/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML = "<div class="msg-avatar">⌨️</div><div class="msg-bubble"><p>" + fmt + "</p></div>";
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML = "<div class="msg-bubble">" + content + "</div>";
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML = "<div class="msg-avatar">⌨️</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>";
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  inp.value = ""; inp.style.height = "";
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+      return;
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+      return;
+    }
+    activeFlow = null;
+  }
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const sys = SYSTEM;
+    const res = await fetch(SAIRN_API, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:sys, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for unlimited access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Sorry, please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai", "Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
 async function loadFirstMessage() {
   try {
     const now = new Date();
-    const res = await fetch('https://sairn.vercel.app/api/greeting', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ app_id: 'sairntype', client_hour: now.getHours(), client_day: now.getDay() })
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
     });
-    const data = await res.json();
-    if (!data.greeting) return;
-    const area = document.getElementById('chatArea') || document.getElementById('output') || document.querySelector('[id*="chat"]');
-    if (!area) return;
-    const div = document.createElement( div');
-    div.className = 'msg ai';
-    div.innerHTML = '<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#A78BFA,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:13px">⌨️</div><div style="max-width:72%;padding:12px 16px;border-radius:18px;background:#1A1C32;color:#F0F0FF;font-size:14px"><p>' + data.greeting + '</p></div>';
-    div.style.cssText =  display:flex;gap:10px;opacity:0;transform:translateY(10px);animation:msgIn .25s ease-out forwards';
-    area.appendChild(div);
-    requestAnimationFrame(()=>{ div.style.transition='opacity .5s,transform .5s'; div.style.opacity='1'; div.style.transform='translateY(0)'; });
+    const data = await res.json(); if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML = "<div class="msg-avatar">⌨️</div><div class="msg-bubble"><p>" + data.greeting + "</p></div>";
+    div.style.cssText = "opacity:0;transform:translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() { div.style.transition = "opacity .5s,transform .5s"; div.style.opacity = "1"; div.style.transform = "translateY(0)"; });
   } catch(e) {}
 }
-setTimeout(loadFirstMessage, 400);
-
-async function loadUserMemory() {
-  const token = localStorage.getItem('sairn_token');
-  if (!token) return '';
-  try {
-    const res = await fetch('https://sairn.vercel.app/api/memory', { headers: {'Authorization':'Bearer '+token} });
-    const { memory } = await res.json();
-    if (!memory?.facts?.length) return '';
-    return '\n\nWhat you know about this user:\n' + memory.facts.slice(-15).map(f=>'- '+f.fact).join('\n');
-  } catch(e) { return ''; }
-}
-
-let lastResponse = '';
-function showSaveBar(content) {
-  const existing = document.getElementById('sairn-save-bar');
-  if (existing) existing.remove();
-  lastResponse = content;
-  const bar = document.createElement('div');
-  bar.id = 'sairn-save-bar';
-  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999';
-  bar.innerHTML = '<button onclick="navigator.clipboard.writeText(lastResponse).then(()=>{this.textContent=\'✓ Copied!\';setTimeout(()=>this.textContent=\'📋 Copy\',2000)})" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button><button onclick="const s=JSON.parse(localStorage.getItem(\ sairn_library\')||\'[]\');s.unshift({content:lastResponse,date:new Date().toLocaleDateString()});localStorage.setItem(\'sairn_library\',JSON.stringify(s.slice(0,50)));this.textContent=\'✓ Saved!\';setTimeout(()=>this.textContent=\'💾 Save\',2000)" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button><button onclick="document.getElementById(\ sairn-save-bar\').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>';
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;animation:slideUp .2s ease";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
   document.body.appendChild(bar);
-  setTimeout(()=>{ const b=document.getElementById('sairn-save-bar'); if(b)b.remove(); }, 8000);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
 }
-
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 </script>
 </body>
 </html>
