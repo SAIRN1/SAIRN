@@ -349,8 +349,8 @@ function addMsg(role, content) {
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
     .replace(/\n\n/g,'</p><p>')
     .replace(/\n/g,'<br>')
-    .replace(/^- (.+)/gm,'<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s,'<ul>$1</ul>');
+    
+    ;
   if(role==='ai') {
     div.innerHTML=`<div class="msg-avatar">🤖</div><div class="msg-bubble"><p>${formatted}</p></div>`;
   } else {
@@ -505,27 +505,6 @@ function startFlow(flowId) {
   document.getElementById('userInput').focus();
 }
 
-function advanceFlow(userReply) {
-  if (!activeFlow) return false;
-  if (flowStep < activeFlow.steps.length) {
-    const nextPrompt = activeFlow.steps[flowStep];
-    flowStep++;
-    setTimeout(() => {
-      addMsg('ai', nextPrompt);
-      messages.push({role:'assistant', content: nextPrompt});
-    }, 800);
-    return true;
-  } else if (flowStep === activeFlow.steps.length) {
-    flowStep++;
-    setTimeout(() => {
-      addMsg('ai', activeFlow.finish);
-      messages.push({role:'assistant', content: activeFlow.finish});
-      activeFlow = null;
-    }, 800);
-    return true;
-  }
-  return false;
-}
 
 
 async function loadUserMemory() {

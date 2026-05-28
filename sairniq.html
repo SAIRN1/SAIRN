@@ -600,7 +600,7 @@ function addMsg(role, content) {
 /g,"</p><p>")
     .replace(/
 /g,"<br>")
-    .replace(/^- (.+)/gm,"<li>$1</li>");
+;
   if(role === "ai") {
     div.innerHTML=`<div class="msg-avatar">⚡</div><div class="msg-bubble"><p>${formatted}</p></div>`;
     lastResponse = content;
