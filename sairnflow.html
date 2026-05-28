@@ -336,9 +336,18 @@ async function sendMessage() {
   const inp = document.getElementById('userInput');
   const text = inp.value.trim();
   if(!text || isLoading) return;
-  if(activeFlow !== null && advanceFlow(text)) {
+  if(activeFlow !== null) {
     addMsg('user', text);
     inp.value=''; inp.style.height='';
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg('ai', nxt); messages.push({role:'assistant',content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg('ai', activeFlow.finish); messages.push({role:'assistant',content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else {
+      activeFlow = null;
+    }
     return;
   }
   inp.value='';inp.style.height='';
