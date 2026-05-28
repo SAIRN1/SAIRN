@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNlaw — AI for Every Law Firm. Built from the Inside.</title>
+<meta name="description" content="Document review, contract drafting, case research, client intake, billing optimization, and compliance — all powered by Claude AI. Built specifically for law firms.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#8B5CF6;--a2:#7C3AED;--grad:linear-gradient(135deg,#8B5CF6,#7C3AED);--ar:rgba(139,92,246,0.15);--ab:rgba(139,92,246,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(139,92,246,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(139,92,246,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.1) 0%,transparent 60%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(139,92,246,0.5))}
+.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#8B5CF6 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:700px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:rgba(139,92,246,0.9);font-weight:600;margin-bottom:48px}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(139,92,246,0.45);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
+.stat-lbl{font-size:12px;color:var(--m)}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:580px;margin:0 auto 48px;line-height:1.7}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.feat-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s;border-left:4px solid var(--a)}
+.feat-card:hover{border-color:rgba(139,92,246,0.4);transform:translateY(-2px)}
+.feat-emoji{font-size:32px;margin-bottom:12px}
+.feat-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.feat-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.feat-features{display:flex;flex-direction:column;gap:4px}
+.feat-feature{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.feat-feature::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--a);flex-shrink:0}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:900px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.04)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 14px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:44px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:4px}
+.pd{font-size:12px;color:var(--d);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--m)}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(139,92,246,0.3)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:420px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:500px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:rgba(139,92,246,0.35);color:var(--w)}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">⚖️</div>
+    <div class="nav-brand">SAIRNlaw</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">AI for Law Firms · Claude Powered</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="hero-eyebrow">AI-Native · Claude Powered · Attorney-Grade Intelligence · Patents Pending</div>
+    <div class="hero-icon">⚖️</div>
+    <h1 class="hero-title">SAIRNlaw</h1>
+    <p class="hero-sub">The AI platform built from the inside of a law firm. Document review, contract drafting, case research, client intake, billing optimization, and compliance — all in one place. Built for attorneys who bill by the hour and need every hour to count.</p>
+    <p class="hero-market">$352B US legal services market · Zero AI platforms built specifically for law firm operations · Every firm using generic AI losing billable hours</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View pricing</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-val">6.2h</div><div class="stat-lbl">Non-billable hours saved per attorney per week</div></div>
+      <div><div class="stat-val">$352B</div><div class="stat-lbl">US legal services market — zero vertical AI competitors</div></div>
+      <div><div class="stat-val">73%</div><div class="stat-lbl">Of attorneys say document review is their biggest time drain</div></div>
+    </div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">Built for law firms</div>
+    <div class="sec-title">Every hour you spend on non-billable work is revenue your firm never sees.</div>
+    <div class="sec-sub">SAIRNlaw eliminates the non-billable hours that drain every law firm — so attorneys spend their time on the work that only an attorney can do.</div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-emoji">📄</div>
+        <div class="feat-title">Document Review Intelligence</div>
+        <div class="feat-desc">Review contracts, pleadings, discovery documents, and briefs in minutes instead of hours. SAIRNlaw identifies key clauses, flags risks, summarizes positions, and highlights what needs attorney attention.</div>
+        <div class="feat-features">
+          <div class="feat-feature">Contract risk identification and clause analysis</div>
+          <div class="feat-feature">Discovery document summarization and organization</div>
+          <div class="feat-feature">Brief and motion analysis with key argument extraction</div>
+          <div class="feat-feature">Due diligence package review and red flag identification</div>
+          <div class="feat-feature">Lease and real estate document analysis</div>
+        </div>
+      </div>
+      <div class="feat-card" style="border-left-color:#06B6D4">
+        <div class="feat-emoji">✍️</div>
+        <div class="feat-title">Contract Drafting Intelligence</div>
+        <div class="feat-desc">Draft any contract from a brief description. SAIRNlaw generates jurisdiction-appropriate first drafts of NDAs, service agreements, employment contracts, operating agreements, and more — ready for attorney review and customization.</div>
+        <div class="feat-features">
+          <div class="feat-feature">NDA, service agreements, and vendor contracts</div>
+          <div class="feat-feature">Employment agreements and offer letters</div>
+          <div class="feat-feature">LLC operating agreements and corporate docs</div>
+          <div class="feat-feature">Real estate purchase agreements and leases</div>
+          <div class="feat-feature">Settlement agreements and releases</div>
+        </div>
+      </div>
+      <div class="feat-card" style="border-left-color:#10B981">
+        <div class="feat-emoji">🔍</div>
+        <div class="feat-title">Case Research Intelligence</div>
+        <div class="feat-desc">Research any legal question and get a structured analysis of relevant precedents, statutes, and arguments — in the jurisdiction that matters. SAIRNlaw synthesizes research so attorneys can focus on strategy, not searching.</div>
+        <div class="feat-features">
+          <div class="feat-feature">Case law analysis by jurisdiction and issue</div>
+          <div class="feat-feature">Statute and regulation interpretation</div>
+          <div class="feat-feature">Opposing counsel argument anticipation</div>
+          <div class="feat-feature">Jury instruction research and drafting</div>
+          <div class="feat-feature">Appellate brief argument development</div>
+        </div>
+      </div>
+      <div class="feat-card" style="border-left-color:#F59E0B">
+        <div class="feat-emoji">👥</div>
+        <div class="feat-title">Client Intake Intelligence</div>
+        <div class="feat-desc">Transform client intake from a form-filling exercise into an intelligent consultation. SAIRNlaw guides clients through relevant questions, identifies case issues, flags conflicts of interest, and generates a complete intake summary for the attorney.</div>
+        <div class="feat-features">
+          <div class="feat-feature">Practice-area specific intake questionnaires</div>
+          <div class="feat-feature">Conflict of interest pre-screening</div>
+          <div class="feat-feature">Case viability preliminary assessment</div>
+          <div class="feat-feature">Intake summary generation for attorney review</div>
+          <div class="feat-feature">Engagement letter drafting from intake data</div>
+        </div>
+      </div>
+      <div class="feat-card" style="border-left-color:#EF4444">
+        <div class="feat-emoji">💰</div>
+        <div class="feat-title">Billing Optimization Intelligence</div>
+        <div class="feat-desc">Capture every billable minute. SAIRNlaw helps attorneys write accurate, detailed billing narratives that survive client scrutiny, identifies underbilling patterns, and generates invoice summaries that clients actually pay without dispute.</div>
+        <div class="feat-features">
+          <div class="feat-feature">Billing narrative drafting from time entries</div>
+          <div class="feat-feature">Underbilling pattern identification</div>
+          <div class="feat-feature">Invoice summary and client-ready reporting</div>
+          <div class="feat-feature">Matter budget tracking and overage alerts</div>
+          <div class="feat-feature">Contingency matter value assessment</div>
+        </div>
+      </div>
+      <div class="feat-card" style="border-left-color:#EC4899">
+        <div class="feat-emoji">🏛️</div>
+        <div class="feat-title">Compliance and Ethics Intelligence</div>
+        <div class="feat-desc">Stay ahead of bar requirements, deadlines, and ethics obligations. SAIRNlaw tracks CLE requirements, monitors ethics rules by jurisdiction, flags potential conflicts, and keeps every attorney in your firm compliant.</div>
+        <div class="feat-features">
+          <div class="feat-feature">CLE tracking and deadline management</div>
+          <div class="feat-feature">Ethics rules by jurisdiction</div>
+          <div class="feat-feature">Conflict of interest monitoring across matters</div>
+          <div class="feat-feature">Trust account compliance guidance</div>
+          <div class="feat-feature">Malpractice risk identification</div>
+        </div>
+      </div>
+      <div class="feat-card" style="border-left-color:#6366F1">
+        <div class="feat-emoji">📧</div>
+        <div class="feat-title">Client Communication Intelligence</div>
+        <div class="feat-desc">Draft every client communication — status updates, demand letters, settlement offers, court filing notices, and billing correspondence — in the right tone for the right moment. Never spend an hour writing an email again.</div>
+        <div class="feat-features">
+          <div class="feat-feature">Status update letters and emails</div>
+          <div class="feat-feature">Demand letters and cease and desist</div>
+          <div class="feat-feature">Settlement offer and counter-offer drafting</div>
+          <div class="feat-feature">Court deadline and filing notices to clients</div>
+          <div class="feat-feature">Difficult conversation communications</div>
+        </div>
+      </div>
+      <div class="feat-card" style="border-left-color:#0284C7">
+        <div class="feat-emoji">📋</div>
+        <div class="feat-title">Court Filing and Procedure Intelligence</div>
+        <div class="feat-desc">Every court has different rules, forms, and procedures. SAIRNlaw knows them. Generate court-ready captions, track filing deadlines, draft motions to the local rules of your jurisdiction, and never miss a procedural requirement.</div>
+        <div class="feat-features">
+          <div class="feat-feature">Motion drafting to local court rules</div>
+          <div class="feat-feature">Filing deadline calculation and tracking</div>
+          <div class="feat-feature">Caption and cover sheet generation</div>
+          <div class="feat-feature">Service of process documentation</div>
+          <div class="feat-feature">Pro hac vice and admission procedures</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">Per-attorney pricing. All modules included.</div>
+    <div class="sec-sub">Simple firm licensing. Cancel anytime. All 8 intelligence modules on every plan.</div>
+    <div class="pricing-grid">
+      <div class="pc">
+        <div class="pt">Solo</div>
+        <div class="pa">$199</div>
+        <div class="pp">/month</div>
+        <div class="pd">Single attorney practice</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 8 intelligence modules</div>
+          <div class="pf-item"><span class="pck">+</span>Document review and drafting</div>
+          <div class="pf-item"><span class="pck">+</span>Case research intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Client intake and billing tools</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Try Free</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Firm</div>
+        <div class="pa">$149</div>
+        <div class="pp">/attorney/month</div>
+        <div class="pd">2-20 attorneys · All practice areas</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Solo</div>
+          <div class="pf-item"><span class="pck">+</span>Conflict of interest monitoring across matters</div>
+          <div class="pf-item"><span class="pck">+</span>Firm-wide billing analytics</div>
+          <div class="pf-item"><span class="pck">+</span>Client portal communications</div>
+          <div class="pf-item"><span class="pck">+</span>Multi-attorney matter management</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Request Demo</button>
+      </div>
+      <div class="pc">
+        <div class="pt">Enterprise</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual contract</div>
+        <div class="pd">Large firms and legal departments</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Firm plan</div>
+          <div class="pf-item"><span class="pck">+</span>Custom AI training on firm templates</div>
+          <div class="pf-item"><span class="pck">+</span>Practice management integration</div>
+          <div class="pf-item"><span class="pck">+</span>DMS integration (NetDocuments, iManage)</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated implementation support</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Contact Sales</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNlaw</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · Patents Pending · Not a substitute for licensed legal counsel · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNlaw <span style="color:var(--m);font-weight:400;font-size:13px">· Attorney Intelligence · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Document Review','Paste a document and I will analyze it, flag risks, and summarize key points')"><span class="mode-icon">📄</span><span class="mode-label">Review Docs</span></button>
+    <button class="mode-btn" onclick="setMode('Contract Drafting','Tell me what contract you need and I will draft it')"><span class="mode-icon">✍️</span><span class="mode-label">Draft Contract</span></button>
+    <button class="mode-btn" onclick="setMode('Case Research','Ask any legal research question and I will analyze it by jurisdiction')"><span class="mode-icon">🔍</span><span class="mode-label">Research</span></button>
+    <button class="mode-btn" onclick="setMode('Client Intake','Guide me through a client intake for a new matter')"><span class="mode-icon">👥</span><span class="mode-label">Client Intake</span></button>
+    <button class="mode-btn" onclick="setMode('Billing','Help me write billing narratives or analyze my billing')"><span class="mode-icon">💰</span><span class="mode-label">Billing</span></button>
+    <button class="mode-btn" onclick="setMode('Compliance','Check ethics rules, CLE requirements, or conflict of interest questions')"><span class="mode-icon">🏛️</span><span class="mode-label">Compliance</span></button>
+    <button class="mode-btn" onclick="setMode('Client Communication','Draft a client letter, demand letter, or status update')"><span class="mode-icon">📧</span><span class="mode-label">Communications</span></button>
+    <button class="mode-btn" onclick="setMode('Court Filings','Help me with motion drafting, filing deadlines, or court procedures')"><span class="mode-icon">📋</span><span class="mode-label">Court Filings</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="review" onclick="startFlow('review')"><span class="mode-icon">📄</span><span class="mode-label">Doc Review</span></button>
+    <button class="flow-btn mode-btn" data-flow="contract" onclick="startFlow('contract')"><span class="mode-icon">✍️</span><span class="mode-label">New Contract</span></button>
+    <button class="flow-btn mode-btn" data-flow="intake" onclick="startFlow('intake')"><span class="mode-icon">👥</span><span class="mode-label">New Client</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">⚖️</div>
+      <div class="empty-title">SAIRNlaw — Attorney Intelligence</div>
+      <div class="empty-sub">Every hour you spend on non-billable work is revenue your firm never sees. What do you need help with today?</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">Review this contract and identify the top 5 risk areas I should discuss with my client before signing</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Draft an NDA for a software development engagement where my client is sharing proprietary algorithms with a vendor</button>
+        <button class="suggestion" onclick="useSuggestion(this)">My client was rear-ended in Ohio and the other driver was uninsured. What are all available recovery options?</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNlaw anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNlaw, an AI legal intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve attorneys and law firms — solo practitioners, small firms, and enterprise legal departments. You are attorney-grade AI — precise, thorough, jurisdiction-aware, and built to save billable hours while improving the quality of every deliverable. CRITICAL: You are not a substitute for licensed legal counsel. Always note this for client-facing content. You serve the attorney, not the client directly. YOUR 8 MODULES: 1. DOCUMENT REVIEW: Contract risk identification and clause analysis, discovery summarization, brief and motion analysis, due diligence review, lease analysis. Flag every risk. Summarize every key point. Tell the attorney exactly what needs their attention. 2. CONTRACT DRAFTING: Generate jurisdiction-appropriate first drafts of any contract — NDA, service agreements, employment contracts, LLC operating agreements, real estate, settlements. Clean, professional, ready for attorney review. 3. CASE RESEARCH: Analyze legal questions by jurisdiction. Identify relevant precedents, statutes, and arguments. Anticipate opposing counsel positions. Develop appellate arguments. Be thorough and cite your reasoning. 4. CLIENT INTAKE: Guide practice-area specific intake, pre-screen for conflicts of interest, assess case viability, generate intake summaries, draft engagement letters. 5. BILLING OPTIMIZATION: Draft detailed billing narratives from time entry descriptions. Identify underbilling patterns. Generate client-ready invoice summaries. Track matter budgets. 6. COMPLIANCE AND ETHICS: CLE tracking, ethics rules by jurisdiction, conflict monitoring, trust account compliance, malpractice risk identification. Know Ohio bar rules precisely. 7. CLIENT COMMUNICATION: Draft status updates, demand letters, cease and desist, settlement offers, court filing notices, difficult conversation communications. Always match the right tone to the right situation. 8. COURT FILINGS: Motion drafting to local court rules, deadline calculation, caption generation, service documentation, pro hac vice procedures. Know Ohio court rules and federal rules precisely. Always be direct, thorough, and practice-ready. Attorneys bill by the hour — never waste their time.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "legal";
+const APP_ICON = "⚖️";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [
+  {id:"review",emoji:"📄",label:"Document Review",
+   intro:"Let us review your document. What type of document is this — contract, pleading, brief, discovery, or something else?",
+   steps:["Paste the document or describe its key terms and what you need me to focus on.","What is your client trying to achieve or protect in this matter?"],
+   finish:"Here is my complete document analysis with risk identification, key clause summary, and recommended attorney attention items. Review and customize before sharing with your client."},
+  {id:"contract",emoji:"✍️",label:"Draft a Contract",
+   intro:"Let us draft your contract. What type of agreement do you need — NDA, service agreement, employment contract, operating agreement, or something else?",
+   steps:["Tell me the key parties, the nature of the engagement, and any specific terms your client requires.","What jurisdiction governs this agreement and are there any unusual provisions or deal-specific terms?"],
+   finish:"Here is your first draft. Review carefully, customize to your client situation, and ensure all jurisdiction-specific requirements are met before execution."},
+  {id:"intake",emoji:"👥",label:"New Client Intake",
+   intro:"Let us set up your new client intake. What practice area is this matter — litigation, transactional, family law, criminal, real estate, or other?",
+   steps:["Tell me the client situation in general terms — what happened and what outcome are they seeking?","Any known conflicts of interest, statute of limitations concerns, or urgency factors I should flag?"],
+   finish:"Here is your complete intake summary with case overview, initial issues identified, potential conflicts flagged, and suggested next steps for the first client meeting."}
+];
+let activeFlow = null, flowStep = 0;
+
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(139,92,246,0.5);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.1);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/
+
+/g,"</p><p>").replace(/
+/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><p>` + formatted + `</p></div>`;
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML=`<div class="msg-bubble">` + content + `</div>`;
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for unlimited access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><p>` + data.greeting + `</p></div>`;
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+}
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>
