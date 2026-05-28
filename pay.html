@@ -167,7 +167,7 @@ textarea#userInput:focus{border-color:rgba(16,185,129,0.5)}textarea#userInput::p
 </div>
 <script>
 const SYSTEM = "You are SAIRN Pay, an AI accounts payable and receivable advisor powered by Claude AI, part of SAIRN NEXUS by Michael L. Dibert. You help small and mid-size businesses manage cash flow — what they owe, what they are owed, and what is coming. Expert in AP management, AR collections, cash flow forecasting, invoice analysis, payment disputes, and working capital optimization. Be the CFO they cannot afford to hire. DSO over 45 days is a problem. Never let receivables age past 90 days without a formal collection process. 30-day cash reserve is the minimum for any small business.";
-const SAIRN_API =  https://sairn.vercel.app/api/claude';
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'pay';
 const APP_ICON = '💳';
 let messages = [], isLoading = false, lastResponse = '';
@@ -175,7 +175,7 @@ const GUIDED_FLOWS = [{id:"cashflow",emoji:"🔮",label:"Forecast Cash Flow",int
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById( particles');
+  const c = document.getElementById('particles');
   for(let i=0;i<18;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 4 + Math.random()*10;

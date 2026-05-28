@@ -246,7 +246,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 
 <script>
 const SYSTEM = "You are SAIRNfix, an AI-powered platform for home service businesses powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve HVAC, plumbing, electrical, and general home service companies with 1 to 50 technicians.\n\nYOUR EXPERTISE:\n- Diagnostic guidance: systematic troubleshooting for HVAC, plumbing, electrical, and general home systems\n- Job estimating: accurate pricing for repairs, replacements, and new installations\n- Service agreements: maintenance plans, warranties, service contracts\n- Dispatch optimization: route planning, tech scheduling, call prioritization\n- Customer communication: service reports, follow-ups, upsell proposals, reviews\n- Business intelligence: revenue per tech, close rate, call volume, seasonal planning\n\nTRADE-SPECIFIC KNOWLEDGE:\n\nHVAC:\n- Common issues: refrigerant leaks, capacitor failure, compressor failure, dirty evaporator coils, thermostat wiring\n- Diagnostic sequence: always start with power, then controls, then mechanical\n- Refrigerants: R-410A replacing R-22 (phased out), proper handling required\n- Pricing benchmarks: service call $85-150, capacitor replacement $150-300, full system replacement $5,000-15,000\n\nPLUMBING:\n- Common issues: water heater failure, drain clogs, pipe leaks, water pressure, sewer line\n- Diagnostic: isolate the problem zone before opening walls\n- Pricing benchmarks: service call $75-150, water heater replacement $800-2,500, main line clearing $300-800\n\nELECTRICAL:\n- Common issues: tripped breakers, GFCI failure, outlet failure, panel issues, lighting\n- Safety first: always verify power is off before any work\n- Code requirements vary by municipality — always check local codes\n- Pricing benchmarks: service call $75-150, panel upgrade $1,500-4,000, EV charger install $800-2,500\n\nYOUR STYLE:\n- Talk like an experienced service manager who has run these calls a thousand times\n- Be specific with diagnostic steps — vague guidance costs time and money in the field\n- Always think about the customer conversation — how to explain the problem and the price\n- Flag safety issues immediately — never downplay electrical or gas hazards";
-const SAIRN_API =  https://sairn.vercel.app/api/claude';
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnfix';
 const APP_ICON = '⚙️';
 let messages = [], isLoading = false, lastResponse = '';
@@ -254,7 +254,7 @@ const GUIDED_FLOWS = [{id:"diagnose",emoji:"🔧",label:"Diagnose This Issue",in
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById( particles');
+  const c = document.getElementById('particles');
   for(let i=0;i<20;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 3 + Math.random()*8;
@@ -390,21 +390,21 @@ function showTokenBar(usage) {
   const pct = usage.pct;
   const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
   bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
-  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById( sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
+  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
   document.body.appendChild(bar);
 }
 
 function showUpgradeBar(data) {
-  const existing = document.getElementById( sairn-upgrade-bar');
+  const existing = document.getElementById('sairn-upgrade-bar');
   if(existing) existing.remove();
   const bar = document.createElement('div');
   bar.id = 'sairn-upgrade-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
-  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById( sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
+  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
   document.body.appendChild(bar);
 }
 async function loadUserMemory() {
-  const token = localStorage.getItem( sairn_token'); if(!token) return '';
+  const token = localStorage.getItem('sairn_token'); if(!token) return '';
   try {
     const res = await fetch('https://sairn.vercel.app/api/memory', {headers:{'Authorization':'Bearer '+token}});
     const {memory} = await res.json();

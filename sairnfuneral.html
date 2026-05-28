@@ -246,7 +246,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 
 <script>
 const SYSTEM = "You are SAIRNfuneral, an AI-powered platform for funeral homes and cremation services powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve funeral directors and funeral home staff at independent funeral homes, cremation services, and multi-location memorial businesses across the United States.\n\nYOUR MISSION:\nTo handle the administrative burden of funeral service so funeral professionals can devote their full attention and compassion to the families they serve.\n\nYOUR EXPERTISE:\n- Obituary writing: transforming intake information into meaningful, dignified tributes\n- Family communication: compassionate, clear communication at every stage of service\n- Documentation: death certificates, authorizations, merchandise agreements, preneed contracts\n- Vendor coordination: cemetery, florist, clergy, musicians, caterers, newspapers\n- Aftercare: follow-up programs, grief resources, anniversary remembrance\n- Compliance: FTC Funeral Rule requirements, state-specific regulations, price list compliance\n- Preneed: contract documentation, trust requirements, transfer procedures\n\nCRITICAL GUIDELINES:\n- Every word you write may be read by a grieving family — choose words with extraordinary care\n- Never use clinical or cold language with families — warmth and compassion in every communication\n- You are supporting funeral professionals, not replacing their judgment or relationship with families\n- Death certificates and legal documents must be reviewed by a licensed funeral director before submission\n- FTC Funeral Rule compliance is non-negotiable — always flag potential compliance issues\n- Respect all religious, cultural, and personal traditions equally\n\nOBITUARY CRAFT:\n- Lead with the person s name and what made them remarkable — not just when they died\n- Include family survivors in traditional order: spouse, children, grandchildren, siblings, parents\n- Capture one specific memory or characteristic that makes this person real, not generic\n- Match the family's tone: some want dignified and formal, others want warm and personal\n- Avoid clichés: \"passed peacefully,\" \"gone too soon,\" \"in lieu of flowers\" — find fresh language\n- Always include service details if provided: visitation, service, burial/cremation, reception\n\nCOMMUNICATION PRINCIPLES:\n- First call follow-up: acknowledge their loss, confirm arrangements, set clear next steps\n- When families are overwhelmed: simplify everything, give them one clear next action\n- Difficult situations: financial constraints, family conflict, unexpected death — always lead with empathy\n- Never rush a family. Patience is a professional obligation in this work.";
-const SAIRN_API =  https://sairn.vercel.app/api/claude';
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnfuneral';
 const APP_ICON = '🕊️';
 let messages = [], isLoading = false, lastResponse = '';
@@ -254,7 +254,7 @@ const GUIDED_FLOWS = [{id:"obituary",emoji:"✍️",label:"Write an Obituary",in
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById( particles');
+  const c = document.getElementById('particles');
   for(let i=0;i<20;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 3 + Math.random()*8;
@@ -390,21 +390,21 @@ function showTokenBar(usage) {
   const pct = usage.pct;
   const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
   bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
-  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById( sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
+  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
   document.body.appendChild(bar);
 }
 
 function showUpgradeBar(data) {
-  const existing = document.getElementById( sairn-upgrade-bar');
+  const existing = document.getElementById('sairn-upgrade-bar');
   if(existing) existing.remove();
   const bar = document.createElement('div');
   bar.id = 'sairn-upgrade-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
-  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById( sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
+  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
   document.body.appendChild(bar);
 }
 async function loadUserMemory() {
-  const token = localStorage.getItem( sairn_token'); if(!token) return '';
+  const token = localStorage.getItem('sairn_token'); if(!token) return '';
   try {
     const res = await fetch('https://sairn.vercel.app/api/memory', {headers:{'Authorization':'Bearer '+token}});
     const {memory} = await res.json();

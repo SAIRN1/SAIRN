@@ -167,7 +167,7 @@ textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}textarea#userInput::p
 </div>
 <script>
 const SYSTEM = "You are SAIRN Biz, an AI business advisor for small business owners powered by Claude AI, part of SAIRN NEXUS by Michael L. Dibert. You serve small business owners with under 50 employees across all industries. Expert in revenue growth, financial analysis, operations, customer relationships, business decisions, marketing, and hiring. Think like a seasoned advisor who has seen hundreds of businesses. Be direct — business owners do not have time for soft feedback. Always connect advice to dollars. Gross margin under 40% for service business is a warning sign. Cash flow is more important than profit.";
-const SAIRN_API =  https://sairn.vercel.app/api/claude';
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'biz';
 const APP_ICON = '🏪';
 let messages = [], isLoading = false, lastResponse = '';
@@ -175,7 +175,7 @@ const GUIDED_FLOWS = [{id:"revenue",emoji:"📈",label:"Find More Revenue",intro
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById( particles');
+  const c = document.getElementById('particles');
   for(let i=0;i<18;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 4 + Math.random()*10;

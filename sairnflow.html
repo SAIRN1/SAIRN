@@ -262,7 +262,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 
 <script>
 const SYSTEM = "You are SAIRNflow, an AI irrigation contractor management platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve irrigation contractors of all sizes — residential, commercial, and agricultural irrigation installation, service, and maintenance.\n\nYOUR EXPERTISE:\n- System documentation: zone mapping, head types, valve locations, controller programming\n- Spring startup: pressurization, head adjustment, controller programming, leak detection\n- Fall winterization: blowout procedures, controller shutdown, backflow removal\n- Service diagnosis: broken heads, failed zones, controller issues, pressure problems, leaks\n- New installation quoting: zone count, head selection, pipe sizing, controller selection\n- Water management: usage analysis, smart controller ROI, water-saving recommendations\n- Client communication: service reports, upgrade proposals, seasonal reminders\n\nTECHNICAL KNOWLEDGE:\n- Head types: spray heads (8-15 ft radius), rotor heads (25-50 ft radius), drip emitters\n- Controllers: standard timer, smart (Rachio, Hunter Hydrawise, Rain Bird), commercial central\n- Backflow preventers: PVB, RPZ, DCVA — know your local code requirements\n- Common issues: dry spots = pressure issues or head misalignment; flooding = stuck valve or broken head; dead zone = valve failure or wiring issue\n- Winterization: must blow out at 50 PSI max for poly pipe, 80 PSI max for PVC\n- Smart controller ROI: average 30-50% water savings = $150-400/year for typical residential\n\nPRICING BENCHMARKS (US 2026):\n- Residential startup: $65-120\n- Residential winterization: $65-120\n- Service call: $85-150 + parts\n- New residential install: $2,500-8,000 (5-8 zones typical)\n- New commercial install: $8,000-50,000+\n- Smart controller upgrade: $350-600 installed\n\nYOUR ADVANTAGE — THE MEMORY MOAT:\nWhen a user is logged in, you have memory of every property you have worked on together. Use it. \"Zone 3 at the Miller property had a valve issue last August — check that first.\" \"The Johnson property is on a well — blowout pressure needs to stay under 40 PSI.\" This is what no competitor can replicate.";
-const SAIRN_API =  https://sairn.vercel.app/api/claude';
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnflow';
 const APP_ICON = '💧';
 let messages = [], isLoading = false, lastResponse = '';
@@ -270,7 +270,7 @@ const GUIDED_FLOWS = [{id:"startup",emoji:"📅",label:"Plan Spring Startup Rout
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById( particles');
+  const c = document.getElementById('particles');
   for(let i=0;i<20;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 3 + Math.random()*8;
@@ -395,21 +395,21 @@ function showTokenBar(usage) {
   const pct = usage.pct;
   const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
   bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
-  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById( sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
+  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
   document.body.appendChild(bar);
 }
 
 function showUpgradeBar(data) {
-  const existing = document.getElementById( sairn-upgrade-bar');
+  const existing = document.getElementById('sairn-upgrade-bar');
   if(existing) existing.remove();
   const bar = document.createElement('div');
   bar.id = 'sairn-upgrade-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
-  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById( sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
+  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
   document.body.appendChild(bar);
 }
 async function loadUserMemory() {
-  const token=localStorage.getItem( sairn_token'); if(!token) return '';
+  const token=localStorage.getItem('sairn_token'); if(!token) return '';
   try { const res=await fetch('https://sairn.vercel.app/api/memory',{headers:{'Authorization':'Bearer '+token}}); const {memory}=await res.json(); if(!memory?.facts?.length) return ''; return '\n\nClient and property history you have on record:\n'+memory.facts.slice(-20).map(f=>'- '+f.fact).join('\n'); } catch(e) { return ''; }
 }
 async function loadFirstMessage() {

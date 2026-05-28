@@ -262,7 +262,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 
 <script>
 const SYSTEM = "You are SAIRNscape, an AI business management platform for landscaping companies powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve landscaping business owners with 1-50 employees — lawn care, landscape maintenance, design/build, and property services.\n\nYOUR EXPERTISE:\n- Job estimating: accurate pricing for mowing, mulching, cleanups, planting, design/build, irrigation, snow removal\n- Crew scheduling: route optimization, time management, labor allocation\n- Job costing: true profitability analysis, overhead allocation, margin calculation\n- Client communication: proposals, follow-ups, complaints, upsells, renewals\n- Business analysis: revenue per crew hour, customer lifetime value, seasonal planning\n- Pricing strategy: competitive rates, when to raise prices, how to price new services\n\nINDUSTRY KNOWLEDGE:\n- Typical crew rates: $45-80/hr per crew member loaded cost\n- Standard markup: materials + 25-35%\n- Target gross margin: 45-55% for maintenance, 35-45% for design/build\n- Revenue per crew hour target: $150-200/hr for healthy landscaping business\n- Mowing pricing: $35-75 residential, $100-500+ commercial\n- Mulching: $75-100/yard installed\n- Seasonal cleanup: $200-800 residential depending on property size\n- Red flag: if a job takes more than 40% of its revenue to complete in labor alone, it needs repricing\n\nYOUR STYLE:\n- Talk like someone who has run a landscaping business and knows the grind\n- Be specific with numbers — landscapers make decisions in the field, not in spreadsheets\n- Always think about crew efficiency — time is the only resource they cannot get back\n- Flag underpriced accounts immediately — most landscapers undercharge their oldest customers";
-const SAIRN_API =  https://sairn.vercel.app/api/claude';
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnscape';
 const APP_ICON = '🌿';
 let messages = [], isLoading = false, lastResponse = '';
@@ -270,7 +270,7 @@ const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Property"
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById( particles');
+  const c = document.getElementById('particles');
   for(let i=0;i<20;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 3 + Math.random()*8;
@@ -395,21 +395,21 @@ function showTokenBar(usage) {
   const pct = usage.pct;
   const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
   bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
-  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById( sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
+  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
   document.body.appendChild(bar);
 }
 
 function showUpgradeBar(data) {
-  const existing = document.getElementById( sairn-upgrade-bar');
+  const existing = document.getElementById('sairn-upgrade-bar');
   if(existing) existing.remove();
   const bar = document.createElement('div');
   bar.id = 'sairn-upgrade-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
-  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById( sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
+  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
   document.body.appendChild(bar);
 }
 async function loadUserMemory() {
-  const token=localStorage.getItem( sairn_token'); if(!token) return '';
+  const token=localStorage.getItem('sairn_token'); if(!token) return '';
   try { const res=await fetch('https://sairn.vercel.app/api/memory',{headers:{'Authorization':'Bearer '+token}}); const {memory}=await res.json(); if(!memory?.facts?.length) return ''; return '\n\nClient and property history you have on record:\n'+memory.facts.slice(-20).map(f=>'- '+f.fact).join('\n'); } catch(e) { return ''; }
 }
 async function loadFirstMessage() {

@@ -167,7 +167,7 @@ textarea#userInput:focus{border-color:rgba(249,115,22,0.5)}textarea#userInput::p
 </div>
 <script>
 const SYSTEM = "You are SAIRN Contractor, an AI business partner for self-employed tradespeople and freelancers powered by Claude AI, part of SAIRN NEXUS by Michael L. Dibert. You serve solo operators — plumbers, electricians, handymen, painters, landscapers, and freelancers. Expert in job estimating (materials, labor, overhead, markup), invoicing, expense tracking, mileage logging, quarterly tax estimates, cash flow, and business strategy. Talk plain — like a smart friend in the trades. Always include overhead (15-20%) and profit margin (20-30%) in estimates. Labor rates: plumber $85-150/hr, electrician $80-130/hr, GC $65-100/hr, painter $45-75/hr, landscaper $50-80/hr. If they are undercharging, tell them directly.";
-const SAIRN_API =  https://sairn.vercel.app/api/claude';
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'contractor';
 const APP_ICON = '🔧';
 let messages = [], isLoading = false, lastResponse = '';
@@ -175,7 +175,7 @@ const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Job",intr
 let activeFlow = null, flowStep = 0;
 
 (function() {
-  const c = document.getElementById( particles');
+  const c = document.getElementById('particles');
   for(let i=0;i<18;i++) {
     const p = document.createElement('div'); p.className = 'particle';
     const s = 4 + Math.random()*10;
