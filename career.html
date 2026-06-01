@@ -516,48 +516,9 @@ function startFlow(flowId) {
   document.getElementById('userInput').focus();
 }
 
-function advanceFlow(userReply) {
-  if (!activeFlow) return false;
-  if (flowStep < activeFlow.steps.length) {
-    const nextPrompt = activeFlow.steps[flowStep];
-    flowStep++;
-    setTimeout(() => {
-      addMsg('ai', nextPrompt);
-      messages.push({role:'assistant', content: nextPrompt});
-    }, 800);
-    return true;
-  } else if (flowStep === activeFlow.steps.length) {
-    flowStep++;
-    setTimeout(() => {
-      addMsg('ai', activeFlow.finish);
-      messages.push({role:'assistant', content: activeFlow.finish});
-      activeFlow = null;
-    }, 800);
-    return true;
-  }
-  return false;
-}
 
 
-async function loadUserMemory() {
-  const token = localStorage.getItem('sairn_token');
-  if (!token) return null;
-  try {
-    const res = await fetch('https://sairn.vercel.app/api/memory', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    const { memory } = await res.json();
-    return memory;
-  } catch(e) { return null; }
-}
 
-async function buildSystemWithMemory(baseSystem) {
-  const memory = await loadUserMemory();
-  if (!memory || !memory.facts || !memory.facts.length) return baseSystem;
-  const facts = memory.facts.slice(-20).map(f => '- ' + f.fact).join('\n');
-  const summary = memory.summary ? '\nWho they are: ' + memory.summary : '';
-  return baseSystem + '\n\nWHAT YOU ALREADY KNOW ABOUT THIS USER (learned across all SAIRN apps):\n' + facts + summary + '\n\nUse this naturally — don\'t announce you remember things, just let it make your help more personal.';
-}
 
 async function extractMemoryAfterChat() {
   const token = localStorage.getItem('sairn_token');
