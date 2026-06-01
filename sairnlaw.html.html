@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNlaw — The World Standard for Law Firm Intelligence</title>
+<meta name="description" content="The AI platform built for the world's most demanding law firms. Document review, contract drafting, case research, cross-office intelligence, client management, billing, compliance, and firm-wide communication — all in one platform.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#8B5CF6;--a2:#7C3AED;--grad:linear-gradient(135deg,#8B5CF6,#7C3AED);--ar:rgba(139,92,246,0.15);--ab:rgba(139,92,246,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060;--gold:#F0B429}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(139,92,246,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-links{display:none}
+@media(min-width:900px){.nav-links{display:flex;align-items:center;gap:28px}}
+.nav-link{font-size:13px;font-weight:500;color:var(--m);text-decoration:none;transition:color 0.2s}
+.nav-link:hover{color:var(--w)}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(139,92,246,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.1) 0%,transparent 60%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(139,92,246,0.5))}
+.hero-title{font-size:clamp(42px,8vw,88px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#8B5CF6 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:760px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:rgba(139,92,246,0.9);font-weight:600;margin-bottom:48px}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:64px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(139,92,246,0.45);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.firms-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:800px}
+.firm-pill{padding:7px 18px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);font-size:12px;font-weight:500;color:var(--m);transition:all 0.2s}
+.firm-pill:hover{border-color:rgba(139,92,246,0.3);color:var(--a)}
+.stats-band{background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);padding:48px 24px}
+.stats-inner{display:flex;gap:0;justify-content:center;flex-wrap:wrap;max-width:1000px;margin:0 auto}
+.stat-item{padding:20px 40px;text-align:center;border-right:1px solid rgba(255,255,255,0.06)}
+.stat-item:last-child{border-right:none}
+.stat-val{font-size:36px;font-weight:800;color:var(--w);letter-spacing:-1.5px;line-height:1;margin-bottom:6px}
+.stat-lbl{font-size:12px;color:var(--m);max-width:140px;margin:0 auto;line-height:1.4}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.section-dark{background:var(--card);padding:80px 24px}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:620px;margin:0 auto 56px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s;border-left:4px solid var(--a);position:relative}
+.module-card:hover{border-color:rgba(139,92,246,0.4);transform:translateY(-2px)}
+.module-card.gold-border{border-left-color:var(--gold)}
+.module-card.cyan-border{border-left-color:#06B6D4}
+.module-card.green-border{border-left-color:#10B981}
+.module-card.red-border{border-left-color:#EF4444}
+.module-card.pink-border{border-left-color:#EC4899}
+.module-card.blue-border{border-left-color:#3B82F6}
+.module-card.orange-border{border-left-color:#F59E0B}
+.module-card.teal-border{border-left-color:#14B8A6}
+.world-badge{position:absolute;top:16px;right:16px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:rgba(240,180,41,0.15);color:var(--gold);border:1px solid rgba(240,180,41,0.3)}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:4px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.mod-feature::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--a);flex-shrink:0}
+.module-card.gold-border .mod-feature::before{background:var(--gold)}
+.module-card.cyan-border .mod-feature::before{background:#06B6D4}
+.module-card.green-border .mod-feature::before{background:#10B981}
+.module-card.red-border .mod-feature::before{background:#EF4444}
+.module-card.pink-border .mod-feature::before{background:#EC4899}
+.module-card.blue-border .mod-feature::before{background:#3B82F6}
+.module-card.orange-border .mod-feature::before{background:#F59E0B}
+.module-card.teal-border .mod-feature::before{background:#14B8A6}
+.oil-section{padding:80px 24px;background:linear-gradient(180deg,var(--bg),rgba(139,92,246,0.04),var(--bg))}
+.oil-inner{max-width:1000px;margin:0 auto;text-align:center}
+.oil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:40px}
+.oil-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:20px;text-align:center}
+.oil-icon{font-size:28px;margin-bottom:8px}
+.oil-title{font-size:14px;font-weight:700;color:var(--w);margin-bottom:4px}
+.oil-desc{font-size:12px;color:var(--m);line-height:1.5}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:1100px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.04)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 14px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:40px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:4px}
+.pd{font-size:12px;color:var(--d);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--m)}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(139,92,246,0.3)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:460px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:520px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:rgba(139,92,246,0.35);color:var(--w)}
+.oil-badge{display:none;position:fixed;top:68px;right:16px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;color:var(--a);z-index:998;cursor:pointer}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<div id="oil-badge" class="oil-badge">🏛️ <span id="oil-badge-label">My Firm</span></div>
+
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">⚖️</div>
+    <div class="nav-brand">SAIRNlaw</div>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="#modules">Modules</a>
+    <a class="nav-link" href="#cross-office">Cross-Office</a>
+    <a class="nav-link" href="#pricing">Pricing</a>
+  </div>
+  <div class="nav-r">
+    <div class="nav-badge">World Standard · Claude AI</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="hero-eyebrow">AI-Native · Attorney-Grade · Global · Patents Pending</div>
+    <div class="hero-icon">⚖️</div>
+    <h1 class="hero-title">SAIRNlaw</h1>
+    <p class="hero-sub">The world standard for law firm intelligence. Built for every firm from solo practitioner to Magic Circle giant — every office, every attorney, every matter, every jurisdiction, every time zone — one unified intelligence layer.</p>
+    <p class="hero-market">$352B US legal market · $1.1T global legal services · 54% of firms say technology is their biggest challenge · Zero vertical AI platforms built from inside a law firm</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.getElementById('modules').scrollIntoView({behavior:'smooth'})">View all modules</button>
+    </div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--d);margin-bottom:16px">Built for the world's most demanding firms</div>
+    <div class="firms-row">
+      <div class="firm-pill">Kirkland and Ellis</div>
+      <div class="firm-pill">Latham and Watkins</div>
+      <div class="firm-pill">Baker McKenzie</div>
+      <div class="firm-pill">DLA Piper</div>
+      <div class="firm-pill">Clifford Chance</div>
+      <div class="firm-pill">Linklaters</div>
+      <div class="firm-pill">Freshfields</div>
+      <div class="firm-pill">Allen and Overy</div>
+      <div class="firm-pill">Skadden</div>
+      <div class="firm-pill">Sidley Austin</div>
+      <div class="firm-pill">Jones Day</div>
+      <div class="firm-pill">White and Case</div>
+    </div>
+  </section>
+
+  <div class="stats-band">
+    <div class="stats-inner">
+      <div class="stat-item"><div class="stat-val">6.2h</div><div class="stat-lbl">Non-billable hours saved per attorney per week</div></div>
+      <div class="stat-item"><div class="stat-val">54%</div><div class="stat-lbl">Of legal teams say technology is their biggest challenge</div></div>
+      <div class="stat-item"><div class="stat-val">41%</div><div class="stat-lbl">Of firms cite fragmented disconnected tools as primary pain point</div></div>
+      <div class="stat-item"><div class="stat-val">70%</div><div class="stat-lbl">Of attorneys now use general AI — but no platform built for law</div></div>
+      <div class="stat-item"><div class="stat-val">$1.1T</div><div class="stat-lbl">Global legal services market — zero vertical AI competitors</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="modules">
+    <div class="sec-eye">12 intelligence modules</div>
+    <div class="sec-title">Every dimension of a law firm.<br>One intelligence platform.</div>
+    <div class="sec-sub">From the solo practitioner to the 5,000-attorney global firm — SAIRNlaw covers every workflow, every practice area, every jurisdiction, and every office simultaneously.</div>
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="mod-emoji">📄</div>
+        <div class="mod-title">Document Review Intelligence</div>
+        <div class="mod-desc">Review any document in any practice area — contracts, pleadings, discovery, briefs, due diligence, regulatory filings — in minutes. SAIRNlaw identifies risks, summarizes positions, flags what needs attorney attention, and cross-references firm precedents.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Contract risk identification across 40+ clause types</div>
+          <div class="mod-feature">Discovery document summarization and privilege review</div>
+          <div class="mod-feature">M&A due diligence package review — red flags in minutes</div>
+          <div class="mod-feature">Cross-border regulatory filing analysis</div>
+          <div class="mod-feature">Precedent comparison against firm template library</div>
+        </div>
+      </div>
+      <div class="module-card cyan-border">
+        <div class="mod-emoji">✍️</div>
+        <div class="mod-title">Contract Drafting Intelligence</div>
+        <div class="mod-desc">Generate first drafts of any agreement in any jurisdiction. SAIRNlaw knows the difference between an English law NDA and a New York law NDA, between a Delaware LLC agreement and a Cayman Islands structure. Jurisdiction-aware from the first word.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Jurisdiction-specific drafting — 50 US states + 40 countries</div>
+          <div class="mod-feature">M&A transaction documents — SPA, SHA, ancillaries</div>
+          <div class="mod-feature">Finance documents — loan agreements, security packages</div>
+          <div class="mod-feature">Employment and equity — offer letters, equity plans, RSA</div>
+          <div class="mod-feature">Firm template integration — drafts in your house style</div>
+        </div>
+      </div>
+      <div class="module-card green-border">
+        <div class="mod-emoji">🔍</div>
+        <div class="mod-title">Case and Legal Research Intelligence</div>
+        <div class="mod-desc">Research any legal question in any jurisdiction. Common law. Civil law. Sharia law. SAIRNlaw synthesizes case law, statutes, regulations, and treaty obligations into structured analysis — with opposing argument anticipation built in.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Multi-jurisdiction comparative law analysis</div>
+          <div class="mod-feature">Case law synthesis across common law and civil law systems</div>
+          <div class="mod-feature">Regulatory intelligence — EU, UK, US, APAC frameworks</div>
+          <div class="mod-feature">Opposing counsel argument anticipation and counter-strategy</div>
+          <div class="mod-feature">Expert witness identification and background analysis</div>
+        </div>
+      </div>
+      <div class="module-card gold-border">
+        <div class="world-badge">World First</div>
+        <div class="mod-emoji">🏛️</div>
+        <div class="mod-title">Cross-Office Intelligence Network</div>
+        <div class="mod-desc">Every office in your firm — London, New York, Singapore, Dubai, Sydney — shares intelligence automatically. A partner in Hong Kong working on a cross-border acquisition sees what the London team learned on a similar deal last month. The firm gets smarter every time any attorney works.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Firm-wide matter intelligence shared across all offices</div>
+          <div class="mod-feature">Precedent and playbook synchronization globally</div>
+          <div class="mod-feature">Attorney expertise mapping — who knows what across the firm</div>
+          <div class="mod-feature">Cross-office conflict checking in real time</div>
+          <div class="mod-feature">Practice group knowledge base continuously updated</div>
+          <div class="mod-feature">Client relationship intelligence shared across offices</div>
+        </div>
+      </div>
+      <div class="module-card red-border">
+        <div class="mod-emoji">👥</div>
+        <div class="mod-title">Client Intelligence and Intake</div>
+        <div class="mod-desc">Transform client intake from a form-filling exercise into an intelligent consultation. SAIRNlaw builds a complete client intelligence profile — history, preferences, risk tolerance, relationship context, and matter patterns — so every attorney serves every client as if they have worked with them for years.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Intelligent intake with practice-area specific questioning</div>
+          <div class="mod-feature">Global conflict checking across all offices and matters</div>
+          <div class="mod-feature">Client intelligence profile — history, patterns, preferences</div>
+          <div class="mod-feature">Relationship mapping — who knows the client across the firm</div>
+          <div class="mod-feature">Engagement letter and retainer agreement generation</div>
+        </div>
+      </div>
+      <div class="module-card orange-border">
+        <div class="mod-emoji">💰</div>
+        <div class="mod-title">Billing and Financial Intelligence</div>
+        <div class="mod-desc">Every billable minute captured. Every narrative defensible. Every invoice paid without dispute. SAIRNlaw optimizes billing across the entire firm — identifying underbilling patterns, generating detailed narratives, tracking matter economics, and ensuring alternative fee arrangements are profitable.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Billing narrative drafting from time entry descriptions</div>
+          <div class="mod-feature">Firm-wide underbilling pattern identification</div>
+          <div class="mod-feature">Matter profitability analysis in real time</div>
+          <div class="mod-feature">Alternative fee arrangement modeling and monitoring</div>
+          <div class="mod-feature">Client budget tracking with overage early warning</div>
+          <div class="mod-feature">Realization rate optimization by attorney and practice group</div>
+        </div>
+      </div>
+      <div class="module-card pink-border">
+        <div class="mod-emoji">🌍</div>
+        <div class="mod-title">Multi-Jurisdiction Compliance Intelligence</div>
+        <div class="mod-desc">The most complex challenge facing every global firm — staying compliant across dozens of jurisdictions simultaneously. SAIRNlaw monitors regulatory changes in every market where your firm operates, flags conflicts between jurisdictions, and keeps every attorney current without manual tracking.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Real-time regulatory change monitoring — 40+ jurisdictions</div>
+          <div class="mod-feature">Cross-border conflict of laws analysis</div>
+          <div class="mod-feature">Bar and admission requirements tracking globally</div>
+          <div class="mod-feature">CLE and CPD tracking by jurisdiction automatically</div>
+          <div class="mod-feature">GDPR, CCPA, and global data privacy compliance</div>
+          <div class="mod-feature">Anti-bribery and sanctions compliance monitoring</div>
+        </div>
+      </div>
+      <div class="module-card blue-border">
+        <div class="mod-emoji">📧</div>
+        <div class="mod-title">Client Communication Intelligence</div>
+        <div class="mod-desc">Every client communication — at the right level of formality, in the right jurisdiction, in the right language. SAIRNlaw drafts status updates, demand letters, settlement positions, board reports, and regulatory submissions — calibrated to the client, the matter, and the relationship.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Jurisdiction and culture-appropriate communication style</div>
+          <div class="mod-feature">Multilingual drafting — 40 languages</div>
+          <div class="mod-feature">Board and C-suite level reporting and presentation</div>
+          <div class="mod-feature">Regulatory submission drafting and review</div>
+          <div class="mod-feature">Demand letters and pre-litigation correspondence</div>
+          <div class="mod-feature">Settlement position papers and negotiation support</div>
+        </div>
+      </div>
+      <div class="module-card teal-border">
+        <div class="mod-emoji">📋</div>
+        <div class="mod-title">Court and Tribunal Intelligence</div>
+        <div class="mod-desc">Every court. Every tribunal. Every arbitration panel. SAIRNlaw knows the procedural rules of courts worldwide — from the US District Court for the Southern District of New York to the ICC International Court of Arbitration to the English Commercial Court. No procedural misstep. No missed deadline.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Motion and brief drafting to local court rules worldwide</div>
+          <div class="mod-feature">Arbitration procedure — ICC, LCIA, AAA, SIAC, HKIAC</div>
+          <div class="mod-feature">Deadline calculation across jurisdictions and time zones</div>
+          <div class="mod-feature">Court and tribunal filing format requirements</div>
+          <div class="mod-feature">International enforcement and recognition analysis</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#6366F1">
+        <div class="mod-emoji">🤝</div>
+        <div class="mod-title">Attorney Collaboration Intelligence</div>
+        <div class="mod-desc">Connect attorneys across offices, practice groups, and time zones on complex matters. SAIRNlaw builds the collaboration layer that 41% of firms say they are missing — sharing research, precedents, strategies, and client intelligence instantly across the entire firm.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Cross-practice group matter collaboration</div>
+          <div class="mod-feature">Real-time precedent and strategy sharing</div>
+          <div class="mod-feature">Attorney expertise directory — find the right partner instantly</div>
+          <div class="mod-feature">Matter team assembly recommendations</div>
+          <div class="mod-feature">Knowledge management — no expertise walks out the door</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#F97316">
+        <div class="mod-emoji">🛡️</div>
+        <div class="mod-title">Risk and Malpractice Intelligence</div>
+        <div class="mod-desc">The most expensive thing a law firm can face is a malpractice claim. SAIRNlaw monitors every matter for risk indicators — missed deadlines, conflicts, scope creep, client dissatisfaction signals, and deviation from best practice — before they become claims.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Deadline and statute of limitations monitoring</div>
+          <div class="mod-feature">Conflict detection across all matters and offices</div>
+          <div class="mod-feature">Scope creep identification and engagement management</div>
+          <div class="mod-feature">Client dissatisfaction early warning signals</div>
+          <div class="mod-feature">Matter quality review against firm standards</div>
+          <div class="mod-feature">Insurance reporting and claims documentation</div>
+        </div>
+      </div>
+      <div class="module-card gold-border">
+        <div class="world-badge">World First</div>
+        <div class="mod-emoji">📊</div>
+        <div class="mod-title">Firm Intelligence Dashboard</div>
+        <div class="mod-desc">The view from managing partner. Every office. Every practice group. Every attorney. Every matter. Real-time firm-wide intelligence — utilization rates, realization rates, client health, pipeline, risk exposure, and competitive positioning — all synthesized by AI into actionable insight.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Firm-wide utilization and realization monitoring</div>
+          <div class="mod-feature">Practice group profitability in real time</div>
+          <div class="mod-feature">Client health scoring and churn risk identification</div>
+          <div class="mod-feature">Lateral hire integration and productivity tracking</div>
+          <div class="mod-feature">Competitive intelligence — market positioning analysis</div>
+          <div class="mod-feature">Strategic planning data — where to grow, where to invest</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="oil-section" id="cross-office">
+    <div class="oil-inner">
+      <div class="sec-eye">Cross-Office Intelligence Network</div>
+      <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:16px">Every office connected.<br>Every attorney smarter.</div>
+      <p style="font-size:16px;color:var(--m);max-width:640px;margin:0 auto;line-height:1.75">The biggest problem at every global law firm is that the left hand does not know what the right hand is doing. A partner in Tokyo works on a matter that a London partner solved six months ago — but the London knowledge never reached Tokyo. SAIRNlaw ends that. Forever.</p>
+      <div class="oil-grid">
+        <div class="oil-card"><div class="oil-icon">🌍</div><div class="oil-title">Global Precedent Sharing</div><div class="oil-desc">Every precedent from every office available to every attorney worldwide instantly</div></div>
+        <div class="oil-card"><div class="oil-icon">⚡</div><div class="oil-title">Real-Time Conflict Check</div><div class="oil-desc">Global conflict checking across all offices, matters, and clients in seconds</div></div>
+        <div class="oil-card"><div class="oil-icon">🧠</div><div class="oil-title">Expertise Mapping</div><div class="oil-desc">Find the right attorney anywhere in the firm for any matter instantly</div></div>
+        <div class="oil-card"><div class="oil-icon">📱</div><div class="oil-title">Cross-Office Messaging</div><div class="oil-desc">Secure matter-specific communication across offices and time zones</div></div>
+        <div class="oil-card"><div class="oil-icon">🔐</div><div class="oil-title">Privilege Protection</div><div class="oil-desc">Attorney-client privilege maintained across all cross-office communications</div></div>
+        <div class="oil-card"><div class="oil-icon">📈</div><div class="oil-title">Firm Intelligence Flow</div><div class="oil-desc">Every matter makes the whole firm smarter — the data flywheel that compounds over time</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing-section" id="pricing">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">Every firm. Every size. One platform.</div>
+    <div class="sec-sub">From solo practitioner to Magic Circle firm. All 12 modules on every plan. Cross-office intelligence activated on Firm plan and above.</div>
+    <div class="pricing-grid">
+      <div class="pc">
+        <div class="pt">Solo</div>
+        <div class="pa">$199</div>
+        <div class="pp">/month</div>
+        <div class="pd">Single attorney practice</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 12 intelligence modules</div>
+          <div class="pf-item"><span class="pck">+</span>Document review and contract drafting</div>
+          <div class="pf-item"><span class="pck">+</span>Case research and billing tools</div>
+          <div class="pf-item"><span class="pck">+</span>Client intake and compliance</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Try Free</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Firm</div>
+        <div class="pa">$149</div>
+        <div class="pp">/attorney/month</div>
+        <div class="pd">2–50 attorneys · All offices</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Solo</div>
+          <div class="pf-item"><span class="pck">+</span>Cross-office intelligence network</div>
+          <div class="pf-item"><span class="pck">+</span>Global conflict checking</div>
+          <div class="pf-item"><span class="pck">+</span>Firm intelligence dashboard</div>
+          <div class="pf-item"><span class="pck">+</span>Attorney collaboration network</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Request Demo</button>
+      </div>
+      <div class="pc">
+        <div class="pt">BigLaw</div>
+        <div class="pa">$99</div>
+        <div class="pp">/attorney/month</div>
+        <div class="pd">50+ attorneys · Global offices</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Firm plan</div>
+          <div class="pf-item"><span class="pck">+</span>Multi-jurisdiction compliance</div>
+          <div class="pf-item"><span class="pck">+</span>DMS integration — iManage, NetDocuments</div>
+          <div class="pf-item"><span class="pck">+</span>SSO and enterprise security</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated success team</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Contact Sales</button>
+      </div>
+      <div class="pc">
+        <div class="pt">Magic Circle</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual contract</div>
+        <div class="pd">Global firms · Thousands of attorneys</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in BigLaw</div>
+          <div class="pf-item"><span class="pck">+</span>Custom AI training on firm precedents</div>
+          <div class="pf-item"><span class="pck">+</span>White-label deployment</div>
+          <div class="pf-item"><span class="pck">+</span>On-premise deployment option</div>
+          <div class="pf-item"><span class="pck">+</span>SLA 99.99% uptime guarantee</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Contact Sales</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNlaw</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · Patents Pending · Not a substitute for licensed legal counsel · Available worldwide · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNlaw <span style="color:var(--m);font-weight:400;font-size:13px">· World Standard · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Document Review','Paste or describe a document and I will analyze it, flag every risk, and summarize key points')"><span>📄</span><span class="mode-label">Review</span></button>
+    <button class="mode-btn" onclick="setMode('Contract Drafting','Tell me what contract you need and the jurisdiction and I will draft it')"><span>✍️</span><span class="mode-label">Draft</span></button>
+    <button class="mode-btn" onclick="setMode('Legal Research','Ask any legal question across any jurisdiction and I will analyze it thoroughly')"><span>🔍</span><span class="mode-label">Research</span></button>
+    <button class="mode-btn" onclick="setMode('Cross-Office','Share intelligence across offices, check conflicts globally, or find the right attorney in your firm')"><span>🌍</span><span class="mode-label">Cross-Office</span></button>
+    <button class="mode-btn" onclick="setMode('Client Intelligence','Build a client profile, run conflict checks, or generate an intake summary')"><span>👥</span><span class="mode-label">Clients</span></button>
+    <button class="mode-btn" onclick="setMode('Billing','Draft billing narratives, analyze matter profitability, or optimize your realization rate')"><span>💰</span><span class="mode-label">Billing</span></button>
+    <button class="mode-btn" onclick="setMode('Compliance','Check regulatory requirements across jurisdictions, track CLE, or monitor regulatory changes')"><span>🌍</span><span class="mode-label">Compliance</span></button>
+    <button class="mode-btn" onclick="setMode('Client Communication','Draft any client communication in any language for any jurisdiction')"><span>📧</span><span class="mode-label">Comms</span></button>
+    <button class="mode-btn" onclick="setMode('Court and Tribunal','Draft motions, calculate deadlines, or prepare arbitration submissions worldwide')"><span>📋</span><span class="mode-label">Court</span></button>
+    <button class="mode-btn" onclick="setMode('Risk Intelligence','Identify malpractice risks, check for missed deadlines, or assess matter quality')"><span>🛡️</span><span class="mode-label">Risk</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="review" onclick="startFlow('review')"><span>📄</span><span class="mode-label">Review</span></button>
+    <button class="flow-btn mode-btn" data-flow="draft" onclick="startFlow('draft')"><span>✍️</span><span class="mode-label">Draft</span></button>
+    <button class="flow-btn mode-btn" data-flow="intake" onclick="startFlow('intake')"><span>👥</span><span class="mode-label">Intake</span></button>
+    <button class="flow-btn mode-btn" data-flow="crossoffice" onclick="startFlow('crossoffice')"><span>🌍</span><span class="mode-label">Connect</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">⚖️</div>
+      <div class="empty-title">SAIRNlaw — World Standard Attorney Intelligence</div>
+      <div class="empty-sub">Every office. Every attorney. Every matter. Every jurisdiction. What do you need?</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">I am working on a cross-border M&A transaction — target is a UK company, buyer is US. Walk me through the key legal issues across both jurisdictions I need to address.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Draft a jurisdiction-aware NDA for a technology licensing deal where both parties are sharing proprietary AI training data. New York law.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">My London office just closed a leveraged finance deal with a covenant package we think is market-leading. How do I share that intelligence with our New York and Hong Kong offices?</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNlaw anything — any matter, any jurisdiction, any office..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNlaw, the world standard AI intelligence platform for law firms, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve every law firm from solo practitioners to the world's largest firms — Kirkland and Ellis, Latham and Watkins, Baker McKenzie, DLA Piper, Clifford Chance, Linklaters, Freshfields, Allen and Overy, Skadden, Jones Day — every attorney, every office, every jurisdiction, every time zone. You are attorney-grade AI — precise, thorough, jurisdiction-aware, privilege-conscious, and built to save 6.2 hours of non-billable work per attorney per week. CRITICAL: You are not a substitute for licensed legal counsel. Always note this for client-facing content. You serve the attorney. YOUR 12 MODULES: 1. DOCUMENT REVIEW: Risk identification across 40 clause types, discovery summarization, M&A due diligence, regulatory filings, cross-border documents. 2. CONTRACT DRAFTING: Jurisdiction-specific drafting — 50 US states and 40 countries. M&A documents, finance documents, employment, equity, real estate. Know English law vs New York law vs Delaware law vs Cayman Islands. 3. LEGAL RESEARCH: Multi-jurisdiction comparative analysis. Common law, civil law, Sharia law. Case synthesis, regulatory intelligence across EU, UK, US, APAC. Opposing argument anticipation. 4. CROSS-OFFICE INTELLIGENCE: Share precedents, playbooks, expertise, and client intelligence across all firm offices globally. Global conflict checking. Attorney expertise mapping. Cross-office secure communication. 5. CLIENT INTELLIGENCE: Intelligent intake, global conflict checking, client profiles, relationship mapping, engagement letter generation. 6. BILLING AND FINANCIAL: Narrative drafting, underbilling identification, matter profitability, alternative fee modeling, realization rate optimization. 7. MULTI-JURISDICTION COMPLIANCE: Regulatory monitoring across 40 jurisdictions, GDPR, CCPA, anti-bribery, sanctions, CLE/CPD tracking globally. 8. CLIENT COMMUNICATION: Jurisdiction and culture-appropriate, multilingual in 40 languages, board-level reporting, regulatory submissions. 9. COURT AND TRIBUNAL: US federal and state courts, English courts, ICC, LCIA, AAA, SIAC, HKIAC arbitration procedures. Deadline calculation across time zones. 10. ATTORNEY COLLABORATION: Cross-practice matter collaboration, precedent sharing, expertise directory, knowledge management. 11. RISK AND MALPRACTICE: Deadline monitoring, conflict detection, scope creep identification, client dissatisfaction signals, matter quality review. 12. FIRM INTELLIGENCE DASHBOARD: Utilization and realization rates, practice group profitability, client health, pipeline, competitive positioning. Be direct, thorough, and practice-ready. Know your audience — a Magic Circle partner in London needs different communication than a solo practitioner in Ohio. Both deserve excellence.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "legal";
+const APP_ICON = "⚖️";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [
+  {id:"review",emoji:"📄",label:"Document Review",
+   intro:"Let us review your document. What type of document and what jurisdiction governs it?",
+   steps:["Paste the document or describe the key terms and what concerns your client most.","What is the transaction or matter context — what is your client trying to achieve or protect?"],
+   finish:"Here is my complete analysis — risk identification, key clause summary, cross-border issues flagged, and recommended attorney attention items. Review and customize before sharing with your client."},
+  {id:"draft",emoji:"✍️",label:"Draft a Document",
+   intro:"Let us draft your document. What type of agreement and what governing law — New York, English, Delaware, or another jurisdiction?",
+   steps:["Tell me the key parties, the nature of the transaction or engagement, and any specific commercial terms your client requires.","Any unusual provisions, cross-border elements, or deal-specific complexities I should build in from the start?"],
+   finish:"Here is your first draft — jurisdiction-appropriate, commercially sound, and ready for attorney review and customization. Check all defined terms, representations, and governing law provisions before execution."},
+  {id:"intake",emoji:"👥",label:"New Client Intake",
+   intro:"Let us set up your new client intake. What practice area and what jurisdiction is the primary seat of this matter?",
+   steps:["Tell me the client situation and what outcome they are seeking — as much or as little detail as you have.","Any known conflicts, regulatory sensitivities, cross-border elements, or urgency factors I should flag immediately?"],
+   finish:"Here is your complete intake summary — matter overview, initial legal issues identified, cross-border considerations, conflicts flagged, and suggested next steps. Review before the first client meeting."},
+  {id:"crossoffice",emoji:"🌍",label:"Cross-Office Connect",
+   intro:"Let us connect your offices. Which offices are involved in this matter and what practice areas are engaged?",
+   steps:["What intelligence from one office would most benefit the others — precedents, client history, regulatory knowledge, or attorney expertise?","What is the matter context and timeline?"],
+   finish:"Here is how I recommend structuring the cross-office intelligence sharing for this matter — who should be connected, what precedents apply from other offices, and how to keep all teams aligned as the matter progresses."}
+];
+let activeFlow = null, flowStep = 0;
+
+const ORG_ID = localStorage.getItem("sairn_org_id") || null;
+const ORG_NAME = localStorage.getItem("sairn_location_name") || "My Firm";
+
+if(ORG_ID) {
+  const badge = document.getElementById("oil-badge");
+  const label = document.getElementById("oil-badge-label");
+  if(badge && label) {
+    label.textContent = ORG_NAME;
+    badge.style.display = "flex";
+    badge.onclick = function() { showOrgModal(); };
+  }
+}
+
+function showOrgModal() {
+  const existing = document.getElementById('org-modal');
+  if(existing) { existing.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'org-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:28px;max-width:380px;width:90%';
+  box.innerHTML = '<div style="font-size:16px;font-weight:700;color:#F0F0FF;margin-bottom:8px">Firm Intelligence Network</div>' +
+    '<div style="font-size:13px;color:#9090B0;margin-bottom:20px">Connect your offices to share intelligence across your entire firm.</div>' +
+    '<input id="org-id-input" placeholder="Firm ID" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:10px;outline:none">' +
+    '<input id="org-name-input" placeholder="Office name" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:16px;outline:none">' +
+    '<div style="display:flex;gap:10px">' +
+    '<button onclick="saveOrg()" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#7C3AED);border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Connect</button>' +
+    '<button onclick="closeOrgModal()" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9090B0;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>' +
+    '</div>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  document.getElementById('org-id-input').value = ORG_ID || '';
+  document.getElementById('org-name-input').value = ORG_NAME || '';
+}
+
+function closeOrgModal() {
+  const m = document.getElementById('org-modal');
+  if(m) m.remove();
+}
+
+function saveOrg() {
+  const orgId = document.getElementById("org-id-input").value.trim();
+  const orgName = document.getElementById("org-name-input").value.trim();
+  if(orgId) {
+    localStorage.setItem("sairn_org_id", orgId);
+    localStorage.setItem("sairn_location_name", orgName || "My Office");
+    location.reload();
+  }
+}
+
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(139,92,246,0.5);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.1);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><p>` + formatted + `</p></div>`;
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML=`<div class="msg-bubble">` + content + `</div>`;
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML=`<div class="msg-avatar">` + APP_ICON + `</div><div class="msg-bubble"><p>` + data.greeting + `</p></div>`;
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+}
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>
