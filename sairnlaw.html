@@ -143,7 +143,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 </head>
 <body>
 <div id="particles"></div>
-<div id="oil-badge" class="oil-badge">🏛️ <span id="oil-badge-label">My Firm</span></div>
+
 
 <nav class="nav">
   <a class="nav-logo" href="/" onclick="showPage('home');return false">
@@ -514,38 +514,7 @@ const GUIDED_FLOWS = [
 ];
 let activeFlow = null, flowStep = 0;
 
-const ORG_ID = localStorage.getItem("sairn_org_id") || null;
-const ORG_NAME = localStorage.getItem("sairn_location_name") || "My Firm";
 
-if(ORG_ID) {
-  const badge = document.getElementById("oil-badge");
-  const label = document.getElementById("oil-badge-label");
-  if(badge && label) {
-    label.textContent = ORG_NAME;
-    badge.style.display = "flex";
-    badge.onclick = function() { showOrgModal(); };
-  }
-}
-
-function showOrgModal() {
-  const existing = document.getElementById("org-modal");
-  if(existing) { existing.remove(); return; }
-  const modal = document.createElement("div");
-  modal.id = "org-modal";
-  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center";
-  modal.innerHTML = "<div style="background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:28px;max-width:380px;width:90%">" +
-    "<div style="font-size:16px;font-weight:700;color:#F0F0FF;margin-bottom:8px">Firm Intelligence Network</div>" +
-    "<div style="font-size:13px;color:#9090B0;margin-bottom:20px">Connect your offices to share intelligence across your entire firm.</div>" +
-    "<input id="org-id-input" placeholder="Firm ID (e.g. kirkland-001)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:10px;outline:none">" +
-    "<input id="org-name-input" placeholder="Office name (e.g. London Office)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:16px;outline:none">" +
-    "<div style="display:flex;gap:10px">" +
-    "<button onclick="saveOrg()" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#7C3AED);border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Connect</button>" +
-    "<button onclick="document.getElementById('org-modal').remove()" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9090B0;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>" +
-    "</div></div>";
-  document.body.appendChild(modal);
-  document.getElementById("org-id-input").value = ORG_ID || "";
-  document.getElementById("org-name-input").value = ORG_NAME || "";
-}
 
 function saveOrg() {
   const orgId = document.getElementById("org-id-input").value.trim();
