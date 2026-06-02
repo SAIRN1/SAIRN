@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRN Intelligence Network — The Cross-Vertical AI Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#020408;--card:#0D1220;--a:#00E5FF;--a2:#0099CC;--grad:linear-gradient(135deg,#00E5FF,#0099CC);--ar:rgba(0,229,255,0.10);--ab:rgba(0,229,255,0.25);--glow:rgba(0,229,255,0.3);--w:#E8F8FF;--m:#6080A0;--d:#2A3A4A;--gold:#F0B429}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.08)}90%{opacity:var(--o,.08)}50%{transform:translateY(-60px) scale(1.3)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(2,4,8,0.95);backdrop-filter:blur(24px);border-bottom:1px solid rgba(0,229,255,0.1)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 28px var(--glow)}
+.nav-brand{font-size:20px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-brand span{color:var(--a)}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.hero{min-height:100vh;padding:100px 24px 80px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;z-index:1}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 20px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.hero-title{font-size:clamp(44px,8vw,96px);font-weight:800;line-height:1.0;letter-spacing:-3px;margin-bottom:24px;background:linear-gradient(135deg,#FFFFFF 0%,#00E5FF 40%,#0099CC 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,22px);color:var(--m);max-width:760px;line-height:1.75;margin-bottom:16px}
+.hero-pull{font-size:clamp(14px,2vw,18px);color:var(--a);font-weight:600;margin-bottom:56px;opacity:0.9;max-width:700px}
+.network-viz{width:100%;max-width:900px;margin:0 auto 64px;position:relative}
+.network-viz svg{width:100%;height:auto}
+.stats-band{display:flex;gap:0;justify-content:center;flex-wrap:wrap;max-width:1000px;margin:0 auto 80px;border:1px solid rgba(0,229,255,0.12);border-radius:16px;overflow:hidden}
+.stat-item{padding:24px 40px;text-align:center;border-right:1px solid rgba(0,229,255,0.08);flex:1;min-width:160px}
+.stat-item:last-child{border-right:none}
+.stat-val{font-size:32px;font-weight:800;color:var(--a);letter-spacing:-1.5px;line-height:1;margin-bottom:6px;font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:11px;color:var(--m);line-height:1.4}
+.section{padding:80px 24px;max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:640px;margin:0 auto 48px;line-height:1.7}
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.how-card{background:var(--card);border:1px solid rgba(0,229,255,0.1);border-radius:20px;padding:28px;border-top:3px solid var(--a)}
+.how-num{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:12px}
+.how-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:10px}
+.how-desc{font-size:13px;color:var(--m);line-height:1.7}
+.vertical-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:32px 0}
+.vert-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:14px;transition:all 0.2s}
+.vert-card:hover{border-color:rgba(0,229,255,0.3);background:rgba(0,229,255,0.04)}
+.vert-icon{font-size:24px;flex-shrink:0}
+.vert-info{flex:1}
+.vert-name{font-size:14px;font-weight:700;color:var(--w);margin-bottom:3px}
+.vert-market{font-size:11px;color:var(--m)}
+.patent-box{background:linear-gradient(135deg,rgba(0,229,255,0.08),rgba(0,153,204,0.05));border:1px solid rgba(0,229,255,0.2);border-radius:20px;padding:48px;margin:32px 0;text-align:center}
+.pb-title{font-size:clamp(24px,4vw,40px);font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:16px}
+.pb-sub{font-size:15px;color:var(--m);max-width:640px;margin:0 auto 32px;line-height:1.75}
+.pb-claims{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;text-align:left}
+.pb-claim{background:rgba(0,0,0,0.3);padding:16px 20px;border-radius:10px;border-left:3px solid var(--a)}
+.pb-claim-num{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--a);margin-bottom:6px;text-transform:uppercase}
+.pb-claim-text{font-size:13px;color:var(--m);line-height:1.6}
+.value-section{padding:80px 24px;background:linear-gradient(180deg,var(--bg),rgba(0,229,255,0.02),var(--bg));position:relative;z-index:1}
+.value-inner{max-width:1000px;margin:0 auto}
+.value-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:32px 0}
+.value-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:24px}
+.vc-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:10px}
+.vc-value{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:6px}
+.vc-desc{font-size:12px;color:var(--m);line-height:1.5}
+.cta-section{padding:80px 24px;text-align:center;position:relative;z-index:1}
+.cta-box{background:linear-gradient(135deg,rgba(0,229,255,0.08),rgba(0,153,204,0.04));border:1px solid rgba(0,229,255,0.2);border-radius:24px;padding:64px 48px;max-width:800px;margin:0 auto}
+.cta-title{font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:16px}
+.cta-sub{font-size:16px;color:var(--m);margin-bottom:32px;line-height:1.75;max-width:560px;margin-left:auto;margin-right:auto}
+.cta-contact{font-size:15px;color:var(--a);font-weight:600;margin-bottom:8px}
+.cta-url{font-size:14px;color:var(--m)}
+footer{padding:32px 24px;border-top:1px solid rgba(0,229,255,0.08);text-align:center;position:relative;z-index:1}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+
+<nav class="nav">
+  <a class="nav-logo" href="/">
+    <div class="nav-gem">🌐</div>
+    <div class="nav-brand">SAIRN <span>Intelligence Network</span></div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">Patent Pending · World First · The $1B Asset</div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">Cross-Vertical Intelligence · Patent Pending · No Prior Art Worldwide</div>
+  <h1 class="hero-title">The Intelligence<br>That Connects<br>Everything.</h1>
+  <p class="hero-sub">Every SAIRN platform learns from every other SAIRN platform. Intelligence generated in a Columbus City Schools classroom enriches what SAIRNhealth knows about that same community. A pattern discovered in SAIRNlaw improves SAIRNgov. A breakthrough in SAIRNgrow informs SAIRNbuild. The entire network gets smarter every time any user anywhere works.</p>
+  <p class="hero-pull">No AI company in the world has filed for this architecture applied across multiple industry verticals simultaneously. This is the patent that makes SAIRN worth $1 billion regardless of revenue.</p>
+
+  <div class="network-viz">
+    <svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Center glow -->
+      <circle cx="450" cy="250" r="120" fill="url(#centerGlow)"/>
+      <!-- Connection lines -->
+      <line x1="450" y1="250" x2="150" y2="100" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+      <line x1="450" y1="250" x2="450" y2="60" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+      <line x1="450" y1="250" x2="750" y2="100" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+      <line x1="450" y1="250" x2="820" y2="260" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+      <line x1="450" y1="250" x2="750" y2="400" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+      <line x1="450" y1="250" x2="450" y2="440" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+      <line x1="450" y1="250" x2="150" y2="400" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+      <line x1="450" y1="250" x2="80" y2="260" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+      <!-- Outer cross connections -->
+      <line x1="150" y1="100" x2="450" y2="60" stroke="#00E5FF" stroke-width="0.5" stroke-opacity="0.1"/>
+      <line x1="750" y1="100" x2="820" y2="260" stroke="#00E5FF" stroke-width="0.5" stroke-opacity="0.1"/>
+      <line x1="750" y1="400" x2="450" y2="440" stroke="#00E5FF" stroke-width="0.5" stroke-opacity="0.1"/>
+      <line x1="150" y1="400" x2="80" y2="260" stroke="#00E5FF" stroke-width="0.5" stroke-opacity="0.1"/>
+      <!-- Center hub -->
+      <circle cx="450" cy="250" r="56" fill="#0D1220" stroke="#00E5FF" stroke-width="1.5" filter="url(#glow)"/>
+      <text x="450" y="244" text-anchor="middle" fill="#00E5FF" font-size="13" font-weight="800" font-family="Inter">SAIRN</text>
+      <text x="450" y="261" text-anchor="middle" fill="#00E5FF" font-size="10" font-family="Inter" opacity="0.7">Intelligence</text>
+      <text x="450" y="275" text-anchor="middle" fill="#00E5FF" font-size="10" font-family="Inter" opacity="0.7">Network</text>
+      <!-- Vertical nodes -->
+      <circle cx="150" cy="100" r="38" fill="#0D1220" stroke="#10B981" stroke-width="1.2"/>
+      <text x="150" y="96" text-anchor="middle" fill="#10B981" font-size="15">🎓</text>
+      <text x="150" y="113" text-anchor="middle" fill="#E8F8FF" font-size="10" font-weight="700" font-family="Inter">SAIRNlearn</text>
+      <circle cx="450" cy="60" r="38" fill="#0D1220" stroke="#EF4444" stroke-width="1.2"/>
+      <text x="450" y="56" text-anchor="middle" fill="#EF4444" font-size="15">🏥</text>
+      <text x="450" y="73" text-anchor="middle" fill="#E8F8FF" font-size="10" font-weight="700" font-family="Inter">SAIRNhealth</text>
+      <circle cx="750" cy="100" r="38" fill="#0D1220" stroke="#8B5CF6" stroke-width="1.2"/>
+      <text x="750" y="96" text-anchor="middle" fill="#8B5CF6" font-size="15">⚖️</text>
+      <text x="750" y="113" text-anchor="middle" fill="#E8F8FF" font-size="10" font-weight="700" font-family="Inter">SAIRNlaw</text>
+      <circle cx="820" cy="260" r="38" fill="#0D1220" stroke="#F59E0B" stroke-width="1.2"/>
+      <text x="820" y="256" text-anchor="middle" fill="#F59E0B" font-size="15">🏗️</text>
+      <text x="820" y="273" text-anchor="middle" fill="#E8F8FF" font-size="10" font-weight="700" font-family="Inter">SAIRNbuild</text>
+      <circle cx="750" cy="400" r="38" fill="#0D1220" stroke="#22C55E" stroke-width="1.2"/>
+      <text x="750" y="396" text-anchor="middle" fill="#22C55E" font-size="15">🌾</text>
+      <text x="750" y="413" text-anchor="middle" fill="#E8F8FF" font-size="10" font-weight="700" font-family="Inter">SAIRNgrow</text>
+      <circle cx="450" cy="440" r="38" fill="#0D1220" stroke="#F43F5E" stroke-width="1.2"/>
+      <text x="450" y="436" text-anchor="middle" fill="#F43F5E" font-size="15">🤝</text>
+      <text x="450" y="453" text-anchor="middle" fill="#E8F8FF" font-size="10" font-weight="700" font-family="Inter">SAIRNgive</text>
+      <circle cx="150" cy="400" r="38" fill="#0D1220" stroke="#3B82F6" stroke-width="1.2"/>
+      <text x="150" y="396" text-anchor="middle" fill="#3B82F6" font-size="15">🏛️</text>
+      <text x="150" y="413" text-anchor="middle" fill="#E8F8FF" font-size="10" font-weight="700" font-family="Inter">SAIRNgov</text>
+      <circle cx="80" cy="260" r="38" fill="#0D1220" stroke="#A78BFA" stroke-width="1.2"/>
+      <text x="80" y="256" text-anchor="middle" fill="#A78BFA" font-size="15">💜</text>
+      <text x="80" y="273" text-anchor="middle" fill="#E8F8FF" font-size="10" font-weight="700" font-family="Inter">SAIRNcare</text>
+      <!-- Animated pulse on center -->
+      <circle cx="450" cy="250" r="56" fill="none" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.3">
+        <animate attributeName="r" values="56;80;56" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="stroke-opacity" values="0.3;0;0.3" dur="3s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+  </div>
+
+  <div class="stats-band">
+    <div class="stat-item"><div class="stat-val">35</div><div class="stat-lbl">Products connected in one intelligence network</div></div>
+    <div class="stat-item"><div class="stat-val">14</div><div class="stat-lbl">Industry verticals sharing intelligence automatically</div></div>
+    <div class="stat-item"><div class="stat-val">0</div><div class="stat-lbl">AI companies with this architecture filed worldwide</div></div>
+    <div class="stat-item"><div class="stat-val">$1B</div><div class="stat-lbl">Valuation path — cross-vertical data flywheel compounds daily</div></div>
+  </div>
+</section>
+
+<div class="section">
+  <div class="sec-eye">How the Network Works</div>
+  <div class="sec-title">Every vertical makes every other vertical smarter.</div>
+  <div class="sec-sub">The SAIRN Intelligence Network is not a feature. It is an architecture. Every query, every outcome, every pattern discovered in any SAIRN vertical enriches the intelligence available to every other vertical automatically.</div>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-num">Layer 1</div>
+      <div class="how-title">Vertical Intelligence</div>
+      <div class="how-desc">Each SAIRN platform builds deep domain intelligence within its vertical — SAIRNlearn learns K-12 education, SAIRNlaw learns legal operations, SAIRNhealth learns hospital administration. Each vertical becomes the most knowledgeable AI system in its industry.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">Layer 2</div>
+      <div class="how-title">Cross-Vertical Pattern Detection</div>
+      <div class="how-desc">The network identifies patterns that cross vertical boundaries. A school district, a hospital, a nonprofit, and a government agency all serving the same Columbus neighborhood generate intelligence that is more valuable together than separately. The network sees the connection automatically.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">Layer 3</div>
+      <div class="how-title">Intelligence Distribution</div>
+      <div class="how-desc">Insights from one vertical are automatically made available to every other vertical where they are relevant. A legal precedent that affects healthcare gets shared with SAIRNhealth. A construction workforce trend gets shared with SAIRNbuild and SAIRNgov. The network routes intelligence to where it matters.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">Layer 4</div>
+      <div class="how-title">The Compounding Flywheel</div>
+      <div class="how-desc">Every interaction makes the network smarter. Every user in every vertical contributes to an intelligence flywheel that compounds over time. A competitor starting today is 18 months behind. A competitor starting in 6 months is 24 months behind. The gap widens every single day.</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-eye">The Network in Practice</div>
+  <div class="sec-title">Real intelligence connections across Columbus, Ohio.</div>
+  <div class="sec-sub">These are not hypothetical connections. These are the intelligence flows that happen automatically when Columbus City Schools, OhioHealth, a Columbus law firm, and the City of Columbus all use SAIRN platforms simultaneously.</div>
+  <div class="vertical-grid">
+    <div class="vert-card">
+      <div class="vert-icon">🎓</div>
+      <div class="vert-info"><div class="vert-name">SAIRNlearn</div><div class="vert-market">K-12 Education · 32 modules</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">🏥</div>
+      <div class="vert-info"><div class="vert-name">SAIRNhealth</div><div class="vert-market">Hospital Administration · 15 modules</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">⚖️</div>
+      <div class="vert-info"><div class="vert-name">SAIRNlaw</div><div class="vert-market">Law Firms · 20 modules</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">💜</div>
+      <div class="vert-info"><div class="vert-name">SAIRNcare</div><div class="vert-market">Assisted Living · 12 modules</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">🏗️</div>
+      <div class="vert-info"><div class="vert-name">SAIRNbuild</div><div class="vert-market">Construction · 6 modules</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">🌾</div>
+      <div class="vert-info"><div class="vert-name">SAIRNgrow</div><div class="vert-market">Agriculture · 6 modules</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">🤝</div>
+      <div class="vert-info"><div class="vert-name">SAIRNgive</div><div class="vert-market">Nonprofits · 6 modules</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">🏛️</div>
+      <div class="vert-info"><div class="vert-name">SAIRNgov</div><div class="vert-market">Local Government · 6 modules</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">🏢</div>
+      <div class="vert-info"><div class="vert-name">SAIRN IQ</div><div class="vert-market">Fortune 500 Enterprise · 7 apps</div></div>
+    </div>
+    <div class="vert-card">
+      <div class="vert-icon">🌐</div>
+      <div class="vert-info"><div class="vert-name">SAIRN NEXUS</div><div class="vert-market">Consumer Intelligence · 19 apps</div></div>
+    </div>
+  </div>
+</div>
+
+<section class="value-section">
+  <div class="value-inner">
+    <div class="sec-eye" style="text-align:center">The Patent That Changes the Valuation</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:48px">Why this architecture is worth $1 billion.</div>
+    <div class="patent-box">
+      <div class="pb-title">SAIRN Intelligence Network Patent Claims</div>
+      <div class="pb-sub">These are the patent claims being prepared for provisional filing. No AI company anywhere in the world has filed for this specific architecture applied across multiple industry verticals simultaneously.</div>
+      <div class="pb-claims">
+        <div class="pb-claim">
+          <div class="pb-claim-num">Claim 1 — Core Architecture</div>
+          <div class="pb-claim-text">A method for building and distributing cross-vertical AI intelligence across multiple industry-specific platforms where intelligence generated in any vertical automatically enriches intelligence available in all connected verticals.</div>
+        </div>
+        <div class="pb-claim">
+          <div class="pb-claim-num">Claim 2 — Pattern Detection</div>
+          <div class="pb-claim-text">A system for identifying intelligence patterns that cross industry vertical boundaries and routing those patterns to the verticals where they deliver maximum value.</div>
+        </div>
+        <div class="pb-claim">
+          <div class="pb-claim-num">Claim 3 — Compounding Flywheel</div>
+          <div class="pb-claim-text">A method for continuously improving cross-vertical AI intelligence through user interactions across all connected verticals simultaneously, creating a compounding intelligence advantage.</div>
+        </div>
+        <div class="pb-claim">
+          <div class="pb-claim-num">Claim 4 — Community Intelligence</div>
+          <div class="pb-claim-text">A system for generating community-level intelligence by combining anonymized insights from organizations serving the same geographic community across multiple industry verticals.</div>
+        </div>
+        <div class="pb-claim">
+          <div class="pb-claim-num">Claim 5 — Enterprise Extension</div>
+          <div class="pb-claim-text">A method for extending cross-vertical intelligence to enterprise organizations that operate across multiple industry verticals simultaneously.</div>
+        </div>
+        <div class="pb-claim">
+          <div class="pb-claim-num">Claim 6 — First Mover Protection</div>
+          <div class="pb-claim-text">The specific combination of vertical AI platforms, cross-vertical intelligence distribution, and compounding flywheel architecture as implemented in the SAIRN platform constitutes a novel and non-obvious invention.</div>
+        </div>
+      </div>
+    </div>
+    <div class="value-grid">
+      <div class="value-card">
+        <div class="vc-label">Without the network</div>
+        <div class="vc-value">$200M–$350M</div>
+        <div class="vc-desc">35 excellent vertical AI platforms each valued independently at current market multiples</div>
+      </div>
+      <div class="value-card">
+        <div class="vc-label">With the network</div>
+        <div class="vc-value">$500M–$1B+</div>
+        <div class="vc-desc">Cross-vertical intelligence architecture with compounding flywheel and no-prior-art patent protection</div>
+      </div>
+      <div class="value-card">
+        <div class="vc-label">First mover window</div>
+        <div class="vc-value">18–24 months</div>
+        <div class="vc-desc">Any competitor starting today is already this far behind the SAIRN intelligence flywheel</div>
+      </div>
+      <div class="value-card">
+        <div class="vc-label">Strategic acquirer value</div>
+        <div class="vc-value">$2B–$5B</div>
+        <div class="vc-desc">To Microsoft, Google, Salesforce, or Oracle — a cross-vertical intelligence layer across 14 industries is a category-defining acquisition</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="cta-box">
+    <div class="cta-title">The network is live.<br>The patent is being filed.<br>The flywheel is spinning.</div>
+    <div class="cta-sub">Every SAIRN user who works today makes the network smarter for every other SAIRN user tomorrow. That is the compounding advantage that no competitor can buy at any price.</div>
+    <div class="cta-contact">Michael L. Dibert · Founder · SAIRN Technologies</div>
+    <div class="cta-url">support@sairntechnologies.com · sairn.vercel.app · Columbus, Ohio · $200M–$350M pre-money · Patent Pending</div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-sub">© 2026 SAIRN Technologies · Michael L. Dibert · SAIRN Intelligence Network Patent Pending · All Rights Reserved · Built in Columbus, Ohio</div>
+</footer>
+
+<script>
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<24;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 2 + Math.random()*5;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(0,229,255,0.6);--d:"+(8+Math.random()*12)+"s;--del:"+(Math.random()*8)+"s;--o:"+(0.04+Math.random()*0.08);
+    c.appendChild(p);
+  }
+})();
+</script>
+</body>
+</html>

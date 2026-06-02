@@ -33,6 +33,7 @@
     { "source": "/sairngrow",            "destination": "/sairngrow.html"            },
     { "source": "/sairngive",            "destination": "/sairngive.html"            },
     { "source": "/sairngov",             "destination": "/sairngov.html"             },
+    { "source": "/network",              "destination": "/sairn_network.html"        },
     { "source": "/memory",               "destination": "/memory_settings.html"      }
   ],
   "cleanUrls": true,
