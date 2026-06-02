@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNhealth — AI for Hospital Administration. Built from the Inside.</title>
+<meta name="description" content="Clinical documentation, prior authorization, staff retention, revenue cycle, HIPAA compliance, and AI governance — all powered by Claude AI. Built specifically for hospital administration.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#EF4444;--a2:#DC2626;--grad:linear-gradient(135deg,#EF4444,#DC2626);--ar:rgba(239,68,68,0.15);--ab:rgba(239,68,68,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(239,68,68,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(239,68,68,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(239,68,68,0.1) 0%,transparent 60%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.crisis-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:100px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);font-size:12px;font-weight:700;color:#FCA5A5;margin-bottom:20px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(239,68,68,0.5))}
+.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#EF4444 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:720px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:rgba(239,68,68,0.9);font-weight:600;margin-bottom:48px}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(239,68,68,0.45);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
+.stat-lbl{font-size:12px;color:var(--m)}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:620px;margin:0 auto 48px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s;border-left:4px solid var(--a)}
+.module-card:hover{border-color:rgba(239,68,68,0.4);transform:translateY(-2px)}
+.module-card.blue{border-left-color:#3B82F6}
+.module-card.green{border-left-color:#10B981}
+.module-card.amber{border-left-color:#F59E0B}
+.module-card.purple{border-left-color:#8B5CF6}
+.module-card.cyan{border-left-color:#06B6D4}
+.module-card.pink{border-left-color:#EC4899}
+.module-card.teal{border-left-color:#14B8A6}
+.module-card.orange{border-left-color:#F97316}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:4px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.mod-feature::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--a);flex-shrink:0}
+.module-card.blue .mod-feature::before{background:#3B82F6}
+.module-card.green .mod-feature::before{background:#10B981}
+.module-card.amber .mod-feature::before{background:#F59E0B}
+.module-card.purple .mod-feature::before{background:#8B5CF6}
+.module-card.cyan .mod-feature::before{background:#06B6D4}
+.module-card.pink .mod-feature::before{background:#EC4899}
+.module-card.teal .mod-feature::before{background:#14B8A6}
+.module-card.orange .mod-feature::before{background:#F97316}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:980px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:rgba(239,68,68,0.4);background:rgba(239,68,68,0.04)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 14px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:44px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:4px}
+.pd{font-size:12px;color:var(--d);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--m)}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(239,68,68,0.3)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(239,68,68,0.5)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:420px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:500px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:rgba(239,68,68,0.35);color:var(--w)}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🏥</div>
+    <div class="nav-brand">SAIRNhealth</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">HIPAA Compliant · BAA Included</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="crisis-badge">🏥 55% of healthcare workers considering leaving · US could lose 96,000 physicians in 2026</div>
+    <div class="hero-eyebrow">HIPAA Compliant · Claude Powered · BAA Included · Patents Pending</div>
+    <div class="hero-icon">🏥</div>
+    <h1 class="hero-title">SAIRNhealth</h1>
+    <p class="hero-sub">The AI platform built from the inside of hospital administration. Clinical documentation, prior authorization, staff retention, revenue cycle, HIPAA compliance, and AI governance — all in one platform. Built for the people keeping healthcare running.</p>
+    <p class="hero-market">$18.1B hospital administration AI market · 81.3% of US hospitals have not adopted AI · OhioHealth and Nationwide Children's both headquartered in Columbus</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View pricing</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-val">55%</div><div class="stat-lbl">Of healthcare workers considering leaving within a year</div></div>
+      <div><div class="stat-val">81.3%</div><div class="stat-lbl">Of US hospitals have not adopted AI</div></div>
+      <div><div class="stat-val">22%</div><div class="stat-lbl">Of hospitals confident they can produce a 30-day AI audit trail</div></div>
+      <div><div class="stat-val">259M</div><div class="stat-lbl">Patient records breached in 2024 — up from 27M in 2020</div></div>
+    </div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">15 intelligence modules</div>
+    <div class="sec-title">Every dimension of hospital administration.<br>15 modules. One AI platform.</div>
+    <div class="sec-sub">SAIRNhealth is not a clinical AI. It is the intelligence layer for everyone who keeps the hospital running — administrators, revenue cycle teams, compliance officers, HR directors, and department managers.</div>
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="mod-emoji">📋</div>
+        <div class="mod-title">Clinical Documentation Intelligence</div>
+        <div class="mod-desc">The number one burnout driver for physicians is administrative documentation burden. SAIRNhealth reduces documentation time by 60% — so physicians spend their time on patients, not paperwork.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Discharge summary drafting from clinical notes</div>
+          <div class="mod-feature">Prior authorization letter generation</div>
+          <div class="mod-feature">Referral letter and care transition documentation</div>
+          <div class="mod-feature">ICD-10 and CPT coding guidance and review</div>
+          <div class="mod-feature">Physician query response drafting</div>
+        </div>
+      </div>
+      <div class="module-card blue">
+        <div class="mod-emoji">💰</div>
+        <div class="mod-title">Revenue Cycle Intelligence</div>
+        <div class="mod-desc">Denied claims cost US hospitals over $260 billion annually. SAIRNhealth identifies denial patterns before they happen, optimizes coding accuracy, and accelerates the revenue cycle from encounter to payment.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Claim denial prevention — pattern identification</div>
+          <div class="mod-feature">Prior authorization workflow automation</div>
+          <div class="mod-feature">Coding accuracy review and optimization</div>
+          <div class="mod-feature">Denial appeal letter generation</div>
+          <div class="mod-feature">Payer contract analysis and negotiation support</div>
+          <div class="mod-feature">Days in AR reduction strategies</div>
+        </div>
+      </div>
+      <div class="module-card green">
+        <div class="mod-emoji">👩‍⚕️</div>
+        <div class="mod-title">Staff Retention and Workforce Intelligence</div>
+        <div class="mod-desc">55% of healthcare workers are considering leaving within a year. The US could lose 96,000 physicians in 2026. SAIRNhealth identifies burnout risk before resignation, builds retention strategies, and manages the staffing pipeline before shortages become crises.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Burnout risk prediction by department and role</div>
+          <div class="mod-feature">Staffing ratio analysis and safe staffing alerts</div>
+          <div class="mod-feature">Retention strategy generation by role type</div>
+          <div class="mod-feature">Travel nurse cost reduction through internal pipeline</div>
+          <div class="mod-feature">Physician recruitment and onboarding support</div>
+          <div class="mod-feature">Exit interview analysis and pattern identification</div>
+        </div>
+      </div>
+      <div class="module-card amber">
+        <div class="mod-emoji">🔐</div>
+        <div class="mod-title">HIPAA Compliance and PHI Protection</div>
+        <div class="mod-desc">PHI data breaches increased from 27 million in 2020 to 259 million in 2024. SAIRNhealth monitors PHI access, identifies breach risks, generates audit documentation, and ensures every AI workflow in your hospital stays inside HIPAA boundaries.</div>
+        <div class="mod-features">
+          <div class="mod-feature">PHI access monitoring and breach risk identification</div>
+          <div class="mod-feature">HIPAA audit trail generation — 30-day ready</div>
+          <div class="mod-feature">Business Associate Agreement template library</div>
+          <div class="mod-feature">Shadow AI detection — unauthorized tool identification</div>
+          <div class="mod-feature">Staff HIPAA training content generation</div>
+          <div class="mod-feature">Incident response documentation and reporting</div>
+        </div>
+      </div>
+      <div class="module-card purple">
+        <div class="mod-emoji">🏛️</div>
+        <div class="mod-title">AI Governance Intelligence</div>
+        <div class="mod-desc">Only 22% of hospitals can produce a complete AI audit trail within 30 days. Shadow AI — staff using ChatGPT and other unapproved tools — is the top 2026 healthcare concern. SAIRNhealth builds your AI governance framework and monitors compliance across every department.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Hospital AI policy generation — regulatory compliant</div>
+          <div class="mod-feature">Shadow AI detection across the organization</div>
+          <div class="mod-feature">AI audit trail — 30-day produceable at any time</div>
+          <div class="mod-feature">Vendor AI risk assessment and BAA requirements</div>
+          <div class="mod-feature">Staff AI training and acceptable use programs</div>
+          <div class="mod-feature">AI governance committee documentation support</div>
+        </div>
+      </div>
+      <div class="module-card cyan">
+        <div class="mod-emoji">📞</div>
+        <div class="mod-title">Patient Communication Intelligence</div>
+        <div class="mod-desc">Patient communication is where hospitals lose trust and revenue simultaneously. SAIRNhealth drafts every patient-facing communication — discharge instructions, appointment reminders, billing explanations, and care follow-ups — in plain language in any language.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Discharge instruction drafting — plain language</div>
+          <div class="mod-feature">Appointment reminder and follow-up communications</div>
+          <div class="mod-feature">Billing explanation letters — reduce patient disputes</div>
+          <div class="mod-feature">Care gap notification and preventive outreach</div>
+          <div class="mod-feature">Multilingual patient communication — 40 languages</div>
+          <div class="mod-feature">Patient satisfaction response and service recovery</div>
+        </div>
+      </div>
+      <div class="module-card pink">
+        <div class="mod-emoji">📊</div>
+        <div class="mod-title">Regulatory Compliance Intelligence</div>
+        <div class="mod-desc">State AI enforcement kicks in June 30, 2026. CMS conditions of participation, Joint Commission standards, state health department requirements — SAIRNhealth monitors every regulatory obligation and generates the documentation to prove compliance on demand.</div>
+        <div class="mod-features">
+          <div class="mod-feature">CMS conditions of participation compliance tracking</div>
+          <div class="mod-feature">Joint Commission standard documentation support</div>
+          <div class="mod-feature">State AI regulation compliance — enforcement June 2026</div>
+          <div class="mod-feature">Quality measure reporting and submission preparation</div>
+          <div class="mod-feature">Survey readiness assessment and gap analysis</div>
+          <div class="mod-feature">Policy and procedure generation and version control</div>
+        </div>
+      </div>
+      <div class="module-card teal">
+        <div class="mod-emoji">🗓️</div>
+        <div class="mod-title">Staffing and Scheduling Intelligence</div>
+        <div class="mod-desc">Unsafe staffing ratios are the leading cause of nurse burnout and patient safety incidents. SAIRNhealth optimizes scheduling, predicts census fluctuations, identifies float pool needs before they become emergencies, and reduces overtime costs.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Census-based staffing demand forecasting</div>
+          <div class="mod-feature">Float pool optimization and agency cost reduction</div>
+          <div class="mod-feature">Safe staffing ratio monitoring and alerts</div>
+          <div class="mod-feature">Overtime cost analysis and reduction strategies</div>
+          <div class="mod-feature">On-call schedule management and communication</div>
+          <div class="mod-feature">Credentialing and competency tracking</div>
+        </div>
+      </div>
+      <div class="module-card orange">
+        <div class="mod-emoji">🔬</div>
+        <div class="mod-title">Quality and Patient Safety Intelligence</div>
+        <div class="mod-desc">Hospital-acquired conditions, readmission rates, and patient safety incidents are the metrics that determine reimbursement and reputation. SAIRNhealth monitors quality indicators, identifies improvement opportunities, and generates the documentation that protects patients and the organization.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Hospital-acquired condition monitoring and prevention</div>
+          <div class="mod-feature">Readmission risk identification and intervention</div>
+          <div class="mod-feature">Root cause analysis documentation support</div>
+          <div class="mod-feature">HCAHPS improvement strategy generation</div>
+          <div class="mod-feature">Quality measure benchmarking vs peer hospitals</div>
+          <div class="mod-feature">Incident reporting and near-miss documentation</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="mod-emoji">🏢</div>
+        <div class="mod-title">Hospital Administration Intelligence</div>
+        <div class="mod-desc">Every administrative function in the hospital — board meeting preparation, strategic planning documents, grant writing, vendor contract review, and department communication — handled faster and better with AI that understands healthcare administration.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Board meeting materials and executive briefings</div>
+          <div class="mod-feature">Strategic planning documentation and analysis</div>
+          <div class="mod-feature">Grant writing for healthcare technology funding</div>
+          <div class="mod-feature">Vendor contract review and negotiation support</div>
+          <div class="mod-feature">Department communication and policy drafting</div>
+          <div class="mod-feature">Budget analysis and capital request documentation</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#F0B429;border-width:3px">
+        <div class="mod-emoji">🎯</div>
+        <div class="mod-title">Care Orchestration Intelligence <span style="font-size:11px;color:#F0B429;font-weight:700;margin-left:8px">WORLD FIRST</span></div>
+        <div class="mod-desc">The intelligent operating platform for your entire hospital. SAIRNhealth routes the right task to the right person at the right time — automatically, across every department simultaneously. Not just answering questions but managing the flow of work that keeps patients safe and operations running.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Cross-department workflow routing and task management</div>
+          <div class="mod-feature">Care gap identification and automatic outreach triggering</div>
+          <div class="mod-feature">Discharge planning coordination across all departments</div>
+          <div class="mod-feature">Bed management and throughput optimization intelligence</div>
+          <div class="mod-feature">Interdepartmental communication and handoff documentation</div>
+          <div class="mod-feature">Real-time operational alert routing to the right leader</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#22C55E;border-width:3px">
+        <div class="mod-emoji">🏠</div>
+        <div class="mod-title">Remote Patient Monitoring Intelligence <span style="font-size:11px;color:#22C55E;font-weight:700;margin-left:8px">NEW</span></div>
+        <div class="mod-desc">AI-driven RPM programs cut 30-day readmissions by up to 50%. SAIRNhealth builds the administrative intelligence layer around your remote monitoring programs — identifying which patients need outreach today, generating the communication, documenting every intervention, and tracking outcomes.</div>
+        <div class="mod-features">
+          <div class="mod-feature">High-risk patient identification for RPM enrollment</div>
+          <div class="mod-feature">Daily outreach priority list — who to call today and why</div>
+          <div class="mod-feature">Care manager communication and documentation support</div>
+          <div class="mod-feature">Readmission risk scoring and intervention tracking</div>
+          <div class="mod-feature">RPM program outcomes measurement and reporting</div>
+          <div class="mod-feature">Virtual ward coordination for heart failure and COPD</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#A78BFA;border-width:3px">
+        <div class="mod-emoji">🔧</div>
+        <div class="mod-title">Workflow Fit and Integration Intelligence <span style="font-size:11px;color:#A78BFA;font-weight:700;margin-left:8px">NEW</span></div>
+        <div class="mod-desc">Most AI tools fail because they do not fit how the hospital actually works. SAIRNhealth analyzes your existing workflows and identifies exactly where AI delivers maximum value and where it does not — before you invest. The only platform that tells you where NOT to use AI.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Workflow mapping and AI fit analysis by department</div>
+          <div class="mod-feature">High-impact AI opportunity identification</div>
+          <div class="mod-feature">Implementation readiness assessment per workflow</div>
+          <div class="mod-feature">Staff adoption barrier identification and mitigation</div>
+          <div class="mod-feature">EHR integration opportunity and gap analysis</div>
+          <div class="mod-feature">ROI projection by workflow before implementation</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#06B6D4;border-width:3px">
+        <div class="mod-emoji">📉</div>
+        <div class="mod-title">AI Cost Optimization Intelligence <span style="font-size:11px;color:#06B6D4;font-weight:700;margin-left:8px">NEW</span></div>
+        <div class="mod-desc">Token-based AI processing can become cost-prohibitive at production scale. SAIRNhealth tracks AI usage costs per department, per query type, and per workflow — then recommends where AI delivers maximum value per dollar and where human workflows are more cost-effective. Your AI investment optimized continuously.</div>
+        <div class="mod-features">
+          <div class="mod-feature">AI usage cost tracking by department and workflow</div>
+          <div class="mod-feature">Cost per query analysis across all use cases</div>
+          <div class="mod-feature">High-value vs low-value AI usage identification</div>
+          <div class="mod-feature">Budget forecasting for AI at production scale</div>
+          <div class="mod-feature">Optimization recommendations — where to use AI vs human</div>
+          <div class="mod-feature">Monthly AI ROI report for executive leadership</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#EC4899;border-width:3px">
+        <div class="mod-emoji">⚖️</div>
+        <div class="mod-title">Health Equity and Bias Monitoring Intelligence <span style="font-size:11px;color:#EC4899;font-weight:700;margin-left:8px">WORLD FIRST</span></div>
+        <div class="mod-desc">No hospital administration platform monitors whether AI is delivering equitable outcomes across patient demographics. SAIRNhealth does. We monitor AI performance by age, race, sex, language, and insurance status — flagging bias before it becomes a liability and ensuring every patient receives the same quality of AI-assisted care regardless of who they are.</div>
+        <div class="mod-features">
+          <div class="mod-feature">AI outcome equity monitoring by demographic group</div>
+          <div class="mod-feature">Bias detection across clinical documentation and coding</div>
+          <div class="mod-feature">Disparity alerts — when AI performs differently by demographic</div>
+          <div class="mod-feature">Health equity reporting for board and regulators</div>
+          <div class="mod-feature">Language access and multilingual care gap identification</div>
+          <div class="mod-feature">Social determinants of health integration and tracking</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">Per-bed pricing. All 10 modules. BAA included.</div>
+    <div class="sec-sub">Simple hospital licensing. HIPAA BAA signed on every plan. All 10 intelligence modules included.</div>
+    <div class="pricing-grid">
+      <div class="pc">
+        <div class="pt">Community</div>
+        <div class="pa">$299</div>
+        <div class="pp">/month</div>
+        <div class="pd">Up to 100 beds · Community hospitals</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 10 intelligence modules</div>
+          <div class="pf-item"><span class="pck">+</span>HIPAA BAA included</div>
+          <div class="pf-item"><span class="pck">+</span>Clinical documentation tools</div>
+          <div class="pf-item"><span class="pck">+</span>Revenue cycle intelligence</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Try Free</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Regional</div>
+        <div class="pa">$799</div>
+        <div class="pp">/month</div>
+        <div class="pd">100–500 beds · Regional medical centers</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Community</div>
+          <div class="pf-item"><span class="pck">+</span>AI governance and shadow AI detection</div>
+          <div class="pf-item"><span class="pck">+</span>Staff retention intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Regulatory compliance monitoring</div>
+          <div class="pf-item"><span class="pck">+</span>Quality and safety intelligence</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Request Demo</button>
+      </div>
+      <div class="pc">
+        <div class="pt">Health System</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual contract</div>
+        <div class="pd">500+ beds · Health systems · IDNs</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Regional</div>
+          <div class="pf-item"><span class="pck">+</span>Multi-facility deployment</div>
+          <div class="pf-item"><span class="pck">+</span>EHR integration support</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated implementation team</div>
+          <div class="pf-item"><span class="pck">+</span>SLA 99.99% uptime</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Contact Sales</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNhealth</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · HIPAA Compliant · BAA Available · Patents Pending · Not a substitute for clinical judgment · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNhealth <span style="color:var(--m);font-weight:400;font-size:13px">· Hospital Administration · Claude AI · HIPAA Compliant</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Clinical Documentation','Draft a discharge summary, prior auth letter, or clinical documentation')"><span>📋</span><span class="mode-label">Documentation</span></button>
+    <button class="mode-btn" onclick="setMode('Revenue Cycle','Analyze a denial, draft an appeal letter, or optimize coding')"><span>💰</span><span class="mode-label">Revenue Cycle</span></button>
+    <button class="mode-btn" onclick="setMode('Staff Retention','Identify burnout risk, build retention strategies, or analyze staffing')"><span>👩‍⚕️</span><span class="mode-label">Workforce</span></button>
+    <button class="mode-btn" onclick="setMode('HIPAA Compliance','Check PHI handling, generate audit documentation, or assess breach risk')"><span>🔐</span><span class="mode-label">HIPAA</span></button>
+    <button class="mode-btn" onclick="setMode('AI Governance','Build AI policy, detect shadow AI, or generate audit trails')"><span>🏛️</span><span class="mode-label">Governance</span></button>
+    <button class="mode-btn" onclick="setMode('Patient Communication','Draft discharge instructions, billing explanations, or follow-up communications')"><span>📞</span><span class="mode-label">Patient Comms</span></button>
+    <button class="mode-btn" onclick="setMode('Regulatory Compliance','Check CMS, Joint Commission, or state regulatory requirements')"><span>📊</span><span class="mode-label">Compliance</span></button>
+    <button class="mode-btn" onclick="setMode('Scheduling','Optimize staffing ratios, forecast census, or reduce overtime')"><span>🗓️</span><span class="mode-label">Scheduling</span></button>
+    <button class="mode-btn" onclick="setMode('Quality and Safety','Monitor HACs, readmissions, or generate root cause analysis')"><span>🔬</span><span class="mode-label">Quality</span></button>
+    <button class="mode-btn" onclick="setMode('Administration','Prepare board materials, draft grants, or analyze vendor contracts')"><span>🏢</span><span class="mode-label">Admin</span></button>
+    <button class="mode-btn" onclick="setMode('Care Orchestration','Route workflows, coordinate discharge planning, or manage cross-department operations')"><span>🎯</span><span class="mode-label">Orchestration</span></button>
+    <button class="mode-btn" onclick="setMode('Remote Monitoring','Identify high-risk patients for RPM, prioritize outreach, or track readmission risk')"><span>🏠</span><span class="mode-label">RPM</span></button>
+    <button class="mode-btn" onclick="setMode('Workflow Fit','Analyze where AI fits your workflows and where it does not before you invest')"><span>🔧</span><span class="mode-label">Workflow Fit</span></button>
+    <button class="mode-btn" onclick="setMode('AI Cost','Track AI usage costs, optimize spending, or forecast AI budget at production scale')"><span>📉</span><span class="mode-label">AI Cost</span></button>
+    <button class="mode-btn" onclick="setMode('Health Equity','Monitor AI equity across demographics, detect bias, or generate equity reports')"><span>⚖️</span><span class="mode-label">Equity</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="priorauth" onclick="startFlow('priorauth')"><span>📋</span><span class="mode-label">Prior Auth</span></button>
+    <button class="flow-btn mode-btn" data-flow="denial" onclick="startFlow('denial')"><span>💰</span><span class="mode-label">Denial Appeal</span></button>
+    <button class="flow-btn mode-btn" data-flow="retention" onclick="startFlow('retention')"><span>👩‍⚕️</span><span class="mode-label">Retention Plan</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🏥</div>
+      <div class="empty-title">SAIRNhealth — Hospital Administration Intelligence</div>
+      <div class="empty-sub">HIPAA-compliant AI for every administrative role in your hospital. What do you need today?</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">Draft a prior authorization letter for a patient needing a lumbar MRI after failed conservative treatment for 6 weeks</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our ICU has had 3 nurses resign this month. Analyze the likely causes and build a 90-day retention intervention plan</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Generate our hospital AI governance policy including shadow AI detection protocols and a 30-day audit trail framework</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Analyze where AI would deliver maximum value in our discharge planning workflow and identify the top 3 integration points</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our heart failure readmission rate is 18%. Build an RPM program intelligence framework to bring that below 12% in 90 days</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNhealth anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNhealth, an AI hospital administration intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You are HIPAA-compliant — you never store or reference PHI. You serve hospital administrators, revenue cycle teams, compliance officers, HR directors, nurse managers, and quality improvement teams. You are not a clinical AI and do not provide clinical diagnosis or treatment recommendations — always note this distinction. YOUR 10 MODULES: 1. CLINICAL DOCUMENTATION: Discharge summaries, prior authorization letters, referral documentation, ICD-10 and CPT coding guidance, physician query responses. Reduce documentation burden — it is the number one burnout driver. 2. REVENUE CYCLE: Claim denial prevention, prior auth automation, coding accuracy, denial appeal letters, payer contract analysis, days in AR reduction. Denied claims cost US hospitals over $260 billion annually. 3. STAFF RETENTION AND WORKFORCE: Burnout risk prediction, staffing ratio analysis, retention strategies, travel nurse cost reduction, physician recruitment, exit interview analysis. 55% of healthcare workers considering leaving within a year. 4. HIPAA COMPLIANCE AND PHI PROTECTION: PHI access monitoring, breach risk identification, 30-day audit trail generation, shadow AI detection, staff HIPAA training, incident response documentation. PHI breaches increased from 27M in 2020 to 259M in 2024. 5. AI GOVERNANCE: Hospital AI policy generation, shadow AI detection, audit trail production, vendor AI risk assessment, staff training programs. Only 22% of hospitals can produce a 30-day AI audit trail. 6. PATIENT COMMUNICATION: Discharge instructions, appointment reminders, billing explanations, care gap notifications, multilingual in 40 languages. 7. REGULATORY COMPLIANCE: CMS conditions of participation, Joint Commission standards, state AI regulation enforcement June 2026, quality measure reporting, survey readiness, policy generation. 8. STAFFING AND SCHEDULING: Census-based demand forecasting, float pool optimization, safe staffing alerts, overtime reduction, credentialing tracking. 9. QUALITY AND PATIENT SAFETY: Hospital-acquired condition monitoring, readmission risk, root cause analysis, HCAHPS improvement, quality benchmarking, incident reporting. 10. HOSPITAL ADMINISTRATION: Board materials, strategic planning, grant writing, vendor contract review, department communications, budget analysis. Always be specific, actionable, and regulation-aware. You know CMS, Joint Commission, HIPAA, and Ohio state health department requirements. ADDITIONAL MODULES: 11. CARE ORCHESTRATION: Cross-department workflow routing, care gap identification, discharge planning coordination, bed management, interdepartmental handoff documentation, real-time alert routing. This is the intelligent operating platform for the entire hospital. 12. REMOTE PATIENT MONITORING: High-risk patient RPM enrollment, daily outreach priority lists, care manager documentation, readmission risk scoring, virtual ward coordination for heart failure and COPD. RPM programs cut 30-day readmissions by up to 50 percent. 13. WORKFLOW FIT AND INTEGRATION: Workflow mapping and AI fit analysis by department, high-impact opportunity identification, implementation readiness, staff adoption barrier identification, EHR integration gap analysis, ROI projection before implementation. Most AI tools fail because they do not fit existing workflows. 14. AI COST OPTIMIZATION: Usage cost tracking by department and query type, cost per workflow analysis, high vs low value AI identification, budget forecasting at production scale, monthly ROI reporting. Token-based processing can become cost-prohibitive at scale. 15. HEALTH EQUITY AND BIAS MONITORING: AI outcome equity monitoring by age race sex language and insurance status, bias detection in documentation and coding, disparity alerts, health equity reporting, language access gap identification, social determinants of health tracking. No other platform monitors whether AI delivers equitable outcomes across demographics.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "health";
+const APP_ICON = "🏥";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [
+  {id:"priorauth",emoji:"📋",label:"Prior Authorization Letter",
+   intro:"Let us draft your prior authorization letter. What procedure or medication needs authorization?",
+   steps:["What is the clinical indication and what conservative treatments have already been tried?","Which payer are you submitting to and do you have the relevant diagnosis codes?"],
+   finish:"Here is your prior authorization letter with clinical justification, supporting documentation checklist, and submission guidance. Review and customize with patient-specific details before submission. Do not include any PHI in this demo."},
+  {id:"denial",emoji:"💰",label:"Denial Appeal Letter",
+   intro:"Let us build your denial appeal. What was the denial reason — medical necessity, coding, authorization, or timely filing?",
+   steps:["What procedure was denied and what is the payer and plan type?","What clinical documentation do you have available to support the appeal?"],
+   finish:"Here is your denial appeal letter with clinical justification, regulatory citations, and supporting argument. Review with your compliance team before submission."},
+  {id:"retention",emoji:"👩‍⚕️",label:"Staff Retention Plan",
+   intro:"Let us build a retention intervention. What role or department is experiencing turnover or burnout risk?",
+   steps:["What are the primary issues you have identified — workload, scheduling, compensation, leadership, or culture?","What is your timeline and what resources do you have available to address this?"],
+   finish:"Here is your 90-day staff retention intervention plan with specific actions, timeline, success metrics, and leadership accountability. Customize to your facility before implementation."}
+];
+let activeFlow = null, flowStep = 0;
+
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(239,68,68,0.5);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.1);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + formatted + "</p></div>";
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML = "<div class=\"msg-bubble\">" + content + "</div>";
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + "</p></div>";
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+}
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>

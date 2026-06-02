@@ -27,6 +27,7 @@
     { "source": "/sairnlearn",           "destination": "/sairnlearn.html"           },
     { "source": "/sairnlearn-dashboard", "destination": "/sairnlearn_dashboard.html" },
     { "source": "/sairnlaw",             "destination": "/sairnlaw.html"             },
+    { "source": "/sairnhealth",          "destination": "/sairnhealth.html"          },
     { "source": "/memory",               "destination": "/memory_settings.html"      }
   ],
   "cleanUrls": true,
