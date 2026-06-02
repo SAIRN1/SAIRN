@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNgive — AI for Nonprofits. Built for the People Who Serve.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#F43F5E;--grad:linear-gradient(135deg,#F43F5E,#E11D48);--ar:rgba(244,63,94,0.15);--ab:rgba(244,63,94,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(244,63,94,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(244,63,94,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(244,63,94,0.15) 0%,transparent 60%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.crisis-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:100px;background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.3);font-size:12px;font-weight:700;color:var(--w);margin-bottom:20px;text-align:center;max-width:700px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(244,63,94,0.4))}
+.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#F43F5E 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:720px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:var(--a);font-weight:600;margin-bottom:48px;opacity:0.9}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(244,63,94,0.4);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
+.stat-lbl{font-size:12px;color:var(--m);max-width:160px;text-align:center;line-height:1.4}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:620px;margin:0 auto 48px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s;border-left:4px solid var(--a)}
+.module-card:hover{transform:translateY(-2px)}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:4px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.mod-feature::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--a);flex-shrink:0}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:900px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:var(--ab);background:var(--ar)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 14px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:44px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:4px}
+.pd{font-size:12px;color:var(--d);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--m)}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid var(--ab)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:var(--ab)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:440px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:520px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:var(--ab);color:var(--w)}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🤝</div>
+    <div class="nav-brand">SAIRNgive</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">Claude Powered · SAIRN Technologies</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="crisis-badge">🤝 1.5 million US nonprofits serve the most vulnerable people with the least technology support of any sector</div>
+    <div class="hero-eyebrow">AI-Native · Claude Powered · Patents Pending · Zero Competitors</div>
+    <div class="hero-icon">🤝</div>
+    <h1 class="hero-title">SAIRNgive</h1>
+    <p class="hero-sub">Grant writing, donor communication, volunteer management, program reporting, outcome measurement, and compliance — all powered by Claude AI. Priced for nonprofits. Built for the mission.</p>
+    <p class="hero-market">1.5M US nonprofits · $500B sector · Zero affordable AI built for nonprofit operations · Grant writing alone costs the sector billions of hours annually</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View pricing</button>
+    </div>
+    <div class="hero-stats"><div><div class="stat-val">1.5M</div><div class="stat-lbl">US nonprofits with no AI tools built for their work</div></div><div><div class="stat-val">$500B</div><div class="stat-lbl">US nonprofit sector annual revenue — serving the most vulnerable</div></div><div><div class="stat-val">40%</div><div class="stat-lbl">Of nonprofit staff time spent on administrative tasks that AI can eliminate</div></div><div><div class="stat-val">0</div><div class="stat-lbl">Affordable AI platforms built specifically for nonprofit operations</div></div></div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">6 intelligence modules</div>
+    <div class="sec-title">Every dimension of give intelligence.<br>One platform.</div>
+    <div class="module-grid">
+      <div class="module-card" style="border-left-color:#F43F5E">
+        <div class="mod-emoji">✍️</div>
+        <div class="mod-title">Grant Writing Intelligence</div>
+        <div class="mod-desc">Grant writing is the lifeblood of most nonprofits — and it consumes staff time that should be spent serving clients. SAIRNgive drafts every grant component: needs statements, program descriptions, evaluation plans, budgets narratives, and logic models — aligned to each funder requirements.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Grant narrative drafting by foundation requirements</div>
+          <div class="mod-feature">Needs statement development with supporting data</div>
+          <div class="mod-feature">Logic model and theory of change documentation</div>
+          <div class="mod-feature">Budget narrative generation and justification</div>
+          <div class="mod-feature">Evaluation plan and outcome measurement framework</div>
+          <div class="mod-feature">Grant report drafting and progress documentation</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#EC4899">
+        <div class="mod-emoji">💌</div>
+        <div class="mod-title">Donor Communication Intelligence</div>
+        <div class="mod-desc">Donors give to organizations they trust and feel connected to. SAIRNgive generates personalized donor communications — acknowledgment letters, impact reports, appeal letters, and stewardship touchpoints — that build relationships and increase retention.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Personalized donation acknowledgment letters</div>
+          <div class="mod-feature">Annual impact report content generation</div>
+          <div class="mod-feature">Appeal letter drafting by donor segment</div>
+          <div class="mod-feature">Major donor stewardship communication</div>
+          <div class="mod-feature">Lapsed donor reactivation messaging</div>
+          <div class="mod-feature">Planned giving inquiry response templates</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#F59E0B">
+        <div class="mod-emoji">🙋</div>
+        <div class="mod-title">Volunteer Management Intelligence</div>
+        <div class="mod-desc">Volunteers are the backbone of most nonprofits and the hardest resource to manage. SAIRNgive handles volunteer recruitment, orientation content, scheduling communication, recognition, and the documentation that keeps your volunteer program thriving.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Volunteer recruitment messaging and job descriptions</div>
+          <div class="mod-feature">Orientation and training content generation</div>
+          <div class="mod-feature">Volunteer schedule communication and reminders</div>
+          <div class="mod-feature">Recognition and appreciation communication</div>
+          <div class="mod-feature">Volunteer impact measurement and reporting</div>
+          <div class="mod-feature">Difficult volunteer situation documentation</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#3B82F6">
+        <div class="mod-emoji">📊</div>
+        <div class="mod-title">Program Reporting Intelligence</div>
+        <div class="mod-desc">Funders require detailed program reports. Government contracts require specific outcome documentation. SAIRNgive generates every report your funders and regulators require — so your program staff spends time delivering services, not documenting them.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Funder program report drafting by requirements</div>
+          <div class="mod-feature">Government contract compliance reporting</div>
+          <div class="mod-feature">Board meeting program updates and dashboards</div>
+          <div class="mod-feature">Outcome and impact data narrative generation</div>
+          <div class="mod-feature">Case study and success story documentation</div>
+          <div class="mod-feature">Annual report program section content</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#8B5CF6">
+        <div class="mod-emoji">📈</div>
+        <div class="mod-title">Outcome Measurement Intelligence</div>
+        <div class="mod-desc">Proving impact is now required for every grant and every major donor. SAIRNgive builds your outcomes measurement framework, generates surveys and assessment tools, analyzes your data, and creates the compelling impact narratives that open funding doors.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Theory of change and outcomes framework development</div>
+          <div class="mod-feature">Client survey and assessment tool generation</div>
+          <div class="mod-feature">Data analysis narrative and visualization support</div>
+          <div class="mod-feature">Benchmark comparison and peer analysis</div>
+          <div class="mod-feature">Impact investment return on investment documentation</div>
+          <div class="mod-feature">Social return on investment calculation framework</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#06B6D4">
+        <div class="mod-emoji">⚖️</div>
+        <div class="mod-title">Compliance and Governance Intelligence</div>
+        <div class="mod-desc">Nonprofit compliance is complex — IRS Form 990, state charitable registration, board governance requirements, and program-specific regulations. SAIRNgive keeps your organization compliant and your board informed without consuming your entire staff capacity.</div>
+        <div class="mod-features">
+          <div class="mod-feature">IRS Form 990 preparation support and narrative</div>
+          <div class="mod-feature">Board meeting agenda and minutes documentation</div>
+          <div class="mod-feature">State charitable registration compliance tracking</div>
+          <div class="mod-feature">Conflict of interest policy and disclosure management</div>
+          <div class="mod-feature">Whistleblower and document retention policy generation</div>
+          <div class="mod-feature">Audit preparation documentation support</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">Simple pricing. All 6 modules included.</div>
+    <div class="pricing-grid">
+      <div class="pc ">
+        <div class="pt">Small Nonprofit</div>
+        <div class="pa">$49</div>
+        <div class="pp">/month</div>
+        <div class="pd">Under $500K annual budget</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 6 modules</div>
+          <div class="pf-item"><span class="pck">+</span>Grant writing tools</div>
+          <div class="pf-item"><span class="pck">+</span>Donor communication</div>
+          <div class="pf-item"><span class="pck">+</span>Program reporting</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Get Started</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Growing Nonprofit</div>
+        <div class="pa">$129</div>
+        <div class="pp">/month</div>
+        <div class="pd">$500K–$5M annual budget</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Small</div>
+          <div class="pf-item"><span class="pck">+</span>Outcome measurement tools</div>
+          <div class="pf-item"><span class="pck">+</span>Volunteer management</div>
+          <div class="pf-item"><span class="pck">+</span>Compliance support</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Request Demo</button>
+      </div>
+      <div class="pc ">
+        <div class="pt">Large Nonprofit</div>
+        <div class="pa">$299</div>
+        <div class="pp">/month</div>
+        <div class="pd">$5M+ annual budget</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Growing</div>
+          <div class="pf-item"><span class="pck">+</span>Multi-program reporting</div>
+          <div class="pf-item"><span class="pck">+</span>Board governance tools</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated support</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Get Started</button>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNgive</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · Patents Pending · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNgive <span style="color:var(--m);font-weight:400;font-size:13px">· Intelligence · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Grant Writing Intelligence','Grant writing is the lifeblood of most nonprofits — and it c...')"><span>✍️</span><span class="mode-label">Grant Writin</span></button>
+    <button class="mode-btn" onclick="setMode('Donor Communication Intelligence','Donors give to organizations they trust and feel connected t...')"><span>💌</span><span class="mode-label">Donor Commun</span></button>
+    <button class="mode-btn" onclick="setMode('Volunteer Management Intelligence','Volunteers are the backbone of most nonprofits and the harde...')"><span>🙋</span><span class="mode-label">Volunteer Ma</span></button>
+    <button class="mode-btn" onclick="setMode('Program Reporting Intelligence','Funders require detailed program reports. Government contrac...')"><span>📊</span><span class="mode-label">Program Repo</span></button>
+    <button class="mode-btn" onclick="setMode('Outcome Measurement Intelligence','Proving impact is now required for every grant and every maj...')"><span>📈</span><span class="mode-label">Outcome Meas</span></button>
+    <button class="mode-btn" onclick="setMode('Compliance and Governance Intelligence','Nonprofit compliance is complex — IRS Form 990, state charit...')"><span>⚖️</span><span class="mode-label">Compliance</span></button>
+
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="grant" onclick="startFlow('grant')"><span>✍️</span><span class="mode-label">Write a Gr</span></button>
+    <button class="flow-btn mode-btn" data-flow="appeal" onclick="startFlow('appeal')"><span>💌</span><span class="mode-label">Draft a Do</span></button>
+    <button class="flow-btn mode-btn" data-flow="report" onclick="startFlow('report')"><span>📊</span><span class="mode-label">Generate a</span></button>
+
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🤝</div>
+      <div class="empty-title">SAIRNgive — Intelligence</div>
+      <div class="empty-sub">What do you need today?</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">Write a compelling needs statement for a grant application to fund our after-school tutoring program serving 200 low-income students in Columbus</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Draft a personalized year-end appeal letter to donors who gave between $100-$500 last year but have not yet given this year</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Generate a logic model for our workforce development program that serves formerly incarcerated adults</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNgive anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNgive, an AI nonprofit intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve nonprofit organizations of all sizes and missions — human services, education, healthcare, arts, environment, housing, food security, workforce development, and more. You know grant writing, donor relations, volunteer management, program evaluation, nonprofit compliance, and board governance. You understand that nonprofits operate with limited resources in service of unlimited need. Your role is to eliminate administrative burden so every staff member can spend more time on mission. Your 6 modules: 1. GRANT WRITING: Narratives, needs statements, logic models, budget narratives, evaluation plans, grant reports. 2. DONOR COMMUNICATION: Acknowledgments, impact reports, appeals, major donor stewardship, lapsed donor reactivation, planned giving. 3. VOLUNTEER MANAGEMENT: Recruitment, orientation, scheduling, recognition, impact measurement, difficult situations. 4. PROGRAM REPORTING: Funder reports, government contract compliance, board updates, case studies, annual reports. 5. OUTCOME MEASUREMENT: Theory of change, assessment tools, data analysis, impact narratives, SROI framework. 6. COMPLIANCE AND GOVERNANCE: Form 990 support, board documentation, state registration, conflict of interest, audit preparation. Always be warm, mission-driven, and specific. The people you serve are doing the hardest work in the world.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "legal";
+const APP_ICON = "🤝";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [
+  {id:"grant",emoji:"✍️",label:"Write a Grant Narrative",intro:"Let us write your grant. What foundation or funder are you applying to and what program are you funding?",steps:["What is the grant amount and what is the application deadline?","Describe your organization briefly and the specific need your program addresses."],finish:"Here is your grant narrative draft including needs statement, program description, and evaluation plan. Customize with your specific data and review with your program staff before submission."},
+  {id:"appeal",emoji:"💌",label:"Draft a Donor Appeal",intro:"Let us draft your donor appeal. What is the campaign — annual fund, emergency need, capital campaign, or special project?",steps:["What is the target audience — all donors, lapsed donors, or a specific segment?","What is the compelling story or impact example that anchors this appeal?"],finish:"Here is your donor appeal letter ready for review. Customize with specific impact stories and your organization voice before sending."},
+  {id:"report",emoji:"📊",label:"Generate a Program Report",intro:"Let us build your program report. Which funder or audience is this report for?",steps:["What reporting period does this cover and what outcomes data do you have available?","What are the key accomplishments and challenges to highlight?"],finish:"Here is your program report draft. Review for accuracy, add your specific data and outcomes numbers, and customize to your funder template before submission."},
+];
+let activeFlow = null, flowStep = 0;
+
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(244,63,94,0.6);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.12);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + formatted + "</p></div>";
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML = "<div class=\"msg-bubble\">" + content + "</div>";
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + "</p></div>";
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+}
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>

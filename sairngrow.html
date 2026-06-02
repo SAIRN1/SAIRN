@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNgrow — AI for Agriculture. Built for the People Who Feed the World.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#22C55E;--grad:linear-gradient(135deg,#22C55E,#16A34A);--ar:rgba(34,197,94,0.15);--ab:rgba(34,197,94,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(34,197,94,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(34,197,94,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(34,197,94,0.15) 0%,transparent 60%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.crisis-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:100px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);font-size:12px;font-weight:700;color:var(--w);margin-bottom:20px;text-align:center;max-width:700px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(34,197,94,0.4))}
+.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#22C55E 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:720px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:var(--a);font-weight:600;margin-bottom:48px;opacity:0.9}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(34,197,94,0.4);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
+.stat-lbl{font-size:12px;color:var(--m);max-width:160px;text-align:center;line-height:1.4}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:620px;margin:0 auto 48px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s;border-left:4px solid var(--a)}
+.module-card:hover{transform:translateY(-2px)}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:4px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.mod-feature::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--a);flex-shrink:0}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:900px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:var(--ab);background:var(--ar)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 14px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:44px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:4px}
+.pd{font-size:12px;color:var(--d);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--m)}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid var(--ab)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:var(--ab)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:440px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:520px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:var(--ab);color:var(--w)}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🌾</div>
+    <div class="nav-brand">SAIRNgrow</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">Claude Powered · SAIRN Technologies</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="crisis-badge">🌾 Less than 10% of agricultural businesses have adopted AI — the people who feed the world are working without it</div>
+    <div class="hero-eyebrow">AI-Native · Claude Powered · Patents Pending · Zero Competitors</div>
+    <div class="hero-icon">🌾</div>
+    <h1 class="hero-title">SAIRNgrow</h1>
+    <p class="hero-sub">Crop planning, equipment management, USDA compliance, commodity intelligence, workforce management, and farm financial analysis — all powered by Claude AI. Built for every farmer, co-op, and agribusiness.</p>
+    <p class="hero-market">$5T global agriculture market · Less than 10% AI adoption · Zero vertical AI competitors · The people who feed the world working without AI</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View pricing</button>
+    </div>
+    <div class="hero-stats"><div><div class="stat-val">$5T</div><div class="stat-lbl">Global agriculture market with less than 10% AI adoption</div></div><div><div class="stat-val">570M</div><div class="stat-lbl">Farms worldwide — virtually none with AI assistance</div></div><div><div class="stat-val">10%</div><div class="stat-lbl">Of agricultural firms use AI — lowest alongside construction</div></div><div><div class="stat-val">0</div><div class="stat-lbl">AI platforms built specifically for farm and agribusiness management</div></div></div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">6 intelligence modules</div>
+    <div class="sec-title">Every dimension of grow intelligence.<br>One platform.</div>
+    <div class="module-grid">
+      <div class="module-card" style="border-left-color:#22C55E">
+        <div class="mod-emoji">🌱</div>
+        <div class="mod-title">Crop Planning and Agronomy Intelligence</div>
+        <div class="mod-desc">Every planting decision — crop selection, rotation planning, soil management, and input optimization — supported by AI that knows your region, your soil type, and your market. Better decisions before the seed goes in the ground.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Crop rotation planning and soil health optimization</div>
+          <div class="mod-feature">Planting schedule generation by field and crop type</div>
+          <div class="mod-feature">Input cost analysis — seed, fertilizer, chemical</div>
+          <div class="mod-feature">Yield potential analysis by field and variety</div>
+          <div class="mod-feature">Cover crop and soil health program recommendations</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#F59E0B">
+        <div class="mod-emoji">🚜</div>
+        <div class="mod-title">Equipment Management Intelligence</div>
+        <div class="mod-desc">Farm equipment is the single largest capital investment most farmers make. SAIRNgrow tracks maintenance schedules, documents repairs, analyzes operating costs, and helps farmers decide when to repair versus replace before a breakdown costs a harvest.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Preventive maintenance schedule generation</div>
+          <div class="mod-feature">Repair documentation and cost tracking</div>
+          <div class="mod-feature">Equipment operating cost analysis per acre</div>
+          <div class="mod-feature">Repair vs replace analysis framework</div>
+          <div class="mod-feature">Parts inventory and supplier management</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#3B82F6">
+        <div class="mod-emoji">📋</div>
+        <div class="mod-title">USDA and Regulatory Compliance Intelligence</div>
+        <div class="mod-desc">USDA programs, crop insurance requirements, environmental regulations, and food safety compliance — SAIRNgrow navigates all of it so farmers can focus on farming instead of paperwork.</div>
+        <div class="mod-features">
+          <div class="mod-feature">USDA FSA program eligibility and application support</div>
+          <div class="mod-feature">Crop insurance documentation and recordkeeping</div>
+          <div class="mod-feature">Environmental compliance — CWA, RCRA, pesticide records</div>
+          <div class="mod-feature">Food safety plan generation and documentation</div>
+          <div class="mod-feature">Organic certification documentation support</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#8B5CF6">
+        <div class="mod-emoji">📈</div>
+        <div class="mod-title">Commodity and Market Intelligence</div>
+        <div class="mod-desc">Commodity markets move fast and the marketing decision is often more important than the production decision. SAIRNgrow helps farmers understand basis, analyze marketing options, and document their marketing strategies.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Marketing plan development by commodity</div>
+          <div class="mod-feature">Basis analysis and forward contract documentation</div>
+          <div class="mod-feature">Revenue protection strategy analysis</div>
+          <div class="mod-feature">Break-even price calculation by crop and field</div>
+          <div class="mod-feature">Market outlook analysis for planting decisions</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#EC4899">
+        <div class="mod-emoji">👷</div>
+        <div class="mod-title">Farm Workforce Intelligence</div>
+        <div class="mod-desc">Farm labor is scarce, seasonal, and increasingly regulated. SAIRNgrow manages H-2A visa documentation, worker safety compliance, payroll records, and the communication that keeps seasonal workforces functioning.</div>
+        <div class="mod-features">
+          <div class="mod-feature">H-2A visa documentation and compliance support</div>
+          <div class="mod-feature">Worker safety training content in Spanish and other languages</div>
+          <div class="mod-feature">Payroll and labor law compliance documentation</div>
+          <div class="mod-feature">Seasonal workforce communication and scheduling</div>
+          <div class="mod-feature">Worker housing compliance documentation</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#06B6D4">
+        <div class="mod-emoji">💰</div>
+        <div class="mod-title">Farm Financial Intelligence</div>
+        <div class="mod-desc">Farm finance is complex — operating loans, land payments, equipment notes, and volatile revenue. SAIRNgrow helps farmers analyze their financial position, prepare for lender meetings, and make the capital decisions that determine long-term viability.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Operating budget development by enterprise</div>
+          <div class="mod-feature">Lender presentation preparation and financial narratives</div>
+          <div class="mod-feature">Cash flow projection by month and quarter</div>
+          <div class="mod-feature">Land purchase vs lease analysis</div>
+          <div class="mod-feature">Succession planning and estate documentation support</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">Simple pricing. All 6 modules included.</div>
+    <div class="pricing-grid">
+      <div class="pc ">
+        <div class="pt">Family Farm</div>
+        <div class="pa">$79</div>
+        <div class="pp">/month</div>
+        <div class="pd">Single operation — any size</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 6 modules</div>
+          <div class="pf-item"><span class="pck">+</span>Crop planning and compliance tools</div>
+          <div class="pf-item"><span class="pck">+</span>Equipment management</div>
+          <div class="pf-item"><span class="pck">+</span>USDA program guidance</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Get Started</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Agribusiness</div>
+        <div class="pa">$199</div>
+        <div class="pp">/month</div>
+        <div class="pd">Multi-farm or co-op operations</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Family Farm</div>
+          <div class="pf-item"><span class="pck">+</span>Workforce management tools</div>
+          <div class="pf-item"><span class="pck">+</span>Commodity intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Farm financial analysis</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Request Demo</button>
+      </div>
+      <div class="pc ">
+        <div class="pt">Enterprise</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual</div>
+        <div class="pd">Large operations and co-ops</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Agribusiness</div>
+          <div class="pf-item"><span class="pck">+</span>Multi-location intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Custom integration support</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated agronomist support</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Get Started</button>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNgrow</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · Patents Pending · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNgrow <span style="color:var(--m);font-weight:400;font-size:13px">· Intelligence · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Crop Planning and Agronomy Intelligence','Every planting decision — crop selection, rotation planning,...')"><span>🌱</span><span class="mode-label">Crop Plannin</span></button>
+    <button class="mode-btn" onclick="setMode('Equipment Management Intelligence','Farm equipment is the single largest capital investment most...')"><span>🚜</span><span class="mode-label">Equipment Ma</span></button>
+    <button class="mode-btn" onclick="setMode('USDA and Regulatory Compliance Intelligence','USDA programs, crop insurance requirements, environmental re...')"><span>📋</span><span class="mode-label">USDA</span></button>
+    <button class="mode-btn" onclick="setMode('Commodity and Market Intelligence','Commodity markets move fast and the marketing decision is of...')"><span>📈</span><span class="mode-label">Commodity</span></button>
+    <button class="mode-btn" onclick="setMode('Farm Workforce Intelligence','Farm labor is scarce, seasonal, and increasingly regulated. ...')"><span>👷</span><span class="mode-label">Farm Workfor</span></button>
+    <button class="mode-btn" onclick="setMode('Farm Financial Intelligence','Farm finance is complex — operating loans, land payments, eq...')"><span>💰</span><span class="mode-label">Farm Financi</span></button>
+
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="cropplan" onclick="startFlow('cropplan')"><span>🌱</span><span class="mode-label">Build a Cr</span></button>
+    <button class="flow-btn mode-btn" data-flow="lender" onclick="startFlow('lender')"><span>💰</span><span class="mode-label">Prepare a </span></button>
+    <button class="flow-btn mode-btn" data-flow="usda" onclick="startFlow('usda')"><span>📋</span><span class="mode-label">Navigate a</span></button>
+
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🌾</div>
+      <div class="empty-title">SAIRNgrow — Intelligence</div>
+      <div class="empty-sub">What do you need today?</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">We are planning our corn and soybean rotation for next year. Our fields are heavy clay soil in central Ohio. What rotation and input strategy should we consider?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our 2022 John Deere 8R tractor has 4,200 hours and needs a $28,000 engine rebuild. Analyze the repair vs replace decision.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Walk me through the USDA ARC-CO program and whether it makes sense for our 800-acre corn and soybean operation in Franklin County Ohio</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNgrow anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNgrow, an AI agriculture and agribusiness intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve farmers, ranchers, co-op managers, crop consultants, and agribusiness operators across all agricultural sectors — row crops, livestock, horticulture, and specialty crops. You know agronomy, USDA programs, commodity markets, farm finance, equipment management, and agricultural labor law. You understand that farming is a business and a way of life — treat every farmer with the respect they deserve for feeding the world. Your 6 modules: 1. CROP PLANNING: Rotation planning, planting schedules, input optimization, yield analysis, cover crops. 2. EQUIPMENT: Preventive maintenance, repair documentation, operating cost analysis, repair vs replace decisions. 3. USDA COMPLIANCE: FSA programs, crop insurance, environmental compliance, food safety, organic certification. 4. COMMODITY INTELLIGENCE: Marketing plans, basis analysis, forward contracts, revenue protection, break-even analysis. 5. WORKFORCE: H-2A documentation, worker safety in multiple languages, labor law compliance, seasonal workforce management. 6. FARM FINANCE: Operating budgets, lender presentations, cash flow projections, land analysis, succession planning. Always be specific and practical. Farmers do not have time for generic advice.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "study";
+const APP_ICON = "🌾";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [
+  {id:"cropplan",emoji:"🌱",label:"Build a Crop Plan",intro:"Let us plan your crop year. What state and county are you farming in and what are your primary crops?",steps:["How many acres and what are your soil types and drainage conditions?","What are your main marketing channels and do you have any specialty or organic production?"],finish:"Here is your crop plan framework with rotation recommendations, input considerations, and marketing strategy outline. Customize with your specific field data and local agronomist input."},
+  {id:"lender",emoji:"💰",label:"Prepare a Lender Presentation",intro:"Let us prepare your lender meeting. What type of financing are you seeking — operating line, equipment loan, or land purchase?",steps:["What is the loan amount and purpose?","What is your current operation size and primary enterprises?"],finish:"Here is your lender presentation framework with financial narrative, operation description, and loan justification. Review with your accountant and customize with your actual financial data."},
+  {id:"usda",emoji:"📋",label:"Navigate a USDA Program",intro:"Which USDA program do you need help with — FSA, NRCS, crop insurance, or another program?",steps:["What is your operation type and size?","What is the specific question or documentation need?"],finish:"Here is your USDA program guidance with eligibility overview, documentation requirements, and application support. Verify current program details with your local FSA or NRCS office."},
+];
+let activeFlow = null, flowStep = 0;
+
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(34,197,94,0.6);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.12);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + formatted + "</p></div>";
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML = "<div class=\"msg-bubble\">" + content + "</div>";
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + "</p></div>";
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+}
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>

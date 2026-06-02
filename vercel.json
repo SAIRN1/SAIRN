@@ -28,6 +28,11 @@
     { "source": "/sairnlearn-dashboard", "destination": "/sairnlearn_dashboard.html" },
     { "source": "/sairnlaw",             "destination": "/sairnlaw.html"             },
     { "source": "/sairnhealth",          "destination": "/sairnhealth.html"          },
+    { "source": "/sairncare",            "destination": "/sairncare.html"            },
+    { "source": "/sairnbuild",           "destination": "/sairnbuild.html"           },
+    { "source": "/sairngrow",            "destination": "/sairngrow.html"            },
+    { "source": "/sairngive",            "destination": "/sairngive.html"            },
+    { "source": "/sairngov",             "destination": "/sairngov.html"             },
     { "source": "/memory",               "destination": "/memory_settings.html"      }
   ],
   "cleanUrls": true,

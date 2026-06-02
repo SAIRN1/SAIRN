@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNbuild — AI for Construction. Built from the Jobsite.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#F59E0B;--grad:linear-gradient(135deg,#F59E0B,#D97706);--ar:rgba(245,158,11,0.15);--ab:rgba(245,158,11,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(245,158,11,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(245,158,11,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(245,158,11,0.15) 0%,transparent 60%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.crisis-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:100px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);font-size:12px;font-weight:700;color:var(--w);margin-bottom:20px;text-align:center;max-width:700px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(245,158,11,0.4))}
+.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#F59E0B 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:720px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:var(--a);font-weight:600;margin-bottom:48px;opacity:0.9}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(245,158,11,0.4);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
+.stat-lbl{font-size:12px;color:var(--m);max-width:160px;text-align:center;line-height:1.4}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:620px;margin:0 auto 48px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s;border-left:4px solid var(--a)}
+.module-card:hover{transform:translateY(-2px)}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:4px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.mod-feature::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--a);flex-shrink:0}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:900px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:var(--ab);background:var(--ar)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 14px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:44px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:4px}
+.pd{font-size:12px;color:var(--d);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--m)}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid var(--ab)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:var(--ab)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:440px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:520px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:var(--ab);color:var(--w)}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🏗️</div>
+    <div class="nav-brand">SAIRNbuild</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">Claude Powered · SAIRN Technologies</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="crisis-badge">🏗️ Only 1.4% of construction companies have adopted AI — the lowest of any industry worldwide</div>
+    <div class="hero-eyebrow">AI-Native · Claude Powered · Patents Pending · Zero Competitors</div>
+    <div class="hero-icon">🏗️</div>
+    <h1 class="hero-title">SAIRNbuild</h1>
+    <p class="hero-sub">Project management, estimating, safety documentation, subcontractor management, job costing, and compliance — all powered by Claude AI. Built for every general contractor, project manager, and superintendent.</p>
+    <p class="hero-market">$13T global construction market · 1.4% AI adoption — the lowest of any industry · Zero vertical AI competitors · Every project manager working without AI</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View pricing</button>
+    </div>
+    <div class="hero-stats"><div><div class="stat-val">$13T</div><div class="stat-lbl">Global construction market with 1.4% AI adoption</div></div><div><div class="stat-val">72%</div><div class="stat-lbl">Of construction firms still use paper-based project management</div></div><div><div class="stat-val">30%</div><div class="stat-lbl">Of construction projects exceed budget — AI changes that</div></div><div><div class="stat-val">0</div><div class="stat-lbl">Vertical AI platforms built specifically for construction</div></div></div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">6 intelligence modules</div>
+    <div class="sec-title">Every dimension of build intelligence.<br>One platform.</div>
+    <div class="module-grid">
+      <div class="module-card" style="border-left-color:#F59E0B">
+        <div class="mod-emoji">📋</div>
+        <div class="mod-title">Project Documentation Intelligence</div>
+        <div class="mod-desc">Every RFI, submittal, change order, and daily report — drafted, organized, and tracked automatically. SAIRNbuild reduces documentation time by 60% so project managers spend time managing projects, not paperwork.</div>
+        <div class="mod-features">
+          <div class="mod-feature">RFI drafting and response management</div>
+          <div class="mod-feature">Submittal log tracking and follow-up</div>
+          <div class="mod-feature">Change order documentation and pricing support</div>
+          <div class="mod-feature">Daily field report generation</div>
+          <div class="mod-feature">Meeting minutes and action item tracking</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#10B981">
+        <div class="mod-emoji">💰</div>
+        <div class="mod-title">Estimating and Bidding Intelligence</div>
+        <div class="mod-desc">Accurate estimates win projects and protect margins. SAIRNbuild analyzes historical job data, current material costs, and labor productivity to build estimates that win bids and deliver profit.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Quantity takeoff assistance and review</div>
+          <div class="mod-feature">Historical cost database analysis</div>
+          <div class="mod-feature">Subcontractor scope of work generation</div>
+          <div class="mod-feature">Bid proposal drafting and formatting</div>
+          <div class="mod-feature">Value engineering recommendation generation</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#EF4444">
+        <div class="mod-emoji">🦺</div>
+        <div class="mod-title">Safety Documentation Intelligence</div>
+        <div class="mod-desc">Construction safety compliance is complex, mandatory, and critical. SAIRNbuild generates every safety document OSHA requires — toolbox talks, JHAs, incident reports, and safety plans — so your team is always protected and always compliant.</div>
+        <div class="mod-features">
+          <div class="mod-feature">OSHA toolbox talk generation by topic and trade</div>
+          <div class="mod-feature">Job hazard analysis documentation</div>
+          <div class="mod-feature">Incident and near-miss report generation</div>
+          <div class="mod-feature">Site safety plan creation and updates</div>
+          <div class="mod-feature">Subcontractor safety prequalification documentation</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#3B82F6">
+        <div class="mod-emoji">👥</div>
+        <div class="mod-title">Subcontractor Management Intelligence</div>
+        <div class="mod-desc">Managing subcontractors is the most complex part of general contracting. SAIRNbuild tracks every sub — their scope, their schedule, their insurance, their performance — and generates every communication needed to keep them accountable.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Subcontractor scope of work generation</div>
+          <div class="mod-feature">Insurance and compliance tracking</div>
+          <div class="mod-feature">Performance evaluation documentation</div>
+          <div class="mod-feature">Notice to cure and default documentation</div>
+          <div class="mod-feature">Lien waiver management and tracking</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#8B5CF6">
+        <div class="mod-emoji">📊</div>
+        <div class="mod-title">Job Costing Intelligence</div>
+        <div class="mod-desc">Every project bleeds money in small amounts that add up to disaster. SAIRNbuild tracks costs against budget in real time, identifies variance patterns before they become losses, and generates the financial reporting owners and bankers expect.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Budget vs actual variance analysis</div>
+          <div class="mod-feature">Cost code tracking and allocation guidance</div>
+          <div class="mod-feature">Owner billing application preparation</div>
+          <div class="mod-feature">Retainage tracking and release documentation</div>
+          <div class="mod-feature">Project profitability forecasting</div>
+        </div>
+      </div>
+      <div class="module-card" style="border-left-color:#06B6D4">
+        <div class="mod-emoji">📅</div>
+        <div class="mod-title">Schedule Intelligence</div>
+        <div class="mod-desc">Construction schedules fall apart when communication fails. SAIRNbuild generates look-ahead schedules, identifies float consumption, documents delays, and drafts every schedule narrative and time impact analysis you need.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Three-week look-ahead schedule generation</div>
+          <div class="mod-feature">Delay documentation and time impact analysis</div>
+          <div class="mod-feature">Critical path analysis and narrative</div>
+          <div class="mod-feature">Schedule recovery plan generation</div>
+          <div class="mod-feature">Weather day documentation and analysis</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">Simple pricing. All 6 modules included.</div>
+    <div class="pricing-grid">
+      <div class="pc ">
+        <div class="pt">Solo PM</div>
+        <div class="pa">$99</div>
+        <div class="pp">/month</div>
+        <div class="pd">Single project manager</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 6 modules</div>
+          <div class="pf-item"><span class="pck">+</span>Unlimited project documentation</div>
+          <div class="pf-item"><span class="pck">+</span>Safety document library</div>
+          <div class="pf-item"><span class="pck">+</span>Estimating support</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Get Started</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Company</div>
+        <div class="pa">$249</div>
+        <div class="pp">/month</div>
+        <div class="pd">Up to 10 users · All projects</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Solo PM</div>
+          <div class="pf-item"><span class="pck">+</span>Subcontractor management</div>
+          <div class="pf-item"><span class="pck">+</span>Job costing intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Schedule intelligence</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Request Demo</button>
+      </div>
+      <div class="pc ">
+        <div class="pt">Enterprise</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual</div>
+        <div class="pd">Large GCs · Multiple offices</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Company</div>
+          <div class="pf-item"><span class="pck">+</span>Multi-office intelligence sharing</div>
+          <div class="pf-item"><span class="pck">+</span>ERP integration support</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated success team</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Get Started</button>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNbuild</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · Patents Pending · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNbuild <span style="color:var(--m);font-weight:400;font-size:13px">· Intelligence · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Project Documentation Intelligence','Every RFI, submittal, change order, and daily report — draft...')"><span>📋</span><span class="mode-label">Project Docu</span></button>
+    <button class="mode-btn" onclick="setMode('Estimating and Bidding Intelligence','Accurate estimates win projects and protect margins. SAIRNbu...')"><span>💰</span><span class="mode-label">Estimating</span></button>
+    <button class="mode-btn" onclick="setMode('Safety Documentation Intelligence','Construction safety compliance is complex, mandatory, and cr...')"><span>🦺</span><span class="mode-label">Safety Docum</span></button>
+    <button class="mode-btn" onclick="setMode('Subcontractor Management Intelligence','Managing subcontractors is the most complex part of general ...')"><span>👥</span><span class="mode-label">Subcontracto</span></button>
+    <button class="mode-btn" onclick="setMode('Job Costing Intelligence','Every project bleeds money in small amounts that add up to d...')"><span>📊</span><span class="mode-label">Job Costing</span></button>
+    <button class="mode-btn" onclick="setMode('Schedule Intelligence','Construction schedules fall apart when communication fails. ...')"><span>📅</span><span class="mode-label">Schedule</span></button>
+
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="rfi" onclick="startFlow('rfi')"><span>📋</span><span class="mode-label">Draft an R</span></button>
+    <button class="flow-btn mode-btn" data-flow="safety" onclick="startFlow('safety')"><span>🦺</span><span class="mode-label">Generate a</span></button>
+    <button class="flow-btn mode-btn" data-flow="changeorder" onclick="startFlow('changeorder')"><span>💰</span><span class="mode-label">Document a</span></button>
+
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🏗️</div>
+      <div class="empty-title">SAIRNbuild — Intelligence</div>
+      <div class="empty-sub">What do you need today?</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">Draft an RFI for a foundation conflict between structural drawings and civil drawings discovered during excavation</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Generate a toolbox talk on fall protection for our crew starting steel erection on Monday</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Our concrete subcontractor is 3 weeks behind schedule. Draft a notice to cure with a 7-day cure period</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNbuild anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNbuild, an AI construction intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve general contractors, project managers, superintendents, estimators, and safety officers across all construction sectors — commercial, residential, industrial, and civil. You know construction law, OSHA regulations, AIA contracts, subcontractor management, estimating, scheduling, and job costing. You speak the language of the jobsite. Never be vague — project managers do not have time for generic advice. Give specific, actionable, construction-ready guidance. Your 6 modules: 1. PROJECT DOCUMENTATION: RFIs, submittals, change orders, daily reports, meeting minutes. 2. ESTIMATING AND BIDDING: Quantity analysis, historical costs, scope of work, bid proposals, value engineering. 3. SAFETY: OSHA toolbox talks, JHAs, incident reports, safety plans, subcontractor prequalification. 4. SUBCONTRACTOR MANAGEMENT: Scope generation, insurance tracking, performance evaluation, notices to cure, lien waivers. 5. JOB COSTING: Budget vs actual, cost code tracking, owner billing, retainage, profitability forecasting. 6. SCHEDULE: Look-ahead schedules, delay documentation, time impact analysis, schedule recovery, weather days.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "contractor";
+const APP_ICON = "🏗️";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [
+  {id:"rfi",emoji:"📋",label:"Draft an RFI",intro:"Let us draft your RFI. What is the conflict or question that needs clarification?",steps:["Which drawing sheets are involved and what is the specific discrepancy?","What is the impact if not clarified — schedule, cost, or safety?"],finish:"Here is your RFI ready for submission. Review the description, add your project number and RFI number, and submit to the appropriate party."},
+  {id:"safety",emoji:"🦺",label:"Generate a Safety Document",intro:"What type of safety document do you need — toolbox talk, JHA, incident report, or safety plan?",steps:["What trade or activity does this cover?","Any specific hazards, recent incidents, or regulatory requirements to address?"],finish:"Here is your safety document ready for use. Review, customize to your specific site conditions, and ensure a qualified safety professional reviews before implementation."},
+  {id:"changeorder",emoji:"💰",label:"Document a Change Order",intro:"Let us document your change order. What work was directed or what changed from the original contract?",steps:["What are the cost impacts — labor, material, equipment, and subcontractors?","What are the schedule impacts and what documentation do you have?"],finish:"Here is your change order documentation package including scope description, pricing breakdown, and schedule impact narrative. Review with your PM before submission."},
+];
+let activeFlow = null, flowStep = 0;
+
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(245,158,11,0.6);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.12);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + formatted + "</p></div>";
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML = "<div class=\"msg-bubble\">" + content + "</div>";
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + "</p></div>";
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+}
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>

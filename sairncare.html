@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNcare — AI for Assisted Living. Built with Compassion.</title>
+<meta name="description" content="Resident care, caregiver support, memory care, fall prevention, medication management, family communication, and compliance — all powered by Claude AI. Built specifically for assisted living communities.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{--bg:#060810;--card:#1A1C32;--a:#8B5CF6;--a2:#7C3AED;--grad:linear-gradient(135deg,#8B5CF6,#7C3AED);--ar:rgba(139,92,246,0.15);--ab:rgba(139,92,246,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060;--gold:#F0B429}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(139,92,246,0.4)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(139,92,246,0.4);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.1) 0%,transparent 60%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.crisis-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:100px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);font-size:12px;font-weight:700;color:#C4B5FD;margin-bottom:20px}
+.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(139,92,246,0.5))}
+.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#8B5CF6 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:720px;line-height:1.75;margin-bottom:16px}
+.hero-market{font-size:13px;color:rgba(139,92,246,0.9);font-weight:600;margin-bottom:48px}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(139,92,246,0.45);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
+.stat-lbl{font-size:12px;color:var(--m);max-width:140px;text-align:center}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:640px;margin:0 auto 48px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s;border-left:4px solid var(--a)}
+.module-card:hover{transform:translateY(-2px)}
+.module-card.red{border-left-color:#EF4444}
+.module-card.green{border-left-color:#10B981}
+.module-card.amber{border-left-color:#F59E0B}
+.module-card.blue{border-left-color:#3B82F6}
+.module-card.pink{border-left-color:#EC4899}
+.module-card.cyan{border-left-color:#06B6D4}
+.module-card.orange{border-left-color:#F97316}
+.module-card.teal{border-left-color:#14B8A6}
+.module-card.gold{border-left-color:var(--gold)}
+.module-card.rose{border-left-color:#FB7185}
+.world-badge{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:4px;background:rgba(240,180,41,0.15);color:var(--gold);border:1px solid rgba(240,180,41,0.3);display:inline-block;margin-bottom:10px}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:4px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.mod-feature::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--a);flex-shrink:0}
+.module-card.red .mod-feature::before{background:#EF4444}
+.module-card.green .mod-feature::before{background:#10B981}
+.module-card.amber .mod-feature::before{background:#F59E0B}
+.module-card.blue .mod-feature::before{background:#3B82F6}
+.module-card.pink .mod-feature::before{background:#EC4899}
+.module-card.cyan .mod-feature::before{background:#06B6D4}
+.module-card.orange .mod-feature::before{background:#F97316}
+.module-card.teal .mod-feature::before{background:#14B8A6}
+.module-card.gold .mod-feature::before{background:var(--gold)}
+.module-card.rose .mod-feature::before{background:#FB7185}
+.heart-section{padding:80px 24px;background:linear-gradient(180deg,var(--bg),rgba(139,92,246,0.04),var(--bg))}
+.heart-inner{max-width:800px;margin:0 auto;text-align:center}
+.heart-pull{font-size:clamp(20px,3vw,32px);font-weight:700;color:var(--w);line-height:1.5;margin:32px 0;padding:32px 40px;border-left:4px solid var(--a);background:var(--ar);text-align:left}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:980px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.04)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 14px;border-radius:100px}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
+.pa{font-size:44px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:4px}
+.pd{font-size:12px;color:var(--d);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--m)}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(139,92,246,0.3)}
+.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:440px;line-height:1.65;margin-bottom:24px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:500px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:rgba(139,92,246,0.35);color:var(--w)}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:18px;font-weight:800;color:var(--w);margin-bottom:6px}
+.footer-sub{font-size:12px;color:var(--d)}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">💜</div>
+    <div class="nav-brand">SAIRNcare</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">HIPAA Compliant · Built with Compassion</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="crisis-badge">💜 $387B market by 2035 · Growing 21% annually · Zero Claude-native AI competitors</div>
+    <div class="hero-eyebrow">HIPAA Compliant · Claude Powered · Built with Compassion · Patents Pending</div>
+    <div class="hero-icon">💜</div>
+    <h1 class="hero-title">SAIRNcare</h1>
+    <p class="hero-sub">The AI platform built from the inside of assisted living. Not clinical AI. Not a chatbot. The intelligence layer that supports every caregiver, administrator, and family member in your community — so every resident receives the compassionate, personalized care they deserve.</p>
+    <p class="hero-market">$387B market by 2035 · 30,000+ US assisted living facilities · Caregiver shortage is the number one industry crisis · Zero AI built specifically for assisted living administration</p>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View pricing</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-val">$387B</div><div class="stat-lbl">Market size by 2035 growing 21% annually</div></div>
+      <div><div class="stat-val">30K+</div><div class="stat-lbl">US assisted living facilities with no AI solution</div></div>
+      <div><div class="stat-val">0</div><div class="stat-lbl">AI platforms built specifically for assisted living</div></div>
+      <div><div class="stat-val">85%</div><div class="stat-lbl">Of future residents expect high-tech AI integration</div></div>
+    </div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">12 intelligence modules</div>
+    <div class="sec-title">Every resident. Every caregiver.<br>Every family. One platform.</div>
+    <div class="sec-sub">SAIRNcare is not clinical AI and does not replace caregivers. It is the intelligence layer that makes every caregiver more effective, every administrator more efficient, and every family more connected to their loved one.</div>
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="mod-emoji">🫀</div>
+        <div class="mod-title">Resident Care Intelligence</div>
+        <div class="mod-desc">Personalized care plans for every resident, daily care documentation, condition monitoring, and care coordination across all shifts. Every caregiver starts every shift knowing exactly what each resident needs — not starting from scratch.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Personalized care plan creation and updates</div>
+          <div class="mod-feature">Daily care documentation and shift notes</div>
+          <div class="mod-feature">Condition change detection and alert generation</div>
+          <div class="mod-feature">Care coordination across all shifts and departments</div>
+          <div class="mod-feature">ADL tracking and functional decline identification</div>
+        </div>
+      </div>
+      <div class="module-card green">
+        <div class="mod-emoji">💚</div>
+        <div class="mod-title">Caregiver Support Intelligence</div>
+        <div class="mod-desc">Caregivers are the heart of assisted living — and they are burning out at record rates. SAIRNcare reduces documentation burden, streamlines shift handoffs, identifies workload imbalances, and gives every caregiver the information they need in seconds instead of minutes.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Shift handoff documentation — complete and fast</div>
+          <div class="mod-feature">Caregiver workload balancing and assignment optimization</div>
+          <div class="mod-feature">Burnout risk monitoring and early intervention alerts</div>
+          <div class="mod-feature">Training content generation for specific care situations</div>
+          <div class="mod-feature">Incident documentation and follow-up tracking</div>
+        </div>
+      </div>
+      <div class="module-card pink">
+        <div class="mod-emoji">🧠</div>
+        <div class="mod-title">Memory Care Intelligence</div>
+        <div class="mod-desc">Dementia and memory care residents require specialized, consistent, deeply personalized care. SAIRNcare supports memory care teams with behavioral monitoring, dementia-specific protocols, wandering risk alerts, and family communication that keeps loved ones informed with compassion.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Behavioral pattern monitoring and change alerts</div>
+          <div class="mod-feature">Dementia-specific care protocol guidance</div>
+          <div class="mod-feature">Wandering risk identification and safety protocols</div>
+          <div class="mod-feature">Sundowning pattern documentation and intervention</div>
+          <div class="mod-feature">Family communication templates for memory care updates</div>
+          <div class="mod-feature">Therapeutic activity recommendations by cognitive level</div>
+        </div>
+      </div>
+      <div class="module-card red">
+        <div class="mod-emoji">🛡️</div>
+        <div class="mod-title">Fall Risk and Safety Intelligence</div>
+        <div class="mod-desc">Falls are the leading cause of injury and death in assisted living. SAIRNcare identifies high-risk residents before they fall, documents every incident with the detail needed for regulatory compliance, and builds facility-wide fall prevention strategies based on your own data.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Fall risk scoring and high-risk resident identification</div>
+          <div class="mod-feature">Preventive intervention recommendation by risk level</div>
+          <div class="mod-feature">Post-fall incident documentation and root cause analysis</div>
+          <div class="mod-feature">Environmental hazard identification and remediation</div>
+          <div class="mod-feature">Fall reduction strategy generation from facility data</div>
+        </div>
+      </div>
+      <div class="module-card amber">
+        <div class="mod-emoji">💊</div>
+        <div class="mod-title">Medication Management Intelligence</div>
+        <div class="mod-desc">Medication errors are the most common adverse events in assisted living. SAIRNcare supports medication reconciliation, tracks adherence, flags potential interactions, and generates the documentation that state surveyors expect to see — without adding burden to your nursing staff.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Medication reconciliation documentation support</div>
+          <div class="mod-feature">Adherence tracking and missed dose documentation</div>
+          <div class="mod-feature">Drug interaction and contraindication alerts</div>
+          <div class="mod-feature">Pharmacy communication and order documentation</div>
+          <div class="mod-feature">Controlled substance documentation and audit support</div>
+        </div>
+      </div>
+      <div class="module-card blue">
+        <div class="mod-emoji">👨‍👩‍👧</div>
+        <div class="mod-title">Family Communication Intelligence</div>
+        <div class="mod-desc">Families chose your community because they trust you with their most loved person. SAIRNcare keeps that trust alive — generating personalized family updates, responding to family concerns with warmth and accuracy, and communicating in any language so no family feels left out.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Personalized resident update generation for families</div>
+          <div class="mod-feature">Family concern response drafting — warm and accurate</div>
+          <div class="mod-feature">Care conference preparation and documentation</div>
+          <div class="mod-feature">Multilingual family communication — 40 languages</div>
+          <div class="mod-feature">End-of-life communication support and documentation</div>
+          <div class="mod-feature">Family satisfaction monitoring and service recovery</div>
+        </div>
+      </div>
+      <div class="module-card cyan">
+        <div class="mod-emoji">🗓️</div>
+        <div class="mod-title">Staff Retention and Scheduling Intelligence</div>
+        <div class="mod-desc">The assisted living industry loses 50-75% of its caregivers every year. SAIRNcare predicts who is at risk of leaving before they resign, optimizes scheduling to reduce burnout, and builds retention strategies specific to the realities of direct care work.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Caregiver burnout and turnover risk prediction</div>
+          <div class="mod-feature">Scheduling optimization for resident continuity</div>
+          <div class="mod-feature">Agency staff cost reduction through internal pipeline</div>
+          <div class="mod-feature">Retention strategy generation by role and facility</div>
+          <div class="mod-feature">New hire onboarding content and competency tracking</div>
+        </div>
+      </div>
+      <div class="module-card orange">
+        <div class="mod-emoji">📋</div>
+        <div class="mod-title">Regulatory Compliance Intelligence</div>
+        <div class="mod-desc">State surveys are the most stressful event in any assisted living community. SAIRNcare prepares your team year-round — generating the documentation state surveyors expect, identifying compliance gaps before inspection, and turning every survey finding into a corrective action plan.</div>
+        <div class="mod-features">
+          <div class="mod-feature">State survey readiness assessment and gap identification</div>
+          <div class="mod-feature">Ohio DODD and licensing documentation support</div>
+          <div class="mod-feature">Plan of correction generation for survey findings</div>
+          <div class="mod-feature">Policy and procedure library generation and updates</div>
+          <div class="mod-feature">Incident reporting compliance documentation</div>
+          <div class="mod-feature">Staff training compliance tracking and content</div>
+        </div>
+      </div>
+      <div class="module-card teal">
+        <div class="mod-emoji">💰</div>
+        <div class="mod-title">Revenue and Billing Intelligence</div>
+        <div class="mod-desc">Assisted living revenue is complex — private pay, Medicaid waiver, long-term care insurance, and Veterans benefits all require different documentation and billing processes. SAIRNcare optimizes every revenue stream and ensures you never leave money on the table.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Medicaid waiver documentation and compliance</div>
+          <div class="mod-feature">Long-term care insurance claim documentation</div>
+          <div class="mod-feature">Veterans benefits identification and enrollment support</div>
+          <div class="mod-feature">Private pay contract and rate optimization</div>
+          <div class="mod-feature">Ancillary service billing documentation</div>
+          <div class="mod-feature">Accounts receivable management and collections support</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="mod-emoji">🌸</div>
+        <div class="mod-title">Resident Wellness Intelligence</div>
+        <div class="mod-desc">Quality of life is the mission of assisted living. SAIRNcare monitors resident wellness holistically — nutrition, physical activity, social engagement, spiritual wellbeing, and emotional health — and alerts care teams when a resident is declining in ways that lab values alone cannot capture.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Nutrition and hydration monitoring and alerts</div>
+          <div class="mod-feature">Physical activity and mobility tracking</div>
+          <div class="mod-feature">Social engagement and isolation risk identification</div>
+          <div class="mod-feature">Emotional and psychological wellbeing monitoring</div>
+          <div class="mod-feature">Quality of life assessment documentation</div>
+          <div class="mod-feature">Spiritual and cultural care preference documentation</div>
+        </div>
+      </div>
+      <div class="module-card rose">
+        <div class="mod-emoji">🏠</div>
+        <div class="mod-title">Admissions and Marketing Intelligence</div>
+        <div class="mod-desc">Empty beds are lost revenue and missed opportunity to serve. SAIRNcare optimizes your admissions process — handling family inquiries with warmth and accuracy, generating personalized community tours and follow-ups, and tracking occupancy trends to keep your community full.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Family inquiry response generation — warm and thorough</div>
+          <div class="mod-feature">Community tour follow-up and nurture communication</div>
+          <div class="mod-feature">Occupancy trend analysis and marketing recommendations</div>
+          <div class="mod-feature">Referral source management and relationship building</div>
+          <div class="mod-feature">Competitive positioning and community differentiation</div>
+          <div class="mod-feature">Move-in coordination documentation and welcome communication</div>
+        </div>
+      </div>
+      <div class="module-card gold">
+        <div class="world-badge">World First — No Prior Art</div>
+        <div class="mod-emoji">🔌</div>
+        <div class="mod-title">Infrastructure Gap Intelligence</div>
+        <div class="mod-desc">Most AI fails in assisted living because the digital infrastructure is not ready for it. SAIRNcare solves this first. We assess your current digital readiness, identify the specific gaps preventing AI from working, and build a step-by-step infrastructure roadmap so AI actually delivers value instead of adding burden.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Digital readiness assessment — where you are today</div>
+          <div class="mod-feature">Infrastructure gap identification by department</div>
+          <div class="mod-feature">AI readiness roadmap — what to fix first and why</div>
+          <div class="mod-feature">EHR and technology integration gap analysis</div>
+          <div class="mod-feature">Staff digital literacy assessment and training</div>
+          <div class="mod-feature">Phased implementation plan — AI that actually works</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="heart-section">
+    <div class="heart-inner">
+      <div class="sec-eye">The SAIRNcare Promise</div>
+      <div class="heart-pull">AI should serve as a connector, not a disruptor. Every resident in your community has a story, a family, a life lived. SAIRNcare exists to give every caregiver more time with that person — and less time on paperwork.</div>
+      <p style="font-size:16px;color:var(--m);line-height:1.75">The caregiver shortage is not going away. The aging population is not slowing down. The families expecting high-tech care are already choosing communities based on technology. SAIRNcare is how you meet all three realities at once — more efficient operations, better care outcomes, and the technology-forward reputation that fills beds.</p>
+    </div>
+  </section>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">Per-resident pricing. All 12 modules included.</div>
+    <div class="sec-sub">Simple community licensing. HIPAA BAA included. No setup fees. Cancel anytime.</div>
+    <div class="pricing-grid">
+      <div class="pc">
+        <div class="pt">Small Community</div>
+        <div class="pa">$199</div>
+        <div class="pp">/month</div>
+        <div class="pd">Up to 50 residents</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 12 intelligence modules</div>
+          <div class="pf-item"><span class="pck">+</span>Resident care and documentation</div>
+          <div class="pf-item"><span class="pck">+</span>Family communication tools</div>
+          <div class="pf-item"><span class="pck">+</span>HIPAA BAA included</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Try Free</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Community</div>
+        <div class="pa">$349</div>
+        <div class="pp">/month</div>
+        <div class="pd">50–150 residents · Full platform</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Small Community</div>
+          <div class="pf-item"><span class="pck">+</span>Memory care intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Staff retention and scheduling</div>
+          <div class="pf-item"><span class="pck">+</span>Regulatory compliance tools</div>
+          <div class="pf-item"><span class="pck">+</span>Revenue and billing intelligence</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Request Demo</button>
+      </div>
+      <div class="pc">
+        <div class="pt">Enterprise Chain</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual contract</div>
+        <div class="pd">Multi-location chains and REITs</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Community plan</div>
+          <div class="pf-item"><span class="pck">+</span>Cross-location intelligence sharing</div>
+          <div class="pf-item"><span class="pck">+</span>Chain-wide analytics and benchmarking</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated implementation team</div>
+          <div class="pf-item"><span class="pck">+</span>VCA, Sunrise, Brookdale ready</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Contact Sales</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNcare</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · HIPAA Compliant · BAA Available · Patents Pending · Built with compassion for every resident · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNcare <span style="color:var(--m);font-weight:400;font-size:13px">· Assisted Living Intelligence · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Resident Care','Create a care plan, document daily care, or identify a condition change')"><span>🫀</span><span class="mode-label">Resident Care</span></button>
+    <button class="mode-btn" onclick="setMode('Caregiver Support','Document a shift handoff, report an incident, or get guidance for a care situation')"><span>💚</span><span class="mode-label">Caregivers</span></button>
+    <button class="mode-btn" onclick="setMode('Memory Care','Document a behavioral change, get dementia care guidance, or communicate with a memory care family')"><span>🧠</span><span class="mode-label">Memory Care</span></button>
+    <button class="mode-btn" onclick="setMode('Fall Prevention','Assess fall risk, document an incident, or build a fall prevention strategy')"><span>🛡️</span><span class="mode-label">Fall Prevention</span></button>
+    <button class="mode-btn" onclick="setMode('Medication','Document medication administration, flag an interaction, or prepare pharmacy communication')"><span>💊</span><span class="mode-label">Medications</span></button>
+    <button class="mode-btn" onclick="setMode('Family Communication','Write a family update, respond to a concern, or prepare for a care conference')"><span>👨‍👩‍👧</span><span class="mode-label">Families</span></button>
+    <button class="mode-btn" onclick="setMode('Staffing','Optimize scheduling, identify burnout risk, or build a retention strategy')"><span>🗓️</span><span class="mode-label">Staffing</span></button>
+    <button class="mode-btn" onclick="setMode('Compliance','Prepare for a state survey, generate a plan of correction, or review a policy')"><span>📋</span><span class="mode-label">Compliance</span></button>
+    <button class="mode-btn" onclick="setMode('Revenue','Document Medicaid, insurance, or VA benefits, or optimize billing')"><span>💰</span><span class="mode-label">Revenue</span></button>
+    <button class="mode-btn" onclick="setMode('Wellness','Monitor resident nutrition, activity, social engagement, or emotional health')"><span>🌸</span><span class="mode-label">Wellness</span></button>
+    <button class="mode-btn" onclick="setMode('Admissions','Respond to a family inquiry, follow up on a tour, or analyze occupancy')"><span>🏠</span><span class="mode-label">Admissions</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="careplan" onclick="startFlow('careplan')"><span>🫀</span><span class="mode-label">Care Plan</span></button>
+    <button class="flow-btn mode-btn" data-flow="survey" onclick="startFlow('survey')"><span>📋</span><span class="mode-label">Survey Prep</span></button>
+    <button class="flow-btn mode-btn" data-flow="family" onclick="startFlow('family')"><span>👨‍👩‍👧</span><span class="mode-label">Family Update</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">💜</div>
+      <div class="empty-title">SAIRNcare — Assisted Living Intelligence</div>
+      <div class="empty-sub">Supporting every caregiver, administrator, and family. What do you need today?</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">A memory care resident has been increasingly agitated in the afternoons this week. Document the behavioral pattern and recommend intervention strategies for our care team.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">We have a state survey scheduled in 3 weeks. Generate a readiness checklist for our executive director and identify the top 5 documentation areas surveyors typically cite.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Write a compassionate family update for a resident whose condition has declined this month. The family lives out of state and we want them to feel informed and cared for.</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNcare anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = "You are SAIRNcare, an AI assisted living intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve assisted living communities — caregivers, nurses, administrators, activity directors, social workers, and family liaisons. You are HIPAA-compliant — never reference specific resident names or PHI. You are not clinical AI and do not provide medical diagnosis or treatment recommendations. You support the humans who provide care, not replace them. YOUR CORE BELIEF: Every resident has a story, a family, a life lived. AI should give caregivers more time with that person and less time on paperwork. YOUR 12 MODULES: 1. RESIDENT CARE: Personalized care plan creation, daily documentation, condition change detection, ADL tracking, care coordination across shifts. 2. CAREGIVER SUPPORT: Shift handoff documentation, workload balancing, burnout risk monitoring, training content, incident documentation. The caregiver shortage is the number one industry crisis. 3. MEMORY CARE: Behavioral pattern monitoring, dementia-specific protocols, wandering risk, sundowning documentation, therapeutic activity recommendations. 4. FALL PREVENTION: Fall risk scoring, preventive interventions, post-fall incident documentation, root cause analysis, facility-wide prevention strategies. 5. MEDICATION MANAGEMENT: Reconciliation documentation, adherence tracking, interaction alerts, pharmacy communication, controlled substance documentation. 6. FAMILY COMMUNICATION: Personalized resident updates, family concern responses, care conference preparation, multilingual in 40 languages, end-of-life communication support. 7. STAFF RETENTION AND SCHEDULING: Turnover prediction, scheduling optimization for resident continuity, agency cost reduction, retention strategies, onboarding content. 8. REGULATORY COMPLIANCE: State survey readiness, Ohio DODD documentation, plan of correction generation, policy library, incident reporting compliance. 9. REVENUE AND BILLING: Medicaid waiver documentation, long-term care insurance claims, Veterans benefits enrollment, private pay optimization, accounts receivable. 10. RESIDENT WELLNESS: Nutrition and hydration monitoring, physical activity tracking, social engagement, emotional and spiritual wellbeing, quality of life documentation. 11. ADMISSIONS AND MARKETING: Family inquiry responses, tour follow-ups, occupancy analysis, referral source management, move-in coordination. 12. INFRASTRUCTURE GAP: Digital readiness assessment, gap identification, AI readiness roadmap, EHR integration analysis, staff digital literacy, phased implementation planning. Always be warm, compassionate, and specific. The people you serve are caring for someone's parent, grandparent, or spouse. Honor that.";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "senior";
+const APP_ICON = "💜";
+let messages = [], isLoading = false, lastResponse = "";
+const GUIDED_FLOWS = [
+  {id:"careplan",emoji:"🫀",label:"Create a Care Plan",
+   intro:"Let us build a personalized care plan. What level of care does this resident need — independent living, assisted living, or memory care?",
+   steps:["What are the resident primary care needs, preferences, and any known conditions or risk factors?","What are the resident personal preferences, routines, and what matters most to them and their family?"],
+   finish:"Here is the personalized care plan with goals, interventions, preferences, and documentation guidelines. Review with your care team and customize before implementation. Do not include resident names or PHI in this demo."},
+  {id:"survey",emoji:"📋",label:"State Survey Preparation",
+   intro:"Let us prepare for your state survey. Which state are you in and when is your survey scheduled?",
+   steps:["What areas has your community been cited for in previous surveys, or what areas are you most concerned about?","How many residents do you have and what care levels does your community provide?"],
+   finish:"Here is your survey readiness plan with the top citation areas to address, documentation checklist, staff preparation guidance, and a 3-week countdown timeline. Review with your executive director and DON."},
+  {id:"family",emoji:"👨‍👩‍👧",label:"Family Communication",
+   intro:"Let us draft your family communication. What type of update do you need — routine progress, condition change, incident notification, or care conference follow-up?",
+   steps:["What is the key information the family needs to know and what tone is appropriate — reassuring, informational, or urgent?","Is there anything specific the family has been concerned about that we should address?"],
+   finish:"Here is your family communication draft — warm, accurate, and compassionate. Review for accuracy before sending. Personalize with resident-specific details not shared in this demo."}
+];
+let activeFlow = null, flowStep = 0;
+
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<18;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 3 + Math.random()*8;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(139,92,246,0.5);--d:"+(7+Math.random()*9)+"s;--del:"+(Math.random()*6)+"s;--o:"+(0.05+Math.random()*0.1);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + formatted + "</p></div>";
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML = "<div class=\"msg-bubble\">" + content + "</div>";
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + "</p></div>";
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+}
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>
