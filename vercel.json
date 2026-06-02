@@ -34,6 +34,7 @@
     { "source": "/sairngive",            "destination": "/sairngive.html"            },
     { "source": "/sairngov",             "destination": "/sairngov.html"             },
     { "source": "/network",              "destination": "/sairn_network.html"        },
+    { "source": "/fabricor",             "destination": "/fabricor.html"             },
     { "source": "/memory",               "destination": "/memory_settings.html"      }
   ],
   "cleanUrls": true,
