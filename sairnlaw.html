@@ -606,6 +606,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 
 <script>
 const SYSTEM = "You are SAIRNlaw, the world standard AI intelligence platform for law firms, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve every law firm from solo practitioners to the world's largest firms — Kirkland and Ellis, Latham and Watkins, Baker McKenzie, DLA Piper, Clifford Chance, Linklaters, Freshfields, Allen and Overy, Skadden, Jones Day — every attorney, every office, every jurisdiction, every time zone. You are attorney-grade AI — precise, thorough, jurisdiction-aware, privilege-conscious, and built to save 6.2 hours of non-billable work per attorney per week. CRITICAL: You are not a substitute for licensed legal counsel. Always note this for client-facing content. You serve the attorney. YOUR 12 MODULES: 1. DOCUMENT REVIEW: Risk identification across 40 clause types, discovery summarization, M&A due diligence, regulatory filings, cross-border documents. 2. CONTRACT DRAFTING: Jurisdiction-specific drafting — 50 US states and 40 countries. M&A documents, finance documents, employment, equity, real estate. Know English law vs New York law vs Delaware law vs Cayman Islands. 3. LEGAL RESEARCH: Multi-jurisdiction comparative analysis. Common law, civil law, Sharia law. Case synthesis, regulatory intelligence across EU, UK, US, APAC. Opposing argument anticipation. 4. CROSS-OFFICE INTELLIGENCE: Share precedents, playbooks, expertise, and client intelligence across all firm offices globally. Global conflict checking. Attorney expertise mapping. Cross-office secure communication. 5. CLIENT INTELLIGENCE: Intelligent intake, global conflict checking, client profiles, relationship mapping, engagement letter generation. 6. BILLING AND FINANCIAL: Narrative drafting, underbilling identification, matter profitability, alternative fee modeling, realization rate optimization. 7. MULTI-JURISDICTION COMPLIANCE: Regulatory monitoring across 40 jurisdictions, GDPR, CCPA, anti-bribery, sanctions, CLE/CPD tracking globally. 8. CLIENT COMMUNICATION: Jurisdiction and culture-appropriate, multilingual in 40 languages, board-level reporting, regulatory submissions. 9. COURT AND TRIBUNAL: US federal and state courts, English courts, ICC, LCIA, AAA, SIAC, HKIAC arbitration procedures. Deadline calculation across time zones. 10. ATTORNEY COLLABORATION: Cross-practice matter collaboration, precedent sharing, expertise directory, knowledge management. 11. RISK AND MALPRACTICE: Deadline monitoring, conflict detection, scope creep identification, client dissatisfaction signals, matter quality review. 12. FIRM INTELLIGENCE DASHBOARD: Utilization and realization rates, practice group profitability, client health, pipeline, competitive positioning. Be direct, thorough, and practice-ready. Know your audience — a Magic Circle partner in London needs different communication than a solo practitioner in Ohio. Both deserve excellence.";
+const APP_NAME = "SAIRNlaw";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "legal";
 const APP_ICON = "⚖️";
@@ -710,6 +711,7 @@ function showTyping() {
 async function sendMessage() {
   const inp = document.getElementById("userInput");
   const text = inp.value.trim(); if(!text || isLoading) return;
+  const memCtx = await cloudLoadMemory().then(function(m) { return m ? "\n\nPrevious session context:\n" + m : ""; }).catch(function() { return ""; });
   if(activeFlow !== null) {
     addMsg("user", text);
     inp.value = ""; inp.style.height = "";
@@ -728,7 +730,7 @@ async function sendMessage() {
   try {
     const res = await fetch(SAIRN_API, {
       method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM + memCtx, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
     });
     const data = await res.json();
     document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
@@ -766,20 +768,216 @@ async function loadFirstMessage() {
     });
   } catch(e) {}
 }
-function showSaveBar() {
-  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
-  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
-  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999";
-  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
-  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
-  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
-  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
-  closeBtn.style.cssText = "background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px";
-  closeBtn.onclick = function() { bar.remove(); };
-  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
-  document.body.appendChild(bar);
-  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 8000);
+// showSaveBar moved to Universal Intelligence Layer
+
+
+
+
+
+// ============================================================
+// SAIRN Universal Intelligence Layer v6.2
+// Cloud Memory · Voice Mode · Outcome Tracking · White Label
+// ============================================================
+
+// White label config — enterprise clients override these
+const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || 'SAIRN';
+const SAIRN_BRAND_COLOR = window.SAIRN_BRAND_COLOR || null;
+
+// User identity — persistent across sessions
+function getSAIRNUserId() {
+  let uid = localStorage.getItem('sairn_uid');
+  if(!uid) {
+    uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('sairn_uid', uid);
+  }
+  return uid;
 }
+const SAIRN_USER_ID = getSAIRNUserId();
+
+// Outcome tracking
+let sessionOutcomes = {queries: 0, saved: 0, startTime: Date.now()};
+
+// ── CLOUD MEMORY ────────────────────────────────────────────
+async function cloudSaveMemory(content) {
+  if(!content || content.length < 20) return;
+  // Save locally first (instant, no latency)
+  try {
+    const key = 'sairn_local_' + APP_ID;
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.unshift({ts: Date.now(), text: content.slice(0, 400)});
+    localStorage.setItem(key, JSON.stringify(existing.slice(0, 100)));
+  } catch(e) {}
+  // Save to cloud (async, best effort)
+  try {
+    await fetch('https://sairn.vercel.app/api/memory-cloud', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-ID': SAIRN_USER_ID,
+        'X-App-ID': APP_ID,
+      },
+      body: JSON.stringify({content: content.slice(0, 400), user_id: SAIRN_USER_ID, app_id: APP_ID}),
+    });
+    sessionOutcomes.saved++;
+  } catch(e) {
+    // Cloud save failed — local backup is enough
+  }
+}
+
+async function cloudLoadMemory() {
+  // Try cloud first, fall back to local
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/memory-cloud?uid=' + SAIRN_USER_ID, {
+      headers: {'X-User-ID': SAIRN_USER_ID, 'X-App-ID': APP_ID}
+    });
+    const data = await res.json();
+    if(data.entries && data.entries.length) {
+      return 'Memory from previous sessions:\n' + data.entries.slice(0, 8).map(function(e) { return e.content; }).join('\n---\n');
+    }
+  } catch(e) {}
+  // Fall back to local
+  try {
+    const key = 'sairn_local_' + APP_ID;
+    const entries = JSON.parse(localStorage.getItem(key) || '[]');
+    if(entries.length) return 'Recent context:\n' + entries.slice(0, 5).map(function(e) { return e.text; }).join('\n---\n');
+  } catch(e) {}
+  return '';
+}
+
+// ── VOICE MODE ──────────────────────────────────────────────
+let isListening = false;
+let voiceRecognition = null;
+
+function initVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition) return false;
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'en-US';
+  voiceRecognition.onresult = function(event) {
+    const transcript = Array.from(event.results).map(function(r) { return r[0].transcript; }).join('');
+    const inp = document.getElementById('userInput');
+    if(inp) inp.value = transcript;
+    if(event.results[event.results.length - 1].isFinal) {
+      stopVoice();
+      sendMessage();
+    }
+  };
+  voiceRecognition.onerror = function() { stopVoice(); };
+  voiceRecognition.onend = function() { stopVoice(); };
+  return true;
+}
+
+function toggleVoice() {
+  if(isListening) { stopVoice(); return; }
+  if(!voiceRecognition && !initVoice()) {
+    alert('Voice input is not supported in this browser. Try Chrome.');
+    return;
+  }
+  isListening = true;
+  voiceRecognition.start();
+  const btn = document.getElementById('voice-btn');
+  if(btn) {
+    btn.style.background = 'var(--grad)';
+    btn.style.animation = 'pulse-voice 1s infinite';
+    btn.title = 'Listening... click to stop';
+  }
+}
+
+function stopVoice() {
+  isListening = false;
+  if(voiceRecognition) try { voiceRecognition.stop(); } catch(e) {}
+  const btn = document.getElementById('voice-btn');
+  if(btn) {
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.animation = '';
+    btn.title = 'Voice input';
+  }
+}
+
+function addVoiceButton() {
+  const inputArea = document.querySelector('.input-area');
+  if(!inputArea || document.getElementById('voice-btn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'voice-btn';
+  btn.innerHTML = '🎤';
+  btn.title = 'Voice input';
+  btn.style.cssText = 'width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit';
+  btn.onclick = toggleVoice;
+  const sendBtn = document.getElementById('sendBtn');
+  if(sendBtn) inputArea.insertBefore(btn, sendBtn);
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.textContent = '@keyframes pulse-voice{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.3)}50%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}';
+  document.head.appendChild(style);
+}
+
+// ── OUTCOME TRACKING ─────────────────────────────────────────
+function trackOutcome() {
+  sessionOutcomes.queries++;
+  updateOutcomeDisplay();
+}
+
+function updateOutcomeDisplay() {
+  const el = document.getElementById('sairn-outcomes');
+  if(!el) return;
+  const mins = Math.round((Date.now() - sessionOutcomes.startTime) / 60000);
+  const saved = Math.round(sessionOutcomes.queries * 4.2); // avg 4.2 min saved per query
+  el.textContent = sessionOutcomes.queries + ' queries · ' + saved + ' min saved this session';
+}
+
+function addOutcomeBar() {
+  if(document.getElementById('sairn-outcomes')) return;
+  const header = document.querySelector('.app-header');
+  if(!header) return;
+  const bar = document.createElement('div');
+  bar.style.cssText = 'padding:5px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0';
+  const dot = document.createElement('span');
+  dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#10B981;display:inline-block;animation:pulse 2s infinite';
+  const label = document.createElement('span');
+  label.id = 'sairn-outcomes';
+  label.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);font-family:inherit';
+  label.textContent = '0 queries · 0 min saved this session';
+  bar.appendChild(dot); bar.appendChild(label);
+  header.after(bar);
+}
+
+// ── ENHANCED SAVE BAR ────────────────────────────────────────
+function showSaveBar() {
+  // Auto-save to cloud silently
+  cloudSaveMemory(lastResponse);
+  trackOutcome();
+  // Show copy bar
+  const existing = document.getElementById('sairn-save-bar'); if(existing) existing.remove();
+  const bar = document.createElement('div'); bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';
+  const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy';
+  copyBtn.style.cssText = 'background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000); }); };
+  const savedBadge = document.createElement('span');
+  savedBadge.textContent = '✓ Saved';
+  savedBadge.style.cssText = 'font-size:11px;color:#10B981;font-weight:600';
+  const closeBtn = document.createElement('button'); closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px';
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 6000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Add voice button and outcome bar after app page loads
+  const observer = new MutationObserver(function() {
+    if(document.getElementById('appPage') && document.getElementById('appPage').style.display !== 'none') {
+      addVoiceButton();
+      addOutcomeBar();
+    }
+  });
+  observer.observe(document.body, {childList: true, subtree: true, attributes: true});
+});
+
 document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
 document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 </script>

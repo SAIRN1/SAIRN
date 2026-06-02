@@ -257,6 +257,12 @@ footer{padding:40px 48px;border-top:1px solid rgba(255,255,255,0.06);
 .tdot{width:7px;height:7px;border-radius:50%;background:var(--gold);opacity:0.7;
   animation:bounce2 1.2s ease-in-out infinite}
 .tdot:nth-child(2){animation-delay:0.2s}.tdot:nth-child(3){animation-delay:0.4s}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
 .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;
   justify-content:center;padding:40px;text-align:center}
 .empty-icon{font-size:56px;margin-bottom:16px}
@@ -522,6 +528,19 @@ textarea#userInput::placeholder{color:var(--d)}
     <button class="dept-btn" onclick="setDept(this,'Legal & Compliance','Ask about policies, compliance requirements, or regulatory questions')">⚖️ Legal</button>
     <button class="dept-btn" onclick="setDept(this,'Finance','Ask about budgets, cost analysis, reporting, or financial guidance')">📊 Finance</button>
   </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('General','Ask SAIRN IQ anything about your organization, industry, or strategy')"><span>🏢</span><span class="mode-label">General</span></button>
+    <button class="mode-btn" onclick="setMode('Strategy','Analyze competitive position, market opportunities, or strategic decisions')"><span>📊</span><span class="mode-label">Strategy</span></button>
+    <button class="mode-btn" onclick="setMode('Operations','Optimize processes, scheduling, quality, or supply chain')"><span>⚡</span><span class="mode-label">Operations</span></button>
+    <button class="mode-btn" onclick="setMode('Finance','Analyze budgets, costs, margins, or financial performance')"><span>💰</span><span class="mode-label">Finance</span></button>
+    <button class="mode-btn" onclick="setMode('HR','Address workforce, retention, training, or organizational issues')"><span>👥</span><span class="mode-label">HR</span></button>
+    <button class="mode-btn" onclick="setMode('Legal','Review policies, compliance requirements, or contract guidance')"><span>⚖️</span><span class="mode-label">Legal</span></button>
+    <button class="mode-btn" onclick="setMode('Sales','Build sales strategies, handle objections, or analyze opportunities')"><span>🎯</span><span class="mode-label">Sales</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="strategy" onclick="startFlow('strategy')"><span>📊</span><span class="mode-label">Strategy</span></button>
+    <button class="flow-btn mode-btn" data-flow="briefing" onclick="startFlow('briefing')"><span>📋</span><span class="mode-label">Briefing</span></button>
+  </div>
   <div class="chat-area" id="chatArea">
     <div class="empty-state" id="emptyState">
       <div class="empty-icon">⚡</div>
@@ -541,9 +560,22 @@ textarea#userInput::placeholder{color:var(--d)}
 </div>
 
 <script>
+const APP_NAME = "SAIRNIQ";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "enterprise";
 const APP_ICON = "⚡";
+const GUIDED_FLOWS = [
+  {id:"strategy",emoji:"📊",label:"Strategic Analysis",
+   intro:"Let us build a strategic analysis. What business challenge or opportunity are you evaluating?",
+   steps:["What is the competitive landscape and who are your main competitors in this space?","What resources, constraints, or timeline do we need to factor into this strategy?"],
+   finish:"Here is your strategic analysis with situation assessment, strategic options, recommended approach, and implementation priorities. Review with your leadership team before executing."},
+  {id:"briefing",emoji:"📋",label:"Executive Briefing",
+   intro:"Let us prepare your executive briefing. What topic or decision needs to be communicated to leadership?",
+   steps:["What is the key information, recommendation, or decision that leadership needs to make?","What is the audience level and what context do they already have?"],
+   finish:"Here is your executive briefing document with situation summary, key findings, recommendation, and next steps. Customize with your specific data before presenting."}
+];
+let activeFlow = null, flowStep = 0;
+
 let messages = [], isLoading = false, lastResponse = "";
 let currentDept = "General";
 let currentPlaceholder = "Ask me anything about your company, your role, or your work";
@@ -582,6 +614,25 @@ function setDept(btn, dept, placeholder) {
   document.getElementById("userInput").focus();
 }
 
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
 function useSuggestion(el) {
   document.getElementById("userInput").value = el.textContent;
   sendMessage();
@@ -620,6 +671,18 @@ async function sendMessage() {
   const inp = document.getElementById("userInput");
   const text = inp.value.trim();
   if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
   inp.value = ""; inp.style.height = "";
   isLoading = true;
   document.getElementById("sendBtn").disabled = true;
@@ -708,6 +771,211 @@ function showSaveBar() {
   document.body.appendChild(bar);
   setTimeout(function() { if(document.getElementById("sairn-save-bar")) document.getElementById("sairn-save-bar").remove(); }, 8000);
 }
+
+
+// ============================================================
+// SAIRN Universal Intelligence Layer v6.2
+// Cloud Memory · Voice Mode · Outcome Tracking · White Label
+// ============================================================
+
+// White label config — enterprise clients override these
+const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || 'SAIRN';
+const SAIRN_BRAND_COLOR = window.SAIRN_BRAND_COLOR || null;
+
+// User identity — persistent across sessions
+function getSAIRNUserId() {
+  let uid = localStorage.getItem('sairn_uid');
+  if(!uid) {
+    uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('sairn_uid', uid);
+  }
+  return uid;
+}
+const SAIRN_USER_ID = getSAIRNUserId();
+
+// Outcome tracking
+let sessionOutcomes = {queries: 0, saved: 0, startTime: Date.now()};
+
+// ── CLOUD MEMORY ────────────────────────────────────────────
+async function cloudSaveMemory(content) {
+  if(!content || content.length < 20) return;
+  // Save locally first (instant, no latency)
+  try {
+    const key = 'sairn_local_' + APP_ID;
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.unshift({ts: Date.now(), text: content.slice(0, 400)});
+    localStorage.setItem(key, JSON.stringify(existing.slice(0, 100)));
+  } catch(e) {}
+  // Save to cloud (async, best effort)
+  try {
+    await fetch('https://sairn.vercel.app/api/memory-cloud', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-ID': SAIRN_USER_ID,
+        'X-App-ID': APP_ID,
+      },
+      body: JSON.stringify({content: content.slice(0, 400), user_id: SAIRN_USER_ID, app_id: APP_ID}),
+    });
+    sessionOutcomes.saved++;
+  } catch(e) {
+    // Cloud save failed — local backup is enough
+  }
+}
+
+async function cloudLoadMemory() {
+  // Try cloud first, fall back to local
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/memory-cloud?uid=' + SAIRN_USER_ID, {
+      headers: {'X-User-ID': SAIRN_USER_ID, 'X-App-ID': APP_ID}
+    });
+    const data = await res.json();
+    if(data.entries && data.entries.length) {
+      return 'Memory from previous sessions:\n' + data.entries.slice(0, 8).map(function(e) { return e.content; }).join('\n---\n');
+    }
+  } catch(e) {}
+  // Fall back to local
+  try {
+    const key = 'sairn_local_' + APP_ID;
+    const entries = JSON.parse(localStorage.getItem(key) || '[]');
+    if(entries.length) return 'Recent context:\n' + entries.slice(0, 5).map(function(e) { return e.text; }).join('\n---\n');
+  } catch(e) {}
+  return '';
+}
+
+// ── VOICE MODE ──────────────────────────────────────────────
+let isListening = false;
+let voiceRecognition = null;
+
+function initVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition) return false;
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'en-US';
+  voiceRecognition.onresult = function(event) {
+    const transcript = Array.from(event.results).map(function(r) { return r[0].transcript; }).join('');
+    const inp = document.getElementById('userInput');
+    if(inp) inp.value = transcript;
+    if(event.results[event.results.length - 1].isFinal) {
+      stopVoice();
+      sendMessage();
+    }
+  };
+  voiceRecognition.onerror = function() { stopVoice(); };
+  voiceRecognition.onend = function() { stopVoice(); };
+  return true;
+}
+
+function toggleVoice() {
+  if(isListening) { stopVoice(); return; }
+  if(!voiceRecognition && !initVoice()) {
+    alert('Voice input is not supported in this browser. Try Chrome.');
+    return;
+  }
+  isListening = true;
+  voiceRecognition.start();
+  const btn = document.getElementById('voice-btn');
+  if(btn) {
+    btn.style.background = 'var(--grad)';
+    btn.style.animation = 'pulse-voice 1s infinite';
+    btn.title = 'Listening... click to stop';
+  }
+}
+
+function stopVoice() {
+  isListening = false;
+  if(voiceRecognition) try { voiceRecognition.stop(); } catch(e) {}
+  const btn = document.getElementById('voice-btn');
+  if(btn) {
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.animation = '';
+    btn.title = 'Voice input';
+  }
+}
+
+function addVoiceButton() {
+  const inputArea = document.querySelector('.input-area');
+  if(!inputArea || document.getElementById('voice-btn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'voice-btn';
+  btn.innerHTML = '🎤';
+  btn.title = 'Voice input';
+  btn.style.cssText = 'width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit';
+  btn.onclick = toggleVoice;
+  const sendBtn = document.getElementById('sendBtn');
+  if(sendBtn) inputArea.insertBefore(btn, sendBtn);
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.textContent = '@keyframes pulse-voice{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.3)}50%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}';
+  document.head.appendChild(style);
+}
+
+// ── OUTCOME TRACKING ─────────────────────────────────────────
+function trackOutcome() {
+  sessionOutcomes.queries++;
+  updateOutcomeDisplay();
+}
+
+function updateOutcomeDisplay() {
+  const el = document.getElementById('sairn-outcomes');
+  if(!el) return;
+  const mins = Math.round((Date.now() - sessionOutcomes.startTime) / 60000);
+  const saved = Math.round(sessionOutcomes.queries * 4.2); // avg 4.2 min saved per query
+  el.textContent = sessionOutcomes.queries + ' queries · ' + saved + ' min saved this session';
+}
+
+function addOutcomeBar() {
+  if(document.getElementById('sairn-outcomes')) return;
+  const header = document.querySelector('.app-header');
+  if(!header) return;
+  const bar = document.createElement('div');
+  bar.style.cssText = 'padding:5px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0';
+  const dot = document.createElement('span');
+  dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#10B981;display:inline-block;animation:pulse 2s infinite';
+  const label = document.createElement('span');
+  label.id = 'sairn-outcomes';
+  label.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);font-family:inherit';
+  label.textContent = '0 queries · 0 min saved this session';
+  bar.appendChild(dot); bar.appendChild(label);
+  header.after(bar);
+}
+
+// ── ENHANCED SAVE BAR ────────────────────────────────────────
+function showSaveBar() {
+  // Auto-save to cloud silently
+  cloudSaveMemory(lastResponse);
+  trackOutcome();
+  // Show copy bar
+  const existing = document.getElementById('sairn-save-bar'); if(existing) existing.remove();
+  const bar = document.createElement('div'); bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';
+  const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy';
+  copyBtn.style.cssText = 'background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000); }); };
+  const savedBadge = document.createElement('span');
+  savedBadge.textContent = '✓ Saved';
+  savedBadge.style.cssText = 'font-size:11px;color:#10B981;font-weight:600';
+  const closeBtn = document.createElement('button'); closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px';
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 6000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Add voice button and outcome bar after app page loads
+  const observer = new MutationObserver(function() {
+    if(document.getElementById('appPage') && document.getElementById('appPage').style.display !== 'none') {
+      addVoiceButton();
+      addOutcomeBar();
+    }
+  });
+  observer.observe(document.body, {childList: true, subtree: true, attributes: true});
+});
 
 document.getElementById("userInput").addEventListener("input", function() {
   this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px";

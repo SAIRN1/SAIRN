@@ -1,6 +1,7 @@
 {
   "name": "sairn-platform",
-  "version": "5.1.0",
+  "version": "7.0.0",
+  "description": "SAIRN Technologies — Complete Intelligence Platform",
   "private": true,
   "type": "module",
   "dependencies": {
