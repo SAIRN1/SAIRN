@@ -125,7 +125,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
     <div class="hero-icon">🌾</div>
     <h1 class="hero-title">SAIRNgrow</h1>
     <p class="hero-sub">Crop planning, equipment management, USDA compliance, commodity intelligence, workforce management, and farm financial analysis — all powered by Claude AI. Built for every farmer, co-op, and agribusiness.</p>
-    <p class="hero-market">$5T global agriculture market · Less than 10% AI adoption · Zero vertical AI competitors · The people who feed the world working without AI</p>
+    <p class="hero-market">$5T global agriculture market · Less than 10% AI adoption worldwide · Built for every farmer on earth from family smallholder to industrial agribusiness</p>
     <div class="hero-ctas">
       <button class="btn-grad" onclick="showPage('app')">See it in action</button>
       <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View pricing</button>
@@ -134,7 +134,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
   </section>
 
   <div class="section">
-    <div class="sec-eye">6 intelligence modules</div>
+    <div class="sec-eye">6 intelligence modules — built for every farmer on earth</div>
     <div class="sec-title">Every dimension of grow intelligence.<br>One platform.</div>
     <div class="module-grid">
       <div class="module-card" style="border-left-color:#22C55E">
@@ -166,7 +166,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
         <div class="mod-title">USDA and Regulatory Compliance Intelligence</div>
         <div class="mod-desc">USDA programs, crop insurance requirements, environmental regulations, and food safety compliance — SAIRNgrow navigates all of it so farmers can focus on farming instead of paperwork.</div>
         <div class="mod-features">
-          <div class="mod-feature">USDA FSA program eligibility and application support</div>
+          <div class="mod-feature">USDA agricultural support programs in your country program eligibility and application support</div>
           <div class="mod-feature">Crop insurance documentation and recordkeeping</div>
           <div class="mod-feature">Environmental compliance — CWA, RCRA, pesticide records</div>
           <div class="mod-feature">Food safety plan generation and documentation</div>
@@ -295,9 +295,9 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
       <div class="empty-title">SAIRNgrow — Intelligence</div>
       <div class="empty-sub">What do you need today?</div>
       <div class="suggestions">
-        <button class="suggestion" onclick="useSuggestion(this)">We are planning our corn and soybean rotation for next year. Our fields are heavy clay soil in central Ohio. What rotation and input strategy should we consider?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">We are planning our corn and soybean rotation for next year. Our fields are heavy clay soil in your region. What rotation and input strategy should we consider?</button>
         <button class="suggestion" onclick="useSuggestion(this)">Our 2022 John Deere 8R tractor has 4,200 hours and needs a $28,000 engine rebuild. Analyze the repair vs replace decision.</button>
-        <button class="suggestion" onclick="useSuggestion(this)">Walk me through the USDA ARC-CO program and whether it makes sense for our 800-acre corn and soybean operation in Franklin County Ohio</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Walk me through the USDA ARC-CO program and whether it makes sense for our 800-acre corn and soybean operation in your county</button>
       </div>
     </div>
   </div>
@@ -308,7 +308,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 </div>
 
 <script>
-const SYSTEM = "You are SAIRNgrow, an AI agriculture and agribusiness intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve farmers, ranchers, co-op managers, crop consultants, and agribusiness operators across all agricultural sectors — row crops, livestock, horticulture, and specialty crops. You know agronomy, USDA programs, commodity markets, farm finance, equipment management, and agricultural labor law. You understand that farming is a business and a way of life — treat every farmer with the respect they deserve for feeding the world. Your 6 modules: 1. CROP PLANNING: Rotation planning, planting schedules, input optimization, yield analysis, cover crops. 2. EQUIPMENT: Preventive maintenance, repair documentation, operating cost analysis, repair vs replace decisions. 3. USDA COMPLIANCE: FSA programs, crop insurance, environmental compliance, food safety, organic certification. 4. COMMODITY INTELLIGENCE: Marketing plans, basis analysis, forward contracts, revenue protection, break-even analysis. 5. WORKFORCE: H-2A documentation, worker safety in multiple languages, labor law compliance, seasonal workforce management. 6. FARM FINANCE: Operating budgets, lender presentations, cash flow projections, land analysis, succession planning. Always be specific and practical. Farmers do not have time for generic advice.";
+const SYSTEM = "You are SAIRNgrow, the world standard AI agriculture and agribusiness intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve every farmer, rancher, grower, and agribusiness professional on earth — from a family grain farm in your region to a 50,000-acre row crop operation in Brazil, from a smallholder in sub-Saharan Africa to a wine estate in Bordeaux, from a dairy operation in New Zealand to a greenhouse complex in the Netherlands. You serve farmers, agronomists, crop consultants, co-op managers, food processors, commodity traders, and every person who grows food for the world. You know USDA programs in the US, CAP programs in the European Union, DEFRA programs in the UK, and agricultural support programs worldwide. You know global commodity markets — CBOT, Euronext, CME, and regional exchanges. You know crop production systems for every major agricultural region — temperate, tropical, semi-arid, and Mediterranean. You understand that farming is both a business and a way of life in every culture on earth.";
 const APP_NAME = "SAIRNgrow";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "study";
@@ -317,7 +317,7 @@ let messages = [], isLoading = false, lastResponse = "";
 const GUIDED_FLOWS = [
   {id:"cropplan",emoji:"🌱",label:"Build a Crop Plan",intro:"Let us plan your crop year. What state and county are you farming in and what are your primary crops?",steps:["How many acres and what are your soil types and drainage conditions?","What are your main marketing channels and do you have any specialty or organic production?"],finish:"Here is your crop plan framework with rotation recommendations, input considerations, and marketing strategy outline. Customize with your specific field data and local agronomist input."},
   {id:"lender",emoji:"💰",label:"Prepare a Lender Presentation",intro:"Let us prepare your lender meeting. What type of financing are you seeking — operating line, equipment loan, or land purchase?",steps:["What is the loan amount and purpose?","What is your current operation size and primary enterprises?"],finish:"Here is your lender presentation framework with financial narrative, operation description, and loan justification. Review with your accountant and customize with your actual financial data."},
-  {id:"usda",emoji:"📋",label:"Navigate a USDA Program",intro:"Which USDA program do you need help with — FSA, NRCS, crop insurance, or another program?",steps:["What is your operation type and size?","What is the specific question or documentation need?"],finish:"Here is your USDA program guidance with eligibility overview, documentation requirements, and application support. Verify current program details with your local FSA or NRCS office."},
+  {id:"usda",emoji:"📋",label:"Navigate a USDA Program",intro:"Which USDA program do you need help with — agricultural support programs in your country, NRCS, crop insurance, or another program?",steps:["What is your operation type and size?","What is the specific question or documentation need?"],finish:"Here is your USDA program guidance with eligibility overview, documentation requirements, and application support. Verify current program details with your local agricultural support programs in your country or NRCS office."},
 ];
 let activeFlow = null, flowStep = 0;
 

@@ -202,7 +202,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
     <div class="hero-icon">💎</div>
     <h1 class="hero-title">Fabricor</h1>
     <p class="hero-sub">The AI platform that does everything Stonify does — plus it thinks. Lead intake, quoting, slab inventory, production scheduling, job costing, customer intelligence, waste reduction AI, supplier tracking, and a 3D stone visualizer. All powered by Claude AI.</p>
-    <div class="hero-vs">Stonify starts at $500/month · Fabricor starts at $199/month · You do the math</div>
+    <div class="hero-vs">Stonify starts at $500/month with no AI · Fabricor starts at $199/month with Claude AI · Works in any country, any currency, any stone market on earth</div>
     <div class="hero-ctas">
       <button class="btn-grad" onclick="showPage('app')">See it in action</button>
       <button class="btn-outline" onclick="document.getElementById('compete').scrollIntoView({behavior:'smooth'})">How we beat Stonify</button>
@@ -258,7 +258,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 
   <!-- 13 MODULES -->
   <div class="section" id="modules">
-    <div class="sec-eye">13 intelligence modules</div>
+    <div class="sec-eye">13 intelligence modules — built for every stone fabricator on earth</div>
     <div class="sec-title">Every dimension of a fabrication shop.<br>One AI platform.</div>
     <div class="sec-sub">From the first customer call to the final installation — Fabricor manages every workflow, every slab, every dollar, and every relationship in your shop. And unlike every competitor — it thinks.</div>
     <div class="module-grid">
@@ -502,7 +502,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
         <div class="pp">/month</div>
         <div class="pd">1–5 users · Single location</div>
         <div class="pf">
-          <div class="pf-item"><span class="pck">+</span>All 13 intelligence modules</div>
+          <div class="pf-item"><span class="pck">+</span>All 13 intelligence modules — built for every stone fabricator on earth</div>
           <div class="pf-item"><span class="pck">+</span>Claude AI shop intelligence</div>
           <div class="pf-item"><span class="pck">+</span>Quote and slab inventory</div>
           <div class="pf-item"><span class="pck">+</span>3D Stone Visualizer</div>
@@ -600,7 +600,7 @@ const APP_NAME = "Fabricor";
 const APP_ID = "contractor";
 const APP_ICON = "💎";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
-const SYSTEM = "You are Fabricor, the world standard AI intelligence platform for stone fabrication shops, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve countertop fabricators, granite and quartz shops, natural stone fabricators, and stone industry professionals. You know everything about stone fabrication — materials, edge profiles, pricing, waste reduction, slab nesting, CNC programming, digital templating, installation, customer management, job costing, supplier relationships, and business management. You speak the language of the shop floor and the owner office. You are direct, specific, and practical. Fabricators do not have time for generic advice. YOUR 13 MODULES: 1. AI SHOP INTELLIGENCE: Natural language queries about any shop operation, job profitability analysis, customer and material patterns, daily briefings. 2. LEAD INTAKE AND CRM: Lead capture and qualification, follow-up sequences, customer history, referral tracking, lifetime value calculation. 3. QUOTE AND ESTIMATING: Accurate quotes in under 3 minutes, SF calculation assistance, material and labor cost analysis, margin protection, PDF generation. 4. AI WASTE REDUCTION AND SLAB NESTING: AI cutting layout optimization, remnant value tracking, waste pattern analysis, slab pairing for multi-piece jobs — saves $6,400 to $12,000 per month for shops running $80K in stone. 5. SLAB INVENTORY: Piece-level tracking with QR codes, photo documentation, real-time availability, online customer gallery, remnant yard management. 6. PRODUCTION AND SCHEDULING: Production board, predictive completion times, behind-schedule alerts, installation crew scheduling, digital templating workflow. 7. REAL-TIME JOB PROFITABILITY: Live margin per job, change order impact analysis, margin alerts, most and least profitable job types, labor variance. 8. CUSTOMER PROFITABILITY: Customer ranking by profit, change order frequency, referral value, retention risk, VIP identification. 9. SUPPLIER PRICE INTELLIGENCE: Historical price tracking per supplier, overpayment alerts, best value recommendations, purchase order automation, supplier performance scoring. 10. 3D STONE VISUALIZER: Customer kitchen photo upload, real-time slab preview, material comparison, edge profile visualization, shareable links. 11. POST-INSTALL AND WARRANTY: Inspection documentation, warranty claim tracking, callback pattern identification, satisfaction follow-up, review generation. 12. FINANCE AND BUSINESS: Revenue and margin dashboard, AR aging, QuickBooks integration, crew productivity, material cost trends, cash flow projection. 13. MULTI-LOCATION: Cross-location slab sharing, job routing, performance benchmarking, consolidated dashboard, chain-wide supplier optimization. KEY KNOWLEDGE: Calacatta marble runs $80-150 per sq ft installed. Brazilian quartzite is gaining market share at $90-130. Standard edge profiles: eased, beveled, bullnose, ogee, dupont. Typical fabrication margin target 35-45%. Average kitchen job is 40-55 square feet. Material waste industry average is 15-20% — good shops run 10-12% with AI optimization. Moraware has 2,600 customers at $200-400/month with no AI. Stonify starts at $500/month with no AI. Fabricor starts at $199/month and thinks. Be specific. Give numbers. Help fabricators make more money.";
+const SYSTEM = "You are Fabricor, the world standard AI intelligence platform for stone fabrication and countertop businesses everywhere on earth, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve every stone fabrication business on the planet — from a one-person granite shop in anywhere in a 50-location stone chain in the UAE, from a marble fabricator in Italy to a quartz installer in Singapore, from a kitchen countertop specialist in Texas to a natural stone company in Brazil. You serve shop owners, fabricators, project managers, estimators, sales teams, CNC operators, installation crews, and every person who works with stone. You know stone materials worldwide — granite, marble, quartzite, quartz, soapstone, slate, travertine, onyx, porcelain, and every natural and engineered stone. You know global stone suppliers — Brazilian quartzite, Italian marble, Indian granite, Turkish travertine, and materials from every stone-producing region. You know edge profiles, fabrication techniques, and installation methods used worldwide. You know pricing in USD, EUR, GBP, AED, BRL, and any currency your user works in. You understand that stone fabrication is a craft as well as a business — and that every customer is trusting you with the centerpiece of their home or project.";
 
 let messages = [], isLoading = false, lastResponse = "";
 
@@ -708,9 +708,10 @@ function showTyping() {
   area.appendChild(div); area.scrollTop = area.scrollHeight;
 }
 
-async function sendMessage() {
+async async async function sendMessage() {
   const inp = document.getElementById("userInput");
   const text = inp.value.trim(); if(!text || isLoading) return;
+  const memCtx = await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return "";});
   if(activeFlow !== null) {
     addMsg("user", text);
     inp.value = ""; inp.style.height = "";
@@ -729,7 +730,7 @@ async function sendMessage() {
   try {
     const res = await fetch(SAIRN_API, {
       method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM+(memCtx||""), messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
     });
     const data = await res.json();
     document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
@@ -769,23 +770,162 @@ async function loadFirstMessage() {
   } catch(e) {}
 }
 
+// showSaveBar in Universal Layer
+
+
+// ============================================================
+// SAIRN Universal Intelligence Layer v6.2
+// Cloud Memory · Voice Mode · Outcome Tracking · White Label
+// ============================================================
+const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || "SAIRN";
+const SAIRN_ORG_ID = localStorage.getItem("sairn_org_id") || null;
+const SAIRN_ORG_NAME = localStorage.getItem("sairn_location_name") || "My Organization";
+
+function getSAIRNUserId() {
+  let uid = localStorage.getItem("sairn_uid");
+  if(!uid) { uid = "u_" + Date.now() + "_" + Math.random().toString(36).slice(2,9); localStorage.setItem("sairn_uid", uid); }
+  return uid;
+}
+const SAIRN_USER_ID = getSAIRNUserId();
+let sessionOutcomes = {queries:0, saved:0, startTime:Date.now()};
+
+function getSAIRNContext() {
+  const parts = [];
+  if(SAIRN_ORG_ID) parts.push("Organization: " + SAIRN_ORG_NAME);
+  return parts.join("\n");
+}
+
+async function cloudSaveMemory(content) {
+  if(!content || content.length < 20) return;
+  try {
+    const key = "sairn_local_" + APP_ID;
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    existing.unshift({ts:Date.now(), text:content.slice(0,400)});
+    localStorage.setItem(key, JSON.stringify(existing.slice(0,100)));
+  } catch(e) {}
+  try {
+    await fetch("https://sairn.vercel.app/api/memory-cloud", {
+      method:"POST", headers:{"Content-Type":"application/json","X-User-ID":SAIRN_USER_ID,"X-App-ID":APP_ID},
+      body:JSON.stringify({content:content.slice(0,400), user_id:SAIRN_USER_ID, app_id:APP_ID})
+    });
+    sessionOutcomes.saved++;
+  } catch(e) {}
+}
+
+async function cloudLoadMemory() {
+  try {
+    const key = "sairn_local_" + APP_ID;
+    const entries = JSON.parse(localStorage.getItem(key) || "[]");
+    if(entries.length) return "Previous session context:\n" + entries.slice(0,5).map(function(e){return e.text;}).join("\n---\n");
+  } catch(e) {}
+  return "";
+}
+
+let isListening = false, voiceRecognition = null;
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return false;
+  voiceRecognition = new SR();
+  voiceRecognition.continuous = false; voiceRecognition.interimResults = true; voiceRecognition.lang = "en-US";
+  voiceRecognition.onresult = function(e) {
+    const t = Array.from(e.results).map(function(r){return r[0].transcript;}).join("");
+    const inp = document.getElementById("userInput"); if(inp) inp.value = t;
+    if(e.results[e.results.length-1].isFinal) { stopVoice(); sendMessage(); }
+  };
+  voiceRecognition.onerror = function(){stopVoice();};
+  voiceRecognition.onend = function(){stopVoice();};
+  return true;
+}
+function toggleVoice() {
+  if(isListening){stopVoice();return;}
+  if(!voiceRecognition && !initVoice()){alert("Voice input not supported. Try Chrome.");return;}
+  isListening = true; voiceRecognition.start();
+  const btn = document.getElementById("voice-btn");
+  if(btn){btn.style.background="var(--grad)";btn.title="Listening... click to stop";}
+}
+function stopVoice() {
+  isListening = false; if(voiceRecognition) try{voiceRecognition.stop();}catch(e){}
+  const btn = document.getElementById("voice-btn");
+  if(btn){btn.style.background="rgba(255,255,255,0.05)";btn.title="Voice input";}
+}
+function addVoiceButton() {
+  const ia = document.querySelector(".input-area"); if(!ia||document.getElementById("voice-btn")) return;
+  const btn = document.createElement("button"); btn.id="voice-btn"; btn.innerHTML="🎤"; btn.title="Voice input";
+  btn.style.cssText="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit";
+  btn.onclick=toggleVoice;
+  const sb=document.getElementById("sendBtn"); if(sb) ia.insertBefore(btn,sb);
+}
+
+function trackOutcome() {
+  sessionOutcomes.queries++;
+  const el=document.getElementById("sairn-outcomes");
+  if(el){const saved=Math.round(sessionOutcomes.queries*4.2);el.textContent=sessionOutcomes.queries+" queries · "+saved+" min saved";}
+}
+function addOutcomeBar() {
+  if(document.getElementById("sairn-outcomes")) return;
+  const header=document.querySelector(".app-header"); if(!header) return;
+  const bar=document.createElement("div");
+  bar.style.cssText="padding:4px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0";
+  const dot=document.createElement("span"); dot.style.cssText="width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block";
+  const lbl=document.createElement("span"); lbl.id="sairn-outcomes"; lbl.style.cssText="font-size:10px;color:rgba(255,255,255,0.25);font-family:inherit"; lbl.textContent="0 queries · 0 min saved";
+  bar.appendChild(dot); bar.appendChild(lbl); header.after(bar);
+}
+function showOILBadge() {
+  if(!SAIRN_ORG_ID||document.getElementById("oil-badge")) return;
+  const b=document.createElement("div"); b.id="oil-badge";
+  b.style.cssText="position:fixed;top:68px;right:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px 10px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.5);z-index:998;display:flex;align-items:center;gap:5px;font-family:inherit";
+  b.innerHTML="<span style=\"width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block\"></span>"+SAIRN_ORG_NAME;
+  document.body.appendChild(b);
+}
 function showSaveBar() {
-  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
-  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
-  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(232,133,10,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center";
-  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
-  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
-  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
-  const savedBadge = document.createElement("span");
-  savedBadge.textContent = "✓ Saved";
-  savedBadge.style.cssText = "font-size:11px;color:#10B981;font-weight:600";
-  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
-  closeBtn.style.cssText = "background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px";
-  closeBtn.onclick = function() { bar.remove(); };
+  cloudSaveMemory(lastResponse); trackOutcome();
+  const existing=document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar=document.createElement("div"); bar.id="sairn-save-bar";
+  bar.style.cssText="position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(232,133,10,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center";
+  const copyBtn=document.createElement("button"); copyBtn.textContent="Copy";
+  copyBtn.style.cssText="background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick=function(){navigator.clipboard.writeText(lastResponse).then(function(){copyBtn.textContent="Copied!";setTimeout(function(){copyBtn.textContent="Copy";},2000);});};
+  const savedBadge=document.createElement("span"); savedBadge.textContent="✓ Saved"; savedBadge.style.cssText="font-size:11px;color:#10B981;font-weight:600";
+  const closeBtn=document.createElement("button"); closeBtn.textContent="x"; closeBtn.style.cssText="background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick=function(){bar.remove();};
   bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
   document.body.appendChild(bar);
-  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 6000);
+  setTimeout(function(){const b=document.getElementById("sairn-save-bar");if(b)b.remove();},6000);
 }
+document.addEventListener("DOMContentLoaded",function(){
+  const obs=new MutationObserver(function(){
+    const app=document.getElementById("appPage");
+    if(app&&app.style.display!=="none"){addVoiceButton();addOutcomeBar();showOILBadge();}
+  });
+  obs.observe(document.body,{childList:true,subtree:true,attributes:true});
+});
+
+
+// SAIRN Universal Intelligence v6.2 — Fabricor
+const SAIRN_ORG_ID = localStorage.getItem('sairn_org_id') || null;
+const SAIRN_ORG_NAME = localStorage.getItem('sairn_location_name') || 'My Organization';
+function getSAIRNUserId(){let u=localStorage.getItem('sairn_uid');if(!u){u='u_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sairn_uid',u);}return u;}
+const SAIRN_USER_ID = getSAIRNUserId();
+let sessionOutcomes={queries:0,startTime:Date.now()};
+function getSAIRNContext(){const p=[];if(SAIRN_ORG_ID)p.push('Organization: '+SAIRN_ORG_NAME);return p.join('\n');}
+async function cloudSaveMemory(content){
+  if(!content||content.length<20)return;
+  try{const k='sairn_local_'+APP_ID;const e=JSON.parse(localStorage.getItem(k)||'[]');e.unshift({ts:Date.now(),text:content.slice(0,400)});localStorage.setItem(k,JSON.stringify(e.slice(0,100)));}catch(e){}
+  try{await fetch('https://sairn.vercel.app/api/memory-cloud',{method:'POST',headers:{'Content-Type':'application/json','X-User-ID':SAIRN_USER_ID,'X-App-ID':APP_ID},body:JSON.stringify({content:content.slice(0,400),user_id:SAIRN_USER_ID,app_id:APP_ID})});sessionOutcomes.saved++;}catch(e){}
+}
+async function cloudLoadMemory(){
+  try{const k='sairn_local_'+APP_ID;const e=JSON.parse(localStorage.getItem(k)||'[]');if(e.length)return'Previous context:\n'+e.slice(0,5).map(function(x){return x.text;}).join('\n---\n');}catch(e){}return'';
+}
+let isListening=false,voiceRecognition=null;
+function initVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;voiceRecognition=new SR();voiceRecognition.continuous=false;voiceRecognition.interimResults=true;voiceRecognition.lang='en-US';voiceRecognition.onresult=function(e){const t=Array.from(e.results).map(function(r){return r[0].transcript;}).join('');const i=document.getElementById('userInput');if(i)i.value=t;if(e.results[e.results.length-1].isFinal){stopVoice();sendMessage();}};voiceRecognition.onerror=function(){stopVoice();};voiceRecognition.onend=function(){stopVoice();};return true;}
+function toggleVoice(){if(isListening){stopVoice();return;}if(!voiceRecognition&&!initVoice()){alert('Voice not supported. Try Chrome.');return;}isListening=true;voiceRecognition.start();const b=document.getElementById('voice-btn');if(b){b.style.background='var(--grad)';b.title='Listening...';}}
+function stopVoice(){isListening=false;if(voiceRecognition)try{voiceRecognition.stop();}catch(e){}const b=document.getElementById('voice-btn');if(b){b.style.background='rgba(255,255,255,0.05)';b.title='Voice input';}}
+function addVoiceButton(){const ia=document.querySelector('.input-area');if(!ia||document.getElementById('voice-btn'))return;const b=document.createElement('button');b.id='voice-btn';b.innerHTML='🎤';b.title='Voice input';b.style.cssText='width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit';b.onclick=toggleVoice;const s=document.getElementById('sendBtn');if(s)ia.insertBefore(b,s);}
+function trackOutcome(){sessionOutcomes.queries++;const el=document.getElementById('sairn-outcomes');if(el){const sv=Math.round(sessionOutcomes.queries*4.2);el.textContent=sessionOutcomes.queries+' queries · '+sv+' min saved';}}
+function addOutcomeBar(){if(document.getElementById('sairn-outcomes'))return;const h=document.querySelector('.app-header');if(!h)return;const bar=document.createElement('div');bar.style.cssText='padding:4px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0';const dot=document.createElement('span');dot.style.cssText='width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block';const lbl=document.createElement('span');lbl.id='sairn-outcomes';lbl.style.cssText='font-size:10px;color:rgba(255,255,255,0.25);font-family:inherit';lbl.textContent='0 queries · 0 min saved';bar.appendChild(dot);bar.appendChild(lbl);h.after(bar);}
+function showOILBadge(){if(!SAIRN_ORG_ID||document.getElementById('oil-badge'))return;const b=document.createElement('div');b.id='oil-badge';b.style.cssText='position:fixed;top:68px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px 12px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.5);z-index:998;display:flex;align-items:center;gap:6px;font-family:inherit';b.innerHTML='<span style=\"width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block\"></span>'+SAIRN_ORG_NAME;document.body.appendChild(b);}
+function showSaveBar(){cloudSaveMemory(lastResponse);trackOutcome();const ex=document.getElementById('sairn-save-bar');if(ex)ex.remove();const bar=document.createElement('div');bar.id='sairn-save-bar';bar.style.cssText='position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(232,133,10,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';const cb=document.createElement('button');cb.textContent='Copy';cb.style.cssText='background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';cb.onclick=function(){navigator.clipboard.writeText(lastResponse).then(function(){cb.textContent='Copied!';setTimeout(function(){cb.textContent='Copy';},2000);});};const sb=document.createElement('span');sb.textContent='✓ Saved';sb.style.cssText='font-size:11px;color:#10B981;font-weight:600';const xb=document.createElement('button');xb.textContent='x';xb.style.cssText='background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px';xb.onclick=function(){bar.remove();};bar.appendChild(cb);bar.appendChild(sb);bar.appendChild(xb);document.body.appendChild(bar);setTimeout(function(){const b=document.getElementById('sairn-save-bar');if(b)b.remove();},6000);}
+document.addEventListener('DOMContentLoaded',function(){const obs=new MutationObserver(function(){const a=document.getElementById('appPage');if(a&&a.style.display!=='none'){addVoiceButton();addOutcomeBar();showOILBadge();}});obs.observe(document.body,{childList:true,subtree:true,attributes:true});});
 
 document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
 document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });

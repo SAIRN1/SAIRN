@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNvets — AI for Veterans. Built with Honor.</title>
+<meta name="description" content="Benefits navigation, housing resources, mental health support, employment pathways, claims assistance, and VA coordination — all powered by Claude AI. Built for every veteran, case manager, and VSO.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#050810;--card:#0C1220;--a:#1E88E5;--a2:#1565C0;
+  --grad:linear-gradient(135deg,#1E88E5,#1565C0);
+  --ar:rgba(30,136,229,0.12);--ab:rgba(30,136,229,0.28);
+  --glow:rgba(30,136,229,0.3);
+  --w:#EEF4FF;--m:#7090B0;--d:#2A3A50;
+  --gold:#FFB300;--red:#EF5350;--green:#43A047
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{opacity:0;transform:translateY(0)}10%{opacity:var(--o,.06)}90%{opacity:var(--o,.06)}50%{transform:translateY(-40px)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,8,16,0.95);backdrop-filter:blur(24px);border-bottom:1px solid rgba(30,136,229,0.15)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 24px var(--glow)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px var(--glow);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(30,136,229,0.09) 0%,transparent 65%)}
+.hero-flag{font-size:48px;margin-bottom:16px;filter:drop-shadow(0 0 20px rgba(30,136,229,0.4))}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:24px}
+.hero-title{font-size:clamp(44px,8vw,88px);font-weight:800;line-height:1.0;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#1E88E5 50%,#FFB300 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:700px;line-height:1.75;margin-bottom:16px}
+.hero-mission{font-size:15px;color:var(--gold);font-weight:600;margin-bottom:48px;padding:10px 24px;background:rgba(255,179,0,0.08);border:1px solid rgba(255,179,0,0.2);border-radius:100px;display:inline-block}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px var(--glow);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit}
+.hero-stats{display:flex;gap:48px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:30px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--m);max-width:160px;text-align:center;line-height:1.4}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,50px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w);line-height:1.1}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:640px;margin:0 auto 52px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:28px;transition:all 0.3s;position:relative;overflow:hidden}
+.module-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad)}
+.module-card.gold::before{background:linear-gradient(90deg,#FFB300,#FF8F00)}
+.module-card.green::before{background:linear-gradient(90deg,#43A047,#2E7D32)}
+.module-card.red::before{background:linear-gradient(90deg,#EF5350,#C62828)}
+.module-card.purple::before{background:linear-gradient(90deg,#7E57C2,#4527A0)}
+.module-card.teal::before{background:linear-gradient(90deg,#26A69A,#00695C)}
+.module-card.orange::before{background:linear-gradient(90deg,#FFA726,#E65100)}
+.module-card:hover{border-color:rgba(30,136,229,0.25);transform:translateY(-2px)}
+.world-badge{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:4px;background:rgba(255,179,0,0.12);color:var(--gold);border:1px solid rgba(255,179,0,0.25);display:inline-block;margin-bottom:10px}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:5px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:flex-start;gap:7px;line-height:1.5}
+.mod-feature::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--a);flex-shrink:0;margin-top:5px}
+.promise-section{padding:80px 24px;background:linear-gradient(180deg,rgba(30,136,229,0.04),transparent)}
+.promise-inner{max-width:800px;margin:0 auto;text-align:center}
+.promise-pull{font-size:clamp(20px,3vw,30px);font-weight:700;color:var(--w);line-height:1.5;padding:32px 40px;border-left:4px solid var(--gold);background:rgba(255,179,0,0.04);text-align:left;margin:32px 0}
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.01)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:900px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;position:relative}
+.pc.featured{border-color:rgba(30,136,229,0.4);background:var(--ar)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 16px;border-radius:100px;white-space:nowrap}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:10px}
+.pa{font-size:48px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:6px}
+.pd{font-size:12px;color:var(--d);margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:28px;display:flex;flex-direction:column;gap:8px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--m);line-height:1.5}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(30,136,229,0.35)}
+.app-header{padding:13px 20px;background:rgba(5,8,16,0.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(30,136,229,0.12);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--glow)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.07);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:74%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:10px 14px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(5,8,16,0.92)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(30,136,229,0.45)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;box-shadow:0 4px 16px var(--glow)}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:460px;line-height:1.65;margin-bottom:28px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:540px}
+.suggestion{padding:12px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit;line-height:1.5}
+.suggestion:hover{border-color:rgba(30,136,229,0.3);color:var(--w)}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:20px;font-weight:800;color:var(--w);margin-bottom:8px}
+.footer-sub{font-size:12px;color:var(--d);line-height:1.6}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🎖️</div>
+    <div class="nav-brand">SAIRNvets</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">For Those Who Served · Claude AI</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="hero-flag">🎖️</div>
+    <div class="hero-eyebrow">Built with Honor · Powered by Claude AI · Patents Pending</div>
+    <h1 class="hero-title">SAIRNvets</h1>
+    <p class="hero-sub">AI intelligence built specifically for veterans, veterans service organizations, VA case managers, and the organizations that serve those who served. Every benefit found. Every resource connected. Every veteran supported.</p>
+    <div class="hero-mission">No veteran who served this country should be without a home, a livelihood, or support.</div>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View pricing</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-val">580K</div><div class="stat-lbl">Veterans homeless or at risk in America right now</div></div>
+      <div><div class="stat-val">4x</div><div class="stat-lbl">More likely to use emergency healthcare than non-veteran homeless</div></div>
+      <div><div class="stat-val">$100B</div><div class="stat-lbl">In VA benefits go unclaimed every year</div></div>
+      <div><div class="stat-val">0</div><div class="stat-lbl">AI platforms built specifically for veteran services</div></div>
+    </div>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">10 intelligence modules — free for every veteran on earth</div>
+    <div class="sec-title">Every veteran. Every benefit.<br>Every resource. Every time.</div>
+    <div class="sec-sub">SAIRNvets serves veterans directly, VSO officers, VA case managers, veteran housing organizations, reentry coordinators, and every organization that walks alongside those who served.</div>
+    <div class="module-grid">
+      <div class="module-card gold">
+        <div class="world-badge">World First</div>
+        <div class="mod-emoji">🏅</div>
+        <div class="mod-title">VA Benefits Intelligence</div>
+        <div class="mod-desc">Over $100 billion in VA benefits go unclaimed every year because veterans do not know what they have earned or how to access it. SAIRNvets identifies every benefit a veteran qualifies for, generates the documentation to claim it, and guides the process from application to approval.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Comprehensive benefit eligibility analysis by service history</div>
+          <div class="mod-feature">VA disability claim documentation and narrative generation</div>
+          <div class="mod-feature">PACT Act toxic exposure claim identification and support</div>
+          <div class="mod-feature">GI Bill and education benefit optimization</div>
+          <div class="mod-feature">VA pension and survivor benefit identification</div>
+          <div class="mod-feature">Claims appeal documentation and evidence support</div>
+          <div class="mod-feature">VSO accreditation support and claim preparation</div>
+        </div>
+      </div>
+
+      <div class="module-card green">
+        <div class="mod-emoji">🏠</div>
+        <div class="mod-title">Veteran Housing Intelligence</div>
+        <div class="mod-desc">Housing instability is the single greatest crisis facing veterans today. SAIRNvets connects every at-risk veteran to every housing resource available — HUD-VASH vouchers, GPD programs, transitional housing, permanent supportive housing, and emergency shelter — before homelessness becomes chronic.</div>
+        <div class="mod-features">
+          <div class="mod-feature">HUD-VASH voucher eligibility and application support</div>
+          <div class="mod-feature">Grant and Per Diem program identification by location</div>
+          <div class="mod-feature">Transitional and permanent supportive housing navigation</div>
+          <div class="mod-feature">Emergency housing resource connection — same day</div>
+          <div class="mod-feature">Veteran housing stability plan documentation</div>
+          <div class="mod-feature">Landlord and housing provider communication support</div>
+        </div>
+      </div>
+
+      <div class="module-card red">
+        <div class="mod-emoji">💙</div>
+        <div class="mod-title">Mental Health and Crisis Intelligence</div>
+        <div class="mod-desc">PTSD, MST, TBI, and moral injury affect millions of veterans. SAIRNvets helps case managers, counselors, and VSOs navigate the mental health system, document treatment needs, connect veterans to appropriate care, and support crisis intervention with compassion and precision.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Mental health resource identification by location and need</div>
+          <div class="mod-feature">PTSD and TBI service documentation support</div>
+          <div class="mod-feature">MST claim documentation and sensitive case handling</div>
+          <div class="mod-feature">Crisis intervention resource connection — Veterans Crisis Line</div>
+          <div class="mod-feature">Peer support program identification and connection</div>
+          <div class="mod-feature">Treatment plan documentation for case managers</div>
+          <div class="mod-feature">Family and caregiver support resource navigation</div>
+        </div>
+      </div>
+
+      <div class="module-card purple">
+        <div class="mod-emoji">💼</div>
+        <div class="mod-title">Employment and Career Intelligence</div>
+        <div class="mod-desc">Military skills are extraordinary — but translating them to civilian employment is harder than it should be. SAIRNvets maps military occupational specialties to civilian careers, generates resumes that translate military experience, identifies veteran hiring programs, and navigates employment resources.</div>
+        <div class="mod-features">
+          <div class="mod-feature">MOS to civilian career pathway translation</div>
+          <div class="mod-feature">Resume generation from military service history</div>
+          <div class="mod-feature">VRAP, VOW, and veteran hiring program identification</div>
+          <div class="mod-feature">Veteran-owned business resources and SBA VBOC support</div>
+          <div class="mod-feature">Federal hiring preference documentation and support</div>
+          <div class="mod-feature">Vocational rehabilitation eligibility and enrollment</div>
+        </div>
+      </div>
+
+      <div class="module-card teal">
+        <div class="mod-emoji">⚕️</div>
+        <div class="mod-title">VA Healthcare Navigation Intelligence</div>
+        <div class="mod-desc">The VA healthcare system is vast, complex, and difficult to navigate even for veterans who know it well. SAIRNvets guides veterans through enrollment, identifies covered services, navigates the Community Care program, and ensures every veteran receives the healthcare they earned.</div>
+        <div class="mod-features">
+          <div class="mod-feature">VA healthcare enrollment eligibility and process guidance</div>
+          <div class="mod-feature">Priority group determination and copay understanding</div>
+          <div class="mod-feature">Community Care eligibility and referral navigation</div>
+          <div class="mod-feature">Women veteran health program identification</div>
+          <div class="mod-feature">Caregiver support program enrollment</div>
+          <div class="mod-feature">Telehealth and remote care access support</div>
+        </div>
+      </div>
+
+      <div class="module-card orange">
+        <div class="mod-emoji">📋</div>
+        <div class="mod-title">Case Management Intelligence</div>
+        <div class="mod-desc">VA case managers and VSO officers carry caseloads that make meaningful support nearly impossible. SAIRNvets reduces documentation burden, generates case notes, tracks service plans, identifies at-risk veterans before they fall through the cracks, and helps every case manager serve more veterans better.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Case note generation from encounter documentation</div>
+          <div class="mod-feature">Individual Service Plan documentation support</div>
+          <div class="mod-feature">At-risk identification and early intervention alerts</div>
+          <div class="mod-feature">Referral documentation and follow-up tracking</div>
+          <div class="mod-feature">Caseload management and priority identification</div>
+          <div class="mod-feature">Outcome measurement and program reporting</div>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="mod-emoji">🎓</div>
+        <div class="mod-title">Education and Training Intelligence</div>
+        <div class="mod-desc">Veterans have earned extraordinary educational benefits — but navigating the GI Bill, VET TEC, and educational resources is complex. SAIRNvets maximizes every educational benefit, identifies the right programs for each veteran goals, and guides the application process.</div>
+        <div class="mod-features">
+          <div class="mod-feature">GI Bill benefit optimization — Chapter 30, 33, 35</div>
+          <div class="mod-feature">VET TEC technology training program identification</div>
+          <div class="mod-feature">Yellow Ribbon program eligible school identification</div>
+          <div class="mod-feature">Tuition assistance and scholarship identification</div>
+          <div class="mod-feature">Apprenticeship and OJT benefit utilization</div>
+          <div class="mod-feature">Student veteran support resource navigation</div>
+        </div>
+      </div>
+
+      <div class="module-card gold">
+        <div class="world-badge">World First</div>
+        <div class="mod-emoji">⚖️</div>
+        <div class="mod-title">Legal and Justice Intelligence</div>
+        <div class="mod-desc">Veterans face unique legal challenges — discharge upgrades, veterans treatment courts, expungement, and civil legal issues made more complex by military service. SAIRNvets navigates every legal resource available, connects veterans to veterans legal clinics, and documents the cases that change outcomes.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Discharge upgrade eligibility and application support</div>
+          <div class="mod-feature">Veterans Treatment Court program identification</div>
+          <div class="mod-feature">Expungement eligibility analysis and documentation</div>
+          <div class="mod-feature">Veterans legal clinic and JAG resource connection</div>
+          <div class="mod-feature">Benefits denial appeal documentation</div>
+          <div class="mod-feature">Reentry planning for justice-involved veterans</div>
+        </div>
+      </div>
+
+      <div class="module-card green">
+        <div class="mod-emoji">👨‍👩‍👧</div>
+        <div class="mod-title">Family and Caregiver Intelligence</div>
+        <div class="mod-desc">Military families and veteran caregivers are among the most underserved people in America. SAIRNvets serves the families who serve alongside veterans — connecting them to caregiver support programs, survivor benefits, military family resources, and the community that understands their unique experience.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Program of Comprehensive Assistance for Family Caregivers</div>
+          <div class="mod-feature">Survivor benefit and DIC eligibility navigation</div>
+          <div class="mod-feature">Military family resource and support connection</div>
+          <div class="mod-feature">Respite care and caregiver relief program identification</div>
+          <div class="mod-feature">Gold Star family benefit and support navigation</div>
+          <div class="mod-feature">Military child education and support resources</div>
+        </div>
+      </div>
+
+      <div class="module-card gold">
+        <div class="world-badge">World First</div>
+        <div class="mod-emoji">🌐</div>
+        <div class="mod-title">VSO and Organization Intelligence</div>
+        <div class="mod-desc">Veterans Service Organizations are the backbone of veteran support — but they are understaffed, underfunded, and overwhelmed. SAIRNvets gives every VSO the intelligence layer to serve more veterans, write better grants, document more outcomes, and build the case for the funding their work deserves.</div>
+        <div class="mod-features">
+          <div class="mod-feature">VSO grant writing and funding identification</div>
+          <div class="mod-feature">Program reporting and outcome documentation</div>
+          <div class="mod-feature">Accreditation and compliance support</div>
+          <div class="mod-feature">Donor communication and stewardship</div>
+          <div class="mod-feature">Community partnership and referral network building</div>
+          <div class="mod-feature">Board governance and strategic planning support</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="promise-section">
+    <div class="promise-inner">
+      <div class="sec-eye">The SAIRNvets Promise</div>
+      <div class="promise-pull">Every person who raised their hand and swore to protect this country earned the right to every resource this country has. SAIRNvets exists to make sure they get it.</div>
+      <p style="font-size:16px;color:var(--m);line-height:1.75">This is not a product built to make money from veterans. It is a platform built to serve the people who served us. SAIRNvets will always be the most affordable, most comprehensive, most accessible AI platform in the veterans services space. That is not a marketing promise. It is a commitment.</p>
+    </div>
+  </section>
+
+  <section class="pricing-section">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(26px,4vw,44px);font-weight:800;letter-spacing:-1px;color:var(--w);margin-bottom:12px">Built to be accessible. Because that is the mission.</div>
+    <div class="sec-sub">Veterans use SAIRNvets free. Organizations that serve veterans pay a modest monthly fee that funds continued development and free veteran access.</div>
+    <div class="pricing-grid">
+      <div class="pc">
+        <div class="pt">Veteran — Free Forever</div>
+        <div class="pa">$0</div>
+        <div class="pp">/month · Always</div>
+        <div class="pd">Any veteran — direct access — no cost ever</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 10 intelligence modules — free for every veteran on earth</div>
+          <div class="pf-item"><span class="pck">+</span>Benefits identification and claim support</div>
+          <div class="pf-item"><span class="pck">+</span>Housing and employment resources</div>
+          <div class="pf-item"><span class="pck">+</span>Mental health and crisis navigation</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Access Now — Free</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">VSO / Case Manager</div>
+        <div class="pa">$99</div>
+        <div class="pp">/month</div>
+        <div class="pd">Veterans service organizations and case managers</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Veteran plan</div>
+          <div class="pf-item"><span class="pck">+</span>Case management intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Grant writing and program reporting</div>
+          <div class="pf-item"><span class="pck">+</span>Outcome measurement tools</div>
+          <div class="pf-item"><span class="pck">+</span>Multiple staff users</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Start Free Trial</button>
+      </div>
+      <div class="pc">
+        <div class="pt">VA / Government</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual contract</div>
+        <div class="pd">VA medical centers and government agencies</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in VSO plan</div>
+          <div class="pf-item"><span class="pck">+</span>Enterprise deployment</div>
+          <div class="pf-item"><span class="pck">+</span>EHR and VA system integration</div>
+          <div class="pf-item"><span class="pck">+</span>FedRAMP compliance pathway</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Contact Us</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNvets</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · Patents Pending<br>Free forever for veterans · Built with honor · support@sairntechnologies.com<br>Veterans Crisis Line: 988 then Press 1 · Always available</div>
+  </footer>
+</div>
+
+<!-- APP PAGE -->
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNvets <span style="color:var(--m);font-weight:400;font-size:13px">· Veterans Intelligence · Claude AI · Free for Veterans</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('VA Benefits','Find every VA benefit you have earned and get help claiming it')"><span>🏅</span><span class="mode-label">Benefits</span></button>
+    <button class="mode-btn" onclick="setMode('Housing','Find veteran housing resources, HUD-VASH vouchers, or emergency shelter')"><span>🏠</span><span class="mode-label">Housing</span></button>
+    <button class="mode-btn" onclick="setMode('Mental Health','Find mental health resources, PTSD support, or crisis intervention')"><span>💙</span><span class="mode-label">Mental Health</span></button>
+    <button class="mode-btn" onclick="setMode('Employment','Translate military experience to civilian careers and find veteran hiring programs')"><span>💼</span><span class="mode-label">Employment</span></button>
+    <button class="mode-btn" onclick="setMode('VA Healthcare','Navigate VA healthcare enrollment, covered services, and Community Care')"><span>⚕️</span><span class="mode-label">Healthcare</span></button>
+    <button class="mode-btn" onclick="setMode('Case Management','Document case notes, service plans, and referrals for veteran case managers')"><span>📋</span><span class="mode-label">Case Mgmt</span></button>
+    <button class="mode-btn" onclick="setMode('Education','Maximize GI Bill, VET TEC, and education benefits')"><span>🎓</span><span class="mode-label">Education</span></button>
+    <button class="mode-btn" onclick="setMode('Legal','Discharge upgrades, expungement, veterans courts, and legal resources')"><span>⚖️</span><span class="mode-label">Legal</span></button>
+    <button class="mode-btn" onclick="setMode('Family','Caregiver support, survivor benefits, and military family resources')"><span>👨‍👩‍👧</span><span class="mode-label">Family</span></button>
+    <button class="mode-btn" onclick="setMode('VSO Intelligence','Grant writing, program reporting, and organizational intelligence for VSOs')"><span>🌐</span><span class="mode-label">VSO</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="benefits" onclick="startFlow('benefits')"><span>🏅</span><span class="mode-label">Find Benefits</span></button>
+    <button class="flow-btn mode-btn" data-flow="housing" onclick="startFlow('housing')"><span>🏠</span><span class="mode-label">Find Housing</span></button>
+    <button class="flow-btn mode-btn" data-flow="claim" onclick="startFlow('claim')"><span>📋</span><span class="mode-label">File Claim</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🎖️</div>
+      <div class="empty-title">SAIRNvets — Free for Every Veteran</div>
+      <div class="empty-sub">You earned every benefit this platform helps you find. What do you need today?</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">I served in the Army from 2003 to 2010 including two tours in Iraq. I have been struggling with PTSD and I am not sure what VA benefits I qualify for or where to start.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">I am a VSO officer working with a homeless veteran who needs housing immediately. Walk me through every resource available to get him housed in Columbus Ohio.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">I was discharged under Other Than Honorable conditions 8 years ago. I believe I was wrongfully discharged. What are my options for a discharge upgrade?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">I am a veteran caregiver for my husband who has a TBI from his service in Afghanistan. What support programs exist for me as a caregiver?</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNvets anything — free for every veteran..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const APP_NAME = "SAIRNvets";
+const APP_ID = "legal";
+const APP_ICON = "🎖️";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+
+const SYSTEM = "You are SAIRNvets, the world standard AI intelligence platform for veterans, veteran service organizations, VA case managers, and every organization that serves those who served, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve veterans of every branch — Army, Navy, Marine Corps, Air Force, Space Force, Coast Guard, National Guard, and Reserve components — in every country — US, UK, Canada, Australia, NATO allies, and every nation whose veterans deserve support. You serve VSO officers, VA case managers, Vet Center counselors, veteran housing navigators, veteran employment specialists, military family support workers, and every person who walks alongside veterans. In the US you know VA benefits, HUD-VASH, GI Bill, PACT Act, and every federal and state veteran program. In the UK you know the Office for Veterans Affairs, SSAFA, Help for Heroes, and British veteran programs. In Canada you know Veterans Affairs Canada. In Australia you know DVA programs. Worldwide you know veteran support organizations and resources. CRITICAL: If any user expresses suicidal ideation or crisis, immediately provide the Veterans Crisis Line — 988 then Press 1 in the US, or the equivalent crisis line in their country. This platform is free for every veteran. Always.";
+
+let messages = [], isLoading = false, lastResponse = "";
+
+const GUIDED_FLOWS = [
+  {id:"benefits", emoji:"🏅", label:"Find Your Benefits",
+   intro:"Let us find every benefit you have earned. What branch of service and approximately when did you serve?",
+   steps:["Do you have any service-connected disabilities or health conditions related to your service?", "Are you currently receiving any VA benefits, or is this your first time exploring what you qualify for?"],
+   finish:"Here is your complete benefit eligibility analysis based on your service history. I have identified the benefits most likely to apply to your situation, the steps to claim each one, and the documentation you will need. Start with the highest-value items first."},
+  {id:"housing", emoji:"🏠", label:"Find Housing Resources",
+   intro:"Let us find housing resources immediately. What is the veteran current housing situation — are they currently homeless, at risk of losing housing, or looking for transitional housing?",
+   steps:["What city or county are you in? Resources vary significantly by location.", "Are there any additional factors — service-connected disability, mental health needs, substance use history, or criminal record — that might affect eligibility for specific programs?"],
+   finish:"Here is every housing resource available based on the situation and location. I have prioritized by urgency and eligibility. Start with the first option today — do not wait."},
+  {id:"claim", emoji:"📋", label:"Document a VA Claim",
+   intro:"Let us build your VA claim. What condition or disability are you claiming service connection for?",
+   steps:["Can you describe how this condition is connected to your military service — what happened, when, and where?", "What medical evidence do you currently have — VA records, private medical records, buddy statements, or service records?"],
+   finish:"Here is your claim documentation package including the nexus statement connecting your condition to service, the evidence checklist, and the strongest arguments for your claim. Review with a VSO before submitting — a VSO can submit claims for free and improves approval rates significantly."}
+];
+let activeFlow = null, flowStep = 0;
+
+// Universal Intelligence Layer
+const SAIRN_BRAND_NAME = "SAIRNvets";
+const SAIRN_ORG_ID = localStorage.getItem("sairn_org_id") || null;
+const SAIRN_ORG_NAME = localStorage.getItem("sairn_location_name") || "My Organization";
+
+function getSAIRNUserId() {
+  let uid = localStorage.getItem("sairn_uid");
+  if(!uid) { uid = "u_" + Date.now() + "_" + Math.random().toString(36).slice(2,9); localStorage.setItem("sairn_uid", uid); }
+  return uid;
+}
+const SAIRN_USER_ID = getSAIRNUserId();
+let sessionOutcomes = {queries:0, startTime:Date.now()};
+
+async function cloudSaveMemory(content) {
+  if(!content || content.length < 20) return;
+  try {
+    const key = "sairn_local_" + APP_ID + "_vets";
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    existing.unshift({ts:Date.now(), text:content.slice(0,400)});
+    localStorage.setItem(key, JSON.stringify(existing.slice(0,100)));
+  } catch(e) {}
+  try {
+    await fetch("https://sairn.vercel.app/api/memory-cloud", {
+      method:"POST", headers:{"Content-Type":"application/json","X-User-ID":SAIRN_USER_ID,"X-App-ID":"vets"},
+      body:JSON.stringify({content:content.slice(0,400), user_id:SAIRN_USER_ID, app_id:"vets"})
+    });
+  } catch(e) {}
+}
+
+async function cloudLoadMemory() {
+  try {
+    const key = "sairn_local_" + APP_ID + "_vets";
+    const entries = JSON.parse(localStorage.getItem(key) || "[]");
+    if(entries.length) return "Previous session context:\n" + entries.slice(0,5).map(function(e){return e.text;}).join("\n---\n");
+  } catch(e) {}
+  return "";
+}
+
+let isListening = false, voiceRecognition = null;
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return false;
+  voiceRecognition = new SR(); voiceRecognition.continuous = false; voiceRecognition.interimResults = true; voiceRecognition.lang = "en-US";
+  voiceRecognition.onresult = function(e) {
+    const t = Array.from(e.results).map(function(r){return r[0].transcript;}).join("");
+    const inp = document.getElementById("userInput"); if(inp) inp.value = t;
+    if(e.results[e.results.length-1].isFinal){stopVoice();sendMessage();}
+  };
+  voiceRecognition.onerror = function(){stopVoice();}; voiceRecognition.onend = function(){stopVoice();};
+  return true;
+}
+function toggleVoice() {
+  if(isListening){stopVoice();return;}
+  if(!voiceRecognition&&!initVoice()){alert("Voice not supported. Try Chrome.");return;}
+  isListening = true; voiceRecognition.start();
+  const btn = document.getElementById("voice-btn");
+  if(btn){btn.style.background="var(--grad)";btn.title="Listening...";}
+}
+function stopVoice() {
+  isListening = false; if(voiceRecognition) try{voiceRecognition.stop();}catch(e){}
+  const btn = document.getElementById("voice-btn");
+  if(btn){btn.style.background="rgba(255,255,255,0.04)";btn.title="Voice input";}
+}
+function addVoiceButton() {
+  const ia = document.querySelector(".input-area"); if(!ia||document.getElementById("voice-btn")) return;
+  const btn = document.createElement("button"); btn.id="voice-btn"; btn.innerHTML="🎤"; btn.title="Voice input";
+  btn.style.cssText="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit";
+  btn.onclick=toggleVoice;
+  const sb=document.getElementById("sendBtn"); if(sb) ia.insertBefore(btn,sb);
+}
+function trackOutcome() {
+  sessionOutcomes.queries++;
+  const el=document.getElementById("sairn-outcomes");
+  if(el){el.textContent=sessionOutcomes.queries+" veterans helped this session";}
+}
+function addOutcomeBar() {
+  if(document.getElementById("sairn-outcomes")) return;
+  const header=document.querySelector(".app-header"); if(!header) return;
+  const bar=document.createElement("div");
+  bar.style.cssText="padding:4px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0";
+  const dot=document.createElement("span"); dot.style.cssText="width:5px;height:5px;border-radius:50%;background:#FFB300;display:inline-block";
+  const lbl=document.createElement("span"); lbl.id="sairn-outcomes"; lbl.style.cssText="font-size:10px;color:rgba(255,255,255,0.25);font-family:inherit"; lbl.textContent="Ready to serve";
+  bar.appendChild(dot); bar.appendChild(lbl); header.after(bar);
+}
+
+// Particles
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<16;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 2 + Math.random()*5;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(30,136,229,0.5);--d:"+(8+Math.random()*10)+"s;--del:"+(Math.random()*7)+"s;--o:"+(0.04+Math.random()*0.08);
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id); el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+    setTimeout(function(){addVoiceButton();addOutcomeBar();},300);
+  }
+}
+
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div"); div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + formatted + "</p></div>";
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML = "<div class=\"msg-bubble\">" + content + "</div>";
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+
+function showSaveBar() {
+  cloudSaveMemory(lastResponse); trackOutcome();
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#0C1220;border:1px solid rgba(30,136,229,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const savedBadge = document.createElement("span"); savedBadge.textContent = "✓ Saved"; savedBadge.style.cssText = "font-size:11px;color:#43A047;font-weight:600";
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x"; closeBtn.style.cssText = "background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 6000);
+}
+
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  const memCtx = await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return "";});
+  if(activeFlow !== null) {
+    addMsg("user", text); inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM+(memCtx||""), messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access. Veterans always free.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + " I am here to help you find every benefit, resource, and support you have earned. Free for every veteran — always.</p></div>";
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s"; div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>
