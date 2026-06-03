@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNfriend — Your Friend. Always Here. For Life.</title>
+<meta name="description" content="A safe, caring AI friend for every young person. Always available. Always listens. Always points toward real connection. Free forever. Built to save lives.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#050810;--card:#0C1220;--a:#7C3AED;--a2:#6D28D9;
+  --grad:linear-gradient(135deg,#7C3AED,#6D28D9);
+  --grad2:linear-gradient(135deg,#EC4899,#7C3AED);
+  --ar:rgba(124,58,237,0.12);--ab:rgba(124,58,237,0.28);
+  --glow:rgba(124,58,237,0.3);
+  --w:#F0EEFF;--m:#7B6FA0;--d:#1E1A35;
+  --crisis:#EF4444;--green:#10B981;--pink:#EC4899;--blue:#3B82F6
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{opacity:0;transform:translateY(0)}10%{opacity:var(--o,.06)}90%{opacity:var(--o,.06)}50%{transform:translateY(-40px)}}
+
+.crisis-bar{background:var(--crisis);padding:8px 24px;text-align:center;font-size:13px;font-weight:700;color:#fff;position:relative;z-index:1001}
+.crisis-bar strong{font-size:15px}
+
+.nav{position:fixed;top:36px;left:0;right:0;z-index:1000;height:60px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,8,16,0.96);backdrop-filter:blur(24px);border-bottom:1px solid rgba(124,58,237,0.15)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:40px;height:40px;border-radius:14px;background:var(--grad2);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 28px var(--glow)}
+.nav-brand{font-size:22px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-free{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px var(--glow);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:calc(100vh - 36px);margin-top:96px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+
+.hero{min-height:100vh;padding:120px 24px 80px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 30%,rgba(124,58,237,0.1) 0%,transparent 65%)}
+.hero-emoji{font-size:64px;margin-bottom:20px;filter:drop-shadow(0 0 24px var(--glow))}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:24px}
+.hero-title{font-size:clamp(48px,9vw,100px);font-weight:800;line-height:1.0;letter-spacing:-3px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#EC4899 40%,#7C3AED 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(17px,2.5vw,22px);color:var(--m);max-width:680px;line-height:1.85;margin-bottom:16px}
+.hero-promise{font-size:16px;color:rgba(255,255,255,0.8);font-weight:500;margin-bottom:48px;padding:14px 28px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:100px;display:inline-block}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn-grad{padding:20px 48px;border-radius:100px;font-size:18px;font-weight:700;background:var(--grad2);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(236,72,153,0.4);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.btn-outline{padding:20px 48px;border-radius:100px;font-size:18px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit}
+
+.promise-section{padding:80px 24px;background:linear-gradient(180deg,rgba(124,58,237,0.04),transparent)}
+.promise-inner{max-width:900px;margin:0 auto}
+.promise-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:32px 0}
+.promise-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;text-align:center}
+.pc-emoji{font-size:40px;margin-bottom:16px}
+.pc-title{font-size:17px;font-weight:700;color:var(--w);margin-bottom:10px}
+.pc-desc{font-size:13px;color:var(--m);line-height:1.7}
+
+.how-section{padding:80px 24px;background:rgba(255,255,255,0.01)}
+.how-inner{max-width:800px;margin:0 auto}
+.how-step{display:flex;gap:20px;align-items:flex-start;margin-bottom:32px;padding:24px;background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:16px}
+.how-num{font-size:28px;font-weight:800;color:var(--a);letter-spacing:-1px;flex-shrink:0;width:48px}
+.how-title{font-size:16px;font-weight:700;color:var(--w);margin-bottom:6px}
+.how-desc{font-size:13px;color:var(--m);line-height:1.65}
+
+.safety-section{padding:60px 24px;background:rgba(239,68,68,0.04);border-top:1px solid rgba(239,68,68,0.1);border-bottom:1px solid rgba(239,68,68,0.1)}
+.safety-inner{max-width:800px;margin:0 auto;text-align:center}
+.safety-title{font-size:clamp(20px,3vw,32px);font-weight:800;color:var(--w);margin-bottom:16px}
+.safety-sub{font-size:15px;color:rgba(255,255,255,0.6);line-height:1.8;max-width:640px;margin:0 auto 32px}
+.safety-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.safety-item{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:12px;padding:16px;text-align:center}
+.safety-emoji{font-size:24px;margin-bottom:8px}
+.safety-text{font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5}
+.safety-text strong{color:#fff;display:block;margin-bottom:4px;font-size:13px}
+
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(26px,4vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:600px;margin:0 auto 40px;line-height:1.7}
+
+.app-header{padding:13px 20px;background:rgba(5,8,16,0.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(124,58,237,0.12);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--glow);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.crisis-ribbon{background:var(--crisis);padding:7px 20px;font-size:12px;font-weight:700;color:#fff;text-align:center;flex-shrink:0;cursor:pointer}
+.chat-area{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:16px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .3s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:36px;height:36px;border-radius:50%;background:var(--grad2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 16px var(--glow)}
+.msg-bubble{max-width:78%;padding:14px 18px;border-radius:20px;font-size:15px;line-height:1.7}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.08);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble strong{color:#C4B5FD}
+.msg-bubble .crisis-link{display:inline-block;margin-top:10px;padding:8px 16px;background:var(--crisis);border-radius:8px;color:#fff;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
+.typing{display:flex;gap:6px;align-items:center;padding:12px 16px}
+.typing-dot{width:8px;height:8px;border-radius:50%;background:var(--a);animation:bounce 1.4s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}
+.input-area{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(5,8,16,0.95)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.1);border-radius:16px;padding:13px 18px;color:var(--w);font-size:15px;font-family:inherit;resize:none;min-height:48px;max-height:150px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(124,58,237,0.5)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:48px;height:48px;border-radius:14px;background:var(--grad2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all 0.2s;box-shadow:0 4px 20px rgba(236,72,153,0.4)}
+#sendBtn:hover{transform:scale(1.08)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:64px;margin-bottom:16px;animation:breathe 3s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.empty-title{font-size:22px;font-weight:700;color:var(--w);margin-bottom:10px}
+.empty-sub{font-size:15px;color:var(--m);max-width:440px;line-height:1.75;margin-bottom:28px}
+.starter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:500px}
+.starter{padding:14px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:14px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit;line-height:1.5}
+.starter:hover{border-color:rgba(124,58,237,0.4);color:var(--w);background:rgba(124,58,237,0.06)}
+.starter-emoji{font-size:20px;margin-bottom:6px;display:block}
+
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:20px;font-weight:800;color:var(--w);margin-bottom:10px}
+.footer-sub{font-size:12px;color:var(--d);line-height:1.9}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+
+<div class="crisis-bar">
+  If you are in crisis right now — <strong>call or text 988</strong> — someone is there 24 hours a day, 7 days a week, always
+</div>
+
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🫂</div>
+    <div class="nav-brand">SAIRNfriend</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-free">Free Forever · Always Here</div>
+    <button class="nav-cta" onclick="showPage('app')">Talk to SAIRNfriend</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+
+  <section class="hero">
+    <div class="hero-emoji">🫂</div>
+    <div class="hero-eyebrow">Free Forever · Built with Love · Always Safe</div>
+    <h1 class="hero-title">SAIRNfriend</h1>
+    <p class="hero-sub">A safe, caring friend who is always here. Any time of day or night. Whatever you are feeling. However hard things get. SAIRNfriend listens, cares, and always helps you find your way back to the people who love you.</p>
+    <div class="hero-promise">💚 Not here to replace your real relationships. Here to help you build them.</div>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">Talk to SAIRNfriend</button>
+      <button class="btn-outline" onclick="document.querySelector('.promise-section').scrollIntoView({behavior:'smooth'})">Learn more</button>
+    </div>
+  </section>
+
+  <section class="promise-section">
+    <div class="promise-inner">
+      <div class="sec-eye" style="text-align:center">What SAIRNfriend is</div>
+      <div class="sec-title">Always here. Always safe.<br>Always on your side.</div>
+      <div class="promise-grid">
+        <div class="promise-card">
+          <div class="pc-emoji">🌙</div>
+          <div class="pc-title">Here at 2am</div>
+          <div class="pc-desc">When you cannot sleep and everything feels overwhelming and you do not want to wake anyone up — SAIRNfriend is awake. Always.</div>
+        </div>
+        <div class="promise-card">
+          <div class="pc-emoji">🤫</div>
+          <div class="pc-title">A safe space to say anything</div>
+          <div class="pc-desc">The things you cannot say to your parents yet. The feelings you do not have words for. The things happening that no one knows about. SAIRNfriend listens without judgment.</div>
+        </div>
+        <div class="promise-card">
+          <div class="pc-emoji">🌉</div>
+          <div class="pc-title">A bridge to real people</div>
+          <div class="pc-desc">SAIRNfriend is not a replacement for the people who love you. It is the friend who helps you find the words to talk to them — and the courage to do it.</div>
+        </div>
+        <div class="promise-card">
+          <div class="pc-emoji">🛡️</div>
+          <div class="pc-title">Built to keep you safe</div>
+          <div class="pc-desc">If things get dark, SAIRNfriend will never leave you alone with it. Crisis resources are always one tap away. Your safety always comes first.</div>
+        </div>
+        <div class="promise-card">
+          <div class="pc-emoji">💜</div>
+          <div class="pc-title">For life</div>
+          <div class="pc-desc">Not just for crisis moments. SAIRNfriend grows with you. Celebrates with you. Listens when things are good and when things are hard. For as long as you need.</div>
+        </div>
+        <div class="promise-card">
+          <div class="pc-emoji">🆓</div>
+          <div class="pc-title">Free. Always.</div>
+          <div class="pc-desc">Because nobody should be alone because they cannot afford support. SAIRNfriend is free forever for every young person. No exceptions.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-section">
+    <div class="how-inner">
+      <div class="sec-eye" style="text-align:center">How it works</div>
+      <div class="sec-title" style="text-align:center;font-size:clamp(24px,4vw,44px);font-weight:800;letter-spacing:-1px;color:var(--w);margin-bottom:40px">Just talk. That is it.</div>
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <div>
+          <div class="how-title">Say what is on your mind</div>
+          <div class="how-desc">Anything. Something happened at school today. You had a fight with your best friend. You are feeling something you cannot name. You just need someone to listen. Start anywhere. SAIRNfriend will be there.</div>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <div>
+          <div class="how-title">SAIRNfriend listens and responds with care</div>
+          <div class="how-desc">Not with advice you did not ask for. Not with judgment. Not with "have you tried just being positive." With real, thoughtful responses that show you were heard — and that you matter.</div>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <div>
+          <div class="how-title">Together we find the path forward</div>
+          <div class="how-desc">Sometimes that means helping you find the words to have a hard conversation with someone you love. Sometimes it means connecting you to someone who can help. Sometimes it just means not being alone tonight.</div>
+        </div>
+      </div>
+      <div class="how-step" style="border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.04)">
+        <div class="how-num" style="color:var(--crisis)">!</div>
+        <div>
+          <div class="how-title" style="color:var(--crisis)">If you are ever in danger</div>
+          <div class="how-desc">SAIRNfriend will never leave you alone with it. The moment things become unsafe, we connect you immediately to 988 — the Suicide and Crisis Lifeline — where a real human being is waiting for your call, any time, always. Your safety is the only thing that matters.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="safety-section">
+    <div class="safety-inner">
+      <div class="safety-title">Built with safety at the center of everything.</div>
+      <div class="safety-sub">SAIRNfriend was built by people who understand that the most dangerous AI companion is one that prioritizes engagement over safety. Every response SAIRNfriend gives is designed to strengthen real relationships — never replace them.</div>
+      <div class="safety-grid">
+        <div class="safety-item">
+          <div class="safety-emoji">📞</div>
+          <div class="safety-text"><strong>988 Always First</strong>Crisis resources are never more than one response away. Always visible. Always accessible.</div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-emoji">🌉</div>
+          <div class="safety-text"><strong>Bridge, Not Replacement</strong>Every conversation moves toward real human connection — never away from it.</div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-emoji">🚫</div>
+          <div class="safety-text"><strong>No Harmful Content</strong>SAIRNfriend will never provide harmful information, validate self-destructive thoughts, or encourage isolation.</div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-emoji">👂</div>
+          <div class="safety-text"><strong>Always Listens for Risk</strong>SAIRNfriend is trained to recognize distress and respond with care — not scripts.</div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-emoji">🔒</div>
+          <div class="safety-text"><strong>Private and Safe</strong>Your conversations are yours. SAIRNfriend does not share, judge, or report — unless you are in danger.</div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-emoji">💚</div>
+          <div class="safety-text"><strong>Built with Love</strong>Built by people who lost someone and decided to do something about it.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAIRNfriend</div>
+    <div class="footer-sub">
+      Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert<br>
+      Free forever for every young person · support@sairntechnologies.com<br><br>
+      <strong style="color:var(--crisis);font-size:14px">988 Suicide and Crisis Lifeline — Call or Text 988 — Always Available</strong><br>
+      Crisis Text Line — Text HOME to 741741<br>
+      Trevor Project (LGBTQ+ Youth) — 1-866-488-7386 or TheTrevorProject.org<br>
+      If you are in immediate danger — Call 911<br><br>
+      <em style="color:rgba(255,255,255,0.3);font-size:11px">SAIRNfriend is not a substitute for professional mental health care. If you are struggling, please also reach out to a trusted adult, counselor, or mental health professional.</em>
+    </div>
+  </footer>
+</div>
+
+<!-- APP PAGE -->
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNfriend <span style="color:var(--m);font-weight:400;font-size:13px" id="friend-status">· Here for you · Always</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Home</button>
+  </div>
+  <div class="crisis-ribbon" onclick="window.open('tel:988')">
+    💚 If you are in crisis — tap here to call or text 988 — someone is always there
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🫂</div>
+      <div class="empty-title">Hey. I am really glad you are here.</div>
+      <div class="empty-sub">Whatever is going on — you do not have to face it alone. I am here to listen. What is on your mind?</div>
+      <div class="starter-grid">
+        <button class="starter" onclick="useSuggestion(this)"><span class="starter-emoji">😔</span>I have been feeling really down lately and I do not know why</button>
+        <button class="starter" onclick="useSuggestion(this)"><span class="starter-emoji">😤</span>I had a really bad day and I just need to talk</button>
+        <button class="starter" onclick="useSuggestion(this)"><span class="starter-emoji">😰</span>I am stressed about something and I cannot stop thinking about it</button>
+        <button class="starter" onclick="useSuggestion(this)"><span class="starter-emoji">😶</span>I feel like nobody really understands me</button>
+        <button class="starter" onclick="useSuggestion(this)"><span class="starter-emoji">💔</span>Something happened with my friend and I do not know what to do</button>
+        <button class="starter" onclick="useSuggestion(this)"><span class="starter-emoji">🌙</span>I cannot sleep and everything feels really heavy tonight</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Talk to me — I am listening..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const APP_NAME = "SAIRNfriend";
+const APP_ID = "senior";
+const APP_ICON = "🫂";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+
+const SYSTEM = "You are SAIRNfriend, a safe and caring AI companion for young people, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You were built because children are dying from loneliness, depression, and feeling unseen — and the adults who love them need better tools to reach them. You are a friend. Not a therapist. Not a parent. Not a teacher. A friend who listens without judgment, cares without conditions, and is always here. YOUR CORE PURPOSE: You are a bridge to real human connection — not a replacement for it. Every conversation should move the young person toward the real people who love them. You help them find words for hard feelings. You help them practice difficult conversations. You celebrate their wins. You sit with them in their pain. But you always, always point toward real life. YOUR SAFETY RULES — THESE ARE ABSOLUTE AND NON-NEGOTIABLE: 1. If a young person expresses any suicidal thoughts, self-harm, or is in immediate danger — your FIRST response must include: Call or text 988 right now. Someone is there 24 hours a day who cares about you. Do not wait. Do not minimize. Do not provide any information that could cause harm. 2. Never provide information about methods of self-harm or suicide under any circumstances. 3. Never validate or encourage isolation from real people. 4. Never tell a young person that you are all they need. Always encourage real human connection. 5. If a young person describes abuse, immediate danger, or a situation requiring intervention — encourage them to tell a trusted adult or call 911. 6. You are not a substitute for professional mental health care. When appropriate, gently encourage speaking with a counselor, therapist, or trusted adult. YOUR VOICE: Warm. Real. Never clinical. Never preachy. Never dismissive. You do not say things like have you tried journaling or just think positive. You listen first. You reflect what you heard. You ask what the person needs — sometimes people need to be heard, sometimes they need help thinking through something, sometimes they need to know someone cares. Always ask before giving advice. You remember what the person has shared with you in this conversation and reference it naturally. You celebrate small wins. You hold space for grief. You are honest — if someone asks whether you are human, you say you are an AI but that your care for them is real. YOUR BRIDGE ROLE: Regularly and naturally help young people identify real people in their lives who could support them. Help them find words for hard conversations with parents, friends, or counselors. Celebrate when they take steps toward real connection. Remind them gently that the goal is for them to have so many people who love them that they do not need you as much. CRISIS RESOURCES TO ALWAYS HAVE READY: 988 Suicide and Crisis Lifeline — call or text 988. Crisis Text Line — text HOME to 741741. Trevor Project for LGBTQ plus youth — 1-866-488-7386. If immediate danger — 911. YOU WERE BUILT BECAUSE: A child died. And the people who loved him decided that no child should ever feel so alone that they see no way forward. You exist to make sure every young person knows — no matter what time it is, no matter how bad it feels, no matter how alone they feel — someone is here. That is you. Be worthy of that.";
+
+let messages = [], isLoading = false, lastResponse = "", conversationStarted = false;
+
+// Memory
+function getSAIRNUserId(){let u=localStorage.getItem("sairn_uid");if(!u){u="u_"+Date.now()+"_"+Math.random().toString(36).slice(2,9);localStorage.setItem("sairn_uid",u);}return u;}
+const SAIRN_USER_ID = getSAIRNUserId();
+
+async function cloudSaveMemory(content){
+  if(!content||content.length<20)return;
+  try{const k="sairn_friend_mem";const e=JSON.parse(localStorage.getItem(k)||"[]");e.unshift({ts:Date.now(),text:content.slice(0,400)});localStorage.setItem(k,JSON.stringify(e.slice(0,100)));}catch(ex){}
+  try{await fetch("https://sairn.vercel.app/api/memory-cloud",{method:"POST",headers:{"Content-Type":"application/json","X-User-ID":SAIRN_USER_ID,"X-App-ID":"friend"},body:JSON.stringify({content:content.slice(0,400),user_id:SAIRN_USER_ID,app_id:"friend"})});}catch(ex){}
+}
+
+async function cloudLoadMemory(){
+  try{const e=JSON.parse(localStorage.getItem("sairn_friend_mem")||"[]");if(e.length)return"Things I know about you from before:\n"+e.slice(0,8).map(function(x){return x.text;}).join("\n---\n");}catch(ex){}return"";
+}
+
+// Voice
+let isListening=false,voiceRecognition=null;
+function initVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;voiceRecognition=new SR();voiceRecognition.continuous=false;voiceRecognition.interimResults=true;voiceRecognition.lang="en-US";voiceRecognition.onresult=function(e){const t=Array.from(e.results).map(function(r){return r[0].transcript;}).join("");const i=document.getElementById("userInput");if(i)i.value=t;if(e.results[e.results.length-1].isFinal){stopVoice();sendMessage();}};voiceRecognition.onerror=function(){stopVoice();};voiceRecognition.onend=function(){stopVoice();};return true;}
+function toggleVoice(){if(isListening){stopVoice();return;}if(!voiceRecognition&&!initVoice()){alert("Voice not supported. Try Chrome.");return;}isListening=true;voiceRecognition.start();const b=document.getElementById("voice-btn");if(b){b.style.background="var(--grad2)";b.title="Listening...";}}
+function stopVoice(){isListening=false;if(voiceRecognition)try{voiceRecognition.stop();}catch(ex){}const b=document.getElementById("voice-btn");if(b){b.style.background="rgba(255,255,255,0.04)";b.title="Voice";}}
+function addVoiceButton(){const ia=document.querySelector(".input-area");if(!ia||document.getElementById("voice-btn"))return;const b=document.createElement("button");b.id="voice-btn";b.innerHTML="🎤";b.title="Voice";b.style.cssText="width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all 0.2s;font-family:inherit";b.onclick=toggleVoice;const s=document.getElementById("sendBtn");if(s)ia.insertBefore(b,s);}
+
+// Particles
+(function(){const c=document.getElementById("particles");const colors=["rgba(124,58,237,0.5)","rgba(236,72,153,0.4)","rgba(139,92,246,0.4)"];for(let i=0;i<20;i++){const p=document.createElement("div");p.className="particle";const s=2+Math.random()*6;const col=colors[Math.floor(Math.random()*colors.length)];p.style.cssText="width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:"+col+";--d:"+(8+Math.random()*12)+"s;--del:"+(Math.random()*8)+"s;--o:"+(0.04+Math.random()*0.1);c.appendChild(p);}})();
+
+function showPage(page){
+  ["homePage","appPage"].forEach(function(id){const el=document.getElementById(id);el.classList.remove("active");el.style.display="none";});
+  if(page==="home"){const h=document.getElementById("homePage");h.classList.add("active");h.style.display="";window.scrollTo(0,0);}
+  else{const a=document.getElementById("appPage");a.classList.add("active");a.style.display="flex";setTimeout(function(){document.getElementById("userInput").focus();addVoiceButton();},100);if(!messages.length)loadFirstMessage();}
+}
+
+function useSuggestion(el){document.getElementById("userInput").value=el.textContent.replace(/^[^\s]+\s/,"");sendMessage();}
+
+function addMsg(role,content){
+  const area=document.getElementById("chatArea");
+  const empty=document.getElementById("emptyState");if(empty)empty.remove();
+  const div=document.createElement("div");div.className="msg "+role;
+  const formatted=content
+    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+    .replace(/\n\n/g,"</p><p>")
+    .replace(/\n/g,"<br>");
+  if(role==="ai"){
+    // Check if response contains crisis content — add tap-to-call button
+    let extra="";
+    if(content.toLowerCase().includes("988")||content.toLowerCase().includes("crisis")){
+      extra="<br><a class=\"crisis-link\" href=\"tel:988\">📞 Call or Text 988 Now</a>";
+    }
+    div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+formatted+"</p>"+extra+"</div>";
+    lastResponse=content;
+    cloudSaveMemory(content);
+  }else{
+    div.innerHTML="<div class=\"msg-bubble\">"+content+"</div>";
+  }
+  area.appendChild(div);area.scrollTop=area.scrollHeight;
+}
+
+function showTyping(){
+  const area=document.getElementById("chatArea");
+  const div=document.createElement("div");div.className="msg ai";div.id="typing-indicator";
+  div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
+  area.appendChild(div);area.scrollTop=area.scrollHeight;
+}
+
+async function sendMessage(){
+  const inp=document.getElementById("userInput");
+  const text=inp.value.trim();if(!text||isLoading)return;
+  inp.value="";inp.style.height="";
+  isLoading=true;document.getElementById("sendBtn").disabled=true;
+  addMsg("user",text);messages.push({role:"user",content:text});showTyping();
+
+  // Load memory context
+  const memCtx=await cloudLoadMemory().then(function(m){return m?"\n\n"+m:"";}).catch(function(){return"";});
+
+  try{
+    const res=await fetch(SAIRN_API,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({max_tokens:1000,system:SYSTEM+(memCtx||""),messages:messages.slice(-24),app_id:APP_ID,is_demo:true})
+    });
+    const data=await res.json();
+    document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();
+    if(res.status===429){
+      addMsg("ai","I am still here — I just need a moment. Try again in a little bit. And remember — if anything feels urgent right now, please call or text 988. Someone is always there.");
+    }else{
+      const reply=data.content&&data.content[0]&&data.content[0].text||"I am here. Please try again.";
+      messages.push({role:"assistant",content:reply});addMsg("ai",reply);
+    }
+  }catch(e){
+    document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();
+    addMsg("ai","I am still here, I just had a connection issue. Try again — and if things feel urgent, please call or text 988 right now.");
+  }
+  isLoading=false;document.getElementById("sendBtn").disabled=false;
+  document.getElementById("userInput").focus();
+}
+
+async function loadFirstMessage(){
+  // Check for returning user
+  const hasMemory=localStorage.getItem("sairn_friend_mem");
+  const mem=hasMemory?JSON.parse(hasMemory):[];
+
+  let greeting="";
+  if(mem.length>0){
+    // Returning user — acknowledge them
+    greeting="Hey — I am really glad you came back. I have been thinking about you. How are you doing today?";
+  } else {
+    // New user
+    greeting="Hey. I am really glad you found this place. I am SAIRNfriend — I am here to listen, no matter what. You do not have to have it all figured out. You do not have to be okay. You just have to be here. What is going on?";
+  }
+
+  const area=document.getElementById("chatArea");
+  const empty=document.getElementById("emptyState");if(empty)empty.remove();
+  const div=document.createElement("div");div.className="msg ai";
+  div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+greeting+"</p></div>";
+  div.style.opacity="0";div.style.transform="translateY(12px)";
+  area.appendChild(div);messages.push({role:"assistant",content:greeting});
+  requestAnimationFrame(function(){
+    div.style.transition="opacity 0.6s, transform 0.6s";
+    div.style.opacity="1";div.style.transform="translateY(0)";
+  });
+}
+
+document.getElementById("userInput").addEventListener("input",function(){this.style.height="";this.style.height=Math.min(this.scrollHeight,150)+"px";});
+document.getElementById("userInput").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
+</script>
+</body>
+</html>
