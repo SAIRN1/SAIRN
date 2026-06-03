@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Fabricor — The World Standard for Stone Fabrication Intelligence</title>
+<meta name="description" content="The AI platform that does everything Stonify does — plus it thinks. Lead intake, quoting, CAD layout, slab inventory, scheduling, job costing, customer intelligence, waste reduction AI, and voice mode. $299/month.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#06080A;--card:#0E1218;--a:#E8850A;--a2:#C97008;
+  --grad:linear-gradient(135deg,#E8850A,#C97008);
+  --ar:rgba(232,133,10,0.12);--ab:rgba(232,133,10,0.28);
+  --glow:rgba(232,133,10,0.35);
+  --w:#F5F0E8;--m:#8A8070;--d:#3A3020;
+  --green:#10B981;--green-dim:rgba(16,185,129,0.15);
+  --red:#EF4444;--blue:#3B82F6;--purple:#8B5CF6;
+  --cyan:#06B6D4;--pink:#EC4899;--teal:#14B8A6
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.08)}90%{opacity:var(--o,.08)}50%{transform:translateY(-50px) scale(1.2)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,10,0.95);backdrop-filter:blur(24px);border-bottom:1px solid rgba(232,133,10,0.15)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px var(--glow)}
+.nav-brand{font-size:22px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-brand span{color:var(--a)}
+.nav-links{display:none}
+@media(min-width:900px){.nav-links{display:flex;align-items:center;gap:28px}}
+.nav-link{font-size:13px;font-weight:500;color:var(--m);text-decoration:none;transition:color 0.2s;cursor:pointer}
+.nav-link:hover{color:var(--w)}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px var(--glow);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 32px var(--glow)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+
+/* HERO */
+.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(232,133,10,0.08) 0%,transparent 65%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
+.hero-icon{font-size:80px;margin-bottom:20px;filter:drop-shadow(0 0 32px var(--glow))}
+.hero-title{font-size:clamp(48px,9vw,100px);font-weight:800;line-height:1.0;letter-spacing:-3px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#E8850A 45%,#C97008 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,21px);color:var(--m);max-width:720px;line-height:1.75;margin-bottom:14px}
+.hero-vs{font-size:14px;color:var(--a);font-weight:700;margin-bottom:48px;padding:8px 20px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);display:inline-block}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:64px}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px var(--glow);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px);box-shadow:0 12px 40px var(--glow)}
+.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
+.btn-outline:hover{border-color:rgba(232,133,10,0.4);color:var(--a)}
+.hero-stats{display:flex;gap:48px;justify-content:center;flex-wrap:wrap}
+.stat-val{font-size:30px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--m);max-width:140px;text-align:center;line-height:1.4}
+
+/* COMPETITOR KILL SECTION */
+.kill-section{padding:80px 24px;background:linear-gradient(180deg,var(--bg),rgba(232,133,10,0.03),var(--bg))}
+.kill-inner{max-width:1000px;margin:0 auto}
+.kill-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:32px}
+.kill-table th{padding:12px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)}
+.kill-table th:first-child{color:var(--m)}
+.kill-table th:nth-child(2){color:var(--m);text-align:center}
+.kill-table th:nth-child(3){color:var(--m);text-align:center}
+.kill-table th:last-child{color:var(--a);text-align:center}
+.kill-table td{padding:11px 16px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--m)}
+.kill-table td:first-child{color:var(--w);font-weight:500}
+.kill-table td:not(:first-child){text-align:center;font-size:16px}
+.kill-table tr:last-child td{border-bottom:none}
+.kill-table tr:hover td{background:rgba(255,255,255,0.02)}
+.kill-price-row td{background:rgba(232,133,10,0.06)!important;font-weight:700}
+.kill-price-row td:first-child{color:var(--a)}
+.kill-price-row td:last-child{color:var(--a);font-size:14px}
+
+/* SECTION */
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.section-dark{padding:80px 24px;background:rgba(255,255,255,0.015)}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w);line-height:1.1}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:640px;margin:0 auto 52px;line-height:1.7}
+
+/* MODULE GRID */
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:28px;transition:all 0.3s;position:relative;overflow:hidden}
+.module-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+.module-card.orange::before{background:var(--grad)}
+.module-card.green::before{background:var(--green)}
+.module-card.blue::before{background:var(--blue)}
+.module-card.purple::before{background:var(--purple)}
+.module-card.cyan::before{background:var(--cyan)}
+.module-card.red::before{background:var(--red)}
+.module-card.pink::before{background:var(--pink)}
+.module-card.teal::before{background:var(--teal)}
+.module-card:hover{border-color:rgba(232,133,10,0.2);transform:translateY(-2px)}
+.module-card.gold-border{border:1px solid rgba(232,133,10,0.3);background:rgba(232,133,10,0.04)}
+.world-badge{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:4px;background:rgba(232,133,10,0.15);color:var(--a);border:1px solid rgba(232,133,10,0.3);display:inline-block;margin-bottom:10px}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px;line-height:1.2}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:5px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:flex-start;gap:7px;line-height:1.5}
+.mod-feature::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--a);flex-shrink:0;margin-top:5px}
+
+/* VISUALIZER SECTION */
+.viz-section{padding:80px 24px;background:linear-gradient(180deg,rgba(232,133,10,0.04),transparent)}
+.viz-inner{max-width:900px;margin:0 auto;text-align:center}
+.viz-demo{background:var(--card);border:1px solid rgba(232,133,10,0.2);border-radius:20px;padding:40px;margin:32px 0;position:relative;overflow:hidden}
+.viz-kitchen{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:24px 0}
+.slab-card{border-radius:12px;padding:16px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;text-align:left}
+.slab-card:hover{transform:scale(1.02)}
+.slab-card.selected{border-color:var(--a);box-shadow:0 0 20px var(--glow)}
+.slab-name{font-size:13px;font-weight:700;color:var(--w);margin-bottom:4px}
+.slab-price{font-size:11px;color:var(--m)}
+.slab-preview{width:100%;height:60px;border-radius:6px;margin-bottom:8px}
+
+/* PRICING */
+.pricing-section{padding:80px 24px;background:rgba(255,255,255,0.01)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:980px;margin:0 auto}
+.pc{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:32px;position:relative}
+.pc.featured{border-color:rgba(232,133,10,0.4);background:rgba(232,133,10,0.04)}
+.pc.featured::before{content:"Most Popular";position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 16px;border-radius:100px;white-space:nowrap}
+.pt{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:10px}
+.pa{font-size:48px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
+.pp{font-size:13px;color:var(--m);margin-bottom:6px}
+.pd{font-size:12px;color:var(--d);margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pf{margin-bottom:28px;display:flex;flex-direction:column;gap:8px}
+.pf-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--m);line-height:1.5}
+.pck{color:var(--a);font-weight:700;flex-shrink:0}
+.pb{width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+.pb-grad{background:var(--grad);color:#fff;box-shadow:0 4px 20px var(--glow)}
+.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(232,133,10,0.35)}
+.pb-grad:hover,.pb-out:hover{transform:translateY(-1px)}
+
+/* APP */
+.app-header{padding:13px 20px;background:rgba(6,8,10,0.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(232,133,10,0.12);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--glow)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-icon{font-size:14px}
+.mode-divider{width:1px;background:rgba(255,255,255,0.07);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:74%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble strong{color:var(--a)}
+.typing{display:flex;gap:5px;align-items:center;padding:10px 14px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,10,0.92)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(232,133,10,0.45)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;box-shadow:0 4px 16px var(--glow)}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:460px;line-height:1.65;margin-bottom:28px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:540px}
+.suggestion{padding:12px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit;line-height:1.5}
+.suggestion:hover{border-color:rgba(232,133,10,0.3);color:var(--w)}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-brand{font-size:20px;font-weight:800;color:var(--w);margin-bottom:8px}
+.footer-sub{font-size:12px;color:var(--d);line-height:1.6}
+</style>
+</head>
+<body>
+<div id="particles"></div>
+
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">💎</div>
+    <div class="nav-brand">Fabri<span>cor</span></div>
+  </a>
+  <div class="nav-links">
+    <span class="nav-link" onclick="document.getElementById('modules').scrollIntoView({behavior:'smooth'})">Modules</span>
+    <span class="nav-link" onclick="document.getElementById('compete').scrollIntoView({behavior:'smooth'})">vs Stonify</span>
+    <span class="nav-link" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Pricing</span>
+  </div>
+  <div class="nav-r">
+    <div class="nav-badge">Claude AI · Stone Fabrication · Patents Pending</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">The World Standard for Stone Fabrication Intelligence</div>
+    <div class="hero-icon">💎</div>
+    <h1 class="hero-title">Fabricor</h1>
+    <p class="hero-sub">The AI platform that does everything Stonify does — plus it thinks. Lead intake, quoting, slab inventory, production scheduling, job costing, customer intelligence, waste reduction AI, supplier tracking, and a 3D stone visualizer. All powered by Claude AI.</p>
+    <div class="hero-vs">Stonify starts at $500/month · Fabricor starts at $199/month · You do the math</div>
+    <div class="hero-ctas">
+      <button class="btn-grad" onclick="showPage('app')">See it in action</button>
+      <button class="btn-outline" onclick="document.getElementById('compete').scrollIntoView({behavior:'smooth'})">How we beat Stonify</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-val">$12K</div><div class="stat-lbl">Monthly stone savings from AI waste reduction per shop</div></div>
+      <div><div class="stat-val">3 min</div><div class="stat-lbl">To generate a complete quote with AI assistance</div></div>
+      <div><div class="stat-val">25%</div><div class="stat-lbl">Reduction in production waste with slab tracking</div></div>
+      <div><div class="stat-val">0</div><div class="stat-lbl">Other platforms with AI intelligence built for fabricators</div></div>
+    </div>
+  </section>
+
+  <!-- COMPETITOR KILL TABLE -->
+  <section class="kill-section" id="compete">
+    <div class="kill-inner">
+      <div class="sec-eye" style="text-align:center">Fabricor vs The Competition</div>
+      <div class="sec-title" style="text-align:center;font-size:clamp(26px,4vw,44px);font-weight:800;letter-spacing:-1px;color:var(--w);margin-bottom:8px">Everything they have. Everything they wish they had.</div>
+      <p style="font-size:15px;color:var(--m);text-align:center;margin-bottom:0">Stonify built a solid ERP. We built an intelligent one.</p>
+      <table class="kill-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>Moraware</th>
+            <th>Stonify</th>
+            <th>Fabricor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Lead intake and CRM</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Quote and estimating</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>CAD layout and drawing</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Slab inventory with piece tracking</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Production scheduling</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Job costing and finance</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Installation management</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>QuickBooks integration</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Purchase order automation</td><td>❌</td><td>✅</td><td>✅</td></tr>
+          <tr><td>3D Stone Visualizer for customers</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Claude AI intelligence assistant</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Real-time margin per job</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>AI waste reduction and nesting</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Customer profitability ranking</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Supplier price intelligence</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Predictive scheduling AI</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Voice mode — hands-free</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Cloud memory — infinite</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>Post-install warranty intelligence</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr class="kill-price-row"><td>Starting price</td><td>$200/mo</td><td>$500/mo</td><td>$199/mo</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 13 MODULES -->
+  <div class="section" id="modules">
+    <div class="sec-eye">13 intelligence modules</div>
+    <div class="sec-title">Every dimension of a fabrication shop.<br>One AI platform.</div>
+    <div class="sec-sub">From the first customer call to the final installation — Fabricor manages every workflow, every slab, every dollar, and every relationship in your shop. And unlike every competitor — it thinks.</div>
+    <div class="module-grid">
+
+      <div class="module-card orange gold-border">
+        <div class="world-badge">Only in Fabricor</div>
+        <div class="mod-emoji">🤖</div>
+        <div class="mod-title">AI Shop Intelligence — Powered by Claude</div>
+        <div class="mod-desc">Ask Fabricor anything about your shop in plain language and get an expert answer instantly. Which jobs are most profitable this month? Which customer costs you the most? Why is your marble waste higher than quartz? No competitor can answer these questions. Fabricor answers them in seconds.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Natural language queries about any aspect of your shop</div>
+          <div class="mod-feature">Job profitability analysis on demand</div>
+          <div class="mod-feature">Customer and material pattern identification</div>
+          <div class="mod-feature">Daily briefing — what to focus on today</div>
+          <div class="mod-feature">Answers specific to your shop history and data</div>
+          <div class="mod-feature">Voice mode — ask hands-free on the shop floor</div>
+        </div>
+      </div>
+
+      <div class="module-card green">
+        <div class="mod-emoji">📋</div>
+        <div class="mod-title">Lead Intake and CRM Intelligence</div>
+        <div class="mod-desc">Never lose a lead again. Fabricor captures every inquiry, qualifies prospects automatically, tracks follow-up sequences, and gives every salesperson a complete customer history before they pick up the phone. Built for the way fabrication shops actually sell.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Lead capture from web, phone, and email</div>
+          <div class="mod-feature">Automated follow-up sequence management</div>
+          <div class="mod-feature">Customer history and communication log</div>
+          <div class="mod-feature">Referral source tracking and analysis</div>
+          <div class="mod-feature">Lead-to-job conversion rate by source</div>
+          <div class="mod-feature">Customer lifetime value calculation</div>
+        </div>
+      </div>
+
+      <div class="module-card blue">
+        <div class="mod-emoji">💰</div>
+        <div class="mod-title">Quote and Estimating Intelligence</div>
+        <div class="mod-desc">Generate accurate, professional quotes in under 3 minutes. Fabricor analyzes job complexity, material costs, labor time, and your historical margins to produce quotes that win business and protect profit — every time, not just when your best estimator is in the building.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Quote generation from job description in minutes</div>
+          <div class="mod-feature">AI-powered square footage calculation assistance</div>
+          <div class="mod-feature">Material cost analysis with current supplier pricing</div>
+          <div class="mod-feature">Labor time estimation by job type and complexity</div>
+          <div class="mod-feature">Margin protection — flags quotes below target margin</div>
+          <div class="mod-feature">Professional PDF quote generation and delivery</div>
+        </div>
+      </div>
+
+      <div class="module-card orange gold-border">
+        <div class="world-badge">Only in Fabricor</div>
+        <div class="mod-emoji">♟️</div>
+        <div class="mod-title">AI Waste Reduction and Slab Nesting</div>
+        <div class="mod-desc">Shops using AI-driven nesting report yield improvements of 8 to 15 percent. On a shop running $80K of stone per month that is $6,400 to $12,000 in monthly savings — real stone you are not throwing away. Fabricor analyzes every job against your slab inventory and recommends the cutting sequence that maximizes yield.</div>
+        <div class="mod-features">
+          <div class="mod-feature">AI cutting layout optimization per job</div>
+          <div class="mod-feature">Remnant value identification and tracking</div>
+          <div class="mod-feature">Waste pattern analysis by material and job type</div>
+          <div class="mod-feature">Monthly waste cost report with improvement recommendations</div>
+          <div class="mod-feature">Slab pairing recommendations for multi-piece jobs</div>
+          <div class="mod-feature">ROI calculator — see monthly savings from optimization</div>
+        </div>
+      </div>
+
+      <div class="module-card purple">
+        <div class="mod-emoji">🪨</div>
+        <div class="mod-title">Slab Inventory Intelligence</div>
+        <div class="mod-desc">Every slab tracked as a unique object — photos, dimensions, location, condition, and assigned job. QR code labels. Real-time availability. Customer-facing online gallery so clients can browse your yard without visiting. The complete slab intelligence system Stonify cannot match.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Piece-level slab tracking with QR codes</div>
+          <div class="mod-feature">Photo documentation for every slab</div>
+          <div class="mod-feature">Real-time availability and reservation management</div>
+          <div class="mod-feature">Online customer slab gallery — 24/7 browsing</div>
+          <div class="mod-feature">Incoming container management and documentation</div>
+          <div class="mod-feature">Remnant yard tracking and valuation</div>
+        </div>
+      </div>
+
+      <div class="module-card cyan">
+        <div class="mod-emoji">📅</div>
+        <div class="mod-title">Production and Scheduling Intelligence</div>
+        <div class="mod-desc">Fabricor manages your entire production floor — from template to installation — with predictive scheduling that accounts for slab type, job complexity, and crew availability. Alerts before a job falls behind. Optimizes the sequence that maximizes throughput every day.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Production board with real-time job status</div>
+          <div class="mod-feature">Predictive completion time by job complexity</div>
+          <div class="mod-feature">Behind-schedule alerts before delivery deadlines</div>
+          <div class="mod-feature">Installation crew scheduling and route optimization</div>
+          <div class="mod-feature">Digital templating workflow and documentation</div>
+          <div class="mod-feature">Capacity analysis — how much can we take on?</div>
+        </div>
+      </div>
+
+      <div class="module-card orange gold-border">
+        <div class="world-badge">Only in Fabricor</div>
+        <div class="mod-emoji">📊</div>
+        <div class="mod-title">Real-Time Job Profitability Intelligence</div>
+        <div class="mod-desc">Every other platform shows you costs. Fabricor shows you margin — in real time, as the job progresses. Know before the slab hits the saw whether you are going to make money. Know immediately when a change order is about to turn a profitable job into a losing one.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Live margin calculation per job at every stage</div>
+          <div class="mod-feature">Change order impact analysis — before you approve</div>
+          <div class="mod-feature">Margin alert when job drops below target</div>
+          <div class="mod-feature">Most and least profitable job types this month</div>
+          <div class="mod-feature">Labor cost variance — estimated vs actual per job</div>
+          <div class="mod-feature">Monthly profitability trend by customer and material</div>
+        </div>
+      </div>
+
+      <div class="module-card orange gold-border">
+        <div class="world-badge">Only in Fabricor</div>
+        <div class="mod-emoji">👥</div>
+        <div class="mod-title">Customer Profitability Intelligence</div>
+        <div class="mod-desc">Not all customers are created equal. Some generate 80% of your profit. Some generate 80% of your headaches. Fabricor ranks every customer by profitability, identifies change order patterns, tracks referral value, and tells you exactly which relationships to grow and which to reconsider.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Customer profitability ranking — who makes you money</div>
+          <div class="mod-feature">Change order frequency and cost by customer</div>
+          <div class="mod-feature">Referral value — how much business have they brought</div>
+          <div class="mod-feature">Average margin by customer segment</div>
+          <div class="mod-feature">Customer retention risk identification</div>
+          <div class="mod-feature">VIP customer identification and service recommendations</div>
+        </div>
+      </div>
+
+      <div class="module-card orange gold-border">
+        <div class="world-badge">Only in Fabricor</div>
+        <div class="mod-emoji">🏭</div>
+        <div class="mod-title">Supplier Price Intelligence</div>
+        <div class="mod-desc">Stone prices fluctuate constantly. Most shop owners have no idea what they paid per square foot from each supplier six months ago — and are being overcharged because of it. Fabricor tracks every purchase from every supplier, flags when you are overpaying, and identifies your best value sources by material type.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Historical price tracking per supplier per material</div>
+          <div class="mod-feature">Overpayment alerts — when price exceeds your average</div>
+          <div class="mod-feature">Best value supplier by material type and grade</div>
+          <div class="mod-feature">Purchase order automation and tracking</div>
+          <div class="mod-feature">Supplier performance scoring — quality, delivery, price</div>
+          <div class="mod-feature">Market price benchmarking recommendations</div>
+        </div>
+      </div>
+
+      <div class="module-card orange gold-border">
+        <div class="world-badge">Only in Fabricor — World First</div>
+        <div class="mod-emoji">🏠</div>
+        <div class="mod-title">3D Stone Visualizer — Customer Experience</div>
+        <div class="mod-desc">Let customers see their exact slab in their actual kitchen before they commit. Upload a photo of the kitchen, select a slab from your inventory, and Fabricor renders a photorealistic preview in seconds. The feature that closes undecided customers. No competitor has it. Fabricor built it first.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Customer kitchen photo upload — any smartphone</div>
+          <div class="mod-feature">Real-time slab preview in customer space</div>
+          <div class="mod-feature">Side-by-side material comparison</div>
+          <div class="mod-feature">Edge profile visualization — all standard profiles</div>
+          <div class="mod-feature">Shareable link — customer shows family before deciding</div>
+          <div class="mod-feature">Closes undecided customers — conversion rate impact</div>
+        </div>
+      </div>
+
+      <div class="module-card red">
+        <div class="mod-emoji">🔧</div>
+        <div class="mod-title">Post-Install and Warranty Intelligence</div>
+        <div class="mod-desc">The job does not end at installation. Warranty claims, callbacks, and post-install service are where reputations are won or lost. Fabricor documents every post-install interaction, tracks warranty status, identifies recurring issues before they become patterns, and turns service calls into repeat business opportunities.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Post-install inspection documentation</div>
+          <div class="mod-feature">Warranty claim tracking and resolution management</div>
+          <div class="mod-feature">Callback pattern identification by crew and material</div>
+          <div class="mod-feature">Customer satisfaction follow-up automation</div>
+          <div class="mod-feature">Review and referral request generation</div>
+          <div class="mod-feature">Repeat business trigger identification</div>
+        </div>
+      </div>
+
+      <div class="module-card pink">
+        <div class="mod-emoji">💼</div>
+        <div class="mod-title">Finance and Business Intelligence</div>
+        <div class="mod-desc">The view from the owner is desk. Revenue by month, margin by job type, accounts receivable aging, crew productivity, material cost trends, and growth trajectory. QuickBooks integration. Everything a fabrication shop owner needs to run a real business — not just a busy shop.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Revenue and margin dashboard — month, quarter, year</div>
+          <div class="mod-feature">Accounts receivable aging and collection follow-up</div>
+          <div class="mod-feature">QuickBooks two-way integration</div>
+          <div class="mod-feature">Crew productivity and labor cost analysis</div>
+          <div class="mod-feature">Material cost trend analysis over time</div>
+          <div class="mod-feature">Cash flow projection and business health scoring</div>
+        </div>
+      </div>
+
+      <div class="module-card teal">
+        <div class="mod-emoji">🌐</div>
+        <div class="mod-title">Multi-Location Intelligence</div>
+        <div class="mod-desc">Running more than one shop? Fabricor connects them. Share slab inventory across locations. Transfer jobs between shops. Benchmark performance across your entire operation. The intelligence layer that turns a collection of shops into a coordinated business.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Cross-location slab inventory sharing and transfer</div>
+          <div class="mod-feature">Inter-shop job routing and capacity balancing</div>
+          <div class="mod-feature">Performance benchmarking across all locations</div>
+          <div class="mod-feature">Consolidated owner dashboard across entire operation</div>
+          <div class="mod-feature">Shared customer intelligence across locations</div>
+          <div class="mod-feature">Chain-wide supplier pricing optimization</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 3D VISUALIZER DEMO SECTION -->
+  <section class="viz-section">
+    <div class="viz-inner">
+      <div class="sec-eye">The Feature That Closes Sales</div>
+      <div class="sec-title" style="text-align:center;font-size:clamp(26px,4vw,44px);font-weight:800;letter-spacing:-1px;color:var(--w);margin-bottom:16px">Let customers see it before they buy it.</div>
+      <p style="font-size:16px;color:var(--m);max-width:580px;margin:0 auto 32px;line-height:1.75;text-align:center">No other fabrication software has this. Customer uploads a photo of their kitchen. You select a slab from your inventory. They see their exact stone in their actual space — before they sign.</p>
+      <div class="viz-demo">
+        <div style="font-size:13px;font-weight:600;color:var(--a);letter-spacing:1px;text-transform:uppercase;margin-bottom:20px">Select a material — see it in the kitchen</div>
+        <div class="viz-kitchen" id="vizGrid">
+          <div class="slab-card selected" onclick="selectSlab(this,'#C8B89A','Calacatta Gold','$85/sq ft')" style="background:rgba(200,184,154,0.15);border-color:var(--a)">
+            <div class="slab-preview" style="background:linear-gradient(135deg,#C8B89A,#E8D5B8,#C8B89A,#D4C4A0)"></div>
+            <div class="slab-name">Calacatta Gold</div>
+            <div class="slab-price">$85/sq ft · 3 slabs available</div>
+          </div>
+          <div class="slab-card" onclick="selectSlab(this,'#2C2C2C','Absolute Black','$65/sq ft')" style="background:rgba(44,44,44,0.4)">
+            <div class="slab-preview" style="background:linear-gradient(135deg,#1A1A1A,#2C2C2C,#1A1A1A,#333)"></div>
+            <div class="slab-name">Absolute Black</div>
+            <div class="slab-price">$65/sq ft · 5 slabs available</div>
+          </div>
+          <div class="slab-card" onclick="selectSlab(this,'#8B9B7A','Verde Alpi','$120/sq ft')" style="background:rgba(139,155,122,0.15)">
+            <div class="slab-preview" style="background:linear-gradient(135deg,#6B7B5A,#8B9B7A,#7A8B69,#9BAB8A)"></div>
+            <div class="slab-name">Verde Alpi</div>
+            <div class="slab-price">$120/sq ft · 1 slab available</div>
+          </div>
+        </div>
+        <div id="viz-preview" style="margin-top:20px;border-radius:12px;overflow:hidden;position:relative;height:200px;background:linear-gradient(180deg,#87CEEB 0%,#87CEEB 30%,#F5F5DC 30%,#F5F5DC 60%,#C8B89A 60%,#C8B89A 75%,#8B7355 75%,#8B7355 100%);transition:all 0.4s">
+          <div style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:0 40px 40px">
+            <div id="counter-preview" style="width:80%;height:30px;border-radius:4px;background:linear-gradient(135deg,#C8B89A,#E8D5B8,#C8B89A,#D4C4A0);transition:background 0.4s;box-shadow:0 4px 20px rgba(0,0,0,0.3)"></div>
+          </div>
+          <div style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,0.8)">Preview — Calacatta Gold</div>
+        </div>
+        <p style="font-size:12px;color:var(--m);margin-top:12px;text-align:center">Click any material above to see it in the kitchen preview. In the full app, customers upload their own kitchen photo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-section" id="pricing">
+    <div class="sec-eye" style="text-align:center">Pricing</div>
+    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:12px">All 13 modules. Every shop size. Beat Stonify by $300/month.</div>
+    <div class="sec-sub">No setup fees. No contracts. Cancel anytime. QuickBooks integration on every plan.</div>
+    <div class="pricing-grid">
+      <div class="pc">
+        <div class="pt">Solo Shop</div>
+        <div class="pa">$199</div>
+        <div class="pp">/month</div>
+        <div class="pd">1–5 users · Single location</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>All 13 intelligence modules</div>
+          <div class="pf-item"><span class="pck">+</span>Claude AI shop intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Quote and slab inventory</div>
+          <div class="pf-item"><span class="pck">+</span>3D Stone Visualizer</div>
+          <div class="pf-item"><span class="pck">+</span>QuickBooks integration</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Try Free</button>
+      </div>
+      <div class="pc featured">
+        <div class="pt">Growing Shop</div>
+        <div class="pa">$299</div>
+        <div class="pp">/month</div>
+        <div class="pd">6–20 users · Full platform</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Solo Shop</div>
+          <div class="pf-item"><span class="pck">+</span>AI waste reduction intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Customer profitability ranking</div>
+          <div class="pf-item"><span class="pck">+</span>Supplier price intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Real-time job margin tracking</div>
+          <div class="pf-item"><span class="pck">+</span>Post-install warranty intelligence</div>
+        </div>
+        <button class="pb pb-grad" onclick="showPage('app')">Start Free Trial</button>
+      </div>
+      <div class="pc">
+        <div class="pt">Multi-Location</div>
+        <div class="pa">Custom</div>
+        <div class="pp">annual contract</div>
+        <div class="pd">Chain operations and groups</div>
+        <div class="pf">
+          <div class="pf-item"><span class="pck">+</span>Everything in Growing Shop</div>
+          <div class="pf-item"><span class="pck">+</span>Cross-location intelligence</div>
+          <div class="pf-item"><span class="pck">+</span>Chain-wide analytics dashboard</div>
+          <div class="pf-item"><span class="pck">+</span>White label deployment option</div>
+          <div class="pf-item"><span class="pck">+</span>Dedicated success team</div>
+        </div>
+        <button class="pb pb-out" onclick="showPage('app')">Contact Sales</button>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--m);margin-top:24px">Stonify starts at $500/month with fewer features. Fabricor starts at $199/month with AI intelligence they will never have.</p>
+  </section>
+
+  <footer>
+    <div class="footer-brand">Fabricor</div>
+    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · Patents Pending<br>The world standard for stone fabrication intelligence · support@sairntechnologies.com</div>
+  </footer>
+</div>
+
+<!-- APP PAGE -->
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      Fabricor <span style="color:var(--m);font-weight:400;font-size:13px">· Stone Fabrication Intelligence · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('Shop Intelligence','Ask anything about your shop — jobs, margins, customers, slabs, or suppliers')"><span class="mode-icon">🤖</span><span class="mode-label">AI Shop</span></button>
+    <button class="mode-btn" onclick="setMode('Quoting','Generate a quote, analyze job complexity, or calculate margins')"><span class="mode-icon">💰</span><span class="mode-label">Quoting</span></button>
+    <button class="mode-btn" onclick="setMode('Slab Inventory','Track slabs, find available material, or manage remnants')"><span class="mode-icon">🪨</span><span class="mode-label">Slabs</span></button>
+    <button class="mode-btn" onclick="setMode('Waste Reduction','Optimize cutting layouts, reduce waste, and maximize slab yield')"><span class="mode-icon">♟️</span><span class="mode-label">Waste AI</span></button>
+    <button class="mode-btn" onclick="setMode('Scheduling','Manage production schedule, crew assignments, and installation routing')"><span class="mode-icon">📅</span><span class="mode-label">Schedule</span></button>
+    <button class="mode-btn" onclick="setMode('Job Costing','Track job margin in real time, analyze labor costs, or flag margin risk')"><span class="mode-icon">📊</span><span class="mode-label">Job Cost</span></button>
+    <button class="mode-btn" onclick="setMode('Customers','Analyze customer profitability, track change orders, or identify VIPs')"><span class="mode-icon">👥</span><span class="mode-label">Customers</span></button>
+    <button class="mode-btn" onclick="setMode('Suppliers','Track supplier prices, flag overpayment, or compare vendor performance')"><span class="mode-icon">🏭</span><span class="mode-label">Suppliers</span></button>
+    <button class="mode-btn" onclick="setMode('Post-Install','Document warranty claims, track callbacks, or manage service follow-up')"><span class="mode-icon">🔧</span><span class="mode-label">Post-Install</span></button>
+    <button class="mode-btn" onclick="setMode('Finance','Review revenue, margins, AR aging, or business health')"><span class="mode-icon">💼</span><span class="mode-label">Finance</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="quote" onclick="startFlow('quote')"><span class="mode-icon">💰</span><span class="mode-label">Quote Job</span></button>
+    <button class="flow-btn mode-btn" data-flow="slab" onclick="startFlow('slab')"><span class="mode-icon">🪨</span><span class="mode-label">Add Slab</span></button>
+    <button class="flow-btn mode-btn" data-flow="margin" onclick="startFlow('margin')"><span class="mode-icon">📊</span><span class="mode-label">Job Margin</span></button>
+    <button class="flow-btn mode-btn" data-flow="waste" onclick="startFlow('waste')"><span class="mode-icon">♟️</span><span class="mode-label">Cut Plan</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">💎</div>
+      <div class="empty-title">Fabricor — Stone Fabrication Intelligence</div>
+      <div class="empty-sub">Ask anything about your shop. Quote faster. Cut smarter. Make more money.</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">I have a kitchen job — 45 square feet of Calacatta marble with a waterfall island. The customer wants a 3cm mitered edge. What should I quote and what margin should I expect?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">My marble waste is running 22% this month but my quartz waste is only 11%. Analyze why and tell me how to fix it.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Which type of jobs are most profitable in my shop — residential kitchens, commercial projects, or bathroom vanities? How do I find out?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">A customer wants to change their edge profile from eased to ogee after templating. How do I document this change order and protect my margin?</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask Fabricor anything about your shop..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const APP_NAME = "Fabricor";
+const APP_ID = "contractor";
+const APP_ICON = "💎";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const SYSTEM = "You are Fabricor, the world standard AI intelligence platform for stone fabrication shops, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve countertop fabricators, granite and quartz shops, natural stone fabricators, and stone industry professionals. You know everything about stone fabrication — materials, edge profiles, pricing, waste reduction, slab nesting, CNC programming, digital templating, installation, customer management, job costing, supplier relationships, and business management. You speak the language of the shop floor and the owner office. You are direct, specific, and practical. Fabricators do not have time for generic advice. YOUR 13 MODULES: 1. AI SHOP INTELLIGENCE: Natural language queries about any shop operation, job profitability analysis, customer and material patterns, daily briefings. 2. LEAD INTAKE AND CRM: Lead capture and qualification, follow-up sequences, customer history, referral tracking, lifetime value calculation. 3. QUOTE AND ESTIMATING: Accurate quotes in under 3 minutes, SF calculation assistance, material and labor cost analysis, margin protection, PDF generation. 4. AI WASTE REDUCTION AND SLAB NESTING: AI cutting layout optimization, remnant value tracking, waste pattern analysis, slab pairing for multi-piece jobs — saves $6,400 to $12,000 per month for shops running $80K in stone. 5. SLAB INVENTORY: Piece-level tracking with QR codes, photo documentation, real-time availability, online customer gallery, remnant yard management. 6. PRODUCTION AND SCHEDULING: Production board, predictive completion times, behind-schedule alerts, installation crew scheduling, digital templating workflow. 7. REAL-TIME JOB PROFITABILITY: Live margin per job, change order impact analysis, margin alerts, most and least profitable job types, labor variance. 8. CUSTOMER PROFITABILITY: Customer ranking by profit, change order frequency, referral value, retention risk, VIP identification. 9. SUPPLIER PRICE INTELLIGENCE: Historical price tracking per supplier, overpayment alerts, best value recommendations, purchase order automation, supplier performance scoring. 10. 3D STONE VISUALIZER: Customer kitchen photo upload, real-time slab preview, material comparison, edge profile visualization, shareable links. 11. POST-INSTALL AND WARRANTY: Inspection documentation, warranty claim tracking, callback pattern identification, satisfaction follow-up, review generation. 12. FINANCE AND BUSINESS: Revenue and margin dashboard, AR aging, QuickBooks integration, crew productivity, material cost trends, cash flow projection. 13. MULTI-LOCATION: Cross-location slab sharing, job routing, performance benchmarking, consolidated dashboard, chain-wide supplier optimization. KEY KNOWLEDGE: Calacatta marble runs $80-150 per sq ft installed. Brazilian quartzite is gaining market share at $90-130. Standard edge profiles: eased, beveled, bullnose, ogee, dupont. Typical fabrication margin target 35-45%. Average kitchen job is 40-55 square feet. Material waste industry average is 15-20% — good shops run 10-12% with AI optimization. Moraware has 2,600 customers at $200-400/month with no AI. Stonify starts at $500/month with no AI. Fabricor starts at $199/month and thinks. Be specific. Give numbers. Help fabricators make more money.";
+
+let messages = [], isLoading = false, lastResponse = "";
+
+const GUIDED_FLOWS = [
+  {id:"quote", emoji:"💰", label:"Quote a Job",
+   intro:"Let us build your quote. What type of job is this — kitchen countertop, bathroom vanity, commercial project, or something else?",
+   steps:["What material is the customer considering and what are the approximate square footage and edge profile?", "Any special features — waterfall island, mitered edges, cutouts for sinks, cooktops, or custom shapes?"],
+   finish:"Here is your complete quote breakdown with material cost, labor estimate, suggested price, and target margin. Review and adjust for your local market before presenting to the customer."},
+  {id:"slab", emoji:"🪨", label:"Add a Slab",
+   intro:"Let us document your new slab. What material is it — granite, quartz, marble, quartzite, or something else?",
+   steps:["What are the slab dimensions and what supplier and price did you pay?", "Any notes on quality, veining pattern, or conditions — and which yard location is it going to?"],
+   finish:"Here is your slab documentation record ready to enter into inventory. Include photos when you add it to your system — piece-level photo documentation reduces disputes and speeds customer selection."},
+  {id:"margin", emoji:"📊", label:"Analyze Job Margin",
+   intro:"Let us analyze your job margin. What type of job is it and what did you quote the customer?",
+   steps:["What is the material cost including the slab price and any additional materials?", "What is your estimated labor time and what do you pay your fabricators per hour fully loaded?"],
+   finish:"Here is your complete job margin analysis with gross margin percentage, labor efficiency ratio, and comparison to your target margin. If you are below target I will tell you exactly where the margin is leaking."},
+  {id:"waste", emoji:"♟️", label:"Optimize a Cut Plan",
+   intro:"Let us optimize your cutting plan. What is the job — describe the pieces you need to cut and approximate dimensions.",
+   steps:["What slab size are you working with and what material is it?", "Any constraints — vein matching requirements, areas to avoid on the slab, or remnant pieces you want to preserve?"],
+   finish:"Here is your optimized cutting sequence with layout recommendations, remnant preservation strategy, and estimated yield percentage. Review with your CNC operator before programming."}
+];
+let activeFlow = null, flowStep = 0;
+
+// Particles
+(function() {
+  const c = document.getElementById("particles");
+  for(let i=0;i<20;i++) {
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 2 + Math.random()*6;
+    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(232,133,10,0.6);--d:"+(7+Math.random()*10)+"s;--del:"+(Math.random()*7)+"s;--o:"+(0.04+Math.random()*0.1);
+    c.appendChild(p);
+  }
+})();
+
+// 3D Visualizer
+function selectSlab(el, color, name, price) {
+  document.querySelectorAll(".slab-card").forEach(function(c) {
+    c.classList.remove("selected");
+    c.style.borderColor = "transparent";
+  });
+  el.classList.add("selected");
+  el.style.borderColor = "var(--a)";
+  document.getElementById("counter-preview").style.background = color;
+  document.querySelector("#viz-preview div:last-child").textContent = "Preview — " + name;
+}
+
+function showPage(page) {
+  ["homePage","appPage"].forEach(function(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("active"); el.style.display = "none";
+  });
+  if(page === "home") {
+    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
+    window.scrollTo(0,0);
+  } else {
+    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+    if(!messages.length) loadFirstMessage();
+  }
+}
+
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+
+function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
+
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+  if(role === "ai") {
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + formatted + "</p></div>";
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 600);
+  } else {
+    div.innerHTML = "<div class=\"msg-bubble\">" + content + "</div>";
+  }
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim(); if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true; document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access.");
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false; document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) return;
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+    const div = document.createElement("div"); div.className = "msg ai";
+    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + "</p></div>";
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s, transform 0.5s";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {}
+}
+
+function showSaveBar() {
+  const existing = document.getElementById("sairn-save-bar"); if(existing) existing.remove();
+  const bar = document.createElement("div"); bar.id = "sairn-save-bar";
+  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(232,133,10,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center";
+  const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy";
+  copyBtn.style.cssText = "background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
+  const savedBadge = document.createElement("span");
+  savedBadge.textContent = "✓ Saved";
+  savedBadge.style.cssText = "font-size:11px;color:#10B981;font-weight:600";
+  const closeBtn = document.createElement("button"); closeBtn.textContent = "x";
+  closeBtn.style.cssText = "background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px";
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById("sairn-save-bar"); if(b) b.remove(); }, 6000);
+}
+
+document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
+document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+</script>
+</body>
+</html>
