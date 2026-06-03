@@ -36,17 +36,11 @@
     { "source": "/network",              "destination": "/sairn_network.html"        },
     { "source": "/fabricor",             "destination": "/fabricor.html"             },
     { "source": "/sairnvets",            "destination": "/sairnvets.html"            },
+    { "source": "/sairnhope",            "destination": "/sairnhope.html"            },
+    { "source": "/sairnfriend",          "destination": "/sairnfriend.html"          },
+    { "source": "/careteam",             "destination": "/sairnlearn_careteam.html"  },
     { "source": "/memory",               "destination": "/memory_settings.html"      }
   ],
   "cleanUrls": true,
-      { "source": "/memory",      "destination": "/memory_settings.html"     },
-    { "source": "/sairnhope",   "destination": "/sairnhope.html"           },
-    { "source": "/sairnfriend", "destination": "/sairnfriend.html"         },
-    { "source": "/careteam",    "destination": "/sairnlearn_careteam.html" }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
-}
-
   "trailingSlash": false
 }
