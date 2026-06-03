@@ -39,5 +39,14 @@
     { "source": "/memory",               "destination": "/memory_settings.html"      }
   ],
   "cleanUrls": true,
+      { "source": "/memory",      "destination": "/memory_settings.html"     },
+    { "source": "/sairnhope",   "destination": "/sairnhope.html"           },
+    { "source": "/sairnfriend", "destination": "/sairnfriend.html"         },
+    { "source": "/careteam",    "destination": "/sairnlearn_careteam.html" }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
+}
+
   "trailingSlash": false
 }
