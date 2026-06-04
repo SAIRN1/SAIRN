@@ -902,11 +902,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
 
 // SAIRN Universal Intelligence v6.2 — Fabricor
-const SAIRN_ORG_ID = localStorage.getItem('sairn_org_id') || null;
-const SAIRN_ORG_NAME = localStorage.getItem('sairn_location_name') || 'My Organization';
 function getSAIRNUserId(){let u=localStorage.getItem('sairn_uid');if(!u){u='u_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sairn_uid',u);}return u;}
-const SAIRN_USER_ID = getSAIRNUserId();
-let sessionOutcomes={queries:0,startTime:Date.now()};
 function getSAIRNContext(){const p=[];if(SAIRN_ORG_ID)p.push('Organization: '+SAIRN_ORG_NAME);return p.join('\n');}
 async function cloudSaveMemory(content){
   if(!content||content.length<20)return;
@@ -916,7 +912,6 @@ async function cloudSaveMemory(content){
 async function cloudLoadMemory(){
   try{const k='sairn_local_'+APP_ID;const e=JSON.parse(localStorage.getItem(k)||'[]');if(e.length)return'Previous context:\n'+e.slice(0,5).map(function(x){return x.text;}).join('\n---\n');}catch(e){}return'';
 }
-let isListening=false,voiceRecognition=null;
 function initVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;voiceRecognition=new SR();voiceRecognition.continuous=false;voiceRecognition.interimResults=true;voiceRecognition.lang='en-US';voiceRecognition.onresult=function(e){const t=Array.from(e.results).map(function(r){return r[0].transcript;}).join('');const i=document.getElementById('userInput');if(i)i.value=t;if(e.results[e.results.length-1].isFinal){stopVoice();sendMessage();}};voiceRecognition.onerror=function(){stopVoice();};voiceRecognition.onend=function(){stopVoice();};return true;}
 function toggleVoice(){if(isListening){stopVoice();return;}if(!voiceRecognition&&!initVoice()){alert('Voice not supported. Try Chrome.');return;}isListening=true;voiceRecognition.start();const b=document.getElementById('voice-btn');if(b){b.style.background='var(--grad)';b.title='Listening...';}}
 function stopVoice(){isListening=false;if(voiceRecognition)try{voiceRecognition.stop();}catch(e){}const b=document.getElementById('voice-btn');if(b){b.style.background='rgba(255,255,255,0.05)';b.title='Voice input';}}
