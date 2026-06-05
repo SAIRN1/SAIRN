@@ -754,24 +754,7 @@ async function loadFirstMessage() {
   }
 }
 
-function showSaveBar() {
-  const existing = document.getElementById("sairn-save-bar");
-  if(existing) existing.remove();
-  const bar = document.createElement("div");
-  bar.id = "sairn-save-bar";
-  bar.style.cssText = "position:fixed;bottom:80px;right:20px;background:#0D0F1E;border:1px solid rgba(240,180,41,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.5)";
-  const copyBtn = document.createElement("button");
-  copyBtn.textContent = "Copy";
-  copyBtn.style.cssText = "background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);border-radius:8px;padding:6px 12px;color:#F0B429;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
-  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = "Copied!"; setTimeout(function() { copyBtn.textContent = "Copy"; }, 2000); }); };
-  const closeBtn = document.createElement("button");
-  closeBtn.textContent = "x";
-  closeBtn.style.cssText = "background:none;border:none;color:#33334A;font-size:16px;cursor:pointer;padding:0 4px";
-  closeBtn.onclick = function() { bar.remove(); };
-  bar.appendChild(copyBtn); bar.appendChild(closeBtn);
-  document.body.appendChild(bar);
-  setTimeout(function() { if(document.getElementById("sairn-save-bar")) document.getElementById("sairn-save-bar").remove(); }, 8000);
-}
+
 
 
 // ============================================================

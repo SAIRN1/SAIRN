@@ -884,21 +884,7 @@ function showOILBadge() {
   b.innerHTML="<span style=\"width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block\"></span>"+SAIRN_ORG_NAME;
   document.body.appendChild(b);
 }
-function showSaveBar() {
-  cloudSaveMemory(lastResponse); trackOutcome();
-  const existing=document.getElementById("sairn-save-bar"); if(existing) existing.remove();
-  const bar=document.createElement("div"); bar.id="sairn-save-bar";
-  bar.style.cssText="position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(232,133,10,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center";
-  const copyBtn=document.createElement("button"); copyBtn.textContent="Copy";
-  copyBtn.style.cssText="background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";
-  copyBtn.onclick=function(){navigator.clipboard.writeText(lastResponse).then(function(){copyBtn.textContent="Copied!";setTimeout(function(){copyBtn.textContent="Copy";},2000);});};
-  const savedBadge=document.createElement("span"); savedBadge.textContent="✓ Saved"; savedBadge.style.cssText="font-size:11px;color:#10B981;font-weight:600";
-  const closeBtn=document.createElement("button"); closeBtn.textContent="x"; closeBtn.style.cssText="background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px";
-  closeBtn.onclick=function(){bar.remove();};
-  bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
-  document.body.appendChild(bar);
-  setTimeout(function(){const b=document.getElementById("sairn-save-bar");if(b)b.remove();},6000);
-}
+
 document.addEventListener("DOMContentLoaded",function(){
   const obs=new MutationObserver(function(){
     const app=document.getElementById("appPage");
