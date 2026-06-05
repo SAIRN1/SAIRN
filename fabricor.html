@@ -608,871 +608,395 @@ const APP_NAME = "Fabricor";
 const APP_ID = "contractor";
 const APP_ICON = "💎";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
-const SYSTEM = "You are Fabricor, the world standard AI intelligence platform for stone fabrication and countertop businesses everywhere on earth, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve every stone fabrication business on the planet — from a one-person granite shop in anywhere in a 50-location stone chain in the UAE, from a marble fabricator in Italy to a quartz installer in Singapore, from a kitchen countertop specialist in Texas to a natural stone company in Brazil. You serve shop owners, fabricators, project managers, estimators, sales teams, CNC operators, installation crews, and every person who works with stone. You know stone materials worldwide — granite, marble, quartzite, quartz, soapstone, slate, travertine, onyx, porcelain, and every natural and engineered stone. You know global stone suppliers — Brazilian quartzite, Italian marble, Indian granite, Turkish travertine, and materials from every stone-producing region. You know edge profiles, fabrication techniques, and installation methods used worldwide. You know pricing in USD, EUR, GBP, AED, BRL, and any currency your user works in. You understand that stone fabrication is a craft as well as a business — and that every customer is trusting you with the centerpiece of their home or project.";
+const SYSTEM = "You are Fabricor, the world standard AI intelligence platform for stone fabrication powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve every stone fabrication shop on earth. You know granite, marble, quartzite, quartz, and all natural and engineered stone. You know edge profiles, fabrication techniques, waste reduction, quoting, job costing, supplier management, customer profitability, and production scheduling. THH KNOWLEDGE: Total Hand Work Hours benchmarks from real shop data — Granite 50sqft: 30min cut plus 1.5hr CNC plus 2hr fab equals 4hr THH. Quartz is 10 percent faster at 3.5hr per 50sqft. Quartzite is 30 percent slower at 4.6hr per 50sqft. A 3-fabricator shop handles 300 sqft per day standard and 200 sqft per day for quartzite or mitered edges. Setup is fixed at 30 minutes per job regardless of size. Larger jobs are more efficient because setup cost is spread across more square footage. Always provide specific answers grounded in real fabrication economics.";
 
 let messages = [], isLoading = false, lastResponse = "";
-
-const GUIDED_FLOWS = [
-  {id:"quote", emoji:"💰", label:"Quote a Job",
-   intro:"Let us build your quote. What type of job is this — kitchen countertop, bathroom vanity, commercial project, or something else?",
-   steps:["What material is the customer considering and what are the approximate square footage and edge profile?", "Any special features — waterfall island, mitered edges, cutouts for sinks, cooktops, or custom shapes?"],
-   finish:"Here is your complete quote breakdown with material cost, labor estimate, suggested price, and target margin. Review and adjust for your local market before presenting to the customer."},
-  {id:"slab", emoji:"🪨", label:"Add a Slab",
-   intro:"Let us document your new slab. What material is it — granite, quartz, marble, quartzite, or something else?",
-   steps:["What are the slab dimensions and what supplier and price did you pay?", "Any notes on quality, veining pattern, or conditions — and which yard location is it going to?"],
-   finish:"Here is your slab documentation record ready to enter into inventory. Include photos when you add it to your system — piece-level photo documentation reduces disputes and speeds customer selection."},
-  {id:"margin", emoji:"📊", label:"Analyze Job Margin",
-   intro:"Let us analyze your job margin. What type of job is it and what did you quote the customer?",
-   steps:["What is the material cost including the slab price and any additional materials?", "What is your estimated labor time and what do you pay your fabricators per hour fully loaded?"],
-   finish:"Here is your complete job margin analysis with gross margin percentage, labor efficiency ratio, and comparison to your target margin. If you are below target I will tell you exactly where the margin is leaking."},
-  {id:"waste", emoji:"♟️", label:"Optimize a Cut Plan",
-   intro:"Let us optimize your cutting plan. What is the job — describe the pieces you need to cut and approximate dimensions.",
-   steps:["What slab size are you working with and what material is it?", "Any constraints — vein matching requirements, areas to avoid on the slab, or remnant pieces you want to preserve?"],
-   finish:"Here is your optimized cutting sequence with layout recommendations, remnant preservation strategy, and estimated yield percentage. Review with your CNC operator before programming."}
-];
 let activeFlow = null, flowStep = 0;
+let isListening = false, voiceRecognition = null;
+let thhJobCount = 0;
+let shopId = localStorage.getItem("fab_shop_id");
+if(!shopId){shopId="shop_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);localStorage.setItem("fab_shop_id",shopId);}
 
-// Particles
-(function() {
-  const c = document.getElementById("particles");
-  for(let i=0;i<20;i++) {
-    const p = document.createElement("div"); p.className = "particle";
-    const s = 2 + Math.random()*6;
-    p.style.cssText = "width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(232,133,10,0.6);--d:"+(7+Math.random()*10)+"s;--del:"+(Math.random()*7)+"s;--o:"+(0.04+Math.random()*0.1);
-    c.appendChild(p);
-  }
-})();
-
-// 3D Visualizer
-function selectSlab(el, color, name, price) {
-  document.querySelectorAll(".slab-card").forEach(function(c) {
-    c.classList.remove("selected");
-    c.style.borderColor = "transparent";
-  });
-  el.classList.add("selected");
-  el.style.borderColor = "var(--a)";
-  document.getElementById("counter-preview").style.background = color;
-  document.querySelector("#viz-preview div:last-child").textContent = "Preview — " + name;
-}
-
-function showPage(page) {
-  ["homePage","appPage"].forEach(function(id) {
-    const el = document.getElementById(id);
-    el.classList.remove("active"); el.style.display = "none";
-  });
-  if(page === "home") {
-    const h = document.getElementById("homePage"); h.classList.add("active"); h.style.display = "";
-    window.scrollTo(0,0);
-  } else {
-    const a = document.getElementById("appPage"); a.classList.add("active"); a.style.display = "flex";
-    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
-    if(!messages.length) loadFirstMessage();
-  }
-}
-
-function setMode(label, ph) {
-  activeFlow = null; flowStep = 0;
-  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
-  event.currentTarget.classList.add("active");
-  document.getElementById("userInput").placeholder = ph;
-  document.getElementById("userInput").focus();
-}
-
-function startFlow(id) {
-  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
-  if(!f) return;
-  activeFlow = f; flowStep = 0;
-  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
-  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
-  const area = document.getElementById("chatArea");
-  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
-  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
-  document.getElementById("userInput").placeholder = "Reply to continue...";
-  document.getElementById("userInput").focus();
-}
-
-function useSuggestion(el) { document.getElementById("userInput").value = el.textContent; sendMessage(); }
-
-function addMsg(role, content) {
-  const area = document.getElementById("chatArea");
-  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
-  const div = document.createElement("div");
-  div.className = "msg " + role;
-  const formatted = content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
-  if(role === "ai") {
-    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + formatted + "</p></div>";
-    lastResponse = content;
-    setTimeout(function() { showSaveBar(); }, 600);
-  } else {
-    div.innerHTML = "<div class=\"msg-bubble\">" + content + "</div>";
-  }
-  area.appendChild(div); area.scrollTop = area.scrollHeight;
-}
-
-function showTyping() {
-  const area = document.getElementById("chatArea");
-  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing-indicator";
-  div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";
-  area.appendChild(div); area.scrollTop = area.scrollHeight;
-}
-
-async function sendMessage() {
-  const inp = document.getElementById("userInput");
-  const text = inp.value.trim(); if(!text || isLoading) return;
-  const memCtx = await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return "";});
-  if(activeFlow !== null) {
-    addMsg("user", text);
-    inp.value = ""; inp.style.height = "";
-    if(flowStep < activeFlow.steps.length) {
-      const nxt = activeFlow.steps[flowStep++];
-      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
-    } else if(flowStep === activeFlow.steps.length) {
-      flowStep++;
-      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
-    } else { activeFlow = null; }
-    return;
-  }
-  inp.value = ""; inp.style.height = "";
-  isLoading = true; document.getElementById("sendBtn").disabled = true;
-  addMsg("user", text); messages.push({role:"user",content:text}); showTyping();
-  try {
-    const res = await fetch(SAIRN_API, {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({max_tokens:1000, system:SYSTEM+(memCtx||""), messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
-    });
-    const data = await res.json();
-    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
-    if(res.status === 429) {
-      addMsg("ai", (data.message || "Daily limit reached.") + " Sign up at sairn.vercel.app for full access.");
-    } else {
-      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
-      messages.push({role:"assistant",content:reply}); addMsg("ai", reply);
-    }
-  } catch(e) {
-    document.getElementById("typing-indicator") && document.getElementById("typing-indicator").remove();
-    addMsg("ai","Connection issue. Please try again.");
-  }
-  isLoading = false; document.getElementById("sendBtn").disabled = false;
-  document.getElementById("userInput").focus();
-}
-
-async function loadFirstMessage() {
-  try {
-    const now = new Date();
-    const res = await fetch("https://sairn.vercel.app/api/greeting", {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
-    });
-    const data = await res.json();
-    if(!data.greeting) return;
-    const area = document.getElementById("chatArea");
-    const empty = document.getElementById("emptyState"); if(empty) empty.remove();
-    const div = document.createElement("div"); div.className = "msg ai";
-    div.innerHTML = "<div class=\"msg-avatar\">" + APP_ICON + "</div><div class=\"msg-bubble\"><p>" + data.greeting + "</p></div>";
-    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
-    area.appendChild(div); messages.push({role:"assistant",content:data.greeting});
-    requestAnimationFrame(function() {
-      div.style.transition = "opacity 0.5s, transform 0.5s";
-      div.style.opacity = "1"; div.style.transform = "translateY(0)";
-    });
-  } catch(e) {}
-}
-
-// showSaveBar in Universal Layer
-
-
-// ============================================================
-// SAIRN Universal Intelligence Layer v6.2
-// Cloud Memory · Voice Mode · Outcome Tracking · White Label
-// ============================================================
-const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || "SAIRN";
 const SAIRN_ORG_ID = localStorage.getItem("sairn_org_id") || null;
 const SAIRN_ORG_NAME = localStorage.getItem("sairn_location_name") || "My Organization";
-
-function getSAIRNUserId() {
-  let uid = localStorage.getItem("sairn_uid");
-  if(!uid) { uid = "u_" + Date.now() + "_" + Math.random().toString(36).slice(2,9); localStorage.setItem("sairn_uid", uid); }
-  return uid;
-}
+function getSAIRNUserId(){let u=localStorage.getItem("sairn_uid");if(!u){u="u_"+Date.now()+"_"+Math.random().toString(36).slice(2,9);localStorage.setItem("sairn_uid",u);}return u;}
 const SAIRN_USER_ID = getSAIRNUserId();
-let sessionOutcomes = {queries:0, saved:0, startTime:Date.now()};
+let sessionOutcomes = {queries:0, saved:0};
 
-function getSAIRNContext() {
-  const parts = [];
-  if(SAIRN_ORG_ID) parts.push("Organization: " + SAIRN_ORG_NAME);
-  return parts.join("\n");
-}
+const GUIDED_FLOWS = [
+  {id:"quote",emoji:"💰",label:"Quote a Job",intro:"What type of job — kitchen, bathroom, commercial, or something else?",steps:["What material and approximate square footage? Any special edge profile?","Any special features — waterfall island, mitered edges, sink or cooktop cutouts?"],finish:"Here is your complete quote breakdown with material cost, labor estimate, suggested price, and target margin."},
+  {id:"slab",emoji:"🪨",label:"Add a Slab",intro:"What material is this slab?",steps:["Dimensions and what did you pay per sqft? Which supplier?","Any quality notes and which yard location?"],finish:"Here is your slab documentation record. Add photos when entering into inventory."},
+  {id:"margin",emoji:"📊",label:"Analyze Job Margin",intro:"What type of job and what did you quote the customer?",steps:["What is the material cost?","Estimated labor hours and your fully loaded hourly rate?"],finish:"Here is your complete margin analysis with gross margin percentage and comparison to your target."},
+  {id:"waste",emoji:"♟️",label:"Optimize Cut Plan",intro:"Describe the pieces you need to cut and approximate dimensions.",steps:["What slab size and material?","Any vein matching requirements or areas to avoid?"],finish:"Here is your optimized cutting sequence with layout recommendations and estimated yield."}
+];
 
-async function cloudSaveMemory(content) {
-  if(!content || content.length < 20) return;
-  try {
-    const key = "sairn_local_" + APP_ID;
-    const existing = JSON.parse(localStorage.getItem(key) || "[]");
-    existing.unshift({ts:Date.now(), text:content.slice(0,400)});
-    localStorage.setItem(key, JSON.stringify(existing.slice(0,100)));
-  } catch(e) {}
-  try {
-    await fetch("https://sairn.vercel.app/api/memory-cloud", {
-      method:"POST", headers:{"Content-Type":"application/json","X-User-ID":SAIRN_USER_ID,"X-App-ID":APP_ID},
-      body:JSON.stringify({content:content.slice(0,400), user_id:SAIRN_USER_ID, app_id:APP_ID})
-    });
-    sessionOutcomes.saved++;
-  } catch(e) {}
-}
+// Particles
+(function(){const c=document.getElementById("particles");for(let i=0;i<20;i++){const p=document.createElement("div");p.className="particle";const s=2+Math.random()*6;p.style.cssText="width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(232,133,10,0.6);--d:"+(7+Math.random()*10)+"s;--del:"+(Math.random()*7)+"s;--o:"+(0.04+Math.random()*0.1);c.appendChild(p);}})();
 
-async function cloudLoadMemory() {
-  try {
-    const key = "sairn_local_" + APP_ID;
-    const entries = JSON.parse(localStorage.getItem(key) || "[]");
-    if(entries.length) return "Previous session context:\n" + entries.slice(0,5).map(function(e){return e.text;}).join("\n---\n");
-  } catch(e) {}
-  return "";
-}
+// Slab visualizer
+function selectSlab(el,color,name,price){document.querySelectorAll(".slab-card").forEach(function(c){c.classList.remove("selected");c.style.borderColor="transparent";});el.classList.add("selected");el.style.borderColor="var(--a)";document.getElementById("counter-preview").style.background=color;document.querySelector("#viz-preview div:last-child").textContent="Preview — "+name;}
 
-let isListening = false, voiceRecognition = null;
-function initVoice() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) return false;
-  voiceRecognition = new SR();
-  voiceRecognition.continuous = false; voiceRecognition.interimResults = true; voiceRecognition.lang = "en-US";
-  voiceRecognition.onresult = function(e) {
-    const t = Array.from(e.results).map(function(r){return r[0].transcript;}).join("");
-    const inp = document.getElementById("userInput"); if(inp) inp.value = t;
-    if(e.results[e.results.length-1].isFinal) { stopVoice(); sendMessage(); }
-  };
-  voiceRecognition.onerror = function(){stopVoice();};
-  voiceRecognition.onend = function(){stopVoice();};
-  return true;
-}
-function toggleVoice() {
-  if(isListening){stopVoice();return;}
-  if(!voiceRecognition && !initVoice()){alert("Voice input not supported. Try Chrome.");return;}
-  isListening = true; voiceRecognition.start();
-  const btn = document.getElementById("voice-btn");
-  if(btn){btn.style.background="var(--grad)";btn.title="Listening... click to stop";}
-}
-function stopVoice() {
-  isListening = false; if(voiceRecognition) try{voiceRecognition.stop();}catch(e){}
-  const btn = document.getElementById("voice-btn");
-  if(btn){btn.style.background="rgba(255,255,255,0.05)";btn.title="Voice input";}
-}
-function addVoiceButton() {
-  const ia = document.querySelector(".input-area"); if(!ia||document.getElementById("voice-btn")) return;
-  const btn = document.createElement("button"); btn.id="voice-btn"; btn.innerHTML="🎤"; btn.title="Voice input";
-  btn.style.cssText="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit";
-  btn.onclick=toggleVoice;
-  const sb=document.getElementById("sendBtn"); if(sb) ia.insertBefore(btn,sb);
-}
+// Page routing
+function showPage(page){["homePage","appPage"].forEach(function(id){const el=document.getElementById(id);el.classList.remove("active");el.style.display="none";});if(page==="home"){const h=document.getElementById("homePage");h.classList.add("active");h.style.display="";window.scrollTo(0,0);}else{const a=document.getElementById("appPage");a.classList.add("active");a.style.display="flex";setTimeout(function(){document.getElementById("userInput").focus();addVoiceButton();addOutcomeBar();},100);if(!messages.length)loadFirstMessage();}}
 
-function trackOutcome() {
-  sessionOutcomes.queries++;
-  const el=document.getElementById("sairn-outcomes");
-  if(el){const saved=Math.round(sessionOutcomes.queries*4.2);el.textContent=sessionOutcomes.queries+" queries · "+saved+" min saved";}
-}
-function addOutcomeBar() {
-  if(document.getElementById("sairn-outcomes")) return;
-  const header=document.querySelector(".app-header"); if(!header) return;
-  const bar=document.createElement("div");
-  bar.style.cssText="padding:4px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0";
-  const dot=document.createElement("span"); dot.style.cssText="width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block";
-  const lbl=document.createElement("span"); lbl.id="sairn-outcomes"; lbl.style.cssText="font-size:10px;color:rgba(255,255,255,0.25);font-family:inherit"; lbl.textContent="0 queries · 0 min saved";
-  bar.appendChild(dot); bar.appendChild(lbl); header.after(bar);
-}
-function showOILBadge() {
-  if(!SAIRN_ORG_ID||document.getElementById("oil-badge")) return;
-  const b=document.createElement("div"); b.id="oil-badge";
-  b.style.cssText="position:fixed;top:68px;right:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px 10px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.5);z-index:998;display:flex;align-items:center;gap:5px;font-family:inherit";
-  b.innerHTML="<span style=\"width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block\"></span>"+SAIRN_ORG_NAME;
-  document.body.appendChild(b);
-}
+// Mode buttons
+function setMode(label,ph){activeFlow=null;flowStep=0;document.querySelectorAll(".mode-btn").forEach(function(b){b.classList.remove("active");});event.currentTarget.classList.add("active");document.getElementById("userInput").placeholder=ph;document.getElementById("userInput").focus();}
 
-document.addEventListener("DOMContentLoaded",function(){
-  const obs=new MutationObserver(function(){
-    const app=document.getElementById("appPage");
-    if(app&&app.style.display!=="none"){addVoiceButton();addOutcomeBar();showOILBadge();}
-  });
-  obs.observe(document.body,{childList:true,subtree:true,attributes:true});
-});
+// Guided flows
+function startFlow(id){const f=GUIDED_FLOWS.find(function(x){return x.id===id;});if(!f)return;activeFlow=f;flowStep=0;document.querySelectorAll(".mode-btn").forEach(function(b){b.classList.remove("active");});document.querySelectorAll("[data-flow="+id+"]").forEach(function(b){b.classList.add("active");});const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();addMsg("ai",f.intro);messages.push({role:"assistant",content:f.intro});document.getElementById("userInput").placeholder="Reply to continue...";document.getElementById("userInput").focus();}
 
+function useSuggestion(el){document.getElementById("userInput").value=el.textContent;sendMessage();}
 
-// SAIRN Universal Intelligence v6.2 — Fabricor
+// Chat
+function addMsg(role,content){const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg "+role;const fmt=content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/
 
+/g,"</p><p>").replace(/
+/g,"<br>");if(role==="ai"){div.innerHTML="<div class='msg-avatar'>"+APP_ICON+"</div><div class='msg-bubble'><p>"+fmt+"</p></div>";lastResponse=content;setTimeout(showSaveBar,600);}else{div.innerHTML="<div class='msg-bubble'>"+content+"</div>";}area.appendChild(div);area.scrollTop=area.scrollHeight;}
 
+function showTyping(){const area=document.getElementById("chatArea");const div=document.createElement("div");div.className="msg ai";div.id="typing-indicator";div.innerHTML="<div class='msg-avatar'>"+APP_ICON+"</div><div class='msg-bubble'><div class='typing'><div class='typing-dot'></div><div class='typing-dot'></div><div class='typing-dot'></div></div></div>";area.appendChild(div);area.scrollTop=area.scrollHeight;}
 
+async function sendMessage(){const inp=document.getElementById("userInput");const text=inp.value.trim();if(!text||isLoading)return;if(activeFlow!==null){addMsg("user",text);inp.value="";inp.style.height="";if(flowStep<activeFlow.steps.length){const nxt=activeFlow.steps[flowStep++];setTimeout(function(){addMsg("ai",nxt);messages.push({role:"assistant",content:nxt});},700);}else if(flowStep===activeFlow.steps.length){flowStep++;setTimeout(function(){addMsg("ai",activeFlow.finish);messages.push({role:"assistant",content:activeFlow.finish});activeFlow=null;},700);}else{activeFlow=null;}return;}inp.value="";inp.style.height="";isLoading=true;document.getElementById("sendBtn").disabled=true;addMsg("user",text);messages.push({role:"user",content:text});showTyping();const memCtx=await cloudLoadMemory().then(function(m){return m?"
 
+Previous context:
+"+m:"";}).catch(function(){return "";});try{const res=await fetch(SAIRN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:1000,system:SYSTEM+(memCtx||""),messages:messages.slice(-20),app_id:APP_ID,is_demo:true})});const data=await res.json();document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();if(res.status===429){addMsg("ai",(data.message||"Daily limit reached.")+" Sign up at sairn.vercel.app for full access.");}else{const reply=data.content&&data.content[0]&&data.content[0].text||"Please try again.";messages.push({role:"assistant",content:reply});addMsg("ai",reply);}}catch(e){document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();addMsg("ai","Connection issue. Please try again.");}isLoading=false;document.getElementById("sendBtn").disabled=false;document.getElementById("userInput").focus();}
 
+async function loadFirstMessage(){try{const now=new Date();const res=await fetch("https://sairn.vercel.app/api/greeting",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({app_id:APP_ID,client_hour:now.getHours(),client_day:now.getDay()})});const data=await res.json();if(!data.greeting)return;const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg ai";div.innerHTML="<div class='msg-avatar'>"+APP_ICON+"</div><div class='msg-bubble'><p>"+data.greeting+"</p></div>";div.style.opacity="0";div.style.transform="translateY(10px)";area.appendChild(div);messages.push({role:"assistant",content:data.greeting});requestAnimationFrame(function(){div.style.transition="opacity 0.5s, transform 0.5s";div.style.opacity="1";div.style.transform="translateY(0)";});}catch(e){}}
 
+// Cloud memory
+async function cloudSaveMemory(content){if(!content||content.length<20)return;try{const k="sairn_local_"+APP_ID;const e=JSON.parse(localStorage.getItem(k)||"[]");e.unshift({ts:Date.now(),text:content.slice(0,400)});localStorage.setItem(k,JSON.stringify(e.slice(0,100)));}catch(e){}try{await fetch("https://sairn.vercel.app/api/memory-cloud",{method:"POST",headers:{"Content-Type":"application/json","X-User-ID":SAIRN_USER_ID,"X-App-ID":APP_ID},body:JSON.stringify({content:content.slice(0,400),user_id:SAIRN_USER_ID,app_id:APP_ID})});sessionOutcomes.saved++;}catch(e){}}
+async function cloudLoadMemory(){try{const k="sairn_local_"+APP_ID;const e=JSON.parse(localStorage.getItem(k)||"[]");if(e.length)return"Previous context:
+"+e.slice(0,5).map(function(x){return x.text;}).join("
+---
+");}catch(e){}return"";}
 
+// Voice
+function initVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;voiceRecognition=new SR();voiceRecognition.continuous=false;voiceRecognition.interimResults=true;voiceRecognition.lang="en-US";voiceRecognition.onresult=function(e){const t=Array.from(e.results).map(function(r){return r[0].transcript;}).join("");const i=document.getElementById("userInput");if(i)i.value=t;if(e.results[e.results.length-1].isFinal){stopVoice();sendMessage();}};voiceRecognition.onerror=function(){stopVoice();};voiceRecognition.onend=function(){stopVoice();};return true;}
+function toggleVoice(){if(isListening){stopVoice();return;}if(!voiceRecognition&&!initVoice()){alert("Voice not supported. Try Chrome.");return;}isListening=true;voiceRecognition.start();const b=document.getElementById("voice-btn");if(b){b.style.background="var(--grad)";b.title="Listening...";}}
+function stopVoice(){isListening=false;if(voiceRecognition)try{voiceRecognition.stop();}catch(e){}const b=document.getElementById("voice-btn");if(b){b.style.background="rgba(255,255,255,0.05)";b.title="Voice input";}}
+function addVoiceButton(){const ia=document.querySelector(".input-area");if(!ia||document.getElementById("voice-btn"))return;const b=document.createElement("button");b.id="voice-btn";b.innerHTML="🎤";b.title="Voice input";b.style.cssText="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit";b.onclick=toggleVoice;const s=document.getElementById("sendBtn");if(s)ia.insertBefore(b,s);}
 
+// Outcome tracking
+function trackOutcome(){sessionOutcomes.queries++;const el=document.getElementById("sairn-outcomes");if(el){el.textContent=sessionOutcomes.queries+" queries";}}
+function addOutcomeBar(){if(document.getElementById("sairn-outcomes"))return;const h=document.querySelector(".app-header");if(!h)return;const bar=document.createElement("div");bar.style.cssText="padding:4px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0";const dot=document.createElement("span");dot.style.cssText="width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block";const lbl=document.createElement("span");lbl.id="sairn-outcomes";lbl.style.cssText="font-size:10px;color:rgba(255,255,255,0.25);font-family:inherit";lbl.textContent="0 queries";bar.appendChild(dot);bar.appendChild(lbl);h.after(bar);}
 
-function showSaveBar(){cloudSaveMemory(lastResponse);trackOutcome();const ex=document.getElementById('sairn-save-bar');if(ex)ex.remove();const bar=document.createElement('div');bar.id='sairn-save-bar';bar.style.cssText='position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(232,133,10,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';const cb=document.createElement('button');cb.textContent='Copy';cb.style.cssText='background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';cb.onclick=function(){navigator.clipboard.writeText(lastResponse).then(function(){cb.textContent='Copied!';setTimeout(function(){cb.textContent='Copy';},2000);});};const sb=document.createElement('span');sb.textContent='✓ Saved';sb.style.cssText='font-size:11px;color:#10B981;font-weight:600';const xb=document.createElement('button');xb.textContent='x';xb.style.cssText='background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px';xb.onclick=function(){bar.remove();};bar.appendChild(cb);bar.appendChild(sb);bar.appendChild(xb);document.body.appendChild(bar);setTimeout(function(){const b=document.getElementById('sairn-save-bar');if(b)b.remove();},6000);}
-document.addEventListener('DOMContentLoaded',function(){const obs=new MutationObserver(function(){const a=document.getElementById('appPage');if(a&&a.style.display!=='none'){addVoiceButton();addOutcomeBar();showOILBadge();}});obs.observe(document.body,{childList:true,subtree:true,attributes:true});});
+// Save bar
+function showSaveBar(){cloudSaveMemory(lastResponse);trackOutcome();const ex=document.getElementById("sairn-save-bar");if(ex)ex.remove();const bar=document.createElement("div");bar.id="sairn-save-bar";bar.style.cssText="position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(232,133,10,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center";const cb=document.createElement("button");cb.textContent="Copy";cb.style.cssText="background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";cb.onclick=function(){navigator.clipboard.writeText(lastResponse).then(function(){cb.textContent="Copied!";setTimeout(function(){cb.textContent="Copy";},2000);});};const xb=document.createElement("button");xb.textContent="x";xb.style.cssText="background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px";xb.onclick=function(){bar.remove();};bar.appendChild(cb);bar.appendChild(xb);document.body.appendChild(bar);setTimeout(function(){const b=document.getElementById("sairn-save-bar");if(b)b.remove();},6000);}
 
+// Cloud sync for shop data
+const FAB_SYNC_API = "https://sairn.vercel.app/api/fabricor-sync";
+async function cloudSaveRecord(type,record){try{const res=await fetch(FAB_SYNC_API+"?type="+type,{method:"POST",headers:{"Content-Type":"application/json","X-Shop-ID":shopId},body:JSON.stringify(record)});const data=await res.json();return data.saved?data.data:null;}catch(e){return null;}}
 
-
-// ============================================================
-// SHOP DATA — LocalStorage persistence
-// Slabs, Customers, Jobs — no server needed
-// ============================================================
-
-function showShopData() {
-  const existing = document.getElementById("shop-data-modal");
-  if(existing) { existing.remove(); return; }
-  const modal = document.createElement("div");
-  modal.id = "shop-data-modal";
-  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
-  const box = document.createElement("div");
-  box.style.cssText = "background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:24px";
-  const hdr = document.createElement("div");
-  hdr.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:20px";
-  hdr.innerHTML = "<div style=\"font-size:16px;font-weight:700;color:#F5F0E8\">Shop Data</div>";
-  const closeBtn = document.createElement("button");
-  closeBtn.textContent = "x";
-  closeBtn.style.cssText = "background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer";
-  closeBtn.onclick = function() { document.getElementById("shop-data-modal").remove(); };
-  hdr.appendChild(closeBtn);
-  box.appendChild(hdr);
-  const tabRow = document.createElement("div");
-  tabRow.style.cssText = "display:flex;gap:8px;margin-bottom:20px";
-  ["slabs","customers","jobs"].forEach(function(t) {
-    const tb = document.createElement("button");
-    tb.id = "tab-" + t;
-    tb.textContent = t === "slabs" ? "Slabs" : t === "customers" ? "Customers" : "Jobs";
-    tb.style.cssText = "flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#8A8070;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit";
-    tb.onclick = function() { showDataTab(t); };
+// Shop data modal - NO innerHTML with nested quotes - pure DOM only
+function showShopData(){
+  const existing=document.getElementById("shop-data-modal");
+  if(existing){existing.remove();return;}
+  const modal=document.createElement("div");
+  modal.id="shop-data-modal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+  const box=document.createElement("div");
+  box.style.cssText="background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:24px";
+  const hdr=document.createElement("div");
+  hdr.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px";
+  const title=document.createElement("div");
+  title.style.cssText="font-size:16px;font-weight:700;color:#F5F0E8";
+  title.textContent="Shop Data";
+  const closeBtn=document.createElement("button");
+  closeBtn.textContent="x";
+  closeBtn.style.cssText="background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer";
+  closeBtn.onclick=function(){modal.remove();};
+  hdr.appendChild(title);hdr.appendChild(closeBtn);box.appendChild(hdr);
+  const tabRow=document.createElement("div");
+  tabRow.style.cssText="display:flex;gap:8px;margin-bottom:16px";
+  ["slabs","customers","jobs"].forEach(function(t){
+    const tb=document.createElement("button");
+    tb.id="tab-"+t;
+    tb.textContent=t.charAt(0).toUpperCase()+t.slice(1);
+    tb.style.cssText="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#8A8070;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit";
+    tb.onclick=function(){showDataTab(t);};
     tabRow.appendChild(tb);
   });
   box.appendChild(tabRow);
-  const content = document.createElement("div");
-  content.id = "shop-data-content";
+  const content=document.createElement("div");
+  content.id="shop-data-content";
   box.appendChild(content);
-
-  // CSV import section
-  const importDiv = document.createElement("div");
-  importDiv.style.cssText = "background:rgba(232,133,10,0.06);border:1px solid rgba(232,133,10,0.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#8A8070;line-height:1.6";
-  importDiv.innerHTML = "<strong style=\"color:#E8850A;display:block;margin-bottom:6px\">Import from Excel or CSV</strong>Export your Excel data as CSV (File, Save As, CSV) then upload here.";
-  const btnRow = document.createElement("div");
-  btnRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px";
-  [["slabs","Slabs"],["customers","Customers"],["jobs","Jobs"]].forEach(function(pair) {
-    const lbl = document.createElement("label");
-    lbl.style.cssText = "padding:5px 12px;background:rgba(232,133,10,0.15);border:1px solid rgba(232,133,10,0.3);border-radius:6px;color:#E8850A;font-size:12px;font-weight:600;cursor:pointer";
-    lbl.textContent = "Upload " + pair[1];
-    const inp = document.createElement("input");
-    inp.type = "file"; inp.accept = ".csv"; inp.style.display = "none";
-    inp.dataset.type = pair[0];
-    inp.onchange = function(e) { importCSV(e, this.dataset.type); };
-    lbl.appendChild(inp);
-    btnRow.appendChild(lbl);
-  });
-  const statusEl = document.createElement("div");
-  statusEl.id = "import-status";
-  statusEl.style.cssText = "margin-top:6px;font-size:11px;color:#10B981;font-weight:600";
-  importDiv.appendChild(btnRow);
-  importDiv.appendChild(statusEl);
-  box.appendChild(importDiv);
-
   modal.appendChild(box);
   document.body.appendChild(modal);
   showDataTab("slabs");
 }
 
-function showDataTab(tab) {
-  ['slabs','customers','jobs'].forEach(function(t) {
-    const btn = document.getElementById('tab-' + t);
-    if(btn) {
-      btn.style.background = t === tab ? 'rgba(232,133,10,0.15)' : 'transparent';
-      btn.style.borderColor = t === tab ? 'rgba(232,133,10,0.4)' : 'rgba(255,255,255,0.1)';
-      btn.style.color = t === tab ? '#E8850A' : '#8A8070';
-    }
+function showDataTab(tab){
+  ["slabs","customers","jobs"].forEach(function(t){
+    const btn=document.getElementById("tab-"+t);
+    if(btn){btn.style.background=t===tab?"rgba(232,133,10,0.15)":"transparent";btn.style.borderColor=t===tab?"rgba(232,133,10,0.4)":"rgba(255,255,255,0.1)";btn.style.color=t===tab?"#E8850A":"#8A8070";}
   });
-
-  const content = document.getElementById('shop-data-content');
-  if(!content) return;
-
-  if(tab === 'slabs') {
-    const slabs = JSON.parse(localStorage.getItem('fab_slabs') || '[]');
-    content.innerHTML = '<div style="margin-bottom:12px;font-size:12px;color:#8A8070">Track every slab in your yard</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
-      '<input id="slab-material" placeholder="Material (Calacatta, Black Galaxy...)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="slab-size" placeholder="Size (e.g. 120x60 inches)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="slab-cost" placeholder="Cost paid per sq ft ($)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="slab-location" placeholder="Yard location (A1, B3...)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '</div>' +
-      '<button onclick="saveSlab()" style="width:100%;padding:10px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">Add Slab</button>' +
-      '<div id="slabs-list">' + renderList(slabs, 'slab') + '</div>';
-
-  } else if(tab === 'customers') {
-    const customers = JSON.parse(localStorage.getItem('fab_customers') || '[]');
-    content.innerHTML = '<div style="margin-bottom:12px;font-size:12px;color:#8A8070">Track your customers and their value</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
-      '<input id="cust-name" placeholder="Customer name" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="cust-phone" placeholder="Phone number" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="cust-type" placeholder="Type (Residential, Builder, Designer...)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="cust-value" placeholder="Estimated annual value ($)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '</div>' +
-      '<button onclick="saveCustomer()" style="width:100%;padding:10px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">Add Customer</button>' +
-      '<div id="customers-list">' + renderList(customers, 'customer') + '</div>';
-
-  } else if(tab === 'jobs') {
-    const jobs = JSON.parse(localStorage.getItem('fab_jobs') || '[]');
-    content.innerHTML = '<div style="margin-bottom:12px;font-size:12px;color:#8A8070">Track every active job and its margin</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
-      '<input id="job-customer" placeholder="Customer name" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="job-material" placeholder="Material" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="job-sqft" placeholder="Square footage" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="job-quoted" placeholder="Quoted price ($)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<input id="job-cost" placeholder="Estimated cost ($)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<select id="job-status" style="background:#0E1218;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none"><option>In progress</option><option>Templated</option><option>In production</option><option>Ready to install</option><option>Complete</option></select>' +
-      '</div>' +
-      '<button onclick="saveJob()" style="width:100%;padding:10px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">Add Job</button>' +
-      '<div id="jobs-list">' + renderList(jobs, 'job') + '</div>';
-  }
-}
-
-function renderList(items, type) {
-  const listId = type + "s-list";
-  const existing = document.getElementById(listId);
-  if(!existing) return;
-  existing.innerHTML = "";
-  if(!items.length) {
-    const msg = document.createElement("div");
-    msg.style.cssText = "font-size:12px;color:#3A3020;text-align:center;padding:16px";
-    msg.textContent = "Nothing saved yet";
-    existing.appendChild(msg);
-    return;
-  }
-  items.forEach(function(item, i) {
-    const row = document.createElement("div");
-    row.style.cssText = "background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center";
-    const txt = document.createElement("div");
-    txt.style.cssText = "font-size:12px;color:#8A8070;line-height:1.6";
-    txt.textContent = Object.values(item).filter(function(v){return v;}).join(" · ");
-    const del = document.createElement("button");
-    del.textContent = "x";
-    del.style.cssText = "background:none;border:none;color:#3A3020;cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0";
-    del.onclick = function() { deleteItem(type + "s", i); };
-    row.appendChild(txt);
-    row.appendChild(del);
-    existing.appendChild(row);
+  const content=document.getElementById("shop-data-content");
+  if(!content)return;
+  content.innerHTML="";
+  const items=JSON.parse(localStorage.getItem("fab_"+tab)||"[]");
+  // Add input form
+  const formDiv=document.createElement("div");
+  formDiv.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px";
+  const fields={slabs:[["slab-material","Material"],["slab-size","Size (e.g. 120x60 in)"],["slab-cost","Cost per sqft ($)"],["slab-location","Yard location"]],customers:[["cust-name","Customer name"],["cust-phone","Phone"],["cust-type","Type (Residential...)"],["cust-value","Annual value ($)"]],jobs:[["job-customer","Customer"],["job-material","Material"],["job-sqft","Square feet"],["job-quoted","Quoted price ($)"],["job-cost","Cost ($)"],["job-status","Status"]]};
+  (fields[tab]||[]).forEach(function(f){
+    const inp=document.createElement(f[0]==="job-status"?"select":"input");
+    inp.id=f[0];inp.placeholder=f[1];
+    inp.style.cssText="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none";
+    if(f[0]==="job-status"){["In progress","Templated","In production","Ready to install","Complete"].forEach(function(o){const opt=document.createElement("option");opt.value=o;opt.textContent=o;inp.appendChild(opt);});inp.style.background="#0E1218";}
+    formDiv.appendChild(inp);
+  });
+  content.appendChild(formDiv);
+  const addBtn=document.createElement("button");
+  addBtn.textContent="Add "+tab.charAt(0).toUpperCase()+tab.slice(1,-1);
+  addBtn.style.cssText="width:100%;padding:10px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:14px";
+  addBtn.onclick=function(){saveDataItem(tab);};
+  content.appendChild(addBtn);
+  // List items
+  if(!items.length){const msg=document.createElement("div");msg.style.cssText="font-size:12px;color:#3A3020;text-align:center;padding:16px";msg.textContent="Nothing saved yet";content.appendChild(msg);return;}
+  items.forEach(function(item,i){
+    const row=document.createElement("div");
+    row.style.cssText="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center";
+    const txt=document.createElement("div");
+    txt.style.cssText="font-size:12px;color:#8A8070;line-height:1.6";
+    txt.textContent=Object.values(item).filter(function(v){return v;}).join(" · ");
+    const del=document.createElement("button");
+    del.textContent="x";del.style.cssText="background:none;border:none;color:#3A3020;cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0";
+    del.onclick=function(){const arr=JSON.parse(localStorage.getItem("fab_"+tab)||"[]");arr.splice(i,1);localStorage.setItem("fab_"+tab,JSON.stringify(arr));showDataTab(tab);};
+    row.appendChild(txt);row.appendChild(del);content.appendChild(row);
   });
 }
 
-function saveSlab() {
-  const material = document.getElementById('slab-material').value.trim();
-  if(!material) return;
-  const slabs = JSON.parse(localStorage.getItem('fab_slabs') || '[]');
-  slabs.unshift({
-    material: material,
-    size: document.getElementById('slab-size').value || 'Size not entered',
-    cost: document.getElementById('slab-cost').value ? '$' + document.getElementById('slab-cost').value + '/sqft' : 'Cost not entered',
-    location: document.getElementById('slab-location').value || 'Location not entered'
-  });
-  localStorage.setItem('fab_slabs', JSON.stringify(slabs));
-  showDataTab('slabs');
+function saveDataItem(tab){
+  const fieldMap={slabs:[["slab-material","material"],["slab-size","size"],["slab-cost","cost"],["slab-location","location"]],customers:[["cust-name","name"],["cust-phone","phone"],["cust-type","type"],["cust-value","value"]],jobs:[["job-customer","customer"],["job-material","material"],["job-sqft","sqft"],["job-quoted","quoted"],["job-cost","cost"],["job-status","status"]]};
+  const fields=fieldMap[tab]||[];
+  const record={};
+  fields.forEach(function(f){const el=document.getElementById(f[0]);if(el)record[f[1]]=el.value.trim();});
+  const firstField=fields[0];
+  if(!firstField||!record[firstField[1]])return;
+  const items=JSON.parse(localStorage.getItem("fab_"+tab)||"[]");
+  items.unshift(record);
+  localStorage.setItem("fab_"+tab,JSON.stringify(items.slice(0,200)));
+  cloudSaveRecord(tab.slice(0,-0),record);
+  showDataTab(tab);
 }
 
-function saveCustomer() {
-  const name = document.getElementById('cust-name').value.trim();
-  if(!name) return;
-  const customers = JSON.parse(localStorage.getItem('fab_customers') || '[]');
-  customers.unshift({
-    name: name,
-    phone: document.getElementById('cust-phone').value || 'No phone',
-    type: document.getElementById('cust-type').value || 'Customer',
-    value: document.getElementById('cust-value').value ? '$' + document.getElementById('cust-value').value + '/year' : ''
-  });
-  localStorage.setItem('fab_customers', JSON.stringify(customers));
-  showDataTab('customers');
-}
+// THH Capacity Planner
+const THH = {granite:{per50:4.0,daily:300},quartz:{per50:3.5,daily:300},quartzite:{per50:4.6,daily:200},mitered:{per50:4.0,daily:200}};
+const THH_SETUP = 0.5;
 
-function saveJob() {
-  const customer = document.getElementById('job-customer').value.trim();
-  if(!customer) return;
-  const jobs = JSON.parse(localStorage.getItem('fab_jobs') || '[]');
-  const quoted = parseFloat(document.getElementById('job-quoted').value) || 0;
-  const cost = parseFloat(document.getElementById('job-cost').value) || 0;
-  const margin = quoted && cost ? Math.round(((quoted-cost)/quoted)*100) + '% margin' : '';
-  jobs.unshift({
-    customer: customer,
-    material: document.getElementById('job-material').value || 'Material TBD',
-    sqft: document.getElementById('job-sqft').value ? document.getElementById('job-sqft').value + ' sqft' : '',
-    quoted: quoted ? '$' + quoted : '',
-    margin: margin,
-    status: document.getElementById('job-status').value
-  });
-  localStorage.setItem('fab_jobs', JSON.stringify(jobs));
-  showDataTab('jobs');
-}
+function calcTHH(mat,sqft){const m=mat.toLowerCase();let b=THH.granite;if(m.includes("quartz")&&!m.includes("quartzite"))b=THH.quartz;if(m.includes("quartzite"))b=THH.quartzite;if(m.includes("miter"))b=THH.mitered;return Math.round((THH_SETUP+(b.per50-THH_SETUP)*(sqft/50))*10)/10;}
+function calcCap(fabs,hasQ){return{sqft:Math.round((hasQ?200:300)*(fabs/3)),hrs:fabs*8};}
 
-function deleteItem(key, index) {
-  const items = JSON.parse(localStorage.getItem('fab_' + key) || '[]');
-  items.splice(index, 1);
-  localStorage.setItem('fab_' + key, JSON.stringify(items));
-  const tab = key.replace('s','');
-  showDataTab(key === 'slabs' ? 'slabs' : key === 'customers' ? 'customers' : 'jobs');
-}
-
-
-// ============================================================
-// THH — Total Hand Work Hours Calculator
-// Based on real shop benchmarks from Michael L. Dibert
-// 3 fabricators = 300 sqft/day standard, 200 quartzite/mitered
-// Granite 50sqft: 30min cut + 1.5hr CNC + 2hr fab = 4hr THH
-// Quartz: 10% faster = 3.5hr THH per 50sqft
-// Quartzite: 30% slower = 4.6hr THH per 50sqft
-// Larger jobs more efficient — 30min setup is fixed cost
-// ============================================================
-
-const THH_BENCHMARKS = {
-  granite:   { per50: 4.0,  dailySqft: 300 },
-  quartz:    { per50: 3.5,  dailySqft: 300 },
-  quartzite: { per50: 4.6,  dailySqft: 200 },
-  mitered:   { per50: 4.0,  dailySqft: 200 }
-};
-
-const THH_SETUP_MINUTES = 30; // fixed per job regardless of size
-
-function calcTHH(material, sqft) {
-  const mat = material.toLowerCase();
-  let bench = THH_BENCHMARKS.granite; // default
-  if(mat.includes('quartz') && !mat.includes('quartzite')) bench = THH_BENCHMARKS.quartz;
-  if(mat.includes('quartzite')) bench = THH_BENCHMARKS.quartzite;
-  
-  // Scale from 50sqft baseline with efficiency on larger jobs
-  // Setup is fixed at 30 min, production scales linearly
-  const setupHrs = THH_SETUP_MINUTES / 60;
-  const productionHrs = (bench.per50 - setupHrs) * (sqft / 50);
-  const totalHrs = setupHrs + productionHrs;
-  return Math.round(totalHrs * 10) / 10;
-}
-
-function calcDailyCapacity(fabricators, hasQuartzite) {
-  const sqftPerDay = hasQuartzite ? 200 : 300;
-  const adjustedSqft = sqftPerDay * (fabricators / 3);
-  // THH hours = fabricators * 8hr day
-  const thhHours = fabricators * 8;
-  return { sqftPerDay: Math.round(adjustedSqft), thhHours };
-}
-
-function showTHHCalculator() {
-  const existing = document.getElementById('thh-modal');
+function showTHHCalculator(){
+  const existing=document.getElementById("thh-modal");
   if(existing){existing.remove();return;}
-  
-  const modal = document.createElement('div');
-  modal.id = 'thh-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
-  
-  const box = document.createElement('div');
-  box.style.cssText = 'background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;padding:24px';
-  
-  box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div style="font-size:16px;font-weight:700;color:#F5F0E8">📐 THH Capacity Planner</div>
-      <button onclick="document.getElementById('thh-modal').remove()" style="background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer">×</button>
-    </div>
-    <div style="background:rgba(232,133,10,0.06);border:1px solid rgba(232,133,10,0.15);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#8A8070;line-height:1.6">
-      <strong style="color:#E8850A;display:block;margin-bottom:4px">Total Hand Work Hours — Shop Capacity Intelligence</strong>
-      Based on real fabrication benchmarks: 3 fabricators handle 300 sqft/day standard, 200 sqft/day quartzite or mitered edges. Setup fixed at 30 min per job. Larger jobs run more efficiently.
-    </div>
-    
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <div>
-        <div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Number of Fabricators</div>
-        <input id="thh-fabricators" type="number" value="3" min="1" max="20" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:14px;font-family:inherit;outline:none">
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Working Hours Per Day</div>
-        <input id="thh-hours" type="number" value="8" min="4" max="12" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:14px;font-family:inherit;outline:none">
-      </div>
-    </div>
-
-    <div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Jobs to Schedule</div>
-    <div id="thh-jobs-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
-    
-    <button onclick="addTHHJob()" style="width:100%;padding:8px;background:rgba(232,133,10,0.1);border:1px dashed rgba(232,133,10,0.3);border-radius:8px;color:#E8850A;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:16px">+ Add Job</button>
-    
-    <button onclick="calculateTHH()" style="width:100%;padding:12px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">Calculate THH and Check Capacity</button>
-    
-    <div id="thh-results" style="display:none"></div>
-  `;
-  
-  modal.appendChild(box);
-  document.body.appendChild(modal);
-  addTHHJob();
-  addTHHJob();
+  thhJobCount=0;
+  const modal=document.createElement("div");
+  modal.id="thh-modal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto";
+  const box=document.createElement("div");
+  box.style.cssText="background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:620px;padding:24px;margin:auto";
+  // Header
+  const hdr=document.createElement("div");
+  hdr.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px";
+  const htitle=document.createElement("div");
+  htitle.style.cssText="font-size:16px;font-weight:700;color:#F5F0E8";
+  htitle.textContent="THH Capacity Planner";
+  const hclose=document.createElement("button");
+  hclose.textContent="x";hclose.style.cssText="background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer";
+  hclose.onclick=function(){modal.remove();};
+  hdr.appendChild(htitle);hdr.appendChild(hclose);box.appendChild(hdr);
+  // Info
+  const info=document.createElement("div");
+  info.style.cssText="background:rgba(232,133,10,0.06);border:1px solid rgba(232,133,10,0.15);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#8A8070;line-height:1.6";
+  info.innerHTML="<strong style='color:#E8850A;display:block;margin-bottom:4px'>Total Hand Work Hours</strong>3 fabricators = 300 sqft/day standard, 200 sqft/day quartzite or mitered. Setup fixed 30 min per job.";
+  box.appendChild(info);
+  // Inputs
+  const inputs=document.createElement("div");
+  inputs.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px";
+  const fabLabel=document.createElement("div");
+  fabLabel.innerHTML="<div style='font-size:11px;font-weight:600;color:#8A8070;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px'>Fabricators</div><input id='thh-fabs' type='number' value='3' min='1' max='20' style='width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:14px;font-family:inherit;outline:none'>";
+  const hrLabel=document.createElement("div");
+  hrLabel.innerHTML="<div style='font-size:11px;font-weight:600;color:#8A8070;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px'>Hours Per Day</div><input id='thh-hrs' type='number' value='8' min='4' max='12' style='width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:14px;font-family:inherit;outline:none'>";
+  inputs.appendChild(fabLabel);inputs.appendChild(hrLabel);box.appendChild(inputs);
+  // Jobs label
+  const jlbl=document.createElement("div");
+  jlbl.style.cssText="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px";
+  jlbl.textContent="Jobs to Schedule";box.appendChild(jlbl);
+  // Jobs list
+  const jlist=document.createElement("div");
+  jlist.id="thh-jobs";jlist.style.cssText="display:flex;flex-direction:column;gap:8px;margin-bottom:10px";
+  box.appendChild(jlist);
+  // Add job button
+  const addJobBtn=document.createElement("button");
+  addJobBtn.textContent="+ Add Job";
+  addJobBtn.style.cssText="width:100%;padding:8px;background:rgba(232,133,10,0.1);border:1px dashed rgba(232,133,10,0.3);border-radius:8px;color:#E8850A;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px";
+  addJobBtn.onclick=addTHHJob;box.appendChild(addJobBtn);
+  // Calculate button
+  const calcBtn=document.createElement("button");
+  calcBtn.textContent="Calculate THH and Check Capacity";
+  calcBtn.style.cssText="width:100%;padding:12px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px";
+  calcBtn.onclick=calculateTHH;box.appendChild(calcBtn);
+  // Results
+  const results=document.createElement("div");
+  results.id="thh-results";box.appendChild(results);
+  modal.appendChild(box);document.body.appendChild(modal);
+  addTHHJob();addTHHJob();
 }
 
-let thhJobCount = 0;
-function addTHHJob() {
+function addTHHJob(){
   thhJobCount++;
-  const list = document.getElementById('thh-jobs-list');
-  if(!list) return;
-  const row = document.createElement('div');
-  row.id = 'thh-job-' + thhJobCount;
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center';
-  row.innerHTML = `
-    <select class="thh-material" style="background:#0E1218;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">
-      <option value="granite">Granite</option>
-      <option value="quartz">Quartz</option>
-      <option value="quartzite">Quartzite</option>
-      <option value="mitered">Mitered Edges</option>
-    </select>
-    <input type="number" class="thh-sqft" placeholder="Square feet" min="1" max="1000" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">
-    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#3A3020;font-size:18px;cursor:pointer;padding:0 4px">×</button>
-  `;
+  const list=document.getElementById("thh-jobs");
+  if(!list)return;
+  const row=document.createElement("div");
+  row.style.cssText="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center";
+  const sel=document.createElement("select");
+  sel.className="thh-mat";
+  sel.style.cssText="background:#0E1218;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none";
+  ["granite","quartz","quartzite","mitered"].forEach(function(v){const o=document.createElement("option");o.value=v;o.textContent=v.charAt(0).toUpperCase()+v.slice(1);sel.appendChild(o);});
+  const sqftInput=document.createElement("input");
+  sqftInput.type="number";sqftInput.className="thh-sqft";sqftInput.placeholder="Square feet";
+  sqftInput.style.cssText="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none";
+  const delBtn=document.createElement("button");
+  delBtn.textContent="x";delBtn.style.cssText="background:none;border:none;color:#3A3020;font-size:18px;cursor:pointer;padding:0 4px";
+  delBtn.onclick=function(){row.remove();};
+  row.appendChild(sel);row.appendChild(sqftInput);row.appendChild(delBtn);
   list.appendChild(row);
 }
 
-function calculateTHH() {
-  const fabricators = parseInt(document.getElementById('thh-fabricators').value) || 3;
-  const hoursPerDay = parseInt(document.getElementById('thh-hours').value) || 8;
-  
-  // Collect jobs
-  const jobs = [];
-  document.querySelectorAll('#thh-jobs-list > div').forEach(function(row) {
-    const mat = row.querySelector('.thh-material');
-    const sqft = row.querySelector('.thh-sqft');
-    if(mat && sqft && sqft.value) {
-      const s = parseFloat(sqft.value);
-      const thh = calcTHH(mat.value, s);
-      jobs.push({ material: mat.value, sqft: s, thh: thh });
-    }
+function calculateTHH(){
+  const fabs=parseInt(document.getElementById("thh-fabs").value)||3;
+  const hrs=parseInt(document.getElementById("thh-hrs").value)||8;
+  const jobs=[];
+  document.querySelectorAll("#thh-jobs > div").forEach(function(row){
+    const mat=row.querySelector(".thh-mat");
+    const sqft=row.querySelector(".thh-sqft");
+    if(mat&&sqft&&sqft.value)jobs.push({mat:mat.value,sqft:parseFloat(sqft.value),thh:calcTHH(mat.value,parseFloat(sqft.value))});
   });
-  
-  if(jobs.length === 0) {
-    alert('Please add at least one job.');
-    return;
-  }
-  
-  const totalTHH = jobs.reduce(function(sum, j) { return sum + j.thh; }, 0);
-  const totalSqft = jobs.reduce(function(sum, j) { return sum + j.sqft; }, 0);
-  const hasQuartzite = jobs.some(function(j) { return j.material === 'quartzite' || j.material === 'mitered'; });
-  
-  // Daily and weekly capacity
-  const dailyCap = calcDailyCapacity(fabricators, hasQuartzite);
-  const dailyTHH = fabricators * hoursPerDay;
-  const weeklyTHH = dailyTHH * 5;
-  const weeklySqft = dailyCap.sqftPerDay * 5;
-  
-  // Load percentage
-  const dailyLoadPct = Math.round((totalTHH / dailyTHH) * 100);
-  const weeklyLoadPct = Math.round((totalTHH / weeklyTHH) * 100);
-  const sqftLoadPct = Math.round((totalSqft / dailyCap.sqftPerDay) * 100);
-  
-  // Status colors
-  function statusColor(pct) {
-    if(pct <= 75) return '#10B981';
-    if(pct <= 90) return '#F59E0B';
-    return '#EF4444';
-  }
-  function statusLabel(pct) {
-    if(pct <= 75) return 'Good — capacity available';
-    if(pct <= 90) return 'Tight — monitor closely';
-    return 'Overloaded — consider rescheduling';
-  }
-  
-  const results = document.getElementById('thh-results');
-  results.style.display = 'block';
-  
-  let jobRows = jobs.map(function(j, i) {
-    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px"><span style="color:#8A8070">Job ' + (i+1) + ' — ' + j.material.charAt(0).toUpperCase()+j.material.slice(1) + ' ' + j.sqft + ' sqft</span><span style="color:#F5F0E8;font-weight:600">' + j.thh + ' hrs THH</span></div>';
-  }).join('');
-  
-  results.innerHTML = `
-    <div style="border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden">
-      <div style="background:rgba(232,133,10,0.08);padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06)">
-        <div style="font-size:12px;font-weight:700;color:#E8850A;text-transform:uppercase;letter-spacing:1px">THH Results — ${fabricators} Fabricators · ${hoursPerDay}hr Day</div>
-      </div>
-      <div style="padding:14px 16px">
-        ${jobRows}
-        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);margin-top:4px">
-          <span style="color:#F5F0E8;font-weight:700">Total THH Required</span>
-          <span style="color:#E8850A;font-weight:800;font-size:16px">${Math.round(totalTHH*10)/10} hours</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
-          <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center">
-            <div style="font-size:10px;font-weight:600;color:#8A8070;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Daily Capacity Used</div>
-            <div style="font-size:28px;font-weight:800;color:${statusColor(dailyLoadPct)}">${dailyLoadPct}%</div>
-            <div style="font-size:11px;color:${statusColor(dailyLoadPct)};margin-top:4px">${statusLabel(dailyLoadPct)}</div>
-            <div style="font-size:11px;color:#3A3020;margin-top:4px">${Math.round(totalTHH*10)/10} of ${dailyTHH} THH hrs</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center">
-            <div style="font-size:10px;font-weight:600;color:#8A8070;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Sqft vs Daily Capacity</div>
-            <div style="font-size:28px;font-weight:800;color:${statusColor(sqftLoadPct)}">${sqftLoadPct}%</div>
-            <div style="font-size:11px;color:${statusColor(sqftLoadPct)};margin-top:4px">${statusLabel(sqftLoadPct)}</div>
-            <div style="font-size:11px;color:#3A3020;margin-top:4px">${totalSqft} of ${dailyCap.sqftPerDay} sqft/day</div>
-          </div>
-        </div>
-        <div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:12px;color:#8A8070;line-height:1.65">
-          <strong style="color:#F5F0E8;display:block;margin-bottom:4px">Weekly capacity:</strong>
-          ${Math.round(totalTHH*10)/10} THH = ${weeklyLoadPct}% of your ${weeklyTHH}-hour week · ${weeklySqft} sqft/week available
-          ${dailyLoadPct > 100 ? '<br><strong style="color:#EF4444">⚠ These jobs exceed one day — plan across ' + Math.ceil(totalTHH/dailyTHH) + ' days minimum</strong>' : ''}
-          ${hasQuartzite ? '<br><strong style="color:#F59E0B">⚠ Quartzite or mitered edges — daily sqft reduced to ' + dailyCap.sqftPerDay + ' sqft</strong>' : ''}
-        </div>
-      </div>
-    </div>
-  `;
+  if(!jobs.length){alert("Add at least one job.");return;}
+  const totalTHH=jobs.reduce(function(s,j){return s+j.thh;},0);
+  const totalSqft=jobs.reduce(function(s,j){return s+j.sqft;},0);
+  const hasQ=jobs.some(function(j){return j.mat==="quartzite"||j.mat==="mitered";});
+  const cap=calcCap(fabs,hasQ);
+  const dailyTHH=fabs*hrs;
+  const dPct=Math.round((totalTHH/dailyTHH)*100);
+  const sPct=Math.round((totalSqft/cap.sqft)*100);
+  const wPct=Math.round((totalTHH/(dailyTHH*5))*100);
+  function col(p){return p<=75?"#10B981":p<=90?"#F59E0B":"#EF4444";}
+  function lbl(p){return p<=75?"Good - capacity available":p<=90?"Tight - monitor closely":"Overloaded - reschedule";}
+  const results=document.getElementById("thh-results");
+  results.innerHTML="";
+  const card=document.createElement("div");
+  card.style.cssText="border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden";
+  const cardHdr=document.createElement("div");
+  cardHdr.style.cssText="background:rgba(232,133,10,0.08);padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px;font-weight:700;color:#E8850A;text-transform:uppercase;letter-spacing:1px";
+  cardHdr.textContent="THH Results - "+fabs+" Fabricators - "+hrs+"hr Day";
+  card.appendChild(cardHdr);
+  const cardBody=document.createElement("div");
+  cardBody.style.cssText="padding:14px 16px";
+  jobs.forEach(function(j,i){
+    const jrow=document.createElement("div");
+    jrow.style.cssText="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px";
+    jrow.innerHTML="<span style='color:#8A8070'>Job "+(i+1)+" - "+j.mat.charAt(0).toUpperCase()+j.mat.slice(1)+" "+j.sqft+" sqft</span><span style='color:#F5F0E8;font-weight:600'>"+j.thh+" hrs THH</span>";
+    cardBody.appendChild(jrow);
+  });
+  const total=document.createElement("div");
+  total.style.cssText="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);margin-top:4px";
+  total.innerHTML="<span style='color:#F5F0E8;font-weight:700'>Total THH Required</span><span style='color:#E8850A;font-weight:800;font-size:16px'>"+Math.round(totalTHH*10)/10+" hours</span>";
+  cardBody.appendChild(total);
+  const grid=document.createElement("div");
+  grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px";
+  [{pct:dPct,label:"Daily Capacity",sub:Math.round(totalTHH*10)/10+" of "+dailyTHH+" hrs"},{pct:sPct,label:"Sqft vs Daily Max",sub:totalSqft+" of "+cap.sqft+" sqft/day"}].forEach(function(item){
+    const cell=document.createElement("div");
+    cell.style.cssText="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center";
+    cell.innerHTML="<div style='font-size:10px;font-weight:600;color:#8A8070;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px'>"+item.label+"</div><div style='font-size:28px;font-weight:800;color:"+col(item.pct)+"'>"+item.pct+"%</div><div style='font-size:11px;color:"+col(item.pct)+";margin-top:4px'>"+lbl(item.pct)+"</div><div style='font-size:11px;color:#3A3020;margin-top:4px'>"+item.sub+"</div>";
+    grid.appendChild(cell);
+  });
+  cardBody.appendChild(grid);
+  const summary=document.createElement("div");
+  summary.style.cssText="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:12px;color:#8A8070;line-height:1.65";
+  let sumText="Weekly: "+Math.round(totalTHH*10)/10+" THH = "+wPct+"% of your "+(dailyTHH*5)+"-hour week. "+(cap.sqft*5)+" sqft/week available.";
+  if(dPct>100)sumText+=" OVERLOADED: plan across "+Math.ceil(totalTHH/dailyTHH)+" days minimum.";
+  if(hasQ)sumText+=" Quartzite/mitered: daily sqft reduced to "+cap.sqft+" sqft.";
+  summary.textContent=sumText;
+  cardBody.appendChild(summary);
+  card.appendChild(cardBody);
+  results.appendChild(card);
 }
 
-
-
-// ============================================================
-// FABRICOR CLOUD SYNC
-// ============================================================
-const FAB_SYNC_API = 'https://sairn.vercel.app/api/fabricor-sync';
-let shopId = localStorage.getItem('fab_shop_id');
-if(!shopId){shopId='shop_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);localStorage.setItem('fab_shop_id',shopId);}
-
-async function cloudSaveRecord(type, record) {
-  try {
-    const res = await fetch(FAB_SYNC_API+'?type='+type, {
-      method:'POST', headers:{'Content-Type':'application/json','X-Shop-ID':shopId},
-      body:JSON.stringify(record)
-    });
-    const data = await res.json();
-    return data.saved ? data.data : null;
-  } catch(e) { return null; }
-}
-
-async function cloudLoadRecords(type) {
-  try {
-    const res = await fetch(FAB_SYNC_API+'?type='+type, {headers:{'X-Shop-ID':shopId}});
-    const data = await res.json();
-    return data.data || [];
-  } catch(e) {
-    return JSON.parse(localStorage.getItem('fab_'+type)||'[]');
-  }
-}
-
-function showSyncBadge(msg, ok) {
-  const existing = document.getElementById('sync-badge'); if(existing) existing.remove();
-  const b = document.createElement('div'); b.id = 'sync-badge';
-  b.style.cssText = 'position:fixed;top:68px;left:16px;background:'+(ok?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)')+';border:1px solid '+(ok?'rgba(16,185,129,0.3)':'rgba(239,68,68,0.3)')+';border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;color:'+(ok?'#10B981':'#EF4444')+';z-index:998;font-family:inherit';
-  b.textContent = msg;
-  document.body.appendChild(b);
-  setTimeout(function(){const x=document.getElementById('sync-badge');if(x)x.remove();},3000);
-}
-
-// ============================================================
-// AI PRODUCTION SCHEDULER
-// ============================================================
-function showScheduler() {
-  const existing = document.getElementById('scheduler-modal');
+// AI Production Scheduler
+function showScheduler(){
+  const existing=document.getElementById("scheduler-modal");
   if(existing){existing.remove();return;}
-  const modal = document.createElement('div');
-  modal.id = 'scheduler-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-  const box = document.createElement('div');
-  box.style.cssText = 'background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;padding:24px';
-  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
-    '<div style="font-size:16px;font-weight:700;color:#F5F0E8">📅 AI Production Scheduler</div>' +
-    '<button onclick="document.getElementById('scheduler-modal').remove()" style="background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer">x</button>' +
-    '</div>' +
-    '<div style="font-size:13px;color:#8A8070;margin-bottom:16px;line-height:1.6">Describe your active jobs and I will build the optimal production schedule for your shop.</div>' +
-    '<textarea id="sched-input" placeholder="Example: 3 jobs this week. Job 1: Smith kitchen 45 sqft Calacatta marble, needs templating Monday. Job 2: Johnson bathroom 18 sqft quartz, already templated. Job 3: Commercial bar top 80 sqft black granite, template Tuesday..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;color:#F5F0E8;font-size:13px;font-family:inherit;resize:vertical;min-height:120px;outline:none;margin-bottom:12px"></textarea>' +
-    '<button onclick="generateSchedule()" id="sched-btn" style="width:100%;padding:12px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">Generate Production Schedule</button>' +
-    '<div id="sched-result" style="font-size:13px;color:#8A8070;line-height:1.7;white-space:pre-wrap"></div>';
-  modal.appendChild(box);
-  document.body.appendChild(modal);
+  const modal=document.createElement("div");
+  modal.id="scheduler-modal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+  const box=document.createElement("div");
+  box.style.cssText="background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;padding:24px";
+  const hdr=document.createElement("div");
+  hdr.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px";
+  const ht=document.createElement("div");
+  ht.style.cssText="font-size:16px;font-weight:700;color:#F5F0E8";
+  ht.textContent="AI Production Scheduler";
+  const hc=document.createElement("button");
+  hc.textContent="x";hc.style.cssText="background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer";
+  hc.onclick=function(){modal.remove();};
+  hdr.appendChild(ht);hdr.appendChild(hc);box.appendChild(hdr);
+  const desc=document.createElement("div");
+  desc.style.cssText="font-size:13px;color:#8A8070;margin-bottom:16px;line-height:1.6";
+  desc.textContent="Describe your active jobs and I will build the optimal production schedule.";
+  box.appendChild(desc);
+  const ta=document.createElement("textarea");
+  ta.id="sched-input";
+  ta.placeholder="Example: 3 jobs this week. Smith kitchen 45 sqft Calacatta marble needs templating Monday. Johnson bathroom 18 sqft quartz already templated. Commercial bar top 80 sqft black granite template Tuesday.";
+  ta.style.cssText="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;color:#F5F0E8;font-size:13px;font-family:inherit;resize:vertical;min-height:120px;outline:none;margin-bottom:12px";
+  box.appendChild(ta);
+  const btn=document.createElement("button");
+  btn.id="sched-btn";
+  btn.textContent="Generate Production Schedule";
+  btn.style.cssText="width:100%;padding:12px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px";
+  btn.onclick=generateSchedule;box.appendChild(btn);
+  const result=document.createElement("div");
+  result.id="sched-result";
+  result.style.cssText="font-size:13px;color:#8A8070;line-height:1.7;white-space:pre-wrap";
+  box.appendChild(result);
+  modal.appendChild(box);document.body.appendChild(modal);
 }
 
-async function generateSchedule() {
-  const input = document.getElementById('sched-input').value.trim();
-  if(!input) return;
-  const btn = document.getElementById('sched-btn');
-  const result = document.getElementById('sched-result');
-  btn.textContent = 'Building your schedule...';
-  btn.disabled = true;
-  result.textContent = '';
-  result.style.color = '#8A8070';
-  try {
-    const res = await fetch(SAIRN_API, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        max_tokens:1000,
-        system:'You are Fabricor AI Production Scheduler for stone fabrication shops. Given a list of jobs create a detailed day-by-day production schedule that sequences by stage (template, cut, polish, install), groups similar materials to minimize blade changes, accounts for cure times and install lead times, identifies urgent jobs, and flags scheduling conflicts. Format as a clear day-by-day schedule with specific job names and tasks.',
-        messages:[{role:'user',content:'Build my production schedule: ' + input}],
-        app_id:'fabricor', is_demo:true
-      })
-    });
-    const data = await res.json();
-    if(res.status===429){
-      result.textContent = (data.message||'Daily limit reached.') + ' Sign up for full access.';
-    } else {
-      const reply = data.content&&data.content[0]&&data.content[0].text||'Please try again.';
-      result.style.color = '#F5F0E8';
-      result.textContent = reply;
-    }
-  } catch(e) {
-    result.textContent = 'Connection issue. Please try again.';
-  }
-  btn.textContent = 'Generate Production Schedule';
-  btn.disabled = false;
+async function generateSchedule(){
+  const input=document.getElementById("sched-input").value.trim();
+  if(!input)return;
+  const btn=document.getElementById("sched-btn");
+  const result=document.getElementById("sched-result");
+  btn.textContent="Building your schedule...";btn.disabled=true;
+  result.textContent="";result.style.color="#8A8070";
+  try{const res=await fetch(SAIRN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:1000,system:"You are Fabricor AI Production Scheduler. Create a detailed day-by-day production schedule that sequences jobs by stage, groups similar materials to minimize blade changes, accounts for cure times, and flags scheduling conflicts. Format as clear day-by-day schedule.",messages:[{role:"user",content:"Build my production schedule: "+input}],app_id:"fabricor",is_demo:true})});const data=await res.json();if(res.status===429){result.textContent=(data.message||"Daily limit reached.")+" Sign up for full access.";}else{const reply=data.content&&data.content[0]&&data.content[0].text||"Please try again.";result.style.color="#F5F0E8";result.textContent=reply;}}catch(e){result.textContent="Connection issue. Please try again.";}
+  btn.textContent="Generate Production Schedule";btn.disabled=false;
 }
 
-// ============================================================
-// CSV IMPORT FROM EXCEL
-// ============================================================
-async function importCSV(event, type) {
-  const file = event.target.files[0];
-  if(!file) return;
-  const status = document.getElementById('import-status');
-  if(status) status.textContent = 'Reading file...';
-  const text = await new Promise(function(resolve) {
-    const reader = new FileReader();
-    reader.onload = function(e) { resolve(e.target.result); };
-    reader.readAsText(file);
-  });
-  const lines = text.trim().split('\n');
-  if(lines.length < 2) { if(status) status.textContent = 'File appears empty.'; return; }
-  const headers = lines[0].split(',').map(function(h){return h.trim().toLowerCase().replace(/"/g,'');});
-  const records = [];
-  for(let i=1;i<lines.length;i++){
-    const values = lines[i].split(',').map(function(v){return v.trim().replace(/"/g,'');});
-    if(values.every(function(v){return !v;})) continue;
-    const record = {};
-    headers.forEach(function(h,idx){record[h]=values[idx]||'';});
-    if(type==='slabs'){
-      records.push({material:record.material||record.stone||record.type||values[0]||'Unknown',size:record.size||record.dimensions||values[1]||'',cost:record.cost||record.price||values[2]||'',location:record.location||record.yard||values[3]||''});
-    } else if(type==='customers'){
-      records.push({name:record.name||record.customer||values[0]||'Unknown',phone:record.phone||record.tel||values[1]||'',type:record.type||record.category||values[2]||'Customer',value:record.value||record.revenue||values[3]||''});
-    } else if(type==='jobs'){
-      records.push({customer:record.customer||record.client||values[0]||'Unknown',material:record.material||record.stone||values[1]||'',sqft:record.sqft||record.sf||values[2]||'',quoted:record.quoted||record.price||values[3]||'',cost:record.cost||values[4]||'',status:record.status||values[5]||'In progress'});
-    }
-  }
-  if(records.length===0){if(status)status.textContent='No records found.';return;}
-  if(status)status.textContent='Saving '+records.length+' records...';
-  let saved=0;
-  for(const record of records){
-    await cloudSaveRecord(type,record);
-    const local=JSON.parse(localStorage.getItem('fab_'+type)||'[]');
-    local.unshift(record);
-    localStorage.setItem('fab_'+type,JSON.stringify(local.slice(0,200)));
-    saved++;
-  }
-  if(status){status.textContent=saved+' '+type+' imported from '+file.name;status.style.color='#10B981';}
+// CSV Import
+async function importCSV(event,type){
+  const file=event.target.files[0];if(!file)return;
+  const status=document.getElementById("import-status");
+  if(status)status.textContent="Reading...";
+  const text=await new Promise(function(resolve){const r=new FileReader();r.onload=function(e){resolve(e.target.result);};r.readAsText(file);});
+  const lines=text.trim().split("
+");
+  if(lines.length<2){if(status)status.textContent="File empty.";return;}
+  const headers=lines[0].split(",").map(function(h){return h.trim().toLowerCase().replace(/"/g,"");});
+  const records=[];
+  for(let i=1;i<lines.length;i++){const v=lines[i].split(",").map(function(x){return x.trim().replace(/"/g,"");});if(v.every(function(x){return !x;}))continue;const r={};headers.forEach(function(h,idx){r[h]=v[idx]||"";});if(type==="slabs")records.push({material:r.material||v[0]||"Unknown",size:r.size||v[1]||"",cost:r.cost||r.price||v[2]||"",location:r.location||v[3]||""});else if(type==="customers")records.push({name:r.name||v[0]||"Unknown",phone:r.phone||v[1]||"",type:r.type||v[2]||"Customer",value:r.value||v[3]||""});else if(type==="jobs")records.push({customer:r.customer||v[0]||"Unknown",material:r.material||v[1]||"",sqft:r.sqft||v[2]||"",quoted:r.quoted||r.price||v[3]||"",cost:r.cost||v[4]||"",status:r.status||v[5]||"In progress"});}
+  if(!records.length){if(status)status.textContent="No records found.";return;}
+  if(status)status.textContent="Saving "+records.length+" records...";
+  for(const rec of records){const local=JSON.parse(localStorage.getItem("fab_"+type)||"[]");local.unshift(rec);localStorage.setItem("fab_"+type,JSON.stringify(local.slice(0,200)));cloudSaveRecord(type,rec);}
+  if(status){status.textContent=records.length+" "+type+" imported from "+file.name;status.style.color="#10B981";}
   showDataTab(type);
 }
 
-// ============================================================
-// THH — TOTAL HAND WORK HOURS CALCULATOR
-// Real benchmarks: Michael L. Dibert — stone fabrication expert
-// 3 fabricators = 300 sqft/day standard, 200 quartzite/mitered
-// Granite 50sqft: 30min cut + 1.5hr CNC + 2hr fab = 4hr THH
-// Quartz: 10% faster = 3.5hr per 50sqft
-// Quartzite: 30% slower = 4.6hr per 50sqft
-// Larger jobs more efficient — setup 30min is fixed per job
-// ============================================================
-
-
-
-
-
-
-
+// Input handlers
+document.getElementById("userInput").addEventListener("input",function(){this.style.height="";this.style.height=Math.min(this.scrollHeight,140)+"px";});
+document.getElementById("userInput").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
 </script>
-
-  <script>
+<script>
     if('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(function(e){});
     }
