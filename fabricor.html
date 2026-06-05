@@ -575,6 +575,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
     <button class="mode-btn" onclick="setMode('Suppliers','Track supplier prices, flag overpayment, or compare vendor performance')"><span class="mode-icon">🏭</span><span class="mode-label">Suppliers</span></button>
     <button class="mode-btn" onclick="setMode('Post-Install','Document warranty claims, track callbacks, or manage service follow-up')"><span class="mode-icon">🔧</span><span class="mode-label">Post-Install</span></button>
     <button class="mode-btn" onclick="setMode('Finance','Review revenue, margins, AR aging, or business health')"><span class="mode-icon">💼</span><span class="mode-label">Finance</span></button>
+    <button class="mode-btn" onclick="showTHHCalculator()"><span class="mode-icon">📐</span><span class="mode-label">THH Capacity</span></button>
     <button class="mode-btn" onclick="showShopData()"><span class="mode-icon">📦</span><span class="mode-label">My Shop Data</span></button>
     <div class="mode-divider"></div>
     <span class="mode-guided-label">Guided</span>
@@ -715,7 +716,7 @@ function showTyping() {
   area.appendChild(div); area.scrollTop = area.scrollHeight;
 }
 
-async async async function sendMessage() {
+async function sendMessage() {
   const inp = document.getElementById("userInput");
   const text = inp.value.trim(); if(!text || isLoading) return;
   const memCtx = await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return "";});
@@ -1267,6 +1268,298 @@ function calculateTHH() {
       </div>
     </div>
   `;
+}
+
+
+
+// ============================================================
+// FABRICOR CLOUD SYNC
+// ============================================================
+const FAB_SYNC_API = 'https://sairn.vercel.app/api/fabricor-sync';
+let shopId = localStorage.getItem('fab_shop_id');
+if(!shopId){shopId='shop_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);localStorage.setItem('fab_shop_id',shopId);}
+
+async function cloudSaveRecord(type, record) {
+  try {
+    const res = await fetch(FAB_SYNC_API+'?type='+type, {
+      method:'POST', headers:{'Content-Type':'application/json','X-Shop-ID':shopId},
+      body:JSON.stringify(record)
+    });
+    const data = await res.json();
+    return data.saved ? data.data : null;
+  } catch(e) { return null; }
+}
+
+async function cloudLoadRecords(type) {
+  try {
+    const res = await fetch(FAB_SYNC_API+'?type='+type, {headers:{'X-Shop-ID':shopId}});
+    const data = await res.json();
+    return data.data || [];
+  } catch(e) {
+    return JSON.parse(localStorage.getItem('fab_'+type)||'[]');
+  }
+}
+
+function showSyncBadge(msg, ok) {
+  const existing = document.getElementById('sync-badge'); if(existing) existing.remove();
+  const b = document.createElement('div'); b.id = 'sync-badge';
+  b.style.cssText = 'position:fixed;top:68px;left:16px;background:'+(ok?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)')+';border:1px solid '+(ok?'rgba(16,185,129,0.3)':'rgba(239,68,68,0.3)')+';border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;color:'+(ok?'#10B981':'#EF4444')+';z-index:998;font-family:inherit';
+  b.textContent = msg;
+  document.body.appendChild(b);
+  setTimeout(function(){const x=document.getElementById('sync-badge');if(x)x.remove();},3000);
+}
+
+// ============================================================
+// AI PRODUCTION SCHEDULER
+// ============================================================
+function showScheduler() {
+  const existing = document.getElementById('scheduler-modal');
+  if(existing){existing.remove();return;}
+  const modal = document.createElement('div');
+  modal.id = 'scheduler-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;padding:24px';
+  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+    '<div style="font-size:16px;font-weight:700;color:#F5F0E8">📅 AI Production Scheduler</div>' +
+    '<button onclick="document.getElementById('scheduler-modal').remove()" style="background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer">x</button>' +
+    '</div>' +
+    '<div style="font-size:13px;color:#8A8070;margin-bottom:16px;line-height:1.6">Describe your active jobs and I will build the optimal production schedule for your shop.</div>' +
+    '<textarea id="sched-input" placeholder="Example: 3 jobs this week. Job 1: Smith kitchen 45 sqft Calacatta marble, needs templating Monday. Job 2: Johnson bathroom 18 sqft quartz, already templated. Job 3: Commercial bar top 80 sqft black granite, template Tuesday..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;color:#F5F0E8;font-size:13px;font-family:inherit;resize:vertical;min-height:120px;outline:none;margin-bottom:12px"></textarea>' +
+    '<button onclick="generateSchedule()" id="sched-btn" style="width:100%;padding:12px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">Generate Production Schedule</button>' +
+    '<div id="sched-result" style="font-size:13px;color:#8A8070;line-height:1.7;white-space:pre-wrap"></div>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+}
+
+async function generateSchedule() {
+  const input = document.getElementById('sched-input').value.trim();
+  if(!input) return;
+  const btn = document.getElementById('sched-btn');
+  const result = document.getElementById('sched-result');
+  btn.textContent = 'Building your schedule...';
+  btn.disabled = true;
+  result.textContent = '';
+  result.style.color = '#8A8070';
+  try {
+    const res = await fetch(SAIRN_API, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        max_tokens:1000,
+        system:'You are Fabricor AI Production Scheduler for stone fabrication shops. Given a list of jobs create a detailed day-by-day production schedule that sequences by stage (template, cut, polish, install), groups similar materials to minimize blade changes, accounts for cure times and install lead times, identifies urgent jobs, and flags scheduling conflicts. Format as a clear day-by-day schedule with specific job names and tasks.',
+        messages:[{role:'user',content:'Build my production schedule: ' + input}],
+        app_id:'fabricor', is_demo:true
+      })
+    });
+    const data = await res.json();
+    if(res.status===429){
+      result.textContent = (data.message||'Daily limit reached.') + ' Sign up for full access.';
+    } else {
+      const reply = data.content&&data.content[0]&&data.content[0].text||'Please try again.';
+      result.style.color = '#F5F0E8';
+      result.textContent = reply;
+    }
+  } catch(e) {
+    result.textContent = 'Connection issue. Please try again.';
+  }
+  btn.textContent = 'Generate Production Schedule';
+  btn.disabled = false;
+}
+
+// ============================================================
+// CSV IMPORT FROM EXCEL
+// ============================================================
+async function importCSV(event, type) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const status = document.getElementById('import-status');
+  if(status) status.textContent = 'Reading file...';
+  const text = await new Promise(function(resolve) {
+    const reader = new FileReader();
+    reader.onload = function(e) { resolve(e.target.result); };
+    reader.readAsText(file);
+  });
+  const lines = text.trim().split('\n');
+  if(lines.length < 2) { if(status) status.textContent = 'File appears empty.'; return; }
+  const headers = lines[0].split(',').map(function(h){return h.trim().toLowerCase().replace(/"/g,'');});
+  const records = [];
+  for(let i=1;i<lines.length;i++){
+    const values = lines[i].split(',').map(function(v){return v.trim().replace(/"/g,'');});
+    if(values.every(function(v){return !v;})) continue;
+    const record = {};
+    headers.forEach(function(h,idx){record[h]=values[idx]||'';});
+    if(type==='slabs'){
+      records.push({material:record.material||record.stone||record.type||values[0]||'Unknown',size:record.size||record.dimensions||values[1]||'',cost:record.cost||record.price||values[2]||'',location:record.location||record.yard||values[3]||''});
+    } else if(type==='customers'){
+      records.push({name:record.name||record.customer||values[0]||'Unknown',phone:record.phone||record.tel||values[1]||'',type:record.type||record.category||values[2]||'Customer',value:record.value||record.revenue||values[3]||''});
+    } else if(type==='jobs'){
+      records.push({customer:record.customer||record.client||values[0]||'Unknown',material:record.material||record.stone||values[1]||'',sqft:record.sqft||record.sf||values[2]||'',quoted:record.quoted||record.price||values[3]||'',cost:record.cost||values[4]||'',status:record.status||values[5]||'In progress'});
+    }
+  }
+  if(records.length===0){if(status)status.textContent='No records found.';return;}
+  if(status)status.textContent='Saving '+records.length+' records...';
+  let saved=0;
+  for(const record of records){
+    await cloudSaveRecord(type,record);
+    const local=JSON.parse(localStorage.getItem('fab_'+type)||'[]');
+    local.unshift(record);
+    localStorage.setItem('fab_'+type,JSON.stringify(local.slice(0,200)));
+    saved++;
+  }
+  if(status){status.textContent=saved+' '+type+' imported from '+file.name;status.style.color='#10B981';}
+  showDataTab(type);
+}
+
+// ============================================================
+// THH — TOTAL HAND WORK HOURS CALCULATOR
+// Real benchmarks: Michael L. Dibert — stone fabrication expert
+// 3 fabricators = 300 sqft/day standard, 200 quartzite/mitered
+// Granite 50sqft: 30min cut + 1.5hr CNC + 2hr fab = 4hr THH
+// Quartz: 10% faster = 3.5hr per 50sqft
+// Quartzite: 30% slower = 4.6hr per 50sqft
+// Larger jobs more efficient — setup 30min is fixed per job
+// ============================================================
+const THH_BENCHMARKS = {
+  granite:   {per50:4.0, dailySqft:300},
+  quartz:    {per50:3.5, dailySqft:300},
+  quartzite: {per50:4.6, dailySqft:200},
+  mitered:   {per50:4.0, dailySqft:200}
+};
+const THH_SETUP_MINUTES = 30;
+
+function calcTHH(material, sqft) {
+  const mat = material.toLowerCase();
+  let bench = THH_BENCHMARKS.granite;
+  if(mat.includes('quartz') && !mat.includes('quartzite')) bench = THH_BENCHMARKS.quartz;
+  if(mat.includes('quartzite')) bench = THH_BENCHMARKS.quartzite;
+  if(mat.includes('miter')) bench = THH_BENCHMARKS.mitered;
+  const setupHrs = THH_SETUP_MINUTES / 60;
+  const productionHrs = (bench.per50 - setupHrs) * (sqft / 50);
+  return Math.round((setupHrs + productionHrs) * 10) / 10;
+}
+
+function calcDailyCapacity(fabricators, hasQuartzite) {
+  const sqftPerDay = hasQuartzite ? 200 : 300;
+  return {sqftPerDay: Math.round(sqftPerDay * (fabricators/3)), thhHours: fabricators * 8};
+}
+
+function showTHHCalculator() {
+  const existing = document.getElementById('thh-modal');
+  if(existing){existing.remove();return;}
+  const modal = document.createElement('div');
+  modal.id = 'thh-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:620px;padding:24px;margin:auto';
+  box.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+      '<div style="font-size:16px;font-weight:700;color:#F5F0E8">📐 THH Capacity Planner</div>' +
+      '<button onclick="document.getElementById('thh-modal').remove()" style="background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer">x</button>' +
+    '</div>' +
+    '<div style="background:rgba(232,133,10,0.06);border:1px solid rgba(232,133,10,0.15);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#8A8070;line-height:1.6">' +
+      '<strong style="color:#E8850A;display:block;margin-bottom:4px">Total Hand Work Hours — Shop Capacity Intelligence</strong>' +
+      '3 fabricators handle 300 sqft/day standard, 200 sqft/day quartzite or mitered edges. Setup fixed at 30 min per job. Larger jobs run more efficiently.' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
+      '<div><div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fabricators</div>' +
+        '<input id="thh-fabricators" type="number" value="3" min="1" max="20" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:14px;font-family:inherit;outline:none"></div>' +
+      '<div><div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Hours Per Day</div>' +
+        '<input id="thh-hours" type="number" value="8" min="4" max="12" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:14px;font-family:inherit;outline:none"></div>' +
+    '</div>' +
+    '<div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Jobs to Schedule</div>' +
+    '<div id="thh-jobs-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>' +
+    '<button onclick="addTHHJob()" style="width:100%;padding:8px;background:rgba(232,133,10,0.1);border:1px dashed rgba(232,133,10,0.3);border-radius:8px;color:#E8850A;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px">+ Add Job</button>' +
+    '<button onclick="calculateTHH()" style="width:100%;padding:12px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">Calculate THH and Check Capacity</button>' +
+    '<div id="thh-results"></div>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  addTHHJob(); addTHHJob();
+}
+
+let thhJobCount = 0;
+function addTHHJob() {
+  thhJobCount++;
+  const list = document.getElementById('thh-jobs-list');
+  if(!list) return;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center';
+  row.innerHTML =
+    '<select class="thh-material" style="background:#0E1218;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
+      '<option value="granite">Granite</option>' +
+      '<option value="quartz">Quartz</option>' +
+      '<option value="quartzite">Quartzite</option>' +
+      '<option value="mitered">Mitered Edges</option>' +
+    '</select>' +
+    '<input type="number" class="thh-sqft" placeholder="Square feet" min="1" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
+    '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#3A3020;font-size:18px;cursor:pointer;padding:0 4px">x</button>';
+  list.appendChild(row);
+}
+
+function calculateTHH() {
+  const fabricators = parseInt(document.getElementById('thh-fabricators').value) || 3;
+  const hoursPerDay = parseInt(document.getElementById('thh-hours').value) || 8;
+  const jobs = [];
+  document.querySelectorAll('#thh-jobs-list > div').forEach(function(row) {
+    const mat = row.querySelector('.thh-material');
+    const sqft = row.querySelector('.thh-sqft');
+    if(mat && sqft && sqft.value) {
+      const s = parseFloat(sqft.value);
+      jobs.push({material:mat.value, sqft:s, thh:calcTHH(mat.value, s)});
+    }
+  });
+  if(!jobs.length){alert('Add at least one job.');return;}
+  const totalTHH = jobs.reduce(function(s,j){return s+j.thh;},0);
+  const totalSqft = jobs.reduce(function(s,j){return s+j.sqft;},0);
+  const hasQuartzite = jobs.some(function(j){return j.material==='quartzite'||j.material==='mitered';});
+  const dailyCap = calcDailyCapacity(fabricators, hasQuartzite);
+  const dailyTHH = fabricators * hoursPerDay;
+  const weeklyTHH = dailyTHH * 5;
+  const weeklySqft = dailyCap.sqftPerDay * 5;
+  const dPct = Math.round((totalTHH/dailyTHH)*100);
+  const sPct = Math.round((totalSqft/dailyCap.sqftPerDay)*100);
+  const wPct = Math.round((totalTHH/weeklyTHH)*100);
+  function col(p){return p<=75?'#10B981':p<=90?'#F59E0B':'#EF4444';}
+  function lbl(p){return p<=75?'Good — capacity available':p<=90?'Tight — monitor closely':'Overloaded — reschedule';}
+  const results = document.getElementById('thh-results');
+  results.style.display = 'block';
+  const jobRows = jobs.map(function(j,i){
+    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px">' +
+      '<span style="color:#8A8070">Job '+(i+1)+' - '+j.material.charAt(0).toUpperCase()+j.material.slice(1)+' '+j.sqft+' sqft</span>' +
+      '<span style="color:#F5F0E8;font-weight:600">'+j.thh+' hrs THH</span></div>';
+  }).join('');
+  results.innerHTML =
+    '<div style="border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden">' +
+      '<div style="background:rgba(232,133,10,0.08);padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+        '<div style="font-size:12px;font-weight:700;color:#E8850A;text-transform:uppercase;letter-spacing:1px">THH Results - '+fabricators+' Fabricators - '+hoursPerDay+'hr Day</div>' +
+      '</div>' +
+      '<div style="padding:14px 16px">' +
+        jobRows +
+        '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);margin-top:4px">' +
+          '<span style="color:#F5F0E8;font-weight:700">Total THH Required</span>' +
+          '<span style="color:#E8850A;font-weight:800;font-size:16px">'+Math.round(totalTHH*10)/10+' hours</span>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">' +
+          '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center">' +
+            '<div style="font-size:10px;font-weight:600;color:#8A8070;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Daily Capacity Used</div>' +
+            '<div style="font-size:28px;font-weight:800;color:'+col(dPct)+'">'+dPct+'%</div>' +
+            '<div style="font-size:11px;color:'+col(dPct)+';margin-top:4px">'+lbl(dPct)+'</div>' +
+            '<div style="font-size:11px;color:#3A3020;margin-top:4px">'+Math.round(totalTHH*10)/10+' of '+dailyTHH+' hrs</div>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center">' +
+            '<div style="font-size:10px;font-weight:600;color:#8A8070;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Sqft vs Daily Max</div>' +
+            '<div style="font-size:28px;font-weight:800;color:'+col(sPct)+'">'+sPct+'%</div>' +
+            '<div style="font-size:11px;color:'+col(sPct)+';margin-top:4px">'+lbl(sPct)+'</div>' +
+            '<div style="font-size:11px;color:#3A3020;margin-top:4px">'+totalSqft+' of '+dailyCap.sqftPerDay+' sqft/day</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:12px;color:#8A8070;line-height:1.65">' +
+          '<strong style="color:#F5F0E8;display:block;margin-bottom:4px">Weekly picture:</strong>' +
+          Math.round(totalTHH*10)/10+' THH = '+wPct+'% of your '+weeklyTHH+'-hour week. '+weeklySqft+' sqft/week available.' +
+          (dPct>100?'<br><strong style="color:#EF4444">These jobs exceed one day - plan across '+Math.ceil(totalTHH/dailyTHH)+' days minimum</strong>':'') +
+          (hasQuartzite?'<br><strong style="color:#F59E0B">Quartzite or mitered - daily sqft reduced to '+dailyCap.sqftPerDay+' sqft</strong>':'') +
+        '</div>' +
+      '</div>' +
+    '</div>';
 }
 
 document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
