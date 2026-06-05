@@ -295,6 +295,8 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
   </div>
   <div class="mode-bar">
     <button class="mode-btn fraud-mode" onclick="setMode('Fraud Detection','Describe a coding pattern or claim scenario and I will analyze it for upcoding, unbundling, or duplicate billing')"><span>🚨</span><span class="mode-label">Fraud Detection</span></button>
+    <button class="mode-btn" onclick="showDocTemplates()"><span class="mode-icon">📝</span><span class="mode-label">Doc Templates</span></button>
+    <button class="mode-btn" onclick="showQueryTemplates()"><span class="mode-icon">🔍</span><span class="mode-label">Query Builder</span></button>
     <div class="mode-divider"></div>
     <button class="mode-btn" onclick="setMode('ICD-10 Coding','Look up ICD-10-CM codes, sequencing rules, or 2026 guideline changes')"><span>🏥</span><span class="mode-label">ICD-10</span></button>
     <button class="mode-btn" onclick="setMode('CPT Coding','Find CPT codes, modifier guidance, or bundling rules')"><span>⚕️</span><span class="mode-label">CPT</span></button>
@@ -386,6 +388,551 @@ function addMsg(role,content){const area=document.getElementById("chatArea");con
 function showTyping(){const area=document.getElementById("chatArea");const div=document.createElement("div");div.className="msg ai";div.id="typing-indicator";div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";area.appendChild(div);area.scrollTop=area.scrollHeight;}
 async function sendMessage(){const inp=document.getElementById("userInput");const text=inp.value.trim();if(!text||isLoading)return;const memCtx=await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return"";});if(activeFlow!==null){addMsg("user",text);inp.value="";inp.style.height="";if(flowStep<activeFlow.steps.length){const nxt=activeFlow.steps[flowStep++];setTimeout(function(){addMsg("ai",nxt);messages.push({role:"assistant",content:nxt});},700);}else if(flowStep===activeFlow.steps.length){flowStep++;setTimeout(function(){addMsg("ai",activeFlow.finish);messages.push({role:"assistant",content:activeFlow.finish});activeFlow=null;},700);}else{activeFlow=null;}return;}inp.value="";inp.style.height="";isLoading=true;document.getElementById("sendBtn").disabled=true;addMsg("user",text);messages.push({role:"user",content:text});showTyping();try{const res=await fetch(SAIRN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:1000,system:SYSTEM+(memCtx||""),messages:messages.slice(-20),app_id:APP_ID,is_demo:true})});const data=await res.json();document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();if(res.status===429){addMsg("ai",(data.message||"Daily limit reached.")+" Sign up at sairn.vercel.app for full access.");}else{const reply=data.content&&data.content[0]&&data.content[0].text||"Please try again.";messages.push({role:"assistant",content:reply});addMsg("ai",reply);}}catch(e){document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();addMsg("ai","Connection issue. Please try again.");}isLoading=false;document.getElementById("sendBtn").disabled=false;document.getElementById("userInput").focus();}
 async function loadFirstMessage(){try{const now=new Date();const res=await fetch("https://sairn.vercel.app/api/greeting",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({app_id:APP_ID,client_hour:now.getHours(),client_day:now.getDay()})});const data=await res.json();if(!data.greeting)return;const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg ai";div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+data.greeting+" SAIRNcode is ready — ICD-10, CPT, E&M leveling, fraud detection, DRG validation, compliance, and audit reporting. What do you need?</p></div>";div.style.opacity="0";div.style.transform="translateY(10px)";area.appendChild(div);messages.push({role:"assistant",content:data.greeting});requestAnimationFrame(function(){div.style.transition="opacity 0.5s, transform 0.5s";div.style.opacity="1";div.style.transform="translateY(0)";});}catch(e){}}
+
+// ============================================================
+// PROVIDER DOCUMENTATION TEMPLATES
+// Structured note templates providers use alongside Epic
+// Ensures documentation specificity for accurate coding
+// ============================================================
+
+const DOC_TEMPLATES = [
+  {
+    id: 'diabetes',
+    title: 'Diabetes Mellitus',
+    icon: '🩺',
+    icd: 'E11.xx',
+    purpose: 'Ensure documentation captures type, complications, and manifestations to highest ICD-10 specificity for accurate HCC coding and risk adjustment.',
+    fields: [
+      { label: 'Type of Diabetes', type: 'select', options: ['Type 2 (E11)', 'Type 1 (E10)', 'Secondary/Other (E13)', 'Due to underlying condition (E08)', 'Drug or chemical induced (E09)'] },
+      { label: 'Current A1C Value', type: 'text', placeholder: 'e.g. 8.2%' },
+      { label: 'Diabetic Kidney Disease', type: 'select', options: ['None', 'Stage 1 CKD (E11.65 + N18.1)', 'Stage 2 CKD (E11.65 + N18.2)', 'Stage 3 CKD (E11.65 + N18.3)', 'Stage 4 CKD (E11.65 + N18.4)', 'Stage 5 CKD (E11.65 + N18.5)', 'ESRD (E11.65 + N18.6)'] },
+      { label: 'Diabetic Neuropathy', type: 'select', options: ['None', 'Peripheral neuropathy (E11.40)', 'Autonomic neuropathy (E11.43)', 'Gastroparesis (E11.43 + K31.84)', 'Mononeuropathy (E11.41)', 'Other neuropathy (E11.49)'] },
+      { label: 'Diabetic Retinopathy', type: 'select', options: ['None', 'Mild NPDR right (E11.3211)', 'Moderate NPDR (E11.3319)', 'Severe NPDR (E11.3419)', 'PDR (E11.3519)', 'Diabetic macular edema present'] },
+      { label: 'Diabetic Foot / Peripheral Vascular', type: 'select', options: ['None', 'Peripheral angiopathy without gangrene (E11.51)', 'Peripheral angiopathy with gangrene (E11.52)', 'Foot ulcer (E11.621)', 'Other skin complication (E11.628)'] },
+      { label: 'Currently Controlled or Uncontrolled', type: 'select', options: ['Controlled — document A1C at goal', 'Uncontrolled — document reason and plan', 'Poorly controlled — document management changes'] },
+      { label: 'Medications', type: 'text', placeholder: 'e.g. Metformin 1000mg BID, Jardiance 10mg QD' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Provider narrative — assessment and plan for this visit' }
+    ]
+  },
+  {
+    id: 'chf',
+    title: 'Heart Failure (CHF)',
+    icon: '❤️',
+    icd: 'I50.xx',
+    purpose: 'Document heart failure type and acuity to ensure correct DRG assignment and HCC capture. Unspecified CHF (I50.9) loses significant reimbursement versus specified type.',
+    fields: [
+      { label: 'Heart Failure Type', type: 'select', options: ['Systolic — Acute (I50.21)', 'Systolic — Chronic (I50.22)', 'Systolic — Acute on Chronic (I50.23)', 'Diastolic — Acute (I50.31)', 'Diastolic — Chronic (I50.32)', 'Diastolic — Acute on Chronic (I50.33)', 'Combined — Acute (I50.41)', 'Combined — Chronic (I50.42)', 'Combined — Acute on Chronic (I50.43)', 'Unspecified (I50.9) — AVOID if possible'] },
+      { label: 'Current EF (Ejection Fraction)', type: 'text', placeholder: 'e.g. EF 35% — reduced, EF 60% — preserved' },
+      { label: 'NYHA Functional Class', type: 'select', options: ['Class I — No symptoms with ordinary activity', 'Class II — Slight limitation with ordinary activity', 'Class III — Marked limitation with less than ordinary activity', 'Class IV — Symptoms at rest'] },
+      { label: 'Acuity — Is this Acute, Chronic, or Acute on Chronic', type: 'select', options: ['Chronic — stable, outpatient management', 'Acute exacerbation — new or worsening symptoms', 'Acute on Chronic — known CHF with acute decompensation'] },
+      { label: 'Underlying Etiology', type: 'select', options: ['Ischemic cardiomyopathy', 'Hypertensive heart disease (I11.0)', 'Valvular disease', 'Idiopathic cardiomyopathy', 'Other — specify in notes'] },
+      { label: 'Current Medications', type: 'text', placeholder: 'e.g. Furosemide 40mg, Lisinopril 10mg, Carvedilol 6.25mg' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Assessment and plan — include response to treatment if acute' }
+    ]
+  },
+  {
+    id: 'ckd',
+    title: 'Chronic Kidney Disease',
+    icon: '🔬',
+    icd: 'N18.x',
+    purpose: 'CKD stage must be documented explicitly — coders cannot assume stage from lab values. Each stage carries different HCC weight and reimbursement impact.',
+    fields: [
+      { label: 'CKD Stage — Must be explicitly stated', type: 'select', options: ['Stage 1 — GFR 90 or above (N18.1)', 'Stage 2 — GFR 60-89 (N18.2)', 'Stage 3a — GFR 45-59 (N18.31)', 'Stage 3b — GFR 30-44 (N18.32)', 'Stage 4 — GFR 15-29 (N18.4)', 'Stage 5 — GFR under 15 (N18.5)', 'ESRD on dialysis (N18.6)'] },
+      { label: 'Current GFR', type: 'text', placeholder: 'e.g. GFR 42 mL/min/1.73m2' },
+      { label: 'Current Creatinine', type: 'text', placeholder: 'e.g. Creatinine 1.8 mg/dL' },
+      { label: 'Underlying Cause', type: 'select', options: ['Diabetic nephropathy — code E11.65 first', 'Hypertensive CKD — code I12.9 first', 'Glomerulonephritis', 'Polycystic kidney disease', 'Other or unknown'] },
+      { label: 'On Dialysis', type: 'select', options: ['No', 'Hemodialysis — document frequency and access', 'Peritoneal dialysis'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Assessment — explicitly state CKD stage in your note' }
+    ]
+  },
+  {
+    id: 'copd',
+    title: 'COPD / Respiratory',
+    icon: '🫁',
+    icd: 'J44.xx',
+    purpose: 'COPD documentation must capture acuity and any exacerbation. J44.1 with exacerbation versus J44.0 with acute lower respiratory infection versus J44.9 unspecified carry very different DRG and HCC weights.',
+    fields: [
+      { label: 'COPD Status', type: 'select', options: ['COPD uncomplicated (J44.9) — avoid if more specific available', 'COPD with acute exacerbation (J44.1)', 'COPD with acute lower respiratory infection (J44.0)', 'COPD with acute bronchitis (J44.0 + J20.9)'] },
+      { label: 'GOLD Stage if Known', type: 'select', options: ['GOLD 1 — Mild (FEV1 80% or above)', 'GOLD 2 — Moderate (FEV1 50-79%)', 'GOLD 3 — Severe (FEV1 30-49%)', 'GOLD 4 — Very Severe (FEV1 under 30%)', 'Not formally staged'] },
+      { label: 'Oxygen Dependency', type: 'select', options: ['No supplemental oxygen', 'PRN oxygen use', 'Continuous home oxygen — document flow rate', 'Ventilator dependent'] },
+      { label: 'Current Medications', type: 'text', placeholder: 'e.g. Spiriva, Advair, Albuterol PRN, prednisone burst' },
+      { label: 'Smoking Status', type: 'select', options: ['Never smoker', 'Former smoker — document pack-year history', 'Current smoker — document counseling provided (Z87.891)'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Assessment and plan — explicitly state acuity' }
+    ]
+  },
+  {
+    id: 'hcc_annual',
+    title: 'HCC Annual Capture Checklist',
+    icon: '📋',
+    icd: 'Multiple',
+    purpose: 'CMS requires that HCC conditions be documented, assessed, and addressed at least once per year to count for risk adjustment. Use this template at every annual wellness visit to ensure all active chronic conditions are captured.',
+    fields: [
+      { label: 'Patient RAF Score if Known', type: 'text', placeholder: 'e.g. 1.42' },
+      { label: 'Diabetes and Complications — Reviewed and Addressed', type: 'select', options: ['Not applicable', 'Documented with full specificity including all complications', 'Documented — needs more specificity', 'Present but not addressed this visit — explain in notes'] },
+      { label: 'Heart Failure — Reviewed and Addressed', type: 'select', options: ['Not applicable', 'Documented with type and acuity specified', 'Documented — type not specified, needs clarification', 'Present but not addressed'] },
+      { label: 'CKD — Reviewed and Addressed', type: 'select', options: ['Not applicable', 'Stage explicitly documented in note', 'CKD present but stage not stated — coder will query', 'Present but not addressed'] },
+      { label: 'COPD — Reviewed and Addressed', type: 'select', options: ['Not applicable', 'Documented with acuity', 'Documented unspecified — needs specificity', 'Present but not addressed'] },
+      { label: 'CAD / Ischemic Heart Disease', type: 'select', options: ['Not applicable', 'Documented with vessel and intervention status', 'Documented — needs specificity', 'Present but not addressed'] },
+      { label: 'Depression / Mental Health', type: 'select', options: ['Not applicable', 'Documented with type and severity', 'Screened — PHQ-9 score documented', 'Present but not addressed'] },
+      { label: 'Obesity', type: 'select', options: ['Not applicable', 'BMI documented — obesity stated explicitly (E66.xx)', 'BMI elevated but obesity not stated — document or query', 'Not applicable'] },
+      { label: 'Additional Chronic Conditions', type: 'textarea', placeholder: 'List any other active chronic conditions reviewed this visit with their status' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Overall HCC review summary for this visit' }
+    ]
+  }
+];
+
+// ============================================================
+// CODER AND AUDITOR QUERY TEMPLATES
+// Physician query forms sent when documentation is unclear
+// Based on AHIMA and ACDIS query guidelines
+// ============================================================
+
+const QUERY_TEMPLATES = [
+  {
+    id: 'unspecified_dx',
+    title: 'Unspecified Diagnosis Query',
+    icon: '❓',
+    category: 'Documentation Clarification',
+    when: 'Use when physician documented a condition but did not specify type, stage, or acuity — for example CHF without type, CKD without stage, diabetes without type.',
+    template: {
+      subject: 'Physician Query — Diagnosis Clarification',
+      intro: 'We are reviewing the medical record for [PATIENT NAME], Date of Service [DOS], MRN [MRN]. To ensure the most accurate coding and reimbursement for services rendered, we are requesting clarification regarding the following diagnosis.',
+      body: 'The documentation references [CONDITION] in your note dated [DATE]. To code this condition to the highest level of specificity as required by ICD-10-CM guidelines, could you please clarify the following:\n\n[SPECIFIC QUESTION — e.g. What type of heart failure is present — systolic, diastolic, or combined?]\n[SPECIFIC QUESTION — e.g. Is this condition acute, chronic, or acute on chronic?]\n[SPECIFIC QUESTION — e.g. What stage of CKD is present based on GFR?]',
+      options: 'Based on your clinical judgment, which of the following best describes this patient\'s condition:\n\n[ ] [Option 1 with ICD-10 code]\n[ ] [Option 2 with ICD-10 code]\n[ ] [Option 3 with ICD-10 code]\n[ ] Unable to determine from available information\n[ ] Other — please specify: _______________',
+      footer: 'Your response will be used solely for coding purposes and will be made part of the medical record. This query is compliant with AHIMA and ACDIS physician query guidelines. Thank you for your time.'
+    }
+  },
+  {
+    id: 'hcc_missing',
+    title: 'HCC Condition Not Addressed',
+    icon: '🎯',
+    category: 'HCC Risk Adjustment',
+    when: 'Use when a patient has a known HCC condition from a prior visit that was not addressed or documented in the current visit note. CMS requires annual documentation of all active chronic conditions.',
+    template: {
+      subject: 'Physician Query — Chronic Condition Annual Documentation',
+      intro: 'We are reviewing the medical record for [PATIENT NAME], DOS [DOS], MRN [MRN]. As part of our HCC risk adjustment review, we identified a condition previously documented that does not appear to have been addressed in this visit.',
+      body: 'Our records indicate [CONDITION — e.g. Type 2 Diabetes with CKD Stage 3] was documented on [PRIOR DATE]. This condition did not appear to be addressed in the current visit note dated [CURRENT DATE].\n\nFor CMS risk adjustment accuracy, all active chronic conditions must be documented, assessed, and addressed at least once per calendar year.',
+      options: 'Could you please clarify the status of this condition for this encounter:\n\n[ ] Condition is active and was assessed this visit — please addend note\n[ ] Condition is active but was not the focus of this visit — please document status\n[ ] Condition has resolved — please document resolution date\n[ ] Condition was monitored by another provider — please identify provider\n[ ] Other — please specify: _______________',
+      footer: 'This query is intended to ensure accurate risk adjustment and is compliant with AHIMA and ACDIS guidelines. An addendum to the existing note is acceptable to address this condition.'
+    }
+  },
+  {
+    id: 'cc_mcc',
+    title: 'CC / MCC Clarification',
+    icon: '🏥',
+    category: 'DRG Optimization',
+    when: 'Use when a complication or comorbidity (CC) or major complication or comorbidity (MCC) is present in the clinical evidence but not explicitly documented in the note. This affects DRG assignment and hospital reimbursement significantly.',
+    template: {
+      subject: 'Physician Query — Complication or Comorbidity Documentation',
+      intro: 'We are reviewing the inpatient record for [PATIENT NAME], Admission Date [DATE], MRN [MRN], for DRG assignment purposes. The clinical documentation and diagnostic results suggest the possible presence of a complication or comorbidity that may affect DRG assignment.',
+      body: 'The following clinical indicators are present in the record:\n\n[CLINICAL EVIDENCE — e.g. Creatinine trending from 0.9 on admission to 2.1 on day 3]\n[CLINICAL EVIDENCE — e.g. Chest X-ray showing pulmonary edema]\n[CLINICAL EVIDENCE — e.g. BNP elevated at 1,842]\n\nBased on this clinical evidence, could you please clarify whether any of the following conditions are present and clinically significant for this encounter:',
+      options: '[ ] [Condition 1 — e.g. Acute kidney injury (N17.9)] — MCC\n[ ] [Condition 2 — e.g. Acute on chronic diastolic heart failure (I50.33)] — MCC\n[ ] [Condition 3 — e.g. Acute pulmonary edema (J81.0)] — MCC\n[ ] Clinically insignificant — does not meet criteria for separate diagnosis\n[ ] Unable to determine — please specify: _______________',
+      footer: 'Per ICD-10-CM Official Guidelines, a condition that is monitored, evaluated, treated, or increases nursing care may be reported as an additional diagnosis. Your clinical judgment determines whether these conditions meet reporting criteria.'
+    }
+  },
+  {
+    id: 'principal_dx',
+    title: 'Principal Diagnosis Clarification',
+    icon: '🎖️',
+    category: 'Principal Diagnosis',
+    when: 'Use when the principal diagnosis — the condition established after study to be chiefly responsible for the admission — is unclear from the documentation, or when multiple conditions could serve as principal diagnosis.',
+    template: {
+      subject: 'Physician Query — Principal Diagnosis for Inpatient Admission',
+      intro: 'We are reviewing the inpatient record for [PATIENT NAME], Admission Date [DATE], MRN [MRN]. To assign the correct principal diagnosis per UHDDS definitions and ICD-10-CM Official Guidelines, we are requesting clarification.',
+      body: 'The patient was admitted with [PRESENTING SYMPTOMS / REASON FOR ADMISSION]. The record documents the following active conditions during this stay:\n\n[CONDITION 1]\n[CONDITION 2]\n[CONDITION 3]\n\nPer UHDDS guidelines, the principal diagnosis is the condition established after study to be chiefly responsible for occasioning the admission. Could you please identify the principal diagnosis for this admission:',
+      options: '[ ] [Condition 1] — chiefly responsible for this admission\n[ ] [Condition 2] — chiefly responsible for this admission\n[ ] [Condition 3] — chiefly responsible for this admission\n[ ] Equally responsible — either may be sequenced as principal\n[ ] Other — please specify: _______________',
+      footer: 'Correct principal diagnosis sequencing directly affects DRG assignment and hospital reimbursement. This query complies with AHIMA and ACDIS physician query guidelines.'
+    }
+  },
+  {
+    id: 'sepsis',
+    title: 'Sepsis / Infection Query',
+    icon: '🦠',
+    category: 'Sepsis Documentation',
+    when: 'Use when clinical indicators suggest sepsis or severe infection but the term sepsis is not explicitly documented. Sepsis (A41.9) as principal diagnosis carries MCC weight and significantly affects DRG.',
+    template: {
+      subject: 'Physician Query — Sepsis Documentation Clarification',
+      intro: 'We are reviewing the record for [PATIENT NAME], DOS [DATE], MRN [MRN]. The clinical documentation contains indicators suggesting a systemic infectious process. To ensure accurate coding under Sepsis-3 definitions and ICD-10-CM guidelines, we are requesting clarification.',
+      body: 'The following clinical indicators are documented:\n\n[ ] Suspected or confirmed infection source: [SPECIFY]\n[ ] SIRS criteria — Temperature, Heart Rate, Respiratory Rate, WBC\n[ ] Organ dysfunction indicators: [SPECIFY — e.g. elevated creatinine, altered mental status, hypotension]\n[ ] Sepsis-3 criteria — life-threatening organ dysfunction caused by dysregulated host response to infection\n[ ] Blood cultures ordered: [ ] Yes [ ] No — Results: [RESULTS]\n[ ] Antibiotics initiated: [ ] Yes — Antibiotic: [NAME] [ ] No\n[ ] Vasopressors required: [ ] Yes [ ] No\n\nBased on your clinical judgment and the Sepsis-3 definition:',
+      options: '[ ] Sepsis is present (A41.9) — organ dysfunction due to infection\n[ ] Severe sepsis is present (A41.9 + R65.20)\n[ ] Septic shock is present (A41.9 + R65.21)\n[ ] SIRS of infectious origin — not meeting sepsis criteria\n[ ] Infection present without systemic response\n[ ] Unable to determine — please specify: _______________',
+      footer: 'Sepsis documentation has significant DRG and quality measure implications. This query is compliant with AHIMA, ACDIS, and Sepsis-3 consensus definitions. Thank you.'
+    }
+  }
+];
+
+function showDocTemplates() {
+  const existing = document.getElementById('doc-template-modal');
+  if(existing) { existing.remove(); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'doc-template-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#0D1117;border-bottom:1px solid rgba(59,130,246,0.2);flex-shrink:0';
+  const htitle = document.createElement('div');
+  htitle.style.cssText = 'font-size:16px;font-weight:700;color:#F5F0E8';
+  htitle.textContent = '📝 Provider Documentation Templates — Epic Compatible';
+  const hsub = document.createElement('div');
+  hsub.style.cssText = 'font-size:11px;color:#8A8070;margin-top:3px';
+  hsub.textContent = 'Structured templates ensuring ICD-10 specificity and HCC capture — use alongside Epic or any EMR';
+  const htitleWrap = document.createElement('div');
+  htitleWrap.appendChild(htitle);
+  htitleWrap.appendChild(hsub);
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#8A8070;font-size:22px;cursor:pointer;padding:0 4px;flex-shrink:0';
+  closeBtn.onclick = function() { modal.remove(); };
+  hdr.appendChild(htitleWrap);
+  hdr.appendChild(closeBtn);
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-content:start';
+
+  DOC_TEMPLATES.forEach(function(tmpl) {
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#0D1117;border:1px solid rgba(59,130,246,0.15);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.2s';
+    card.onmouseenter = function() { this.style.borderColor = 'rgba(59,130,246,0.4)'; };
+    card.onmouseleave = function() { this.style.borderColor = 'rgba(59,130,246,0.15)'; };
+
+    const cardHdr = document.createElement('div');
+    cardHdr.style.cssText = 'padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.05)';
+    cardHdr.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">' + tmpl.icon + '</span><span style="font-size:14px;font-weight:700;color:#F5F0E8">' + tmpl.title + '</span></div><span style="font-size:10px;font-weight:700;padding:2px 8px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:100px;color:#60A5FA">' + tmpl.icd + '</span></div><div style="font-size:12px;color:#8A8070;line-height:1.5">' + tmpl.purpose + '</div>';
+
+    const openBtn = document.createElement('button');
+    openBtn.textContent = 'Open Template';
+    openBtn.style.cssText = 'width:calc(100% - 32px);margin:12px 16px;padding:8px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:8px;color:#60A5FA;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit';
+    openBtn.onclick = function() { openDocTemplate(tmpl); };
+
+    card.appendChild(cardHdr);
+    card.appendChild(openBtn);
+    body.appendChild(card);
+  });
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function openDocTemplate(tmpl) {
+  const existing = document.getElementById('doc-form-modal');
+  if(existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'doc-form-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:10000;display:flex;flex-direction:column;overflow:hidden';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#0D1117;border-bottom:1px solid rgba(59,130,246,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">' + tmpl.icon + ' ' + tmpl.title + ' Documentation Template</div><div style="font-size:11px;color:#8A8070;margin-top:2px">ICD-10: ' + tmpl.icd + ' — Complete all fields then print or copy to Epic</div></div>';
+  const btnGroup = document.createElement('div');
+  btnGroup.style.cssText = 'display:flex;gap:8px;align-items:center';
+  const printBtn = document.createElement('button');
+  printBtn.textContent = 'Print Template';
+  printBtn.style.cssText = 'padding:7px 14px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:8px;color:#60A5FA;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit';
+  printBtn.onclick = function() { printDocTemplate(tmpl); };
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#8A8070;font-size:22px;cursor:pointer;padding:0 4px';
+  closeBtn.onclick = function() { modal.remove(); };
+  btnGroup.appendChild(printBtn);
+  btnGroup.appendChild(closeBtn);
+  hdr.appendChild(btnGroup);
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:24px;max-width:700px;margin:0 auto;width:100%';
+
+  // Patient info
+  const patientSection = document.createElement('div');
+  patientSection.style.cssText = 'background:#0D1117;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;margin-bottom:20px';
+  patientSection.innerHTML = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8A8070;margin-bottom:10px">Patient Information</div>';
+  const patientGrid = document.createElement('div');
+  patientGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px';
+  [['doc-patient-name','Patient Name'],['doc-dos','Date of Service'],['doc-mrn','MRN'],['doc-provider','Provider Name']].forEach(function(f) {
+    const wrap = document.createElement('div');
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:11px;color:#8A8070;margin-bottom:4px';
+    lbl.textContent = f[1];
+    const inp = document.createElement('input');
+    inp.id = f[0]; inp.placeholder = f[1];
+    inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:7px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box';
+    wrap.appendChild(lbl); wrap.appendChild(inp);
+    patientGrid.appendChild(wrap);
+  });
+  patientSection.appendChild(patientGrid);
+  body.appendChild(patientSection);
+
+  // Template fields
+  const fieldsSection = document.createElement('div');
+  fieldsSection.style.cssText = 'background:#0D1117;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;margin-bottom:20px';
+  fieldsSection.innerHTML = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#60A5FA;margin-bottom:14px">Clinical Documentation</div>';
+
+  tmpl.fields.forEach(function(field, idx) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:14px';
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:12px;font-weight:600;color:#F5F0E8;margin-bottom:5px';
+    lbl.textContent = field.label;
+    wrap.appendChild(lbl);
+
+    let inp;
+    if(field.type === 'select') {
+      inp = document.createElement('select');
+      inp.style.cssText = 'width:100%;background:#0D1117;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none';
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = '— Select —';
+      inp.appendChild(defaultOpt);
+      field.options.forEach(function(opt) {
+        const o = document.createElement('option');
+        o.value = opt; o.textContent = opt;
+        inp.appendChild(o);
+      });
+    } else if(field.type === 'textarea') {
+      inp = document.createElement('textarea');
+      inp.placeholder = field.placeholder || '';
+      inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;resize:vertical;min-height:80px;box-sizing:border-box';
+    } else {
+      inp = document.createElement('input');
+      inp.placeholder = field.placeholder || '';
+      inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box';
+    }
+    inp.id = 'doc-field-' + idx;
+    inp.dataset.fieldLabel = field.label;
+    wrap.appendChild(inp);
+    fieldsSection.appendChild(wrap);
+  });
+
+  body.appendChild(fieldsSection);
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function printDocTemplate(tmpl) {
+  const patientName = document.getElementById('doc-patient-name')?.value || '[Patient Name]';
+  const dos = document.getElementById('doc-dos')?.value || '[Date of Service]';
+  const mrn = document.getElementById('doc-mrn')?.value || '[MRN]';
+  const provider = document.getElementById('doc-provider')?.value || '[Provider]';
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  let fieldRows = '';
+  tmpl.fields.forEach(function(field, idx) {
+    const el = document.getElementById('doc-field-' + idx);
+    const val = el ? el.value : '';
+    fieldRows += '<tr><td style="font-weight:600;padding:7px 10px;border-bottom:1px solid #eee;width:35%;vertical-align:top;font-size:12px">' + field.label + '</td><td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px;color:' + (val ? '#111' : '#aaa') + '">' + (val || 'Not documented') + '</td></tr>';
+  });
+
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + tmpl.title + ' — ' + patientName + '</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:32px;color:#111;font-size:13px;line-height:1.6}');
+  win.document.write('.header{border-bottom:2px solid #1E40AF;padding-bottom:14px;margin-bottom:20px}.title{font-size:18px;font-weight:700;color:#1E40AF;margin-bottom:4px}.meta{font-size:11px;color:#666}');
+  win.document.write('.patient-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#F0F7FF;padding:12px;border-radius:6px;margin-bottom:18px;border:1px solid #BFDBFE}');
+  win.document.write('.patient-item{font-size:12px}.patient-label{color:#666;margin-bottom:2px}.patient-value{font-weight:600;color:#111}');
+  win.document.write('table{width:100%;border-collapse:collapse;margin-bottom:18px}th{background:#1E40AF;color:#fff;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}');
+  win.document.write('.purpose{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:#1E3A8A;line-height:1.6}');
+  win.document.write('.sig-line{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px}.sig{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#666}');
+  win.document.write('.footer{margin-top:20px;padding-top:12px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:10px;color:#aaa}');
+  win.document.write('@media print{body{padding:20px}}</style></head><body>');
+
+  win.document.write('<div class="header"><div class="title">' + tmpl.icon + ' ' + tmpl.title + ' — Clinical Documentation Template</div>');
+  win.document.write('<div class="meta">ICD-10: ' + tmpl.icd + ' &nbsp;|&nbsp; Generated: ' + date + ' &nbsp;|&nbsp; SAIRNcode — Epic Compatible Documentation Tool</div></div>');
+
+  win.document.write('<div class="patient-grid">');
+  win.document.write('<div class="patient-item"><div class="patient-label">Patient Name</div><div class="patient-value">' + patientName + '</div></div>');
+  win.document.write('<div class="patient-item"><div class="patient-label">Date of Service</div><div class="patient-value">' + dos + '</div></div>');
+  win.document.write('<div class="patient-item"><div class="patient-label">MRN</div><div class="patient-value">' + mrn + '</div></div>');
+  win.document.write('<div class="patient-item"><div class="patient-label">Provider</div><div class="patient-value">' + provider + '</div></div>');
+  win.document.write('</div>');
+
+  win.document.write('<div class="purpose"><strong>Purpose:</strong> ' + tmpl.purpose + '</div>');
+
+  win.document.write('<table><thead><tr><th>Documentation Element</th><th>Documented Value</th></tr></thead><tbody>' + fieldRows + '</tbody></table>');
+
+  win.document.write('<div class="sig-line"><div class="sig">Provider Signature &amp; Date</div><div class="sig">Reviewed by Coder / Auditor &amp; Date</div></div>');
+  win.document.write('<div class="footer"><div>Confidential — For Clinical and Coding Use Only</div><div>SAIRNcode AI — sairn.vercel.app/sairncode</div></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ============================================================
+// QUERY BUILDER FOR CODERS AND AUDITORS
+// ============================================================
+
+function showQueryTemplates() {
+  const existing = document.getElementById('query-modal');
+  if(existing) { existing.remove(); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'query-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#0D1117;border-bottom:1px solid rgba(124,58,237,0.2);flex-shrink:0';
+  const htitleWrap = document.createElement('div');
+  htitleWrap.innerHTML = '<div style="font-size:16px;font-weight:700;color:#F5F0E8">🔍 Physician Query Builder — AHIMA and ACDIS Compliant</div><div style="font-size:11px;color:#8A8070;margin-top:3px">Query templates for coders and auditors — compliant with AHIMA and ACDIS physician query guidelines</div>';
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#8A8070;font-size:22px;cursor:pointer;padding:0 4px;flex-shrink:0';
+  closeBtn.onclick = function() { modal.remove(); };
+  hdr.appendChild(htitleWrap);
+  hdr.appendChild(closeBtn);
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-content:start';
+
+  QUERY_TEMPLATES.forEach(function(tmpl) {
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#0D1117;border:1px solid rgba(124,58,237,0.15);border-radius:12px;overflow:hidden;transition:border-color 0.2s';
+    card.onmouseenter = function() { this.style.borderColor = 'rgba(124,58,237,0.4)'; };
+    card.onmouseleave = function() { this.style.borderColor = 'rgba(124,58,237,0.15)'; };
+
+    const cardHdr = document.createElement('div');
+    cardHdr.style.cssText = 'padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.05)';
+    cardHdr.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:20px">' + tmpl.icon + '</span><span style="font-size:14px;font-weight:700;color:#F5F0E8">' + tmpl.title + '</span></div><div style="font-size:10px;font-weight:700;padding:2px 8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:100px;color:#A78BFA;display:inline-block;margin-bottom:8px">' + tmpl.category + '</div><div style="font-size:12px;color:#8A8070;line-height:1.5">' + tmpl.when + '</div>';
+
+    const buildBtn = document.createElement('button');
+    buildBtn.textContent = 'Build Query';
+    buildBtn.style.cssText = 'width:calc(100% - 32px);margin:12px 16px;padding:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:8px;color:#A78BFA;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit';
+    buildBtn.onclick = function() { openQueryBuilder(tmpl); };
+
+    card.appendChild(cardHdr);
+    card.appendChild(buildBtn);
+    body.appendChild(card);
+  });
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function openQueryBuilder(tmpl) {
+  const existing = document.getElementById('query-form-modal');
+  if(existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'query-form-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:10000;display:flex;flex-direction:column;overflow:hidden';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#0D1117;border-bottom:1px solid rgba(124,58,237,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">' + tmpl.icon + ' ' + tmpl.title + '</div><div style="font-size:11px;color:#8A8070;margin-top:2px">Fill in patient details and customize the query — then print or send</div></div>';
+  const btnGroup = document.createElement('div');
+  btnGroup.style.cssText = 'display:flex;gap:8px;align-items:center';
+  const printBtn = document.createElement('button');
+  printBtn.textContent = 'Print Query';
+  printBtn.style.cssText = 'padding:7px 14px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:8px;color:#A78BFA;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit';
+  printBtn.onclick = function() { printQuery(tmpl); };
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#8A8070;font-size:22px;cursor:pointer;padding:0 4px';
+  closeBtn.onclick = function() { modal.remove(); };
+  btnGroup.appendChild(printBtn);
+  btnGroup.appendChild(closeBtn);
+  hdr.appendChild(btnGroup);
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:24px;max-width:700px;margin:0 auto;width:100%';
+
+  // Patient info fields
+  const patGrid = document.createElement('div');
+  patGrid.style.cssText = 'background:#0D1117;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;margin-bottom:20px';
+  patGrid.innerHTML = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8A8070;margin-bottom:12px">Patient and Encounter Details</div>';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px';
+  [['q-patient','Patient Name'],['q-dos','Date of Service'],['q-mrn','MRN'],['q-provider','Attending Physician'],['q-coder','Coder / Auditor Name'],['q-facility','Facility']].forEach(function(f) {
+    const wrap = document.createElement('div');
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:11px;color:#8A8070;margin-bottom:4px';
+    lbl.textContent = f[1];
+    const inp = document.createElement('input');
+    inp.id = f[0]; inp.placeholder = f[1];
+    inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:7px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box';
+    wrap.appendChild(lbl); wrap.appendChild(inp);
+    grid.appendChild(wrap);
+  });
+  patGrid.appendChild(grid);
+  body.appendChild(patGrid);
+
+  // Query preview — editable
+  const previewSection = document.createElement('div');
+  previewSection.style.cssText = 'background:#0D1117;border:1px solid rgba(124,58,237,0.2);border-radius:10px;padding:16px;margin-bottom:20px';
+  previewSection.innerHTML = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#A78BFA;margin-bottom:12px">Query Text — Customize as Needed</div>';
+
+  const fullQueryText = [
+    'TO: ' + tmpl.template.subject,
+    '',
+    tmpl.template.intro,
+    '',
+    tmpl.template.body,
+    '',
+    tmpl.template.options,
+    '',
+    tmpl.template.footer
+  ].join('\n');
+
+  const queryTA = document.createElement('textarea');
+  queryTA.id = 'query-text';
+  queryTA.value = fullQueryText;
+  queryTA.style.cssText = 'width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:12px;color:#F5F0E8;font-size:12px;font-family:monospace;outline:none;resize:vertical;min-height:300px;box-sizing:border-box;line-height:1.7';
+  previewSection.appendChild(queryTA);
+  body.appendChild(previewSection);
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function printQuery(tmpl) {
+  const patient = document.getElementById('q-patient')?.value || '[Patient Name]';
+  const dos = document.getElementById('q-dos')?.value || '[Date of Service]';
+  const mrn = document.getElementById('q-mrn')?.value || '[MRN]';
+  const provider = document.getElementById('q-provider')?.value || '[Physician]';
+  const coder = document.getElementById('q-coder')?.value || '[Coder / Auditor]';
+  const facility = document.getElementById('q-facility')?.value || '[Facility]';
+  const queryText = document.getElementById('query-text')?.value || '';
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Physician Query — ' + patient + '</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;color:#111;font-size:13px;line-height:1.7}');
+  win.document.write('.header{border-bottom:2px solid #6D28D9;padding-bottom:14px;margin-bottom:20px}');
+  win.document.write('.title{font-size:17px;font-weight:700;color:#6D28D9;margin-bottom:4px}');
+  win.document.write('.meta{font-size:11px;color:#666;margin-bottom:2px}');
+  win.document.write('.compliance-badge{display:inline-block;background:#EDE9FE;border:1px solid #C4B5FD;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;color:#5B21B6;margin-top:6px}');
+  win.document.write('.patient-box{background:#F5F3FF;border:1px solid #C4B5FD;border-radius:6px;padding:12px 16px;margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px}');
+  win.document.write('.pf{font-size:12px}.pl{color:#666;margin-bottom:2px}.pv{font-weight:600}');
+  win.document.write('.query-body{white-space:pre-wrap;font-size:13px;line-height:1.8;margin-bottom:24px;padding:16px;background:#FAFAFA;border:1px solid #E5E7EB;border-radius:6px}');
+  win.document.write('.sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-top:32px}');
+  win.document.write('.sig-line{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#666}');
+  win.document.write('.footer{margin-top:20px;padding-top:12px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:10px;color:#aaa}');
+  win.document.write('@media print{body{padding:20px}}</style></head><body>');
+
+  win.document.write('<div class="header">');
+  win.document.write('<div class="title">' + tmpl.icon + ' Physician Query — ' + tmpl.title + '</div>');
+  win.document.write('<div class="meta">Date: ' + date + ' &nbsp;|&nbsp; Prepared by: ' + coder + ' &nbsp;|&nbsp; Facility: ' + facility + '</div>');
+  win.document.write('<div class="compliance-badge">AHIMA and ACDIS Compliant Physician Query</div></div>');
+
+  win.document.write('<div class="patient-box">');
+  win.document.write('<div class="pf"><div class="pl">Patient Name</div><div class="pv">' + patient + '</div></div>');
+  win.document.write('<div class="pf"><div class="pl">MRN</div><div class="pv">' + mrn + '</div></div>');
+  win.document.write('<div class="pf"><div class="pl">Date of Service</div><div class="pv">' + dos + '</div></div>');
+  win.document.write('<div class="pf"><div class="pl">Attending Physician</div><div class="pv">' + provider + '</div></div>');
+  win.document.write('</div>');
+
+  win.document.write('<div class="query-body">' + queryText.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>');
+
+  win.document.write('<div class="sig-grid">');
+  win.document.write('<div class="sig-line">Physician Response &amp; Date</div>');
+  win.document.write('<div class="sig-line">Physician Signature</div>');
+  win.document.write('<div class="sig-line">Coder Receipt &amp; Date</div>');
+  win.document.write('</div>');
+
+  win.document.write('<div class="footer"><div>Physician Query — Confidential — For Coding and Compliance Purposes Only</div><div>SAIRNcode AI — sairn.vercel.app/sairncode</div></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
 document.getElementById("userInput").addEventListener("input",function(){this.style.height="";this.style.height=Math.min(this.scrollHeight,140)+"px";});
 document.getElementById("userInput").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
 </script>
