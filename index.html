@@ -575,8 +575,15 @@ function addOutcomeBar() {
   header.after(bar);
 }
 
-// ── ENHANCED SAVE BAR ────────────────────────────────────────
-// showSaveBar consolidated, 2000); }); };
+// ── SAVE BAR ─────────────────────────────────────────────────
+function showSaveBar() {
+  cloudSaveMemory(lastResponse); trackOutcome();
+  const ex = document.getElementById('sairn-save-bar'); if(ex) ex.remove();
+  const bar = document.createElement('div'); bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';
+  const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy';
+  copyBtn.style.cssText = 'background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000); }); };
   const savedBadge = document.createElement('span');
   savedBadge.textContent = '✓ Saved';
   savedBadge.style.cssText = 'font-size:11px;color:#10B981;font-weight:600';
