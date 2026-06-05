@@ -896,23 +896,15 @@ document.addEventListener("DOMContentLoaded",function(){
 
 
 // SAIRN Universal Intelligence v6.2 — Fabricor
-function getSAIRNUserId(){let u=localStorage.getItem('sairn_uid');if(!u){u='u_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sairn_uid',u);}return u;}
-function getSAIRNContext(){const p=[];if(SAIRN_ORG_ID)p.push('Organization: '+SAIRN_ORG_NAME);return p.join('\n');}
-async function cloudSaveMemory(content){
-  if(!content||content.length<20)return;
-  try{const k='sairn_local_'+APP_ID;const e=JSON.parse(localStorage.getItem(k)||'[]');e.unshift({ts:Date.now(),text:content.slice(0,400)});localStorage.setItem(k,JSON.stringify(e.slice(0,100)));}catch(e){}
-  try{await fetch('https://sairn.vercel.app/api/memory-cloud',{method:'POST',headers:{'Content-Type':'application/json','X-User-ID':SAIRN_USER_ID,'X-App-ID':APP_ID},body:JSON.stringify({content:content.slice(0,400),user_id:SAIRN_USER_ID,app_id:APP_ID})});sessionOutcomes.saved++;}catch(e){}
-}
-async function cloudLoadMemory(){
-  try{const k='sairn_local_'+APP_ID;const e=JSON.parse(localStorage.getItem(k)||'[]');if(e.length)return'Previous context:\n'+e.slice(0,5).map(function(x){return x.text;}).join('\n---\n');}catch(e){}return'';
-}
-function initVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;voiceRecognition=new SR();voiceRecognition.continuous=false;voiceRecognition.interimResults=true;voiceRecognition.lang='en-US';voiceRecognition.onresult=function(e){const t=Array.from(e.results).map(function(r){return r[0].transcript;}).join('');const i=document.getElementById('userInput');if(i)i.value=t;if(e.results[e.results.length-1].isFinal){stopVoice();sendMessage();}};voiceRecognition.onerror=function(){stopVoice();};voiceRecognition.onend=function(){stopVoice();};return true;}
-function toggleVoice(){if(isListening){stopVoice();return;}if(!voiceRecognition&&!initVoice()){alert('Voice not supported. Try Chrome.');return;}isListening=true;voiceRecognition.start();const b=document.getElementById('voice-btn');if(b){b.style.background='var(--grad)';b.title='Listening...';}}
-function stopVoice(){isListening=false;if(voiceRecognition)try{voiceRecognition.stop();}catch(e){}const b=document.getElementById('voice-btn');if(b){b.style.background='rgba(255,255,255,0.05)';b.title='Voice input';}}
-function addVoiceButton(){const ia=document.querySelector('.input-area');if(!ia||document.getElementById('voice-btn'))return;const b=document.createElement('button');b.id='voice-btn';b.innerHTML='🎤';b.title='Voice input';b.style.cssText='width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit';b.onclick=toggleVoice;const s=document.getElementById('sendBtn');if(s)ia.insertBefore(b,s);}
-function trackOutcome(){sessionOutcomes.queries++;const el=document.getElementById('sairn-outcomes');if(el){const sv=Math.round(sessionOutcomes.queries*4.2);el.textContent=sessionOutcomes.queries+' queries · '+sv+' min saved';}}
-function addOutcomeBar(){if(document.getElementById('sairn-outcomes'))return;const h=document.querySelector('.app-header');if(!h)return;const bar=document.createElement('div');bar.style.cssText='padding:4px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0';const dot=document.createElement('span');dot.style.cssText='width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block';const lbl=document.createElement('span');lbl.id='sairn-outcomes';lbl.style.cssText='font-size:10px;color:rgba(255,255,255,0.25);font-family:inherit';lbl.textContent='0 queries · 0 min saved';bar.appendChild(dot);bar.appendChild(lbl);h.after(bar);}
-function showOILBadge(){if(!SAIRN_ORG_ID||document.getElementById('oil-badge'))return;const b=document.createElement('div');b.id='oil-badge';b.style.cssText='position:fixed;top:68px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px 12px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.5);z-index:998;display:flex;align-items:center;gap:6px;font-family:inherit';b.innerHTML='<span style=\"width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block\"></span>'+SAIRN_ORG_NAME;document.body.appendChild(b);}
+
+
+
+
+
+
+
+
+
 function showSaveBar(){cloudSaveMemory(lastResponse);trackOutcome();const ex=document.getElementById('sairn-save-bar');if(ex)ex.remove();const bar=document.createElement('div');bar.id='sairn-save-bar';bar.style.cssText='position:fixed;bottom:80px;right:20px;background:#0E1218;border:1px solid rgba(232,133,10,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';const cb=document.createElement('button');cb.textContent='Copy';cb.style.cssText='background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';cb.onclick=function(){navigator.clipboard.writeText(lastResponse).then(function(){cb.textContent='Copied!';setTimeout(function(){cb.textContent='Copy';},2000);});};const sb=document.createElement('span');sb.textContent='✓ Saved';sb.style.cssText='font-size:11px;color:#10B981;font-weight:600';const xb=document.createElement('button');xb.textContent='x';xb.style.cssText='background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px';xb.onclick=function(){bar.remove();};bar.appendChild(cb);bar.appendChild(sb);bar.appendChild(xb);document.body.appendChild(bar);setTimeout(function(){const b=document.getElementById('sairn-save-bar');if(b)b.remove();},6000);}
 document.addEventListener('DOMContentLoaded',function(){const obs=new MutationObserver(function(){const a=document.getElementById('appPage');if(a&&a.style.display!=='none'){addVoiceButton();addOutcomeBar();showOILBadge();}});obs.observe(document.body,{childList:true,subtree:true,attributes:true});});
 
@@ -1471,151 +1463,13 @@ async function importCSV(event, type) {
 // Quartzite: 30% slower = 4.6hr per 50sqft
 // Larger jobs more efficient — setup 30min is fixed per job
 // ============================================================
-const THH_BENCHMARKS = {
-  granite:   {per50:4.0, dailySqft:300},
-  quartz:    {per50:3.5, dailySqft:300},
-  quartzite: {per50:4.6, dailySqft:200},
-  mitered:   {per50:4.0, dailySqft:200}
-};
-const THH_SETUP_MINUTES = 30;
 
-function calcTHH(material, sqft) {
-  const mat = material.toLowerCase();
-  let bench = THH_BENCHMARKS.granite;
-  if(mat.includes('quartz') && !mat.includes('quartzite')) bench = THH_BENCHMARKS.quartz;
-  if(mat.includes('quartzite')) bench = THH_BENCHMARKS.quartzite;
-  if(mat.includes('miter')) bench = THH_BENCHMARKS.mitered;
-  const setupHrs = THH_SETUP_MINUTES / 60;
-  const productionHrs = (bench.per50 - setupHrs) * (sqft / 50);
-  return Math.round((setupHrs + productionHrs) * 10) / 10;
-}
 
-function calcDailyCapacity(fabricators, hasQuartzite) {
-  const sqftPerDay = hasQuartzite ? 200 : 300;
-  return {sqftPerDay: Math.round(sqftPerDay * (fabricators/3)), thhHours: fabricators * 8};
-}
 
-function showTHHCalculator() {
-  const existing = document.getElementById('thh-modal');
-  if(existing){existing.remove();return;}
-  const modal = document.createElement('div');
-  modal.id = 'thh-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto';
-  const box = document.createElement('div');
-  box.style.cssText = 'background:#0E1218;border:1px solid rgba(232,133,10,0.3);border-radius:20px;width:100%;max-width:620px;padding:24px;margin:auto';
-  box.innerHTML =
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
-      '<div style="font-size:16px;font-weight:700;color:#F5F0E8">📐 THH Capacity Planner</div>' +
-      '<button onclick="document.getElementById('thh-modal').remove()" style="background:none;border:none;color:#8A8070;font-size:20px;cursor:pointer">x</button>' +
-    '</div>' +
-    '<div style="background:rgba(232,133,10,0.06);border:1px solid rgba(232,133,10,0.15);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#8A8070;line-height:1.6">' +
-      '<strong style="color:#E8850A;display:block;margin-bottom:4px">Total Hand Work Hours — Shop Capacity Intelligence</strong>' +
-      '3 fabricators handle 300 sqft/day standard, 200 sqft/day quartzite or mitered edges. Setup fixed at 30 min per job. Larger jobs run more efficiently.' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
-      '<div><div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Fabricators</div>' +
-        '<input id="thh-fabricators" type="number" value="3" min="1" max="20" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:14px;font-family:inherit;outline:none"></div>' +
-      '<div><div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Hours Per Day</div>' +
-        '<input id="thh-hours" type="number" value="8" min="4" max="12" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:14px;font-family:inherit;outline:none"></div>' +
-    '</div>' +
-    '<div style="font-size:11px;font-weight:600;color:#8A8070;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Jobs to Schedule</div>' +
-    '<div id="thh-jobs-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>' +
-    '<button onclick="addTHHJob()" style="width:100%;padding:8px;background:rgba(232,133,10,0.1);border:1px dashed rgba(232,133,10,0.3);border-radius:8px;color:#E8850A;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px">+ Add Job</button>' +
-    '<button onclick="calculateTHH()" style="width:100%;padding:12px;background:linear-gradient(135deg,#E8850A,#C97008);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">Calculate THH and Check Capacity</button>' +
-    '<div id="thh-results"></div>';
-  modal.appendChild(box);
-  document.body.appendChild(modal);
-  addTHHJob(); addTHHJob();
-}
 
-let thhJobCount = 0;
-function addTHHJob() {
-  thhJobCount++;
-  const list = document.getElementById('thh-jobs-list');
-  if(!list) return;
-  const row = document.createElement('div');
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center';
-  row.innerHTML =
-    '<select class="thh-material" style="background:#0E1218;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-      '<option value="granite">Granite</option>' +
-      '<option value="quartz">Quartz</option>' +
-      '<option value="quartzite">Quartzite</option>' +
-      '<option value="mitered">Mitered Edges</option>' +
-    '</select>' +
-    '<input type="number" class="thh-sqft" placeholder="Square feet" min="1" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
-    '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#3A3020;font-size:18px;cursor:pointer;padding:0 4px">x</button>';
-  list.appendChild(row);
-}
 
-function calculateTHH() {
-  const fabricators = parseInt(document.getElementById('thh-fabricators').value) || 3;
-  const hoursPerDay = parseInt(document.getElementById('thh-hours').value) || 8;
-  const jobs = [];
-  document.querySelectorAll('#thh-jobs-list > div').forEach(function(row) {
-    const mat = row.querySelector('.thh-material');
-    const sqft = row.querySelector('.thh-sqft');
-    if(mat && sqft && sqft.value) {
-      const s = parseFloat(sqft.value);
-      jobs.push({material:mat.value, sqft:s, thh:calcTHH(mat.value, s)});
-    }
-  });
-  if(!jobs.length){alert('Add at least one job.');return;}
-  const totalTHH = jobs.reduce(function(s,j){return s+j.thh;},0);
-  const totalSqft = jobs.reduce(function(s,j){return s+j.sqft;},0);
-  const hasQuartzite = jobs.some(function(j){return j.material==='quartzite'||j.material==='mitered';});
-  const dailyCap = calcDailyCapacity(fabricators, hasQuartzite);
-  const dailyTHH = fabricators * hoursPerDay;
-  const weeklyTHH = dailyTHH * 5;
-  const weeklySqft = dailyCap.sqftPerDay * 5;
-  const dPct = Math.round((totalTHH/dailyTHH)*100);
-  const sPct = Math.round((totalSqft/dailyCap.sqftPerDay)*100);
-  const wPct = Math.round((totalTHH/weeklyTHH)*100);
-  function col(p){return p<=75?'#10B981':p<=90?'#F59E0B':'#EF4444';}
-  function lbl(p){return p<=75?'Good — capacity available':p<=90?'Tight — monitor closely':'Overloaded — reschedule';}
-  const results = document.getElementById('thh-results');
-  results.style.display = 'block';
-  const jobRows = jobs.map(function(j,i){
-    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px">' +
-      '<span style="color:#8A8070">Job '+(i+1)+' - '+j.material.charAt(0).toUpperCase()+j.material.slice(1)+' '+j.sqft+' sqft</span>' +
-      '<span style="color:#F5F0E8;font-weight:600">'+j.thh+' hrs THH</span></div>';
-  }).join('');
-  results.innerHTML =
-    '<div style="border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden">' +
-      '<div style="background:rgba(232,133,10,0.08);padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
-        '<div style="font-size:12px;font-weight:700;color:#E8850A;text-transform:uppercase;letter-spacing:1px">THH Results - '+fabricators+' Fabricators - '+hoursPerDay+'hr Day</div>' +
-      '</div>' +
-      '<div style="padding:14px 16px">' +
-        jobRows +
-        '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);margin-top:4px">' +
-          '<span style="color:#F5F0E8;font-weight:700">Total THH Required</span>' +
-          '<span style="color:#E8850A;font-weight:800;font-size:16px">'+Math.round(totalTHH*10)/10+' hours</span>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">' +
-          '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center">' +
-            '<div style="font-size:10px;font-weight:600;color:#8A8070;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Daily Capacity Used</div>' +
-            '<div style="font-size:28px;font-weight:800;color:'+col(dPct)+'">'+dPct+'%</div>' +
-            '<div style="font-size:11px;color:'+col(dPct)+';margin-top:4px">'+lbl(dPct)+'</div>' +
-            '<div style="font-size:11px;color:#3A3020;margin-top:4px">'+Math.round(totalTHH*10)/10+' of '+dailyTHH+' hrs</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center">' +
-            '<div style="font-size:10px;font-weight:600;color:#8A8070;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Sqft vs Daily Max</div>' +
-            '<div style="font-size:28px;font-weight:800;color:'+col(sPct)+'">'+sPct+'%</div>' +
-            '<div style="font-size:11px;color:'+col(sPct)+';margin-top:4px">'+lbl(sPct)+'</div>' +
-            '<div style="font-size:11px;color:#3A3020;margin-top:4px">'+totalSqft+' of '+dailyCap.sqftPerDay+' sqft/day</div>' +
-          '</div>' +
-        '</div>' +
-        '<div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:12px;color:#8A8070;line-height:1.65">' +
-          '<strong style="color:#F5F0E8;display:block;margin-bottom:4px">Weekly picture:</strong>' +
-          Math.round(totalTHH*10)/10+' THH = '+wPct+'% of your '+weeklyTHH+'-hour week. '+weeklySqft+' sqft/week available.' +
-          (dPct>100?'<br><strong style="color:#EF4444">These jobs exceed one day - plan across '+Math.ceil(totalTHH/dailyTHH)+' days minimum</strong>':'') +
-          (hasQuartzite?'<br><strong style="color:#F59E0B">Quartzite or mitered - daily sqft reduced to '+dailyCap.sqftPerDay+' sqft</strong>':'') +
-        '</div>' +
-      '</div>' +
-    '</div>';
-}
 
-document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
-document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
 </script>
 
   <script>
