@@ -983,6 +983,410 @@ async function importCSV(event,type){
 }
 
 // Input handlers
+
+// ============================================================
+// STONE SHOP SOP MANAGER
+// Printable SOPs for every position — auto-populates shop name
+// Links to SAIRNhr for HR questions beyond SOPs
+// ============================================================
+
+const STONE_SOPS = [
+  {
+    id: 'cnc',
+    title: 'CNC Operator',
+    icon: '⚙️',
+    color: '#3B82F6',
+    duties: [
+      'Review job tickets and cut files before each job — confirm material, dimensions, and edge profiles match the work order',
+      'Inspect each slab for cracks, fissures, and defects before loading — document and photograph any issues found',
+      'Set up CNC machine per material specifications — adjust speeds and feeds for granite, quartz, quartzite, and marble',
+      'Monitor cutting in progress — stop immediately if blade chatter, unusual sounds, or unexpected resistance occurs',
+      'Clean and inspect machine at end of each shift — check water levels, blade condition, and vacuum systems',
+      'Complete CNC production log for every job — record material, square footage, run time, and any issues',
+      'Never leave machine unattended during a cutting cycle'
+    ],
+    safety: [
+      'Safety glasses required at all times on the shop floor',
+      'Hearing protection required when machine is running',
+      'Wet cutting required for all stone — never dry cut granite, quartz, or quartzite',
+      'OSHA silica dust standard 1926.1153 — wet methods suppress silica exposure',
+      'Steel-toed boots required — no exceptions',
+      'No loose clothing or jewelry near rotating equipment',
+      'Emergency stop button location must be known before operating any machine'
+    ],
+    quality: [
+      'Measure finished cuts to confirm dimensions within 1/16 inch tolerance',
+      'Inspect edge profiles for consistency — report any chipping or inconsistency to foreman immediately',
+      'Photograph finished cut before moving to fabrication station'
+    ],
+    reporting: 'Report to Shop Foreman. Any machine malfunction, unusual wear, or safety concern must be reported immediately — do not continue operating a machine that does not sound or feel right.'
+  },
+  {
+    id: 'fabricator',
+    title: 'Fabricator / Polisher',
+    icon: '🔧',
+    color: '#10B981',
+    duties: [
+      'Receive cut pieces from CNC station — verify dimensions match work order before beginning fabrication',
+      'Polish edges to specified profile — eased, beveled, bullnose, ogee, or mitered as specified on job ticket',
+      'Install undermount sink cutouts, cooktop cutouts, and faucet holes per template specifications',
+      'Apply sealer to all natural stone per manufacturer specifications before delivery',
+      'Stage finished pieces for installation crew — label each piece clearly with job name and piece number',
+      'Complete fabrication log for every job — record time, materials used, and any issues',
+      'Keep work area clean and organized — stone dust must be wet-swept, never dry-swept'
+    ],
+    safety: [
+      'Safety glasses and face shield required during all grinding and polishing operations',
+      'Hearing protection required when using angle grinders',
+      'Wet polishing required — never dry grind stone without respiratory protection rated for silica',
+      'OSHA silica standard 1926.1153 — employer must provide silica controls and medical surveillance',
+      'Nitrile gloves when handling chemicals including sealers, epoxies, and cleaners',
+      'Back brace recommended when lifting slabs over 50 pounds — always use team lift for heavy pieces',
+      'Steel-toed boots required at all times'
+    ],
+    quality: [
+      'Edge profile must be consistent along entire length — check with profile gauge',
+      'Seams must be tight and color-matched — report any seam gaps over 1/16 inch to foreman',
+      'All surfaces must be clean and free of scratches, chips, or polishing swirls before staging'
+    ],
+    reporting: 'Report to Shop Foreman. Any piece that does not meet quality standards must be flagged before it leaves the shop — catching a problem here costs minutes, catching it at installation costs hours and money.'
+  },
+  {
+    id: 'templater',
+    title: 'Templater',
+    icon: '📐',
+    color: '#8B5CF6',
+    duties: [
+      'Contact customer 24 hours before template appointment to confirm access and cabinet readiness',
+      'Confirm cabinets are installed, level, and secured before templating — do not template over unlevel cabinets',
+      'Document all seam locations with customer approval before leaving — get signature on seam placement diagram',
+      'Photograph all walls, backsplash areas, and appliances — photo documentation protects both shop and customer',
+      'Measure all cutouts — sinks, cooktops, faucet holes — and confirm with customer before leaving',
+      'Note any special conditions — out-of-square walls, unusual overhangs, structural concerns',
+      'Return template to shop same day and brief fabrication team on any special requirements',
+      'Use Magicplan app for room measurement when available — speeds accuracy and documentation'
+    ],
+    safety: [
+      'Always assess job site safety upon arrival — note any trip hazards, unstable surfaces, or access issues',
+      'Wear steel-toed boots on all job sites',
+      'Pre-1978 homes — be aware of lead paint risk when drilling or cutting near painted surfaces — RRP certification required',
+      'Never template over cabinets that are not fully secured and level — this is a quality and liability issue'
+    ],
+    quality: [
+      'Double-check all measurements before leaving job site — a wrong template means a remake',
+      'Seam placement must avoid high-stress areas like sink corners when possible',
+      'Overhang must not exceed 12 inches unsupported without approval from shop foreman'
+    ],
+    reporting: 'Report to Shop Foreman. Any customer concern, site condition issue, or measurement discrepancy must be communicated before fabrication begins — never assume.'
+  },
+  {
+    id: 'installer',
+    title: 'Installer',
+    icon: '🏠',
+    color: '#E8850A',
+    duties: [
+      'Review job packet before departure — confirm all pieces, adhesives, caulk colors, and tools are loaded',
+      'Protect floors, cabinets, and appliances before installation begins — use blankets and cardboard',
+      'Dry-fit all pieces before applying adhesive — confirm fit, seam alignment, and overhangs',
+      'Apply silicone caulk at all wall joints, sink perimeters, and appliance cutouts per specification',
+      'Clean all surfaces thoroughly before leaving — no adhesive residue, caulk smears, or stone dust',
+      'Walk customer through completed installation — address any questions before leaving job site',
+      'Document any pre-existing damage to cabinets, flooring, or walls before installation begins',
+      'Complete installation report — note any field changes, customer concerns, or follow-up items'
+    ],
+    safety: [
+      'Steel-toed boots required on all job sites',
+      'Back brace required when carrying countertop pieces — always use two-person carry for pieces over 60 pounds',
+      'Pre-1978 homes — RRP certification required if disturbing painted surfaces during installation',
+      'GFCI protection required for all power tools near water sources',
+      'Secure vehicle load properly — unsecured stone in a vehicle is a serious liability',
+      'Assess job site for hazards before beginning work — notify foreman of any unsafe conditions'
+    ],
+    quality: [
+      'Seams must be tight, flush, and color-matched — no seam gap visible from standing height',
+      'Countertop must be level — check with level before adhesive sets',
+      'All caulk joints must be smooth, consistent, and properly tooled',
+      'No chips, scratches, or damage to material — document anything that arrived damaged'
+    ],
+    reporting: 'Report to Shop Foreman. Any customer complaint, damage claim, or quality concern must be reported same day — do not leave a job site with an unhappy customer without calling the shop first.'
+  },
+  {
+    id: 'foreman',
+    title: 'Shop Foreman / Production Manager',
+    icon: '👷',
+    color: '#EF4444',
+    duties: [
+      'Open daily production meeting — review all active jobs, priorities, and crew assignments',
+      'Manage daily THH capacity — ensure shop is not overcommitted using Total Hand Work Hours planning',
+      'Assign jobs to CNC, fabrication, and installation crews based on skill level and job complexity',
+      'Conduct quality inspection at each stage — CNC output, fabrication, and staging for delivery',
+      'Manage material flow — confirm slabs are pulled and ready before jobs are scheduled to run',
+      'Handle customer escalations that cannot be resolved by sales team',
+      'Maintain OSHA 300 injury and illness log — record all incidents within 24 hours',
+      'Conduct weekly equipment inspection — document any maintenance needs',
+      'Ensure all crew members follow safety protocols — address violations immediately'
+    ],
+    safety: [
+      'Responsible for safety compliance across entire shop floor',
+      'OSHA 300 recordkeeping — maintain injury log, post annual summary from February through April',
+      'Conduct monthly safety meetings — document attendance and topics covered',
+      'Silica exposure monitoring — ensure wet methods are used consistently',
+      'Enforce PPE compliance — safety glasses, hearing protection, steel-toed boots are non-negotiable',
+      'Emergency action plan must be posted and all employees must know evacuation routes'
+    ],
+    quality: [
+      'No job leaves the shop without foreman quality sign-off',
+      'Rework costs money — catch issues at CNC before they reach fabrication',
+      'Monthly waste analysis — track material waste percentage and identify improvement opportunities'
+    ],
+    reporting: 'Report to Owner. The foreman is responsible for the shop running safely, on time, and at target margin. Daily production updates to owner required.'
+  },
+  {
+    id: 'estimator',
+    title: 'Sales / Estimator',
+    icon: '💰',
+    color: '#F59E0B',
+    duties: [
+      'Respond to all leads within 2 hours during business hours — speed of response wins jobs',
+      'Qualify prospects — confirm project timeline, budget range, and decision maker before scheduling a visit',
+      'Generate accurate quotes using current material costs and labor rates — never estimate from memory',
+      'Present quotes in person or by video when possible — phone quotes close at lower rates',
+      'Follow up on every open quote within 48 hours — note result in customer record',
+      'Document all customer communications in job record — every call, email, and meeting',
+      'Coordinate with templater and foreman on scheduling commitments before confirming dates to customers',
+      'Never commit to a deadline without confirming shop capacity with foreman'
+    ],
+    safety: [
+      'Home visit safety — always let someone know your location when visiting unfamiliar job sites',
+      'Do not commit shop to jobs that require unsafe installation conditions'
+    ],
+    quality: [
+      'Quote accuracy is a quality metric — if actual costs consistently exceed estimates, pricing model needs review',
+      'Customer experience starts with the first contact — set accurate expectations on timeline and process',
+      'Change orders must be documented and signed before additional work begins — no exceptions'
+    ],
+    reporting: 'Report to Owner. Weekly pipeline review required — open quotes, follow-up status, and closed business. Margin on won jobs must be tracked against estimate.'
+  },
+  {
+    id: 'inventory',
+    title: 'Yard / Inventory Manager',
+    icon: '🪨',
+    color: '#06B6D4',
+    duties: [
+      'Receive all incoming slabs — inspect for damage, verify count against purchase order, document condition',
+      'Photograph every slab on receipt — front, back, and any defects — tag with bundle number and yard location',
+      'Maintain accurate slab inventory — update records immediately when slabs are pulled for jobs',
+      'Organize yard by material type and supplier — clearly label all locations',
+      'Track remnants — photograph, measure, and record all remnants over 4 square feet',
+      'Conduct weekly inventory count — reconcile physical count against system records',
+      'Alert purchasing when any material falls below reorder threshold',
+      'Coordinate with fabrication team on daily slab pulls — have material staged before jobs begin'
+    ],
+    safety: [
+      'A-frame racks must be rated for the weight of stone being stored — never overload',
+      'Steel-toed boots required in yard at all times',
+      'Forklift operation requires certification — no exceptions',
+      'Never store slabs leaning at more than 15 degrees from vertical — fall risk',
+      'Wet areas near saws — non-slip footwear required',
+      'Secure slabs during transport within yard — unsecured stone can shift and fall'
+    ],
+    quality: [
+      'Inventory accuracy directly affects job profitability — a wrong count means a job runs short',
+      'First-in first-out for same material — use oldest bundles before newer ones',
+      'Flag any slab with structural concerns to foreman before it is pulled for a job'
+    ],
+    reporting: 'Report to Shop Foreman. Inventory discrepancies must be reported immediately — a missing slab discovered after a job is scheduled is a production crisis.'
+  },
+  {
+    id: 'office',
+    title: 'Office / Customer Service',
+    icon: '📞',
+    color: '#EC4899',
+    duties: [
+      'Answer all incoming calls within 3 rings — a missed call is a missed lead',
+      'Schedule template appointments confirming customer readiness — cabinets installed and level',
+      'Send job confirmations to customers at every stage — template scheduled, fabrication complete, installation scheduled',
+      'Process invoices and collect payments — no job leaves for installation without deposit on file',
+      'Handle incoming customer questions and complaints with professionalism — escalate to foreman or owner when needed',
+      'Maintain organized job files — every job needs a complete file with signed contract, measurements, and change orders',
+      'Coordinate with templaters and installers on daily schedules — communicate changes immediately',
+      'Follow up on outstanding invoices — accounts receivable directly affects shop cash flow'
+    ],
+    safety: [
+      'Workplace safety applies to office staff too — report any unsafe conditions in shop area',
+      'Secure customer financial information — never store credit card numbers in plain text'
+    ],
+    quality: [
+      'Every customer communication reflects the shop — professional, prompt, and accurate',
+      'Billing errors damage customer relationships — double-check every invoice before sending',
+      'A customer who calls with a complaint is giving you a chance to keep them — respond with urgency'
+    ],
+    reporting: 'Report to Owner. Daily cash flow summary required. Any customer escalation beyond standard resolution must be escalated to owner same day.'
+  }
+];
+
+function showSOPs() {
+  const existing = document.getElementById('sop-modal');
+  if(existing) { existing.remove(); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'sop-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+
+  // Header
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#0E1218;border-bottom:1px solid rgba(232,133,10,0.2);flex-shrink:0;gap:12px';
+
+  const titleArea = document.createElement('div');
+  titleArea.style.cssText = 'display:flex;align-items:center;gap:12px;flex:1';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:16px;font-weight:700;color:#F5F0E8;white-space:nowrap';
+  title.textContent = 'Standard Operating Procedures';
+
+  const shopInput = document.createElement('input');
+  shopInput.id = 'sop-shop-name';
+  shopInput.placeholder = 'Enter your shop name for printable SOPs';
+  shopInput.value = localStorage.getItem('fab_shop_name') || '';
+  shopInput.style.cssText = 'flex:1;max-width:300px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:7px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none';
+  shopInput.onchange = function() {
+    localStorage.setItem('fab_shop_name', this.value);
+  };
+
+  const hrLink = document.createElement('a');
+  hrLink.href = 'https://sairn.vercel.app/hr';
+  hrLink.target = '_blank';
+  hrLink.style.cssText = 'padding:6px 14px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:8px;color:#A78BFA;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap';
+  hrLink.textContent = '👥 Open SAIRNhr';
+
+  titleArea.appendChild(title);
+  titleArea.appendChild(shopInput);
+  titleArea.appendChild(hrLink);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#8A8070;font-size:22px;cursor:pointer;padding:0 4px;flex-shrink:0';
+  closeBtn.onclick = function() { modal.remove(); };
+
+  hdr.appendChild(titleArea);
+  hdr.appendChild(closeBtn);
+  modal.appendChild(hdr);
+
+  // SOP grid
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;align-content:start';
+
+  STONE_SOPS.forEach(function(sop) {
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#0E1218;border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;transition:border-color 0.2s';
+    card.onmouseenter = function() { this.style.borderColor = 'rgba(232,133,10,0.3)'; };
+    card.onmouseleave = function() { this.style.borderColor = 'rgba(255,255,255,0.07)'; };
+
+    const cardHdr = document.createElement('div');
+    cardHdr.style.cssText = 'padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between';
+
+    const cardTitle = document.createElement('div');
+    cardTitle.style.cssText = 'display:flex;align-items:center;gap:8px';
+    cardTitle.innerHTML = '<span style="font-size:20px">' + sop.icon + '</span><span style="font-size:14px;font-weight:700;color:#F5F0E8">' + sop.title + '</span>';
+
+    const printBtn = document.createElement('button');
+    printBtn.textContent = 'Print SOP';
+    printBtn.style.cssText = 'padding:5px 12px;background:rgba(232,133,10,0.15);border:1px solid rgba(232,133,10,0.3);border-radius:6px;color:#E8850A;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit';
+    printBtn.onclick = function() { printSOP(sop); };
+
+    cardHdr.appendChild(cardTitle);
+    cardHdr.appendChild(printBtn);
+    card.appendChild(cardHdr);
+
+    const cardBody = document.createElement('div');
+    cardBody.style.cssText = 'padding:12px 16px';
+
+    const dutyLabel = document.createElement('div');
+    dutyLabel.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8A8070;margin-bottom:6px';
+    dutyLabel.textContent = 'Key Responsibilities';
+
+    const dutyList = document.createElement('ul');
+    dutyList.style.cssText = 'margin:0 0 10px 16px;padding:0';
+    sop.duties.slice(0,3).forEach(function(d) {
+      const li = document.createElement('li');
+      li.style.cssText = 'font-size:12px;color:#8A8070;margin-bottom:4px;line-height:1.5';
+      li.textContent = d;
+      dutyList.appendChild(li);
+    });
+
+    const more = document.createElement('div');
+    more.style.cssText = 'font-size:11px;color:#3A3020';
+    more.textContent = '+ ' + (sop.duties.length - 3) + ' more responsibilities — click Print SOP for full document';
+
+    cardBody.appendChild(dutyLabel);
+    cardBody.appendChild(dutyList);
+    cardBody.appendChild(more);
+    card.appendChild(cardBody);
+    body.appendChild(card);
+  });
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function printSOP(sop) {
+  const shopName = localStorage.getItem('fab_shop_name') || document.getElementById('sop-shop-name')?.value || 'Your Shop Name';
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + sop.title + ' SOP - ' + shopName + '</title><style>');
+  win.document.write('*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;padding:40px;max-width:800px;margin:0 auto;line-height:1.6}');
+  win.document.write('.header{border-bottom:3px solid #111;padding-bottom:16px;margin-bottom:24px}');
+  win.document.write('.shop-name{font-size:22px;font-weight:700;margin-bottom:4px}');
+  win.document.write('.doc-title{font-size:16px;color:#555;margin-bottom:4px}');
+  win.document.write('.meta{font-size:12px;color:#888}');
+  win.document.write('h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#333;margin:20px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}');
+  win.document.write('ul{margin:0 0 0 20px;padding:0}');
+  win.document.write('li{margin-bottom:5px;font-size:13px;line-height:1.6}');
+  win.document.write('.safety li{color:#c00}');
+  win.document.write('.reporting{background:#f9f9f9;border-left:3px solid #111;padding:10px 14px;font-size:13px;margin-top:20px}');
+  win.document.write('.footer{margin-top:40px;padding-top:16px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:11px;color:#aaa}');
+  win.document.write('.sig-line{margin-top:40px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px}');
+  win.document.write('.sig{border-top:1px solid #999;padding-top:6px;font-size:12px;color:#555}');
+  win.document.write('@media print{body{padding:20px}.no-print{display:none}}');
+  win.document.write('</style></head><body>');
+
+  win.document.write('<div class="header">');
+  win.document.write('<div class="shop-name">' + shopName + '</div>');
+  win.document.write('<div class="doc-title">' + sop.icon + ' Standard Operating Procedure — ' + sop.title + '</div>');
+  win.document.write('<div class="meta">Effective Date: ' + date + ' &nbsp;|&nbsp; Department: Production &nbsp;|&nbsp; Powered by Fabricor AI</div>');
+  win.document.write('</div>');
+
+  win.document.write('<h2>Position Overview</h2>');
+  win.document.write('<p style="font-size:13px;margin-bottom:4px">This SOP defines the daily responsibilities, safety requirements, and quality standards for the ' + sop.title + ' position at ' + shopName + '. All employees in this role are expected to read, understand, and follow these procedures from their first day.</p>');
+
+  win.document.write('<h2>Daily Responsibilities</h2><ul>');
+  sop.duties.forEach(function(d) { win.document.write('<li>' + d + '</li>'); });
+  win.document.write('</ul>');
+
+  win.document.write('<h2>Safety Requirements</h2><ul class="safety">');
+  sop.safety.forEach(function(s) { win.document.write('<li>' + s + '</li>'); });
+  win.document.write('</ul>');
+
+  win.document.write('<h2>Quality Standards</h2><ul>');
+  sop.quality.forEach(function(q) { win.document.write('<li>' + q + '</li>'); });
+  win.document.write('</ul>');
+
+  win.document.write('<div class="reporting"><strong>Reporting Structure:</strong> ' + sop.reporting + '</div>');
+
+  win.document.write('<div class="sig-line">');
+  win.document.write('<div class="sig">Employee Signature &amp; Date</div>');
+  win.document.write('<div class="sig">Manager Signature &amp; Date</div>');
+  win.document.write('<div class="sig">Date of Review</div>');
+  win.document.write('</div>');
+
+  win.document.write('<div class="footer"><div>' + shopName + ' — Confidential — For Internal Use Only</div><div>Generated by Fabricor AI &nbsp;|&nbsp; sairn.vercel.app/fabricor</div></div>');
+
+  win.document.write('<script>window.onload=function(){window.print();}<\/script>');
+  win.document.write('</body></html>');
+  win.document.close();
+}
+
 document.getElementById("userInput").addEventListener("input",function(){this.style.height="";this.style.height=Math.min(this.scrollHeight,140)+"px";});
 document.getElementById("userInput").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
 </script>
