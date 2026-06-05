@@ -1,32 +1,33 @@
-const CACHE = 'sairntype-v1';
-const ASSETS = ['/', '/index.html'];
+// SAIRN Service Worker — offline capability
+const CACHE_NAME = 'sairn-v1';
+const URLS_TO_CACHE = [
+  '/',
+  '/fabricor',
+  '/sairnlearn',
+  '/sairnlaw',
+  '/sairnhealth',
+  '/sairnhope',
+  '/sairnfriend',
+  '/careteam'
+];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS)).catch(() => {})
+self.addEventListener('install', function(event) {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(URLS_TO_CACHE);
+    })
   );
-  self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', e => {
-  // Only cache GET requests for same origin
-  if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) return;
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(cache => cache.put(e.request, clone));
-        return res;
-      })
-      .catch(() => caches.match(e.request))
+self.addEventListener('fetch', function(event) {
+  event.respondWith(
+    caches.match(event.request).then(function(response) {
+      if (response) return response;
+      return fetch(event.request).catch(function() {
+        return new Response('You appear to be offline. Please reconnect to use SAIRN.', {
+          headers: {'Content-Type': 'text/plain'}
+        });
+      });
+    })
   );
 });

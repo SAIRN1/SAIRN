@@ -1,7 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAIRN">
+  <meta name="theme-color" content="#050810"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>SAIRNtype — Write anything. Better. Faster. With AI that understands intent.</title>
 <meta name="theme-color" content="#0A0B14">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -570,17 +576,7 @@ function addOutcomeBar() {
 }
 
 // ── ENHANCED SAVE BAR ────────────────────────────────────────
-function showSaveBar() {
-  // Auto-save to cloud silently
-  cloudSaveMemory(lastResponse);
-  trackOutcome();
-  // Show copy bar
-  const existing = document.getElementById('sairn-save-bar'); if(existing) existing.remove();
-  const bar = document.createElement('div'); bar.id = 'sairn-save-bar';
-  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';
-  const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy';
-  copyBtn.style.cssText = 'background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
-  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000); }); };
+// showSaveBar consolidated, 2000); }); };
   const savedBadge = document.createElement('span');
   savedBadge.textContent = '✓ Saved';
   savedBadge.style.cssText = 'font-size:11px;color:#10B981;font-weight:600';
@@ -607,5 +603,11 @@ document.addEventListener('DOMContentLoaded', function() {
 document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
 document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 </script>
+
+  <script>
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function(e){});
+    }
+  </script>
 </body>
 </html>

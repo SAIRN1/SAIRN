@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAIRN">
+  <meta name="theme-color" content="#050810">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>SAIRNlaw — The World Standard for Law Firm Intelligence</title>
 <meta name="description" content="The AI platform built for the world's most demanding law firms. Document review, contract drafting, case research, cross-office intelligence, client management, billing, compliance, and firm-wide communication — all in one platform.">
@@ -1006,5 +1012,11 @@ function showOILBadge() {
 document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
 document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 </script>
+
+  <script>
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function(e){});
+    }
+  </script>
 </body>
 </html>
