@@ -39,6 +39,7 @@
     { "source": "/sairnhope",            "destination": "/sairnhope.html"            },
     { "source": "/sairnfriend",          "destination": "/sairnfriend.html"          },
     { "source": "/careteam",             "destination": "/sairnlearn_careteam.html"  },
+    { "source": "/sairncode",            "destination": "/sairncode.html"            },
     { "source": "/memory",               "destination": "/memory_settings.html"      }
   ],
   "cleanUrls": true,

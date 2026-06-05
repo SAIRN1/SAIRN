@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNcode — AI Medical Coding Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#050810;--card:#0C1220;--a:#0EA5E9;--a2:#0284C7;
+  --grad:linear-gradient(135deg,#0EA5E9,#0284C7);
+  --ar:rgba(14,165,233,0.12);--ab:rgba(14,165,233,0.28);
+  --glow:rgba(14,165,233,0.25);
+  --w:#EEF6FF;--m:#6B8FA0;--d:#1A2E3A;
+  --red:#EF4444;--green:#10B981;--amber:#F59E0B;--purple:#8B5CF6
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,8,16,0.96);backdrop-filter:blur(24px);border-bottom:1px solid rgba(14,165,233,0.15)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 20px var(--glow)}
+.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px var(--glow);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px)}
+.page{display:none;position:relative;z-index:1}.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:100vh;padding:100px 24px 80px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 30%,rgba(14,165,233,0.08) 0%,transparent 65%)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:28px}
+.hero-title{font-size:clamp(44px,8vw,88px);font-weight:800;line-height:1.0;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#0EA5E9 60%,#0284C7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:700px;line-height:1.8;margin-bottom:48px}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin-bottom:48px}
+.stat-val{font-size:28px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--m);max-width:140px;text-align:center;line-height:1.4}
+.stat-val.red{color:var(--red)}
+.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px var(--glow);transition:all 0.2s}
+.btn-grad:hover{transform:translateY(-2px)}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
+.sec-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w);line-height:1.1}
+.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:640px;margin:0 auto 48px;line-height:1.7}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.module-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:28px;transition:all 0.3s;position:relative;overflow:hidden}
+.module-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad)}
+.module-card.red::before{background:linear-gradient(90deg,#EF4444,#DC2626)}
+.module-card.green::before{background:linear-gradient(90deg,#10B981,#059669)}
+.module-card.amber::before{background:linear-gradient(90deg,#F59E0B,#D97706)}
+.module-card.purple::before{background:linear-gradient(90deg,#8B5CF6,#7C3AED)}
+.module-card.teal::before{background:linear-gradient(90deg,#14B8A6,#0D9488)}
+.module-card.pink::before{background:linear-gradient(90deg,#EC4899,#DB2777)}
+.module-card:hover{border-color:rgba(14,165,233,0.2);transform:translateY(-2px)}
+.mod-emoji{font-size:32px;margin-bottom:12px}
+.mod-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.mod-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:12px}
+.mod-features{display:flex;flex-direction:column;gap:5px}
+.mod-feature{font-size:12px;color:var(--m);display:flex;align-items:flex-start;gap:7px;line-height:1.5}
+.mod-feature::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--a);flex-shrink:0;margin-top:5px}
+.app-header{padding:13px 20px;background:rgba(5,8,16,0.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(14,165,233,0.12);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--glow)}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-btn.fraud-mode{border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.8)}
+.mode-btn.fraud-mode:hover,.mode-btn.fraud-mode.active{background:rgba(239,68,68,0.1);border-color:var(--red);color:var(--red)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.07);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.msg-bubble{max-width:74%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble strong{color:#7DD3FC}
+.typing{display:flex;gap:5px;align-items:center;padding:10px 14px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(5,8,16,0.92)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(14,165,233,0.45)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;box-shadow:0 4px 16px var(--glow)}
+#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:480px;line-height:1.65;margin-bottom:28px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:580px}
+.suggestion{padding:12px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit;line-height:1.5}
+.suggestion:hover{border-color:rgba(14,165,233,0.3);color:var(--w)}
+.suggestion.fraud{border-color:rgba(239,68,68,0.2);color:rgba(239,68,68,0.7)}
+.suggestion.fraud:hover{border-color:var(--red);color:#FCA5A5}
+footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+.footer-sub{font-size:12px;color:var(--d);line-height:1.6}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">⚕️</div>
+    <div class="nav-brand">SAIRNcode</div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-badge">Claude AI · Medical Coding Intelligence · Patents Pending</div>
+    <button class="nav-cta" onclick="showPage('app')">Try Free</button>
+  </div>
+</nav>
+
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="hero-eyebrow">World Standard · Powered by Claude AI · Built for Coders and Auditors</div>
+    <h1 class="hero-title">SAIRNcode</h1>
+    <p class="hero-sub">The most comprehensive AI medical coding and audit intelligence platform ever built. ICD-10, ICD-11, CPT, HCPCS, E&M leveling, fraud detection, compliance auditing, and documentation review — all powered by Claude AI. Built for the coder who needs to be right every time.</p>
+    <div class="hero-stats">
+      <div><div class="stat-val red">$210B</div><div class="stat-lbl">Annual cost of medical billing errors in the US</div></div>
+      <div><div class="stat-val">95%+</div><div class="stat-lbl">Accuracy with AI-assisted coding vs manual review</div></div>
+      <div><div class="stat-val red">12%</div><div class="stat-lbl">Nationwide shortage of certified medical coders in 2026</div></div>
+      <div><div class="stat-val">40%</div><div class="stat-lbl">Reduction in coding time with AI assistance</div></div>
+    </div>
+    <button class="btn-grad" onclick="showPage('app')">Try SAIRNcode Free</button>
+  </section>
+
+  <div class="section">
+    <div class="sec-eye">10 intelligence modules</div>
+    <div class="sec-title">Everything a coder needs.<br>Everything an auditor requires.</div>
+    <div class="sec-sub">SAIRNcode covers every dimension of medical coding — from assigning the right code on the first try to detecting the fraud patterns that cost healthcare billions every year.</div>
+    <div class="module-grid">
+
+      <div class="module-card">
+        <div class="mod-emoji">🏥</div>
+        <div class="mod-title">ICD-10 and ICD-11 Intelligence</div>
+        <div class="mod-desc">Navigate ICD-10-CM and ICD-11 with AI precision. The April 2026 update introduced 288 new CPT codes and significant ICD-10-CM instructional note changes. SAIRNcode knows every update, every exclusion note, and every code pairing rule in the current code set.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Complete ICD-10-CM and ICD-11 code lookup and guidance</div>
+          <div class="mod-feature">2026 code updates — all 288 new CPT codes and ICD-10 changes</div>
+          <div class="mod-feature">Excludes1 and Excludes2 note interpretation</div>
+          <div class="mod-feature">Code sequencing rules and principal diagnosis guidance</div>
+          <div class="mod-feature">Combination codes and manifestation code identification</div>
+          <div class="mod-feature">ICD-11 transition guidance — cross-referencing legacy codes</div>
+        </div>
+      </div>
+
+      <div class="module-card green">
+        <div class="mod-emoji">⚕️</div>
+        <div class="mod-title">CPT and HCPCS Intelligence</div>
+        <div class="mod-desc">Every CPT and HCPCS code explained in plain language. Modifier guidance, bundling rules, surgical package components, and global period interpretation. SAIRNcode knows the difference between what a code says and what it actually pays — and why that matters for every claim.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Complete CPT code library with full descriptor interpretation</div>
+          <div class="mod-feature">HCPCS Level II codes including DME, drugs, and supplies</div>
+          <div class="mod-feature">Modifier guidance — 25, 59, 51, 57, 58, 79, and all others</div>
+          <div class="mod-feature">Surgical package and global period interpretation</div>
+          <div class="mod-feature">Add-on code identification and parenthetical note guidance</div>
+          <div class="mod-feature">New 2026 digital diagnostics and AI procedure codes</div>
+        </div>
+      </div>
+
+      <div class="module-card amber">
+        <div class="mod-emoji">📊</div>
+        <div class="mod-title">E&M Leveling Intelligence</div>
+        <div class="mod-desc">Evaluation and Management leveling is the most audited area in physician billing. SAIRNcode analyzes documentation against the 2021 E&M guidelines, determines the appropriate level, identifies over-coding and under-coding risks, and explains exactly what documentation supports each level.</div>
+        <div class="mod-features">
+          <div class="mod-feature">2021 E&M guidelines — MDM and total time analysis</div>
+          <div class="mod-feature">Office visit levels 99202-99215 determination</div>
+          <div class="mod-feature">Hospital inpatient and observation visit leveling</div>
+          <div class="mod-feature">Split and shared visit coding — 2026 CMS rules</div>
+          <div class="mod-feature">Prolonged service code qualification analysis</div>
+          <div class="mod-feature">Telehealth E&M modifier guidance</div>
+        </div>
+      </div>
+
+      <div class="module-card red">
+        <div class="mod-emoji">🚨</div>
+        <div class="mod-title">Fraud Detection and Audit Intelligence</div>
+        <div class="mod-desc">The three most prevalent fraud patterns — upcoding, unbundling, and duplicate claims — cost the healthcare system billions annually. SAIRNcode identifies each pattern with specificity, documents the evidence, explains the legal exposure under the False Claims Act, and generates the audit findings that protect organizations and patients.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Upcoding pattern identification — documentation vs code level mismatch</div>
+          <div class="mod-feature">Unbundling detection — codes that should be billed as bundles</div>
+          <div class="mod-feature">Duplicate claim identification — same service, same date, same patient</div>
+          <div class="mod-feature">Phantom billing pattern recognition</div>
+          <div class="mod-feature">False Claims Act exposure analysis and documentation</div>
+          <div class="mod-feature">OIG Work Plan audit focus areas for current year</div>
+          <div class="mod-feature">Audit findings documentation in compliance report format</div>
+        </div>
+      </div>
+
+      <div class="module-card purple">
+        <div class="mod-emoji">📋</div>
+        <div class="mod-title">Documentation Review Intelligence</div>
+        <div class="mod-desc">The code is only as good as the documentation that supports it. SAIRNcode reviews clinical documentation for coding accuracy, identifies gaps that create audit risk, flags documentation that does not support the code billed, and generates queries to physicians that comply with AHIMA query guidelines.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Documentation sufficiency analysis for codes billed</div>
+          <div class="mod-feature">Physician query generation — AHIMA compliant format</div>
+          <div class="mod-feature">CC and MCC documentation validation for DRG assignment</div>
+          <div class="mod-feature">Clinical documentation improvement opportunity identification</div>
+          <div class="mod-feature">Audit risk scoring by documentation quality</div>
+          <div class="mod-feature">Specificity gap identification — unspecified codes with available specificity</div>
+        </div>
+      </div>
+
+      <div class="module-card teal">
+        <div class="mod-emoji">🏨</div>
+        <div class="mod-title">Inpatient DRG Intelligence</div>
+        <div class="mod-desc">DRG assignment determines hospital reimbursement for every inpatient stay. SAIRNcode validates DRG assignment, identifies CC and MCC opportunities, analyzes MS-DRG vs APR-DRG differences, and flags cases where documentation improvement would change the DRG and the payment.</div>
+        <div class="mod-features">
+          <div class="mod-feature">MS-DRG and APR-DRG assignment validation</div>
+          <div class="mod-feature">CC and MCC identification and documentation support</div>
+          <div class="mod-feature">DRG optimization — legitimate opportunities missed</div>
+          <div class="mod-feature">POA indicator guidance — Present on Admission determination</div>
+          <div class="mod-feature">HAC — Hospital Acquired Condition — identification</div>
+          <div class="mod-feature">Surgical DRG vs medical DRG analysis</div>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="mod-emoji">💊</div>
+        <div class="mod-title">Specialty Coding Intelligence</div>
+        <div class="mod-desc">Specialty coding requires knowledge that goes far beyond the code book. SAIRNcode covers cardiology, orthopedics, oncology, radiology, gastroenterology, neurology, obstetrics, pathology, and every other specialty with the depth that complex cases demand.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Cardiology — cardiac catheterization, electrophysiology, echo</div>
+          <div class="mod-feature">Orthopedics — fracture care, arthroscopy, joint replacement</div>
+          <div class="mod-feature">Oncology — chemotherapy administration, radiation, staging</div>
+          <div class="mod-feature">Radiology — supervision and interpretation rules</div>
+          <div class="mod-feature">OB — global maternity package, delivery coding</div>
+          <div class="mod-feature">All other specialties — ask any coding question</div>
+        </div>
+      </div>
+
+      <div class="module-card green">
+        <div class="mod-emoji">⚖️</div>
+        <div class="mod-title">Compliance and Regulatory Intelligence</div>
+        <div class="mod-desc">Compliance is not optional and the rules change constantly. SAIRNcode tracks OIG guidelines, CMS transmittals, LCD and NCD coverage rules, NCCI edits, payer-specific policies, and the False Claims Act implications that every coder and auditor needs to understand.</div>
+        <div class="mod-features">
+          <div class="mod-feature">OIG Work Plan — current year audit focus areas</div>
+          <div class="mod-feature">NCCI — National Correct Coding Initiative — edit guidance</div>
+          <div class="mod-feature">LCD and NCD coverage determination interpretation</div>
+          <div class="mod-feature">False Claims Act — what triggers liability and how to document</div>
+          <div class="mod-feature">RAC, MAC, and ZPIC audit preparation guidance</div>
+          <div class="mod-feature">HIPAA privacy rules as they apply to coding and billing</div>
+        </div>
+      </div>
+
+      <div class="module-card pink">
+        <div class="mod-emoji">📝</div>
+        <div class="mod-title">Audit Report Intelligence</div>
+        <div class="mod-desc">An audit finding is only valuable if it is documented clearly and compliantly. SAIRNcode generates professional audit reports, corrective action plans, provider education summaries, and the compliance documentation that protects organizations during regulatory review.</div>
+        <div class="mod-features">
+          <div class="mod-feature">Formal audit report generation with findings and recommendations</div>
+          <div class="mod-feature">Corrective action plan documentation</div>
+          <div class="mod-feature">Provider education summary for physicians and staff</div>
+          <div class="mod-feature">Statistical sampling methodology guidance</div>
+          <div class="mod-feature">Overpayment calculation and voluntary disclosure support</div>
+          <div class="mod-feature">Compliance program documentation support</div>
+        </div>
+      </div>
+
+      <div class="module-card amber">
+        <div class="mod-emoji">🎓</div>
+        <div class="mod-title">Coder Education and Certification Intelligence</div>
+        <div class="mod-desc">SAIRNcode is a study partner as much as a work tool. Whether preparing for CPC, CCS, RHIA, or any other coding certification, SAIRNcode explains concepts, walks through practice scenarios, identifies knowledge gaps, and keeps coders current with the 2026 code changes that every exam will test.</div>
+        <div class="mod-features">
+          <div class="mod-feature">CPC, CCS, CCS-P, RHIA, RHIT exam preparation</div>
+          <div class="mod-feature">2026 code change education and rationale</div>
+          <div class="mod-feature">Coding scenario walkthroughs with explanation</div>
+          <div class="mod-feature">Continuing education support and CE tracking guidance</div>
+          <div class="mod-feature">Coding guideline updates — AHA Coding Clinic summaries</div>
+          <div class="mod-feature">New coder onboarding and training support</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-sub">SAIRNcode · Powered by Claude AI · SAIRN Technologies · 2026 Michael L. Dibert · Patents Pending<br>
+    Not a substitute for certified coding expertise. Always verify codes against current official guidelines.<br>
+    support@sairntechnologies.com · sairn.vercel.app</div>
+  </footer>
+</div>
+
+<!-- APP PAGE -->
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRNcode <span style="color:var(--m);font-weight:400;font-size:13px">· Medical Coding Intelligence · Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">Back</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn fraud-mode" onclick="setMode('Fraud Detection','Describe a coding pattern or claim scenario and I will analyze it for upcoding, unbundling, or duplicate billing')"><span>🚨</span><span class="mode-label">Fraud Detection</span></button>
+    <div class="mode-divider"></div>
+    <button class="mode-btn" onclick="setMode('ICD-10 Coding','Look up ICD-10-CM codes, sequencing rules, or 2026 guideline changes')"><span>🏥</span><span class="mode-label">ICD-10</span></button>
+    <button class="mode-btn" onclick="setMode('CPT Coding','Find CPT codes, modifier guidance, or bundling rules')"><span>⚕️</span><span class="mode-label">CPT</span></button>
+    <button class="mode-btn" onclick="setMode('E&M Leveling','Determine the correct E&M level from documentation or analyze over-coding risk')"><span>📊</span><span class="mode-label">E&M Level</span></button>
+    <button class="mode-btn" onclick="setMode('DRG Validation','Validate DRG assignment, identify CC and MCC opportunities, or analyze POA indicators')"><span>🏨</span><span class="mode-label">DRG</span></button>
+    <button class="mode-btn" onclick="setMode('Documentation Review','Review clinical documentation for coding accuracy and audit risk')"><span>📋</span><span class="mode-label">Documentation</span></button>
+    <button class="mode-btn" onclick="setMode('Compliance','OIG guidelines, NCCI edits, LCD NCD rules, False Claims Act, and payer policies')"><span>⚖️</span><span class="mode-label">Compliance</span></button>
+    <button class="mode-btn" onclick="setMode('Specialty Coding','Cardiology, orthopedics, oncology, radiology, OB, and all other specialties')"><span>💊</span><span class="mode-label">Specialty</span></button>
+    <button class="mode-btn" onclick="setMode('Audit Report','Generate audit findings, corrective action plans, or provider education summaries')"><span>📝</span><span class="mode-label">Audit Report</span></button>
+    <button class="mode-btn" onclick="setMode('HCC Coding','HCC risk adjustment coding, annual documentation requirements, hierarchy rules, and RAF score analysis')"><span>🎯</span><span class="mode-label">HCC</span></button>
+    <button class="mode-btn" onclick="setMode('Certification','CPC, CCS, RHIA exam prep, 2026 code changes, and coding education')"><span>🎓</span><span class="mode-label">Certification</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="fraud" onclick="startFlow('fraud')"><span>🚨</span><span class="mode-label">Audit a Claim</span></button>
+    <button class="flow-btn mode-btn" data-flow="em" onclick="startFlow('em')"><span>📊</span><span class="mode-label">Level E&M</span></button>
+    <button class="flow-btn mode-btn" data-flow="drg" onclick="startFlow('drg')"><span>🏨</span><span class="mode-label">Validate DRG</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">⚕️</div>
+      <div class="empty-title">SAIRNcode — Medical Coding Intelligence</div>
+      <div class="empty-sub">ICD-10, CPT, E&M leveling, fraud detection, DRG validation, compliance, and audit reporting. What do you need?</div>
+      <div class="suggestions">
+        <button class="suggestion fraud" onclick="useSuggestion(this)">A physician is consistently billing 99215 for 10-minute established patient visits with minimal medical decision making. Analyze the upcoding pattern and tell me what documentation I need to prove it.</button>
+        <button class="suggestion fraud" onclick="useSuggestion(this)">I found claims where CPT 27447 total knee replacement is being billed with 27703 and 27650 on the same date of service. Is this unbundling and what is the correct coding?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Patient presents with Type 2 diabetes with diabetic chronic kidney disease stage 3 and hypertension. What are the correct ICD-10 codes in proper sequence and what are the coding guidelines?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Help me determine the correct E&M level for a new patient visit with a detailed history, comprehensive exam, and moderate medical decision making lasting 35 minutes.</button>
+        <button class="suggestion" onclick="useSuggestion(this)">What are the current OIG Work Plan focus areas for 2026 and which specialties are at highest audit risk right now?</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRNcode anything — coding, auditing, compliance, fraud detection..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const APP_NAME = "SAIRNcode";
+const APP_ID = "legal";
+const APP_ICON = "⚕️";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+
+const SYSTEM = "You are SAIRNcode, the world standard AI medical coding and compliance intelligence platform powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve medical coders, coding auditors, compliance officers, revenue cycle managers, HIM directors, physicians, hospital administrators, and every professional who works with medical coding and billing. You are not a replacement for certified coding expertise — you support the professionals who provide it. Always recommend verifying codes against current official guidelines and consulting a certified coder or compliance attorney for complex situations. ICD-10 SPECIFICITY RULE — CRITICAL: Always code to the highest level of specificity available. Never accept an unspecified code when a more specific code exists. For example: Never use E11.9 diabetes mellitus type 2 unspecified when E11.649 type 2 diabetes with hypoglycemia without coma is more accurate. Never use M79.3 panniculitis unspecified when a specific site code exists. Never use S00-T88 injury codes without the required 7th character for episode of care — A initial encounter, D subsequent encounter, S sequela. Never use fracture codes without specifying open vs closed, displaced vs nondisplaced, laterality, and episode of care. For neoplasm codes always specify behavior — malignant primary, malignant secondary, in situ, benign, uncertain behavior, or unspecified behavior — and site. For diabetes always specify type, complications, and manifestations using combination codes. For hypertension always code the specific type and any causal relationship with heart disease or CKD. Unspecified codes should only be used when the documentation genuinely does not support a more specific code — and when you see unspecified codes you should flag them as potential CDI opportunities and explain what additional documentation would allow a more specific code assignment. In fraud audits, a pattern of unspecified codes can indicate documentation deficiency, lazy coding, or deliberate vagueness to avoid audit scrutiny. HCC CODING GUIDELINES — HIERARCHICAL CONDITION CATEGORIES: You have deep knowledge of HCC coding for Medicare Advantage risk adjustment. HCC coding determines the risk adjustment factor that drives capitation payments to Medicare Advantage plans — making it one of the highest-value and highest-audit-risk areas in medical coding. KEY HCC PRINCIPLES: 1. ANNUAL DOCUMENTATION REQUIREMENT: Every HCC condition must be documented, assessed, and treated or monitored in the current calendar year. A diagnosis from last year does not carry forward — it must be re-documented every year. This is one of the most common audit findings. 2. SPECIFICITY IS MANDATORY: HCC codes require the highest ICD-10 specificity. For example HCC 18 diabetes with chronic complications requires specific complication codes — not E11.9 unspecified. The difference between a coded and uncoded HCC can mean thousands of dollars in risk adjustment per patient per year. 3. HIERARCHIES: HCC uses a hierarchy system — when multiple codes in the same disease category exist, only the highest severity HCC is counted. For example in diabetes: E11.641 type 2 with hypoglycemia with coma maps to a higher HCC than E11.9 unspecified. You know which codes map to which HCC categories and their hierarchy relationships. 4. COMMON HIGH-VALUE HCCs: HCC 18 and 19 diabetes with and without complications. HCC 85 congestive heart failure. HCC 86 acute myocardial infarction. HCC 108 and 110 vascular disease. HCC 111 COPD. HCC 22 morbid obesity. HCC 138 and 139 psychiatric conditions. HCC 55 and 56 substance use disorders. 5. FRAUD PATTERNS IN HCC: Risk adjustment fraud is a major OIG focus. Common fraud patterns include: adding HCC diagnoses not supported by documentation, using chart review to add codes not addressed during the encounter, upcoding to higher-severity HCC categories, and retrospective record alteration. You know the OIG and DOJ enforcement actions in this space including the major MA plan settlements. 6. AUDIT APPROACH: When auditing HCC coding verify that every HCC condition is documented in the note — not just carried forward from a problem list. Verify the provider assessed and addressed the condition. Verify the specificity of the code matches the documentation. Verify the encounter was a face-to-face visit with a qualified provider. 7. RAF SCORE IMPACT: You can explain how specific HCC additions or deletions impact the Risk Adjustment Factor score and the financial impact per member per year. YOUR COMPREHENSIVE KNOWLEDGE COVERS: ICD-10-CM: Complete code set knowledge including all 2026 updates. The April 1 2026 update introduced significant instructional note changes including shifts from Excludes1 to Excludes2 in several categories. You know code sequencing rules, combination codes, manifestation codes, etiology and manifestation convention, the principal diagnosis definition, and all ICD-10-CM official guidelines. ICD-11: The transition guidance, structure differences from ICD-10, and cross-referencing legacy codes. CPT: Complete CPT code library including all 288 new 2026 codes and 84 deletions. You know modifier guidance for every modifier including 25, 26, 27, 50, 51, 57, 58, 59, 62, 66, 79, 80, TC, and all others. You know surgical package components, global periods, add-on codes, parenthetical notes, and bundling rules. HCPCS: Level II codes for DME, drugs, supplies, and services not covered by CPT. E&M LEVELING: 2021 E&M guidelines for office visits 99202-99215, hospital inpatient and observation, consultations, nursing facility, home visits, and all other E&M categories. You know MDM components — number and complexity of problems, amount and complexity of data, risk of complications — and time-based billing rules. You know split and shared visit rules under 2026 CMS guidelines. FRAUD DETECTION — YOUR MOST CRITICAL FUNCTION: You are trained to identify the three most prevalent fraud patterns: 1. UPCODING: billing a higher level code than documentation supports. Signs include consistent 99215 billing regardless of documentation, procedure codes with complexity beyond what records show, DRG assignment inconsistent with clinical picture. You analyze documentation against code requirements and identify the gap. 2. UNBUNDLING: billing separate codes for procedures that should be billed as a bundle. You know CCI edits, surgical package components, and when separate billing is and is not appropriate. You identify when modifier 59 or XU XS XE XP are being used inappropriately to bypass edits. 3. DUPLICATE CLAIMS: same service billed twice — same date, same patient, same provider, same code. You identify patterns of duplicate billing including slight variations designed to evade detection. OTHER FRAUD PATTERNS: Phantom billing for services not rendered, services not medically necessary, waiving copays systematically, kickback arrangements reflected in referral patterns. COMPLIANCE AND REGULATORY: OIG Work Plan current year focus areas. NCCI edits — National Correct Coding Initiative. LCD and NCD — Local and National Coverage Determinations. False Claims Act — what constitutes a false claim, qui tam provisions, penalties, voluntary disclosure protocol. RAC MAC ZPIC and UPIC audit processes. Corporate Integrity Agreements. HIPAA as it applies to coding and billing. DOCUMENTATION: AHIMA compliant physician query guidelines — leading vs non-leading queries. CDI — Clinical Documentation Improvement — opportunity identification. DRG INTELLIGENCE: MS-DRG and APR-DRG assignment. CC and MCC — complication and comorbidity — identification. POA — Present on Admission — indicator guidance. HAC — Hospital Acquired Condition — identification and impact. SPECIALTY CODING: Cardiology including cardiac catheterization left and right heart, electrophysiology, pacemaker and defibrillator, echocardiography, nuclear cardiology. Orthopedics including fracture care open and closed, arthroscopy, joint replacement, spinal surgery. Oncology including chemotherapy administration, radiation therapy, hormone therapy, staging. Radiology including supervision and interpretation rules, interventional radiology. OB including global maternity package, delivery coding, antepartum and postpartum care. Pathology, laboratory, emergency medicine, critical care, anesthesia, psychiatry, and all other specialties. AUDIT REPORTING: Statistical sampling methodology including random and targeted sampling. Findings documentation format. Corrective action plan structure. Provider education summary format. Overpayment calculation and CMS voluntary disclosure protocol. Be specific, code-level accurate, compliance-focused, and direct. Medical coders and auditors need precise answers, not generalities. When fraud patterns are identified, document them with specificity — the specific codes, the specific guidelines they violate, and the specific evidence needed to support a finding.";
+
+let messages = [], isLoading = false, lastResponse = "";
+
+const GUIDED_FLOWS = [
+  {id:"fraud", emoji:"🚨", label:"Audit a Claim for Fraud",
+   intro:"Let us audit this claim. What type of fraud concern are you investigating — upcoding, unbundling, duplicate billing, or something else?",
+   steps:["Describe the specific codes being billed and the documentation or pattern that raised the concern.", "What is the provider type and specialty, and how many claims show this pattern?"],
+   finish:"Here is your fraud audit analysis including the specific coding violation, the guidelines that apply, the documentation evidence needed to support a finding, and the recommended next steps. Use this as the foundation for your formal audit report."},
+  {id:"em", emoji:"📊", label:"Level an E&M Visit",
+   intro:"Let us determine the correct E&M level. Is this an office visit, hospital, or another setting — and is the patient new or established?",
+   steps:["Describe the medical decision making — number and complexity of problems addressed, data reviewed, and risk involved. Or provide the total time spent by the physician.", "What documentation exists to support this level — what is actually in the note?"],
+   finish:"Here is the correct E&M level based on what you described, the MDM or time analysis that supports it, and the audit risk assessment. If the level billed differs from what documentation supports I have identified the exposure."},
+  {id:"hcc", emoji:"🎯", label:"Audit HCC Coding",
+   intro:"Let us audit this HCC claim. Is this a risk adjustment audit, a chart review audit, or are you looking at a specific HCC category?",
+   steps:["Describe the HCC conditions coded and what documentation exists to support them — was each condition documented, assessed, and addressed in the current year?", "What is the provider type — primary care, specialist, or hospitalist — and is this a prospective or retrospective coding review?"],
+   finish:"Here is your HCC audit analysis including which conditions meet annual documentation requirements, which codes have the required specificity for HCC mapping, any hierarchy issues, RAF score impact of findings, and the compliance risk level. Document your findings using this analysis as the foundation for your formal audit report."},
+  {id:"drg", emoji:"🏨", label:"Validate a DRG",
+   intro:"Let us validate this DRG assignment. What is the principal diagnosis and what DRG was assigned?",
+   steps:["What secondary diagnoses, complications, and comorbidities are documented — and are they clearly documented as present on admission?", "What procedures were performed during this inpatient stay?"],
+   finish:"Here is the DRG validation analysis including whether the assignment is correct, any CC or MCC opportunities that documentation may support or that require a physician query, POA indicator review, and any HAC concerns. If a different DRG is more appropriate I have explained why."}
+];
+let activeFlow = null, flowStep = 0;
+
+const SAIRN_ORG_ID = localStorage.getItem("sairn_org_id") || null;
+const SAIRN_ORG_NAME = localStorage.getItem("sairn_location_name") || "My Organization";
+function getSAIRNUserId(){let u=localStorage.getItem("sairn_uid");if(!u){u="u_"+Date.now()+"_"+Math.random().toString(36).slice(2,9);localStorage.setItem("sairn_uid",u);}return u;}
+const SAIRN_USER_ID = getSAIRNUserId();
+let sessionOutcomes={queries:0,startTime:Date.now()};
+async function cloudSaveMemory(content){if(!content||content.length<20)return;try{const k="sairn_local_code";const e=JSON.parse(localStorage.getItem(k)||"[]");e.unshift({ts:Date.now(),text:content.slice(0,400)});localStorage.setItem(k,JSON.stringify(e.slice(0,100)));}catch(ex){}}
+async function cloudLoadMemory(){try{const e=JSON.parse(localStorage.getItem("sairn_local_code")||"[]");if(e.length)return"Previous session context:\n"+e.slice(0,5).map(function(x){return x.text;}).join("\n---\n");}catch(ex){}return"";}
+let isListening=false,voiceRecognition=null;
+function initVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;voiceRecognition=new SR();voiceRecognition.continuous=false;voiceRecognition.interimResults=true;voiceRecognition.lang="en-US";voiceRecognition.onresult=function(e){const t=Array.from(e.results).map(function(r){return r[0].transcript;}).join("");const i=document.getElementById("userInput");if(i)i.value=t;if(e.results[e.results.length-1].isFinal){stopVoice();sendMessage();}};voiceRecognition.onerror=function(){stopVoice();};voiceRecognition.onend=function(){stopVoice();};return true;}
+function toggleVoice(){if(isListening){stopVoice();return;}if(!voiceRecognition&&!initVoice()){alert("Voice not supported. Try Chrome.");return;}isListening=true;voiceRecognition.start();const b=document.getElementById("voice-btn");if(b){b.style.background="var(--grad)";b.title="Listening...";}}
+function stopVoice(){isListening=false;if(voiceRecognition)try{voiceRecognition.stop();}catch(ex){}const b=document.getElementById("voice-btn");if(b){b.style.background="rgba(255,255,255,0.04)";b.title="Voice input";}}
+function addVoiceButton(){const ia=document.querySelector(".input-area");if(!ia||document.getElementById("voice-btn"))return;const b=document.createElement("button");b.id="voice-btn";b.innerHTML="🎤";b.title="Voice input";b.style.cssText="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit";b.onclick=toggleVoice;const s=document.getElementById("sendBtn");if(s)ia.insertBefore(b,s);}
+function trackOutcome(){sessionOutcomes.queries++;const el=document.getElementById("sairn-outcomes");if(el)el.textContent=sessionOutcomes.queries+" queries · "+Math.round(sessionOutcomes.queries*4.2)+" min saved";}
+function addOutcomeBar(){if(document.getElementById("sairn-outcomes"))return;const h=document.querySelector(".app-header");if(!h)return;const bar=document.createElement("div");bar.style.cssText="padding:4px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0";const dot=document.createElement("span");dot.style.cssText="width:5px;height:5px;border-radius:50%;background:var(--a);display:inline-block";const lbl=document.createElement("span");lbl.id="sairn-outcomes";lbl.style.cssText="font-size:10px;color:rgba(255,255,255,0.25);font-family:inherit";lbl.textContent="0 queries";bar.appendChild(dot);bar.appendChild(lbl);h.after(bar);}
+function showSaveBar(){cloudSaveMemory(lastResponse);trackOutcome();const ex=document.getElementById("sairn-save-bar");if(ex)ex.remove();const bar=document.createElement("div");bar.id="sairn-save-bar";bar.style.cssText="position:fixed;bottom:80px;right:20px;background:#0C1220;border:1px solid rgba(14,165,233,0.25);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center";const cb=document.createElement("button");cb.textContent="Copy";cb.style.cssText="background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit";cb.onclick=function(){navigator.clipboard.writeText(lastResponse).then(function(){cb.textContent="Copied!";setTimeout(function(){cb.textContent="Copy";},2000);});};const sb=document.createElement("span");sb.textContent="✓ Saved";sb.style.cssText="font-size:11px;color:#10B981;font-weight:600";const xb=document.createElement("button");xb.textContent="x";xb.style.cssText="background:none;border:none;color:var(--d);font-size:16px;cursor:pointer;padding:0 4px";xb.onclick=function(){bar.remove();};bar.appendChild(cb);bar.appendChild(sb);bar.appendChild(xb);document.body.appendChild(bar);setTimeout(function(){const b=document.getElementById("sairn-save-bar");if(b)b.remove();},6000);}
+
+function showPage(page){["homePage","appPage"].forEach(function(id){const el=document.getElementById(id);el.classList.remove("active");el.style.display="none";});if(page==="home"){const h=document.getElementById("homePage");h.classList.add("active");h.style.display="";window.scrollTo(0,0);}else{const a=document.getElementById("appPage");a.classList.add("active");a.style.display="flex";setTimeout(function(){document.getElementById("userInput").focus();addVoiceButton();addOutcomeBar();},100);if(!messages.length)loadFirstMessage();}}
+function setMode(label,ph){activeFlow=null;flowStep=0;document.querySelectorAll(".mode-btn").forEach(function(b){b.classList.remove("active");});event.currentTarget.classList.add("active");document.getElementById("userInput").placeholder=ph;document.getElementById("userInput").focus();}
+function startFlow(id){const f=GUIDED_FLOWS.find(function(x){return x.id===id;});if(!f)return;activeFlow=f;flowStep=0;document.querySelectorAll(".mode-btn").forEach(function(b){b.classList.remove("active");});document.querySelectorAll("[data-flow="+id+"]").forEach(function(b){b.classList.add("active");});const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();addMsg("ai",f.intro);messages.push({role:"assistant",content:f.intro});document.getElementById("userInput").placeholder="Reply to continue...";document.getElementById("userInput").focus();}
+function useSuggestion(el){document.getElementById("userInput").value=el.textContent;sendMessage();}
+function addMsg(role,content){const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg "+role;const formatted=content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");if(role==="ai"){div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+formatted+"</p></div>";lastResponse=content;setTimeout(function(){showSaveBar();},600);}else{div.innerHTML="<div class=\"msg-bubble\">"+content+"</div>";}area.appendChild(div);area.scrollTop=area.scrollHeight;}
+function showTyping(){const area=document.getElementById("chatArea");const div=document.createElement("div");div.className="msg ai";div.id="typing-indicator";div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";area.appendChild(div);area.scrollTop=area.scrollHeight;}
+async function sendMessage(){const inp=document.getElementById("userInput");const text=inp.value.trim();if(!text||isLoading)return;const memCtx=await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return"";});if(activeFlow!==null){addMsg("user",text);inp.value="";inp.style.height="";if(flowStep<activeFlow.steps.length){const nxt=activeFlow.steps[flowStep++];setTimeout(function(){addMsg("ai",nxt);messages.push({role:"assistant",content:nxt});},700);}else if(flowStep===activeFlow.steps.length){flowStep++;setTimeout(function(){addMsg("ai",activeFlow.finish);messages.push({role:"assistant",content:activeFlow.finish});activeFlow=null;},700);}else{activeFlow=null;}return;}inp.value="";inp.style.height="";isLoading=true;document.getElementById("sendBtn").disabled=true;addMsg("user",text);messages.push({role:"user",content:text});showTyping();try{const res=await fetch(SAIRN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:1000,system:SYSTEM+(memCtx||""),messages:messages.slice(-20),app_id:APP_ID,is_demo:true})});const data=await res.json();document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();if(res.status===429){addMsg("ai",(data.message||"Daily limit reached.")+" Sign up at sairn.vercel.app for full access.");}else{const reply=data.content&&data.content[0]&&data.content[0].text||"Please try again.";messages.push({role:"assistant",content:reply});addMsg("ai",reply);}}catch(e){document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();addMsg("ai","Connection issue. Please try again.");}isLoading=false;document.getElementById("sendBtn").disabled=false;document.getElementById("userInput").focus();}
+async function loadFirstMessage(){try{const now=new Date();const res=await fetch("https://sairn.vercel.app/api/greeting",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({app_id:APP_ID,client_hour:now.getHours(),client_day:now.getDay()})});const data=await res.json();if(!data.greeting)return;const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg ai";div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+data.greeting+" SAIRNcode is ready — ICD-10, CPT, E&M leveling, fraud detection, DRG validation, compliance, and audit reporting. What do you need?</p></div>";div.style.opacity="0";div.style.transform="translateY(10px)";area.appendChild(div);messages.push({role:"assistant",content:data.greeting});requestAnimationFrame(function(){div.style.transition="opacity 0.5s, transform 0.5s";div.style.opacity="1";div.style.transform="translateY(0)";});}catch(e){}}
+document.getElementById("userInput").addEventListener("input",function(){this.style.height="";this.style.height=Math.min(this.scrollHeight,140)+"px";});
+document.getElementById("userInput").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
+</script>
+</body>
+</html>
