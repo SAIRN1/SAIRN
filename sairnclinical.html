@@ -482,9 +482,9 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
 .auth-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:#F0F8FA;letter-spacing:-.5px;margin-bottom:6px}
 .auth-title em{font-style:normal;color:#06B6D4}
 .auth-sub{font-size:13px;color:#5A8A94;margin-bottom:28px;line-height:1.5}
-.auth-input{width:100%;background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:12px;padding:14px 16px;color:#F0F8FA;font-size:22px;letter-spacing:8px;text-align:center;outline:none;font-family:inherit;transition:border-color .15s;box-sizing:border-box;margin-bottom:16px}
+.auth-input{width:100%;background:#FFFFFF;border:2px solid #06B6D4;border-radius:12px;padding:14px 16px;color:#021018;font-size:24px;font-weight:700;letter-spacing:8px;text-align:center;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;box-sizing:border-box;margin-bottom:16px}
 .auth-input:focus{border-color:rgba(6,182,212,0.5)}
-.auth-input::placeholder{letter-spacing:2px;font-size:14px;color:#5A8A94}
+.auth-input::placeholder{letter-spacing:2px;font-size:14px;color:#999;font-weight:400}
 .auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,#06B6D4,#0891B2);border:none;border-radius:12px;color:#021018;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(6,182,212,0.3);transition:opacity .15s;letter-spacing:.3px}
 .auth-btn:hover{opacity:.9}
 .auth-error{font-size:12px;color:#EF4444;margin-top:10px;min-height:18px;font-weight:600}
@@ -513,7 +513,7 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
       <div class="nav-brand">SAIRN<em>clinical</em></div>
     </a>
     <div class="nav-badge">Claude AI · SAIRN Technologies · Built for Clinical Staff</div>
-    <button class="nav-cta" onclick="showPage('ap')">Enter Platform →</button>
+    <button class="nav-cta" onclick="document.getElementById('auth-gate')&&document.getElementById('auth-gate').style.display!=='none'?document.getElementById('auth-pin-input')&&document.getElementById('auth-pin-input').focus():showPage('ap')">Enter Platform →</button>
   </nav>
 
   <div class="hero">
@@ -532,7 +532,7 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
       <div class="hero-pill">📊 Joint Commission Prep</div>
       <div class="hero-pill">🔄 Handoff Intelligence</div>
     </div>
-    <button class="hero-btn" onclick="showPage('ap')">Enter SAIRNclinical →</button>
+    <button class="hero-btn" onclick="document.getElementById('auth-gate')&&document.getElementById('auth-gate').style.display!=='none'?document.getElementById('auth-pin-input')&&document.getElementById('auth-pin-input').focus():showPage('ap')">Enter SAIRNclinical →</button>
     <div class="crisis-badge">
       <div class="crisis-dot"></div>
       <span>48% global nurse burnout rate — documentation is the biggest contributor. We fix that.</span>
@@ -1547,7 +1547,11 @@ function _dismissAuthGate() {
   if(gate){
     gate.style.transition='opacity .4s';
     gate.style.opacity='0';
-    setTimeout(function(){gate.style.display='none';},400);
+    setTimeout(function(){
+      gate.style.display='none';
+      // Go directly into the platform — skip landing
+      showPage('ap');
+    },400);
   }
 }
 
