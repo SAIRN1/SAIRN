@@ -521,6 +521,833 @@ const DOC_TEMPLATES = [
       { label: 'Additional Chronic Conditions', type: 'textarea', placeholder: 'List any other active chronic conditions reviewed this visit with their status' },
       { label: 'Clinical Notes', type: 'textarea', placeholder: 'Overall HCC review summary for this visit' }
     ]
+  },
+  {
+    id: 'cardiac_arrest',
+    title: 'Cardiac Arrest and Resuscitation',
+    icon: '\u{1F4CB}',
+    icd: 'I46.x',
+    purpose: 'Cardiac arrest documentation must specify arrest rhythm and whether ROSC achieved. Post-cardiac arrest syndrome is separate with MCC weight. Anoxic brain injury G93.1 is MCC. Document time to ROSC and targeted temperature management.',
+    fields: [
+      { label: 'Arrest Rhythm', type: 'select', options: ['Ventricular fibrillation (I46.01)', 'Ventricular tachycardia (I46.09)', 'Asystole (I46.09)', 'PEA - pulseless electrical activity (I46.09)', 'Cardiac arrest cause unknown (I46.9)', 'Sudden cardiac death not resuscitated (I46.1)'] },
+      { label: 'ROSC', type: 'select', options: ['ROSC achieved - document time to ROSC', 'No ROSC - unsuccessful resuscitation', 'Survived to hospital admission', 'Survived to discharge'] },
+      { label: 'Underlying Cause', type: 'select', options: ['AMI STEMI or NSTEMI - document separately', 'VF in ischemia', 'Electrolyte abnormality', 'Drug toxicity - document substance', 'Massive PE', 'Respiratory failure', 'Unknown'] },
+      { label: 'Post-Arrest Syndrome', type: 'select', options: ['Not applicable - no ROSC', 'Post-cardiac arrest syndrome - document organ dysfunction', 'Targeted temperature management 33-36C initiated', 'No post-arrest syndrome - rapid recovery'] },
+      { label: 'Anoxic Brain Injury', type: 'select', options: ['No anoxic brain injury', 'Anoxic brain damage (G93.1) - MCC - document time without perfusion', 'Hypoxic-ischemic encephalopathy - specify severity', 'Brain death criteria being assessed'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Post-cardiac arrest syndrome requires explicit documentation. Anoxic brain damage G93.1 is MCC. Document time to ROSC. VF arrest codes differently from PEA or asystole.' }
+    ]
+  },
+  {
+    id: 'shock',
+    title: 'Shock',
+    icon: '\u{1F4CB}',
+    icd: 'R57.x',
+    purpose: 'Shock type must be explicitly documented. Septic shock codes A41.9 plus R65.21 not R57. Cardiogenic shock is MCC. Hypovolemic shock requires cause. Obstructive shock from PE or tension pneumothorax codes separately.',
+    fields: [
+      { label: 'Shock Type', type: 'select', options: ['Cardiogenic shock (R57.0) - MCC - pump failure', 'Hypovolemic shock (R57.1) - document cause', 'Septic shock - code A41.9 + R65.21 NOT R57', 'Anaphylactic shock (T78.2x) - document allergen', 'Neurogenic shock - spinal cord injury', 'Obstructive shock - massive PE or tension pneumo', 'Hemorrhagic shock (R57.1) - trauma or GI bleed'] },
+      { label: 'Hemodynamics', type: 'text', placeholder: 'e.g. BP 72/40 HR 128 MAP 51 despite 2L NS requiring norepinephrine 0.2 mcg/kg/min' },
+      { label: 'Vasopressors', type: 'select', options: ['No vasopressors - responding to fluids', 'Norepinephrine first line - document dose', 'Vasopressin added second agent', 'Epinephrine - cardiogenic or anaphylaxis', 'Multiple vasopressors - refractory shock'] },
+      { label: 'Cause', type: 'text', placeholder: 'e.g. Massive GI bleed Hgb 4.8 or anterior STEMI EF 15% or anaphylaxis to penicillin' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Septic shock codes A41.9 plus R65.21 - not R57. Cardiogenic shock R57.0 is MCC. Document vasopressor requirements and MAP goals.' }
+    ]
+  },
+  {
+    id: 'trauma',
+    title: 'Trauma and Polytrauma',
+    icon: '\u{1F4CB}',
+    icd: 'S00-T88',
+    purpose: 'Trauma requires specific site laterality and type for each injury. Most severe injury is principal diagnosis. Open versus closed fractures differ. Document mechanism and GCS. External cause codes required.',
+    fields: [
+      { label: 'Primary Injury', type: 'text', placeholder: 'e.g. Splenic laceration grade III right femur fracture closed head injury rib fractures 3-7 right side' },
+      { label: 'Mechanism', type: 'select', options: ['Motor vehicle accident - document belt and airbag', 'Fall - document height and surface', 'Penetrating - gunshot or stab', 'Blast injury', 'Sports or recreational', 'Assault'] },
+      { label: 'GCS', type: 'text', placeholder: 'e.g. GCS 14 E4V4M6 or GCS 7 requiring intubation' },
+      { label: 'ISS Estimate', type: 'text', placeholder: 'e.g. ISS approximately 25 severe polytrauma or ISS 16 moderate' },
+      { label: 'Interventions', type: 'text', placeholder: 'e.g. Emergent splenectomy ex-fix right femur craniotomy for epidural hematoma' },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Traumatic coagulopathy massive transfusion protocol activated ARDS post-trauma' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Code each injury with site and laterality. Open fractures differ from closed. External cause codes required. Traumatic coagulopathy and ARDS code separately as MCCs.' }
+    ]
+  },
+  {
+    id: 'burns',
+    title: 'Burns',
+    icon: '\u{1F4CB}',
+    icd: 'T20-T31',
+    purpose: 'Burns require degree, TBSA percentage, and site. Third degree is MCC. TBSA drives DRG significantly. Inhalation injury is a major complication affecting mortality and must be documented separately.',
+    fields: [
+      { label: 'Degree', type: 'select', options: ['First degree - erythema only', 'Second degree superficial - blisters', 'Second degree deep - pale or mottled', 'Third degree - full thickness white or leathery - MCC', 'Fourth degree - involves underlying structures'] },
+      { label: 'Site', type: 'text', placeholder: 'e.g. Face hands trunk circumferential extremity - document each site separately' },
+      { label: 'TBSA', type: 'select', options: ['Less than 10% TBSA', '10-19% TBSA', '20-29% TBSA', '30-39% TBSA - significant', '40-49% TBSA - severe', '50% or greater TBSA - critical'] },
+      { label: 'Inhalation Injury', type: 'select', options: ['No inhalation injury', 'Inhalation injury without respiratory failure', 'Inhalation injury with respiratory failure - MCC', 'Carbon monoxide poisoning - document COHb level', 'Cyanide exposure'] },
+      { label: 'Resuscitation', type: 'text', placeholder: 'e.g. Parkland formula 4 mL/kg per TBSA in 24 hours urine output target 0.5-1 mL/kg/hr' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Third degree burns are MCCs. TBSA drives DRG. Inhalation injury dramatically increases mortality. Document each burn site separately.' }
+    ]
+  },
+  {
+    id: 'poisoning',
+    title: 'Poisoning and Overdose',
+    icon: '\u{1F4CB}',
+    icd: 'T36-T65',
+    purpose: 'Poisoning requires substance, intent, and encounter type. Adverse effects code differently - adverse effect is when medication taken correctly causes harm. Document organ dysfunction from toxicity as separate codes.',
+    fields: [
+      { label: 'Substance', type: 'text', placeholder: 'e.g. Acetaminophen opioid specify drug tricyclic antidepressant methamphetamine carbon monoxide' },
+      { label: 'Intent', type: 'select', options: ['Accidental - unintentional', 'Intentional self-harm - suicide attempt', 'Assault - homicide attempt', 'Undetermined intent'] },
+      { label: 'Adverse Effect vs Poisoning', type: 'select', options: ['Poisoning - wrong dose or wrong drug', 'Adverse effect - medication correctly taken causing harm', 'Underdosing - less than prescribed'] },
+      { label: 'Toxic Level', type: 'text', placeholder: 'e.g. Acetaminophen level 480 mcg/mL at 4 hours Rumack-Matthew nomogram toxic zone' },
+      { label: 'Organ Toxicity', type: 'text', placeholder: 'e.g. Hepatic failure AKI from NSAID QTc prolongation 640ms respiratory depression' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. NAC protocol naloxone 0.4mg IV activated charcoal hemodialysis for lithium' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Poisoning uses T codes with intent qualifier. Adverse effect codes drug first then manifestation. Document organ dysfunction as MCCs. Psychiatric consult required for intentional ingestions.' }
+    ]
+  },
+  {
+    id: 'hypothermia',
+    title: 'Temperature Disorders',
+    icon: '\u{1F4CB}',
+    icd: 'T67-T68',
+    purpose: 'Severe hypothermia below 28C is MCC. Heat stroke with CNS dysfunction is MCC and emergency. Document core temperature and organ dysfunction from extreme temperature.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Accidental hypothermia mild 32-35C (T68)', 'Accidental hypothermia moderate 28-32C (T68)', 'Accidental hypothermia severe below 28C (T68) - MCC', 'Heat exhaustion (T67.01)', 'Heat stroke (T67.01) - MCC - CNS dysfunction required', 'Hyperthermia unspecified (T67.5)'] },
+      { label: 'Core Temperature', type: 'text', placeholder: 'e.g. Core temperature 28.4C rectal or temp 41.2C rectal - heat stroke' },
+      { label: 'Cause', type: 'select', options: ['Environmental exposure', 'Medication-induced NMS or serotonin syndrome', 'Endocrine hypothyroidism or adrenal', 'Exertional heat stroke military or athletic'] },
+      { label: 'Organ Dysfunction', type: 'text', placeholder: 'e.g. Rhabdomyolysis CK 48000 AKI Cr 3.2 coagulopathy DIC encephalopathy' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Heat stroke requires CNS dysfunction to distinguish from heat exhaustion. Severe hypothermia and heat stroke are MCCs. Rhabdomyolysis and organ dysfunction code separately with additional MCC weight.' }
+    ]
+  },
+  {
+    id: 'mechanical_ventilation',
+    title: 'Mechanical Ventilation',
+    icon: '\u{1F4CB}',
+    icd: '5A19x',
+    purpose: 'Ventilation duration significantly affects DRG. Greater than 96 hours is higher-weighted DRG. Document indication, settings, weaning progress, and complications. Tracheostomy timing affects DRG.',
+    fields: [
+      { label: 'Duration', type: 'select', options: ['Less than 96 hours - document expected duration', '96 hours or greater - significant DRG impact - document clearly', 'Tracheostomy placed for prolonged ventilation', 'Non-invasive BiPAP or CPAP only'] },
+      { label: 'Indication', type: 'select', options: ['Respiratory failure hypoxic', 'Respiratory failure hypercapnic', 'Post-operative airway protection', 'Airway protection altered mental status', 'Neuromuscular failure', 'Hemodynamic instability'] },
+      { label: 'Settings', type: 'text', placeholder: 'e.g. Volume control TV 420mL 6mL/kg IBW RR 18 PEEP 8 FiO2 0.45 plateau 24 cmH2O' },
+      { label: 'Weaning', type: 'select', options: ['Not weaning - full support', 'Active weaning - daily SBT', 'Passed SBT - extubation planned', 'Failed SBT - continue ventilator', 'Liberated - extubated'] },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. VAP ventilator-associated pneumonia barotrauma pneumothorax VILI' },
+      { label: 'Notes', type: 'textarea', placeholder: '96-hour threshold dramatically changes DRG. Document indication. VAP is HAC affecting reimbursement. Tracheostomy timing affects DRG split in many respiratory diagnoses.' }
+    ]
+  },
+  {
+    id: 'sepsis_organ',
+    title: 'Sepsis Organ Dysfunction Detail',
+    icon: '\u{1F4CB}',
+    icd: 'A41.9 + R65.2x',
+    purpose: 'Each sepsis organ failure codes separately and carries MCC weight. SOFA score components should be documented. Vasopressor requirement must be explicitly stated for septic shock R65.21.',
+    fields: [
+      { label: 'Sepsis Code', type: 'select', options: ['Sepsis (A41.9) - organ dysfunction', 'Severe sepsis (A41.9 + R65.20)', 'Septic shock (A41.9 + R65.21) - vasopressors required', 'Sepsis Staph aureus (A41.01)', 'Sepsis MRSA (A41.02)', 'Sepsis gram-negative (A41.5x)', 'Sepsis unspecified (A41.9)'] },
+      { label: 'Respiratory Dysfunction', type: 'select', options: ['None', 'Hypoxemia requiring supplemental O2', 'Acute respiratory failure (J96.01) - MCC - document explicitly', 'Mechanical ventilation required'] },
+      { label: 'Renal Dysfunction', type: 'select', options: ['None', 'Oliguria or creatinine elevation', 'AKI (N17.9) - MCC - document explicitly', 'Dialysis required'] },
+      { label: 'Neurological Dysfunction', type: 'select', options: ['None', 'Altered mental status', 'Septic encephalopathy (G93.41) - MCC - document explicitly', 'Coma'] },
+      { label: 'Hematologic Dysfunction', type: 'select', options: ['None', 'Thrombocytopenia - document nadir', 'DIC (D65) - MCC', 'Lactate greater than 2 mmol/L'] },
+      { label: 'Vasopressors', type: 'text', placeholder: 'e.g. Norepinephrine 0.18 mcg/kg/min vasopressin 0.04 units/min added - refractory shock' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Each organ dysfunction codes separately and each is MCC dramatically affecting DRG. Document SOFA score. Vasopressor requirement must be explicit for septic shock R65.21.' }
+    ]
+  },
+  {
+    id: 'leukemia',
+    title: 'Leukemia',
+    icon: '\u{1F4CB}',
+    icd: 'C91-C95',
+    purpose: 'Leukemia must specify type and remission status. AML versus ALL versus CML versus CLL code completely differently. Blast crisis in CML is MCC. Document treatment phase.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['AML not in remission (C92.00)', 'AML in remission (C92.01)', 'AML in relapse (C92.02)', 'ALL not in remission (C91.00)', 'ALL in remission (C91.01)', 'CML chronic phase (C92.10)', 'CML blast crisis (C92.12) - MCC', 'CLL not in remission (C91.10)'] },
+      { label: 'Remission', type: 'select', options: ['Active - not in remission', 'Complete remission - document date', 'Partial remission', 'Relapsed', 'Refractory - failed multiple regimens'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. 7+3 induction Cytarabine Daunorubicin HIDAC consolidation TKI Imatinib 400mg Venetoclax Azacitidine' },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Tumor lysis syndrome neutropenic fever transfusion dependent CNS involvement DIC' },
+      { label: 'Transplant', type: 'select', options: ['No transplant', 'Listed for allogeneic SCT', 'Allogeneic SCT performed - document date', 'GVHD post-transplant'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Remission status dramatically changes the code. AML ALL CML are completely different diseases. Blast crisis in CML is more severe. Document treatment phase explicitly.' }
+    ]
+  },
+  {
+    id: 'lymphoma',
+    title: 'Lymphoma',
+    icon: '\u{1F4CB}',
+    icd: 'C81-C85',
+    purpose: 'Lymphoma requires Hodgkin versus Non-Hodgkin, histology, and Ann Arbor stage. B symptoms affect stage suffix. CNS involvement codes separately. Document treatment and response assessment.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Hodgkin nodular sclerosis (C81.1x)', 'Hodgkin mixed cellularity (C81.2x)', 'DLBCL diffuse large B-cell (C83.3x)', 'Follicular grade 1-2 (C82.0x)', 'Follicular grade 3 (C82.2x)', 'Mantle cell (C83.1x)', 'Peripheral T-cell (C84.4x)', 'Burkitt (C83.7x)', 'Marginal zone (C83.0x)'] },
+      { label: 'Ann Arbor Stage', type: 'select', options: ['Stage I - single region', 'Stage II - two regions same side', 'Stage III - both sides of diaphragm', 'Stage IV - disseminated extralymphatic', 'A - no B symptoms', 'B - fever night sweats weight loss'] },
+      { label: 'Bulky Disease', type: 'select', options: ['No bulky disease', 'Bulky disease - mass greater than 10cm', 'Mediastinal mass with compression'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. R-CHOP cycle 4 of 6 RDHAP salvage for relapsed CAR-T axi-cel infused' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Document histologic type explicitly. Ann Arbor stage required. B symptoms affect stage suffix. CNS involvement requires prophylaxis documentation.' }
+    ]
+  },
+  {
+    id: 'myeloma',
+    title: 'Multiple Myeloma',
+    icon: '\u{1F4CB}',
+    icd: 'C90.x',
+    purpose: 'Multiple myeloma requires active versus smoldering versus MGUS. CRAB criteria define active disease. Bone lesions and renal failure code separately. Document ISS stage and treatment.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Multiple myeloma not in remission (C90.00)', 'Multiple myeloma in remission (C90.01)', 'Multiple myeloma in relapse (C90.02)', 'Smoldering myeloma (C90.3x)', 'Plasma cell leukemia (C90.1x)', 'MGUS (D47.2)'] },
+      { label: 'ISS Stage', type: 'select', options: ['Stage I - beta-2 microglobulin less than 3.5 albumin 3.5+', 'Stage II - not I or III', 'Stage III - beta-2 microglobulin 5.5 or greater'] },
+      { label: 'CRAB Criteria', type: 'text', placeholder: 'e.g. Calcium 11.8 hypercalcemia MCC Renal Cr 3.2 cast nephropathy Anemia Hgb 7.2 Bone lytic lesions' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. VRd Bortezomib Lenalidomide Dex cycle 3 Daratumumab for relapse post-SCT maintenance Lenalidomide' },
+      { label: 'Notes', type: 'textarea', placeholder: 'CRAB criteria define active myeloma. Hypercalcemia renal failure anemia and bone lesions each code separately as MCCs. Document remission status.' }
+    ]
+  },
+  {
+    id: 'neutropenic_fever',
+    title: 'Neutropenic Fever',
+    icon: '\u{1F4CB}',
+    icd: 'D70.x + R50.9',
+    purpose: 'Neutropenic fever is oncologic emergency. ANC threshold and infection source must be documented. MASCC score determines inpatient versus outpatient management. Document underlying malignancy and recent chemotherapy.',
+    fields: [
+      { label: 'Neutropenia', type: 'select', options: ['Febrile neutropenia ANC less than 500 (D70.3 + R50.9)', 'Profound neutropenia ANC less than 100', 'Drug-induced agranulocytosis (D70.1) - document agent'] },
+      { label: 'ANC', type: 'text', placeholder: 'e.g. ANC 80 cells/uL profound neutropenia or ANC 320 at presentation nadir 20 on day 7' },
+      { label: 'MASCC Score', type: 'text', placeholder: 'e.g. MASCC score 21 high risk inpatient or MASCC 24 low risk consider outpatient' },
+      { label: 'Source', type: 'select', options: ['No source - primary bacteremia', 'CLABSI - central line associated', 'Pneumonia', 'UTI', 'Skin or soft tissue', 'GI typhlitis or colitis', 'Unknown'] },
+      { label: 'Cultures', type: 'text', placeholder: 'e.g. Blood cultures gram-positive cocci preliminary viridans Strep 2 of 2 bottles' },
+      { label: 'Antibiotics', type: 'text', placeholder: 'e.g. Cefepime 2g q8h Piperacillin-tazobactam for mucositis risk Vancomycin added for port site' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Document ANC and temperature. MASCC score guides management. Blood cultures before antibiotics affects quality measures. Document underlying malignancy and recent chemotherapy separately.' }
+    ]
+  },
+  {
+    id: 'tumor_lysis',
+    title: 'Tumor Lysis Syndrome',
+    icon: '\u{1F4CB}',
+    icd: 'E88.3',
+    purpose: 'TLS is metabolic emergency in hematologic malignancies. Cairo-Bishop criteria define laboratory versus clinical TLS. Renal failure codes separately as MCC. Document prophylaxis given.',
+    fields: [
+      { label: 'TLS Type', type: 'select', options: ['Laboratory TLS - metabolic without clinical symptoms', 'Clinical TLS - metabolic plus AKI or arrhythmia or seizure (E88.3)', 'High-risk disease - prophylaxis required'] },
+      { label: 'Cairo-Bishop Criteria', type: 'text', placeholder: 'e.g. Uric acid 12.4 potassium 6.2 phosphorus 8.1 calcium 6.8 creatinine 3.4' },
+      { label: 'Malignancy', type: 'text', placeholder: 'e.g. Burkitt lymphoma ALL with WBC 180K AML high blast count - highest risk' },
+      { label: 'Organ Dysfunction', type: 'select', options: ['None - laboratory TLS only', 'AKI (N17.9) - MCC - code separately', 'Arrhythmia from hyperkalemia', 'Seizure from hypocalcemia', 'Multi-organ dysfunction'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Rasburicase 0.2 mg/kg allopurinol 300mg aggressive hydration cardiac monitoring dialysis for refractory' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Clinical TLS requires organ dysfunction. Rasburicase contraindicated in G6PD deficiency. AKI from TLS codes separately as MCC. Document prophylaxis given.' }
+    ]
+  },
+  {
+    id: 'fungal',
+    title: 'Fungal Infections',
+    icon: '\u{1F4CB}',
+    icd: 'B35-B49',
+    purpose: 'Invasive fungal infections carry high morbidity in immunocompromised patients. Candidemia requires central line removal. Aspergillus codes separately. PCP is MCC. Document underlying immunosuppression.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Invasive candidiasis candidemia (B37.7)', 'Esophageal candidiasis (B37.81)', 'Pulmonary aspergillosis (B44.1)', 'Invasive aspergillosis (B44.0) - MCC', 'Mucormycosis (B46.x)', 'Cryptococcal meningitis (B45.1) - MCC', 'Histoplasmosis disseminated (B39.3)', 'PCP pneumocystis (B59) - MCC'] },
+      { label: 'Immune Status', type: 'text', placeholder: 'e.g. AML induction post-allogeneic SCT day 45 HIV CD4 52 prolonged steroids solid organ transplant' },
+      { label: 'Diagnostics', type: 'text', placeholder: 'e.g. Blood cultures 4 of 4 Candida albicans BAL galactomannan 4.2 beta-D-glucan 680 tissue biopsy' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Micafungin 100mg for candidemia Voriconazole 6mg/kg for aspergillus TDM levels checked' },
+      { label: 'Central Line', type: 'select', options: ['Not applicable', 'Central line removed - required for candidemia', 'Central line retained - document rationale', 'No central line at time of infection'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Candidemia requires ophthalmology exam for endophthalmitis and echo for endocarditis. Central line must be removed per IDSA. PCP and invasive aspergillosis are MCCs.' }
+    ]
+  },
+  {
+    id: 'tb',
+    title: 'Tuberculosis',
+    icon: '\u{1F4CB}',
+    icd: 'A15-A19',
+    purpose: 'TB must specify pulmonary versus extrapulmonary and drug resistance. Miliary TB and TB meningitis are MCCs. Latent TB codes Z22.7 not A15. Document infection control and public health reporting.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Active pulmonary TB smear positive (A15.0)', 'Active pulmonary TB culture confirmed (A15.0)', 'Miliary TB disseminated (A19.0) - MCC', 'TB meningitis (A17.0) - MCC', 'TB spine Potts disease (A18.01)', 'Latent TB LTBI (Z22.7) - not active disease'] },
+      { label: 'Drug Resistance', type: 'select', options: ['Pan-sensitive - standard 4-drug HRZE', 'INH-resistant', 'MDR-TB - resistant to INH and rifampin', 'XDR-TB - resistant to INH rifampin fluoroquinolone'] },
+      { label: 'AFB Results', type: 'text', placeholder: 'e.g. AFB smear 3+ positive culture MTBC pending or PCR rapid test positive rifampin sensitive' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. HRZE INH Rifampin Pyrazinamide Ethambutol DOT arranged pyridoxine 50mg for neuropathy prevention' },
+      { label: 'Infection Control', type: 'select', options: ['Airborne precautions negative pressure room', 'N95 respirators for all staff', 'Public health notified - required by law', 'Contact investigation initiated'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Active TB requires airborne precautions and public health notification by law. Latent TB uses Z22.7. MDR-TB dramatically changes treatment. Miliary TB and TB meningitis are MCCs.' }
+    ]
+  },
+  {
+    id: 'als',
+    title: 'ALS and Motor Neuron Disease',
+    icon: '\u{1F4CB}',
+    icd: 'G12.21',
+    purpose: 'ALS documentation tracks respiratory involvement. Respiratory failure is major complication. Document FVC and ventilator support. Goals of care discussion essential.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['ALS amyotrophic lateral sclerosis (G12.21)', 'Progressive bulbar palsy (G12.21)', 'Primary lateral sclerosis (G12.21)', 'Progressive muscular atrophy (G12.21)'] },
+      { label: 'Progression', type: 'text', placeholder: 'e.g. Diagnosis 18 months ago limb onset current ALSFRS-R 28 declining 3 points per month' },
+      { label: 'Respiratory', type: 'select', options: ['Adequate FVC above 80%', 'Mild compromise FVC 50-80%', 'Significant compromise FVC 30-50%', 'FVC below 30% - NIV required', 'BiPAP or invasive ventilation dependent'] },
+      { label: 'Nutrition', type: 'select', options: ['Oral feeds adequate', 'Modified texture for dysphagia', 'PEG tube enteral nutrition', 'PEG placement pending'] },
+      { label: 'Goals', type: 'text', placeholder: 'e.g. Declined tracheostomy pursuing comfort measures with hospice or proceeding with PEG and BiPAP' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Document FVC at each encounter. Goals of care discussion essential. Respiratory failure from ALS codes J96 separately. Dysphagia and aspiration risk documented.' }
+    ]
+  },
+  {
+    id: 'myasthenia',
+    title: 'Myasthenia Gravis',
+    icon: '\u{1F4CB}',
+    icd: 'G70.01',
+    purpose: 'Myasthenic crisis is respiratory emergency requiring ICU. Thymoma requires documentation. Distinguish from cholinergic crisis. Document AChR antibody status.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['MG AChR antibody positive (G70.01)', 'MG MuSK antibody positive (G70.01)', 'MG seronegative (G70.01)', 'Myasthenic crisis (G70.01) - respiratory failure', 'Lambert-Eaton myasthenic syndrome (G73.1)'] },
+      { label: 'Crisis Status', type: 'select', options: ['Stable outpatient', 'Mild exacerbation', 'Myasthenic crisis - ventilatory failure - ICU', 'IVIG or plasmapheresis initiated'] },
+      { label: 'Thymoma', type: 'select', options: ['No thymoma', 'Thymoma present - document status', 'Post-thymectomy', 'Thymic carcinoma'] },
+      { label: 'AChR Titer', type: 'text', placeholder: 'e.g. AChR binding antibody 48 nmol/L elevated or MuSK antibody positive or seronegative' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Pyridostigmine 60mg q4h Prednisone 60mg taper Mycophenolate IVIG 2g/kg for crisis' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Myasthenic crisis requires intubation if FVC below 15 mL/kg or NIF worse than -20. IVIG versus plasmapheresis equivalent for crisis. Thymectomy benefits AChR+ patients under 60.' }
+    ]
+  },
+  {
+    id: 'guillain_barre',
+    title: 'Guillain-Barre Syndrome',
+    icon: '\u{1F4CB}',
+    icd: 'G61.0',
+    purpose: 'GBS progression tracked by disability scale. Respiratory failure from diaphragm weakness is life-threatening. Autonomic instability is serious. Document IVIG or plasmapheresis.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['AIDP classic GBS (G61.0)', 'Miller Fisher syndrome (G61.0)', 'Acute motor axonal neuropathy AMAN (G61.0)'] },
+      { label: 'Disability Scale', type: 'select', options: ['Grade 1 - minor symptoms', 'Grade 2 - walks 5m without aid', 'Grade 3 - walks with aid', 'Grade 4 - confined to bed', 'Grade 5 - mechanical ventilation required'] },
+      { label: 'Respiratory', type: 'text', placeholder: 'e.g. FVC 1.8L declining NIF -28 cmH2O intubation threshold approached rule of 20-30' },
+      { label: 'Autonomic', type: 'select', options: ['No autonomic dysfunction', 'Labile BP', 'Arrhythmias - ICU monitoring', 'Severe dysautonomia - vasopressors or pacing'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. IVIG 2g/kg over 5 days plasmapheresis 5 exchanges - steroids NOT indicated in GBS' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Steroids do NOT help GBS. 20-30 rule for intubation: FVC less than 20 mL/kg or MIP worse than 30 cmH2O. Autonomic instability can cause cardiac arrest.' }
+    ]
+  },
+  {
+    id: 'neuropathy',
+    title: 'Peripheral Neuropathy',
+    icon: '\u{1F4CB}',
+    icd: 'G60-G65',
+    purpose: 'Neuropathy type affects coding and treatment. Diabetic neuropathy requires linking to diabetes. CIDP is treatable. Document nerve conduction study findings.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Diabetic peripheral neuropathy (E11.40) - code with diabetes', 'CIDP (G61.81)', 'Charcot-Marie-Tooth (G60.0)', 'Drug-induced (G62.0) - document agent', 'Alcoholic (G62.1)', 'Critical illness polyneuropathy (G62.81)', 'Chemotherapy-induced (G62.2)', 'Small fiber neuropathy (G62.89)'] },
+      { label: 'NCS Findings', type: 'text', placeholder: 'e.g. EMG/NCS demyelinating pattern prolonged distal latencies slowed conduction velocities consistent with CIDP' },
+      { label: 'Distribution', type: 'select', options: ['Length-dependent stocking glove', 'Multifocal mononeuritis multiplex', 'Cranial neuropathy', 'Autonomic neuropathy', 'Mixed sensorimotor'] },
+      { label: 'Functional Impact', type: 'text', placeholder: 'e.g. Unable to ambulate without assistance neuropathic pain 8/10 at rest falls twice past month' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Gabapentin 600mg TID IVIG 2g/kg monthly for CIDP PT for balance podiatry for wound prevention' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Diabetic neuropathy links to diabetes - do not code separately as G63. CIDP is treatable with IVIG. Critical illness polyneuropathy affects ICU weaning.' }
+    ]
+  },
+  {
+    id: 'spine',
+    title: 'Spine Surgery and Complications',
+    icon: '\u{1F4CB}',
+    icd: 'M47-M51',
+    purpose: 'Spine surgery must specify level and approach. Cauda equina syndrome is emergency. Post-laminectomy syndrome codes M96.1. Document neurological deficits and resolution.',
+    fields: [
+      { label: 'Condition', type: 'select', options: ['Cervical disc herniation (M50.1x)', 'Lumbar disc herniation with radiculopathy (M51.16)', 'Lumbar spinal stenosis (M48.061)', 'Cervical spondylotic myelopathy (M47.812)', 'Compression fracture osteoporotic (M80.08xA)', 'Post-laminectomy syndrome (M96.1)'] },
+      { label: 'Level', type: 'text', placeholder: 'e.g. L4-5 herniation with right L5 radiculopathy or C5-6 stenosis with myelopathy' },
+      { label: 'Neurology', type: 'select', options: ['No deficit - pain only', 'Radiculopathy - dermatomal pain', 'Myelopathy - cord compression with weakness', 'Cauda equina syndrome - emergent surgery required', 'Incomplete cord injury'] },
+      { label: 'Procedure', type: 'select', options: ['Microdiscectomy', 'Laminectomy decompression', 'ACDF anterior cervical discectomy fusion', 'PLIF or TLIF posterior lumbar interbody fusion', 'Vertebroplasty or kyphoplasty'] },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. CSF leak wound infection adjacent segment disease hardware failure persistent radiculopathy' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Cauda equina syndrome requires emergent surgery. Post-laminectomy syndrome M96.1 is distinct from original spine condition. Document pre and post-operative neurological status.' }
+    ]
+  },
+  {
+    id: 'compartment',
+    title: 'Compartment Syndrome',
+    icon: '\u{1F4CB}',
+    icd: 'M79.A',
+    purpose: 'Compartment syndrome is surgical emergency. Delta pressure below 30 mmHg indicates fasciotomy needed. Rhabdomyolysis adds additional MCC. Document fasciotomy timing.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Acute traumatic compartment syndrome (M79.A1x)', 'Acute non-traumatic compartment syndrome (M79.A2x)', 'Chronic exertional compartment syndrome', 'Abdominal compartment syndrome'] },
+      { label: 'Location', type: 'select', options: ['Anterior compartment lower leg - most common', 'Deep posterior compartment', 'Forearm volar', 'Upper arm', 'Thigh', 'Foot'] },
+      { label: 'Pressure', type: 'text', placeholder: 'e.g. Measured compartment pressure 48 mmHg delta pressure MAP minus compartment 18 mmHg - fasciotomy indicated' },
+      { label: 'Fasciotomy', type: 'select', options: ['Fasciotomy performed - document timing', 'Fasciotomy indicated - patient declined', 'Fasciotomy not yet performed - monitoring', 'Wound closure after fasciotomy - staged'] },
+      { label: 'Rhabdomyolysis', type: 'select', options: ['No rhabdomyolysis', 'Rhabdomyolysis (M62.82) - code separately', 'CK peak documented', 'AKI from myoglobinuria - code separately'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Delta pressure below 30 mmHg indicates fasciotomy needed. Delay beyond 6-8 hours causes irreversible damage. Rhabdomyolysis and AKI code separately as MCCs.' }
+    ]
+  },
+  {
+    id: 'fracture_complication',
+    title: 'Fracture Complications',
+    icon: '\u{1F4CB}',
+    icd: 'M84.x',
+    purpose: 'Nonunion versus malunion code differently. Pathologic fractures use M80 for osteoporosis or M84.5 for metastatic disease. Periprosthetic fractures code M97.',
+    fields: [
+      { label: 'Complication', type: 'select', options: ['Fracture nonunion (M84.3x)', 'Fracture delayed union (M84.2x)', 'Fracture malunion (M84.4x)', 'Stress fracture (M84.3x)', 'Pathologic fracture metastatic (M84.5x)', 'Pathologic fracture osteoporosis (M80.xx)', 'Periprosthetic fracture (M97.x)', 'Hardware failure (T84.x)'] },
+      { label: 'Location', type: 'text', placeholder: 'e.g. Right tibial shaft nonunion after ORIF 8 months ago or L2 pathologic fracture from breast metastasis' },
+      { label: 'Prior Treatment', type: 'text', placeholder: 'e.g. ORIF with IM nail 8 months ago no bone bridging on CT at 6 months failed conservative' },
+      { label: 'Plan', type: 'text', placeholder: 'e.g. Revision with bone grafting BMP-2 application electrical bone stimulator orthopedic oncology consulted' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Pathologic fractures use M80 for osteoporosis M84.5 for neoplasm. Nonunion defined as no radiographic progression. Document prior treatment and revision approach.' }
+    ]
+  },
+  {
+    id: 'amputation',
+    title: 'Amputation',
+    icon: '\u{1F4CB}',
+    icd: 'Z89.x / S48-S98',
+    purpose: 'Amputation must specify level, laterality, and whether traumatic or surgical. Phantom limb pain codes separately. Document underlying cause and rehabilitation potential.',
+    fields: [
+      { label: 'Level', type: 'select', options: ['Below knee transtibial right (Z89.511)', 'Below knee transtibial left (Z89.512)', 'Above knee transfemoral right (Z89.611)', 'Above knee transfemoral left (Z89.612)', 'Foot transmetatarsal (Z89.4x)', 'Digit finger or toe (Z89.0x)'] },
+      { label: 'Type', type: 'select', options: ['Traumatic - acute injury', 'Surgical - dysvascular disease', 'Surgical - infection or sepsis', 'Surgical - cancer', 'Revision - stump complication'] },
+      { label: 'Cause', type: 'select', options: ['Peripheral vascular disease - critical limb ischemia', 'Diabetic foot osteomyelitis or gangrene', 'Trauma', 'Malignancy', 'Infection necrotizing fasciitis'] },
+      { label: 'Phantom Pain', type: 'select', options: ['No phantom pain', 'Phantom limb pain (G54.6) - code separately', 'Stump pain - wound healing', 'Phantom sensation without pain'] },
+      { label: 'Rehabilitation', type: 'select', options: ['Prosthetic fitting planned', 'PT initiated', 'Contralateral limb at risk - bilateral vascular disease', 'Not prosthetic candidate - document reason'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Document level explicitly - below versus above knee dramatically affects rehabilitation. Phantom limb pain G54.6 codes separately. Bilateral amputations significantly worsen functional prognosis.' }
+    ]
+  },
+  {
+    id: 'kidney_stones',
+    title: 'Nephrolithiasis',
+    icon: '\u{1F4CB}',
+    icd: 'N20-N23',
+    purpose: 'Stone documentation requires location, size, and composition. Infected obstructed stone is urological emergency. Document intervention performed.',
+    fields: [
+      { label: 'Location', type: 'select', options: ['Calculus of kidney (N20.0)', 'Calculus of ureter (N20.1) - most symptomatic', 'Calculus kidney and ureter (N20.2)', 'Bladder calculus (N21.0)', 'Staghorn calculus - occupies renal pelvis'] },
+      { label: 'Size', type: 'text', placeholder: 'e.g. 8mm right proximal ureteral stone or 3mm left distal likely to pass or 2.4cm staghorn right kidney' },
+      { label: 'Composition', type: 'select', options: ['Calcium oxalate - most common', 'Uric acid - radiolucent', 'Struvite - infection-associated staghorn', 'Cystine - genetic', 'Unknown - send for analysis'] },
+      { label: 'Complications', type: 'select', options: ['No obstruction', 'Hydronephrosis without infection', 'Infected obstructed stone - urological emergency - urosepsis', 'Ureteral obstruction with AKI', 'Bilateral obstruction'] },
+      { label: 'Intervention', type: 'select', options: ['Conservative fluids and analgesia less than 5mm', 'Medical expulsion therapy tamsulosin', 'Ureteroscopy with laser lithotripsy', 'SWL shockwave lithotripsy', 'Percutaneous nephrostomy for obstruction', 'PCNL for large stone'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Infected obstructed stone requires emergency urological decompression. Obstruction with AKI codes separately. Struvite stones require long-term antibiotics. Stone composition guides prevention.' }
+    ]
+  },
+  {
+    id: 'uti_complicated',
+    title: 'Complicated UTI',
+    icon: '\u{1F4CB}',
+    icd: 'N10 / N15.1',
+    purpose: 'Complicated UTI involves structural or functional abnormality. Emphysematous pyelonephritis is surgical emergency. Renal abscess may require drainage. Document anatomic complication.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Acute pyelonephritis (N10)', 'Chronic pyelonephritis (N11.x)', 'Emphysematous pyelonephritis (N10) - MCC - surgical emergency', 'Renal abscess (N15.1)', 'Perinephric abscess (N15.1)', 'Pyelonephritis with obstruction', 'Complicated UTI - structural abnormality'] },
+      { label: 'Complicating Factor', type: 'select', options: ['Ureteral obstruction stone or stricture', 'Vesicoureteral reflux', 'Neurogenic bladder', 'Renal transplant', 'Polycystic kidney disease', 'Diabetes', 'Foreign body stent or catheter'] },
+      { label: 'CT Findings', type: 'text', placeholder: 'e.g. Right emphysematous pyelonephritis gas throughout parenchyma or 3cm perinephric abscess' },
+      { label: 'Organism', type: 'text', placeholder: 'e.g. E. coli ESBL Klebsiella pan-sensitive Proteus mirabilis urease positive' },
+      { label: 'Intervention', type: 'text', placeholder: 'e.g. Percutaneous drainage emergent nephrectomy for emphysematous pyelonephritis ureteral stent for obstruction' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Emphysematous pyelonephritis 50% mortality without surgery. Perinephric abscess may require percutaneous drainage. Document complicating anatomic factor.' }
+    ]
+  },
+  {
+    id: 'bladder_cancer',
+    title: 'Bladder Cancer',
+    icon: '\u{1F4CB}',
+    icd: 'C67.x',
+    purpose: 'Bladder cancer must specify muscle-invasive versus non-muscle-invasive. NMIBC versus MIBC determines treatment. BCG versus cystectomy decision documented.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Non-muscle-invasive NMIBC (C67.x)', 'Muscle-invasive MIBC (C67.x)', 'Carcinoma in situ CIS (D09.0)', 'High grade NMIBC Ta or T1', 'Metastatic urothelial carcinoma'] },
+      { label: 'Location', type: 'select', options: ['Trigone (C67.0)', 'Dome (C67.1)', 'Lateral wall (C67.2)', 'Posterior wall (C67.3)', 'Neck (C67.5)', 'Multiple sites (C67.8)'] },
+      { label: 'Stage', type: 'text', placeholder: 'e.g. T1N0M0 high grade non-muscle invasive or T2N0M0 muscle invasive requiring cystectomy' },
+      { label: 'Treatment', type: 'select', options: ['TURBT for diagnosis and treatment', 'BCG intravesical 6-week induction', 'Gemcitabine intravesical', 'Radical cystectomy with ileal conduit or neobladder', 'Cisplatin-based plus immunotherapy for metastatic'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Muscle-invasive requires radical cystectomy. CIS requires aggressive BCG. Document histologic type and grade. Recurrence after BCG requires cystectomy discussion.' }
+    ]
+  },
+  {
+    id: 'prostate_cancer',
+    title: 'Prostate Cancer',
+    icon: '\u{1F4CB}',
+    icd: 'C61',
+    purpose: 'Prostate cancer requires Gleason score, PSA, and risk stratification. Active surveillance versus treatment documented. Castration-resistant prostate cancer separate entity. Document PSADT.',
+    fields: [
+      { label: 'Stage', type: 'select', options: ['Localized T1-T2', 'Locally advanced T3-T4', 'Regional lymph nodes N1', 'Bone metastases M1b - most common', 'Visceral metastases M1c', 'Castration-resistant CRPC'] },
+      { label: 'Gleason and Grade Group', type: 'text', placeholder: 'e.g. Gleason 4+5=9 Grade Group 5 very high risk or Gleason 3+4=7 Grade Group 2 intermediate' },
+      { label: 'PSA and PSADT', type: 'text', placeholder: 'e.g. PSA 18.4 at diagnosis current PSA 0.8 on ADT or PSADT 6 months suggesting aggressive' },
+      { label: 'Treatment', type: 'select', options: ['Active surveillance low risk', 'Radical prostatectomy', 'Radiation EBRT or brachytherapy', 'ADT androgen deprivation', 'ADT plus enzalutamide or abiraterone', 'Chemotherapy docetaxel for CRPC', 'Lutetium-177 PSMA therapy'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Gleason and PSA required for risk stratification. Castration-resistant defined as progression with testosterone below 50 ng/dL. Spinal cord compression requires urgent radiation.' }
+    ]
+  },
+  {
+    id: 'acute_liver_failure',
+    title: 'Acute Liver Failure',
+    icon: '\u{1F4CB}',
+    icd: 'K72.00',
+    purpose: 'Acute liver failure is distinct from acute on chronic. INR above 1.5 with encephalopathy defines ALF. Acetaminophen most common US cause has specific antidote. Transplant evaluation must be documented.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Acute liver failure fulminant (K72.00) - MCC', 'Acute on chronic liver failure (K72.10)', 'Subacute liver failure (K72.00)', 'Acute hepatic failure with coma (K72.01) - MCC'] },
+      { label: 'Etiology', type: 'select', options: ['Acetaminophen toxicity - most common US cause', 'DILI drug-induced - document agent', 'Viral hepatitis A or B acute', 'Autoimmune hepatitis', 'Wilson disease', 'Ischemic hepatitis - shock liver', 'Indeterminate'] },
+      { label: 'Severity', type: 'text', placeholder: 'e.g. INR 4.2 total bilirubin 18.4 ammonia 210 grade III encephalopathy creatinine 2.8 AKI phosphorus 1.2' },
+      { label: 'Kings College Criteria', type: 'text', placeholder: 'e.g. Acetaminophen: pH 7.24 or INR 6.5 plus Cr 3.4 plus grade III enceph - poor prognosis criteria met' },
+      { label: 'NAC', type: 'select', options: ['Not applicable - non-acetaminophen cause', 'NAC initiated within 8 hours - best outcome', 'NAC started late - continued per protocol', 'NAC completed'] },
+      { label: 'Transplant', type: 'select', options: ['Transplant team consulted', 'Listed for emergency liver transplant', 'Transplant contraindicated - document reason', 'Spontaneous recovery - deferred'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Acute liver failure is medical emergency. Kings College Criteria guide transplant listing. NAC benefits all ALF not just acetaminophen. Avoid benzodiazepines. Hepatic encephalopathy grade and coagulopathy documented.' }
+    ]
+  },
+  {
+    id: 'cholecystitis',
+    title: 'Biliary Disease',
+    icon: '\u{1F4CB}',
+    icd: 'K80-K83',
+    purpose: 'Acute cholecystitis must specify calculous versus acalculous. Cholangitis with Charcots triad is emergency. Tokyo Guidelines severity affects surgical timing. Choledocholithiasis requires ERCP.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Acute cholecystitis with gallstones (K80.00)', 'Acute cholecystitis acalculous (K81.0)', 'Chronic cholecystitis (K81.1)', 'Choledocholithiasis without cholangitis (K80.50)', 'Choledocholithiasis with cholangitis (K80.32)', 'Ascending cholangitis Charcots triad (K83.09)', 'Primary sclerosing cholangitis (K83.01)'] },
+      { label: 'Tokyo Severity', type: 'select', options: ['Grade I mild - no organ dysfunction', 'Grade II moderate - local complications or SIRS', 'Grade III severe - organ dysfunction - ICU'] },
+      { label: 'CBD', type: 'text', placeholder: 'e.g. CBD dilated 1.2cm on US CBD stone on MRCP bili 8.4 elevated - CBD obstruction' },
+      { label: 'Intervention', type: 'select', options: ['Emergent cholecystectomy Grade III', 'Urgent within 72 hours Grade II', 'Elective Grade I', 'Cholecystostomy - poor surgical candidate', 'ERCP with sphincterotomy for CBD stone'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Charcots triad indicates cholangitis requiring urgent ERCP. Tokyo Grade III requires ICU and emergent drainage. Acalculous occurs in critically ill.' }
+    ]
+  },
+  {
+    id: 'ibd',
+    title: 'Inflammatory Bowel Disease',
+    icon: '\u{1F4CB}',
+    icd: 'K50-K51',
+    purpose: 'Crohn versus UC must be documented. Location and severity affect coding. Complications including abscess and fistula code separately. Document biologic therapy and response.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Crohn small intestine (K50.0x)', 'Crohn large intestine (K50.1x)', 'Crohn small and large intestine (K50.8x)', 'UC proctitis (K51.2x)', 'UC left-sided (K51.3x)', 'UC pancolitis (K51.0x)', 'UC unspecified (K51.9x)'] },
+      { label: 'Activity', type: 'select', options: ['Remission', 'Mild to moderate - ambulatory', 'Moderate to severe - failed steroids', 'Severe or fulminant - hospitalization'] },
+      { label: 'Biologics', type: 'text', placeholder: 'e.g. Infliximab 10mg/kg q8 weeks Ustekinumab 90mg q8 weeks Vedolizumab 300mg Ozanimod 0.92mg' },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Intra-abdominal abscess enterocutaneous fistula stricture toxic megacolon perianal disease' },
+      { label: 'Labs', type: 'text', placeholder: 'e.g. CRP 48 ESR 82 fecal calprotectin 1240 albumin 2.8 hemoglobin 9.4' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Document Crohn versus UC. Document location and activity. Complications code separately. Biologic response documented for insurance justification.' }
+    ]
+  },
+  {
+    id: 'pancreatitis_chronic',
+    title: 'Chronic Pancreatitis',
+    icon: '\u{1F4CB}',
+    icd: 'K86.x',
+    purpose: 'Complications include exocrine and endocrine insufficiency. Type 3c diabetes from pancreatic destruction. Pseudocysts over 6cm require drainage. Document pain management strategy.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Chronic pancreatitis alcoholic (K86.0)', 'Chronic pancreatitis other (K86.1)', 'Autoimmune pancreatitis IgG4 (K86.1)', 'Hereditary pancreatitis (K86.1)', 'Chronic pancreatitis with exocrine insufficiency (K86.81)', 'Pancreatic pseudocyst (K86.3)'] },
+      { label: 'Exocrine', type: 'select', options: ['No exocrine insufficiency', 'Exocrine insufficiency (K86.81) - document separately', 'On PERT pancreatic enzyme replacement', 'Fat malabsorption steatorrhea'] },
+      { label: 'Endocrine', type: 'select', options: ['No diabetes', 'Pancreatogenic diabetes type 3c - document', 'Insulin dependent from pancreatic destruction', 'Brittle diabetes from CP'] },
+      { label: 'Imaging', type: 'text', placeholder: 'e.g. CT dilated main pancreatic duct 7mm parenchymal calcifications 5cm pseudocyst head of pancreas' },
+      { label: 'Pain', type: 'text', placeholder: 'e.g. Celiac plexus block performed slow-release morphine 30mg q12h surgical decompression Puestow planned' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Type 3c diabetes requires separate documentation from type 1 or 2. Pseudocysts greater than 6cm or symptomatic require drainage. PERT and fat-soluble vitamins for exocrine insufficiency.' }
+    ]
+  },
+  {
+    id: 'dka',
+    title: 'Diabetic Ketoacidosis',
+    icon: '\u{1F4CB}',
+    icd: 'E10-E11.1x',
+    purpose: 'DKA requires type 1 versus type 2 and with or without coma. HHS codes separately from DKA. Document precipitant. Insulin protocol and potassium replacement must be documented.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['DKA Type 1 with coma (E10.11) - MCC', 'DKA Type 1 without coma (E10.10)', 'DKA Type 2 with coma (E11.11) - MCC', 'DKA Type 2 without coma (E11.10)', 'HHS hyperosmolar hyperglycemic state (E11.00) - MCC', 'Hypoglycemia with coma (E11.641) - MCC', 'Hypoglycemia without coma (E11.649)'] },
+      { label: 'Labs', type: 'text', placeholder: 'e.g. Glucose 624 pH 7.08 bicarb 6 anion gap 28 ketonuria large beta-hydroxybutyrate 8.2' },
+      { label: 'Precipitant', type: 'text', placeholder: 'e.g. New diagnosis type 1 insulin omission infection pneumonia ischemic event' },
+      { label: 'Protocol', type: 'text', placeholder: 'e.g. DKA protocol insulin drip 0.1 units/kg/hr potassium replacement dextrose added when glucose below 250' },
+      { label: 'Notes', type: 'textarea', placeholder: 'DKA with coma is MCC. Type 1 and Type 2 DKA code differently. HHS has much higher glucose and osmolarity. Document precipitant. Potassium replacement before insulin if hypokalemic.' }
+    ]
+  },
+  {
+    id: 'hypercalcemia',
+    title: 'Hypercalcemia',
+    icon: '\u{1F4CB}',
+    icd: 'E83.52',
+    purpose: 'Hypercalcemia above 14 mg/dL is MCC. PTH level distinguishes primary hyperparathyroidism from malignancy. Bisphosphonate takes 2-4 days. Document cause.',
+    fields: [
+      { label: 'Severity', type: 'select', options: ['Mild 10.5-12 mg/dL', 'Moderate 12-14 mg/dL', 'Severe greater than 14 mg/dL (E83.52) - MCC', 'Hypercalcemic crisis with AMS - MCC'] },
+      { label: 'Cause', type: 'select', options: ['Primary hyperparathyroidism - PTH elevated (E21.0)', 'Malignancy-associated - PTHrP elevated', 'Osteolytic metastases', 'Vitamin D toxicity', 'Sarcoidosis or granulomatous disease', 'Thiazide diuretics', 'Immobility'] },
+      { label: 'Labs', type: 'text', placeholder: 'e.g. Calcium 14.8 ionized 1.88 PTH 8 suppressed suggests malignancy PTHrP 4.2 pmol/L elevated' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. IV fluids NS 200-300 mL/hr furosemide after hydration Zoledronic acid calcitonin 4 IU/kg dialysis for refractory' },
+      { label: 'Notes', type: 'textarea', placeholder: 'PTH distinguishes primary hyperparathyroidism from malignancy. PTHrP elevation confirms humoral hypercalcemia. Bisphosphonate takes 2-4 days. Calcitonin fast but tachyphylaxis occurs.' }
+    ]
+  },
+  {
+    id: 'hyponatremia',
+    title: 'Hyponatremia',
+    icon: '\u{1F4CB}',
+    icd: 'E87.1',
+    purpose: 'Correction of chronic hyponatremia beyond 8 mEq per day risks osmotic demyelination syndrome. SIADH is most common cause. Document acuity and correction rate.',
+    fields: [
+      { label: 'Severity', type: 'select', options: ['Mild sodium 130-134 mEq/L', 'Moderate sodium 125-129 mEq/L', 'Severe sodium less than 125 mEq/L', 'Symptomatic - seizures or AMS'] },
+      { label: 'Acuity', type: 'select', options: ['Acute less than 48 hours - faster correction safe', 'Chronic greater than 48 hours - correction risk of ODS', 'Indeterminate - assume chronic to prevent ODS'] },
+      { label: 'Cause', type: 'select', options: ['SIADH (E22.2) - euvolemic - code separately', 'Hypovolemic - diuretics or GI losses or adrenal', 'Hypervolemic - CHF or cirrhosis or nephrotic', 'Hypothyroidism - code separately', 'Cerebral salt wasting'] },
+      { label: 'Osmolality', type: 'text', placeholder: 'e.g. Serum osm 248 urine osm 620 urine sodium 68 - SIADH pattern' },
+      { label: 'Correction Rate', type: 'text', placeholder: 'e.g. Target 6-8 mEq/L per 24 hours current Na 119 corrected to 126 over 24 hours' },
+      { label: 'Notes', type: 'textarea', placeholder: 'SIADH codes E22.2 separately. Correction greater than 8 mEq per day risks ODS irreversible neurological injury. Document correction rate. Hypertonic saline for symptomatic with seizures.' }
+    ]
+  },
+  {
+    id: 'asthma',
+    title: 'Asthma',
+    icon: '\u{1F4CB}',
+    icd: 'J45.xx',
+    purpose: 'Asthma severity and control must be documented. Status asthmaticus is MCC. Mild intermittent versus mild persistent versus moderate versus severe code differently. Document triggers for quality measures.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Mild intermittent (J45.20) - less than 2 days/week', 'Mild persistent (J45.30) - more than 2 days/week', 'Moderate persistent (J45.40) - daily', 'Severe persistent (J45.50) - continuous', 'Acute exacerbation mild (J45.21)', 'Acute exacerbation moderate to severe (J45.41)', 'Status asthmaticus (J45.x1) - MCC - refractory'] },
+      { label: 'Control', type: 'select', options: ['Well controlled', 'Partly controlled', 'Poorly controlled', 'Uncontrolled - daily symptoms'] },
+      { label: 'Trigger', type: 'select', options: ['Allergen - seasonal or perennial', 'Respiratory infection', 'Exercise-induced', 'Occupational exposure', 'NSAID or aspirin sensitivity', 'Unknown'] },
+      { label: 'Medications', type: 'text', placeholder: 'e.g. ICS/LABA Advair 500/50 BID rescue albuterol PRN Montelukast 10mg Dupilumab 300mg q2 weeks' },
+      { label: 'PFTs', type: 'text', placeholder: 'e.g. FEV1 62% predicted FEV1/FVC 68% 18% improvement post-bronchodilator significant reversibility' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Status asthmaticus is MCC - must be explicitly documented when refractory to initial bronchodilator. Document control level and trigger. Biologics require documentation of prior step therapy failure.' }
+    ]
+  },
+  {
+    id: 'pleural',
+    title: 'Pleural Disease',
+    icon: '\u{1F4CB}',
+    icd: 'J90-J94',
+    purpose: 'Pleural effusion requires transudative versus exudative and cause. Empyema codes separately and requires drainage. Tension pneumothorax is emergency requiring immediate needle decompression.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Pleural effusion unspecified (J90)', 'Transudative - CHF or cirrhosis or nephrotic', 'Exudative - infection or cancer', 'Malignant pleural effusion (J91.0) - code primary', 'Empyema bacterial (J86.0) - MCC - requires drainage', 'Chylothorax (J94.0)', 'Hemothorax (J94.2)', 'Spontaneous pneumothorax (J93.1)', 'Tension pneumothorax (J93.0) - emergency'] },
+      { label: 'Light Criteria', type: 'text', placeholder: 'e.g. LDH ratio 0.8 protein ratio 0.6 exudative or LDH ratio 0.3 transudative CHF' },
+      { label: 'Size', type: 'select', options: ['Small - asymptomatic monitoring', 'Moderate - mild dyspnea', 'Large - significant dyspnea - drainage indicated', 'Massive - complete opacification'] },
+      { label: 'Intervention', type: 'select', options: ['Observation - small transudative', 'Therapeutic thoracentesis', 'Chest tube - empyema or large', 'Indwelling pleural catheter - malignant', 'VATS decortication - organized empyema', 'Needle decompression then chest tube - tension'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Tension pneumothorax requires immediate needle decompression - do not wait for chest X-ray. Empyema requires tube drainage and often VATS. Malignant effusion consider indwelling catheter. Apply Light criteria.' }
+    ]
+  },
+  {
+    id: 'schizophrenia',
+    title: 'Schizophrenia Spectrum',
+    icon: '\u{1F4CB}',
+    icd: 'F20-F29',
+    purpose: 'Schizophrenia must specify type and episode. Schizoaffective codes differently. First episode versus multiple episodes affects code. Document positive and negative symptoms and antipsychotic adherence.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Schizophrenia paranoid type (F20.0)', 'Schizophrenia disorganized (F20.1)', 'Schizophrenia catatonic (F20.2)', 'Schizophrenia undifferentiated (F20.3)', 'Schizoaffective bipolar type (F25.0)', 'Schizoaffective depressive type (F25.1)', 'Brief psychotic disorder (F23)', 'Delusional disorder (F22)'] },
+      { label: 'Episode', type: 'select', options: ['First episode currently acute', 'First episode in remission', 'Multiple episodes currently acute', 'Multiple episodes in remission', 'Continuous - persistent despite treatment'] },
+      { label: 'Positive Symptoms', type: 'text', placeholder: 'e.g. Auditory hallucinations commanding paranoid delusions disorganized thought bizarre behavior' },
+      { label: 'Negative Symptoms', type: 'text', placeholder: 'e.g. Flat affect alogia avolition anhedonia social withdrawal - often more disabling' },
+      { label: 'Adherence', type: 'select', options: ['Adherent to oral antipsychotic', 'Non-adherent - contributing to decompensation', 'Long-acting injectable LAI - document agent and schedule', 'Medication resistant - failed 2 or more adequate trials', 'Clozapine for treatment resistance'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Non-adherence is most common cause of relapse. LAI reduces relapse risk. Clozapine most effective for treatment-resistant but requires REMS monitoring. Negative symptoms respond less to antipsychotics.' }
+    ]
+  },
+  {
+    id: 'bipolar',
+    title: 'Bipolar Disorder',
+    icon: '\u{1F4CB}',
+    icd: 'F31.xx',
+    purpose: 'Bipolar requires current episode type and severity. Bipolar I versus II code differently. Mixed features affect code. Lithium toxicity above 2.5 requires hemodialysis.',
+    fields: [
+      { label: 'Current Episode', type: 'select', options: ['Bipolar I manic severe without psychosis (F31.13)', 'Bipolar I manic with psychosis (F31.2) - MCC', 'Bipolar I depressed mild (F31.31)', 'Bipolar I depressed moderate (F31.32)', 'Bipolar I depressed severe (F31.4)', 'Bipolar I mixed (F31.60)', 'Bipolar II hypomanic (F31.81)', 'Bipolar II depressed (F31.82)'] },
+      { label: 'Rapid Cycling', type: 'select', options: ['No rapid cycling', 'Rapid cycling - 4 or more episodes per year', 'Ultra-rapid cycling - multiple per month'] },
+      { label: 'Mood Stabilizer', type: 'text', placeholder: 'e.g. Lithium 1200mg QD level 0.9 therapeutic Valproate 2000mg level 88 Lamotrigine 200mg BID' },
+      { label: 'Lithium Toxicity', type: 'select', options: ['No toxicity', 'Mild level 1.5-2.0 - tremor', 'Moderate level 2.0-2.5 - confusion', 'Severe level greater than 2.5 - seizures coma - MCC'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Manic with psychosis is MCC. Lithium above 2.5 requires hemodialysis. Mixed features worsen prognosis. Rapid cycling responds better to valproate. Document current episode at every encounter.' }
+    ]
+  },
+  {
+    id: 'eating_disorders',
+    title: 'Eating Disorders',
+    icon: '\u{1F4CB}',
+    icd: 'F50.x',
+    purpose: 'Anorexia nervosa with BMI below 15 is medical emergency. Refeeding syndrome is dangerous complication. Highest mortality of any mental health condition.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Anorexia nervosa restricting type (F50.01)', 'Anorexia nervosa binge-purging type (F50.02)', 'Bulimia nervosa (F50.2)', 'Binge-eating disorder (F50.81)', 'ARFID (F50.82)'] },
+      { label: 'BMI Severity', type: 'select', options: ['Mild BMI 17 or greater', 'Moderate BMI 16-16.99', 'Severe BMI 15-15.99', 'Extreme BMI below 15 - medical emergency'] },
+      { label: 'Medical Complications', type: 'text', placeholder: 'e.g. Bradycardia HR 36 QTc 520ms hypokalemia 2.8 hypophosphatemia 1.2 low bone density' },
+      { label: 'Refeeding Risk', type: 'select', options: ['Low refeeding risk', 'High refeeding risk - monitor electrolytes', 'Refeeding syndrome occurred - hypophosphatemia', 'Phosphorus supplementation protocol initiated'] },
+      { label: 'Level of Care', type: 'select', options: ['Outpatient medically stable', 'Intensive outpatient or PHP', 'Residential', 'Inpatient medical stabilization', 'ICU cardiac monitoring'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Anorexia has 5-10% lifetime mortality - highest of psychiatric conditions. Refeeding syndrome occurs with carbohydrate refeeding in severe malnutrition - slow refeeding and phosphorus monitoring required.' }
+    ]
+  },
+  {
+    id: 'falls',
+    title: 'Falls and Injuries',
+    icon: '\u{1F4CB}',
+    icd: 'W00-W19',
+    purpose: 'Falls require mechanism and resulting injuries. Recurrent falls code Z91.81 as HCC. Syncope versus mechanical fall versus drop attack have different diagnoses. Document fall prevention.',
+    fields: [
+      { label: 'Mechanism', type: 'select', options: ['Fall same level mechanical (W18.4x)', 'Fall from bed (W06)', 'Syncope causing fall (R55)', 'Drop attack vertebrobasilar', 'Fall from dizziness or vertigo', 'Fall due to medication - document agent'] },
+      { label: 'Injuries', type: 'text', placeholder: 'e.g. Right hip fracture wrist fracture scalp laceration subdural hematoma rib fractures' },
+      { label: 'Recurrent Falls', type: 'select', options: ['Single fall first occurrence', 'Recurrent falls 2 or more in past year (Z91.81)', 'History of falling (Z91.81) - code as additional'] },
+      { label: 'Anticoagulation', type: 'text', placeholder: 'e.g. Warfarin INR 3.8 supratherapeutic at time of fall head CT obtained' },
+      { label: 'Prevention', type: 'text', placeholder: 'e.g. Fall risk score high bed alarm low bed hip protector PT for gait training medication review' },
+      { label: 'Notes', type: 'textarea', placeholder: 'History of falling Z91.81 is HCC code - document at every encounter when applicable. Syncope requires separate diagnostic workup. Anticoagulation management after fall with head injury requires risk-benefit discussion.' }
+    ]
+  },
+  {
+    id: 'dehydration',
+    title: 'Dehydration',
+    icon: '\u{1F4CB}',
+    icd: 'E86.x',
+    purpose: 'Dehydration must distinguish from hypovolemia. Severe dehydration with AKI common in elderly. Hypernatremia or hyponatremia from dehydration code separately. Document oral intake assessment.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Volume depletion (E86.0) - fluid loss all sources', 'Dehydration (E86.0) - water deficit', 'Hypovolemia (E86.1) - reduced effective circulating volume', 'Hypernatremic dehydration (E87.0 + E86.0)', 'Hyponatremic dehydration (E87.1 + E86.0)'] },
+      { label: 'Cause', type: 'select', options: ['Poor oral intake - cognitive impairment or access', 'GI losses vomiting or diarrhea', 'Excessive urination - diabetes or diuretics', 'Insensible losses fever or heat', 'Iatrogenic excessive diuresis'] },
+      { label: 'Severity', type: 'select', options: ['Mild dry mucous membranes', 'Moderate orthostatic hypotension tachycardia', 'Severe AMS AKI hypotension', 'Critical - shock'] },
+      { label: 'Labs', type: 'text', placeholder: 'e.g. BUN 68 Cr 2.1 BUN/Cr ratio 32 prerenal Na 154 Hct 52 hemoconcentration' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Dehydration in elderly presents with confusion before hemodynamic instability. AKI from prerenal codes separately. Hypernatremia - replace water slowly to avoid cerebral edema. Document oral intake barriers.' }
+    ]
+  },
+  {
+    id: 'diabetic_retinopathy',
+    title: 'Diabetic Retinopathy',
+    icon: '\u{1F4CB}',
+    icd: 'E11.3x',
+    purpose: 'Diabetic retinopathy requires linking to diabetes. Each eye documented separately. DME codes with retinopathy. Document visual acuity.',
+    fields: [
+      { label: 'Right Eye Stage', type: 'select', options: ['No retinopathy right (E11.3211)', 'Mild NPDR right', 'Moderate NPDR right', 'Severe NPDR right', 'PDR proliferative right (E11.3511)', 'PDR with tractional detachment right'] },
+      { label: 'Left Eye Stage', type: 'select', options: ['No retinopathy left (E11.3212)', 'Mild NPDR left', 'Moderate NPDR left', 'Severe NPDR left', 'PDR proliferative left', 'PDR with tractional detachment left'] },
+      { label: 'Macular Edema', type: 'select', options: ['No DME', 'DME right eye center-involving', 'DME left eye center-involving', 'Bilateral DME'] },
+      { label: 'Visual Acuity', type: 'text', placeholder: 'e.g. BCVA right 20/40 left 20/200 significant loss from DME or 20/20 bilaterally early NPDR' },
+      { label: 'Treatment', type: 'select', options: ['Observation mild NPDR', 'Anti-VEGF injections for DME or PDR', 'Laser photocoagulation focal or panretinal', 'Vitrectomy tractional detachment'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Document each eye separately with laterality. DME is most common cause of vision loss in diabetics. PDR requires immediate retina referral. Anti-VEGF is first-line for center-involving DME.' }
+    ]
+  },
+  {
+    id: 'glaucoma',
+    title: 'Glaucoma',
+    icon: '\u{1F4CB}',
+    icd: 'H40.xx',
+    purpose: 'Glaucoma requires type, severity, and laterality. Open angle versus angle closure have different management. Acute angle-closure is emergency.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Primary open-angle right (H40.1110)', 'Primary open-angle left (H40.1120)', 'Primary open-angle bilateral (H40.1130)', 'Angle-closure chronic (H40.22x)', 'Acute angle-closure attack (H40.211) - emergency', 'Normal tension glaucoma (H40.12x)', 'Secondary glaucoma - document cause'] },
+      { label: 'Severity', type: 'select', options: ['Stage 0 no visual field loss', 'Stage 1 mild', 'Stage 2 moderate', 'Stage 3 severe', 'Stage 4 end-stage'] },
+      { label: 'IOP', type: 'text', placeholder: 'e.g. IOP right 28 mmHg target below 18 or post-treatment IOP 14 achieving 30% reduction' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Latanoprost 0.005% QHS Dorzolamide/Timolol BID SLT laser 6 months ago trabeculectomy planned' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Acute angle-closure is medical emergency requiring immediate IOP reduction. Document laterality. Severity based on visual field testing.' }
+    ]
+  },
+  {
+    id: 'vertigo',
+    title: 'Vertigo and Vestibular Disorders',
+    icon: '\u{1F4CB}',
+    icd: 'H81.x',
+    purpose: 'BPPV is most common cause treated with canalith repositioning. Vertical nystagmus suggests central cause requiring urgent MRI. Meniere requires audiometric confirmation.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['BPPV (H81.1x)', 'Labyrinthitis (H83.0x)', 'Meniere disease (H81.0x)', 'Vestibular neuritis (H81.2x)', 'Bilateral vestibular hypofunction (H81.31)', 'Central vertigo - cerebrovascular - code separately'] },
+      { label: 'Nystagmus', type: 'select', options: ['Horizontal - peripheral cause', 'Vertical or torsional - central - urgent MRI', 'Direction-changing - central', 'Suppressed by fixation - peripheral', 'Not suppressed - central - urgent'] },
+      { label: 'Dix-Hallpike', type: 'select', options: ['Positive right posterior canal BPPV', 'Positive left posterior canal BPPV', 'Negative', 'Not performed'] },
+      { label: 'Epley', type: 'select', options: ['Epley performed - posterior canal BPPV', 'Semont liberatory maneuver', 'Brandt-Daroff exercises prescribed'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'BPPV responds to canalith repositioning in one session. Vertical nystagmus suggests central cause - immediate MRI. Document which ear affected for BPPV. Meniere requires audiogram confirming low-frequency SNHL.' }
+    ]
+  },
+  {
+    id: 'sjs_ten',
+    title: 'Stevens-Johnson and TEN',
+    icon: '\u{1F4CB}',
+    icd: 'L51.x',
+    purpose: 'SJS and TEN are life-threatening drug reactions with MCC status. BSA detachment determines severity. Offending medication must be immediately discontinued. Burn unit management for extensive cases.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Stevens-Johnson syndrome SJS (L51.1) - MCC - less than 10% BSA', 'SJS-TEN overlap (L51.3) - MCC - 10-30% BSA', 'Toxic epidermal necrolysis TEN (L51.2) - MCC - greater than 30% BSA'] },
+      { label: 'BSA', type: 'text', placeholder: 'e.g. 8% BSA epidermal detachment SJS or 25% detachment SJS-TEN overlap' },
+      { label: 'Causative Medication', type: 'text', placeholder: 'e.g. Allopurinol most common TEN cause TMP-SMX carbamazepine nevirapine lamotrigine - discontinue immediately' },
+      { label: 'SCORTEN Score', type: 'text', placeholder: 'e.g. SCORTEN 3 predicted mortality 35% - document for prognosis' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Immediately discontinue offending drug IVIG 2g/kg wound care ophthalmology consult burn unit transfer' },
+      { label: 'Notes', type: 'textarea', placeholder: 'TEN mortality up to 30%. Offending medication must be immediately discontinued - survival depends on this. SCORTEN predicts mortality. Burn unit for extensive cases. Ophthalmology consult required - eye involvement causes blindness.' }
+    ]
+  },
+  {
+    id: 'psoriasis',
+    title: 'Psoriasis',
+    icon: '\u{1F4CB}',
+    icd: 'L40.x',
+    purpose: 'Psoriasis severity must be documented. Erythrodermic is medical emergency. Biologic therapy requires prior treatment failure documentation.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Plaque psoriasis (L40.0)', 'Guttate (L40.4)', 'Pustular generalized (L40.1)', 'Erythrodermic (L40.85) - medical emergency', 'Palmoplantar (L40.3)', 'Nail psoriasis (L40.89)', 'Psoriatic arthritis M07.x code separately'] },
+      { label: 'PASI Score', type: 'text', placeholder: 'e.g. PASI 22 moderate to severe or PASI 5 after biologic - PASI 75 response achieved' },
+      { label: 'BSA', type: 'text', placeholder: 'e.g. 35% BSA involved severe or 5% BSA mild plaques on scalp elbows knees' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Secukinumab 300mg q4 weeks prior failure methotrexate and adalimumab or topical betamethasone for limited' },
+      { label: 'Psoriatic Arthritis', type: 'select', options: ['No psoriatic arthritis', 'Present (M07.xx) - code separately', 'Dactylitis sausage digits', 'Enthesitis heel or Achilles', 'Axial spine involvement'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Erythrodermic psoriasis is life-threatening - hospitalization required. Pustular generalized requires urgent treatment. PASI score required for biologic authorization. PsA codes separately with M07.' }
+    ]
+  },
+  {
+    id: 'endometriosis',
+    title: 'Endometriosis and Pelvic Pain',
+    icon: '\u{1F4CB}',
+    icd: 'N80.x',
+    purpose: 'Endometriosis severity documented by ASRM stage when surgery performed. Deep infiltrating endometriosis requires subspecialist. Document fertility impact and treatment.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Endometriosis of uterus adenomyosis (N80.0)', 'Endometriosis ovary right (N80.11)', 'Endometriosis ovary left (N80.12)', 'Endometriosis fallopian tube (N80.2x)', 'Deep infiltrating endometriosis (N80.4x)', 'Endometriosis bladder (N80.6x)', 'Chronic pelvic pain (N94.89)', 'Primary dysmenorrhea (N94.4)'] },
+      { label: 'ASRM Stage', type: 'select', options: ['Stage I minimal - isolated implants', 'Stage II mild - small implants minimal adhesions', 'Stage III moderate - multiple implants some adhesions', 'Stage IV severe - large endometriomas dense adhesions'] },
+      { label: 'Symptoms', type: 'text', placeholder: 'e.g. Dysmenorrhea 9/10 dyspareunia dyschezia chronic pelvic pain 6/10 infertility 2 years' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. OCP suppressive Norethindrone 5mg GnRH agonist Lupron with add-back prior laparoscopy excision' },
+      { label: 'Fertility', type: 'select', options: ['Not currently desired', 'Actively trying to conceive', 'IVF recommended', 'Surgical treatment prioritized for fertility'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Deep infiltrating endometriosis requires subspecialist surgeon. Document ASRM stage when surgery performed. GnRH agonists require add-back estrogen. IVF may be required for severe disease.' }
+    ]
+  },
+  {
+    id: 'gynecologic_oncology',
+    title: 'Gynecologic Cancers',
+    icon: '\u{1F4CB}',
+    icd: 'C51-C58',
+    purpose: 'Gynecologic cancers require specific site, histology, and FIGO stage. Endometrial cancer type I versus II code differently. Lynch syndrome affects surveillance and coding.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Cervical squamous (C53.x)', 'Cervical adenocarcinoma (C53.x)', 'Endometrial type I endometrioid (C54.1)', 'Endometrial type II serous or clear cell (C54.1)', 'Ovarian high grade serous (C56.x)', 'Vulvar (C51.x)', 'Vaginal (C52)'] },
+      { label: 'FIGO Stage', type: 'text', placeholder: 'e.g. FIGO Stage IIIC1 endometrial pelvic LN positive or FIGO IVB ovarian peritoneal carcinomatosis' },
+      { label: 'Molecular Markers', type: 'text', placeholder: 'e.g. BRCA1 mutation positive MMR deficient MSI-H for Lynch HER2 positive endometrial PD-L1 CPS score' },
+      { label: 'Treatment', type: 'select', options: ['Surgery hysterectomy and staging', 'Chemotherapy carboplatin paclitaxel', 'Pembrolizumab for MMR-deficient', 'Radiation EBRT plus brachytherapy', 'PARP inhibitor maintenance olaparib', 'Bevacizumab maintenance'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Lynch syndrome requires genetic counseling and colon cancer surveillance. MMR-deficient endometrial responds to pembrolizumab. BRCA ovarian benefits from PARP inhibitors. Document FIGO stage at diagnosis.' }
+    ]
+  },
+  {
+    id: 'pediatric_resp',
+    title: 'Pediatric Respiratory Disease',
+    icon: '\u{1F4CB}',
+    icd: 'J21.x',
+    purpose: 'RSV bronchiolitis codes differ from adult bronchitis. Croup requires Westley score. Bronchiolitis treatment is supportive. High-risk infants with prematurity or CHD require closer monitoring.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['RSV bronchiolitis confirmed (J21.0)', 'Bronchiolitis other organism (J21.1)', 'Bronchiolitis unspecified (J21.9)', 'Croup laryngotracheobronchitis (J05.0)', 'Croup with stridor', 'RSV high-risk infant - prematurity or CHD'] },
+      { label: 'Age and Risk', type: 'text', placeholder: 'e.g. 6-week-old RSV prematurity 28 weeks high risk or healthy 18-month-old' },
+      { label: 'Severity', type: 'select', options: ['Mild SpO2 above 94% room air', 'Moderate SpO2 90-93% moderate WOB', 'Severe SpO2 below 90% - ICU consideration', 'Critical respiratory failure - mechanical ventilation'] },
+      { label: 'Westley Croup', type: 'text', placeholder: 'e.g. Westley score 4 moderate croup stridor at rest mild retractions patient alert' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Racemic epinephrine nebulized dexamethasone 0.6mg/kg IM HFNC 2L/kg/min FiO2 0.4 for bronchiolitis' },
+      { label: 'Notes', type: 'textarea', placeholder: 'RSV bronchiolitis treatment is supportive - suctioning and oxygen. Nebulized saline marginal benefit. Croup responds to dexamethasone and epinephrine. Document Westley score for croup severity.' }
+    ]
+  },
+  {
+    id: 'pediatric_seizures',
+    title: 'Pediatric Seizures',
+    icon: '\u{1F4CB}',
+    icd: 'R56.x / G40.x',
+    purpose: 'Febrile seizures are common and mostly benign. Infantile spasms require urgent treatment. Status epilepticus in children is emergency. Document developmental impact.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Febrile seizure simple (R56.00)', 'Febrile seizure complex (R56.01)', 'Infantile spasms West syndrome (G40.42x) - urgent', 'Dravet syndrome (G40.42x)', 'Lennox-Gastaut (G40.81x)', 'Childhood absence (G40.A09)', 'JME juvenile myoclonic (G40.B09)', 'Neonatal seizures (P90)'] },
+      { label: 'Developmental Impact', type: 'text', placeholder: 'e.g. Developmental regression after seizure onset concerning for Dravet or normal development maintained' },
+      { label: 'AEDs in Pediatrics', type: 'text', placeholder: 'e.g. Levetiracetam 20mg/kg/day Clobazam for Dravet Vigabatrin for infantile spasms ketogenic diet' },
+      { label: 'Status Epilepticus', type: 'text', placeholder: 'e.g. Lorazepam 0.1mg/kg IV Fosphenytoin 20mg/kg IV Levetiracetam 60mg/kg IV intubation for refractory' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Infantile spasms require urgent ACTH or vigabatrin - delay worsens development. Simple febrile seizure does not require EEG or AED. Dravet syndrome - sodium channel blockers contraindicated. Status beyond 5 minutes requires treatment.' }
+    ]
+  },
+  {
+    id: 'congenital_heart',
+    title: 'Congenital Heart Disease',
+    icon: '\u{1F4CB}',
+    icd: 'Q20-Q26',
+    purpose: 'CHD must specify anatomic defect and hemodynamic impact. Eisenmenger syndrome from uncorrected CHD is late complication. Post-repair status codes Z87.74.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['VSD ventricular septal defect (Q21.0)', 'ASD atrial septal defect (Q21.1)', 'PDA patent ductus arteriosus (Q25.0)', 'TOF tetralogy of Fallot (Q21.3) - cyanotic', 'TGA transposition great arteries (Q20.3) - emergency', 'HLHS hypoplastic left heart (Q23.4)', 'Coarctation of aorta (Q25.1)', 'Ebstein anomaly (Q22.5)'] },
+      { label: 'Hemodynamics', type: 'select', options: ['Acyanotic left to right shunt - increased pulmonary flow', 'Cyanotic right to left shunt', 'Eisenmenger syndrome (Q21.89 + I27.0) - irreversible PH'] },
+      { label: 'Repair Status', type: 'select', options: ['Unrepaired medical management', 'Complete repair (Z87.74) - document procedure', 'Palliated multiple stage repair in progress', 'Not surgical candidate'] },
+      { label: 'Current Status', type: 'text', placeholder: 'e.g. Echo large VSD Qp:Qs 2.8:1 moderate LV dilation or post-Fontan well compensated' },
+      { label: 'Notes', type: 'textarea', placeholder: 'TGA without intervention incompatible with life beyond first days. Eisenmenger is inoperable - transplant only. Document post-repair status Z87.74. Single ventricle palliation requires specialized cardiology.' }
+    ]
+  },
+  {
+    id: 'child_abuse',
+    title: 'Child Abuse and Maltreatment',
+    icon: '\u{1F4CB}',
+    icd: 'T74.x',
+    purpose: 'Child abuse has legal implications. Mandatory reporting required in all states. Document specific injuries, history inconsistencies, and social work involvement. Abusive head trauma T74.4 is MCC.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Physical abuse confirmed (T74.12)', 'Physical abuse suspected (T76.12)', 'Sexual abuse confirmed (T74.22)', 'Sexual abuse suspected (T76.22)', 'Emotional abuse (T74.32)', 'Neglect confirmed (T74.02)', 'Abusive head trauma shaken baby (T74.4) - MCC', 'Multiple forms (T74.92)'] },
+      { label: 'Injuries', type: 'text', placeholder: 'e.g. Multiple bruises various stages of healing bilateral retinal hemorrhages subdural hematoma posterior rib fractures' },
+      { label: 'History Inconsistency', type: 'text', placeholder: 'e.g. Mechanism inconsistent with developmental stage changing story between caregivers delayed presentation' },
+      { label: 'Mandatory Reporting', type: 'select', options: ['Report made to CPS - required by law', 'Report already made by ED', 'Law enforcement notified', 'Report in process'] },
+      { label: 'Social Work', type: 'select', options: ['Social work consulted', 'Safety assessment completed', 'Child in protective custody', 'Siblings assessed'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Mandatory reporting required by law in all 50 states. Abusive head trauma T74.4 is MCC. Skeletal survey and ophthalmology required for suspected abuse in infants. Documentation critical for legal proceedings.' }
+    ]
+  },
+  {
+    id: 'preventive_care',
+    title: 'Preventive Care and Wellness',
+    icon: '\u{1F4CB}',
+    icd: 'Z00.x',
+    purpose: 'Annual wellness visits drive HCC capture. All chronic conditions must be addressed annually. SDOH screening increasingly required. Document preventive services performed.',
+    fields: [
+      { label: 'Visit Type', type: 'select', options: ['Annual wellness visit Medicare (Z00.00)', 'Annual preventive exam commercial (Z00.00)', 'Well-child visit document age-specific code (Z00.1x)', 'Initial preventive exam Welcome to Medicare (Z00.00)'] },
+      { label: 'Chronic Conditions Reviewed', type: 'text', placeholder: 'e.g. Diabetes A1C 7.2 controlled HTN BP 128/76 at goal CKD Stage 3 GFR 42 stable depression PHQ-9 6 improving' },
+      { label: 'Preventive Services', type: 'text', placeholder: 'e.g. Colorectal cancer screening FIT ordered mammogram DEXA scan flu vaccine pneumococcal vaccine' },
+      { label: 'HCC Review', type: 'text', placeholder: 'e.g. All HCC conditions addressed this visit - diabetes with CKD CHF CAD depression all reviewed and coded' },
+      { label: 'SDOH Screening', type: 'select', options: ['PRAPARE completed - no social needs', 'SDOH needs identified - referrals made', 'Screening declined', 'Not performed this visit'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'Annual wellness visit is highest-yield opportunity for HCC capture. All chronic conditions must be documented reviewed and addressed to count for risk adjustment. SDOH screening increasingly required by payers.' }
+    ]
+  },
+  {
+    id: 'hcc_audit',
+    title: 'HCC Documentation Audit Checklist',
+    icon: '\u{1F4CB}',
+    icd: 'Multiple',
+    purpose: 'HCC risk adjustment requires annual documentation of all chronic conditions. RAF score drives Medicare Advantage payments. Unspecified codes do not count for risk adjustment. Use as CDI audit checklist.',
+    fields: [
+      { label: 'Cardiovascular HCCs', type: 'select', options: ['CHF type and EF documented', 'CAD vessel and angina status', 'Vascular disease peripheral and cerebrovascular', 'Cardiomyopathy type documented', 'AFib type documented'] },
+      { label: 'Endocrine HCCs', type: 'select', options: ['Diabetes type and all complications highest specificity', 'Obesity class explicitly stated', 'CKD stage explicitly documented'] },
+      { label: 'Pulmonary HCCs', type: 'select', options: ['COPD acuity documented', 'Respiratory failure type documented', 'Sleep apnea on CPAP compliance documented'] },
+      { label: 'Neurological HCCs', type: 'select', options: ['Dementia type and behavioral disturbance', 'Stroke with residual deficits I69 codes', 'Hemiplegia or paraplegia laterality', 'ALS or MS documented'] },
+      { label: 'Oncology HCCs', type: 'select', options: ['Active cancer C codes used', 'Metastatic cancer primary and all sites', 'Leukemia or lymphoma remission status'] },
+      { label: 'Psychiatric HCCs', type: 'select', options: ['MDD type and severity', 'Schizophrenia type and episode', 'Substance use disorders severity and remission'] },
+      { label: 'Notes', type: 'textarea', placeholder: 'RAF score calculated from HCC codes submitted. Each unspecified code loses risk adjustment credit. Review all HCC conditions at every encounter. Annual documentation required for CMS risk adjustment accuracy.' }
+    ]
+  },
+  {
+    id: 'observation',
+    title: 'Observation vs Inpatient Status',
+    icon: '\u{1F4CB}',
+    icd: 'Z03.89',
+    purpose: 'Observation versus inpatient has major financial implications for Medicare patients. Two-midnight rule governs inpatient status. Document medical necessity explicitly.',
+    fields: [
+      { label: 'Status', type: 'select', options: ['Inpatient - two-midnight rule met', 'Inpatient - exception applies', 'Observation - less than two midnights', 'Outpatient with observation', 'Direct admission'] },
+      { label: 'Two-Midnight Basis', type: 'select', options: ['Medical necessity for 2 or more midnights anticipated', 'Exception - high-severity short stay', 'Procedure exception - inpatient-only procedure', 'Physician clinical judgment documented'] },
+      { label: 'Medical Necessity', type: 'text', placeholder: 'e.g. Reason inpatient required - active IV medications monitoring for hemodynamic instability cannot manage safely as outpatient because...' },
+      { label: 'Admitting Diagnosis', type: 'text', placeholder: 'e.g. COPD exacerbation requiring IV antibiotics and respiratory therapy expected 3-day stay' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Observation status costs Medicare patients more in cost-sharing. Two-midnight rule requires physician documentation of expected stay. Document medical necessity explicitly. Inpatient-only procedures qualify for inpatient regardless of stay length.' }
+    ]
+  },
+  {
+    id: 'polypharmacy',
+    title: 'Polypharmacy and Adverse Drug Effects',
+    icon: '\u{1F4CB}',
+    icd: 'T36-T50',
+    purpose: 'Polypharmacy in elderly is major cause of hospitalization. Adverse effects code drug first then manifestation. Beers criteria identifies inappropriate medications in elderly.',
+    fields: [
+      { label: 'Issue', type: 'select', options: ['Adverse effect of correctly prescribed medication - code drug then manifestation', 'Drug-drug interaction - document both drugs', 'Polypharmacy 5 or more medications (Z82.69)', 'Potentially inappropriate medication per Beers criteria', 'Medication non-adherence (Z91.19)', 'Medication reconciliation discrepancy'] },
+      { label: 'Causative Medication', type: 'text', placeholder: 'e.g. Warfarin causing GI bleed digoxin toxicity with AV block ACE inhibitor causing angioedema NSAID causing AKI' },
+      { label: 'Adverse Effect', type: 'text', placeholder: 'e.g. Falls from benzodiazepine confusion from anticholinergic hypoglycemia from insulin QTc prolongation' },
+      { label: 'Medications Count', type: 'text', placeholder: 'e.g. 14 total medications 4 potentially inappropriate per Beers criteria pharmacist review ordered' },
+      { label: 'Intervention', type: 'text', placeholder: 'e.g. Offending medication discontinued dose reduced safer alternative pharmacist deprescribing plan' },
+      { label: 'Notes', type: 'textarea', placeholder: 'Code drug causing adverse effect first then manifestation. Polypharmacy increases fall risk and adverse events. Beers criteria identifies inappropriate medications in elderly. Document pharmacist involvement.' }
+    ]
   }
 ];
 
