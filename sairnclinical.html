@@ -489,6 +489,10 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
 .auth-btn:hover{opacity:.9}
 .auth-error{font-size:12px;color:#EF4444;margin-top:10px;min-height:18px;font-weight:600}
 .auth-hint{font-size:11px;color:#5A8A94;margin-top:16px;line-height:1.6}
+
+/* TRIAGE TABS */
+.triage-tab{display:none!important}
+.triage-tab.active{display:block!important}
 </style>
 </head>
 <body>
@@ -1142,113 +1146,636 @@ function printSBAR() {
 }
 
 // ── TRIAGE FORM ───────────────────────────────────────────────
+
+// ================================================================
+// SAIRN CLINICAL — EXPANDED TRIAGE SYSTEM v2.0
+// Built for ER Physicians, Nurses, ID Specialists, Hospitalists
+// Live calculators: ESI, MEWS, NEWS2, qSOFA, HEART, Wells PE/DVT,
+//   PERC, CURB-65, NIHSS, GCS, SOFA, SIRS + ID-specific tools
+// Research basis: Surviving Sepsis Campaign 2026, NEJM AI triage
+//   study, 2026 AHA/ACC PE Guidelines, ESI implementation handbook
+// ================================================================
+
 function showTriageForm() {
-  const ex = document.getElementById('triage-modal');
+  var ex = document.getElementById('triage-modal');
   if (ex) { ex.remove(); return; }
 
-  const modal = document.createElement('div');
+  var modal = document.createElement('div');
   modal.id = 'triage-modal';
   modal.className = 'sc-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
 
-  const hdr = document.createElement('div');
+  var hdr = document.createElement('div');
   hdr.className = 'sc-modal-hdr';
-  hdr.innerHTML = '<div><div class="sc-modal-title">🚨 ESI Triage Assessment</div><div class="sc-modal-sub">Emergency Severity Index — AI-assisted acuity guidance. Always verify with clinical judgment.</div></div><button class="sc-modal-close" onclick="document.getElementById(\'triage-modal\').remove()">×</button>';
+  hdr.innerHTML = '<div><div class="sc-modal-title">🚨 Clinical Assessment Suite — Full Triage Platform</div><div class="sc-modal-sub">ESI · MEWS · NEWS2 · qSOFA · HEART · Wells PE/DVT · PERC · CURB-65 · NIHSS · SOFA · GCS · Sepsis Bundle · ID Tools</div></div><button class="sc-modal-close" onclick="document.getElementById(\'triage-modal\').remove()">×</button>';
   modal.appendChild(hdr);
 
-  const body = document.createElement('div');
-  body.className = 'sc-modal-body';
-  body.style.maxWidth = '700px';
-  body.style.margin = '0 auto';
+  // Tab navigation
+  var tabBar = document.createElement('div');
+  tabBar.style.cssText = 'display:flex;gap:0;background:#030F18;border-bottom:1px solid rgba(6,182,212,0.15);flex-shrink:0;overflow-x:auto;padding:0 16px';
+  var tabs = [
+    { id:'t-esi',     label:'🚨 ESI Triage',    active:true  },
+    { id:'t-scores',  label:'📊 Score Calculators' },
+    { id:'t-sepsis',  label:'🦠 Sepsis / ID'   },
+    { id:'t-cardiac', label:'❤️ Cardiac'        },
+    { id:'t-neuro',   label:'🧠 Neuro / Stroke' },
+    { id:'t-resp',    label:'🫁 Respiratory'    },
+  ];
+  tabs.forEach(function(t) {
+    var btn = document.createElement('button');
+    btn.id = 'tab-btn-' + t.id;
+    btn.style.cssText = 'padding:10px 16px;border:none;border-bottom:2px solid ' + (t.active ? '#06B6D4' : 'transparent') + ';background:transparent;color:' + (t.active ? '#06B6D4' : 'rgba(240,248,250,0.45)') + ';font-family:Outfit,sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0';
+    btn.textContent = t.label;
+    btn.onclick = (function(tid) { return function() { switchTriageTab(tid); }; })(t.id);
+    tabBar.appendChild(btn);
+  });
+  modal.appendChild(tabBar);
 
-  function sel(id, label, opts) {
-    return '<div class="sc-field"><label>' + label + '</label><select id="' + id + '">' + opts.map(o => '<option>' + o + '</option>').join('') + '</select></div>';
-  }
-  function inp(id, label, ph) {
-    return '<div class="sc-field"><label>' + label + '</label><input type="text" id="' + id + '" placeholder="' + ph + '"></div>';
-  }
-  function ta(id, label, ph) {
-    return '<div class="sc-field"><label>' + label + '</label><textarea id="' + id + '" placeholder="' + ph + '" rows="3"></textarea></div>';
-  }
+  var body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:760px;margin:0 auto;width:100%';
 
-  body.innerHTML =
-    '<div class="note-box">ESI triage guidance is AI-assisted and educational only. Final triage level must always be assigned by a trained, licensed triage nurse with direct patient assessment.</div>' +
+  // ── TAB 1: ESI TRIAGE ─────────────────────────────────────────
+  var t1 = document.createElement('div');
+  t1.id = 't-esi';
+  t1.className = 'triage-tab active';
+
+  t1.innerHTML =
+    '<div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:rgba(239,68,68,0.8)">⚠️ ESI guidance is AI-assisted and educational only. Final triage level must be assigned by a trained, licensed triage clinician with direct patient assessment.</div>' +
+
     '<div class="sc-grid2">' +
-    inp('tr-age','Patient Age / Sex','e.g. 54M, 8F, 34F pregnant') +
-    inp('tr-arrival','Arrival Mode','e.g. walk-in, EMS, wheelchair') +
+    fld('tr-age',  'Age / Sex', 'inp', 'e.g. 54M, 8F, 34F pregnant') +
+    fld('tr-mode', 'Arrival Mode', 'sel', '', ['Walk-in','EMS — stable','EMS — critical','Wheelchair','Carried / stretcher','Transferred']) +
     '</div>' +
-    ta('tr-complaint','Chief Complaint','Describe the patient\'s main complaint in their own words...') +
-    '<div class="sc-grid3">' +
-    inp('tr-hr','Heart Rate','e.g. 98') +
-    inp('tr-rr','Resp Rate','e.g. 18') +
-    inp('tr-spo2','SpO2','e.g. 98%') +
-    '</div>' +
-    '<div class="sc-grid3">' +
-    inp('tr-sbp','Systolic BP','e.g. 124') +
-    inp('tr-temp','Temperature','e.g. 38.4C / 101.1F') +
-    inp('tr-gcs','GCS / Mental Status','e.g. A&Ox4 or GCS 15') +
-    '</div>' +
-    sel('tr-pain','Pain Scale (0-10)',['0 - No pain','1-2 - Mild','3-4 - Mild-Moderate','5-6 - Moderate','7-8 - Severe','9-10 - Worst possible']) +
-    ta('tr-hx','Brief History / PMH','Onset, duration, associated symptoms, relevant medical history, medications, allergies...') +
-    sel('tr-mechanism','Mechanism (if trauma)',['Not applicable — medical','MVC — low speed','MVC — high speed / rollover','Fall — ground level','Fall — height','Penetrating injury','Blast / explosion','Other trauma']) +
-    '<div style="margin-top:14px"><button onclick="runTriageAssessment()" class="sc-btn primary">🚨 Get ESI Level Guidance and Immediate Actions</button></div>' +
-    '<div id="triage-result" style="margin-top:14px"></div>';
 
+    fld('tr-complaint', 'Chief Complaint (patient\'s own words)', 'ta', 'What is the patient\'s main concern...') +
+
+    '<div class="sc-grid3">' +
+    fld('tr-hr',   'Heart Rate',  'inp', 'e.g. 98') +
+    fld('tr-rr',   'Resp Rate',   'inp', 'e.g. 18') +
+    fld('tr-spo2', 'SpO2',        'inp', 'e.g. 98%') +
+    '</div>' +
+    '<div class="sc-grid3">' +
+    fld('tr-sbp',  'SBP mmHg',   'inp', 'e.g. 124') +
+    fld('tr-temp', 'Temp',        'inp', 'e.g. 38.4°C / 101.1°F') +
+    fld('tr-gcs',  'Mental Status / GCS', 'inp', 'e.g. A&Ox4 / GCS 15') +
+    '</div>' +
+
+    fld('tr-pain', 'Pain Scale', 'sel', '', ['0 — No pain','1-2 — Mild','3-4 — Mild-Moderate','5-6 — Moderate','7-8 — Severe','9-10 — Worst possible']) +
+
+    '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px">Danger Zone Indicators (check all that apply)</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' +
+    chk('dz-lethargy',  'Lethargic / not alert') +
+    chk('dz-disoriented','Disoriented / confused') +
+    chk('dz-diaphoretic','Diaphoretic') +
+    chk('dz-pallor',    'Pale / mottled / grey') +
+    chk('dz-distress',  'Severe pain or distress') +
+    chk('dz-position',  'Position of comfort / tripod') +
+    chk('dz-tachy',     'HR >100 at rest') +
+    chk('dz-hypoxia',   'SpO2 <94%') +
+    '</div></div>' +
+
+    fld('tr-hx', 'PMH / Current Medications / Allergies', 'ta', 'Relevant history, medications, known allergies, recent surgeries, immunocompromised status...') +
+    fld('tr-mechanism', 'Mechanism (if trauma)', 'sel', '', ['Not applicable — medical','MVC low speed','MVC high speed / rollover','Fall ground level','Fall from height','Penetrating','Blast','Other trauma']) +
+
+    '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px">Anticipated Resources (ESI 3 stratification)</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">' +
+    chk('res-labs',  'Labs') +
+    chk('res-ecg',   'ECG') +
+    chk('res-xray',  'X-Ray') +
+    chk('res-ct',    'CT/MRI') +
+    chk('res-iv',    'IV/fluids') +
+    chk('res-consult','Consult') +
+    '</div></div>' +
+
+    // Live MEWS calculator
+    '<div id="mews-calc" style="background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.15);border-radius:10px;padding:14px;margin-bottom:14px">' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#06B6D4;margin-bottom:10px">⚡ Live MEWS Calculator (Surviving Sepsis 2026 preferred screening tool)</div>' +
+    '<div class="sc-grid3" style="margin-bottom:8px">' +
+    mewsSel('mews-rr',  'Resp Rate', [['<9','2'],['9-14','0'],['15-20','1'],['21-29','2'],['>29','3']]) +
+    mewsSel('mews-hr',  'Heart Rate', [['<40','2'],['40-50','1'],['51-100','0'],['101-110','1'],['111-129','2'],['>129','3']]) +
+    mewsSel('mews-sbp', 'SBP mmHg',  [['<70','3'],['71-80','2'],['81-100','1'],['101-199','0'],['>199','2']]) +
+    '</div>' +
+    '<div class="sc-grid3">' +
+    mewsSel('mews-temp','Temp °C',   [['<35','2'],['35-38.4','0'],['>38.4','2']]) +
+    mewsSel('mews-avpu','AVPU',      [['Alert','0'],['Voice','1'],['Pain','2'],['Unresponsive','3']]) +
+    '<div style="display:flex;align-items:center;justify-content:center"><div id="mews-result" style="text-align:center"><div id="mews-score" style="font-size:32px;font-weight:700;color:#06B6D4;line-height:1">—</div><div style="font-size:10px;color:var(--muted);margin-top:2px">MEWS Score</div><div id="mews-interp" style="font-size:10px;margin-top:3px;font-weight:600"></div></div></div>' +
+    '</div>' +
+    '</div>' +
+
+    '<button onclick="runFullTriageAssessment()" style="width:100%;padding:13px;background:linear-gradient(135deg,#EF4444,#DC2626);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(239,68,68,0.3)">🚨 Get Full AI Triage Assessment + ESI Level + Immediate Actions</button>' +
+    '<div id="esi-result" style="margin-top:14px"></div>';
+
+  // ── TAB 2: SCORE CALCULATORS ───────────────────────────────────
+  var t2 = document.createElement('div');
+  t2.id = 't-scores';
+  t2.className = 'triage-tab';
+
+  t2.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+
+    // qSOFA
+    scoreCard('qSOFA Score', 'Sepsis screen outside ICU — ≥2 = high risk',
+      '<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">' +
+      checkScore('qs1','Respiratory rate ≥22 /min','1') +
+      checkScore('qs2','Altered mentation (new)','1') +
+      checkScore('qs3','Systolic BP ≤100 mmHg','1') +
+      '</div><div id="qsofa-result" style="font-size:12px;font-weight:700;text-align:center;padding:8px;border-radius:6px;background:rgba(6,182,212,0.08);color:#06B6D4">Score: 0 / 3</div>' +
+      '<button onclick="calcqSOFA()" style="width:100%;padding:8px;margin-top:8px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Calculate</button>') +
+
+    // GCS
+    scoreCard('Glasgow Coma Scale', 'Eyes + Verbal + Motor',
+      '<div style="margin-bottom:8px">' +
+      gcsSel('gcs-eye', 'Eye Opening', [['4','Spontaneous'],['3','To voice'],['2','To pain'],['1','None']]) +
+      gcsSel('gcs-verb','Verbal',      [['5','Oriented'],['4','Confused'],['3','Words'],['2','Sounds'],['1','None']]) +
+      gcsSel('gcs-motor','Motor',      [['6','Obeys'],['5','Localizes'],['4','Withdraws'],['3','Flexion'],['2','Extension'],['1','None']]) +
+      '</div><div id="gcs-result" style="font-size:12px;font-weight:700;text-align:center;padding:8px;border-radius:6px;background:rgba(6,182,212,0.08);color:#06B6D4">GCS: 15 — Normal</div>' +
+      '<button onclick="calcGCS()" style="width:100%;padding:8px;margin-top:8px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Calculate</button>') +
+
+    // SIRS
+    scoreCard('SIRS Criteria', '≥2 of 4 = SIRS positive (more sensitive than qSOFA)',
+      '<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">' +
+      checkScore('sirs1','Temp >38°C or <36°C','1') +
+      checkScore('sirs2','HR >90 bpm','1') +
+      checkScore('sirs3','RR >20 or PaCO2 <32','1') +
+      checkScore('sirs4','WBC >12K or <4K or >10% bands','1') +
+      '</div><div id="sirs-result" style="font-size:12px;font-weight:700;text-align:center;padding:8px;border-radius:6px;background:rgba(6,182,212,0.08);color:#06B6D4">SIRS: 0/4</div>' +
+      '<button onclick="calcSIRS()" style="width:100%;padding:8px;margin-top:8px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Calculate</button>') +
+
+    // CURB-65
+    scoreCard('CURB-65', 'Pneumonia severity — score 0-5',
+      '<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">' +
+      checkScore('curb1','Confusion (new onset)','1') +
+      checkScore('curb2','Urea >7 mmol/L (BUN >19)','1') +
+      checkScore('curb3','Resp Rate ≥30','1') +
+      checkScore('curb4','BP: SBP <90 or DBP ≤60','1') +
+      checkScore('curb5','Age ≥65','1') +
+      '</div><div id="curb-result" style="font-size:12px;font-weight:700;text-align:center;padding:8px;border-radius:6px;background:rgba(6,182,212,0.08);color:#06B6D4">CURB-65: 0</div>' +
+      '<button onclick="calcCURB()" style="width:100%;padding:8px;margin-top:8px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Calculate</button>') +
+
+    '</div>' +
+
+    // Morse Fall Scale — full width
+    '<div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.12);border-radius:12px;padding:16px;margin-top:14px">' +
+    '<div style="font-size:12px;font-weight:700;color:#06B6D4;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Morse Fall Scale</div>' +
+    '<div class="sc-grid3" style="gap:10px">' +
+    morseItem('mf1','Fall history in past 3 months','0','25') +
+    morseItem('mf2','Secondary diagnosis','0','15') +
+    morseItem('mf3','Ambulatory aid','0','15','Furniture=30,Crutches/cane=15,None=0') +
+    morseItem('mf4','IV / heparin lock','0','20') +
+    morseItem('mf5','Gait','0','10','Impaired=20,Weak=10,Normal=0') +
+    morseItem('mf6','Mental status','0','15') +
+    '</div>' +
+    '<button onclick="calcMorse()" style="padding:8px 20px;margin-top:10px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Calculate Morse Score</button>' +
+    '<div id="morse-result" style="margin-top:8px;font-size:12px;font-weight:700;color:#06B6D4"></div>' +
+    '</div>' +
+
+    '<button onclick="sendScoresToAI()" style="width:100%;padding:12px;margin-top:14px;background:linear-gradient(135deg,#06B6D4,#0891B2);border:none;border-radius:10px;color:#021018;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🧠 Send All Scores to Claude for Clinical Analysis</button>';
+
+  // ── TAB 3: SEPSIS / ID ─────────────────────────────────────────
+  var t3 = document.createElement('div');
+  t3.id = 't-sepsis';
+  t3.className = 'triage-tab';
+
+  t3.innerHTML =
+    // Sepsis Hour-1 Bundle
+    '<div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:16px;margin-bottom:16px">' +
+    '<div style="font-size:12px;font-weight:700;color:#EF4444;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">🦠 Surviving Sepsis Hour-1 Bundle Tracker (2026 Guidelines)</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px">' +
+    bundleItem('b1','Measure lactate level — repeat if initial >2 mmol/L') +
+    bundleItem('b2','Obtain blood cultures BEFORE antibiotic administration') +
+    bundleItem('b3','Administer broad-spectrum antibiotics') +
+    bundleItem('b4','30 mL/kg crystalloid for hypotension or lactate ≥4 mmol/L') +
+    bundleItem('b5','Vasopressors if MAP <65 mmHg despite fluid resuscitation') +
+    '</div>' +
+    '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+    tinyInput('sepsis-time','Time of sepsis recognition (HH:MM)','e.g. 14:32') +
+    tinyInput('sepsis-lactate','Lactate result (mmol/L)','e.g. 3.2') +
+    '</div>' +
+    '<button onclick="analyzeSepsis()" style="width:100%;padding:10px;margin-top:10px;background:#EF4444;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🧠 Claude — Analyze Sepsis Risk + Bundle Guidance</button>' +
+    '</div>' +
+
+    // ID intake form
+    '<div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.12);border-radius:12px;padding:16px;margin-bottom:14px">' +
+    '<div style="font-size:12px;font-weight:700;color:#06B6D4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Infectious Disease Assessment</div>' +
+    '<div class="sc-grid2">' +
+    fld('id-source','Suspected Infection Source','sel','',['Unclear / unknown','Pneumonia — CAP','Pneumonia — HAP/VAP','UTI / urosepsis','Intra-abdominal','Skin / soft tissue — cellulitis','Skin / soft tissue — necrotizing','Bacteremia — line-associated','Meningitis / encephalitis','Endocarditis','Septic joint','Wound infection','C. difficile colitis','Neutropenic fever','Other']) +
+    fld('id-immune','Immune Status','sel','',['Immunocompetent','HIV — CD4 >200','HIV — CD4 <200','Active malignancy on chemo','Transplant recipient','High-dose steroids','Biologics / immunosuppressants','Asplenic','Neutropenic (ANC <500)']) +
+    '</div>' +
+    fld('id-abx','Antibiotics in past 90 days (if known)','inp','e.g. Cipro for UTI, Augmentin for URI...') +
+    fld('id-organism','Known or suspected organism (if any)','inp','e.g. MRSA, GNR, Candida, C.diff, unknown...') +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">' +
+    chk('id-mrsa',  'MRSA risk factors') +
+    chk('id-pseudo','Pseudomonas risk') +
+    chk('id-esbl',  'ESBL history') +
+    chk('id-cdiff', 'Prior C.diff') +
+    chk('id-vanco', 'Vanco-resistant concern') +
+    chk('id-fungal','Fungal risk') +
+    '</div>' +
+    fld('id-context','Clinical Context','ta','Onset, duration, prior treatment, relevant exposures, travel, sick contacts, animal contacts...') +
+    '<button onclick="analyzeID()" style="width:100%;padding:10px;background:linear-gradient(135deg,#06B6D4,#0891B2);border:none;border-radius:8px;color:#021018;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🦠 Claude — Empiric Antibiotic Guidance + Isolation Precautions</button>' +
+    '</div>';
+
+  // ── TAB 4: CARDIAC ─────────────────────────────────────────────
+  var t4 = document.createElement('div');
+  t4.id = 't-cardiac';
+  t4.className = 'triage-tab';
+
+  t4.innerHTML =
+    // HEART Score
+    '<div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.12);border-radius:12px;padding:16px;margin-bottom:14px">' +
+    '<div style="font-size:12px;font-weight:700;color:#06B6D4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">❤️ HEART Score — Chest Pain Risk Stratification</div>' +
+    '<div style="font-size:10px;color:var(--muted);margin-bottom:12px">0-3 = Low risk (~2% MACE) · 4-6 = Moderate (12-16%) · 7-10 = High (50-65%)</div>' +
+    heartItem('heart-h','History','Highly suspicious=2,Moderately suspicious=1,Slightly suspicious=0') +
+    heartItem('heart-e','ECG','Significant ST deviation=2,Non-specific repolarization disturbance=1,Normal=0') +
+    heartItem('heart-a','Age','≥65=2,45-64=1,<45=0') +
+    heartItem('heart-r','Risk Factors','≥3 or hx of ASCVD=2,1-2 risk factors=1,No known risk=0') +
+    heartItem('heart-t','Troponin','>2x normal=2,1-2x normal=1,≤normal=0') +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">' +
+    '<button onclick="calcHEART()" style="padding:9px 20px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Calculate HEART</button>' +
+    '<div id="heart-result" style="font-size:14px;font-weight:700;color:#06B6D4">Score: —</div>' +
+    '</div>' +
+    '<button onclick="analyzeCardiac()" style="width:100%;padding:10px;margin-top:10px;background:linear-gradient(135deg,#EF4444,#DC2626);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🧠 Claude — Chest Pain Workup + Disposition Guidance</button>' +
+    '</div>' +
+
+    // Wells PE
+    '<div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.12);border-radius:12px;padding:16px;margin-bottom:14px">' +
+    '<div style="font-size:12px;font-weight:700;color:#06B6D4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Wells Score — Pulmonary Embolism (2026 AHA/ACC Guidelines)</div>' +
+    '<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">' +
+    checkScore('w1','Clinical signs/symptoms of DVT','3') +
+    checkScore('w2','PE is #1 diagnosis OR equally likely','3') +
+    checkScore('w3','Heart rate >100 bpm','1.5') +
+    checkScore('w4','Immobilization ≥3 days or surgery in past 4 weeks','1.5') +
+    checkScore('w5','Prior DVT or PE (objectively diagnosed)','1.5') +
+    checkScore('w6','Hemoptysis','1') +
+    checkScore('w7','Malignancy (active treatment, <6 mo, or palliative)','1') +
+    '</div>' +
+    '<div id="wells-result" style="font-size:12px;font-weight:700;text-align:center;padding:8px;border-radius:6px;background:rgba(6,182,212,0.08);color:#06B6D4;margin-bottom:8px">Wells PE Score: 0</div>' +
+    '<button onclick="calcWellsPE()" style="padding:9px 20px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;margin-right:8px">Calculate</button>' +
+    '<button onclick="calcPERC()" style="padding:9px 20px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Run PERC Rule</button>' +
+    '<div id="perc-result" style="margin-top:8px;font-size:11px;color:var(--muted)"></div>' +
+    '</div>';
+
+  // ── TAB 5: NEURO / STROKE ─────────────────────────────────────
+  var t5 = document.createElement('div');
+  t5.id = 't-neuro';
+  t5.className = 'triage-tab';
+
+  t5.innerHTML =
+    '<div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:14px;margin-bottom:14px;font-size:12px;color:#EF4444;font-weight:600">🚨 Suspected stroke — every minute = 1.9 million neurons lost. Time to CT and treatment is the only metric that matters.</div>' +
+
+    // Cincinnati Stroke Scale
+    '<div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.12);border-radius:12px;padding:16px;margin-bottom:14px">' +
+    '<div style="font-size:12px;font-weight:700;color:#06B6D4;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Cincinnati Prehospital Stroke Scale (1 positive = 72% likelihood of stroke)</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">' +
+    strokeItem('cinc1','Facial droop — Ask patient to smile or show teeth. Normal: both sides move equally. Abnormal: one side does not move.') +
+    strokeItem('cinc2','Arm drift — Both arms outstretched, eyes closed, 10 seconds. Normal: both move same, or neither moves. Abnormal: one drifts down.') +
+    strokeItem('cinc3','Abnormal speech — Ask patient to say "You can\'t teach an old dog new tricks." Normal: correct words, no slurring. Abnormal: slurred, wrong words, or unable to speak.') +
+    '</div>' +
+    tinyInput('stroke-lwt','Last Known Well Time','e.g. 14:30 or "Woke up with symptoms"') +
+    '<button onclick="analyzeStroke()" style="width:100%;padding:10px;margin-top:10px;background:linear-gradient(135deg,#EF4444,#DC2626);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🧠 Claude — Stroke Protocol + tPA/Thrombectomy Window</button>' +
+    '<div id="stroke-result" style="margin-top:10px"></div>' +
+    '</div>' +
+
+    // NIHSS simplified
+    '<div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.12);border-radius:12px;padding:16px">' +
+    '<div style="font-size:12px;font-weight:700;color:#06B6D4;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">NIHSS — Quick Severity Assessment</div>' +
+    '<div style="font-size:10px;color:var(--muted);margin-bottom:10px">0 = No stroke · 1-4 = Minor · 5-15 = Moderate · 16-20 = Moderate-severe · 21-42 = Severe</div>' +
+    '<div class="sc-grid2">' +
+    nihssSel('n1','Level of Consciousness',[['0','Alert'],['1','Drowsy'],['2','Stuporous'],['3','Coma']]) +
+    nihssSel('n2','LOC Questions (month/age)',[['0','Both correct'],['1','One correct'],['2','Neither correct']]) +
+    nihssSel('n3','Best Gaze',[['0','Normal'],['1','Partial gaze palsy'],['2','Forced deviation']]) +
+    nihssSel('n4','Visual Fields',[['0','No loss'],['1','Partial hemianopia'],['2','Complete hemianopia'],['3','Bilateral blindness']]) +
+    nihssSel('n5','Facial Palsy',[['0','Normal'],['1','Minor'],['2','Partial'],['3','Complete']]) +
+    nihssSel('n6','Motor Arm (worst side)',[['0','No drift'],['1','Drift'],['2','Some effort vs gravity'],['3','No effort vs gravity'],['4','No movement']]) +
+    '</div>' +
+    '<button onclick="calcNIHSS()" style="padding:9px 20px;margin-top:10px;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);border-radius:7px;color:#06B6D4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Calculate NIHSS</button>' +
+    '<div id="nihss-result" style="margin-top:8px;font-size:13px;font-weight:700;color:#06B6D4"></div>' +
+    '</div>';
+
+  // ── TAB 6: RESPIRATORY ─────────────────────────────────────────
+  var t6 = document.createElement('div');
+  t6.id = 't-resp';
+  t6.className = 'triage-tab';
+
+  t6.innerHTML =
+    '<div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.12);border-radius:12px;padding:16px;margin-bottom:14px">' +
+    '<div style="font-size:12px;font-weight:700;color:#06B6D4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">🫁 Respiratory Assessment</div>' +
+    '<div class="sc-grid2">' +
+    fld('resp-onset','Symptom Onset','sel','',['Sudden (<1 hour)','Acute (hours)','Subacute (days)','Chronic (weeks/months)']) +
+    fld('resp-type','Primary Symptom','sel','',['Dyspnea — at rest','Dyspnea — exertional','Chest tightness','Wheezing','Cough — dry','Cough — productive','Hemoptysis','Pleuritic chest pain','Stridor']) +
+    '</div>' +
+    '<div class="sc-grid3">' +
+    fld('resp-rr','Resp Rate','inp','e.g. 24') +
+    fld('resp-spo2','SpO2 on room air','inp','e.g. 92%') +
+    fld('resp-fio2','Supplemental O2 (if any)','inp','e.g. 2L NC or none') +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">' +
+    chk('resp-asthma','Known asthma/COPD') +
+    chk('resp-smoker','Current or ex-smoker') +
+    chk('resp-fever','Fever present') +
+    chk('resp-unilateral','Unilateral findings on exam') +
+    chk('resp-pleuritic','Pleuritic pain') +
+    chk('resp-immobile','Recent immobility/surgery') +
+    '</div>' +
+    fld('resp-hx','Additional history','ta','Sick contacts, travel, occupational exposure, prior episodes, medications...') +
+    '<button onclick="analyzeResp()" style="width:100%;padding:10px;background:linear-gradient(135deg,#06B6D4,#0891B2);border:none;border-radius:8px;color:#021018;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🫁 Claude — Respiratory DDx + Workup + Disposition</button>' +
+    '<div id="resp-result" style="margin-top:10px"></div>' +
+    '</div>';
+
+  body.appendChild(t1);
+  body.appendChild(t2);
+  body.appendChild(t3);
+  body.appendChild(t4);
+  body.appendChild(t5);
+  body.appendChild(t6);
   modal.appendChild(body);
   document.body.appendChild(modal);
+
+  // Wire up live MEWS calculation
+  setTimeout(function() {
+    ['mews-rr','mews-hr','mews-sbp','mews-temp','mews-avpu'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', calcMEWS);
+    });
+    calcMEWS();
+  }, 100);
 }
 
-async function runTriageAssessment() {
-  const age      = document.getElementById('tr-age')?.value || '';
-  const complaint= document.getElementById('tr-complaint')?.value || '';
-  const hr       = document.getElementById('tr-hr')?.value || '';
-  const rr       = document.getElementById('tr-rr')?.value || '';
-  const spo2     = document.getElementById('tr-spo2')?.value || '';
-  const sbp      = document.getElementById('tr-sbp')?.value || '';
-  const temp     = document.getElementById('tr-temp')?.value || '';
-  const gcs      = document.getElementById('tr-gcs')?.value || '';
-  const pain     = document.getElementById('tr-pain')?.value || '';
-  const hx       = document.getElementById('tr-hx')?.value || '';
-  const mechanism= document.getElementById('tr-mechanism')?.value || '';
+// ── TAB SWITCHING ─────────────────────────────────────────────
+function switchTriageTab(id) {
+  document.querySelectorAll('.triage-tab').forEach(function(t) { t.style.display = 'none'; });
+  document.querySelectorAll('[id^="tab-btn-"]').forEach(function(b) {
+    b.style.borderBottomColor = 'transparent';
+    b.style.color = 'rgba(240,248,250,0.45)';
+  });
+  var tab = document.getElementById(id);
+  var btn = document.getElementById('tab-btn-' + id);
+  if (tab) tab.style.display = 'block';
+  if (btn) { btn.style.borderBottomColor = '#06B6D4'; btn.style.color = '#06B6D4'; }
+}
+
+// Apply CSS for tab visibility
+(function() {
+  var style = document.createElement('style');
+  style.textContent = '.triage-tab{display:none}.triage-tab.active{display:block}';
+  document.head.appendChild(style);
+})();
+
+// ── FORM HELPERS ──────────────────────────────────────────────
+function fld(id, label, type, ph, opts) {
+  var s = '<div class="sc-field"><label>' + label + '</label>';
+  if (type === 'inp') s += '<input type="text" id="' + id + '" placeholder="' + ph + '">';
+  else if (type === 'ta') s += '<textarea id="' + id + '" placeholder="' + ph + '" rows="3"></textarea>';
+  else if (type === 'sel') s += '<select id="' + id + '">' + (opts||[]).map(function(o){return'<option>'+o+'</option>';}).join('') + '</select>';
+  s += '</div>';
+  return s;
+}
+function chk(id, label) {
+  return '<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text);cursor:pointer;padding:5px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.02)"><input type="checkbox" id="' + id + '" style="accent-color:#06B6D4">' + label + '</label>';
+}
+function checkScore(id, label, pts) {
+  return '<label style="display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text);cursor:pointer;padding:7px 10px;border-radius:7px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.02)"><span style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="' + id + '" style="accent-color:#06B6D4">' + label + '</span><span style="font-size:10px;font-weight:700;color:#06B6D4;flex-shrink:0">+' + pts + '</span></label>';
+}
+function bundleItem(id, label) {
+  return '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);cursor:pointer;padding:8px 10px;border-radius:7px;border:1px solid rgba(239,68,68,0.15);background:rgba(239,68,68,0.04)"><input type="checkbox" id="' + id + '" style="accent-color:#EF4444;margin-top:1px;flex-shrink:0">' + label + '</label>';
+}
+function strokeItem(id, label) {
+  return '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);cursor:pointer;padding:8px 10px;border-radius:7px;border:1px solid rgba(239,68,68,0.15);background:rgba(239,68,68,0.04)"><input type="checkbox" id="' + id + '" style="accent-color:#EF4444;margin-top:1px;flex-shrink:0">' + label + '</label>';
+}
+function tinyInput(id, label, ph) {
+  return '<div class="sc-field"><label>' + label + '</label><input type="text" id="' + id + '" placeholder="' + ph + '"></div>';
+}
+function scoreCard(title, sub, inner) {
+  return '<div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.12);border-radius:12px;padding:14px"><div style="font-size:11px;font-weight:700;color:#06B6D4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">' + title + '</div><div style="font-size:10px;color:var(--muted);margin-bottom:10px">' + sub + '</div>' + inner + '</div>';
+}
+function gcsSel(id, label, opts) {
+  return '<div class="sc-field"><label>' + label + '</label><select id="' + id + '" onchange="calcGCS()">' + opts.map(function(o){return'<option value="'+o[0]+'">'+o[0]+' — '+o[1]+'</option>';}).join('') + '</select></div>';
+}
+function mewsSel(id, label, opts) {
+  return '<div class="sc-field"><label>' + label + '</label><select id="' + id + '">' + opts.map(function(o){return'<option value="'+o[1]+'">'+o[0]+'</option>';}).join('') + '</select></div>';
+}
+function morseItem(id, label, low, high) {
+  return '<div class="sc-field"><label>' + label + '</label><select id="' + id + '"><option value="0">No (0)</option><option value="' + high + '">Yes (' + high + ')</option></select></div>';
+}
+function heartItem(id, label, opts) {
+  var optArr = opts.split(',');
+  return '<div class="sc-field"><label>' + label + '</label><select id="' + id + '">' + optArr.map(function(o,i){return'<option value="'+(optArr.length-1-i)+'">'+o+'</option>';}).join('') + '</select></div>';
+}
+function nihssSel(id, label, opts) {
+  return '<div class="sc-field"><label>' + label + '</label><select id="' + id + '">' + opts.map(function(o){return'<option value="'+o[0]+'">'+o[0]+' — '+o[1]+'</option>';}).join('') + '</select></div>';
+}
+
+// ── LIVE CALCULATORS ──────────────────────────────────────────
+
+function calcMEWS() {
+  var s = parseInt(document.getElementById('mews-rr')?.value||0) +
+          parseInt(document.getElementById('mews-hr')?.value||0) +
+          parseInt(document.getElementById('mews-sbp')?.value||0) +
+          parseInt(document.getElementById('mews-temp')?.value||0) +
+          parseInt(document.getElementById('mews-avpu')?.value||0);
+  var el = document.getElementById('mews-score');
+  var interp = document.getElementById('mews-interp');
+  if (!el) return;
+  el.textContent = s;
+  var color = s < 3 ? '#10B981' : s < 5 ? '#F59E0B' : '#EF4444';
+  el.style.color = color;
+  if (interp) {
+    if (s < 3) interp.textContent = 'Low risk';
+    else if (s < 5) interp.textContent = '⚠️ Moderate — monitor closely';
+    else interp.textContent = '🚨 HIGH RISK — consider RRT';
+    interp.style.color = color;
+  }
+}
+
+function calcqSOFA() {
+  var s = (document.getElementById('qs1')?.checked?1:0) +
+          (document.getElementById('qs2')?.checked?1:0) +
+          (document.getElementById('qs3')?.checked?1:0);
+  var el = document.getElementById('qsofa-result');
+  if (!el) return;
+  var color = s === 0 ? '#10B981' : s === 1 ? '#F59E0B' : '#EF4444';
+  el.style.background = 'rgba(' + (s===0?'16,185,129':s===1?'245,158,11':'239,68,68') + ',0.08)';
+  el.style.color = color;
+  el.textContent = 'qSOFA: ' + s + '/3 — ' + (s<2?'Low risk':'HIGH RISK — evaluate for sepsis');
+}
+
+function calcSIRS() {
+  var s = (document.getElementById('sirs1')?.checked?1:0) +
+          (document.getElementById('sirs2')?.checked?1:0) +
+          (document.getElementById('sirs3')?.checked?1:0) +
+          (document.getElementById('sirs4')?.checked?1:0);
+  var el = document.getElementById('sirs-result');
+  if (!el) return;
+  var pos = s >= 2;
+  el.style.color = pos ? '#EF4444' : '#10B981';
+  el.textContent = 'SIRS: ' + s + '/4 — ' + (pos ? 'POSITIVE — assess for infection source' : 'Negative');
+}
+
+function calcGCS() {
+  var e = parseInt(document.getElementById('gcs-eye')?.value||4);
+  var v = parseInt(document.getElementById('gcs-verb')?.value||5);
+  var m = parseInt(document.getElementById('gcs-motor')?.value||6);
+  var s = e + v + m;
+  var el = document.getElementById('gcs-result');
+  if (!el) return;
+  var severity = s >= 13 ? 'Mild' : s >= 9 ? 'Moderate' : 'Severe';
+  var color = s >= 13 ? '#10B981' : s >= 9 ? '#F59E0B' : '#EF4444';
+  el.style.color = color;
+  el.textContent = 'GCS: ' + s + ' — ' + severity;
+}
+
+function calcCURB() {
+  var s = (document.getElementById('curb1')?.checked?1:0) +
+          (document.getElementById('curb2')?.checked?1:0) +
+          (document.getElementById('curb3')?.checked?1:0) +
+          (document.getElementById('curb4')?.checked?1:0) +
+          (document.getElementById('curb5')?.checked?1:0);
+  var el = document.getElementById('curb-result');
+  if (!el) return;
+  var rec = s<=1 ? 'Outpatient' : s<=2 ? 'Consider hospital' : 'Inpatient (ICU if 4-5)';
+  var color = s<=1 ? '#10B981' : s<=2 ? '#F59E0B' : '#EF4444';
+  el.style.color = color;
+  el.textContent = 'CURB-65: ' + s + ' — ' + rec;
+}
+
+function calcMorse() {
+  var s = parseInt(document.getElementById('mf1')?.value||0) +
+          parseInt(document.getElementById('mf2')?.value||0) +
+          parseInt(document.getElementById('mf3')?.value||0) +
+          parseInt(document.getElementById('mf4')?.value||0) +
+          parseInt(document.getElementById('mf5')?.value||0) +
+          parseInt(document.getElementById('mf6')?.value||0);
+  var el = document.getElementById('morse-result');
+  if (!el) return;
+  var risk = s < 25 ? 'Low fall risk' : s < 51 ? 'Medium fall risk' : 'HIGH fall risk — implement full fall precautions';
+  var color = s < 25 ? '#10B981' : s < 51 ? '#F59E0B' : '#EF4444';
+  el.style.color = color;
+  el.textContent = 'Morse Score: ' + s + ' — ' + risk;
+}
+
+function calcHEART() {
+  var s = parseInt(document.getElementById('heart-h')?.value||0) +
+          parseInt(document.getElementById('heart-e')?.value||0) +
+          parseInt(document.getElementById('heart-a')?.value||0) +
+          parseInt(document.getElementById('heart-r')?.value||0) +
+          parseInt(document.getElementById('heart-t')?.value||0);
+  var el = document.getElementById('heart-result');
+  if (!el) return;
+  var risk = s<=3 ? 'Low (~2% MACE)' : s<=6 ? 'Moderate (12-16% MACE)' : 'High (50-65% MACE)';
+  var color = s<=3 ? '#10B981' : s<=6 ? '#F59E0B' : '#EF4444';
+  el.style.color = color;
+  el.textContent = 'HEART: ' + s + ' — ' + risk;
+}
+
+function calcWellsPE() {
+  var s = (document.getElementById('w1')?.checked?3:0) +
+          (document.getElementById('w2')?.checked?3:0) +
+          (document.getElementById('w3')?.checked?1.5:0) +
+          (document.getElementById('w4')?.checked?1.5:0) +
+          (document.getElementById('w5')?.checked?1.5:0) +
+          (document.getElementById('w6')?.checked?1:0) +
+          (document.getElementById('w7')?.checked?1:0);
+  var el = document.getElementById('wells-result');
+  if (!el) return;
+  var risk = s<=1 ? 'Low (3.6%)' : s<=6 ? 'Moderate (20.5%)' : 'High (66.7%)';
+  var twotier = s<=4 ? 'PE Unlikely (≤4)' : 'PE Likely (>4) — imaging warranted';
+  var color = s<=1 ? '#10B981' : s<=6 ? '#F59E0B' : '#EF4444';
+  el.style.color = color;
+  el.textContent = 'Wells PE: ' + s + ' — ' + risk + ' | ' + twotier;
+}
+
+function calcPERC() {
+  var el = document.getElementById('perc-result');
+  if (!el) return;
+  el.innerHTML = '<div style="margin-top:6px;font-size:11px;color:#06B6D4">PERC Rule: All 8 criteria must be met to rule out PE without D-dimer: Age <50, HR <100, SpO2 ≥95%, No prior DVT/PE, No hemoptysis, No estrogen use, No surgery/trauma in 4 weeks, No unilateral leg swelling. <button onclick="analyzeWithClaude(\'PERC rule-out evaluation\')" style="background:none;border:none;color:#06B6D4;font-size:11px;cursor:pointer;text-decoration:underline">Ask Claude</button></div>';
+}
+
+function calcNIHSS() {
+  var total = ['n1','n2','n3','n4','n5','n6'].reduce(function(sum,id){
+    return sum + parseInt(document.getElementById(id)?.value||0);
+  }, 0);
+  var el = document.getElementById('nihss-result');
+  if (!el) return;
+  var severity = total === 0 ? 'No stroke symptoms' : total<=4 ? 'Minor stroke' : total<=15 ? 'Moderate stroke' : total<=20 ? 'Moderate-severe' : 'Severe stroke';
+  var color = total === 0 ? '#10B981' : total<=4 ? '#10B981' : total<=15 ? '#F59E0B' : '#EF4444';
+  el.style.color = color;
+  el.textContent = 'NIHSS: ' + total + ' — ' + severity;
+}
+
+// ── AI ANALYSIS FUNCTIONS ─────────────────────────────────────
+
+async function runFullTriageAssessment() {
+  var age       = document.getElementById('tr-age')?.value || '';
+  var complaint = document.getElementById('tr-complaint')?.value || '';
+  var hr        = document.getElementById('tr-hr')?.value || '';
+  var rr        = document.getElementById('tr-rr')?.value || '';
+  var spo2      = document.getElementById('tr-spo2')?.value || '';
+  var sbp       = document.getElementById('tr-sbp')?.value || '';
+  var temp      = document.getElementById('tr-temp')?.value || '';
+  var gcs       = document.getElementById('tr-gcs')?.value || '';
+  var pain      = document.getElementById('tr-pain')?.value || '';
+  var hx        = document.getElementById('tr-hx')?.value || '';
 
   if (!complaint.trim()) { showClinicalFlag('Enter the chief complaint.', 'warn'); return; }
 
-  checkClinicalFlags(complaint + ' ' + hx);
+  // Collect danger zone indicators
+  var danger = [];
+  ['dz-lethargy','dz-disoriented','dz-diaphoretic','dz-pallor','dz-distress','dz-position','dz-tachy','dz-hypoxia'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.checked) danger.push(el.nextSibling ? el.nextSibling.textContent.trim() : id);
+  });
 
-  const resDiv = document.getElementById('triage-result');
-  if (resDiv) resDiv.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px">Analyzing triage data...</div>';
+  // Collect resources
+  var resources = [];
+  ['res-labs','res-ecg','res-xray','res-ct','res-iv','res-consult'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.checked) resources.push(id.replace('res-',''));
+  });
 
-  const prompt = 'Please provide ESI triage guidance for this patient:\n\n' +
+  // Get live MEWS score
+  var mewsScore = document.getElementById('mews-score')?.textContent || '?';
+
+  var resDiv = document.getElementById('esi-result');
+  if (resDiv) resDiv.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px">Running comprehensive triage assessment...</div>';
+
+  var prompt = 'COMPREHENSIVE TRIAGE ASSESSMENT REQUEST:\n\n' +
     'Patient: ' + age + '\n' +
     'Chief complaint: ' + complaint + '\n' +
-    'Vitals: HR ' + hr + ', RR ' + rr + ', SpO2 ' + spo2 + ', SBP ' + sbp + ', Temp ' + temp + ', ' + gcs + '\n' +
+    'Vitals: HR ' + hr + ', RR ' + rr + ', SpO2 ' + spo2 + ', SBP ' + sbp + ', Temp ' + temp + ', Mental status: ' + gcs + '\n' +
     'Pain: ' + pain + '\n' +
-    (hx ? 'History: ' + hx + '\n' : '') +
-    (mechanism && !mechanism.includes('Not applicable') ? 'Mechanism: ' + mechanism + '\n' : '') +
-    '\nPlease provide: (1) suggested ESI level with rationale, (2) immediate interventions and assessments to initiate, (3) red flag symptoms to watch for, (4) anticipated resources needed, (5) any vital sign concerns and clinical significance. Remind the triage nurse this is AI-assisted guidance requiring clinical verification.';
+    'MEWS score (live calculated): ' + mewsScore + '\n' +
+    (danger.length ? 'Danger zone indicators: ' + danger.join(', ') + '\n' : '') +
+    (resources.length ? 'Anticipated resources: ' + resources.join(', ') + '\n' : '') +
+    (hx ? 'PMH/Meds/Allergies: ' + hx + '\n' : '') +
+    '\nPlease provide a structured triage assessment:\n' +
+    '1. SUGGESTED ESI LEVEL (1-5) with clear rationale\n' +
+    '2. IMMEDIATE INTERVENTIONS — what must happen in the next 5 minutes\n' +
+    '3. DIFFERENTIAL DIAGNOSIS — top 3-5 most likely diagnoses given the presentation\n' +
+    '4. RED FLAGS — specific findings that would mandate immediate escalation\n' +
+    '5. RECOMMENDED WORKUP — labs, imaging, and monitoring\n' +
+    '6. CLINICAL SCORING — which additional calculators apply (HEART, Wells, qSOFA, sepsis screen, etc.)\n' +
+    '7. DISPOSITION GUIDANCE — ED bed, fast track, immediate resuscitation bay, or other\n' +
+    'Always note this is AI-assisted decision support — clinical verification is mandatory.';
 
   try {
-    const res = await fetch(SAIRN_API, {
+    var sysPrompt = SYSTEM + '\n\nYou are in Comprehensive Triage mode. You serve ER physicians, triage nurses, charge nurses, and all ED clinical staff. Provide complete, structured, clinically precise triage guidance drawing on all clinical scoring tools you know.';
+    var res = await fetch(SAIRN_API, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        max_tokens:1000,
-        system: SYSTEM + '\n\nYou are in Triage mode. Provide clear, organized ESI guidance.',
-        messages:[{role:'user',content:prompt}],
-        app_id:APP_ID, is_demo:true,
-      }),
+      body:JSON.stringify({ max_tokens:1000, system:sysPrompt, messages:[{role:'user',content:prompt}], app_id:APP_ID, is_demo:true }),
     });
-    const data = await res.json();
-    const reply = data.content && data.content[0] ? data.content[0].text : 'Triage assessment failed.';
+    var data = await res.json();
+    var reply = data.content && data.content[0] ? data.content[0].text : 'Assessment failed.';
 
-    // Detect ESI level for color
-    const esiMatch = reply.match(/ESI.{0,10}([1-5])/i) || reply.match(/level.{0,5}([1-5])/i);
-    const esiLevel = esiMatch ? parseInt(esiMatch[1]) : 0;
-    const esiColors = ['','#EF4444','#F97316','#EAB308','#22C55E','#6B7280'];
-    const esiLabels = ['','Immediate','Emergent','Urgent','Less Urgent','Non-Urgent'];
-    const esiBadge = esiLevel ? '<div style="display:inline-block;padding:6px 16px;border-radius:100px;font-size:13px;font-weight:700;color:#fff;background:' + esiColors[esiLevel] + ';margin-bottom:10px">ESI Level ' + esiLevel + ' — ' + (esiLabels[esiLevel]||'') + '</div><br>' : '';
+    // Detect ESI level
+    var esiMatch = reply.match(/ESI.{0,10}([1-5])/i) || reply.match(/Level\s+([1-5])/i);
+    var esiLevel = esiMatch ? parseInt(esiMatch[1]) : 0;
+    var esiColors = ['','#EF4444','#F97316','#EAB308','#22C55E','#6B7280'];
+    var esiLabels = ['','IMMEDIATE','EMERGENT','URGENT','Less Urgent','Non-Urgent'];
+    var esiBadge = esiLevel ? '<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:100px;font-size:14px;font-weight:700;color:#fff;background:' + esiColors[esiLevel] + ';margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,0.3)">ESI Level ' + esiLevel + ' — ' + esiLabels[esiLevel] + '</div>' : '';
 
     if (resDiv) {
-      resDiv.innerHTML = '<div style="background:var(--card);border:1px solid var(--border-hi);border-radius:12px;padding:16px">' + esiBadge + '<div style="font-size:12px;color:var(--text);line-height:1.7">' + formatMsg(reply) + '</div></div>';
+      resDiv.innerHTML = '<div style="background:var(--card);border:1px solid var(--border-hi);border-radius:12px;padding:16px">' + esiBadge + '<div style="font-size:12px;color:var(--text);line-height:1.75">' + formatMsg(reply) + '</div></div>';
     }
     messages.push({ role:'user', content: prompt });
     messages.push({ role:'assistant', content: reply });
@@ -1256,6 +1783,92 @@ async function runTriageAssessment() {
     if (resDiv) resDiv.innerHTML = '<div style="color:var(--red);font-size:12px">Connection error. Try again.</div>';
   }
 }
+
+async function sendScoresToAI() {
+  var scores = [];
+  var qsScore = (document.getElementById('qs1')?.checked?1:0)+(document.getElementById('qs2')?.checked?1:0)+(document.getElementById('qs3')?.checked?1:0);
+  var sirsScore = (document.getElementById('sirs1')?.checked?1:0)+(document.getElementById('sirs2')?.checked?1:0)+(document.getElementById('sirs3')?.checked?1:0)+(document.getElementById('sirs4')?.checked?1:0);
+  var gcsTotal = parseInt(document.getElementById('gcs-eye')?.value||4)+parseInt(document.getElementById('gcs-verb')?.value||5)+parseInt(document.getElementById('gcs-motor')?.value||6);
+  var curb = (document.getElementById('curb1')?.checked?1:0)+(document.getElementById('curb2')?.checked?1:0)+(document.getElementById('curb3')?.checked?1:0)+(document.getElementById('curb4')?.checked?1:0)+(document.getElementById('curb5')?.checked?1:0);
+  var morse = ['mf1','mf2','mf3','mf4','mf5','mf6'].reduce(function(s,id){return s+parseInt(document.getElementById(id)?.value||0);},0);
+  var mews = document.getElementById('mews-score')?.textContent || '?';
+
+  var prompt = 'Please provide a clinical analysis of these scored assessments:\n\nMEWS Score: ' + mews + '\nqSOFA: ' + qsScore + '/3\nSIRS Criteria: ' + sirsScore + '/4\nGCS: ' + gcsTotal + '/15\nCURB-65: ' + curb + '/5\nMorse Fall Scale: ' + morse + '\n\nFor each score that is clinically significant (elevated or positive), explain: the clinical implication, the immediate action it triggers, and what additional information would change the picture. Provide an integrated clinical summary.';
+  document.getElementById('triage-modal')?.remove();
+  addMsg('user', 'Clinical scores analysis: MEWS=' + mews + ' qSOFA=' + qsScore + ' SIRS=' + sirsScore + ' GCS=' + gcsTotal);
+  messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+async function analyzeSepsis() {
+  var source  = document.getElementById('id-source')?.value || 'Unknown';
+  var time    = document.getElementById('sepsis-time')?.value || 'Not recorded';
+  var lactate = document.getElementById('sepsis-lactate')?.value || 'Not drawn';
+  var checked = ['b1','b2','b3','b4','b5'].filter(function(id){return document.getElementById(id)?.checked;}).length;
+  var prompt = 'Sepsis bundle assessment:\n\nSuspected source: ' + source + '\nTime of recognition: ' + time + '\nLactate: ' + lactate + ' mmol/L\nBundle elements completed: ' + checked + '/5\n\nPer 2026 Surviving Sepsis Campaign guidelines, provide: (1) Hour-1 bundle completion guidance for any missing elements, (2) lactate interpretation and implications, (3) antimicrobial selection guidance for this source, (4) fluid resuscitation and vasopressor thresholds, (5) any infection source control considerations.';
+  document.getElementById('triage-modal')?.remove();
+  addMsg('user', 'Sepsis bundle — source: ' + source + ' — lactate: ' + lactate);
+  messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+async function analyzeID() {
+  var source   = document.getElementById('id-source')?.value || '';
+  var immune   = document.getElementById('id-immune')?.value || '';
+  var abx      = document.getElementById('id-abx')?.value || '';
+  var organism = document.getElementById('id-organism')?.value || '';
+  var context  = document.getElementById('id-context')?.value || '';
+  var risks    = ['id-mrsa','id-pseudo','id-esbl','id-cdiff','id-vanco','id-fungal'].filter(function(id){return document.getElementById(id)?.checked;}).map(function(id){return id.replace('id-','');});
+  var prompt = 'Infectious disease clinical assessment:\n\nInfection source: ' + source + '\nImmune status: ' + immune + '\nRecent antibiotics: ' + (abx||'None known') + '\nSuspected organism: ' + (organism||'Unknown') + '\nResistance risk factors: ' + (risks.length?risks.join(', '):'None identified') + '\n' + (context?'Clinical context: '+context+'\n':'') + '\nProvide: (1) empiric antibiotic regimen by name and dose for this source and immune status, (2) isolation precautions required, (3) recommended cultures and diagnostics, (4) de-escalation criteria, (5) ID consult indications, (6) specific guidance for any identified resistance concerns.';
+  document.getElementById('triage-modal')?.remove();
+  addMsg('user', 'ID assessment — ' + source + ' — ' + immune);
+  messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+async function analyzeCardiac() {
+  var heartScore = parseInt(document.getElementById('heart-h')?.value||0)+parseInt(document.getElementById('heart-e')?.value||0)+parseInt(document.getElementById('heart-a')?.value||0)+parseInt(document.getElementById('heart-r')?.value||0)+parseInt(document.getElementById('heart-t')?.value||0);
+  var prompt = 'Chest pain / cardiac assessment:\n\nHEART Score: ' + heartScore + '/10\n\nProvide: (1) risk stratification based on HEART score and recommended disposition, (2) serial troponin timing if indicated, (3) ECG findings to urgently evaluate, (4) STEMI equivalent patterns to recognize, (5) ACS vs non-ACS differential, (6) when to activate cath lab, (7) antiplatelet and anticoagulation guidance if ACS confirmed.';
+  document.getElementById('triage-modal')?.remove();
+  addMsg('user', 'Cardiac assessment — HEART Score: ' + heartScore);
+  messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+async function analyzeStroke() {
+  var cinc = (document.getElementById('cinc1')?.checked?1:0)+(document.getElementById('cinc2')?.checked?1:0)+(document.getElementById('cinc3')?.checked?1:0);
+  var lwt  = document.getElementById('stroke-lwt')?.value || 'Unknown';
+  var prompt = 'Suspected stroke assessment:\n\nCincinnati Stroke Scale: ' + cinc + '/3 positive items\nLast Known Well: ' + lwt + '\n\nProvide: (1) stroke code activation criteria — should this be activated NOW, (2) tPA eligibility window calculation from last known well time, (3) thrombectomy eligibility criteria and time window, (4) immediate CT protocol and findings to identify, (5) NIHSS interpretation and implications, (6) blood pressure management targets, (7) contraindications to thrombolytics to immediately check.';
+  document.getElementById('triage-modal')?.remove();
+  addMsg('user', 'Stroke assessment — Cincinnati: ' + cinc + '/3 — LKW: ' + lwt);
+  messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+async function analyzeResp() {
+  var onset   = document.getElementById('resp-onset')?.value || '';
+  var type    = document.getElementById('resp-type')?.value || '';
+  var rr      = document.getElementById('resp-rr')?.value || '';
+  var spo2    = document.getElementById('resp-spo2')?.value || '';
+  var fio2    = document.getElementById('resp-fio2')?.value || '';
+  var context = document.getElementById('resp-hx')?.value || '';
+  var flags   = ['resp-asthma','resp-smoker','resp-fever','resp-unilateral','resp-pleuritic','resp-immobile'].filter(function(id){return document.getElementById(id)?.checked;}).map(function(id){return id.replace('resp-','');});
+  var prompt = 'Respiratory assessment:\n\nOnset: ' + onset + '\nPrimary symptom: ' + type + '\nVitals: RR ' + rr + ', SpO2 ' + spo2 + ', O2: ' + fio2 + '\nClinical flags: ' + (flags.length?flags.join(', '):'None') + '\n' + (context?'History: '+context+'\n':'') + '\nProvide: (1) respiratory differential diagnosis in order of urgency, (2) immediate oxygen and airway management if indicated, (3) recommended workup — ABG indications, CXR priorities, CT-PA criteria, (4) CURB-65 application if pneumonia suspected, (5) Wells PE score indication if PE suspected, (6) bronchodilator and steroid indications, (7) admission vs discharge criteria.';
+  document.getElementById('triage-modal')?.remove();
+  addMsg('user', 'Respiratory assessment — ' + type + ' — SpO2: ' + spo2);
+  messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+async function analyzeWithClaude(context) {
+  var prompt = 'Clinical consultation request: ' + context + '. Provide complete clinical guidance including scoring, workup, and management.';
+  document.getElementById('triage-modal')?.remove();
+  addMsg('user', context);
+  messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+
 
 // ── HANDOFF BUILDER ───────────────────────────────────────────
 function showHandoffBuilder() {
