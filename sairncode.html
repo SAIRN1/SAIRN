@@ -1348,6 +1348,969 @@ const DOC_TEMPLATES = [
       { label: 'Intervention', type: 'text', placeholder: 'e.g. Offending medication discontinued dose reduced safer alternative pharmacist deprescribing plan' },
       { label: 'Notes', type: 'textarea', placeholder: 'Code drug causing adverse effect first then manifestation. Polypharmacy increases fall risk and adverse events. Beers criteria identifies inappropriate medications in elderly. Document pharmacist involvement.' }
     ]
+  },
+  {
+    id: 'afib',
+    title: 'Atrial Fibrillation',
+    icon: '📋',
+    icd: 'I48.xx',
+    purpose: 'AFib type must be documented. Paroxysmal, persistent, long-standing persistent, or permanent. Unspecified loses HCC weight. Document rate vs rhythm control and anticoagulation status with CHA2DS2-VASc.',
+    fields: [
+      { label: 'AFib Type', type: 'select', options: ['Paroxysmal AFib (I48.0) - self-terminates within 7 days', 'Persistent AFib (I48.11) - sustained over 7 days', 'Long-standing persistent AFib (I48.19) - over 12 months', 'Permanent AFib (I48.21) - rhythm control abandoned', 'Typical atrial flutter (I48.3)', 'Unspecified AFib (I48.91) - avoid if type known'] },
+      { label: 'Ventricular Rate', type: 'text', placeholder: 'e.g. Rate 88 bpm controlled, or RVR with rate 142 bpm' },
+      { label: 'Management Strategy', type: 'select', options: ['Rate control - document target HR achieved', 'Rhythm control - document antiarrhythmic agent', 'Cardioversion performed', 'Ablation performed or planned'] },
+      { label: 'Anticoagulation', type: 'select', options: ['On anticoagulation - document agent and dose', 'Not anticoagulated - document CHA2DS2-VASc score', 'Anticoagulation held - document reason'] },
+      { label: 'CHA2DS2-VASc Score', type: 'text', placeholder: 'e.g. CHA2DS2-VASc 4 - high stroke risk' },
+      { label: 'Current Medications', type: 'text', placeholder: 'e.g. Metoprolol 50mg BID, Apixaban 5mg BID' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Explicitly state AFib type. Document anticoagulation and rationale. AFib with RVR is not a separate ICD-10 code.' }
+    ]
+  },
+  {
+    id: 'dvt_pe',
+    title: 'DVT and Pulmonary Embolism',
+    icon: '📋',
+    icd: 'I82.xx / I26.xx',
+    purpose: 'DVT and PE require laterality and vessel. Acute versus chronic required. Massive PE is MCC. Document provoked versus unprovoked and anticoagulation duration plan.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Acute DVT - specify vessel and side', 'Acute PE - specify severity', 'Both DVT and PE', 'Chronic DVT - post-thrombotic syndrome', 'History of DVT or PE (Z86.718)'] },
+      { label: 'DVT Location', type: 'select', options: ['Not applicable', 'Right femoral vein (I82.411)', 'Left femoral vein (I82.412)', 'Right popliteal vein (I82.431)', 'Left popliteal vein (I82.432)', 'Right iliac vein (I82.421)', 'Left iliac vein (I82.422)', 'Right upper extremity (I82.611)', 'Left upper extremity (I82.612)', 'Calf vein - distal'] },
+      { label: 'PE Severity', type: 'select', options: ['Not applicable', 'Low risk PE - stable (I26.09)', 'Submassive PE - RV strain without shock', 'Massive PE - hemodynamic instability (I26.02) - MCC', 'Chronic PE (I27.82)'] },
+      { label: 'Provoked or Unprovoked', type: 'select', options: ['Provoked - recent surgery', 'Provoked - immobility', 'Provoked - malignancy', 'Provoked - hormonal therapy', 'Provoked - pregnancy', 'Unprovoked - no identifiable risk factor'] },
+      { label: 'Anticoagulation Plan', type: 'text', placeholder: 'e.g. Apixaban 10mg BID x7 days then 5mg BID x3 months' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document vessel, laterality, severity, provocation, and treatment duration.' }
+    ]
+  },
+  {
+    id: 'ami',
+    title: 'Acute MI - STEMI and NSTEMI',
+    icon: '📋',
+    icd: 'I21.xx',
+    purpose: 'STEMI versus NSTEMI and vessel required. Type 1 plaque rupture versus Type 2 supply demand mismatch code differently. Document intervention and all complications.',
+    fields: [
+      { label: 'MI Type', type: 'select', options: ['STEMI - anterior wall LAD (I21.09)', 'STEMI - inferior wall RCA (I21.19)', 'STEMI - other site (I21.29)', 'NSTEMI - Type 1 plaque rupture (I21.4)', 'NSTEMI - Type 2 supply demand mismatch (I21.A1)', 'Subsequent MI within 4 weeks (I22.x)', 'Old MI healed (I25.2)'] },
+      { label: 'Vessel Involved', type: 'text', placeholder: 'e.g. LAD mid-vessel 90% occlusion, RCA proximal 100% occlusion' },
+      { label: 'Intervention', type: 'select', options: ['Primary PCI with DES', 'Fibrinolytic therapy', 'CABG', 'Medical management only - document reason', 'No intervention - comfort measures'] },
+      { label: 'Peak Troponin', type: 'text', placeholder: 'e.g. Peak Troponin I 48.2 ng/mL' },
+      { label: 'EF Post-MI', type: 'text', placeholder: 'e.g. EF 40% on echo, anterior wall hypokinesis' },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Cardiogenic shock, VT requiring cardioversion, complete heart block' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document STEMI vs NSTEMI, vessel, and intervention. Type 2 MI requires supply-demand mismatch etiology documented.' }
+    ]
+  },
+  {
+    id: 'pneumonia',
+    title: 'Pneumonia',
+    icon: '📋',
+    icd: 'J12-J18',
+    purpose: 'Organism-specific codes carry higher DRG weight than unspecified J18.9. Aspiration pneumonia codes separately. Hospital-acquired versus community-acquired affects quality measures.',
+    fields: [
+      { label: 'Pneumonia Type', type: 'select', options: ['Community-acquired unspecified (J18.9)', 'Pneumococcal (J13)', 'Haemophilus influenzae (J14)', 'Mycoplasma - atypical (J15.7)', 'Legionella (J15.0)', 'Staph aureus MSSA (J15.211)', 'MRSA (J15.212)', 'Viral COVID (U07.1 + J12.82)', 'Viral influenza (J10.0x)', 'Aspiration pneumonia (J69.0) - code cause separately', 'Hospital-acquired or VAP (J95.851)'] },
+      { label: 'Severity', type: 'text', placeholder: 'e.g. PSI Class IV, CURB-65 score 2' },
+      { label: 'Oxygen Requirements', type: 'text', placeholder: 'e.g. SpO2 91% on 4L NC, requiring HFNC at FiO2 0.5' },
+      { label: 'Culture Results', type: 'text', placeholder: 'e.g. Sputum: Strep pneumoniae, Blood cultures no growth' },
+      { label: 'Aspiration', type: 'select', options: ['No aspiration', 'Aspiration documented - code J69.0 separately', 'Aspiration risk - CVA dysphagia dementia'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document organism when known. Aspiration J69.0 is separate from infectious pneumonia. HAP and VAP use J95.851.' }
+    ]
+  },
+  {
+    id: 'gi_bleed',
+    title: 'GI Bleed',
+    icon: '📋',
+    icd: 'K25-K92',
+    purpose: 'Source must be documented when identified by endoscopy. Acute blood loss anemia codes separately as D62. Peptic ulcer codes require hemorrhage qualifier when bleeding present.',
+    fields: [
+      { label: 'Location', type: 'select', options: ['Upper GI bleed', 'Lower GI bleed', 'GI bleed unspecified (K92.2) - use only if location unknown after workup'] },
+      { label: 'Source', type: 'select', options: ['Gastric ulcer with hemorrhage (K25.0)', 'Duodenal ulcer with hemorrhage (K26.0)', 'Esophageal varices bleeding (I85.01)', 'Mallory-Weiss tear (K22.6)', 'Diverticular bleed (K57.31)', 'Colonic angiodysplasia (K55.21)', 'Hemorrhoids bleeding (K64.8)', 'Ischemic colitis (K55.039)', 'Unknown - workup in progress'] },
+      { label: 'Presentation', type: 'select', options: ['Hematemesis', 'Coffee ground emesis', 'Melena', 'Hematochezia', 'Occult blood'] },
+      { label: 'Hemodynamic Status', type: 'select', options: ['Stable', 'Orthostatic hypotension', 'Active hemodynamic instability', 'Shock requiring vasopressors'] },
+      { label: 'Hemoglobin and Transfusion', type: 'text', placeholder: 'e.g. Hgb 7.2, nadir 5.8, transfused 2 units pRBC' },
+      { label: 'Anemia', type: 'select', options: ['Acute blood loss anemia (D62) - code separately', 'Chronic blood loss anemia (D50.0)', 'No significant anemia'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Code source when identified by endoscopy. Acute blood loss anemia D62 codes separately. Peptic ulcer requires hemorrhage qualifier.' }
+    ]
+  },
+  {
+    id: 'liver_disease',
+    title: 'Liver Disease and Cirrhosis',
+    icon: '📋',
+    icd: 'K70-K77',
+    purpose: 'Etiology and compensated vs decompensated status required. Hepatic encephalopathy and ascites are MCCs that code separately. Document alcohol use explicitly when causative.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Alcoholic cirrhosis (K70.30)', 'Alcoholic cirrhosis with ascites (K70.31)', 'NAFLD (K76.0)', 'NASH (K75.81)', 'NASH with cirrhosis (K74.60)', 'Hepatitis B cirrhosis (B18.1 + K74.60)', 'Hepatitis C cirrhosis (B18.2 + K74.60)', 'Primary biliary cholangitis (K74.3)', 'Autoimmune hepatitis (K75.4)', 'Cryptogenic cirrhosis (K74.60)'] },
+      { label: 'Status', type: 'select', options: ['Compensated - no complications', 'Decompensated - document complications', 'Child-Pugh A - mild', 'Child-Pugh B - moderate', 'Child-Pugh C - severe'] },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Ascites, hepatic encephalopathy grade 2, esophageal varices, SBP' },
+      { label: 'MELD Score', type: 'text', placeholder: 'e.g. MELD-Na 22, listed for transplant' },
+      { label: 'Alcohol Use', type: 'select', options: ['No current alcohol - sustained sobriety', 'Active alcohol use - document amount', 'AUD - code F10.xx separately'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Hepatic encephalopathy and ascites code separately from cirrhosis - each carries MCC weight.' }
+    ]
+  },
+  {
+    id: 'dementia',
+    title: 'Dementia and Cognitive Disorders',
+    icon: '📋',
+    icd: 'F01-F03 / G30',
+    purpose: 'Alzheimer requires two codes - G30.x for disease and F02.8x for dementia. Behavioral disturbances carry additional HCC weight and must be documented explicitly.',
+    fields: [
+      { label: 'Dementia Type', type: 'select', options: ['Alzheimer late onset without behavioral disturbance (G30.1 + F02.80)', 'Alzheimer late onset with behavioral disturbance (G30.1 + F02.81)', 'Alzheimer early onset (G30.0 + F02.80)', 'Vascular dementia without behavioral disturbance (F01.50)', 'Vascular dementia with behavioral disturbance (F01.51)', 'Lewy body dementia (G31.83 + F02.80)', 'Frontotemporal dementia (G31.09 + F02.80)', 'Unspecified dementia (F03.90)', 'Mild cognitive impairment (G31.84)'] },
+      { label: 'Severity', type: 'select', options: ['Mild - independent in ADLs with some difficulty', 'Moderate - requires assistance with ADLs', 'Severe - fully dependent'] },
+      { label: 'Behavioral Disturbances', type: 'select', options: ['None', 'Agitation or aggression - add behavioral disturbance code', 'Wandering (Z91.83) - add separately', 'Psychotic features', 'Depression in dementia (F06.31) - code separately'] },
+      { label: 'Current Medications', type: 'text', placeholder: 'e.g. Donepezil 10mg QD, Memantine 10mg BID' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Alzheimer requires two codes. Behavioral disturbances carry additional HCC weight and must be documented explicitly.' }
+    ]
+  },
+  {
+    id: 'alcohol_withdrawal',
+    title: 'Alcohol Withdrawal',
+    icon: '📋',
+    icd: 'F10.230-F10.239',
+    purpose: 'Delirium tremens is an MCC and must be explicitly documented. Document CIWA scores. Code underlying alcohol use disorder separately from the withdrawal episode.',
+    fields: [
+      { label: 'Withdrawal Severity', type: 'select', options: ['Alcohol withdrawal uncomplicated (F10.230)', 'Alcohol withdrawal with seizures (F10.231)', 'Alcohol withdrawal delirium - delirium tremens (F10.231) - MCC', 'Alcohol withdrawal with perceptual disturbances (F10.232)'] },
+      { label: 'CIWA-Ar Score', type: 'text', placeholder: 'e.g. CIWA score 18 on admission, 6 at 24 hours after treatment' },
+      { label: 'Last Drink', type: 'text', placeholder: 'e.g. Last alcohol 36 hours ago, daily drinker x10 years, 1 pint vodka per day' },
+      { label: 'AUD Severity', type: 'select', options: ['AUD mild (F10.10) - code separately', 'AUD moderate (F10.20) - code separately', 'AUD severe (F10.20) - code separately'] },
+      { label: 'Wernicke Risk', type: 'select', options: ['Thiamine administered prophylactically', 'Wernicke encephalopathy present - code E51.2 separately', 'Not indicated'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. CIWA protocol lorazepam PRN, thiamine 100mg TID, folate, multivitamin' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Delirium tremens is an MCC - must be explicitly stated. Code AUD separately from withdrawal.' }
+    ]
+  },
+  {
+    id: 'epilepsy',
+    title: 'Epilepsy and Seizures',
+    icon: '📋',
+    icd: 'G40.xx',
+    purpose: 'Type and intractable versus not intractable required. Status epilepticus is an MCC. Distinguish provoked seizure from true epilepsy diagnosis.',
+    fields: [
+      { label: 'Seizure Type', type: 'select', options: ['Generalized tonic-clonic not intractable (G40.309)', 'Generalized tonic-clonic intractable (G40.319)', 'Focal onset impaired awareness not intractable (G40.109)', 'Focal onset impaired awareness intractable (G40.119)', 'Absence epilepsy (G40.A09)', 'Status epilepticus generalized (G41.0) - MCC', 'Single unprovoked seizure (R56.9)', 'Febrile seizure simple (R56.00)'] },
+      { label: 'Intractable Status', type: 'select', options: ['Not intractable - well controlled', 'Intractable - poorly controlled despite treatment', 'Pharmacoresistant - failed 2 or more AEDs'] },
+      { label: 'Precipitating Factors', type: 'text', placeholder: 'e.g. Medication non-compliance, sleep deprivation, alcohol withdrawal, metabolic' },
+      { label: 'AED Medications', type: 'text', placeholder: 'e.g. Levetiracetam 1000mg BID, Lamotrigine 200mg BID - levels therapeutic' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document intractable status. Status epilepticus is an MCC. Distinguish provoked from unprovoked seizure.' }
+    ]
+  },
+  {
+    id: 'hip_fracture',
+    title: 'Hip Fracture',
+    icon: '📋',
+    icd: 'S72.xx',
+    purpose: 'Laterality and fracture type required. Osteoporotic fractures use M80 pathologic fracture code not S72 traumatic code. Document surgical plan and DVT prophylaxis.',
+    fields: [
+      { label: 'Fracture Type', type: 'select', options: ['Femoral neck right displaced (S72.001A)', 'Femoral neck left displaced (S72.002A)', 'Intertrochanteric right (S72.141A)', 'Intertrochanteric left (S72.142A)', 'Subtrochanteric right (S72.21xA)', 'Pathologic from osteoporosis (M80.051A)', 'Pathologic from metastatic disease (M84.551A)'] },
+      { label: 'Mechanism', type: 'select', options: ['Fall from standing - low energy', 'Higher energy trauma', 'Pathologic - minimal trauma', 'Insufficiency fracture'] },
+      { label: 'Surgical Treatment', type: 'select', options: ['ORIF', 'Hemiarthroplasty', 'Total hip arthroplasty', 'Non-operative - document reason', 'Pre-operative planning'] },
+      { label: 'Osteoporosis', type: 'select', options: ['Osteoporosis present - use M80 pathologic code', 'Osteoporosis without pathologic fracture (M81.0)', 'DEXA results documented', 'No known osteoporosis'] },
+      { label: 'DVT Prophylaxis', type: 'text', placeholder: 'e.g. Enoxaparin 40mg SQ QD, SCDs, early mobilization' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Osteoporotic fracture uses M80 not S72. Document laterality and surgical plan.' }
+    ]
+  },
+  {
+    id: 'postop_complications',
+    title: 'Post-Operative Complications',
+    icon: '📋',
+    icd: 'T81.xx',
+    purpose: 'Complications use T81 category. Distinguish from expected post-op course. Document whether present on admission or developed post-operatively. SSI depth determines code.',
+    fields: [
+      { label: 'Complication Type', type: 'select', options: ['SSI - superficial (T81.41xA)', 'SSI - deep incisional (T81.42xA)', 'SSI - organ space (T81.43xA)', 'Post-op ileus (K91.89)', 'Anastomotic leak (K91.89)', 'Post-op hemorrhage (T81.010A)', 'Wound dehiscence (T81.30xA)', 'Post-op pneumonia (J95.89)', 'Post-op respiratory failure (J95.821)', 'Acute post-hemorrhagic anemia (D62)', 'Post-op DVT or PE', 'Urinary retention (R33.9)'] },
+      { label: 'Procedure Performed', type: 'text', placeholder: 'e.g. Laparoscopic colectomy POD 4, total knee replacement POD 2' },
+      { label: 'Post-Op Day', type: 'text', placeholder: 'e.g. Post-operative day 3' },
+      { label: 'Wound Assessment', type: 'text', placeholder: 'e.g. 3cm erythema with purulent drainage - culture obtained' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Wound opened and packed, IV antibiotics, wound vac applied' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Use T81 category for post-op complications. SSI depth determines code. Document whether POA.' }
+    ]
+  },
+  {
+    id: 'substance_use',
+    title: 'Substance Use Disorders',
+    icon: '📋',
+    icd: 'F11-F19',
+    purpose: 'Document substance, severity, and remission status. OUD on MAT requires Z79.891 in addition to F11.20. Overdose requires external cause T40 code. Withdrawal codes separately.',
+    fields: [
+      { label: 'Primary Substance', type: 'select', options: ['Opioid use disorder mild (F11.10)', 'Opioid use disorder moderate to severe (F11.20)', 'Opioid use disorder in remission (F11.21)', 'OUD on buprenorphine MAT (F11.20 + Z79.891)', 'OUD on methadone MAT (F11.20 + Z79.891)', 'Cocaine use disorder (F14.10)', 'Stimulant use disorder (F15.10)', 'Cannabis use disorder mild (F12.10)', 'Cannabis use disorder moderate to severe (F12.20)', 'Benzodiazepine use disorder (F13.10)', 'Polysubstance - document each'] },
+      { label: 'Current Status', type: 'select', options: ['Active use - document frequency and amount', 'Early remission - less than 12 months', 'Sustained remission - 12 months or greater', 'On MAT compliant', 'On MAT non-compliant'] },
+      { label: 'Overdose', type: 'select', options: ['No overdose', 'Opioid overdose - document substance (T40.xx)', 'Naloxone administered - document dose', 'Multi-substance overdose'] },
+      { label: 'COWS Score', type: 'text', placeholder: 'e.g. COWS score 14 - moderate opioid withdrawal' },
+      { label: 'Treatment Plan', type: 'text', placeholder: 'e.g. Suboxone 16/4mg SL QD, MAT initiated, detox protocol' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'MAT requires Z79.891 in addition to OUD code. Overdose requires T40 external cause code. Withdrawal codes separately.' }
+    ]
+  },
+  {
+    id: 'anemia',
+    title: 'Anemia',
+    icon: '📋',
+    icd: 'D50-D64',
+    purpose: 'Specify type - unspecified D64.9 loses reimbursement. Acute blood loss D62 is distinct from chronic blood loss D50.0. Anemia of chronic disease requires linking to underlying condition.',
+    fields: [
+      { label: 'Anemia Type', type: 'select', options: ['Iron deficiency anemia (D50.9)', 'Iron deficiency from chronic blood loss (D50.0)', 'Acute blood loss anemia (D62) - from acute hemorrhage', 'B12 deficiency anemia (D51.9)', 'Pernicious anemia (D51.0)', 'Folate deficiency anemia (D52.9)', 'Anemia of chronic disease (D63.8) - code underlying cause', 'Hemolytic anemia autoimmune (D59.11)', 'Sickle cell anemia in crisis (D57.00)', 'Aplastic anemia (D61.9)', 'Unspecified anemia (D64.9) - avoid if type determinable'] },
+      { label: 'Hemoglobin and MCV', type: 'text', placeholder: 'e.g. Hgb 7.2, MCV 68 microcytic - iron deficiency pattern' },
+      { label: 'Etiology', type: 'text', placeholder: 'e.g. Iron deficiency from GI blood loss, CKD on EPO, post-chemo marrow suppression' },
+      { label: 'Labs', type: 'text', placeholder: 'e.g. Ferritin 6, TIBC 480, transferrin sat 4%, reticulocyte count 0.8%' },
+      { label: 'Transfusion', type: 'select', options: ['No transfusion', 'Transfused - document threshold and units', 'EPO or iron infusion administered', 'Transfusion declined - informed refusal'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Specify type. Anemia of CKD requires linking codes. Acute blood loss D62 is distinct from chronic blood loss D50.0.' }
+    ]
+  },
+  {
+    id: 'hypothyroidism',
+    title: 'Thyroid Disorders',
+    icon: '📋',
+    icd: 'E00-E07',
+    purpose: 'Post-surgical or post-ablative hypothyroidism uses E89.0 not E03.9. Myxedema coma is an MCC. Thyroid storm is an MCC requiring explicit documentation.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Hypothyroidism unspecified (E03.9)', 'Hashimoto thyroiditis (E06.3)', 'Post-ablative hypothyroidism (E89.0)', 'Post-surgical hypothyroidism (E89.0)', 'Myxedema - severe hypothyroidism (E03.5) - MCC', 'Hyperthyroidism (E05.90)', 'Graves disease (E05.00)', 'Toxic multinodular goiter (E05.20)', 'Thyroid storm (E05.01) - MCC', 'Subclinical hypothyroidism (E02)'] },
+      { label: 'TSH and Thyroid Levels', type: 'text', placeholder: 'e.g. TSH 42 elevated, Free T4 low 0.4 - or TSH 0.02 suppressed, Free T4 3.8' },
+      { label: 'Controlled Status', type: 'select', options: ['Controlled - TSH within target range', 'Uncontrolled - medication adjustment made', 'Newly diagnosed - initiating treatment'] },
+      { label: 'Current Medications', type: 'text', placeholder: 'e.g. Levothyroxine 125mcg QD, Methimazole 20mg BID, RAI completed 2024' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Post-surgical or post-ablative hypothyroidism uses E89.0 not E03.9. Myxedema and thyroid storm are MCCs.' }
+    ]
+  },
+  {
+    id: 'hiv',
+    title: 'HIV and AIDS',
+    icon: '📋',
+    icd: 'B20 / Z21',
+    purpose: 'Symptomatic HIV with AIDS-defining condition uses B20. Asymptomatic uses Z21. All opportunistic infections code separately in addition to B20. Document CD4, viral load, and ART.',
+    fields: [
+      { label: 'HIV Status', type: 'select', options: ['Symptomatic HIV disease - AIDS defining condition (B20)', 'HIV with acute opportunistic infection (B20)', 'Asymptomatic HIV - no AIDS defining illness (Z21)', 'Exposure to HIV - testing ordered (Z20.6)'] },
+      { label: 'CD4 Count', type: 'text', placeholder: 'e.g. CD4 count 180 - below 200 threshold, or CD4 620 - well controlled on ART' },
+      { label: 'Viral Load', type: 'text', placeholder: 'e.g. HIV RNA undetectable on ART, or detectable 45,000 copies/mL - non-adherent' },
+      { label: 'Opportunistic Infections', type: 'text', placeholder: 'e.g. PCP pneumonia, CMV retinitis, cryptococcal meningitis - each coded separately with B20' },
+      { label: 'ART Regimen', type: 'text', placeholder: 'e.g. Biktarvy 1 tablet daily - adherent, or not on ART - barriers documented' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'B20 when any AIDS-defining condition present. Z21 for asymptomatic only. All opportunistic infections coded separately in addition to B20.' }
+    ]
+  },
+  {
+    id: 'obesity',
+    title: 'Obesity and BMI',
+    icon: '📋',
+    icd: 'E66.xx + Z68.xx',
+    purpose: 'Obesity must be explicitly stated as a diagnosis - BMI alone does not allow E66 code assignment. Morbid obesity and obesity hypoventilation syndrome are MCCs.',
+    fields: [
+      { label: 'Obesity Diagnosis', type: 'select', options: ['Obesity class I (E66.09) - BMI 30-34.9', 'Obesity class II (E66.09) - BMI 35-39.9', 'Morbid obesity class III (E66.01) - BMI 40 or greater - MCC', 'Morbid obesity with OHS (E66.2) - MCC', 'Overweight (E66.09) - BMI 25-29.9', 'Drug-induced obesity (E66.1) - document causative medication'] },
+      { label: 'BMI', type: 'text', placeholder: 'e.g. BMI 42.3 kg/m2 - morbid obesity class III' },
+      { label: 'Obesity-Related Comorbidities', type: 'text', placeholder: 'e.g. Type 2 diabetes, hypertension, OSA, GERD, osteoarthritis' },
+      { label: 'Sleep Apnea', type: 'select', options: ['No sleep apnea', 'OSA on CPAP (G47.33)', 'OSA not on CPAP - document reason', 'OHS (E66.2) - explicit documentation required'] },
+      { label: 'Counseling', type: 'select', options: ['Diet and exercise counseling provided', 'Referral to weight management', 'Bariatric surgery referral', 'Not addressed - document reason'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Obesity must be explicitly stated. BMI alone insufficient for E66 code. Morbid obesity and OHS are MCCs.' }
+    ]
+  },
+  {
+    id: 'cancer',
+    title: 'Cancer - Active and History',
+    icon: '📋',
+    icd: 'C00-C99 / Z85.x',
+    purpose: 'Active cancer uses C codes. History after completed treatment uses Z85. Metastatic cancer requires coding both primary and all metastatic sites separately.',
+    fields: [
+      { label: 'Cancer Status', type: 'select', options: ['Active cancer - under treatment - use C code', 'Active cancer - monitoring only - use C code', 'Cancer in remission - document complete or partial', 'History of cancer - treatment completed - use Z85', 'Metastatic - code primary and all metastatic sites'] },
+      { label: 'Primary Site', type: 'text', placeholder: 'e.g. Right breast invasive ductal carcinoma, sigmoid colon adenocarcinoma' },
+      { label: 'Stage', type: 'text', placeholder: 'e.g. Stage IIIA, T2N1M0, locally advanced, metastatic' },
+      { label: 'Metastatic Sites', type: 'text', placeholder: 'e.g. Liver metastases, bone metastases lumbar spine - each site coded separately' },
+      { label: 'Current Treatment', type: 'select', options: ['Active chemotherapy - document regimen', 'Active radiation', 'Active immunotherapy or targeted therapy', 'Surgical treatment planned', 'Hormonal therapy', 'Active surveillance', 'Palliative care - no curative intent', 'Treatment completed - surveillance'] },
+      { label: 'Treatment Agent', type: 'text', placeholder: 'e.g. Carboplatin + Paclitaxel cycle 3 of 6, Keytruda 200mg q3 weeks' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Active cancer requires C codes. Use Z85 only after treatment complete and disease-free. Code all metastatic sites separately.' }
+    ]
+  },
+  {
+    id: 'coagulopathy',
+    title: 'Coagulation Disorders',
+    icon: '📋',
+    icd: 'D65-D69',
+    purpose: 'DIC is a major MCC requiring explicit documentation. HIT requires T45 external cause code. Thrombocytopenia type must specify immune versus drug-induced.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['DIC (D65) - MCC - must be explicitly stated', 'ITP - immune thrombocytopenia (D69.3)', 'Drug-induced thrombocytopenia (D69.59) - document drug', 'HIT - heparin-induced (T45.515A)', 'TTP (M31.19)', 'HUS (D59.31)', 'Acquired coagulation factor deficiency (D68.4)', 'Thrombocytopenia unspecified (D69.6) - avoid if type known'] },
+      { label: 'Platelet Count', type: 'text', placeholder: 'e.g. Platelets 28K, nadir 12K, recovering to 68K with treatment' },
+      { label: 'Coagulation Studies', type: 'text', placeholder: 'e.g. PT 22, INR 2.1, PTT 68, fibrinogen 82, D-dimer 12.4' },
+      { label: 'Causative Condition', type: 'text', placeholder: 'e.g. DIC secondary to sepsis, HIT from heparin day 5, ITP no secondary cause' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. FFP, cryoprecipitate, heparin held, argatroban for HIT' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'DIC must be explicitly stated - it is an MCC. HIT requires T45 code. Document causative medication for drug-induced conditions.' }
+    ]
+  },
+  {
+    id: 'uti',
+    title: 'UTI and Urosepsis',
+    icon: '📋',
+    icd: 'N39.0 / A41.9',
+    purpose: 'Urosepsis is not a standalone ICD-10 code. When sepsis from UTI, code A41.x as principal plus UTI additional. CAUTI uses T83.511A plus N39.0. Document organism.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['UTI uncomplicated (N39.0)', 'Acute cystitis (N30.00)', 'Acute pyelonephritis (N10)', 'Urosepsis - code as Sepsis A41.x + UTI - NOT standalone', 'CAUTI (T83.511A + N39.0)', 'Recurrent UTI (N39.0)'] },
+      { label: 'Organism', type: 'text', placeholder: 'e.g. E. coli pan-sensitive, Klebsiella ESBL, MRSA, culture pending' },
+      { label: 'Systemic Signs', type: 'select', options: ['No systemic signs - UTI only', 'Systemic signs present - evaluate for sepsis criteria', 'Sepsis criteria met - code A41.x as principal'] },
+      { label: 'Catheter', type: 'select', options: ['No urinary catheter', 'Foley in place - document indication and duration', 'Catheter removed as part of treatment'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Ceftriaxone IV, transitioned to oral per sensitivities, catheter removed' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Urosepsis is not an ICD-10 code. Code sepsis A41.x as principal when systemic criteria met. CAUTI codes T83.511A separately.' }
+    ]
+  },
+  {
+    id: 'cellulitis',
+    title: 'Cellulitis and Skin Infections',
+    icon: '📋',
+    icd: 'L03.xx',
+    purpose: 'Site and laterality required. Necrotizing fasciitis is a separate life-threatening condition coded M72.6. Diabetic skin complications require linking to diabetes code.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Cellulitis right lower leg (L03.115)', 'Cellulitis left lower leg (L03.116)', 'Cellulitis right foot (L03.115)', 'Cellulitis left foot (L03.116)', 'Cellulitis right upper extremity (L03.111)', 'Cellulitis left upper extremity (L03.112)', 'Cellulitis face (L03.211)', 'Abscess - specify site', 'Necrotizing fasciitis (M72.6) - surgical emergency', 'Diabetic cellulitis - link to diabetes code'] },
+      { label: 'Extent', type: 'text', placeholder: 'e.g. Erythema 8x12cm right lower leg, marked borders, streaking present' },
+      { label: 'Organism', type: 'text', placeholder: 'e.g. Wound culture MRSA, Group A Strep rapid positive, culture pending' },
+      { label: 'Necrotizing Fasciitis Excluded', type: 'select', options: ['No evidence - clinical assessment documented', 'Necrotizing fasciitis confirmed - code M72.6 - surgical emergency', 'Imaging obtained to rule out deep infection'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Vancomycin IV, wound marked for progression monitoring, cultures obtained' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document site and laterality. Necrotizing fasciitis is M72.6 - urgent surgical consultation. Diabetic cellulitis requires explicit diabetes link.' }
+    ]
+  },
+  {
+    id: 'pregnancy',
+    title: 'Obstetric Complications',
+    icon: '📋',
+    icd: 'O09-O99',
+    purpose: 'Trimester required with all obstetric codes. Severe pre-eclampsia and eclampsia are MCCs. Gestational versus pre-existing conditions code differently.',
+    fields: [
+      { label: 'Gestational Age', type: 'text', placeholder: 'e.g. 34 weeks 2 days, EDC 08/15/2026' },
+      { label: 'Primary Complication', type: 'select', options: ['Gestational hypertension (O13.x)', 'Pre-eclampsia mild to moderate (O14.0x)', 'Pre-eclampsia severe (O14.1x) - MCC', 'HELLP syndrome (O14.2x) - MCC', 'Eclampsia (O15.0x) - MCC', 'Gestational diabetes diet controlled (O24.410)', 'Gestational diabetes insulin (O24.414)', 'Pre-existing diabetes in pregnancy (O24.x)', 'Placenta previa (O44.x)', 'Placental abruption (O45.x)', 'Preterm labor (O60.x)', 'PPROM (O42.x)'] },
+      { label: 'Trimester', type: 'select', options: ['First trimester - less than 14 weeks', 'Second trimester - 14 to 27 weeks', 'Third trimester - 28 weeks or greater', 'Postpartum - within 6 weeks'] },
+      { label: 'Blood Pressure', type: 'text', placeholder: 'e.g. BP 158/104 severe range, or BP 142/92 mild range' },
+      { label: 'Fetal Status', type: 'text', placeholder: 'e.g. NST reactive, BPP 8/8, growth 35th percentile' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Severe pre-eclampsia and eclampsia are MCCs. Document trimester with all obstetric codes.' }
+    ]
+  },
+  {
+    id: 'newborn',
+    title: 'Newborn and Neonatal Conditions',
+    icon: '📋',
+    icd: 'P00-P96',
+    purpose: 'Birth weight and gestational age drive DRG significantly. Extreme prematurity and VLBW are MCCs. Always use P codes for neonatal conditions. Document APGAR scores.',
+    fields: [
+      { label: 'Birth Weight', type: 'text', placeholder: 'e.g. 1820 grams - VLBW, or 3450 grams - normal birth weight' },
+      { label: 'Gestational Age', type: 'text', placeholder: 'e.g. 32 weeks 4 days - preterm, or 39 weeks - full term' },
+      { label: 'Prematurity', type: 'select', options: ['Full term 37 weeks or greater', 'Late preterm 34-36 weeks (P07.39)', 'Moderate preterm 32-33 weeks (P07.38)', 'Very preterm 28-31 weeks (P07.37)', 'Extreme prematurity under 28 weeks (P07.2x) - MCC', 'ELBW under 1000g (P07.0x) - MCC', 'VLBW 1000-1499g (P07.1x) - MCC'] },
+      { label: 'Primary Neonatal Condition', type: 'select', options: ['RDS (P22.0)', 'Transient tachypnea (P22.1)', 'Neonatal sepsis (P36.x)', 'Hyperbilirubinemia (P59.9)', 'Hypoglycemia (P70.4)', 'Severe birth asphyxia (P21.0) - MCC', 'NEC (P77.x) - MCC', 'IVH (P52.x)', 'Neonatal abstinence syndrome (P96.1)'] },
+      { label: 'APGAR Scores', type: 'text', placeholder: 'e.g. APGAR 7 at 1 min, 9 at 5 min. Or APGAR 3 at 1 min - resuscitation required' },
+      { label: 'Interventions', type: 'text', placeholder: 'e.g. Surfactant administered, CPAP, phototherapy, TPN, central line placed' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Always document birth weight and gestational age. Extreme prematurity and VLBW are MCCs. Use P codes for all neonatal conditions.' }
+    ]
+  },
+  {
+    id: 'pain_management',
+    title: 'Pain Management',
+    icon: '📋',
+    icd: 'G89.xx',
+    purpose: 'G89 codes supplement underlying cause - always code underlying diagnosis first. Chronic pain syndrome, neoplasm-related pain, and post-procedural pain code specifically.',
+    fields: [
+      { label: 'Pain Type', type: 'select', options: ['Acute pain - document underlying cause', 'Chronic pain (G89.29) - over 3 months', 'Chronic pain syndrome (G89.4)', 'Neoplasm-related pain (G89.3) - cancer pain', 'Post-procedural pain (G89.18)', 'Post-thoracotomy pain syndrome (G89.22)', 'Central pain syndrome (G89.0)'] },
+      { label: 'Underlying Cause', type: 'text', placeholder: 'e.g. Lumbar disc herniation, metastatic bone disease, post-herpetic neuralgia' },
+      { label: 'Pain Scale', type: 'text', placeholder: 'e.g. 7/10 at rest, 9/10 with movement, functional limitation documented' },
+      { label: 'Current Regimen', type: 'text', placeholder: 'e.g. Oxycodone 10mg q6h, Gabapentin 300mg TID, topical lidocaine, PT referral' },
+      { label: 'Opioid Documentation', type: 'select', options: ['Opioids prescribed - PDMP checked', 'Risk stratification completed', 'Opioid agreement signed', 'Not prescribing - reasoning documented'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'G89 codes are supplementary - code underlying cause first. Document functional impact on daily activities and work capacity.' }
+    ]
+  },
+  {
+    id: 'wound_care',
+    title: 'Wounds and Ulcers',
+    icon: '📋',
+    icd: 'L97-L99',
+    purpose: 'Diabetic foot ulcers require explicit link to diabetes code. Venous and arterial ulcers code differently. Osteomyelitis codes separately when bone involvement confirmed.',
+    fields: [
+      { label: 'Wound Type', type: 'select', options: ['Diabetic foot ulcer right (E11.621)', 'Diabetic foot ulcer left (E11.622)', 'Diabetic foot with gangrene (E11.52)', 'Venous stasis ulcer right (I87.311)', 'Venous stasis ulcer left (I87.312)', 'Arterial ulcer - peripheral vascular disease', 'Neuropathic ulcer - document underlying neuropathy', 'Surgical wound dehiscence', 'Non-healing surgical wound'] },
+      { label: 'Site', type: 'text', placeholder: 'e.g. Right plantar foot, left medial malleolus, right heel' },
+      { label: 'Dimensions', type: 'text', placeholder: 'e.g. 2.5cm x 1.8cm x 0.3cm depth' },
+      { label: 'Depth', type: 'select', options: ['Superficial - epidermis only', 'Partial thickness - into dermis', 'Full thickness - into subcutaneous tissue', 'Full thickness - into muscle or bone', 'Unstageable'] },
+      { label: 'Infection', type: 'select', options: ['No infection', 'Local cellulitis', 'Moderate infection extending over 2cm', 'Severe infection with systemic signs', 'Osteomyelitis confirmed (M86.x) - code separately'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Collagen dressing, offloading boot, wound vac applied, surgical debridement' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Diabetic ulcers require explicit diabetes link. Document dimensions and depth at every encounter. Osteomyelitis requires separate documentation and imaging confirmation.' }
+    ]
+  },
+  {
+    id: 'cad',
+    title: 'Coronary Artery Disease',
+    icon: '📋',
+    icd: 'I25.xx',
+    purpose: 'CAD with angina or prior CABG carries higher HCC weight than unspecified I25.10. Document native vessel versus bypass graft and all prior interventions.',
+    fields: [
+      { label: 'CAD Type', type: 'select', options: ['CAD native coronary without angina (I25.10)', 'CAD native coronary with unstable angina (I25.110)', 'CAD native coronary with stable angina (I25.111)', 'CAD with prior CABG - native vessels (I25.810)', 'CAD of bypass graft - autologous vein (I25.810)', 'CAD with prior PCI - stent in place (I25.700)'] },
+      { label: 'Angina Status', type: 'select', options: ['No current angina', 'Stable angina - predictable exertional', 'Unstable angina - new onset or worsening', 'Variant angina - Prinzmetal', 'Microvascular angina'] },
+      { label: 'Prior Interventions', type: 'text', placeholder: 'e.g. CABG x3 in 2018, DES to LAD 2022, prior MI 2019' },
+      { label: 'Current EF', type: 'text', placeholder: 'e.g. EF 45% on echo 2025, no RWMA' },
+      { label: 'Current Medications', type: 'text', placeholder: 'e.g. Aspirin 81mg, Plavix 75mg, Atorvastatin 80mg, Metoprolol 25mg BID' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'CAD with angina or prior CABG carries higher HCC weight than I25.10 unspecified. Document all prior interventions.' }
+    ]
+  },
+  {
+    id: 'hypertension',
+    title: 'Hypertension',
+    icon: '📋',
+    icd: 'I10-I16',
+    purpose: 'Hypertension with CKD uses I12 combination code. Hypertension with heart failure uses I11. These combination codes are required by ICD-10 guidelines - do not code separately.',
+    fields: [
+      { label: 'Hypertension Type', type: 'select', options: ['Essential hypertension controlled (I10)', 'Essential hypertension uncontrolled (I10)', 'Hypertensive heart disease without HF (I11.9)', 'Hypertensive heart disease with HF (I11.0) - code CHF type separately', 'Hypertensive CKD Stage 1-4 (I12.9)', 'Hypertensive CKD Stage 5 or ESRD (I12.0)', 'Hypertensive heart and CKD (I13.xx)', 'Hypertensive urgency (I16.0)', 'Hypertensive emergency (I16.1)'] },
+      { label: 'Current BP', type: 'text', placeholder: 'e.g. 162/98 today, home readings averaging 148/90' },
+      { label: 'At Goal', type: 'select', options: ['At goal - less than 130/80', 'Not at goal - medication adjustment made', 'Not at goal - patient non-compliant', 'White coat hypertension - ambulatory monitoring'] },
+      { label: 'Complications', type: 'select', options: ['None', 'LVH on echo', 'CKD - stage documented separately', 'Retinopathy', 'End-organ damage - specify in notes'] },
+      { label: 'Antihypertensives', type: 'text', placeholder: 'e.g. Lisinopril 20mg QD, Amlodipine 10mg QD, HCTZ 25mg QD' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Hypertension with CKD uses I12 - do not code separately. Hypertension with HF uses I11. Document controlled versus uncontrolled.' }
+    ]
+  },
+  {
+    id: 'stroke',
+    title: 'Stroke and TIA',
+    icon: '📋',
+    icd: 'I60-I69',
+    purpose: 'Stroke type, vessel, and laterality required. History of stroke with residual deficits uses I69 category. TIA must be distinguished from completed stroke. Document NIHSS and all residual deficits.',
+    fields: [
+      { label: 'Stroke Type', type: 'select', options: ['Acute ischemic stroke - cardioembolic (I63.4x)', 'Acute ischemic stroke - large vessel (I63.3x)', 'Acute ischemic stroke - lacunar (I63.81)', 'Acute ischemic stroke - cryptogenic', 'Intracerebral hemorrhage (I61.x)', 'Subarachnoid hemorrhage (I60.x)', 'TIA (G45.9) - symptoms resolved within 24 hours', 'History of stroke with residual deficits (I69.x)', 'History of TIA (Z86.73)'] },
+      { label: 'Vessel and Territory', type: 'text', placeholder: 'e.g. Left MCA territory, right posterior circulation, basilar artery' },
+      { label: 'NIHSS Score', type: 'text', placeholder: 'e.g. NIHSS 8 at presentation, 4 at 24 hours' },
+      { label: 'Treatment', type: 'select', options: ['IV tPA - door to needle time documented', 'Mechanical thrombectomy', 'Both tPA and thrombectomy', 'Conservative management - ineligibility documented', 'Hemorrhagic stroke - surgical consultation'] },
+      { label: 'Residual Deficits', type: 'text', placeholder: 'e.g. Right-sided hemiplegia, expressive aphasia, right facial droop, dysphagia' },
+      { label: 'AFib Present', type: 'select', options: ['No AFib', 'Known AFib - anticoagulation status documented', 'New AFib detected - cardiology consulted'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document type, vessel, laterality, and treatment. Residual deficits code under I69.x. History of stroke carries HCC weight only when residual deficits present.' }
+    ]
+  },
+  {
+    id: 'pulmonary_htn',
+    title: 'Pulmonary Hypertension',
+    icon: '📋',
+    icd: 'I27.xx',
+    purpose: 'Pulmonary arterial hypertension must specify WHO group and functional class. Group 1 PAH versus Group 2 from left heart disease versus Group 3 from lung disease code differently. Document WHO functional class as it reflects severity and affects risk adjustment.',
+    fields: [
+      { label: 'WHO Group', type: 'select', options: ['Group 1 PAH - pulmonary arterial hypertension (I27.0)', 'Group 2 - pulmonary hypertension from left heart disease (I27.22)', 'Group 3 - pulmonary hypertension from lung disease (I27.23)', 'Group 4 - CTEPH - chronic thromboembolic (I27.24)', 'Group 5 - unclear or multifactorial (I27.29)', 'Unspecified pulmonary hypertension (I27.20)'] },
+      { label: 'WHO Functional Class', type: 'select', options: ['Class I - no limitation of physical activity', 'Class II - slight limitation with ordinary activity', 'Class III - marked limitation with less than ordinary activity', 'Class IV - unable to carry out any activity without symptoms'] },
+      { label: 'Right Heart Catheterization Data', type: 'text', placeholder: 'e.g. mPAP 42 mmHg, PCWP 12 mmHg, PVR 6.2 Wood units, CO 3.8 L/min' },
+      { label: 'Current PAH Medications', type: 'text', placeholder: 'e.g. Sildenafil 20mg TID, Ambrisentan 10mg QD, Treprostinil SC infusion' },
+      { label: 'RV Function', type: 'text', placeholder: 'e.g. RV dilation with moderate dysfunction on echo, TAPSE 14mm, RAP estimated 15 mmHg' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document WHO group explicitly - group determines both prognosis and treatment eligibility. Document RV function as RV failure codes separately.' }
+    ]
+  },
+  {
+    id: 'cardiomyopathy',
+    title: 'Cardiomyopathy',
+    icon: '📋',
+    icd: 'I42.xx',
+    purpose: 'Cardiomyopathy type must be specified. Dilated, hypertrophic, restrictive, and peripartum cardiomyopathy code differently. Ischemic cardiomyopathy from CAD codes under I25 not I42. Document EF and functional class.',
+    fields: [
+      { label: 'Cardiomyopathy Type', type: 'select', options: ['Dilated cardiomyopathy (I42.0)', 'Hypertrophic obstructive cardiomyopathy (I42.1)', 'Hypertrophic non-obstructive cardiomyopathy (I42.2)', 'Endomyocardial fibrosis (I42.3)', 'Endocardial fibroelastosis (I42.4)', 'Restrictive cardiomyopathy (I42.5)', 'Alcoholic cardiomyopathy (I42.6) - document alcohol use separately', 'Peripartum cardiomyopathy (O90.3) - obstetric code', 'Drug-induced cardiomyopathy (I42.7) - document causative agent', 'Ischemic cardiomyopathy from CAD - code I25.5 not I42'] },
+      { label: 'Ejection Fraction', type: 'text', placeholder: 'e.g. EF 25% severely reduced, EF 45% borderline reduced, EF 65% preserved' },
+      { label: 'NYHA Class', type: 'select', options: ['Class I - no symptoms with ordinary activity', 'Class II - slight limitation with ordinary activity', 'Class III - marked limitation', 'Class IV - symptoms at rest'] },
+      { label: 'Etiology', type: 'text', placeholder: 'e.g. Idiopathic, prior myocarditis, anthracycline toxicity post-chemotherapy, familial mutation confirmed' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Ischemic cardiomyopathy codes as I25.5 not I42. Document type explicitly. EF and NYHA class guide treatment and quality measures.' }
+    ]
+  },
+  {
+    id: 'peripheral_vascular',
+    title: 'Peripheral Vascular Disease',
+    icon: '📋',
+    icd: 'I70-I74',
+    purpose: 'PVD must specify type and severity. Atherosclerosis of native vessels versus bypass grafts code differently. Critical limb ischemia is a more severe classification affecting DRG. Document ABI values and revascularization status.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Atherosclerosis of native arteries of extremities without gangrene (I70.209)', 'Atherosclerosis with intermittent claudication (I70.219)', 'Atherosclerosis with rest pain (I70.229) - critical limb ischemia', 'Atherosclerosis with ulceration (I70.23x) - critical limb ischemia', 'Atherosclerosis with gangrene (I70.26x) - critical limb ischemia', 'Atherosclerosis of bypass graft (I70.30x)', 'Diabetic peripheral angiopathy (E11.51) - code with diabetes', 'Raynaud phenomenon (I73.00)', 'Thromboangiitis obliterans - Buerger disease (I73.1)'] },
+      { label: 'ABI Value', type: 'text', placeholder: 'e.g. ABI right 0.62, ABI left 0.78 - moderate peripheral arterial disease' },
+      { label: 'Severity', type: 'select', options: ['Asymptomatic', 'Claudication - pain with exertion', 'Rest pain - pain at rest critical limb ischemia', 'Tissue loss - ulceration or gangrene - critical limb ischemia'] },
+      { label: 'Revascularization', type: 'select', options: ['No revascularization - conservative management', 'PTA - percutaneous transluminal angioplasty performed', 'Bypass graft - document type and location', 'Amputation performed or planned', 'Vascular surgery consulted'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Critical limb ischemia includes rest pain, ulceration, and gangrene - higher severity codes. Diabetic PVD links to diabetes code E11.51. Document ABI values.' }
+    ]
+  },
+  {
+    id: 'valve_disease',
+    title: 'Valvular Heart Disease',
+    icon: '📋',
+    icd: 'I34-I38',
+    purpose: 'Valve disease must specify valve, type, and severity. Rheumatic origin codes differently from non-rheumatic. Aortic stenosis severity classification affects surgical planning and DRG. Document echocardiographic findings.',
+    fields: [
+      { label: 'Valve and Condition', type: 'select', options: ['Non-rheumatic aortic valve stenosis (I35.0)', 'Non-rheumatic aortic valve insufficiency (I35.1)', 'Non-rheumatic aortic valve stenosis with insufficiency (I35.2)', 'Non-rheumatic mitral valve prolapse (I34.1)', 'Non-rheumatic mitral valve insufficiency (I34.0)', 'Mitral valve stenosis (I05.0) - rheumatic origin', 'Aortic valve stenosis rheumatic (I06.0)', 'Tricuspid valve disorder (I36.x)', 'Pulmonary valve disorder (I37.x)', 'Prosthetic valve dysfunction - code T82.xx'] },
+      { label: 'Severity', type: 'select', options: ['Mild - serial monitoring', 'Moderate - surveillance and consideration of intervention', 'Severe - symptom onset or reduced EF - intervention indicated', 'Critical - emergency intervention required'] },
+      { label: 'Echocardiographic Data', type: 'text', placeholder: 'e.g. AVA 0.8 cm2 severe AS, peak gradient 72 mmHg, mean gradient 48 mmHg, EF 55%' },
+      { label: 'Symptoms', type: 'select', options: ['Asymptomatic', 'Angina', 'Syncope or near-syncope', 'Heart failure symptoms - dyspnea on exertion', 'Classic triad of severe AS present'] },
+      { label: 'Intervention', type: 'select', options: ['Medical management - serial surveillance', 'TAVR - transcatheter aortic valve replacement', 'SAVR - surgical aortic valve replacement', 'MitraClip or TEER - mitral valve repair', 'Open surgical repair or replacement', 'Not a candidate for intervention - document reason'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Rheumatic origin uses I05-I09 codes not I34-I37. Prosthetic valve dysfunction uses T82. Document severity grading explicitly.' }
+    ]
+  },
+  {
+    id: 'aortic_disease',
+    title: 'Aortic Aneurysm and Dissection',
+    icon: '📋',
+    icd: 'I71.xx',
+    purpose: 'Aortic aneurysm type and location must be documented. Thoracic versus abdominal carries different DRG weight. Dissection is a surgical emergency with MCC status. Document size and whether rupture or dissection present.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Thoracic aortic aneurysm without rupture (I71.2)', 'Thoracic aortic aneurysm with rupture (I71.1) - MCC', 'Abdominal aortic aneurysm without rupture (I71.4)', 'Abdominal aortic aneurysm with rupture (I71.3) - MCC', 'Thoracoabdominal aortic aneurysm without rupture (I71.6)', 'Aortic dissection - Type A - ascending (I71.01)', 'Aortic dissection - Type B - descending (I71.02)', 'Aortic dissection unspecified (I71.00)'] },
+      { label: 'Size', type: 'text', placeholder: 'e.g. Infrarenal AAA 5.4 cm on CT, ascending aorta 4.8 cm on echo' },
+      { label: 'Intervention', type: 'select', options: ['Surveillance - not yet at surgical threshold', 'EVAR - endovascular aneurysm repair', 'Open surgical repair', 'TEVAR - thoracic endovascular aortic repair', 'Emergency surgery - rupture or dissection'] },
+      { label: 'Stanford Classification for Dissection', type: 'select', options: ['Not applicable - aneurysm not dissection', 'Type A - involves ascending aorta - surgical emergency', 'Type B - descending only - medical management vs endovascular'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Rupture and dissection are MCCs. Document size at each encounter for AAA surveillance. Type A dissection is a surgical emergency.' }
+    ]
+  },
+  {
+    id: 'pe_primary',
+    title: 'Pulmonary Embolism - Detailed',
+    icon: '📋',
+    icd: 'I26.xx',
+    purpose: 'PE severity classification affects DRG significantly. Massive PE with hemodynamic compromise codes I26.02. Subsegmental PE codes differently. PESI score and echocardiographic RV strain determine treatment pathway.',
+    fields: [
+      { label: 'PE Classification', type: 'select', options: ['Low-risk PE - hemodynamically stable - PESI low (I26.09)', 'Intermediate low-risk - RV strain without hemodynamic compromise', 'Intermediate high-risk - RV strain plus positive troponin', 'Massive PE - hemodynamic instability requiring vasopressors (I26.02)', 'Saddle embolus spanning bifurcation (I26.02)', 'Subsegmental PE - isolated (I26.09)', 'Chronic PE - CTEPH (I27.24)', 'Incidental PE - found on imaging for other reason'] },
+      { label: 'PESI Score', type: 'text', placeholder: 'e.g. PESI score 85 - Class III - intermediate risk, or sPESI 0 - low risk' },
+      { label: 'RV Function on Echo', type: 'text', placeholder: 'e.g. RV dilation with septal bowing, TAPSE 12mm, estimated RVSP 58 mmHg, McConnell sign' },
+      { label: 'Troponin and BNP', type: 'text', placeholder: 'e.g. Troponin I 0.42 elevated, BNP 840 - RV strain markers positive' },
+      { label: 'Anticoagulation', type: 'text', placeholder: 'e.g. IV heparin initiated, transitioning to Apixaban, duration 3 months for provoked' },
+      { label: 'Thrombolysis or Thrombectomy', type: 'select', options: ['No thrombolysis or thrombectomy', 'IV systemic tPA administered - hemodynamically unstable', 'Catheter-directed thrombolysis - CDT', 'Catheter-directed mechanical thrombectomy', 'Surgical embolectomy - massive PE'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document severity classification explicitly. Massive PE is I26.02. Subsegmental PE has different coding and treatment implications. Thrombectomy and tPA have separate procedure codes.' }
+    ]
+  },
+  {
+    id: 'pericarditis',
+    title: 'Pericarditis and Pericardial Disease',
+    icon: '📋',
+    icd: 'I30-I32',
+    purpose: 'Pericarditis must specify acute versus chronic and etiology when known. Cardiac tamponade is an MCC requiring immediate intervention. Constrictive pericarditis codes separately. Document pericardial effusion size and hemodynamic impact.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Acute pericarditis unspecified (I30.9)', 'Idiopathic acute pericarditis (I30.0)', 'Infective pericarditis - bacterial (I30.1) - document organism', 'Viral pericarditis (I30.8) - most common etiology', 'Post-MI pericarditis - Dressler syndrome (I24.1)', 'Uremic pericarditis - from renal failure (I32)', 'Constrictive pericarditis (I31.1)', 'Cardiac tamponade (I31.4) - MCC', 'Pericardial effusion without tamponade (I31.3)'] },
+      { label: 'Pericardial Effusion Size', type: 'select', options: ['No effusion', 'Small - less than 10mm posterior', 'Moderate - 10-20mm', 'Large - greater than 20mm', 'Circumferential - hemodynamically significant'] },
+      { label: 'Hemodynamic Impact', type: 'select', options: ['No hemodynamic compromise', 'Early tamponade physiology - equalization of pressures', 'Tamponade - hypotension tachycardia JVD - emergency pericardiocentesis'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. NSAID plus colchicine 3 months per ESC guidelines, pericardiocentesis performed, pericardiectomy planned' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Cardiac tamponade is an MCC requiring urgent pericardiocentesis. Document effusion size at each encounter. Post-MI pericarditis uses I24.1 not I30.' }
+    ]
+  },
+  {
+    id: 'ms',
+    title: 'Multiple Sclerosis',
+    icon: '📋',
+    icd: 'G35',
+    purpose: 'Multiple sclerosis must specify whether relapsing-remitting, secondary progressive, or primary progressive. Active relapse versus stable codes differently in FY2026. Document functional status and current disease-modifying therapy.',
+    fields: [
+      { label: 'MS Type', type: 'select', options: ['Multiple sclerosis relapsing-remitting (G35)', 'Multiple sclerosis secondary progressive (G35)', 'Multiple sclerosis primary progressive (G35)', 'Multiple sclerosis progressive relapsing (G35)', 'Clinically isolated syndrome - not yet MS'] },
+      { label: 'Current Status', type: 'select', options: ['In remission - stable no active relapse', 'Active relapse - new or worsening symptoms', 'Progressive - gradual worsening without distinct relapses', 'Stable on current DMT'] },
+      { label: 'EDSS Score', type: 'text', placeholder: 'e.g. EDSS 3.5 - moderate disability, ambulatory without aid, or EDSS 6.0 - requires unilateral aid to walk' },
+      { label: 'Current DMT', type: 'text', placeholder: 'e.g. Ocrelizumab 600mg IV q6 months, Natalizumab 300mg IV q4 weeks, Siponimod 2mg QD' },
+      { label: 'Current Relapse Symptoms', type: 'text', placeholder: 'e.g. New right arm weakness and paresthesias, worsening spasticity, visual changes' },
+      { label: 'MRI Findings', type: 'text', placeholder: 'e.g. Multiple periventricular and juxtacortical T2 lesions, new enhancing lesion right frontal on gadolinium' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'FY2026 updated MS codes - document type and activity status. New enhancing lesions on MRI indicate active disease. Document EDSS score for functional classification.' }
+    ]
+  },
+  {
+    id: 'parkinsons',
+    title: 'Parkinsons Disease',
+    icon: '📋',
+    icd: 'G20 / G21.x',
+    purpose: 'Parkinson disease versus secondary parkinsonism code differently. Drug-induced parkinsonism requires documentation of the causative medication. Dysphagia, falls, and dementia are complications with separate codes carrying additional HCC weight.',
+    fields: [
+      { label: 'Type', type: 'select', options: ['Parkinson disease idiopathic (G20)', 'Secondary parkinsonism drug-induced (G21.11) - document medication', 'Vascular parkinsonism (G21.4)', 'Parkinsonism in other disease (G21.89)', 'Parkinson disease with dementia (G20 + F02.80)'] },
+      { label: 'Hoehn and Yahr Stage', type: 'select', options: ['Stage 1 - unilateral involvement only', 'Stage 2 - bilateral without balance impairment', 'Stage 3 - mild to moderate bilateral with postural instability', 'Stage 4 - severe disability but able to walk', 'Stage 5 - wheelchair bound or bedridden'] },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Dysphagia modified diet, orthostatic hypotension, constipation, depression, freezing of gait' },
+      { label: 'Fall Risk', type: 'select', options: ['Low fall risk', 'High fall risk - precautions in place', 'Recent fall - document injury if present', 'Recurrent falls - PT evaluation ordered'] },
+      { label: 'Current Medications', type: 'text', placeholder: 'e.g. Carbidopa-Levodopa 25/100mg TID, Ropinirole 4mg TID, DBS device in place' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document all complications separately - dysphagia, dementia, and depression each have additional codes with HCC weight. Drug-induced parkinsonism requires causative medication documentation.' }
+    ]
+  },
+  {
+    id: 'traumatic_brain',
+    title: 'Traumatic Brain Injury',
+    icon: '📋',
+    icd: 'S06.xx',
+    purpose: 'TBI must specify severity, whether loss of consciousness occurred and duration, and laterality of lesion. Glasgow Coma Scale score required. Intracranial hemorrhage codes separately. Document whether sequelae of prior TBI are present.',
+    fields: [
+      { label: 'TBI Type', type: 'select', options: ['Concussion unspecified (S06.0x)', 'Concussion with loss of consciousness under 30 min (S06.0x1A)', 'Diffuse traumatic brain injury (S06.2x)', 'Focal TBI - cerebral laceration or contusion (S06.3x)', 'Epidural hematoma (S06.4x)', 'Traumatic subdural hematoma (S06.5x)', 'Traumatic subarachnoid hemorrhage (S06.6x)', 'Diffuse axonal injury - most severe (S06.2x8)'] },
+      { label: 'Loss of Consciousness Duration', type: 'select', options: ['No loss of consciousness', 'Brief LOC - under 30 minutes - concussion', 'LOC 30 minutes to 24 hours', 'LOC 1 to 24 hours with amnesia', 'LOC greater than 24 hours - severe TBI', 'Unspecified LOC duration'] },
+      { label: 'Glasgow Coma Scale', type: 'text', placeholder: 'e.g. GCS 14 on arrival - mild TBI, or GCS 7 - severe TBI, document each component E3 V4 M6' },
+      { label: 'CT Head Findings', type: 'text', placeholder: 'e.g. No acute intracranial abnormality, or subdural hematoma right frontoparietal 8mm midline shift 4mm' },
+      { label: 'Post-Concussive Symptoms', type: 'text', placeholder: 'e.g. Headache, dizziness, nausea, cognitive slowing, sleep disturbance, photophobia' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document GCS, LOC duration, and imaging findings. Intracranial hemorrhage codes separately as MCC. Post-concussive syndrome codes F07.81 for chronic symptoms.' }
+    ]
+  },
+  {
+    id: 'spinal_cord',
+    title: 'Spinal Cord Injury',
+    icon: '📋',
+    icd: 'S14.x / S24.x / S34.x',
+    purpose: 'Spinal cord injuries require level and completeness documentation. Complete versus incomplete injury affects prognosis and coding. ASIA classification guides neurological assessment. Document complications including neurogenic bladder and autonomic dysreflexia.',
+    fields: [
+      { label: 'Level of Injury', type: 'select', options: ['Cervical - C1-C4 - high tetraplegia', 'Cervical - C5-C8 - lower tetraplegia', 'Thoracic - T1-T6 - paraplegia', 'Thoracic - T7-T12 - paraplegia', 'Lumbar - L1-L5 - paraplegia or cauda equina', 'Sacral - cauda equina syndrome'] },
+      { label: 'Complete or Incomplete', type: 'select', options: ['Complete - no motor or sensory function below level of injury', 'Incomplete - some function preserved below level', 'ASIA A - complete', 'ASIA B - sensory incomplete', 'ASIA C - motor incomplete', 'ASIA D - motor functional', 'ASIA E - normal function'] },
+      { label: 'Mechanism', type: 'select', options: ['Motor vehicle accident', 'Fall from height', 'Penetrating trauma - gunshot or stab', 'Sports injury - diving or football', 'Non-traumatic - tumor or abscess or infarct'] },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Neurogenic bladder requiring intermittent catheterization, neurogenic bowel program, pressure injury prevention, DVT prophylaxis' },
+      { label: 'Autonomic Dysreflexia', type: 'select', options: ['Not present - injury below T6', 'Present - document triggers and management', 'Documented and patient educated on emergency management'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document ASIA classification, level, and completeness. Autonomic dysreflexia is specific to injuries above T6 and can be life-threatening. Neurogenic bladder codes separately.' }
+    ]
+  },
+  {
+    id: 'meningitis',
+    title: 'Meningitis and CNS Infections',
+    icon: '📋',
+    icd: 'G00-G03',
+    purpose: 'Meningitis must specify bacterial versus viral versus fungal and organism when known. Bacterial meningitis is an MCC. Document CSF findings and clinical complications including hearing loss and cognitive impairment.',
+    fields: [
+      { label: 'Meningitis Type', type: 'select', options: ['Bacterial meningitis - gram-negative (G00.9)', 'Streptococcal meningitis (G00.3)', 'Pneumococcal meningitis (G00.1)', 'Staphylococcal meningitis (G00.3)', 'Listeria meningitis (G00.8)', 'Meningococcal meningitis (A39.0)', 'Viral meningitis - enteroviral (A87.0)', 'HSV meningitis (B00.3)', 'Tuberculous meningitis (A17.0)', 'Cryptococcal meningitis (B45.1)', 'Aseptic meningitis - no organism identified (G03.0)'] },
+      { label: 'CSF Findings', type: 'text', placeholder: 'e.g. Opening pressure 28 cmH2O, WBC 2400 with 95% PMNs, glucose 28, protein 480, gram stain positive gram-positive diplococci' },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Sensorineural hearing loss, cerebral edema, subdural empyema, septic shock requiring vasopressors' },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Ceftriaxone 2g IV q12h, Vancomycin, Dexamethasone started before antibiotics, neurosurgery consulted for empyema' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Bacterial meningitis is an MCC. Document organism when known - organism-specific codes carry different reimbursement. Document all neurological complications separately.' }
+    ]
+  },
+  {
+    id: 'delirium',
+    title: 'Delirium',
+    icon: '📋',
+    icd: 'F05',
+    purpose: 'Delirium must be distinguished from dementia and from encephalopathy. CAM-positive delirium with documented precipitants and hyperactive versus hypoactive subtype affects management. Superimposed delirium on dementia codes both F05 and the dementia code.',
+    fields: [
+      { label: 'Delirium Type', type: 'select', options: ['Delirium superimposed on dementia (F05 + dementia code)', 'Hyperactive delirium - agitated combative', 'Hypoactive delirium - somnolent withdrawn - often missed', 'Mixed delirium - fluctuating between hyperactive and hypoactive', 'Post-operative delirium (F05)', 'ICU delirium (F05)', 'Substance-induced delirium (F1x.x)'] },
+      { label: 'CAM Assessment', type: 'select', options: ['CAM positive - delirium confirmed - feature 1 and 2 plus 3 or 4', 'CAM negative - delirium not present', 'CAM not performed - document clinical basis for diagnosis'] },
+      { label: 'Precipitating Factors', type: 'text', placeholder: 'e.g. Infection, metabolic abnormality, medications especially anticholinergics or benzodiazepines, pain, constipation, urinary retention, sleep deprivation' },
+      { label: 'Baseline Mental Status', type: 'text', placeholder: 'e.g. Baseline alert and oriented per family, current presentation is acute change from baseline over 2 days' },
+      { label: 'Management', type: 'text', placeholder: 'e.g. Treating underlying cause, reorientation, minimizing sedation, early mobilization, sleep hygiene, avoiding restraints, low-dose Haldol for safety' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document CAM assessment. Distinguish delirium from dementia - delirium is acute and fluctuating. Delirium superimposed on dementia requires both codes. Hyperactive delirium is often missed.' }
+    ]
+  },
+  {
+    id: 'cystic_fibrosis',
+    title: 'Cystic Fibrosis and Rare Pulmonary',
+    icon: '📋',
+    icd: 'J84.xx / E84.xx',
+    purpose: 'Cystic fibrosis documentation must specify with or without pulmonary manifestations and with or without meconium ileus. Pulmonary fibrosis type must be documented - IPF versus UIP versus NSIP. Document FEV1 percentage for severity.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Cystic fibrosis with pulmonary manifestations (E84.0)', 'Cystic fibrosis with meconium ileus (E84.11)', 'Cystic fibrosis with other intestinal manifestations (E84.19)', 'Cystic fibrosis with other manifestations (E84.8)', 'Idiopathic pulmonary fibrosis - IPF (J84.112)', 'Interstitial lung disease unspecified (J84.9)', 'Usual interstitial pneumonia - UIP (J84.112)', 'Nonspecific interstitial pneumonia - NSIP (J84.113)'] },
+      { label: 'FEV1 Percent Predicted', type: 'text', placeholder: 'e.g. FEV1 48% predicted - moderate severity, or FEV1 72% - mild' },
+      { label: 'Current Medications', type: 'text', placeholder: 'e.g. Trikafta elexacaftor/tezacaftor/ivacaftor, inhaled tobramycin, dornase alfa, hypertonic saline' },
+      { label: 'Pulmonary Exacerbation', type: 'select', options: ['Stable - no acute exacerbation', 'Acute pulmonary exacerbation - document clinical criteria', 'Requiring IV antibiotics - inpatient admission', 'Mechanical ventilation required'] },
+      { label: 'Transplant Status', type: 'select', options: ['No transplant', 'Listed for lung transplant', 'Bilateral lung transplant completed - document date', 'Post-transplant complications'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document with or without manifestations. CF exacerbation requires documentation of clinical criteria. IPF versus other ILD affects prognosis and treatment eligibility for antifibrotic therapy.' }
+    ]
+  },
+  {
+    id: 'sleep_apnea',
+    title: 'Sleep Apnea',
+    icon: '📋',
+    icd: 'G47.3x',
+    purpose: 'OSA must specify whether on CPAP and CPAP compliance. Obesity hypoventilation syndrome is separate from OSA and carries MCC weight. Central sleep apnea has different etiology and treatment. Document apnea-hypopnea index from sleep study.',
+    fields: [
+      { label: 'Sleep Apnea Type', type: 'select', options: ['Obstructive sleep apnea - adult (G47.33)', 'Obstructive sleep apnea - pediatric (G47.33)', 'Central sleep apnea (G47.31)', 'Complex sleep apnea (G47.37) - mixed', 'Sleep-related hypoxemia (G47.36)', 'Obesity hypoventilation syndrome (E66.2) - code separately from OSA'] },
+      { label: 'AHI from Sleep Study', type: 'text', placeholder: 'e.g. AHI 42 events/hour - severe OSA, or AHI 8 - mild OSA, HSAT or PSG documented' },
+      { label: 'CPAP Compliance', type: 'select', options: ['On CPAP - adherent - greater than 4 hours 70% of nights', 'On CPAP - non-adherent - document barriers', 'On BiPAP - document settings', 'Not on CPAP - document reason', 'CPAP not yet prescribed - newly diagnosed'] },
+      { label: 'Symptoms', type: 'text', placeholder: 'e.g. Excessive daytime sleepiness, witnessed apneas, snoring, morning headaches, nocturnal desaturations' },
+      { label: 'Obesity HVS', type: 'select', options: ['OSA without OHS', 'Obesity hypoventilation syndrome present - code E66.2 separately - MCC', 'Paco2 elevated - hypoventilation documented'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'OSA on CPAP requires compliance documentation. OHS is separate from OSA and requires elevated PaCO2 documentation. OHS is an MCC. Document AHI from formal sleep study.' }
+    ]
+  },
+  {
+    id: 'head_neck_cancer',
+    title: 'Head and Neck Cancer',
+    icon: '📋',
+    icd: 'C00-C14 / C30-C32',
+    purpose: 'Head and neck cancers require primary site, laterality, and HPV status for oropharyngeal tumors. HPV-positive oropharyngeal cancer has different staging and prognosis. Document treatment modality and post-treatment complications including dysphagia and xerostomia.',
+    fields: [
+      { label: 'Primary Site', type: 'select', options: ['Oral cavity - lip tongue floor of mouth (C00-C06)', 'Oropharynx - tonsil base of tongue soft palate (C09-C10)', 'Nasopharynx (C11)', 'Hypopharynx (C12-C13)', 'Larynx - supraglottic glottic subglottic (C32)', 'Nasal cavity or paranasal sinuses (C30-C31)', 'Salivary gland (C07-C08)', 'Thyroid cancer (C73)'] },
+      { label: 'HPV Status for Oropharynx', type: 'select', options: ['Not applicable - not oropharyngeal', 'HPV-positive - p16 positive - better prognosis', 'HPV-negative - p16 negative', 'HPV status not tested'] },
+      { label: 'Stage', type: 'text', placeholder: 'e.g. Stage IVA T3N2M0 HPV-positive, or Stage II T2N0M0 glottic larynx' },
+      { label: 'Treatment', type: 'select', options: ['Concurrent chemoradiation - definitive', 'Surgery - transoral robotic - TORS', 'Surgery followed by adjuvant radiation', 'Induction chemotherapy then chemoradiation', 'Systemic therapy - immunotherapy Keytruda', 'Palliation - performance status not candidate'] },
+      { label: 'Post-Treatment Complications', type: 'text', placeholder: 'e.g. Grade 3 dysphagia requiring PEG tube, severe xerostomia, radiation-induced osteoradionecrosis, trismus' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document HPV status for oropharyngeal cancers - affects staging and prognosis. Post-treatment complications have separate ICD-10 codes. Radiation-related complications code from Y84.2 category.' }
+    ]
+  },
+  {
+    id: 'lung_cancer',
+    title: 'Lung Cancer',
+    icon: '📋',
+    icd: 'C34.xx',
+    purpose: 'Lung cancer requires laterality, lobe, and histology. NSCLC versus SCLC determines treatment pathway. PD-L1 and molecular marker status determines immunotherapy and targeted therapy eligibility. Document performance status.',
+    fields: [
+      { label: 'Histology', type: 'select', options: ['Non-small cell - adenocarcinoma (C34.xx)', 'Non-small cell - squamous cell carcinoma (C34.xx)', 'Non-small cell - large cell carcinoma (C34.xx)', 'Non-small cell - NSCLC NOS (C34.xx)', 'Small cell lung cancer - SCLC (C34.xx)', 'Carcinoid tumor of lung (C7A.090)'] },
+      { label: 'Location', type: 'select', options: ['Right upper lobe', 'Right middle lobe', 'Right lower lobe', 'Left upper lobe', 'Left lower lobe', 'Overlapping lesion', 'Bilateral'] },
+      { label: 'Stage', type: 'text', placeholder: 'e.g. Stage IIIA T3N2M0, or Stage IV with liver and adrenal metastases' },
+      { label: 'Molecular Markers', type: 'text', placeholder: 'e.g. EGFR exon 19 deletion positive, ALK rearrangement negative, KRAS G12C positive, PD-L1 TPS 85%' },
+      { label: 'Current Treatment', type: 'text', placeholder: 'e.g. Osimertinib 80mg QD for EGFR mutation, Pembrolizumab monotherapy PD-L1 greater than 50%, Carboplatin + Pemetrexed + Keytruda' },
+      { label: 'Performance Status', type: 'select', options: ['ECOG 0 - fully active', 'ECOG 1 - restricted but ambulatory', 'ECOG 2 - ambulatory, up more than 50% of waking hours', 'ECOG 3 - limited self-care', 'ECOG 4 - fully disabled'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document laterality and lobe. SCLC versus NSCLC determines staging system used. Molecular markers must be documented before targeted therapy - affects treatment decisions and quality measures.' }
+    ]
+  },
+  {
+    id: 'renal_transplant',
+    title: 'Renal Transplant and Complications',
+    icon: '📋',
+    icd: 'Z94.0 / T86.1x',
+    purpose: 'Transplant status affects coding of subsequent conditions. Transplant complications use T86 category. Chronic rejection versus acute rejection versus calcineurin toxicity code differently. Document immunosuppression regimen.',
+    fields: [
+      { label: 'Transplant Status', type: 'select', options: ['Functioning renal transplant - document current GFR (Z94.0)', 'Acute T-cell mediated rejection (T86.11)', 'Chronic active T-cell mediated rejection (T86.12)', 'Antibody-mediated rejection (T86.13)', 'Calcineurin inhibitor nephrotoxicity - not rejection', 'Transplant failure - return to dialysis (T86.12)', 'Transplant infection - document organism (T86.19)'] },
+      { label: 'Time Since Transplant', type: 'text', placeholder: 'e.g. Received living donor kidney transplant 3 years ago, currently functioning with GFR 48' },
+      { label: 'Current Immunosuppression', type: 'text', placeholder: 'e.g. Tacrolimus 2mg BID trough 6.8, Mycophenolate 750mg BID, Prednisone 5mg QD' },
+      { label: 'Rejection Diagnosis', type: 'text', placeholder: 'e.g. Biopsy confirmed Banff grade 2 acute T-cell rejection, DSA positive for DQ7' },
+      { label: 'Current Creatinine', type: 'text', placeholder: 'e.g. Baseline Cr 1.4, current Cr 2.8 - elevated from baseline prompting workup' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Transplant complications use T86 category not N17. Document type of rejection if biopsy performed. Calcineurin toxicity is not rejection. Immunosuppression reduction for toxicity versus augmentation for rejection.' }
+    ]
+  },
+  {
+    id: 'dialysis',
+    title: 'Hemodialysis and ESRD',
+    icon: '📋',
+    icd: 'Z99.2 / N18.6',
+    purpose: 'ESRD on dialysis requires documentation of dialysis access type and adequacy. Document cause of ESRD. Missed treatments and complications require separate documentation. Document volume status and dry weight.',
+    fields: [
+      { label: 'Dialysis Type', type: 'select', options: ['Hemodialysis in-center (Z99.2)', 'Home hemodialysis (Z99.2)', 'Peritoneal dialysis - CAPD (Z99.2)', 'Nocturnal dialysis', 'Transitioning to transplant - listed'] },
+      { label: 'Dialysis Access', type: 'select', options: ['AV fistula - document maturity and adequacy', 'AV graft - document location', 'Tunneled dialysis catheter - document insertion date', 'Access malfunction - intervention needed'] },
+      { label: 'ESRD Etiology', type: 'text', placeholder: 'e.g. Diabetic nephropathy, hypertensive nephrosclerosis, IgA nephropathy, PCKD' },
+      { label: 'Adequacy', type: 'text', placeholder: 'e.g. Kt/V 1.4 - adequate, URR 72%, or inadequate - access dysfunction' },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Volume overload, missed 2 treatments this week, hypotension during HD, catheter infection' },
+      { label: 'Dry Weight and Volume Status', type: 'text', placeholder: 'e.g. Estimated dry weight 78 kg, currently 3.2 kg above dry weight - volume overloaded' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Always code N18.6 ESRD plus Z99.2 for dialysis dependence. Document access type and adequacy. Complications code separately. Document missed treatments and clinical impact.' }
+    ]
+  },
+  {
+    id: 'lupus',
+    title: 'Lupus and Connective Tissue Disease',
+    icon: '📋',
+    icd: 'M32.xx',
+    purpose: 'Lupus must specify systemic versus limited and organ involvement. Lupus nephritis requires classification and code linking to the lupus. Drug-induced lupus codes separately. Document SLEDAI score and current immunosuppression.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['SLE systemic lupus erythematosus without organ involvement (M32.10)', 'SLE with nephritis - lupus nephritis (M32.14)', 'SLE with neurological involvement (M32.19)', 'SLE with cardiovascular involvement (M32.12)', 'SLE with lung involvement (M32.13)', 'Drug-induced lupus (M32.0) - document causative medication', 'Discoid lupus - limited cutaneous only (L93.0)', 'Sjögren syndrome (M35.0)', 'Mixed connective tissue disease (M35.1)', 'Polymyositis (M33.2)', 'Dermatomyositis (M33.1)'] },
+      { label: 'SLEDAI Score', type: 'text', placeholder: 'e.g. SLEDAI-2K score 8 - moderate disease activity, or score 0 - remission' },
+      { label: 'Lupus Nephritis Class', type: 'select', options: ['Not applicable - no nephritis', 'Class I - minimal mesangial', 'Class II - mesangial proliferative', 'Class III - focal nephritis - active or chronic', 'Class IV - diffuse nephritis - MCC - most severe', 'Class V - membranous nephritis', 'Class VI - advanced sclerosing'] },
+      { label: 'Current Immunosuppression', type: 'text', placeholder: 'e.g. Hydroxychloroquine 400mg QD, Mycophenolate 2g QD, Prednisone taper 20mg QD' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document organ involvement explicitly - each organ affected codes separately. Lupus nephritis class IV is most severe and requires aggressive treatment. Drug-induced lupus uses M32.0.' }
+    ]
+  },
+  {
+    id: 'rheumatoid_arthritis',
+    title: 'Rheumatoid Arthritis',
+    icon: '📋',
+    icd: 'M05-M06',
+    purpose: 'RA must specify seropositive versus seronegative and affected joints. Felty syndrome and rheumatoid vasculitis are complications with separate codes. Document DAS28 disease activity score and biologic therapy.',
+    fields: [
+      { label: 'RA Type', type: 'select', options: ['Rheumatoid arthritis seropositive - RF positive (M05.x)', 'Rheumatoid arthritis seronegative (M06.0x)', 'Juvenile idiopathic arthritis (M08.xx)', 'Felty syndrome (M05.00) - RA plus splenomegaly plus neutropenia', 'Rheumatoid vasculitis (M05.20)', 'Adult-onset Still disease (M06.1)'] },
+      { label: 'Joint Involvement', type: 'select', options: ['Shoulder', 'Elbow', 'Wrist', 'Hand and finger joints - MCP PIP', 'Hip', 'Knee', 'Ankle and foot joints', 'Multiple joints - polyarthritis'] },
+      { label: 'Disease Activity', type: 'select', options: ['Remission - DAS28 less than 2.6', 'Low disease activity - DAS28 2.6-3.2', 'Moderate activity - DAS28 3.2-5.1', 'High activity - DAS28 greater than 5.1'] },
+      { label: 'Current Treatment', type: 'text', placeholder: 'e.g. Methotrexate 20mg weekly, Adalimumab 40mg q2 weeks, Prednisone 5mg QD bridge while escalating therapy' },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. RA-associated ILD, cervical spine instability, atlantoaxial subluxation, secondary amyloidosis' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document seropositive versus seronegative. Felty syndrome and vasculitis are complications requiring separate codes. RA-associated ILD codes J99 as additional diagnosis.' }
+    ]
+  },
+  {
+    id: 'gout',
+    title: 'Gout',
+    icon: '📋',
+    icd: 'M10.xx',
+    purpose: 'Gout must specify acute versus chronic and joint affected. Tophaceous gout codes separately. Hyperuricemia without gout is a different condition. Document serum urate and urate-lowering therapy adherence.',
+    fields: [
+      { label: 'Gout Type', type: 'select', options: ['Acute gout flare - idiopathic (M10.0x)', 'Acute gout - drug-induced (M10.2x) - document causative drug', 'Acute gout from renal failure (M10.3x)', 'Chronic gout with tophus (M1A.0x)', 'Chronic gout without tophus', 'Hyperuricemia without gout (E79.0) - different from gout'] },
+      { label: 'Joint Affected', type: 'select', options: ['First MTP joint - great toe - podagra - most common', 'Ankle', 'Knee', 'Wrist', 'Elbow - olecranon', 'Multiple joints - polyarticular gout'] },
+      { label: 'Serum Urate', type: 'text', placeholder: 'e.g. Serum urate 10.8 mg/dL - elevated, target less than 6.0 on ULT' },
+      { label: 'Urate Lowering Therapy', type: 'select', options: ['Not on ULT - acute flare only', 'On allopurinol - document dose and compliance', 'On febuxostat - document dose', 'On pegloticase - refractory tophaceous gout', 'Not tolerated - document reason'] },
+      { label: 'Tophi', type: 'select', options: ['No tophi', 'Tophi present - document location', 'Tophaceous deposits on imaging'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document joint affected and laterality. Acute gout flare codes differently from chronic gout with tophi. Hyperuricemia without gout uses E79.0 not M10. ULT is not indicated during acute flare initiation - document timing.' }
+    ]
+  },
+  {
+    id: 'osteoporosis',
+    title: 'Osteoporosis',
+    icon: '📋',
+    icd: 'M80-M81',
+    purpose: 'Osteoporosis must specify whether pathologic fracture has occurred. M80 codes for osteoporosis with current fracture, M81 for without fracture. Document DEXA T-score and current bone-strengthening therapy. Prior fractures affect fracture risk.',
+    fields: [
+      { label: 'Osteoporosis Type', type: 'select', options: ['Osteoporosis without fracture - age-related (M81.0)', 'Osteoporosis without fracture - other (M81.8)', 'Osteoporosis with current pathologic fracture - vertebral (M80.08xA)', 'Osteoporosis with current pathologic fracture - hip (M80.05xA)', 'Osteoporosis with current pathologic fracture - wrist (M80.03xA)', 'Drug-induced osteoporosis (M81.4) - document causative medication', 'Osteoporosis in other disease (M82)'] },
+      { label: 'DEXA T-Score', type: 'text', placeholder: 'e.g. T-score lumbar spine -2.8, T-score femoral neck -2.5 - osteoporosis by WHO criteria' },
+      { label: 'FRAX Score', type: 'text', placeholder: 'e.g. FRAX 10-year major fracture risk 22%, hip fracture risk 8% - above treatment threshold' },
+      { label: 'Current Treatment', type: 'select', options: ['Calcium and Vitamin D supplementation only', 'Bisphosphonate - alendronate risedronate', 'IV bisphosphonate - zoledronic acid annually', 'Denosumab 60mg q6 months', 'Teriparatide - PTH analog - severe osteoporosis', 'ROMO - romosozumab - severe osteoporosis with fracture history'] },
+      { label: 'Fall Prevention', type: 'text', placeholder: 'e.g. PT home safety evaluation, balance training, medication review for fall risk, assistive device recommended' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'M80 for fracture present, M81 for no fracture. Document DEXA results and FRAX score. Drug-induced osteoporosis from chronic steroid use is common - document causative medication.' }
+    ]
+  },
+  {
+    id: 'fibromyalgia',
+    title: 'Fibromyalgia and Chronic Pain Syndromes',
+    icon: '📋',
+    icd: 'M79.3 / G89.4',
+    purpose: 'Fibromyalgia requires documentation of widespread pain and exclusion of inflammatory cause. Chronic pain syndrome codes G89.4. Document ACR diagnostic criteria met and functional impact. Distinguish fibromyalgia from inflammatory arthritis.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Fibromyalgia (M79.3)', 'Chronic pain syndrome (G89.4)', 'Myofascial pain syndrome (M79.3)', 'Complex regional pain syndrome CRPS type 1 (G90.50)', 'CRPS type 2 - causalgia (G56.4x)', 'Persistent post-COVID pain - code U09.9 + M79.3'] },
+      { label: 'ACR Diagnostic Criteria', type: 'text', placeholder: 'e.g. Widespread pain index 12, symptom severity scale 8, symptoms present greater than 3 months, no other disorder to explain symptoms' },
+      { label: 'Functional Impact', type: 'select', options: ['Mild - working full time with some limitations', 'Moderate - working part time or modified duty', 'Severe - unable to work or maintain ADLs', 'Disability documented'] },
+      { label: 'Current Treatment', type: 'text', placeholder: 'e.g. Duloxetine 60mg QD, Pregabalin 150mg BID, PT aquatic therapy, CBT for pain management, sleep hygiene' },
+      { label: 'Comorbid Conditions', type: 'text', placeholder: 'e.g. Comorbid depression, anxiety, IBS, sleep disorder, migraine - common fibromyalgia cluster' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document ACR criteria met. Fibromyalgia is a clinical diagnosis of exclusion. Code comorbid depression and anxiety separately as these are important treatment targets. Avoid opioids - document reasoning if considered.' }
+    ]
+  },
+  {
+    id: 'ibd',
+    title: 'Inflammatory Bowel Disease',
+    icon: '📋',
+    icd: 'K50-K51',
+    purpose: 'Crohn disease versus ulcerative colitis must be documented. Location and severity affect coding and treatment decisions. Complications including abscess, fistula, and obstruction code separately. Document biologic therapy and response.',
+    fields: [
+      { label: 'IBD Type', type: 'select', options: ['Crohn disease - small intestine (K50.0x)', 'Crohn disease - large intestine (K50.1x)', 'Crohn disease - small and large intestine (K50.8x)', 'Ulcerative colitis - proctitis (K51.2x)', 'Ulcerative colitis - left-sided (K51.3x)', 'Ulcerative colitis - pancolitis (K51.0x)', 'Ulcerative colitis unspecified (K51.9x)', 'IBD unspecified (K52.3)'] },
+      { label: 'Disease Activity', type: 'select', options: ['Remission - no symptoms on current therapy', 'Mild to moderate activity - ambulatory well tolerated', 'Moderate to severe - failed steroids or outpatient therapy', 'Severe or fulminant - hospitalization required'] },
+      { label: 'Current Biologics', type: 'text', placeholder: 'e.g. Infliximab 10mg/kg q8 weeks, Ustekinumab 90mg SQ q8 weeks, Vedolizumab 300mg IV q8 weeks, Ozanimod 0.92mg QD' },
+      { label: 'Complications', type: 'text', placeholder: 'e.g. Intra-abdominal abscess, enterocutaneous fistula, stricture with partial obstruction, perianal disease, toxic megacolon' },
+      { label: 'Labs', type: 'text', placeholder: 'e.g. CRP 48, ESR 82, fecal calprotectin 1240 - active inflammation, albumin 2.8, hemoglobin 9.4' },
+      { label: 'Surgical History', type: 'text', placeholder: 'e.g. Prior ileocecal resection 2018, J-pouch created 2021, no stoma currently' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document Crohn versus UC - these are treated very differently. Document location and activity severity. Complications code separately. Biologic therapy and response must be documented for insurance justification.' }
+    ]
+  },
+  {
+    id: 'celiac',
+    title: 'Malabsorption and Nutrition Disorders',
+    icon: '📋',
+    icd: 'K90.x / E41-E46',
+    purpose: 'Celiac disease requires documentation of dietary adherence and ongoing symptoms despite gluten-free diet. Malabsorption syndromes must specify the underlying cause. Short bowel syndrome affects coding and nutritional support needs.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Celiac disease - gluten-sensitive enteropathy (K90.0)', 'Tropical sprue (K90.1)', 'Short bowel syndrome (K91.2)', 'Whipple disease (K90.81)', 'Intestinal lactase deficiency (E73.0)', 'Other intestinal malabsorption (K90.89)', 'Malnutrition - see separate template', 'Protein-calorie malnutrition (E40-E46)'] },
+      { label: 'Celiac Status', type: 'select', options: ['On strict gluten-free diet - asymptomatic', 'On GFD with ongoing symptoms - refractory celiac', 'Not adhering to GFD - document counseling provided', 'Newly diagnosed - initiating GFD'] },
+      { label: 'Serologic Tests', type: 'text', placeholder: 'e.g. tTG-IgA elevated 48 U/mL, EMA positive, HLA DQ2/DQ8 positive, or all normalized on GFD' },
+      { label: 'Nutritional Deficiencies', type: 'text', placeholder: 'e.g. Iron deficiency anemia, B12 deficiency, Vitamin D deficiency, folate deficiency, zinc deficiency' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Celiac disease requires biopsy confirmation and serologic testing. Nutritional deficiencies from malabsorption code separately. Short bowel syndrome affects PN or EN needs.' }
+    ]
+  },
+  {
+    id: 'diverticular',
+    title: 'Diverticular Disease',
+    icon: '📋',
+    icd: 'K57.xx',
+    purpose: 'Diverticulitis must specify acute versus chronic, with or without abscess, with or without peritonitis. Diverticular bleed codes K57.31. Perforation with peritonitis is an MCC. Document whether surgical intervention required.',
+    fields: [
+      { label: 'Diagnosis', type: 'select', options: ['Diverticulosis without diverticulitis - large intestine (K57.30)', 'Acute diverticulitis without abscess without perforation (K57.32)', 'Acute diverticulitis with abscess (K57.20)', 'Acute diverticulitis with perforation and peritonitis (K57.00) - MCC', 'Diverticular disease with bleeding (K57.31)', 'Chronic diverticulitis (K57.12)', 'Sigmoid diverticulitis - most common site'] },
+      { label: 'Severity - Hinchey Classification', type: 'select', options: ['Not applicable - diverticulosis only', 'Stage I - pericolic abscess', 'Stage II - pelvic abscess', 'Stage III - purulent peritonitis', 'Stage IV - fecal peritonitis - emergent surgery'] },
+      { label: 'CT Findings', type: 'text', placeholder: 'e.g. CT abdomen: sigmoid diverticulitis with 3.5cm pericolic abscess, no free air' },
+      { label: 'Management', type: 'select', options: ['Outpatient antibiotics - mild uncomplicated', 'Inpatient IV antibiotics - moderate severity', 'Percutaneous drainage - abscess', 'Surgery - colectomy with or without ostomy', 'Non-operative management - Hinchey III or IV selected cases'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document Hinchey classification for complicated diverticulitis. Perforation with peritonitis is MCC. Diverticular bleed codes separately from diverticulitis. Document surgical plan and ostomy if applicable.' }
+    ]
+  },
+  {
+    id: 'bowel_obstruction',
+    title: 'Bowel Obstruction',
+    icon: '📋',
+    icd: 'K56.xx',
+    purpose: 'Bowel obstruction must specify small versus large bowel and partial versus complete. Closed-loop obstruction is a surgical emergency. Cause must be documented when known - adhesions versus hernia versus volvulus versus malignancy.',
+    fields: [
+      { label: 'Obstruction Type', type: 'select', options: ['Small bowel obstruction - partial (K56.600)', 'Small bowel obstruction - complete (K56.601)', 'Adhesive small bowel obstruction (K56.50)', 'Large bowel obstruction (K56.609)', 'Sigmoid volvulus (K56.2)', 'Cecal volvulus (K56.2)', 'Paralytic ileus - not mechanical (K56.0)', 'Ogilvie syndrome - colonic pseudo-obstruction (K59.31)'] },
+      { label: 'Cause', type: 'select', options: ['Adhesions - prior surgery - most common cause', 'Incarcerated or strangulated hernia - surgical emergency', 'Malignancy - document tumor location', 'Crohn disease stricture', 'Sigmoid volvulus - often in elderly', 'Unknown - workup in progress'] },
+      { label: 'CT Findings', type: 'text', placeholder: 'e.g. CT abdomen: dilated small bowel loops to 4.2cm with transition point at right iliac fossa, no free air, no closed loop' },
+      { label: 'Management', type: 'select', options: ['NGT decompression - conservative management', 'Colonoscopic decompression for volvulus', 'Surgery - bowel resection', 'Laparoscopic lysis of adhesions'] },
+      { label: 'Strangulation Signs', type: 'select', options: ['No strangulation - bowel viability intact', 'Strangulation suspected - fever tachycardia peritoneal signs', 'Free air on imaging - perforation - emergent surgery'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Complete obstruction is more severe than partial. Strangulation is a surgical emergency. Volvulus may be detorsed endoscopically for sigmoid but cecal volvulus requires surgery.' }
+    ]
+  },
+  {
+    id: 'hepatitis',
+    title: 'Viral Hepatitis',
+    icon: '📋',
+    icd: 'B15-B19',
+    purpose: 'Hepatitis must specify acute versus chronic and virus type. HCV treatment with DAA therapy requires documentation of sustained virologic response. HBV reactivation during immunosuppression has specific coding and treatment urgency.',
+    fields: [
+      { label: 'Hepatitis Type', type: 'select', options: ['Acute hepatitis A (B15.9)', 'Acute hepatitis B with delta agent (B16.0)', 'Acute hepatitis B without delta (B16.9)', 'Chronic hepatitis B - HBsAg positive (B18.1)', 'Chronic hepatitis B - inactive carrier (B18.1)', 'Acute hepatitis C (B17.10)', 'Chronic hepatitis C without cirrhosis (B18.2)', 'Chronic hepatitis C with cirrhosis (B18.2 + K74.60)', 'Hepatitis C in sustained virologic response (SVR) - code B18.2 until confirmed SVR'] },
+      { label: 'HCV Treatment', type: 'select', options: ['Not applicable - not HCV', 'Active treatment - document DAA regimen', 'Completed treatment - SVR12 confirmed - document date', 'Treatment naive - evaluating for treatment', 'Treatment experienced - prior treatment failure'] },
+      { label: 'Current Antivirals', type: 'text', placeholder: 'e.g. Epclusa sofosbuvir/velpatasvir 12 weeks, Harvoni ledipasvir/sofosbuvir, Mavyret completed 8 weeks' },
+      { label: 'HBV Reactivation Risk', type: 'select', options: ['Not applicable - not HBV', 'Low reactivation risk - monitoring only', 'High reactivation risk - prophylaxis with entecavir or tenofovir', 'Active reactivation - treatment initiated'] },
+      { label: 'Liver Fibrosis Stage', type: 'text', placeholder: 'e.g. FibroScan 8.2 kPa - F2 fibrosis, or Metavir F3 by biopsy, or cirrhosis present' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document SVR after HCV treatment - reimbursement changes when SVR confirmed. HBV reactivation during immunosuppression can be life-threatening - prophylaxis required before starting biologics or chemotherapy.' }
+    ]
+  },
+  {
+    id: 'ibs',
+    title: 'Irritable Bowel Syndrome and Functional GI',
+    icon: '📋',
+    icd: 'K58.xx',
+    purpose: 'IBS type must be documented. IBS with constipation versus diarrhea versus mixed patterns code differently and respond to different treatments. Distinguish IBS from IBD - different conditions entirely.',
+    fields: [
+      { label: 'IBS Type', type: 'select', options: ['IBS with diarrhea - IBS-D (K58.0)', 'IBS with constipation - IBS-C (K58.1)', 'IBS with mixed bowel habits - IBS-M (K58.2)', 'IBS unspecified (K58.9)', 'Functional dyspepsia (K30)', 'Functional constipation (K59.04)', 'Functional diarrhea (K59.1)'] },
+      { label: 'Diagnostic Criteria', type: 'select', options: ['Rome IV criteria met - recurrent abdominal pain at least 1 day per week for 3 months', 'Diagnosis of exclusion - organic pathology ruled out', 'Colonoscopy or imaging normal', 'Celiac ruled out', 'IBD ruled out'] },
+      { label: 'Symptom Severity', type: 'select', options: ['Mild - manageable with lifestyle modification', 'Moderate - affecting quality of life', 'Severe - debilitating', 'Persistent despite first-line treatment'] },
+      { label: 'Current Treatment', type: 'text', placeholder: 'e.g. Low FODMAP diet, peppermint oil 0.2mL TID, Dicyclomine 20mg QID for IBS-D, Linzess 290mcg QD for IBS-C' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'IBS is a functional disorder diagnosed by Rome IV criteria after excluding organic pathology. Document subtype. IBS and IBD are entirely different conditions - document the distinction clearly.' }
+    ]
+  },
+  {
+    id: 'geriatric',
+    title: 'Geriatric Syndromes and Frailty',
+    icon: '📋',
+    icd: 'R54 / Z87.xx',
+    purpose: 'Frailty and debility are important clinical conditions that affect DRG and quality of care planning. Adult failure to thrive, debility, and sarcopenia have specific documentation requirements. Document functional baseline and changes from baseline.',
+    fields: [
+      { label: 'Primary Geriatric Condition', type: 'select', options: ['Frailty (R54)', 'Adult failure to thrive (R62.7)', 'Debility - generalized weakness (R53.81)', 'Sarcopenia (M62.84)', 'Deconditioning after hospitalization', 'Multiple chronic conditions - complex case'] },
+      { label: 'Functional Status', type: 'select', options: ['Independent in all ADLs - baseline', 'Requires assistance with instrumental ADLs - IADL dependent', 'Requires assistance with basic ADLs', 'Fully dependent in ADLs'] },
+      { label: 'Cognitive Status', type: 'text', placeholder: 'e.g. Alert and oriented x4 at baseline, or mild cognitive impairment at baseline per family, or severe dementia' },
+      { label: 'Fall History', type: 'text', placeholder: 'e.g. 3 falls in past 6 months, most recent fall with hip fracture, uses walker for ambulation' },
+      { label: 'Social Situation', type: 'text', placeholder: 'e.g. Lives alone - safety concern, lives with spouse who has own health limitations, resides in assisted living' },
+      { label: 'Goals of Care', type: 'select', options: ['Full code - pursue all life-sustaining treatment', 'DNR/DNI - document patient preference', 'Comfort-focused care - hospice referral', 'Goals of care discussion documented - patient or family'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Document functional baseline and changes. Frailty R54 and debility R53.81 are important secondary diagnoses that affect nursing care intensity and quality metrics. Document fall risk and prevention measures.' }
+    ]
+  },
+  {
+    id: 'hospice',
+    title: 'Hospice and Palliative Care',
+    icon: '📋',
+    icd: 'Z51.5',
+    purpose: 'Palliative care consultation and hospice enrollment have specific documentation requirements. Prognosis less than 6 months must be documented for hospice certification. Document goals of care, symptom management, and advance directives.',
+    fields: [
+      { label: 'Care Status', type: 'select', options: ['Palliative care consultation requested or in progress (Z51.5)', 'Hospice care - inpatient (Z51.5)', 'Hospice care - home hospice enrolled', 'Patient receiving hospice - admitted for unrelated condition', 'Goals of care discussion - not yet enrolled in hospice'] },
+      { label: 'Primary Life-Limiting Diagnosis', type: 'text', placeholder: 'e.g. Stage IV NSCLC with brain metastases, end-stage heart failure NYHA Class IV, end-stage COPD on home O2' },
+      { label: 'Prognosis', type: 'select', options: ['Prognosis less than 6 months if disease follows expected course', 'Prognosis uncertain but poor', 'Expected survival months - document clinical basis', 'Terminal trajectory - days to weeks'] },
+      { label: 'Symptom Burden', type: 'text', placeholder: 'e.g. Pain 8/10 requiring opioid titration, dyspnea at rest, refractory nausea, existential distress documented' },
+      { label: 'Advance Directives', type: 'select', options: ['DNR and DNI documented and in chart', 'POLST or MOLST completed', 'Durable POA for healthcare documented', 'Advance directive not yet completed - discussion in progress'] },
+      { label: 'Goals of Care', type: 'text', placeholder: 'e.g. Patient wishes to focus on comfort, remain at home with family, avoid hospitalization, managed by hospice team' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Palliative care and hospice use Z51.5. Document prognosis explicitly for hospice certification. All symptom management codes separately. Advance directives in chart prevent unwanted interventions.' }
+    ]
+  },
+  {
+    id: 'social_determinants',
+    title: 'Social Determinants of Health',
+    icon: '📋',
+    icd: 'Z55-Z65',
+    purpose: 'FY2026 guidelines emphasize capturing social determinants that affect health outcomes. Housing instability, food insecurity, and transportation barriers now have specific ICD-10 codes and affect quality measures and population health.',
+    fields: [
+      { label: 'Social Determinants Present', type: 'select', options: ['Housing instability - inadequate housing (Z59.1)', 'Homelessness (Z59.0)', 'Food insecurity - inadequate food supply (Z59.41)', 'Transportation barrier to healthcare (Z59.82)', 'Low income - financial hardship (Z59.6)', 'Insufficient social support (Z60.2)', 'Social isolation (Z60.4)', 'Domestic violence or intimate partner violence (Z69.11)', 'Educational barriers (Z55.9)', 'Unemployment or job loss (Z56.0)'] },
+      { label: 'Screening Tool Used', type: 'select', options: ['PRAPARE screening completed', 'AHC HRSN screening completed', 'Informal clinical assessment - no formal tool', 'Screening not performed this visit'] },
+      { label: 'Referrals Made', type: 'text', placeholder: 'e.g. Social work consulted, community health worker referral, food bank referral, housing assistance program, transportation voucher provided' },
+      { label: 'Impact on Health', type: 'text', placeholder: 'e.g. Medication non-adherence due to cost, missed follow-up appointments due to transportation, food insecurity contributing to poor diabetes control' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'FY2026 emphasizes SDOH documentation. Document screening results and referrals made. These codes are increasingly required by payers for risk adjustment and population health management.' }
+    ]
+  },
+  {
+    id: 'long_term_care',
+    title: 'Long-Term Care and Skilled Nursing',
+    icon: '📋',
+    icd: 'Z74.xx',
+    purpose: 'Long-term care documentation requires functional status, rehabilitation potential, and restorative goals. Skilled nursing facility level of care requirements must be documented. MDS assessment items affect reimbursement under PDPM.',
+    fields: [
+      { label: 'Level of Care Required', type: 'select', options: ['Skilled nursing care - RN or therapy required', 'Physical therapy skilled need - document goals', 'Occupational therapy skilled need', 'Speech therapy skilled need - dysphagia', 'IV antibiotics requiring skilled oversight', 'Wound care requiring skilled nursing', 'Observation and assessment - skilled need'] },
+      { label: 'ADL Function', type: 'select', options: ['Independent in all ADLs', 'Requires limited assistance with ADLs', 'Requires extensive assistance with ADLs', 'Dependent in all ADLs'] },
+      { label: 'Rehabilitation Potential', type: 'select', options: ['Good rehabilitation potential - able to participate in therapy', 'Moderate potential - some participation expected', 'Limited potential - maintenance therapy goal', 'Restorative program only - not skilled rehab'] },
+      { label: 'PDPM Clinical Categories', type: 'text', placeholder: 'e.g. Medical management category, PT and OT category, SLP category, NTA points - document all clinical conditions accurately' },
+      { label: 'Discharge Goal', type: 'text', placeholder: 'e.g. Return to home with home health, return to assisted living with family support, long-term care placement likely' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'PDPM reimbursement is driven by accurate ICD-10 coding and functional status documentation. Skilled need must be clearly documented - custodial care does not qualify for SNF level of care.' }
+    ]
+  },
+  {
+    id: 'covid',
+    title: 'COVID-19',
+    icon: '📋',
+    icd: 'U07.1',
+    purpose: 'COVID-19 documentation requirements have evolved. Active infection versus post-COVID condition code differently. Vaccine status and variant documentation affect epidemiologic tracking. Document all organ complications separately.',
+    fields: [
+      { label: 'COVID Status', type: 'select', options: ['Active COVID-19 confirmed (U07.1)', 'Active COVID-19 suspected - awaiting test (U07.2)', 'Post-COVID condition - long COVID (U09.9)', 'COVID pneumonia (U07.1 + J12.82)', 'COVID with multisystem inflammatory syndrome (U07.1 + M35.81)', 'History of COVID - resolved (Z86.16)', 'COVID vaccination status documented'] },
+      { label: 'COVID Complications', type: 'text', placeholder: 'e.g. Respiratory failure requiring O2, AKI, myocarditis, PE, encephalopathy - each coded separately with U07.1' },
+      { label: 'Severity', type: 'select', options: ['Mild - outpatient management', 'Moderate - hospitalization without O2', 'Severe - requiring supplemental O2', 'Critical - ICU level care mechanical ventilation'] },
+      { label: 'Treatment', type: 'text', placeholder: 'e.g. Paxlovid nirmatrelvir/ritonavir, Remdesivir 5-day course, dexamethasone 6mg QD, therapeutic anticoagulation' },
+      { label: 'Post-COVID Symptoms', type: 'text', placeholder: 'e.g. Fatigue, cognitive impairment brain fog, dyspnea, POTS, chronic pain - present greater than 4 weeks after acute infection' },
+      { label: 'Vaccination Status', type: 'select', options: ['Unvaccinated', 'Partially vaccinated', 'Fully vaccinated - primary series', 'Boosted - document number of doses'] },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'U07.1 for confirmed COVID. U09.9 for post-COVID condition with specific lingering symptoms coded additionally. All organ complications code separately. Long COVID U09.9 requires a prior COVID infection documented.' }
+    ]
+  },
+  {
+    id: 'transplant_other',
+    title: 'Solid Organ Transplant - Non-Renal',
+    icon: '📋',
+    icd: 'Z94.x',
+    purpose: 'Non-renal transplant complications use T86 category. Heart transplant rejection versus cardiac allograft vasculopathy code differently. Liver transplant complications include hepatic artery thrombosis and biliary strictures. Document immunosuppression.',
+    fields: [
+      { label: 'Transplant Type', type: 'select', options: ['Heart transplant (Z94.1)', 'Lung transplant bilateral (Z94.2)', 'Liver transplant (Z94.4)', 'Pancreas transplant (Z94.83)', 'Combined liver-kidney transplant', 'Hematopoietic stem cell transplant (Z94.81)', 'Small bowel transplant (Z94.82)'] },
+      { label: 'Rejection Status', type: 'select', options: ['No rejection - stable function', 'Acute cellular rejection (T86.x1)', 'Chronic rejection (T86.x2)', 'Antibody-mediated rejection (T86.x3)', 'Rejection with graft failure (T86.x2)'] },
+      { label: 'Cardiac Allograft Vasculopathy', type: 'select', options: ['Not applicable - not heart transplant', 'No CAV - coronary angiography normal', 'CAV present - grade I mild', 'CAV grade II moderate', 'CAV grade III severe'] },
+      { label: 'Immunosuppression', type: 'text', placeholder: 'e.g. Tacrolimus, Mycophenolate, Prednisone - document levels, or Cyclosporine, Sirolimus combination' },
+      { label: 'Post-Transplant Infections', type: 'text', placeholder: 'e.g. CMV reactivation on prophylaxis, PCP despite TMP-SMX, aspergillosis, BK nephropathy in kidney' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Use T86 category for all transplant complications. Cardiac allograft vasculopathy is specific to heart transplant - affects long-term survival. Document immunosuppression levels and compliance.' }
+    ]
+  },
+  {
+    id: 'pressure_ulcer_staging',
+    title: 'Pressure Injury Staging - Detailed',
+    icon: '📋',
+    icd: 'L89.xx',
+    purpose: 'This template provides detailed staging guidance. Each stage has distinct tissue involvement. Unstageable injuries due to slough or eschar require documentation. Document POA status for all pressure injuries - hospital-acquired conditions have reimbursement implications.',
+    fields: [
+      { label: 'Stage and Tissue Depth', type: 'select', options: ['Stage 1 - non-blanchable erythema of intact skin - no tissue loss', 'Stage 2 - partial thickness loss with exposed dermis - pink or red wound bed - no adipose or deeper tissue', 'Stage 3 - full thickness skin loss - adipose tissue visible - no fascia muscle bone', 'Stage 4 - full thickness skin and tissue loss - fascia muscle tendon bone or cartilage exposed - MCC', 'Unstageable - full thickness skin loss but wound bed obscured by slough or eschar', 'Deep tissue pressure injury - purple or maroon discoloration or blood-filled blister', 'Medical device-related pressure injury - document device'] },
+      { label: 'Site', type: 'select', options: ['Sacrum or coccyx (L89.15x)', 'Right ischium (L89.311)', 'Left ischium (L89.312)', 'Right trochanter (L89.21x)', 'Left trochanter (L89.22x)', 'Right heel (L89.61x)', 'Left heel (L89.62x)', 'Occipital head (L89.81x)', 'Ear (L89.01x)', 'Elbow (L89.0xx)', 'Other site - specify'] },
+      { label: 'POA Status', type: 'select', options: ['Present on admission - Y - documented in admission nursing assessment', 'Not present on admission - N - hospital acquired HAC', 'Unable to determine - U - document clinical rationale', 'W exempt - no required reporting'] },
+      { label: 'Wound Measurement', type: 'text', placeholder: 'e.g. 4.2cm x 3.8cm x 1.2cm depth, tunneling 2cm at 6 oclock position, undermining 1.5cm' },
+      { label: 'Wound Bed', type: 'text', placeholder: 'e.g. 60% granulation tissue, 40% yellow slough, serosanguineous drainage, wound edges indurated' },
+      { label: 'Clinical Notes', type: 'textarea', placeholder: 'Stage 3 and 4 are MCCs. Document POA status - hospital-acquired pressure injuries are HACs that reduce reimbursement. Measure and document at every encounter. Stage based on deepest visible tissue layer.' }
+    ]
   }
 ];
 
