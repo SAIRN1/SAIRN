@@ -137,8 +137,19 @@ textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}textarea#userInput::p
     <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">Back</button>
   </div>
   <div class="mode-bar">
-    <button class="mode-btn" onclick="setMode('Read a Document','Help me understand a legal document')"><span class="mode-icon">📋</span><span class="mode-label">Read a Document</span></button><button class="mode-btn" onclick="setMode('Know My Rights','What are my rights in this situation?')"><span class="mode-icon">🔍</span><span class="mode-label">Know My Rights</span></button><button class="mode-btn" onclick="setMode('Draft Something','Help me write a legal letter or agreement')"><span class="mode-icon">✍️</span><span class="mode-label">Draft Something</span></button><button class="mode-btn" onclick="setMode('Tenant Rights','Help with a landlord or housing issue')"><span class="mode-icon">🏠</span><span class="mode-label">Tenant Rights</span></button><button class="mode-btn" onclick="setMode('Work Question','Help with an employment legal question')"><span class="mode-icon">💼</span><span class="mode-label">Work Question</span></button>
-    <div class="mode-divider"></div>
+    <button class="mode-btn" onclick="setMode('Read_a_Document')"><span class="mode-label">Read a Document</span></button>
+    <button class="mode-btn" onclick="setMode('Know_My_Rights')"><span class="mode-label">Know My Rights</span></button>
+    <button class="mode-btn" onclick="setMode('Draft_a_Document')"><span class="mode-label">Draft a Document</span></button>
+    <button class="mode-btn" onclick="setMode('Tenant_Rights')"><span class="mode-label">Tenant Rights</span></button>
+    <button class="mode-btn" onclick="setMode('Employment_Rights')"><span class="mode-label">Employment Rights</span></button>
+    <button class="mode-btn" onclick="setMode('Family_Law')"><span class="mode-label">Family Law</span></button>
+    <button class="mode-btn" onclick="setMode('Business_Law')"><span class="mode-label">Business Law</span></button>
+    <button class="mode-btn" onclick="setMode('Consumer_Rights')"><span class="mode-label">Consumer Rights</span></button>
+    <button class="mode-btn" onclick="setMode('Immigration_Basics')"><span class="mode-label">Immigration Basics</span></button>
+    <button class="mode-btn" onclick="setMode('Criminal_Rights')"><span class="mode-label">Criminal Rights</span></button>
+    <button class="mode-btn" onclick="setMode('Small_Claims_Court')"><span class="mode-label">Small Claims Court</span></button>
+    <button class="mode-btn" onclick="setMode('Estate_Planning')"><span class="mode-label">Estate Planning</span></button>
+  </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="document" onclick="startFlow('document')"><span class="mode-icon">📋</span><span class="mode-label">a Document</span></button><button class="flow-btn mode-btn" data-flow="rights" onclick="startFlow('rights')"><span class="mode-icon">🔍</span><span class="mode-label">My Rights</span></button>
   </div>
@@ -160,7 +171,7 @@ textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}textarea#userInput::p
   </div>
 </div>
 <script>
-const SYSTEM = "You are SAIRN Legal, an AI legal guidance companion powered by Claude AI, part of SAIRN NEXUS built by Michael L. Dibert of SAIRN Technologies. You help people understand legal documents, know their rights, and navigate common legal situations. You are not a lawyer — always note this and recommend attorneys for serious legal matters. Be genuinely helpful. Explain legal concepts in plain language. Do not use contractions.";
+const SYSTEM = "You are SAIRNlaw, the world's most comprehensive AI legal intelligence companion powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve individuals and small businesses worldwide with practical legal guidance across all major areas of law. CONSUMER LAW: tenant and landlord rights, consumer protection, debt collection rights, FDCPA, FCRA, lemon laws, warranty rights, and small claims court guidance. EMPLOYMENT LAW: wrongful termination, workplace discrimination, harassment, FMLA, wage and hour violations, independent contractor classification, non-compete agreements, and workers compensation. FAMILY LAW: divorce, child custody, child support, adoption, guardianship, domestic violence protective orders, and estate basics. REAL ESTATE: property purchases, contracts, disclosures, HOA disputes, foreclosure, and title issues. BUSINESS LAW: contract drafting and review, business formation, partnership agreements, intellectual property basics, trademark and copyright fundamentals. CRIMINAL LAW: understanding charges, rights during arrest, bail, plea agreements, and record expungement basics. IMMIGRATION: visa categories, green card basics, naturalization, and deportation defense concepts. DOCUMENT GUIDANCE: explain any legal document in plain language, identify concerning clauses, and flag missing protections. Always recommend consulting a licensed attorney in the user's jurisdiction for specific legal advice, court representation, or document execution. Always ask what state the user is in — law varies significantly by state.";
 const APP_NAME = "SAIRNlegal";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "legal";

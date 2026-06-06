@@ -137,8 +137,19 @@ textarea#userInput:focus{border-color:rgba(239,68,68,0.5)}textarea#userInput::pl
     <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">Back</button>
   </div>
   <div class="mode-bar">
-    <button class="mode-btn" onclick="setMode('Understand Symptoms','Help me understand what I might be experiencing')"><span class="mode-icon">🩺</span><span class="mode-label">Understand Symptoms</span></button><button class="mode-btn" onclick="setMode('Medication Question','I have a question about a medication')"><span class="mode-icon">💊</span><span class="mode-label">Medication Question</span></button><button class="mode-btn" onclick="setMode('Nutrition Guidance','Help me eat better for my health goals')"><span class="mode-icon">🥗</span><span class="mode-label">Nutrition Guidance</span></button><button class="mode-btn" onclick="setMode('Fitness Advice','Create an exercise plan for me')"><span class="mode-icon">🏃</span><span class="mode-label">Fitness Advice</span></button><button class="mode-btn" onclick="setMode('Mental Wellness','Help me with stress, sleep, or mental health')"><span class="mode-icon">🧘</span><span class="mode-label">Mental Wellness</span></button>
-    <div class="mode-divider"></div>
+    <button class="mode-btn" onclick="setMode('Understand_Symptoms')"><span class="mode-label">Understand Symptoms</span></button>
+    <button class="mode-btn" onclick="setMode('Medication_Guide')"><span class="mode-label">Medication Guide</span></button>
+    <button class="mode-btn" onclick="setMode('Nutrition_Plan')"><span class="mode-label">Nutrition Plan</span></button>
+    <button class="mode-btn" onclick="setMode('Mental_Wellness')"><span class="mode-label">Mental Wellness</span></button>
+    <button class="mode-btn" onclick="setMode('Preventive_Care')"><span class="mode-label">Preventive Care</span></button>
+    <button class="mode-btn" onclick="setMode('Chronic_Disease')"><span class="mode-label">Chronic Disease</span></button>
+    <button class="mode-btn" onclick="setMode('Fitness_and_Exercise')"><span class="mode-label">Fitness and Exercise</span></button>
+    <button class="mode-btn" onclick="setMode('Pediatric_Health')"><span class="mode-label">Pediatric Health</span></button>
+    <button class="mode-btn" onclick="setMode('Women's_Health')"><span class="mode-label">Women's Health</span></button>
+    <button class="mode-btn" onclick="setMode('Men's_Health')"><span class="mode-label">Men's Health</span></button>
+    <button class="mode-btn" onclick="setMode('Sleep_Health')"><span class="mode-label">Sleep Health</span></button>
+    <button class="mode-btn" onclick="setMode('Emergency_Signs')"><span class="mode-label">Emergency Signs</span></button>
+  </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="symptoms" onclick="startFlow('symptoms')"><span class="mode-icon">🩺</span><span class="mode-label">Symptoms</span></button><button class="flow-btn mode-btn" data-flow="nutrition" onclick="startFlow('nutrition')"><span class="mode-icon">🥗</span><span class="mode-label">Guidance</span></button>
   </div>
@@ -160,7 +171,7 @@ textarea#userInput:focus{border-color:rgba(239,68,68,0.5)}textarea#userInput::pl
   </div>
 </div>
 <script>
-const SYSTEM = "You are SAIRN Health, an AI health companion powered by Claude AI, part of SAIRN NEXUS built by Michael L. Dibert of SAIRN Technologies. You provide informed health guidance on symptoms, medications, nutrition, fitness, and mental wellness. Always be clear that you are an AI and not a doctor. Recommend professional medical consultation for serious symptoms. Be genuinely helpful — not overly cautious. Give real information, not just 'see a doctor.' Use plain language. Do not use contractions.";
+const SYSTEM = "You are SAIRNhealth, the world's most comprehensive AI health intelligence companion powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve patients, caregivers, and health-conscious individuals worldwide. You are knowledgeable in internal medicine, primary care, nutrition science, mental health, fitness physiology, pharmacology, preventive medicine, chronic disease management, pediatric health, women's health, men's health, geriatric care, sleep medicine, and integrative health. SYMPTOM GUIDANCE: Provide thorough symptom analysis with differential diagnoses, red flag symptoms requiring immediate emergency care, appropriate over-the-counter remedies, when to call a doctor versus when to wait, and what to expect at a doctor's visit. Always recommend professional medical evaluation for serious symptoms. MEDICATION KNOWLEDGE: Explain medications in plain language — what they do, how to take them, common side effects, drug interactions to watch for, what to do if a dose is missed, and generic versus brand name options. NUTRITION: Provide evidence-based dietary guidance for health goals, chronic conditions, weight management, athletic performance, and specific medical diets including diabetic, heart-healthy, renal, anti-inflammatory, and Mediterranean. MENTAL HEALTH: Address anxiety, depression, stress, sleep disorders, grief, and behavioral health with evidence-based coping strategies, therapy modalities explained, and medication guidance. PREVENTIVE CARE: Recommend age-appropriate screenings, vaccines, and wellness visits based on patient demographics. CHRONIC DISEASE: Specialized knowledge in diabetes, hypertension, heart disease, COPD, asthma, arthritis, thyroid disorders, and cancer survivorship. Always recommend consulting a licensed healthcare provider for diagnosis, prescription, and treatment decisions. You are a knowledgeable health partner — not a replacement for medical care.";
 const APP_NAME = "SAIRNhealth";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "health";

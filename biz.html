@@ -143,8 +143,19 @@ textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}textarea#userInput::p
     <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">← Back</button>
   </div>
   <div class="mode-bar">
-    <button class="mode-btn" onclick="setMode('Grow Revenue','Help me find more customers or increase revenue')"><span class="mode-icon">📈</span><span class="mode-label">Grow Revenue</span></button><button class="mode-btn" onclick="setMode('Fix Finances','Understand my numbers and improve my margins')"><span class="mode-icon">💰</span><span class="mode-label">Fix Finances</span></button><button class="mode-btn" onclick="setMode('Customer Issue','Handle a customer situation or write a message')"><span class="mode-icon">👥</span><span class="mode-label">Customer Issue</span></button><button class="mode-btn" onclick="setMode('Operations','Help me work smarter and waste less time')"><span class="mode-icon">⚙️</span><span class="mode-label">Operations</span></button><button class="mode-btn" onclick="setMode('Business Advice','I have a decision to make — help me think it through')"><span class="mode-icon">🧠</span><span class="mode-label">Business Advice</span></button>
-    <div class="mode-divider"></div>
+    <button class="mode-btn" onclick="setMode('Grow_Revenue')"><span class="mode-label">Grow Revenue</span></button>
+    <button class="mode-btn" onclick="setMode('Fix_Cash_Flow')"><span class="mode-label">Fix Cash Flow</span></button>
+    <button class="mode-btn" onclick="setMode('Marketing_Strategy')"><span class="mode-label">Marketing Strategy</span></button>
+    <button class="mode-btn" onclick="setMode('Hire_and_Manage_People')"><span class="mode-label">Hire and Manage People</span></button>
+    <button class="mode-btn" onclick="setMode('Customer_Problems')"><span class="mode-label">Customer Problems</span></button>
+    <button class="mode-btn" onclick="setMode('Operations_Help')"><span class="mode-label">Operations Help</span></button>
+    <button class="mode-btn" onclick="setMode('Pricing_Strategy')"><span class="mode-label">Pricing Strategy</span></button>
+    <button class="mode-btn" onclick="setMode('Start_a_Business')"><span class="mode-label">Start a Business</span></button>
+    <button class="mode-btn" onclick="setMode('Business_Plan')"><span class="mode-label">Business Plan</span></button>
+    <button class="mode-btn" onclick="setMode('Raise_Capital')"><span class="mode-label">Raise Capital</span></button>
+    <button class="mode-btn" onclick="setMode('Competitor_Analysis')"><span class="mode-label">Competitor Analysis</span></button>
+    <button class="mode-btn" onclick="setMode('Scale_My_Business')"><span class="mode-label">Scale My Business</span></button>
+  </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="revenue" onclick="startFlow('revenue')"><span class="mode-icon">📈</span><span class="mode-label">More Revenue</span></button><button class="flow-btn mode-btn" data-flow="margins" onclick="startFlow('margins')"><span class="mode-icon">💰</span><span class="mode-label">My Margins</span></button>
   </div>
@@ -166,7 +177,7 @@ textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}textarea#userInput::p
   </div>
 </div>
 <script>
-const SYSTEM = "You are SAIRN Biz, an AI business advisor for small business owners powered by Claude AI, part of SAIRN NEXUS by Michael L. Dibert. You serve small business owners with under 50 employees across all industries. Expert in revenue growth, financial analysis, operations, customer relationships, business decisions, marketing, and hiring. Think like a seasoned advisor who has seen hundreds of businesses. Be direct — business owners do not have time for soft feedback. Always connect advice to dollars. Gross margin under 40% for service business is a warning sign. Cash flow is more important than profit.";
+const SYSTEM = "You are SAIRNbiz, the world's most comprehensive AI business intelligence advisor for small and mid-size businesses, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve business owners, entrepreneurs, and operators across every industry with Fortune 500-level business strategy and practical execution guidance. REVENUE GROWTH: pricing strategy, sales funnel optimization, customer acquisition, upselling and cross-selling, loyalty programs, referral programs, digital marketing, social media strategy, email marketing, and local business marketing. FINANCIAL MANAGEMENT: cash flow management, profit margin analysis, break-even analysis, financial statements interpretation, cost reduction, pricing for profit, invoice management, and when to hire a CFO or bookkeeper. OPERATIONS: standard operating procedures, process documentation, hiring and onboarding, vendor management, inventory control, customer service systems, and automation opportunities. MARKETING: brand positioning, competitor analysis, content marketing, SEO basics, Google Business Profile optimization, reputation management, and advertising ROI. CUSTOMER RELATIONS: handling complaints, building loyalty, collecting reviews, customer lifetime value, and churn reduction. GROWTH STRATEGY: when to expand, franchise considerations, partnership structures, raising capital, SBA loans, and scaling operations. LEGAL AND COMPLIANCE: business entity selection, contracts basics, employment law for small business, licenses and permits, and when to involve an attorney. HR: hiring, performance management, compensation benchmarking, and employee retention for small teams. Always ask what industry and business size before advising — strategy differs significantly across contexts.";
 const APP_NAME = "SAIRNbiz";
 const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'biz';

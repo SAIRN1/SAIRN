@@ -137,8 +137,19 @@ textarea#userInput:focus{border-color:rgba(59,130,246,0.5)}textarea#userInput::p
     <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">Back</button>
   </div>
   <div class="mode-bar">
-    <button class="mode-btn" onclick="setMode('Explain a Concept','Explain something I am struggling to understand')"><span class="mode-icon">📖</span><span class="mode-label">Explain a Concept</span></button><button class="mode-btn" onclick="setMode('Quiz Me','Test my knowledge on a topic')"><span class="mode-icon">❓</span><span class="mode-label">Quiz Me</span></button><button class="mode-btn" onclick="setMode('Study Plan','Build me a study plan for an exam')"><span class="mode-icon">📝</span><span class="mode-label">Study Plan</span></button><button class="mode-btn" onclick="setMode('Research Help','Help me research a topic thoroughly')"><span class="mode-icon">🔬</span><span class="mode-label">Research Help</span></button><button class="mode-btn" onclick="setMode('Check My Work','Review my essay or homework')"><span class="mode-icon">✅</span><span class="mode-label">Check My Work</span></button>
-    <div class="mode-divider"></div>
+    <button class="mode-btn" onclick="setMode('Explain_a_Concept')"><span class="mode-label">Explain a Concept</span></button>
+    <button class="mode-btn" onclick="setMode('Quiz_Me')"><span class="mode-label">Quiz Me</span></button>
+    <button class="mode-btn" onclick="setMode('Build_a_Study_Plan')"><span class="mode-label">Build a Study Plan</span></button>
+    <button class="mode-btn" onclick="setMode('Help_With_Math')"><span class="mode-label">Help With Math</span></button>
+    <button class="mode-btn" onclick="setMode('Essay_Writing')"><span class="mode-label">Essay Writing</span></button>
+    <button class="mode-btn" onclick="setMode('Exam_Prep')"><span class="mode-label">Exam Prep</span></button>
+    <button class="mode-btn" onclick="setMode('Research_Help')"><span class="mode-label">Research Help</span></button>
+    <button class="mode-btn" onclick="setMode('Science_Help')"><span class="mode-label">Science Help</span></button>
+    <button class="mode-btn" onclick="setMode('History_and_Social_Studies')"><span class="mode-label">History and Social Studies</span></button>
+    <button class="mode-btn" onclick="setMode('Check_My_Work')"><span class="mode-label">Check My Work</span></button>
+    <button class="mode-btn" onclick="setMode('Foreign_Language_Help')"><span class="mode-label">Foreign Language Help</span></button>
+    <button class="mode-btn" onclick="setMode('Professional_Certification')"><span class="mode-label">Professional Certification</span></button>
+  </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="explain" onclick="startFlow('explain')"><span class="mode-icon">📖</span><span class="mode-label">a Concept</span></button><button class="flow-btn mode-btn" data-flow="quiz" onclick="startFlow('quiz')"><span class="mode-icon">❓</span><span class="mode-label">Me</span></button>
   </div>
@@ -160,7 +171,7 @@ textarea#userInput:focus{border-color:rgba(59,130,246,0.5)}textarea#userInput::p
   </div>
 </div>
 <script>
-const SYSTEM = "You are SAIRN Study, an AI tutor powered by Claude AI, part of SAIRN NEXUS built by Michael L. Dibert of SAIRN Technologies. You teach any subject at any level — from elementary school to graduate school. Explain concepts clearly using examples and analogies. Quiz students effectively. Build study plans. Give honest feedback on written work. Adapt your explanations to the student's level. Do not use contractions.";
+const SYSTEM = "You are SAIRNstudy, the world's most advanced AI tutor and academic companion powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You teach any subject at any level — from kindergarten through graduate school and professional certification. SUBJECTS: mathematics from arithmetic through calculus and statistics, sciences including biology, chemistry, physics, and earth science, history and social studies, literature and writing, foreign languages, computer science and programming, economics, philosophy, psychology, law school preparation, medical school preparation, and professional certifications including CPA, CFA, bar exam, USMLE, and real estate licensing. TEACHING METHODS: explain concepts using analogies tailored to the student's background, use the Socratic method to deepen understanding, generate practice problems with step-by-step solutions, create custom study plans based on exam dates and weak areas, use spaced repetition principles, and adapt explanations to visual, auditory, or hands-on learning preferences. EXAM PREP: SAT, ACT, GRE, GMAT, LSAT, MCAT, AP exams, IB exams, TOEFL, IELTS, and state licensing exams. WRITING: essay structure and argumentation, thesis development, citation styles including APA, MLA, and Chicago, research paper organization, and academic writing conventions. RESEARCH: finding credible sources, evaluating evidence quality, synthesizing information from multiple sources, and avoiding plagiarism. Always adapt your teaching style to the student's age, level, and learning goals. Ask clarifying questions to understand exactly where the student is struggling before teaching.";
 const APP_NAME = "SAIRNstudy";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "study";

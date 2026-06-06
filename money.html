@@ -137,8 +137,19 @@ textarea#userInput:focus{border-color:rgba(245,158,11,0.5)}textarea#userInput::p
     <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">Back</button>
   </div>
   <div class="mode-bar">
-    <button class="mode-btn" onclick="setMode('Budget Help','Help me build or fix my budget')"><span class="mode-icon">📊</span><span class="mode-label">Budget Help</span></button><button class="mode-btn" onclick="setMode('Debt Strategy','Help me tackle my debt the smart way')"><span class="mode-icon">💳</span><span class="mode-label">Debt Strategy</span></button><button class="mode-btn" onclick="setMode('Save More','Help me save more money each month')"><span class="mode-icon">💵</span><span class="mode-label">Save More</span></button><button class="mode-btn" onclick="setMode('Invest Basics','Explain investing in plain language')"><span class="mode-icon">📈</span><span class="mode-label">Invest Basics</span></button><button class="mode-btn" onclick="setMode('Big Purchase','Help me think through a major financial decision')"><span class="mode-icon">🏠</span><span class="mode-label">Big Purchase</span></button>
-    <div class="mode-divider"></div>
+    <button class="mode-btn" onclick="setMode('Build_a_Budget')"><span class="mode-label">Build a Budget</span></button>
+    <button class="mode-btn" onclick="setMode('Eliminate_Debt')"><span class="mode-label">Eliminate Debt</span></button>
+    <button class="mode-btn" onclick="setMode('Start_Investing')"><span class="mode-label">Start Investing</span></button>
+    <button class="mode-btn" onclick="setMode('Improve_Credit_Score')"><span class="mode-label">Improve Credit Score</span></button>
+    <button class="mode-btn" onclick="setMode('Save_for_a_Goal')"><span class="mode-label">Save for a Goal</span></button>
+    <button class="mode-btn" onclick="setMode('Retirement_Planning')"><span class="mode-label">Retirement Planning</span></button>
+    <button class="mode-btn" onclick="setMode('Buy_a_Home')"><span class="mode-label">Buy a Home</span></button>
+    <button class="mode-btn" onclick="setMode('Tax_Strategy')"><span class="mode-label">Tax Strategy</span></button>
+    <button class="mode-btn" onclick="setMode('Emergency_Fund')"><span class="mode-label">Emergency Fund</span></button>
+    <button class="mode-btn" onclick="setMode('Side_Income')"><span class="mode-label">Side Income</span></button>
+    <button class="mode-btn" onclick="setMode('Insurance_Basics')"><span class="mode-label">Insurance Basics</span></button>
+    <button class="mode-btn" onclick="setMode('Net_Worth_Tracker')"><span class="mode-label">Net Worth Tracker</span></button>
+  </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="budget" onclick="startFlow('budget')"><span class="mode-icon">📊</span><span class="mode-label">a Budget</span></button><button class="flow-btn mode-btn" data-flow="debt" onclick="startFlow('debt')"><span class="mode-icon">💳</span><span class="mode-label">My Debt</span></button>
   </div>
@@ -160,7 +171,7 @@ textarea#userInput:focus{border-color:rgba(245,158,11,0.5)}textarea#userInput::p
   </div>
 </div>
 <script>
-const SYSTEM = "You are SAIRN Money, an AI financial guidance companion powered by Claude AI, part of SAIRN NEXUS built by Michael L. Dibert of SAIRN Technologies. You help people with budgeting, debt management, saving, and basic investing. You are not a licensed financial advisor — always note this for investment questions. Be specific with numbers. Give real actionable guidance, not vague platitudes. Do not use contractions.";
+const SYSTEM = "You are SAIRNmoney, the world's most comprehensive AI financial intelligence companion powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve individuals and families worldwide with practical, actionable financial guidance. BUDGETING: zero-based budgeting, 50/30/20 rule, envelope method, budgeting apps compared, tracking spending, identifying waste, and building a sustainable budget for any income level. DEBT MANAGEMENT: avalanche versus snowball methods, debt consolidation, negotiating with creditors, understanding interest, student loan repayment strategies, credit card debt elimination, and bankruptcy basics. SAVING: emergency fund building, high-yield savings accounts, CDs, money market accounts, short versus long-term savings goals, and automating savings. INVESTING: stock market basics, index funds versus actively managed funds, ETFs, 401k and IRA contribution strategies, Roth versus traditional accounts, asset allocation by age, dollar cost averaging, and understanding risk tolerance. CREDIT: how credit scores work, the five FICO factors, building credit from scratch, disputing errors, credit cards for building credit, and what lenders look for. REAL ESTATE: renting versus buying analysis, mortgage types, down payment strategies, PMI, refinancing, home equity, and real estate investment basics. RETIREMENT: Social Security optimization, Medicare basics, required minimum distributions, sequence of returns risk, and retirement income planning. TAX: standard versus itemized deductions, common credits, retirement contribution deductions, and when to consult a CPA. Always recommend consulting a licensed financial advisor for specific investment advice and a CPA for tax guidance.";
 const APP_NAME = "SAIRNmoney";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "money";

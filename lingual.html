@@ -137,8 +137,19 @@ textarea#userInput:focus{border-color:rgba(16,185,129,0.5)}textarea#userInput::p
     <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">Back</button>
   </div>
   <div class="mode-bar">
-    <button class="mode-btn" onclick="setMode('Practice Speaking','Practice a conversation in my target language')"><span class="mode-icon">🗣️</span><span class="mode-label">Practice Speaking</span></button><button class="mode-btn" onclick="setMode('Learn Vocabulary','Teach me new words and how to use them')"><span class="mode-icon">📖</span><span class="mode-label">Learn Vocabulary</span></button><button class="mode-btn" onclick="setMode('Check My Writing','Review something I wrote in another language')"><span class="mode-icon">✍️</span><span class="mode-label">Check My Writing</span></button><button class="mode-btn" onclick="setMode('Translate This','Translate text and explain the nuances')"><span class="mode-icon">🔤</span><span class="mode-label">Translate This</span></button><button class="mode-btn" onclick="setMode('Grammar Help','Explain a grammar rule I am struggling with')"><span class="mode-icon">📚</span><span class="mode-label">Grammar Help</span></button>
-    <div class="mode-divider"></div>
+    <button class="mode-btn" onclick="setMode('Practice_Conversation')"><span class="mode-label">Practice Conversation</span></button>
+    <button class="mode-btn" onclick="setMode('Learn_Vocabulary')"><span class="mode-label">Learn Vocabulary</span></button>
+    <button class="mode-btn" onclick="setMode('Grammar_Explained')"><span class="mode-label">Grammar Explained</span></button>
+    <button class="mode-btn" onclick="setMode('Pronunciation_Guide')"><span class="mode-label">Pronunciation Guide</span></button>
+    <button class="mode-btn" onclick="setMode('Translate_and_Explain')"><span class="mode-label">Translate and Explain</span></button>
+    <button class="mode-btn" onclick="setMode('Check_My_Writing')"><span class="mode-label">Check My Writing</span></button>
+    <button class="mode-btn" onclick="setMode('Cultural_Context')"><span class="mode-label">Cultural Context</span></button>
+    <button class="mode-btn" onclick="setMode('Exam_Prep')"><span class="mode-label">Exam Prep</span></button>
+    <button class="mode-btn" onclick="setMode('Business_Language')"><span class="mode-label">Business Language</span></button>
+    <button class="mode-btn" onclick="setMode('Travel_Phrases')"><span class="mode-label">Travel Phrases</span></button>
+    <button class="mode-btn" onclick="setMode('Beginner_Basics')"><span class="mode-label">Beginner Basics</span></button>
+    <button class="mode-btn" onclick="setMode('Advanced_Practice')"><span class="mode-label">Advanced Practice</span></button>
+  </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="conversation" onclick="startFlow('conversation')"><span class="mode-icon">🗣️</span><span class="mode-label">a Conversation</span></button><button class="flow-btn mode-btn" data-flow="vocab" onclick="startFlow('vocab')"><span class="mode-icon">📖</span><span class="mode-label">New Vocabulary</span></button>
   </div>
@@ -160,7 +171,7 @@ textarea#userInput:focus{border-color:rgba(16,185,129,0.5)}textarea#userInput::p
   </div>
 </div>
 <script>
-const SYSTEM = "You are SAIRN Lingual, an AI language learning companion powered by Claude AI, part of SAIRN NEXUS built by Michael L. Dibert of SAIRN Technologies. You teach any language through conversation, vocabulary building, grammar explanation, and writing correction. Adapt your teaching to the learner's level precisely. For conversation practice, stay in the target language but switch to English to explain when needed. Always include pronunciation guidance. Do not use contractions in your English explanations.";
+const SYSTEM = "You are SAIRNlingual, the world's most comprehensive AI language learning companion powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You teach any language to any level of learner. LANGUAGES: Spanish, French, German, Italian, Portuguese, Mandarin, Japanese, Korean, Arabic, Russian, Hindi, Dutch, Polish, Turkish, Swedish, Greek, Hebrew, Vietnamese, Thai, and any other language requested. CONVERSATION PRACTICE: engage in realistic dialogues at the student's level, gently correct mistakes in real-time, explain why corrections are needed, introduce natural phrases natives actually use, and progressively increase difficulty. VOCABULARY: teach words in context rather than isolated lists, use spaced repetition principles, group vocabulary by theme and situation, and explain etymology and memory techniques. GRAMMAR: explain grammar rules in plain language without jargon, show patterns rather than memorization, provide examples in context, and identify the most common mistakes made by English speakers learning each language. PRONUNCIATION: describe pronunciation clearly in writing, explain mouth position and sounds, identify sounds that do not exist in English, and explain tonal languages clearly. CULTURAL CONTEXT: explain cultural norms, idioms, slang, regional differences, and the context in which phrases are used. LEVELS: adapt perfectly to complete beginners through advanced speakers. For beginners, use English explanations. For advanced learners, conduct entire sessions in the target language. TEST PREP: DELF, DALF, HSK, JLPT, DELE, Goethe-Zertifikat, and other proficiency exams. Always identify what level the user is at before beginning and adapt your approach accordingly.";
 const APP_NAME = "SAIRNlingual";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "lingual";

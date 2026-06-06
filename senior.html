@@ -137,8 +137,19 @@ textarea#userInput:focus{border-color:rgba(245,158,11,0.5)}textarea#userInput::p
     <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">Back</button>
   </div>
   <div class="mode-bar">
-    <button class="mode-btn" onclick="setMode('Medication Help','Help me understand my medications')"><span class="mode-icon">💊</span><span class="mode-label">Medication Help</span></button><button class="mode-btn" onclick="setMode('Family Communication','Help me communicate with family')"><span class="mode-icon">👨‍👩‍👧</span><span class="mode-label">Family Communication</span></button><button class="mode-btn" onclick="setMode('Retirement Finance','Help with retirement financial questions')"><span class="mode-icon">💰</span><span class="mode-label">Retirement Finance</span></button><button class="mode-btn" onclick="setMode('Healthcare Navigation','Help me navigate healthcare and insurance')"><span class="mode-icon">🏥</span><span class="mode-label">Healthcare Navigation</span></button><button class="mode-btn" onclick="setMode('Tech Help','Help me with technology questions')"><span class="mode-icon">📱</span><span class="mode-label">Tech Help</span></button>
-    <div class="mode-divider"></div>
+    <button class="mode-btn" onclick="setMode('Medicare_Help')"><span class="mode-label">Medicare Help</span></button>
+    <button class="mode-btn" onclick="setMode('Medication_Guide')"><span class="mode-label">Medication Guide</span></button>
+    <button class="mode-btn" onclick="setMode('Retirement_Finance')"><span class="mode-label">Retirement Finance</span></button>
+    <button class="mode-btn" onclick="setMode('Technology_Help')"><span class="mode-label">Technology Help</span></button>
+    <button class="mode-btn" onclick="setMode('Family_Communication')"><span class="mode-label">Family Communication</span></button>
+    <button class="mode-btn" onclick="setMode('Healthcare_Navigation')"><span class="mode-label">Healthcare Navigation</span></button>
+    <button class="mode-btn" onclick="setMode('Home_Safety')"><span class="mode-label">Home Safety</span></button>
+    <button class="mode-btn" onclick="setMode('Social_Connection')"><span class="mode-label">Social Connection</span></button>
+    <button class="mode-btn" onclick="setMode('Legal_Documents')"><span class="mode-label">Legal Documents</span></button>
+    <button class="mode-btn" onclick="setMode('Scam_Protection')"><span class="mode-label">Scam Protection</span></button>
+    <button class="mode-btn" onclick="setMode('Caregiver_Support')"><span class="mode-label">Caregiver Support</span></button>
+    <button class="mode-btn" onclick="setMode('End_of_Life_Planning')"><span class="mode-label">End of Life Planning</span></button>
+  </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="medication" onclick="startFlow('medication')"><span class="mode-icon">💊</span><span class="mode-label">Questions</span></button><button class="flow-btn mode-btn" data-flow="family" onclick="startFlow('family')"><span class="mode-icon">👨‍👩‍👧</span><span class="mode-label">With Family</span></button>
   </div>
@@ -160,7 +171,7 @@ textarea#userInput:focus{border-color:rgba(245,158,11,0.5)}textarea#userInput::p
   </div>
 </div>
 <script>
-const SYSTEM = "You are SAIRN Senior, an AI companion designed for adults 60 and older, powered by Claude AI, part of SAIRN NEXUS built by Michael L. Dibert of SAIRN Technologies. Also accessible via Alexa voice. You assist with medications, family communication, retirement finances, healthcare navigation, and technology questions. Speak clearly and warmly. Never be condescending. Use larger concepts and plain language. Be patient and thorough. Do not rush. Do not use contractions.";
+const SYSTEM = "You are SAIRNsenior, the world's most compassionate and comprehensive AI companion for adults 60 and older, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve seniors and their caregivers with warmth, patience, and expertise. Use clear, jargon-free language. Never rush. Repeat information when needed. HEALTH MANAGEMENT: explain Medicare Parts A, B, C, and D in plain language, help compare Medicare Advantage plans, explain Medicaid, prescription drug coverage, prior authorizations, finding in-network providers, understanding medical bills, and navigating healthcare paperwork. MEDICATIONS: explain prescriptions clearly, identify potential drug interactions common in seniors, explain polypharmacy risks, and help prepare questions for doctor visits. RETIREMENT AND FINANCE: Social Security optimization including when to claim, survivor benefits, pension management, RMD requirements, Medicare costs, supplemental income options, senior discounts, and protecting savings from scams. TECHNOLOGY HELP: step-by-step guidance for smartphones, tablets, computers, video calling, email, online banking, streaming services, and smart home devices — always patient, always clear. FAMILY COMMUNICATION: help draft messages to family, navigate family dynamics around care decisions, and communicate health concerns clearly. DAILY LIVING: fall prevention, home safety modifications, driving decisions, senior housing options including aging in place, assisted living, and memory care. SOCIAL CONNECTION: combating isolation, finding senior centers, volunteering, lifelong learning programs, and staying engaged. Always speak with warmth and respect. Never be condescending. Celebrate the wisdom and experience of older adults.";
 const APP_NAME = "SAIRNsenior";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "senior";
