@@ -463,7 +463,7 @@ const DOC_TEMPLATES = [
   {
     id: 'sports_physical',
     title: 'Sports Physical (PPE)',
-    icon: '\u{1F3C3}',
+    icon: '🏃',
     icd: 'Z02.5',
     purpose: 'Pre-Participation Physical Evaluation for athletic clearance. Documents cardiovascular screening, musculoskeletal exam, medical history, and clearance decision. Print or copy to Epic as SmartPhrase.',
     fields: [
@@ -525,7 +525,7 @@ const DOC_TEMPLATES = [
   {
     id: 'cardiac_arrest',
     title: 'Cardiac Arrest and Resuscitation',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'I46.x',
     purpose: 'Cardiac arrest documentation must specify arrest rhythm and whether ROSC achieved. Post-cardiac arrest syndrome is separate with MCC weight. Anoxic brain injury G93.1 is MCC. Document time to ROSC and targeted temperature management.',
     fields: [
@@ -540,7 +540,7 @@ const DOC_TEMPLATES = [
   {
     id: 'shock',
     title: 'Shock',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'R57.x',
     purpose: 'Shock type must be explicitly documented. Septic shock codes A41.9 plus R65.21 not R57. Cardiogenic shock is MCC. Hypovolemic shock requires cause. Obstructive shock from PE or tension pneumothorax codes separately.',
     fields: [
@@ -554,7 +554,7 @@ const DOC_TEMPLATES = [
   {
     id: 'trauma',
     title: 'Trauma and Polytrauma',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'S00-T88',
     purpose: 'Trauma requires specific site laterality and type for each injury. Most severe injury is principal diagnosis. Open versus closed fractures differ. Document mechanism and GCS. External cause codes required.',
     fields: [
@@ -570,7 +570,7 @@ const DOC_TEMPLATES = [
   {
     id: 'burns',
     title: 'Burns',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'T20-T31',
     purpose: 'Burns require degree, TBSA percentage, and site. Third degree is MCC. TBSA drives DRG significantly. Inhalation injury is a major complication affecting mortality and must be documented separately.',
     fields: [
@@ -585,7 +585,7 @@ const DOC_TEMPLATES = [
   {
     id: 'poisoning',
     title: 'Poisoning and Overdose',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'T36-T65',
     purpose: 'Poisoning requires substance, intent, and encounter type. Adverse effects code differently - adverse effect is when medication taken correctly causes harm. Document organ dysfunction from toxicity as separate codes.',
     fields: [
@@ -601,7 +601,7 @@ const DOC_TEMPLATES = [
   {
     id: 'hypothermia',
     title: 'Temperature Disorders',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'T67-T68',
     purpose: 'Severe hypothermia below 28C is MCC. Heat stroke with CNS dysfunction is MCC and emergency. Document core temperature and organ dysfunction from extreme temperature.',
     fields: [
@@ -615,7 +615,7 @@ const DOC_TEMPLATES = [
   {
     id: 'mechanical_ventilation',
     title: 'Mechanical Ventilation',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: '5A19x',
     purpose: 'Ventilation duration significantly affects DRG. Greater than 96 hours is higher-weighted DRG. Document indication, settings, weaning progress, and complications. Tracheostomy timing affects DRG.',
     fields: [
@@ -630,7 +630,7 @@ const DOC_TEMPLATES = [
   {
     id: 'sepsis_organ',
     title: 'Sepsis Organ Dysfunction Detail',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'A41.9 + R65.2x',
     purpose: 'Each sepsis organ failure codes separately and carries MCC weight. SOFA score components should be documented. Vasopressor requirement must be explicitly stated for septic shock R65.21.',
     fields: [
@@ -646,7 +646,7 @@ const DOC_TEMPLATES = [
   {
     id: 'leukemia',
     title: 'Leukemia',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'C91-C95',
     purpose: 'Leukemia must specify type and remission status. AML versus ALL versus CML versus CLL code completely differently. Blast crisis in CML is MCC. Document treatment phase.',
     fields: [
@@ -661,7 +661,7 @@ const DOC_TEMPLATES = [
   {
     id: 'lymphoma',
     title: 'Lymphoma',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'C81-C85',
     purpose: 'Lymphoma requires Hodgkin versus Non-Hodgkin, histology, and Ann Arbor stage. B symptoms affect stage suffix. CNS involvement codes separately. Document treatment and response assessment.',
     fields: [
@@ -675,7 +675,7 @@ const DOC_TEMPLATES = [
   {
     id: 'myeloma',
     title: 'Multiple Myeloma',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'C90.x',
     purpose: 'Multiple myeloma requires active versus smoldering versus MGUS. CRAB criteria define active disease. Bone lesions and renal failure code separately. Document ISS stage and treatment.',
     fields: [
@@ -689,7 +689,7 @@ const DOC_TEMPLATES = [
   {
     id: 'neutropenic_fever',
     title: 'Neutropenic Fever',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'D70.x + R50.9',
     purpose: 'Neutropenic fever is oncologic emergency. ANC threshold and infection source must be documented. MASCC score determines inpatient versus outpatient management. Document underlying malignancy and recent chemotherapy.',
     fields: [
@@ -705,7 +705,7 @@ const DOC_TEMPLATES = [
   {
     id: 'tumor_lysis',
     title: 'Tumor Lysis Syndrome',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'E88.3',
     purpose: 'TLS is metabolic emergency in hematologic malignancies. Cairo-Bishop criteria define laboratory versus clinical TLS. Renal failure codes separately as MCC. Document prophylaxis given.',
     fields: [
@@ -720,7 +720,7 @@ const DOC_TEMPLATES = [
   {
     id: 'fungal',
     title: 'Fungal Infections',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'B35-B49',
     purpose: 'Invasive fungal infections carry high morbidity in immunocompromised patients. Candidemia requires central line removal. Aspergillus codes separately. PCP is MCC. Document underlying immunosuppression.',
     fields: [
@@ -735,7 +735,7 @@ const DOC_TEMPLATES = [
   {
     id: 'tb',
     title: 'Tuberculosis',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'A15-A19',
     purpose: 'TB must specify pulmonary versus extrapulmonary and drug resistance. Miliary TB and TB meningitis are MCCs. Latent TB codes Z22.7 not A15. Document infection control and public health reporting.',
     fields: [
@@ -750,7 +750,7 @@ const DOC_TEMPLATES = [
   {
     id: 'als',
     title: 'ALS and Motor Neuron Disease',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'G12.21',
     purpose: 'ALS documentation tracks respiratory involvement. Respiratory failure is major complication. Document FVC and ventilator support. Goals of care discussion essential.',
     fields: [
@@ -765,7 +765,7 @@ const DOC_TEMPLATES = [
   {
     id: 'myasthenia',
     title: 'Myasthenia Gravis',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'G70.01',
     purpose: 'Myasthenic crisis is respiratory emergency requiring ICU. Thymoma requires documentation. Distinguish from cholinergic crisis. Document AChR antibody status.',
     fields: [
@@ -780,7 +780,7 @@ const DOC_TEMPLATES = [
   {
     id: 'guillain_barre',
     title: 'Guillain-Barre Syndrome',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'G61.0',
     purpose: 'GBS progression tracked by disability scale. Respiratory failure from diaphragm weakness is life-threatening. Autonomic instability is serious. Document IVIG or plasmapheresis.',
     fields: [
@@ -795,7 +795,7 @@ const DOC_TEMPLATES = [
   {
     id: 'neuropathy',
     title: 'Peripheral Neuropathy',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'G60-G65',
     purpose: 'Neuropathy type affects coding and treatment. Diabetic neuropathy requires linking to diabetes. CIDP is treatable. Document nerve conduction study findings.',
     fields: [
@@ -810,7 +810,7 @@ const DOC_TEMPLATES = [
   {
     id: 'spine',
     title: 'Spine Surgery and Complications',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'M47-M51',
     purpose: 'Spine surgery must specify level and approach. Cauda equina syndrome is emergency. Post-laminectomy syndrome codes M96.1. Document neurological deficits and resolution.',
     fields: [
@@ -825,7 +825,7 @@ const DOC_TEMPLATES = [
   {
     id: 'compartment',
     title: 'Compartment Syndrome',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'M79.A',
     purpose: 'Compartment syndrome is surgical emergency. Delta pressure below 30 mmHg indicates fasciotomy needed. Rhabdomyolysis adds additional MCC. Document fasciotomy timing.',
     fields: [
@@ -840,7 +840,7 @@ const DOC_TEMPLATES = [
   {
     id: 'fracture_complication',
     title: 'Fracture Complications',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'M84.x',
     purpose: 'Nonunion versus malunion code differently. Pathologic fractures use M80 for osteoporosis or M84.5 for metastatic disease. Periprosthetic fractures code M97.',
     fields: [
@@ -854,7 +854,7 @@ const DOC_TEMPLATES = [
   {
     id: 'amputation',
     title: 'Amputation',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'Z89.x / S48-S98',
     purpose: 'Amputation must specify level, laterality, and whether traumatic or surgical. Phantom limb pain codes separately. Document underlying cause and rehabilitation potential.',
     fields: [
@@ -869,7 +869,7 @@ const DOC_TEMPLATES = [
   {
     id: 'kidney_stones',
     title: 'Nephrolithiasis',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'N20-N23',
     purpose: 'Stone documentation requires location, size, and composition. Infected obstructed stone is urological emergency. Document intervention performed.',
     fields: [
@@ -884,7 +884,7 @@ const DOC_TEMPLATES = [
   {
     id: 'uti_complicated',
     title: 'Complicated UTI',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'N10 / N15.1',
     purpose: 'Complicated UTI involves structural or functional abnormality. Emphysematous pyelonephritis is surgical emergency. Renal abscess may require drainage. Document anatomic complication.',
     fields: [
@@ -899,7 +899,7 @@ const DOC_TEMPLATES = [
   {
     id: 'bladder_cancer',
     title: 'Bladder Cancer',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'C67.x',
     purpose: 'Bladder cancer must specify muscle-invasive versus non-muscle-invasive. NMIBC versus MIBC determines treatment. BCG versus cystectomy decision documented.',
     fields: [
@@ -913,7 +913,7 @@ const DOC_TEMPLATES = [
   {
     id: 'prostate_cancer',
     title: 'Prostate Cancer',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'C61',
     purpose: 'Prostate cancer requires Gleason score, PSA, and risk stratification. Active surveillance versus treatment documented. Castration-resistant prostate cancer separate entity. Document PSADT.',
     fields: [
@@ -927,7 +927,7 @@ const DOC_TEMPLATES = [
   {
     id: 'acute_liver_failure',
     title: 'Acute Liver Failure',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'K72.00',
     purpose: 'Acute liver failure is distinct from acute on chronic. INR above 1.5 with encephalopathy defines ALF. Acetaminophen most common US cause has specific antidote. Transplant evaluation must be documented.',
     fields: [
@@ -943,7 +943,7 @@ const DOC_TEMPLATES = [
   {
     id: 'cholecystitis',
     title: 'Biliary Disease',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'K80-K83',
     purpose: 'Acute cholecystitis must specify calculous versus acalculous. Cholangitis with Charcots triad is emergency. Tokyo Guidelines severity affects surgical timing. Choledocholithiasis requires ERCP.',
     fields: [
@@ -957,7 +957,7 @@ const DOC_TEMPLATES = [
   {
     id: 'ibd',
     title: 'Inflammatory Bowel Disease',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'K50-K51',
     purpose: 'Crohn versus UC must be documented. Location and severity affect coding. Complications including abscess and fistula code separately. Document biologic therapy and response.',
     fields: [
@@ -972,7 +972,7 @@ const DOC_TEMPLATES = [
   {
     id: 'pancreatitis_chronic',
     title: 'Chronic Pancreatitis',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'K86.x',
     purpose: 'Complications include exocrine and endocrine insufficiency. Type 3c diabetes from pancreatic destruction. Pseudocysts over 6cm require drainage. Document pain management strategy.',
     fields: [
@@ -987,7 +987,7 @@ const DOC_TEMPLATES = [
   {
     id: 'dka',
     title: 'Diabetic Ketoacidosis',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'E10-E11.1x',
     purpose: 'DKA requires type 1 versus type 2 and with or without coma. HHS codes separately from DKA. Document precipitant. Insulin protocol and potassium replacement must be documented.',
     fields: [
@@ -1001,7 +1001,7 @@ const DOC_TEMPLATES = [
   {
     id: 'hypercalcemia',
     title: 'Hypercalcemia',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'E83.52',
     purpose: 'Hypercalcemia above 14 mg/dL is MCC. PTH level distinguishes primary hyperparathyroidism from malignancy. Bisphosphonate takes 2-4 days. Document cause.',
     fields: [
@@ -1015,7 +1015,7 @@ const DOC_TEMPLATES = [
   {
     id: 'hyponatremia',
     title: 'Hyponatremia',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'E87.1',
     purpose: 'Correction of chronic hyponatremia beyond 8 mEq per day risks osmotic demyelination syndrome. SIADH is most common cause. Document acuity and correction rate.',
     fields: [
@@ -1030,7 +1030,7 @@ const DOC_TEMPLATES = [
   {
     id: 'asthma',
     title: 'Asthma',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'J45.xx',
     purpose: 'Asthma severity and control must be documented. Status asthmaticus is MCC. Mild intermittent versus mild persistent versus moderate versus severe code differently. Document triggers for quality measures.',
     fields: [
@@ -1045,7 +1045,7 @@ const DOC_TEMPLATES = [
   {
     id: 'pleural',
     title: 'Pleural Disease',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'J90-J94',
     purpose: 'Pleural effusion requires transudative versus exudative and cause. Empyema codes separately and requires drainage. Tension pneumothorax is emergency requiring immediate needle decompression.',
     fields: [
@@ -1059,7 +1059,7 @@ const DOC_TEMPLATES = [
   {
     id: 'schizophrenia',
     title: 'Schizophrenia Spectrum',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'F20-F29',
     purpose: 'Schizophrenia must specify type and episode. Schizoaffective codes differently. First episode versus multiple episodes affects code. Document positive and negative symptoms and antipsychotic adherence.',
     fields: [
@@ -1074,7 +1074,7 @@ const DOC_TEMPLATES = [
   {
     id: 'bipolar',
     title: 'Bipolar Disorder',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'F31.xx',
     purpose: 'Bipolar requires current episode type and severity. Bipolar I versus II code differently. Mixed features affect code. Lithium toxicity above 2.5 requires hemodialysis.',
     fields: [
@@ -1088,7 +1088,7 @@ const DOC_TEMPLATES = [
   {
     id: 'eating_disorders',
     title: 'Eating Disorders',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'F50.x',
     purpose: 'Anorexia nervosa with BMI below 15 is medical emergency. Refeeding syndrome is dangerous complication. Highest mortality of any mental health condition.',
     fields: [
@@ -1103,7 +1103,7 @@ const DOC_TEMPLATES = [
   {
     id: 'falls',
     title: 'Falls and Injuries',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'W00-W19',
     purpose: 'Falls require mechanism and resulting injuries. Recurrent falls code Z91.81 as HCC. Syncope versus mechanical fall versus drop attack have different diagnoses. Document fall prevention.',
     fields: [
@@ -1118,7 +1118,7 @@ const DOC_TEMPLATES = [
   {
     id: 'dehydration',
     title: 'Dehydration',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'E86.x',
     purpose: 'Dehydration must distinguish from hypovolemia. Severe dehydration with AKI common in elderly. Hypernatremia or hyponatremia from dehydration code separately. Document oral intake assessment.',
     fields: [
@@ -1132,7 +1132,7 @@ const DOC_TEMPLATES = [
   {
     id: 'diabetic_retinopathy',
     title: 'Diabetic Retinopathy',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'E11.3x',
     purpose: 'Diabetic retinopathy requires linking to diabetes. Each eye documented separately. DME codes with retinopathy. Document visual acuity.',
     fields: [
@@ -1147,7 +1147,7 @@ const DOC_TEMPLATES = [
   {
     id: 'glaucoma',
     title: 'Glaucoma',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'H40.xx',
     purpose: 'Glaucoma requires type, severity, and laterality. Open angle versus angle closure have different management. Acute angle-closure is emergency.',
     fields: [
@@ -1161,7 +1161,7 @@ const DOC_TEMPLATES = [
   {
     id: 'vertigo',
     title: 'Vertigo and Vestibular Disorders',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'H81.x',
     purpose: 'BPPV is most common cause treated with canalith repositioning. Vertical nystagmus suggests central cause requiring urgent MRI. Meniere requires audiometric confirmation.',
     fields: [
@@ -1175,7 +1175,7 @@ const DOC_TEMPLATES = [
   {
     id: 'sjs_ten',
     title: 'Stevens-Johnson and TEN',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'L51.x',
     purpose: 'SJS and TEN are life-threatening drug reactions with MCC status. BSA detachment determines severity. Offending medication must be immediately discontinued. Burn unit management for extensive cases.',
     fields: [
@@ -1190,7 +1190,7 @@ const DOC_TEMPLATES = [
   {
     id: 'psoriasis',
     title: 'Psoriasis',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'L40.x',
     purpose: 'Psoriasis severity must be documented. Erythrodermic is medical emergency. Biologic therapy requires prior treatment failure documentation.',
     fields: [
@@ -1205,7 +1205,7 @@ const DOC_TEMPLATES = [
   {
     id: 'endometriosis',
     title: 'Endometriosis and Pelvic Pain',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'N80.x',
     purpose: 'Endometriosis severity documented by ASRM stage when surgery performed. Deep infiltrating endometriosis requires subspecialist. Document fertility impact and treatment.',
     fields: [
@@ -1220,7 +1220,7 @@ const DOC_TEMPLATES = [
   {
     id: 'gynecologic_oncology',
     title: 'Gynecologic Cancers',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'C51-C58',
     purpose: 'Gynecologic cancers require specific site, histology, and FIGO stage. Endometrial cancer type I versus II code differently. Lynch syndrome affects surveillance and coding.',
     fields: [
@@ -1234,7 +1234,7 @@ const DOC_TEMPLATES = [
   {
     id: 'pediatric_resp',
     title: 'Pediatric Respiratory Disease',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'J21.x',
     purpose: 'RSV bronchiolitis codes differ from adult bronchitis. Croup requires Westley score. Bronchiolitis treatment is supportive. High-risk infants with prematurity or CHD require closer monitoring.',
     fields: [
@@ -1249,7 +1249,7 @@ const DOC_TEMPLATES = [
   {
     id: 'pediatric_seizures',
     title: 'Pediatric Seizures',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'R56.x / G40.x',
     purpose: 'Febrile seizures are common and mostly benign. Infantile spasms require urgent treatment. Status epilepticus in children is emergency. Document developmental impact.',
     fields: [
@@ -1263,7 +1263,7 @@ const DOC_TEMPLATES = [
   {
     id: 'congenital_heart',
     title: 'Congenital Heart Disease',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'Q20-Q26',
     purpose: 'CHD must specify anatomic defect and hemodynamic impact. Eisenmenger syndrome from uncorrected CHD is late complication. Post-repair status codes Z87.74.',
     fields: [
@@ -1277,7 +1277,7 @@ const DOC_TEMPLATES = [
   {
     id: 'child_abuse',
     title: 'Child Abuse and Maltreatment',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'T74.x',
     purpose: 'Child abuse has legal implications. Mandatory reporting required in all states. Document specific injuries, history inconsistencies, and social work involvement. Abusive head trauma T74.4 is MCC.',
     fields: [
@@ -1292,7 +1292,7 @@ const DOC_TEMPLATES = [
   {
     id: 'preventive_care',
     title: 'Preventive Care and Wellness',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'Z00.x',
     purpose: 'Annual wellness visits drive HCC capture. All chronic conditions must be addressed annually. SDOH screening increasingly required. Document preventive services performed.',
     fields: [
@@ -1307,7 +1307,7 @@ const DOC_TEMPLATES = [
   {
     id: 'hcc_audit',
     title: 'HCC Documentation Audit Checklist',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'Multiple',
     purpose: 'HCC risk adjustment requires annual documentation of all chronic conditions. RAF score drives Medicare Advantage payments. Unspecified codes do not count for risk adjustment. Use as CDI audit checklist.',
     fields: [
@@ -1323,7 +1323,7 @@ const DOC_TEMPLATES = [
   {
     id: 'observation',
     title: 'Observation vs Inpatient Status',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'Z03.89',
     purpose: 'Observation versus inpatient has major financial implications for Medicare patients. Two-midnight rule governs inpatient status. Document medical necessity explicitly.',
     fields: [
@@ -1337,7 +1337,7 @@ const DOC_TEMPLATES = [
   {
     id: 'polypharmacy',
     title: 'Polypharmacy and Adverse Drug Effects',
-    icon: '\u{1F4CB}',
+    icon: '📋',
     icd: 'T36-T50',
     purpose: 'Polypharmacy in elderly is major cause of hospitalization. Adverse effects code drug first then manifestation. Beers criteria identifies inappropriate medications in elderly.',
     fields: [
