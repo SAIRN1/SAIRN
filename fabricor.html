@@ -121,12 +121,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 
 /* ── TOPBAR ── */
 .topbar{
-  background:#0A0D14;border-bottom:1px solid var(--border-a);
+  background:#1A1410;border-bottom:1px solid rgba(232,133,10,0.3);
   padding:0 20px;display:flex;align-items:center;
-  justify-content:space-between;height:52px;flex-shrink:0;
+  justify-content:space-between;height:52px;flex-shrink:0;min-width:0;
 }
 .topbar-brand{
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
 }
 .topbar-gem{
   width:32px;height:32px;border-radius:9px;
@@ -136,15 +136,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 }
 .topbar-name{
   font-family:'Cormorant Garamond',serif;
-  font-size:20px;font-weight:700;color:var(--text);
-  letter-spacing:-.3px;
+  font-size:20px;font-weight:700;color:#FFFFFF;
+  letter-spacing:-.3px;white-space:nowrap;
 }
+.topbar-name em{font-style:normal;color:#FDB347;}
 .topbar-name em{font-style:normal;color:var(--a);}
 
 .topbar-nav{display:flex;gap:2px}
 .nav-btn{
   padding:6px 14px;border-radius:6px;border:none;
-  background:transparent;color:rgba(245,240,232,.5);
+  background:transparent;color:rgba(245,240,232,.6);
   font-family:'Outfit',sans-serif;font-size:12px;
   cursor:pointer;transition:all .15s;letter-spacing:.3px;
   font-weight:500;
