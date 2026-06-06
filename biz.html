@@ -155,6 +155,10 @@ textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}textarea#userInput::p
     <button class="mode-btn" onclick="setMode('Raise_Capital')"><span class="mode-label">Raise Capital</span></button>
     <button class="mode-btn" onclick="setMode('Competitor_Analysis')"><span class="mode-label">Competitor Analysis</span></button>
     <button class="mode-btn" onclick="setMode('Scale_My_Business')"><span class="mode-label">Scale My Business</span></button>
+  
+    <button class="mode-btn" onclick="showBizIntake()"><span class="mode-icon">🏢</span><span class="mode-label">Situation Intake</span></button>
+    <button class="mode-btn" onclick="showFinancialBenchmark()"><span class="mode-icon">📊</span><span class="mode-label">Benchmarking</span></button>
+    <button class="mode-btn" onclick="showBizHistory()"><span class="mode-icon">🕐</span><span class="mode-label">History</span></button>
   </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="revenue" onclick="startFlow('revenue')"><span class="mode-icon">📈</span><span class="mode-label">More Revenue</span></button><button class="flow-btn mode-btn" data-flow="margins" onclick="startFlow('margins')"><span class="mode-icon">💰</span><span class="mode-label">My Margins</span></button>
@@ -173,7 +177,7 @@ textarea#userInput:focus{border-color:rgba(139,92,246,0.5)}textarea#userInput::p
   </div>
   <div class="input-area">
     <textarea id="userInput" placeholder="Ask SAIRN Biz anything..." rows="1"></textarea>
-    <button id="sendBtn" onclick="sendMessage()">➤</button>
+    <button id="save-biz-btn" onclick="saveBizSession()" style="background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.2);border-radius:6px;color:#818CF8;font-size:11px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit">💾 Save</button><button onclick="printBizSummary()" style="background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.2);border-radius:6px;color:#818CF8;font-size:11px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit">🖨️ Print</button><button id="sendBtn" onclick="sendMessage()">➤</button>
   </div>
 </div>
 <script>
@@ -295,6 +299,7 @@ async function sendMessage() {
       const reply = data.content?.[0]?.text || 'Sorry, I had trouble with that. Please try again.';
       messages.push({role:'assistant',content:reply});
       addMsg('ai', reply);
+      checkBizFlags(reply);
     }
   } catch(e) {
     document.getElementById('typing-indicator')?.remove();
@@ -578,6 +583,333 @@ function showOILBadge() {
 
 document.getElementById('userInput').addEventListener('input',function(){this.style.height='';this.style.height=Math.min(this.scrollHeight,120)+'px';});
 document.getElementById('userInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+
+
+// ══════════════════════════════════════════════════════════════
+// SAIRN BIZ — ENTERPRISE UPGRADE PATTERNS
+// 1. Save + Session History
+// 2. Print / Export (business strategy reports)
+// 3. Smart Business Flags (cash flow, margin, compliance warnings)
+// 4. Business Situation Intake Form
+// 5. Financial Benchmarking with Range Bars (vs industry averages)
+// ══════════════════════════════════════════════════════════════
+
+// ── 1. SAVE + HISTORY ─────────────────────────────────────────
+let bizHistory = JSON.parse(localStorage.getItem('sairn_biz_history') || '[]');
+
+function saveBizSession() {
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showBizFlag('Start a session first, then save.', 'info'); return; }
+  const session = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+    time: new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}),
+    mode: document.querySelector('.mode-btn.active .mode-label')?.textContent || 'General',
+    preview: lastAI.content.replace(/[#*`]/g,'').slice(0, 130) + '...',
+    messages: [...msgs],
+  };
+  bizHistory.unshift(session);
+  if (bizHistory.length > 100) bizHistory = bizHistory.slice(0, 100);
+  localStorage.setItem('sairn_biz_history', JSON.stringify(bizHistory));
+  const btn = document.getElementById('save-biz-btn');
+  if (btn) { btn.textContent = '✓ Saved'; btn.style.color = '#4ADE80'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; }, 2000); }
+  showBizFlag('Strategy session saved.', 'success');
+}
+
+function showBizHistory() {
+  const ex = document.getElementById('biz-history-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'biz-history-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#030610;border-bottom:1px solid rgba(129,140,248,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">💾 Strategy Session History</div><div style="font-size:11px;color:#70708A;margin-top:2px">' + bizHistory.length + ' saved sessions</div></div><button onclick="document.getElementById(\'biz-history-modal\').remove()" style="background:none;border:none;color:#70708A;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px';
+  if (!bizHistory.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#70708A;font-size:14px">No saved sessions yet.</div>';
+  } else {
+    bizHistory.forEach((s, i) => {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#0A0C1C;border:1px solid rgba(129,140,248,0.15);border-radius:10px;padding:16px;transition:border-color .15s;cursor:pointer';
+      card.onmouseenter = () => card.style.borderColor = 'rgba(129,140,248,0.4)';
+      card.onmouseleave = () => card.style.borderColor = 'rgba(129,140,248,0.15)';
+      card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:10px;background:rgba(129,140,248,0.15);border:1px solid rgba(129,140,248,0.3);border-radius:100px;padding:2px 10px;color:#818CF8;font-weight:600">' + s.mode + '</span><div style="display:flex;gap:10px;align-items:center"><span style="font-size:10px;color:#70708A">' + s.date + ' · ' + s.time + '</span><button onclick="deleteBizSession(' + i + ',event)" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:5px;color:#EF4444;font-size:10px;padding:2px 8px;cursor:pointer">Delete</button></div></div><div style="font-size:12px;color:rgba(245,240,232,0.55);line-height:1.5;margin-bottom:10px">' + s.preview + '</div><button onclick="restoreBizSession(' + i + ')" style="background:rgba(129,140,248,0.12);border:1px solid rgba(129,140,248,0.25);border-radius:6px;color:#818CF8;font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;font-family:inherit">Restore Session</button>';
+      body.appendChild(card);
+    });
+  }
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function restoreBizSession(idx) {
+  const s = bizHistory[idx];
+  if (!s) return;
+  if (typeof messages !== 'undefined') messages = [...s.messages];
+  const area = document.getElementById('chatArea') || document.getElementById('messages');
+  if (area) { area.innerHTML = ''; s.messages.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content)); }
+  document.getElementById('biz-history-modal')?.remove();
+}
+
+function deleteBizSession(idx, e) {
+  e.stopPropagation();
+  bizHistory.splice(idx, 1);
+  localStorage.setItem('sairn_biz_history', JSON.stringify(bizHistory));
+  document.getElementById('biz-history-modal')?.remove();
+  showBizHistory();
+}
+
+// ── 2. PRINT ──────────────────────────────────────────────────
+function printBizSummary() {
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showBizFlag('Complete a session first, then print.', 'info'); return; }
+  const mode = document.querySelector('.mode-btn.active .mode-label')?.textContent || 'Business Strategy';
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+  const companyName = localStorage.getItem('sairn_biz_company') || 'Your Business';
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SAIRNbiz — ' + mode + '</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:750px;margin:0 auto;font-size:13px;line-height:1.7}.hdr{border-bottom:3px solid #4F46E5;padding-bottom:14px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.brand{font-size:22px;font-weight:700;color:#312E81}.sub{font-size:12px;color:#777;margin-top:3px}.meta{text-align:right;font-size:11px;color:#999}.msg-block{margin-bottom:14px;padding:14px;border-radius:6px}.msg-block.user{background:#EEF2FF;border-left:3px solid #818CF8}.msg-block.ai{background:#FAFAFA;border-left:3px solid #4F46E5}.msg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6B7280;margin-bottom:6px}.content{font-size:13px;line-height:1.8;color:#222;white-space:pre-wrap}.disclaimer{margin-top:28px;padding:12px;background:#EEF2FF;border-radius:6px;font-size:11px;color:#9CA3AF;border:1px solid #C7D2FE}.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:32px}.sig{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#777}.ftr{margin-top:20px;padding-top:10px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:10px;color:#CCC}@media print{body{padding:20px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">' + companyName + ' — SAIRNbiz</div><div class="sub">' + mode + ' — Strategy Session Report</div></div><div class="meta">Date: ' + date + '<br>Powered by Claude AI</div></div>');
+  msgs.forEach(m => {
+    win.document.write('<div class="msg-block ' + (m.role==='user'?'user':'ai') + '"><div class="msg-label">' + (m.role==='user'?'Business Question':'SAIRNbiz AI Strategy') + '</div><div class="content">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') + '</div></div>');
+  });
+  win.document.write('<div class="sig-row"><div class="sig">Owner / Decision Maker</div><div class="sig">Advisor Review</div></div>');
+  win.document.write('<div class="disclaimer"><strong>Note:</strong> This strategy guidance was generated by SAIRNbiz AI. All major business decisions should be validated with qualified financial, legal, and industry advisors before implementation.</div>');
+  win.document.write('<div class="ftr"><span>SAIRNbiz by SAIRN Technologies · Powered by Claude AI</span><span>sairn.vercel.app/biz</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ── 3. SMART BUSINESS FLAGS ───────────────────────────────────
+function showBizFlag(msg, type) {
+  const existing = document.getElementById('biz-flag');
+  if (existing) existing.remove();
+  const colors = {
+    danger:  { bg:'rgba(239,68,68,0.1)',   border:'#EF4444', text:'#EF4444' },
+    warn:    { bg:'rgba(251,191,36,0.1)',   border:'#FBBF24', text:'#FBBF24' },
+    success: { bg:'rgba(74,222,128,0.1)',   border:'#4ADE80', text:'#4ADE80' },
+    info:    { bg:'rgba(129,140,248,0.1)',  border:'#818CF8', text:'#818CF8' },
+  };
+  const cl = colors[type] || colors.info;
+  const flag = document.createElement('div');
+  flag.id = 'biz-flag';
+  flag.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:' + cl.bg + ';border:1px solid ' + cl.border + ';border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:' + cl.text + ';z-index:999;max-width:560px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.35)';
+  flag.textContent = msg;
+  document.body.appendChild(flag);
+  setTimeout(() => flag.remove(), 5000);
+}
+
+function checkBizFlags(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes('cash flow') && (lower.includes('negative') || lower.includes('problem') || lower.includes('struggling')))
+    showBizFlag('🚨 Negative cash flow kills profitable businesses. Identify the 3 largest outflows and review AR aging immediately.', 'danger');
+  else if (lower.includes('margin') && (lower.includes('low') || lower.includes('thin') || lower.includes('losing')))
+    showBizFlag('⚠️ Thin margins compress your options. A 5% price increase typically has more impact than cutting 20% of costs.', 'warn');
+  else if (lower.includes('partner') && lower.includes('agreement') || lower.includes('partnership'))
+    showBizFlag('⚖️ Always have a written partnership agreement covering equity, roles, decision-making, buyout terms, and dissolution.', 'warn');
+  else if (lower.includes('personal guarantee') || lower.includes('personally liable'))
+    showBizFlag('🚨 Personal guarantees put your personal assets at risk. Consult an attorney before signing any personal guarantee.', 'danger');
+  else if (lower.includes('franchise') && lower.includes('considering'))
+    showBizFlag('📋 Franchise FDD review is required 14 days before signing. Have a franchise attorney review before any commitment.', 'info');
+  else if ((lower.includes('hire') || lower.includes('hiring')) && lower.includes('first'))
+    showBizFlag('💡 Your first hire defines your culture. Take time on this one — a bad first hire costs 3-5x their salary to replace.', 'info');
+  else if (lower.includes('line of credit') || lower.includes('sba loan') || lower.includes('funding'))
+    showBizFlag('💡 Access capital before you need it — banks lend to businesses that do not need the money. Apply when cash flow is strong.', 'info');
+  else if (lower.includes('competitor') && lower.includes('price'))
+    showBizFlag('⚠️ Competing on price is a race to the bottom. Differentiate on speed, quality, or service before dropping price.', 'warn');
+}
+
+// ── 4. BUSINESS SITUATION INTAKE ─────────────────────────────
+function showBizIntake() {
+  const ex = document.getElementById('biz-intake-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'biz-intake-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#030610;border-bottom:1px solid rgba(129,140,248,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">🏢 Business Situation Intake</div><div style="font-size:11px;color:#70708A;margin-top:2px">Describe your business and challenge — AI builds a complete strategy analysis</div></div><button onclick="document.getElementById(\'biz-intake-modal\').remove()" style="background:none;border:none;color:#70708A;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  function sel(id, label, opts) {
+    return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#70708A;margin-bottom:5px">' + label + '</div><select id="' + id + '" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' + opts.map(o => '<option>' + o + '</option>').join('') + '</select></div>';
+  }
+  function txt(id, label, ph, rows) {
+    return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#70708A;margin-bottom:5px">' + label + '</div><textarea id="' + id + '" placeholder="' + ph + '" rows="' + (rows||3) + '" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box"></textarea></div>';
+  }
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:700px;margin:0 auto;width:100%';
+  body.innerHTML =
+    sel('bi-industry', 'Industry', ['Retail — brick and mortar','Retail — e-commerce','Restaurant / Food Service','Construction / Trades','Manufacturing','Healthcare / Medical','Legal / Professional Services','Financial Services','Technology / Software','Real Estate','Stone Fabrication / Specialty Trade','Staffing / Recruiting','Logistics / Transportation','Hospitality / Events','Franchise','Other']) +
+    sel('bi-size', 'Business Size', ['Solo / just me','2-5 employees','6-15 employees','16-50 employees','51-200 employees','200+ employees']) +
+    sel('bi-revenue', 'Annual Revenue Range', ['Under $250K','$250K - $500K','$500K - $1M','$1M - $3M','$3M - $10M','$10M - $50M','$50M+','Prefer not to say']) +
+    sel('bi-stage', 'Business Stage', ['Pre-launch — building the business','Early stage — under 2 years','Growth stage — scaling up','Established — stable and profitable','Turnaround — struggling and fixing','Mature — looking to exit or sell']) +
+    sel('bi-focus', 'Primary Challenge Right Now', ['Revenue is not growing fast enough','Cash flow is tight','Margins are too thin','Can not find or keep good people','Operations are chaotic','Marketing is not working','A specific competitor is hurting us','Preparing to raise capital or sell','Expanding to new locations or markets','Other']) +
+    txt('bi-situation', 'Describe Your Specific Situation and Goals', 'What is happening in your business right now? What have you tried? What does success look like in 12 months?', 4) +
+    txt('bi-numbers', 'Key Financial Numbers (optional but helpful)', 'e.g. Monthly revenue $180K, gross margin 38%, payroll $45K/month, 3 months runway...') +
+    '<button onclick="submitBizIntake()" style="width:100%;padding:13px;background:linear-gradient(135deg,#818CF8,#4F46E5);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px">🏢 Build My Strategy Analysis</button>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function submitBizIntake() {
+  const industry   = document.getElementById('bi-industry')?.value || '';
+  const size       = document.getElementById('bi-size')?.value || '';
+  const revenue    = document.getElementById('bi-revenue')?.value || '';
+  const stage      = document.getElementById('bi-stage')?.value || '';
+  const focus      = document.getElementById('bi-focus')?.value || '';
+  const situation  = document.getElementById('bi-situation')?.value || '';
+  const numbers    = document.getElementById('bi-numbers')?.value || '';
+
+  if (!situation.trim()) { showBizFlag('Please describe your situation before submitting.', 'warn'); return; }
+
+  checkBizFlags(focus + ' ' + situation);
+
+  const prompt = 'I need a complete business strategy analysis. Here is my situation:\n\n' +
+    'Industry: ' + industry + '\n' +
+    'Business size: ' + size + '\n' +
+    'Revenue range: ' + revenue + '\n' +
+    'Stage: ' + stage + '\n' +
+    'Primary challenge: ' + focus + '\n' +
+    'Situation: ' + situation + '\n' +
+    (numbers ? 'Financial context: ' + numbers + '\n' : '') +
+    '\nPlease provide: (1) a direct assessment of the root cause of my challenge, (2) the 3 highest-impact actions I should take in the next 90 days with specific steps for each, (3) one metric I should be tracking weekly that I am probably not tracking, (4) one thing most businesses in my situation get wrong and how to avoid it, and (5) a realistic 12-month outlook if I execute well.';
+
+  document.getElementById('biz-intake-modal')?.remove();
+  addMsg('user', focus + ' — ' + situation.slice(0, 60) + (situation.length > 60 ? '...' : ''));
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+// ── 5. FINANCIAL BENCHMARKING ─────────────────────────────────
+function showFinancialBenchmark() {
+  const ex = document.getElementById('biz-bench-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'biz-bench-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#030610;border-bottom:1px solid rgba(129,140,248,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">📊 Financial Benchmarking</div><div style="font-size:11px;color:#70708A;margin-top:2px">Enter your numbers — see how you compare to industry averages</div></div><button onclick="document.getElementById(\'biz-bench-modal\').remove()" style="background:none;border:none;color:#70708A;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  function numField(id, label, placeholder) {
+    return '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#70708A;margin-bottom:4px">' + label + '</div><input type="number" id="' + id + '" placeholder="' + placeholder + '" min="0" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>';
+  }
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:700px;margin:0 auto;width:100%';
+
+  const INDUSTRIES = ['Retail','Restaurant / Food Service','Construction / Trades','Manufacturing','Professional Services','Healthcare','Technology','Stone Fabrication'];
+
+  body.innerHTML =
+    '<div style="margin-bottom:16px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#70708A;margin-bottom:5px">Your Industry</div><select id="bench-industry" onchange="updateBenchmarks()" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' + INDUSTRIES.map(i => '<option>' + i + '</option>').join('') + '</select></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">' +
+    numField('bench-revenue','Monthly Revenue ($)','e.g. 180000') +
+    numField('bench-cogs','Cost of Goods / Direct Costs ($)','e.g. 90000') +
+    numField('bench-payroll','Monthly Payroll ($)','e.g. 45000') +
+    numField('bench-rent','Rent / Facility ($)','e.g. 8000') +
+    numField('bench-marketing','Marketing Spend ($)','e.g. 3500') +
+    numField('bench-other','Other Operating Expenses ($)','e.g. 12000') +
+    '</div>' +
+    '<button onclick="calcBenchmarks()" style="width:100%;padding:12px;background:linear-gradient(135deg,#818CF8,#4F46E5);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:14px">Calculate and Benchmark</button>' +
+    '<div id="bench-results"></div>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function calcBenchmarks() {
+  const revenue   = parseFloat(document.getElementById('bench-revenue')?.value) || 0;
+  const cogs      = parseFloat(document.getElementById('bench-cogs')?.value) || 0;
+  const payroll   = parseFloat(document.getElementById('bench-payroll')?.value) || 0;
+  const rent      = parseFloat(document.getElementById('bench-rent')?.value) || 0;
+  const marketing = parseFloat(document.getElementById('bench-marketing')?.value) || 0;
+  const other     = parseFloat(document.getElementById('bench-other')?.value) || 0;
+  const industry  = document.getElementById('bench-industry')?.value || 'Retail';
+
+  if (!revenue) { showBizFlag('Enter your monthly revenue to benchmark.', 'warn'); return; }
+
+  const totalCosts = cogs + payroll + rent + marketing + other;
+  const grossProfit = revenue - cogs;
+  const netProfit = revenue - totalCosts;
+  const grossMargin = revenue > 0 ? (grossProfit / revenue * 100) : 0;
+  const netMargin = revenue > 0 ? (netProfit / revenue * 100) : 0;
+  const payrollPct = revenue > 0 ? (payroll / revenue * 100) : 0;
+  const marketingPct = revenue > 0 ? (marketing / revenue * 100) : 0;
+  const rentPct = revenue > 0 ? (rent / revenue * 100) : 0;
+
+  // Industry benchmarks
+  const BENCHMARKS = {
+    'Retail':                  { grossMargin:[45,55], netMargin:[3,8],  payroll:[15,25], marketing:[2,5],  rent:[5,10] },
+    'Restaurant / Food Service':{ grossMargin:[60,70], netMargin:[3,9],  payroll:[30,38], marketing:[2,4],  rent:[6,12] },
+    'Construction / Trades':   { grossMargin:[20,35], netMargin:[5,15], payroll:[25,40], marketing:[1,3],  rent:[2,5]  },
+    'Manufacturing':           { grossMargin:[25,40], netMargin:[5,12], payroll:[20,35], marketing:[1,3],  rent:[4,8]  },
+    'Professional Services':   { grossMargin:[60,80], netMargin:[15,30],payroll:[40,60], marketing:[3,8],  rent:[5,12] },
+    'Healthcare':              { grossMargin:[40,60], netMargin:[8,18], payroll:[35,55], marketing:[2,5],  rent:[5,10] },
+    'Technology':              { grossMargin:[65,85], netMargin:[10,25],payroll:[40,65], marketing:[8,18], rent:[4,10] },
+    'Stone Fabrication':       { grossMargin:[35,50], netMargin:[8,18], payroll:[25,38], marketing:[1,3],  rent:[4,8]  },
+  };
+
+  const bench = BENCHMARKS[industry] || BENCHMARKS['Retail'];
+
+  function barRow(label, actual, low, high, suffix) {
+    const pct = ((actual - low) / (high - low)) * 100;
+    const inRange = actual >= low && actual <= high;
+    const above = actual > high;
+    const color = inRange ? '#4ADE80' : above ? '#EF4444' : '#FBBF24';
+    const status = inRange ? '✓ On target' : above ? '⚠️ Above average' : '⚠️ Below average';
+    return '<div style="margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+      '<span style="font-size:12px;color:#F5F0E8">' + label + '</span>' +
+      '<span style="font-size:12px;font-weight:700;color:' + color + '">' + actual.toFixed(1) + suffix + ' <span style="font-size:10px;font-weight:400;color:#70708A">target: ' + low + '-' + high + suffix + '</span></span>' +
+      '</div>' +
+      '<div style="background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden">' +
+      '<div style="width:' + Math.min(Math.max(actual/high*80,5),100) + '%;height:100%;background:' + color + ';border-radius:4px;transition:width .4s"></div>' +
+      '</div>' +
+      '<div style="font-size:10px;color:' + color + ';margin-top:3px">' + status + ' for ' + industry + '</div>' +
+      '</div>';
+  }
+
+  const res = document.getElementById('bench-results');
+  if (!res) return;
+
+  const netColor = netMargin >= bench.netMargin[0] ? '#4ADE80' : netMargin >= 0 ? '#FBBF24' : '#EF4444';
+
+  res.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">' +
+    [
+      { n:'$'+revenue.toLocaleString(undefined,{maximumFractionDigits:0}), l:'Monthly Revenue', c:'#818CF8' },
+      { n:'$'+Math.round(grossProfit).toLocaleString(), l:'Gross Profit', c:'#4ADE80' },
+      { n:'$'+Math.round(netProfit).toLocaleString(), l:'Net Profit', c:netColor },
+    ].map(m => '<div style="background:#0A0C1C;border:1px solid rgba(129,140,248,0.15);border-radius:10px;padding:14px;text-align:center"><div style="font-size:20px;font-weight:700;color:' + m.c + '">' + m.n + '</div><div style="font-size:11px;color:#70708A;margin-top:3px">' + m.l + '</div></div>').join('') +
+    '</div>' +
+    '<div style="background:#0A0C1C;border:1px solid rgba(129,140,248,0.15);border-radius:12px;padding:16px;margin-bottom:16px">' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#818CF8;margin-bottom:14px">Your Margins vs ' + industry + ' Industry Average</div>' +
+    barRow('Gross Margin', grossMargin, bench.grossMargin[0], bench.grossMargin[1], '%') +
+    barRow('Net Margin', netMargin, bench.netMargin[0], bench.netMargin[1], '%') +
+    barRow('Payroll as % of Revenue', payrollPct, bench.payroll[0], bench.payroll[1], '%') +
+    barRow('Marketing as % of Revenue', marketingPct, bench.marketing[0], bench.marketing[1], '%') +
+    barRow('Rent as % of Revenue', rentPct, bench.rent[0], bench.rent[1], '%') +
+    '</div>' +
+    '<button onclick="askBizAI(' + revenue + ',' + grossMargin.toFixed(1) + ',' + netMargin.toFixed(1) + ',' + payrollPct.toFixed(1) + ',\'' + industry + '\')" style="width:100%;padding:12px;background:linear-gradient(135deg,#818CF8,#4F46E5);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🧠 Get AI Action Plan for These Numbers</button>';
+}
+
+async function askBizAI(revenue, grossMargin, netMargin, payrollPct, industry) {
+  const prompt = 'My business financials: Monthly revenue $' + revenue.toLocaleString() + ', gross margin ' + grossMargin + '%, net margin ' + netMargin + '%, payroll ' + payrollPct + '% of revenue. Industry: ' + industry + '. Please give me a specific action plan — the 3 things I should focus on to improve my margins, what the realistic improvement is for each, and what I should measure weekly to track progress.';
+  document.getElementById('biz-bench-modal')?.remove();
+  addMsg('user', 'Analyze my financial benchmarks and give me an action plan.');
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+
 </script>
 </body>
 </html>
