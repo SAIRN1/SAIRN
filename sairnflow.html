@@ -238,6 +238,10 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
   </div>
   <div class="mode-bar">
     <button class="mode-btn" onclick="setMode('Property System','Document or look up a property's irrigation system')"><span class="mode-icon">🗺️</span><span class="mode-label">Property System</span></button><button class="mode-btn" onclick="setMode('Route Planning','Plan my spring startup or fall winterization routes')"><span class="mode-icon">📅</span><span class="mode-label">Route Planning</span></button><button class="mode-btn" onclick="setMode('Service Call','Help me diagnose and document a service issue')"><span class="mode-icon">🔧</span><span class="mode-label">Service Call</span></button><button class="mode-btn" onclick="setMode('Quote New Install','Generate a quote for a new irrigation installation')"><span class="mode-icon">📋</span><span class="mode-label">Quote New Install</span></button><button class="mode-btn" onclick="setMode('Water Analysis','Help me analyze water usage and upsell smart controllers')"><span class="mode-icon">💧</span><span class="mode-label">Water Analysis</span></button>
+
+    <button class="mode-btn" onclick="showPropertyIntake()"><span class="mode-icon">🏡</span><span class="mode-label">Property Intake</span></button>
+    <button class="mode-btn" onclick="showRoutePlanner()"><span class="mode-icon">🗓️</span><span class="mode-label">Route Planner</span></button>
+    <button class="mode-btn" onclick="showFlowHistory()"><span class="mode-icon">📋</span><span class="mode-label">History</span></button>
     <div class="mode-divider"></div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="startup" onclick="startFlow('startup')"><span class="mode-icon">📅</span><span class="mode-label">Spring Startup Routes</span></button><button class="flow-btn mode-btn" data-flow="quote" onclick="startFlow('quote')"><span class="mode-icon">📋</span><span class="mode-label">a New Installation</span></button><button class="flow-btn mode-btn" data-flow="diagnose" onclick="startFlow('diagnose')"><span class="mode-icon">🔧</span><span class="mode-label">a Service Issue</span></button>
@@ -256,7 +260,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
   </div>
   <div class="input-area">
     <textarea id="userInput" placeholder="Ask SAIRNflow anything..." rows="1"></textarea>
-    <button id="sendBtn" onclick="sendMessage()">➤</button>
+    <button id="save-flow-btn" onclick="saveFlowSession()" style="background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.2);border-radius:6px;color:#14B8A6;font-size:11px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit">💾 Save</button><button onclick="printFlowReport()" style="background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.2);border-radius:6px;color:#14B8A6;font-size:11px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit">🖨️ Print</button><button id="sendBtn" onclick="sendMessage()">➤</button>
   </div>
 </div>
 
@@ -378,6 +382,7 @@ async function sendMessage() {
       const reply = data.content?.[0]?.text || 'Sorry, I had trouble with that. Please try again.';
       messages.push({role:'assistant',content:reply});
       addMsg('ai', reply);
+      checkFlowFlags(reply);
     }
   } catch(e) {
     document.getElementById('typing-indicator')?.remove();
@@ -786,6 +791,308 @@ function saveOILSettings() {
 // Show badge on load if org is set
 setTimeout(function() { showOILBadge(); }, 1500);
 // =======================================================================
+
+
+
+// ══════════════════════════════════════════════════════════════
+// SAIRN FLOW — ENTERPRISE UPGRADE PATTERNS
+// 1. Save + Property History (service records per property)
+// 2. Print (service reports, proposals, work orders)
+// 3. Smart Irrigation Flags (pressure, backflow, winterization)
+// 4. Property Intake Form (structured service / install intake)
+// 5. Seasonal Route Planner (spring startup / fall winterization)
+// ══════════════════════════════════════════════════════════════
+
+// ── 1. SAVE + PROPERTY HISTORY ────────────────────────────────
+let flowHistory = JSON.parse(localStorage.getItem('sairn_flow_history') || '[]');
+
+function saveFlowSession() {
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showFlowFlag('Start a session first, then save.', 'info'); return; }
+  const session = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+    time: new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}),
+    mode: document.querySelector('.mode-btn.active .mode-label')?.textContent || 'General',
+    preview: lastAI.content.replace(/[#*`]/g,'').slice(0, 130) + '...',
+    messages: [...msgs],
+  };
+  flowHistory.unshift(session);
+  if (flowHistory.length > 200) flowHistory = flowHistory.slice(0, 200);
+  localStorage.setItem('sairn_flow_history', JSON.stringify(flowHistory));
+  const btn = document.getElementById('save-flow-btn');
+  if (btn) { btn.textContent = '✓ Saved'; btn.style.color = '#4ADE80'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; }, 2000); }
+  showFlowFlag('Service record saved.', 'success');
+}
+
+function showFlowHistory() {
+  const ex = document.getElementById('flow-history-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'flow-history-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#020A0E;border-bottom:1px solid rgba(20,184,166,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">📋 Service Record History</div><div style="font-size:11px;color:#507068;margin-top:2px">' + flowHistory.length + ' saved records · Your property service history</div></div><button onclick="document.getElementById(\'flow-history-modal\').remove()" style="background:none;border:none;color:#507068;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px';
+  if (!flowHistory.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#507068;font-size:14px">No saved records yet.<br>Save sessions to build your property service history.</div>';
+  } else {
+    flowHistory.forEach((s, i) => {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#051418;border:1px solid rgba(20,184,166,0.15);border-radius:10px;padding:16px;transition:border-color .15s;cursor:pointer';
+      card.onmouseenter = () => card.style.borderColor = 'rgba(20,184,166,0.4)';
+      card.onmouseleave = () => card.style.borderColor = 'rgba(20,184,166,0.15)';
+      card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:10px;background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.3);border-radius:100px;padding:2px 10px;color:#14B8A6;font-weight:600">' + s.mode + '</span><div style="display:flex;gap:10px;align-items:center"><span style="font-size:10px;color:#507068">' + s.date + ' · ' + s.time + '</span><button onclick="deleteFlowSession(' + i + ',event)" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:5px;color:#EF4444;font-size:10px;padding:2px 8px;cursor:pointer">Delete</button></div></div><div style="font-size:12px;color:rgba(245,240,232,0.55);line-height:1.5;margin-bottom:10px">' + s.preview + '</div><button onclick="restoreFlowSession(' + i + ')" style="background:rgba(20,184,166,0.12);border:1px solid rgba(20,184,166,0.25);border-radius:6px;color:#14B8A6;font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;font-family:inherit">Restore Record</button>';
+      body.appendChild(card);
+    });
+  }
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function restoreFlowSession(idx) {
+  const s = flowHistory[idx];
+  if (!s) return;
+  if (typeof messages !== 'undefined') messages = [...s.messages];
+  const area = document.getElementById('chatArea') || document.getElementById('messages');
+  if (area) { area.innerHTML = ''; s.messages.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content)); }
+  document.getElementById('flow-history-modal')?.remove();
+}
+
+function deleteFlowSession(idx, e) {
+  e.stopPropagation();
+  flowHistory.splice(idx, 1);
+  localStorage.setItem('sairn_flow_history', JSON.stringify(flowHistory));
+  document.getElementById('flow-history-modal')?.remove();
+  showFlowHistory();
+}
+
+// ── 2. PRINT SERVICE REPORT ───────────────────────────────────
+function printFlowReport() {
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showFlowFlag('Complete a session first, then print.', 'info'); return; }
+  const mode = document.querySelector('.mode-btn.active .mode-label')?.textContent || 'Service Report';
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+  const companyName = localStorage.getItem('sairn_flow_company') || 'Your Irrigation Company';
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SAIRNflow — Service Report</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:750px;margin:0 auto;font-size:13px;line-height:1.7}.hdr{border-bottom:3px solid #0D9488;padding-bottom:14px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.brand{font-size:22px;font-weight:700;color:#134E4A}.sub{font-size:12px;color:#777;margin-top:3px}.meta{text-align:right;font-size:11px;color:#999}.msg-block{margin-bottom:14px;padding:14px;border-radius:6px}.msg-block.user{background:#F0FDFA;border-left:3px solid #14B8A6}.msg-block.ai{background:#FAFAFA;border-left:3px solid #0D9488}.msg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6B7280;margin-bottom:6px}.content{font-size:13px;line-height:1.8;color:#222;white-space:pre-wrap}.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-top:32px}.sig{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#777}.ftr{margin-top:20px;padding-top:10px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:10px;color:#CCC}@media print{body{padding:20px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">' + companyName + '</div><div class="sub">' + mode + ' — SAIRNflow Service Report</div></div><div class="meta">Date: ' + date + '<br>Service Record</div></div>');
+  msgs.forEach(m => {
+    win.document.write('<div class="msg-block ' + (m.role==='user'?'user':'ai') + '"><div class="msg-label">' + (m.role==='user'?'Technician / Office':'SAIRNflow AI Guidance') + '</div><div class="content">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') + '</div></div>');
+  });
+  win.document.write('<div class="sig-row"><div class="sig">Technician Signature &amp; Date</div><div class="sig">Customer Approval &amp; Date</div><div class="sig">Office Sign-Off</div></div>');
+  win.document.write('<div class="ftr"><span>' + companyName + ' — Powered by SAIRNflow AI</span><span>sairn.vercel.app/sairnflow</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ── 3. SMART IRRIGATION FLAGS ─────────────────────────────────
+function showFlowFlag(msg, type) {
+  const existing = document.getElementById('flow-flag');
+  if (existing) existing.remove();
+  const colors = {
+    danger:  { bg:'rgba(239,68,68,0.1)',   border:'#EF4444', text:'#EF4444' },
+    warn:    { bg:'rgba(251,191,36,0.1)',   border:'#FBBF24', text:'#FBBF24' },
+    success: { bg:'rgba(74,222,128,0.1)',   border:'#4ADE80', text:'#4ADE80' },
+    info:    { bg:'rgba(20,184,166,0.1)',   border:'#14B8A6', text:'#14B8A6' },
+  };
+  const cl = colors[type] || colors.info;
+  const flag = document.createElement('div');
+  flag.id = 'flow-flag';
+  flag.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:' + cl.bg + ';border:1px solid ' + cl.border + ';border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:' + cl.text + ';z-index:999;max-width:560px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.35)';
+  flag.textContent = msg;
+  document.body.appendChild(flag);
+  setTimeout(() => flag.remove(), 5000);
+}
+
+function checkFlowFlags(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes('blow') && lower.includes('psi') || lower.includes('winteriz'))
+    showFlowFlag('⚠️ Winterization PSI limits: 50 PSI max for poly pipe, 80 PSI max for PVC. Exceeding these blows fittings and heads.', 'warn');
+  else if (lower.includes('backflow') && (lower.includes('test') || lower.includes('require') || lower.includes('certif')))
+    showFlowFlag('⚖️ Backflow preventer testing requirements vary by municipality — most require annual certified testing. Verify local code.', 'info');
+  else if (lower.includes('well') && (lower.includes('pressure') || lower.includes('pump')))
+    showFlowFlag('⚠️ Well systems: confirm pump capacity before designing zones — undersized pumps cause pressure drop and dry spots.', 'warn');
+  else if (lower.includes('freeze') || lower.includes('frost') && lower.includes('damage'))
+    showFlowFlag('🚨 Freeze damage to irrigation systems is not covered by most insurance without documented winterization. Protect yourself.', 'danger');
+  else if (lower.includes('rpz') || lower.includes('reduced pressure'))
+    showFlowFlag('💡 RPZ backflow preventers must be installed above ground and are required for high-hazard connections. Verify local code.', 'info');
+  else if (lower.includes('commercial') && lower.includes('permit'))
+    showFlowFlag('⚖️ Commercial irrigation installs typically require permits and licensed contractor. Verify local licensing requirements.', 'warn');
+  else if (lower.includes('smart controller') || lower.includes('rachio') || lower.includes('hydrawise'))
+    showFlowFlag('💡 Smart controllers save 30-50% water on average — $150-400/year for residential. Lead with the ROI in every upsell.', 'info');
+}
+
+// ── 4. PROPERTY INTAKE FORM ───────────────────────────────────
+function showPropertyIntake() {
+  const ex = document.getElementById('prop-intake-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'prop-intake-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#020A0E;border-bottom:1px solid rgba(20,184,166,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">🏡 Property Intake Form</div><div style="font-size:11px;color:#507068;margin-top:2px">Enter property details — AI gives you a complete service or install plan</div></div><button onclick="document.getElementById(\'prop-intake-modal\').remove()" style="background:none;border:none;color:#507068;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  function sel(id, label, opts) {
+    return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#507068;margin-bottom:5px">' + label + '</div><select id="' + id + '" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' + opts.map(o => '<option>' + o + '</option>').join('') + '</select></div>';
+  }
+  function txt(id, label, ph) {
+    return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#507068;margin-bottom:5px">' + label + '</div><textarea id="' + id + '" placeholder="' + ph + '" rows="3" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box"></textarea></div>';
+  }
+  function inp(id, label, ph) {
+    return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#507068;margin-bottom:5px">' + label + '</div><input type="text" id="' + id + '" placeholder="' + ph + '" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>';
+  }
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:660px;margin:0 auto;width:100%';
+  body.innerHTML =
+    inp('pi-address', 'Property Address or Name', 'e.g. 123 Oak Street or Johnson Commercial') +
+    sel('pi-type', 'Property Type', ['Residential — single family','Residential — multi-unit','Commercial — small (under 1 acre)','Commercial — large (1+ acres)','HOA / Community','Athletic Field / Sports Complex','Municipal / Government','Agricultural / Farm']) +
+    sel('pi-call-type', 'Type of Work', ['Spring startup — pressurize and check system','Fall winterization — blowout and shutdown','Service call — specific issue to diagnose','New installation — design and quote','System upgrade — controller or heads','Water audit — usage analysis and optimization','Annual maintenance contract','Backflow test and certification']) +
+    inp('pi-zones', 'Number of Zones (if known)', 'e.g. 8 zones, or unknown') +
+    sel('pi-water', 'Water Source', ['Municipal / city water','Private well','Pond / lake','Reclaimed / recycled water','Unknown']) +
+    sel('pi-controller', 'Controller Type', ['Standard timer — unknown brand','Rain Bird','Hunter','Orbit / B-Hyve','Rachio smart controller','Hunter Hydrawise','Toro','Unknown / need to identify']) +
+    txt('pi-issue', 'Describe the Issue or Project', 'What is the specific problem or what needs to be done? Include zone numbers, symptoms, or project scope...') +
+    txt('pi-history', 'Known System History (if any)', 'Prior repairs, known problem zones, age of system, special notes about this property...') +
+    '<button onclick="submitPropertyIntake()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14B8A6,#0D9488);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🏡 Get Service Plan</button>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function submitPropertyIntake() {
+  const address  = document.getElementById('pi-address')?.value || '';
+  const type     = document.getElementById('pi-type')?.value || '';
+  const callType = document.getElementById('pi-call-type')?.value || '';
+  const zones    = document.getElementById('pi-zones')?.value || 'unknown';
+  const water    = document.getElementById('pi-water')?.value || '';
+  const ctrl     = document.getElementById('pi-controller')?.value || '';
+  const issue    = document.getElementById('pi-issue')?.value || '';
+  const history  = document.getElementById('pi-history')?.value || '';
+
+  if (!issue.trim()) { showFlowFlag('Please describe the issue or project.', 'warn'); return; }
+
+  checkFlowFlags(callType + ' ' + issue);
+
+  const prompt = 'I need a complete irrigation service plan for this property:\n\n' +
+    'Property: ' + (address || 'Not specified') + '\n' +
+    'Property type: ' + type + '\n' +
+    'Work needed: ' + callType + '\n' +
+    'Zones: ' + zones + '\n' +
+    'Water source: ' + water + '\n' +
+    'Controller: ' + ctrl + '\n' +
+    'Issue / scope: ' + issue + '\n' +
+    (history ? 'System history: ' + history + '\n' : '') +
+    '\nPlease provide: (1) a step-by-step service checklist for this specific call type, (2) the most likely causes if this is a diagnostic call, (3) parts I should bring on the truck, (4) any safety or compliance items specific to this property type, and (5) upsell or upgrade opportunities I should flag for this customer.';
+
+  document.getElementById('prop-intake-modal')?.remove();
+  addMsg('user', callType + ' — ' + (address || 'Property') + (issue ? ' — ' + issue.slice(0, 50) : ''));
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+// ── 5. SEASONAL ROUTE PLANNER ─────────────────────────────────
+function showRoutePlanner() {
+  const ex = document.getElementById('route-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'route-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#020A0E;border-bottom:1px solid rgba(20,184,166,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">🗓️ Seasonal Route Planner</div><div style="font-size:11px;color:#507068;margin-top:2px">Build your spring startup or fall winterization route schedule</div></div><button onclick="document.getElementById(\'route-modal\').remove()" style="background:none;border:none;color:#507068;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:700px;margin:0 auto;width:100%';
+
+  const savedProperties = JSON.parse(localStorage.getItem('sairn_flow_props') || '[]');
+
+  body.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">' +
+    '<div style="background:#051418;border:1px solid rgba(20,184,166,0.15);border-radius:12px;padding:18px;cursor:pointer;transition:border-color .15s" onclick="planRoute(\'spring\')" onmouseenter="this.style.borderColor=\'rgba(20,184,166,0.4)\'" onmouseleave="this.style.borderColor=\'rgba(20,184,166,0.15)\'">' +
+    '<div style="font-size:28px;margin-bottom:10px">🌱</div>' +
+    '<div style="font-size:15px;font-weight:700;color:#F5F0E8;margin-bottom:6px">Spring Startup Route</div>' +
+    '<div style="font-size:12px;color:#507068;line-height:1.6">Pressurize systems, check heads, adjust controllers, identify winter damage, schedule repairs</div>' +
+    '</div>' +
+    '<div style="background:#051418;border:1px solid rgba(20,184,166,0.15);border-radius:12px;padding:18px;cursor:pointer;transition:border-color .15s" onclick="planRoute(\'fall\')" onmouseenter="this.style.borderColor=\'rgba(20,184,166,0.4)\'" onmouseleave="this.style.borderColor=\'rgba(20,184,166,0.15)\'">' +
+    '<div style="font-size:28px;margin-bottom:10px">🍂</div>' +
+    '<div style="font-size:15px;font-weight:700;color:#F5F0E8;margin-bottom:6px">Fall Winterization Route</div>' +
+    '<div style="font-size:12px;color:#507068;line-height:1.6">Blowout procedures, controller shutdown, backflow removal, system documentation</div>' +
+    '</div>' +
+    '</div>' +
+
+    '<div style="background:#051418;border:1px solid rgba(20,184,166,0.15);border-radius:12px;padding:16px;margin-bottom:16px">' +
+    '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#14B8A6;margin-bottom:12px">Route Builder</div>' +
+    '<div style="margin-bottom:10px"><div style="font-size:10px;color:#507068;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Add Property to Route</div>' +
+    '<div style="display:flex;gap:8px">' +
+    '<input id="route-prop-name" type="text" placeholder="Property name or address" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
+    '<input id="route-prop-zones" type="number" placeholder="Zones" min="1" style="width:80px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
+    '<input id="route-prop-notes" type="text" placeholder="Notes (e.g. well, back gate)" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:8px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' +
+    '<button onclick="addRouteProperty()" style="background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.3);border-radius:7px;color:#14B8A6;font-size:12px;font-weight:600;padding:8px 14px;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add</button>' +
+    '</div></div>' +
+    '<div id="route-prop-list">' + renderRouteProps(savedProperties) + '</div>' +
+    '</div>' +
+    '<button onclick="buildAIRoute()" style="width:100%;padding:12px;background:linear-gradient(135deg,#14B8A6,#0D9488);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🧠 Build AI-Optimized Route Schedule</button>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function renderRouteProps(props) {
+  if (!props.length) return '<div style="text-align:center;padding:16px;color:#507068;font-size:12px">Add properties above to build your route.</div>';
+  return '<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">' +
+    props.map((p,i) => '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(20,184,166,0.1);border-radius:6px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between"><div><span style="font-size:12px;font-weight:600;color:#F5F0E8">' + p.name + '</span>' + (p.zones?'<span style="font-size:11px;color:#507068;margin-left:8px">' + p.zones + ' zones</span>':'') + (p.notes?'<span style="font-size:10px;color:#507068;margin-left:8px">· ' + p.notes + '</span>':'') + '</div><button onclick="removeRouteProp(' + i + ')" style="background:none;border:none;color:#507068;cursor:pointer;font-size:14px;padding:0 4px">×</button></div>').join('') +
+    '</div>';
+}
+
+function addRouteProperty() {
+  const name  = document.getElementById('route-prop-name')?.value?.trim();
+  const zones = document.getElementById('route-prop-zones')?.value?.trim();
+  const notes = document.getElementById('route-prop-notes')?.value?.trim();
+  if (!name) { showFlowFlag('Enter a property name or address.', 'warn'); return; }
+  const props = JSON.parse(localStorage.getItem('sairn_flow_props') || '[]');
+  props.push({ name, zones, notes });
+  localStorage.setItem('sairn_flow_props', JSON.stringify(props));
+  const list = document.getElementById('route-prop-list');
+  if (list) list.innerHTML = renderRouteProps(props);
+  ['route-prop-name','route-prop-zones','route-prop-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+function removeRouteProp(idx) {
+  const props = JSON.parse(localStorage.getItem('sairn_flow_props') || '[]');
+  props.splice(idx, 1);
+  localStorage.setItem('sairn_flow_props', JSON.stringify(props));
+  const list = document.getElementById('route-prop-list');
+  if (list) list.innerHTML = renderRouteProps(props);
+}
+
+function planRoute(season) {
+  const props = JSON.parse(localStorage.getItem('sairn_flow_props') || '[]');
+  if (!props.length) { showFlowFlag('Add properties to your route first.', 'warn'); return; }
+  const propList = props.map((p,i) => (i+1) + '. ' + p.name + (p.zones?' ('+p.zones+' zones)':'') + (p.notes?' — '+p.notes:'')).join('\n');
+  const seasonLabel = season === 'spring' ? 'spring startup' : 'fall winterization';
+  const prompt = 'I need a complete ' + seasonLabel + ' route schedule for these ' + props.length + ' properties:\n\n' + propList + '\n\nPlease: (1) suggest the optimal order to run these properties to minimize drive time and maximize efficiency, (2) give me a realistic time estimate per property for ' + seasonLabel + ', (3) provide the complete ' + seasonLabel + ' checklist I should run at each stop, (4) list the tools and supplies I need to load on the truck before leaving, and (5) flag any properties with special notes that need extra attention.';
+  document.getElementById('route-modal')?.remove();
+  addMsg('user', 'Build my ' + seasonLabel + ' route for ' + props.length + ' properties.');
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+function buildAIRoute() {
+  const props = JSON.parse(localStorage.getItem('sairn_flow_props') || '[]');
+  if (!props.length) { showFlowFlag('Add properties to build a route.', 'warn'); return; }
+  planRoute('spring');
+}
+
 
 </script>
 </body>
