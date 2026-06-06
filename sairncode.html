@@ -297,7 +297,10 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
     <button class="mode-btn fraud-mode" onclick="setMode('Fraud Detection','Describe a coding pattern or claim scenario and I will analyze it for upcoding, unbundling, or duplicate billing')"><span>🚨</span><span class="mode-label">Fraud Detection</span></button>
     <button class="mode-btn" onclick="showDocTemplates()"><span class="mode-icon">📝</span><span class="mode-label">Doc Templates</span></button>
     <button class="mode-btn" onclick="showQueryTemplates()"><span class="mode-icon">🔍</span><span class="mode-label">Query Builder</span></button>
-    <div class="mode-divider"></div>
+    <div class="mode-divider">
+    <button class="mode-btn" onclick="showClaimAudit()"><span class="mode-icon">📂</span><span class="mode-label">Claim Audit</span></button>
+    <button class="mode-btn" onclick="showCodeHistory()"><span class="mode-icon">🕐</span><span class="mode-label">History</span></button>
+  </div>
     <button class="mode-btn" onclick="setMode('ICD-10 Coding','Look up ICD-10-CM codes, sequencing rules, or 2026 guideline changes')"><span>🏥</span><span class="mode-label">ICD-10</span></button>
     <button class="mode-btn" onclick="setMode('CPT Coding','Find CPT codes, modifier guidance, or bundling rules')"><span>⚕️</span><span class="mode-label">CPT</span></button>
     <button class="mode-btn" onclick="setMode('E&M Leveling','Determine the correct E&M level from documentation or analyze over-coding risk')"><span>📊</span><span class="mode-label">E&M Level</span></button>
@@ -386,7 +389,7 @@ function startFlow(id){const f=GUIDED_FLOWS.find(function(x){return x.id===id;})
 function useSuggestion(el){document.getElementById("userInput").value=el.textContent;sendMessage();}
 function addMsg(role,content){const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg "+role;const formatted=content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");if(role==="ai"){div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+formatted+"</p></div>";lastResponse=content;setTimeout(function(){showSaveBar();},600);}else{div.innerHTML="<div class=\"msg-bubble\">"+content+"</div>";}area.appendChild(div);area.scrollTop=area.scrollHeight;}
 function showTyping(){const area=document.getElementById("chatArea");const div=document.createElement("div");div.className="msg ai";div.id="typing-indicator";div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";area.appendChild(div);area.scrollTop=area.scrollHeight;}
-async function sendMessage(){const inp=document.getElementById("userInput");const text=inp.value.trim();if(!text||isLoading)return;const memCtx=await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return"";});if(activeFlow!==null){addMsg("user",text);inp.value="";inp.style.height="";if(flowStep<activeFlow.steps.length){const nxt=activeFlow.steps[flowStep++];setTimeout(function(){addMsg("ai",nxt);messages.push({role:"assistant",content:nxt});},700);}else if(flowStep===activeFlow.steps.length){flowStep++;setTimeout(function(){addMsg("ai",activeFlow.finish);messages.push({role:"assistant",content:activeFlow.finish});activeFlow=null;},700);}else{activeFlow=null;}return;}inp.value="";inp.style.height="";isLoading=true;document.getElementById("sendBtn").disabled=true;addMsg("user",text);messages.push({role:"user",content:text});showTyping();try{const res=await fetch(SAIRN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:1000,system:SYSTEM+(memCtx||""),messages:messages.slice(-20),app_id:APP_ID,is_demo:true})});const data=await res.json();document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();if(res.status===429){addMsg("ai",(data.message||"Daily limit reached.")+" Sign up at sairn.vercel.app for full access.");}else{const reply=data.content&&data.content[0]&&data.content[0].text||"Please try again.";messages.push({role:"assistant",content:reply});addMsg("ai",reply);}}catch(e){document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();addMsg("ai","Connection issue. Please try again.");}isLoading=false;document.getElementById("sendBtn").disabled=false;document.getElementById("userInput").focus();}
+async function sendMessage(){const inp=document.getElementById("userInput");const text=inp.value.trim();if(!text||isLoading)return;const memCtx=await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return"";});if(activeFlow!==null){addMsg("user",text);inp.value="";inp.style.height="";if(flowStep<activeFlow.steps.length){const nxt=activeFlow.steps[flowStep++];setTimeout(function(){addMsg("ai",nxt);messages.push({role:"assistant",content:nxt});},700);}else if(flowStep===activeFlow.steps.length){flowStep++;setTimeout(function(){addMsg("ai",activeFlow.finish);messages.push({role:"assistant",content:activeFlow.finish});activeFlow=null;},700);}else{activeFlow=null;}return;}inp.value="";inp.style.height="";isLoading=true;document.getElementById("sendBtn").disabled=true;addMsg("user",text);messages.push({role:"user",content:text});showTyping();try{const res=await fetch(SAIRN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:1000,system:SYSTEM+(memCtx||""),messages:messages.slice(-20),app_id:APP_ID,is_demo:true})});const data=await res.json();document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();if(res.status===429){addMsg("ai",(data.message||"Daily limit reached.")+" Sign up at sairn.vercel.app for full access.");}else{const reply=data.content&&data.content[0]&&data.content[0].text||"Please try again.";messages.push({role:"assistant",content:reply});addMsg("ai",reply);checkCodingFlags(reply);}}catch(e){document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();addMsg("ai","Connection issue. Please try again.");}isLoading=false;document.getElementById("sendBtn").disabled=false;document.getElementById("userInput").focus();}
 async function loadFirstMessage(){try{const now=new Date();const res=await fetch("https://sairn.vercel.app/api/greeting",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({app_id:APP_ID,client_hour:now.getHours(),client_day:now.getDay()})});const data=await res.json();if(!data.greeting)return;const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg ai";div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+data.greeting+" SAIRNcode is ready — ICD-10, CPT, E&M leveling, fraud detection, DRG validation, compliance, and audit reporting. What do you need?</p></div>";div.style.opacity="0";div.style.transform="translateY(10px)";area.appendChild(div);messages.push({role:"assistant",content:data.greeting});requestAnimationFrame(function(){div.style.transition="opacity 0.5s, transform 0.5s";div.style.opacity="1";div.style.transform="translateY(0)";});}catch(e){}}
 
 // ============================================================
@@ -2760,6 +2763,321 @@ function printQuery(tmpl) {
 
 document.getElementById("userInput").addEventListener("input",function(){this.style.height="";this.style.height=Math.min(this.scrollHeight,140)+"px";});
 document.getElementById("userInput").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
+
+
+// ══════════════════════════════════════════════════════════════
+// SAIRN CODE — UPGRADE PATTERNS
+// 1. Save + Session History (coding QA sessions)
+// 2. Role-Based Access: Coder / CDI Specialist / Auditor / Admin
+// 3. Claim Audit CSV Upload (upload claims, AI audits each one)
+// 4. Print Professional Audit Report
+// 5. Smart Coding Flags (MCC/CC alerts, unbundling, DRG warnings)
+// ══════════════════════════════════════════════════════════════
+
+// ── 1. SAVE + SESSION HISTORY ─────────────────────────────────
+let codeSessionHistory = JSON.parse(localStorage.getItem('sairn_code_history') || '[]');
+let codeUserRole = localStorage.getItem('sairn_code_role') || 'Coder';
+
+function saveCodeSession() {
+  const chatArea = document.getElementById('chatArea') || document.getElementById('messages');
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showCodeFlag('Start a coding session first, then save.', 'info'); return; }
+  const session = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+    time: new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}),
+    role: codeUserRole,
+    mode: document.querySelector('.mode-btn.active')?.textContent?.trim()?.slice(2) || 'General',
+    preview: lastAI.content.replace(/[#*`]/g,'').slice(0, 140) + '...',
+    messages: [...msgs],
+  };
+  codeSessionHistory.unshift(session);
+  if (codeSessionHistory.length > 100) codeSessionHistory = codeSessionHistory.slice(0, 100);
+  localStorage.setItem('sairn_code_history', JSON.stringify(codeSessionHistory));
+  const btn = document.getElementById('save-code-btn');
+  if (btn) { btn.textContent = '✓ Saved'; btn.style.color = '#4ADE80'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; }, 2000); }
+  showCodeFlag('Coding session saved.', 'success');
+}
+
+function showCodeHistory() {
+  const ex = document.getElementById('code-history-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'code-history-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#020B18;border-bottom:1px solid rgba(14,165,233,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">💾 Saved Coding Sessions</div><div style="font-size:11px;color:#607080;margin-top:2px">' + codeSessionHistory.length + ' sessions · Tap any to restore for QA review</div></div><button onclick="document.getElementById(\'code-history-modal\').remove()" style="background:none;border:none;color:#607080;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px';
+  if (!codeSessionHistory.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#607080;font-size:14px">No saved sessions yet.<br>Code a case then tap 💾 Save to build your audit trail.</div>';
+  } else {
+    codeSessionHistory.forEach((s, i) => {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#061628;border:1px solid rgba(14,165,233,0.15);border-radius:10px;padding:16px;transition:border-color .15s;cursor:pointer';
+      card.onmouseenter = () => card.style.borderColor = 'rgba(14,165,233,0.4)';
+      card.onmouseleave = () => card.style.borderColor = 'rgba(14,165,233,0.15)';
+      card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="display:flex;gap:8px"><span style="font-size:10px;background:rgba(14,165,233,0.15);border:1px solid rgba(14,165,233,0.3);border-radius:100px;padding:2px 10px;color:#0EA5E9;font-weight:600">' + s.mode + '</span><span style="font-size:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:100px;padding:2px 10px;color:#A78BFA;font-weight:600">' + s.role + '</span></div><div style="display:flex;gap:10px;align-items:center"><span style="font-size:10px;color:#607080">' + s.date + ' · ' + s.time + '</span><button onclick="deleteCodeSession(' + i + ',event)" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:5px;color:#EF4444;font-size:10px;padding:2px 8px;cursor:pointer">Delete</button></div></div><div style="font-size:12px;color:rgba(245,240,232,0.5);line-height:1.5;margin-bottom:10px">' + s.preview + '</div><button onclick="restoreCodeSession(' + i + ')" style="background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.25);border-radius:6px;color:#0EA5E9;font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;font-family:inherit">Restore for Review</button>';
+      body.appendChild(card);
+    });
+  }
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function restoreCodeSession(idx) {
+  const s = codeSessionHistory[idx];
+  if (!s) return;
+  if (typeof messages !== 'undefined') messages = [...s.messages];
+  const area = document.getElementById('chatArea') || document.getElementById('messages');
+  if (area) { area.innerHTML = ''; s.messages.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content)); }
+  document.getElementById('code-history-modal')?.remove();
+}
+
+function deleteCodeSession(idx, e) {
+  e.stopPropagation();
+  codeSessionHistory.splice(idx, 1);
+  localStorage.setItem('sairn_code_history', JSON.stringify(codeSessionHistory));
+  document.getElementById('code-history-modal')?.remove();
+  showCodeHistory();
+}
+
+// ── 2. ROLE SELECTOR ──────────────────────────────────────────
+function showRoleSelector() {
+  const ex = document.getElementById('role-modal');
+  if (ex) { ex.remove(); return; }
+  const roles = [
+    { id:'Coder', icon:'🖊️', label:'Medical Coder', desc:'ICD-10, CPT, HCPCS coding with MCC/CC optimization and DRG guidance' },
+    { id:'CDI', icon:'📋', label:'CDI Specialist', desc:'Clinical Documentation Improvement — physician query templates and documentation gap analysis' },
+    { id:'Auditor', icon:'🔍', label:'Coding Auditor', desc:'Pre-bill and post-bill audit with compliance analysis and overpayment risk scoring' },
+    { id:'Compliance', icon:'⚖️', label:'Compliance Officer', desc:'RAC, OIG, and payer audit defense with regulatory guidance and corrective action' },
+    { id:'Admin', icon:'🏥', label:'HIM Director / Admin', desc:'Full access to all tools — team oversight, report generation, and admin settings' },
+  ];
+  const modal = document.createElement('div');
+  modal.id = 'role-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:9999;display:flex;align-items:center;justify-content:center';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#061628;border:1px solid rgba(14,165,233,0.2);border-radius:16px;padding:32px;width:500px;max-width:95vw';
+  box.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:700;color:#F5F0E8;margin-bottom:6px">Select Your Role</div><div style="font-size:12px;color:#607080;margin-bottom:20px">Your role customizes the AI to focus on your specific workflow</div>' +
+    roles.map(r => '<div onclick="setCodeRole(\'' + r.id + '\')" style="background:' + (codeUserRole===r.id?'rgba(14,165,233,0.1)':'rgba(255,255,255,0.03)') + ';border:1px solid ' + (codeUserRole===r.id?'rgba(14,165,233,0.4)':'rgba(255,255,255,0.08)') + ';border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:flex-start;gap:14px;transition:all .15s" onmouseenter="this.style.borderColor=\'rgba(14,165,233,0.3)\'" onmouseleave="this.style.borderColor=\'' + (codeUserRole===r.id?'rgba(14,165,233,0.4)':'rgba(255,255,255,0.08)') + '\'"><span style="font-size:22px;flex-shrink:0">' + r.icon + '</span><div><div style="font-size:14px;font-weight:600;color:#F5F0E8;margin-bottom:3px">' + r.label + '</div><div style="font-size:12px;color:#607080;line-height:1.5">' + r.desc + '</div></div>' + (codeUserRole===r.id?'<span style="margin-left:auto;color:#0EA5E9;font-size:18px;flex-shrink:0">✓</span>':'') + '</div>').join('') +
+    '<button onclick="document.getElementById(\'role-modal\').remove()" style="width:100%;padding:10px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.25);border-radius:8px;color:#0EA5E9;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px">Done</button>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+}
+
+function setCodeRole(role) {
+  codeUserRole = role;
+  localStorage.setItem('sairn_code_role', role);
+  document.getElementById('role-modal')?.remove();
+  const roleBtn = document.getElementById('role-display-btn');
+  if (roleBtn) roleBtn.textContent = '👤 ' + role;
+  showCodeFlag('Role set to ' + role + '. AI will focus on your workflow.', 'success');
+}
+
+// ── 3. CLAIM AUDIT CSV UPLOAD ─────────────────────────────────
+function showClaimAudit() {
+  const ex = document.getElementById('claim-audit-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'claim-audit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#020B18;border-bottom:1px solid rgba(14,165,233,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">📂 Claim Audit Tool</div><div style="font-size:11px;color:#607080;margin-top:2px">Upload a claim data CSV — AI reviews each claim for coding accuracy and compliance risk</div></div><button onclick="document.getElementById(\'claim-audit-modal\').remove()" style="background:none;border:none;color:#607080;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:800px;margin:0 auto;width:100%';
+  body.innerHTML = '<div id="claim-upload-area">' +
+    '<div style="background:#061628;border:1px solid rgba(14,165,233,0.15);border-radius:12px;padding:18px;margin-bottom:16px">' +
+    '<div style="font-size:13px;font-weight:600;color:#0EA5E9;margin-bottom:8px">Expected CSV Format</div>' +
+    '<div style="font-family:DM Mono,monospace;font-size:11px;color:#607080;line-height:1.8">claim_id, patient_id, drg, principal_dx, secondary_dx, procedure, provider, billed_amount</div>' +
+    '<div style="font-size:11px;color:#607080;margin-top:8px">Secondary diagnoses can be comma-separated within quotes. All columns except claim_id are optional.</div>' +
+    '</div>' +
+    '<div id="claim-drop-zone" style="border:2px dashed rgba(14,165,233,0.25);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .15s" onclick="document.getElementById(\'claim-csv-input\').click()">' +
+    '<div style="font-size:36px;margin-bottom:12px">📋</div>' +
+    '<div style="font-size:14px;font-weight:600;color:#F5F0E8;margin-bottom:6px">Click to upload claim data CSV</div>' +
+    '<div style="font-size:12px;color:#607080">Drag and drop supported · Data never leaves your browser</div>' +
+    '</div>' +
+    '<input type="file" id="claim-csv-input" accept=".csv" style="display:none" onchange="parseClaimCSV(this)">' +
+    '<div style="margin-top:14px;text-align:center"><button onclick="loadSampleClaimData()" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);border-radius:8px;color:#0EA5E9;font-size:12px;font-weight:600;padding:8px 18px;cursor:pointer;font-family:inherit">Load Sample Claims — Demo</button></div>' +
+    '</div>' +
+    '<div id="claim-results" style="display:none"></div>';
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+  setTimeout(() => {
+    const zone = document.getElementById('claim-drop-zone');
+    if (zone) {
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor='rgba(14,165,233,0.6)'; });
+      zone.addEventListener('dragleave', () => { zone.style.borderColor='rgba(14,165,233,0.25)'; });
+      zone.addEventListener('drop', e => { e.preventDefault(); zone.style.borderColor='rgba(14,165,233,0.25)'; const f=e.dataTransfer.files[0]; if(f){const r=new FileReader();r.onload=ev=>processClaimCSV(ev.target.result);r.readAsText(f);}});
+    }
+  }, 100);
+}
+
+function parseClaimCSV(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => processClaimCSV(e.target.result);
+  reader.readAsText(file);
+}
+
+function loadSampleClaimData() {
+  const csv = `claim_id,patient_id,drg,principal_dx,secondary_dx,procedure,provider,billed_amount
+CLM001,PT1001,291,I50.9,"I10,E11.9,N18.3",93306,Dr. Smith,18500
+CLM002,PT1002,470,M16.11,"Z79.899,E11.65",27447,Dr. Jones,42000
+CLM003,PT1003,683,J18.9,"J44.1,I10",None,Dr. Brown,8200
+CLM004,PT1004,689,J96.01,"A41.9,N17.9",5A1955Z,Dr. Davis,34000
+CLM005,PT1005,193,I21.4,"I10,E78.5,Z87.891",92928,Dr. Wilson,28500
+CLM006,PT1006,177,I63.511,"I10,E11.40,Z79.01",None,Dr. Taylor,22000
+CLM007,PT1007,312,K92.1,"K57.30,I10",45380,Dr. Anderson,11500
+CLM008,PT1008,885,F32.1,"F41.1,Z87.39",None,Dr. Thomas,4800`;
+  processClaimCSV(csv);
+}
+
+function processClaimCSV(csvText) {
+  const lines = csvText.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g,''));
+  const claims = lines.slice(1).map(line => {
+    const cols = line.match(/(".*?"|[^,]+)(?=,|$)/g) || line.split(',');
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = (cols[i]||'').trim().replace(/"/g,''); });
+    return obj;
+  }).filter(c => c.claim_id || c[headers[0]]);
+
+  if (!claims.length) { showCodeFlag('Could not parse this CSV. Check the format.', 'warn'); return; }
+
+  // Risk scoring rules
+  const RISK_RULES = [
+    { test: c => c.principal_dx === 'I50.9' || c.drg === '291', msg: 'Unspecified CHF (I50.9) — systolic vs diastolic and acute vs chronic missing. DRG 291 may be upgradable.', level: 'high' },
+    { test: c => c.drg === '291' && c.secondary_dx && !c.secondary_dx.includes('N17') && !c.secondary_dx.includes('J96'), msg: 'CHF DRG 291 — check for AKI (N17.x) or respiratory failure (J96.x) which would upgrade to DRG 291 with MCC.', level: 'medium' },
+    { test: c => c.principal_dx === 'J18.9', msg: 'Unspecified pneumonia (J18.9) — organism not specified. CAP vs HAP not documented. Opportunity for more specific code.', level: 'high' },
+    { test: c => c.principal_dx === 'J96.01' && c.secondary_dx && c.secondary_dx.includes('A41'), msg: 'Sepsis with respiratory failure — confirm sepsis (A41.9) is principal diagnosis per Sepsis-3 guidelines and J96.01 is MCC.', level: 'info' },
+    { test: c => c.principal_dx === 'I50.9' && c.secondary_dx && !c.secondary_dx.includes('N18'), msg: 'CHF without CKD — if patient has known CKD, cardiorenal syndrome I13 codes may be more accurate.', level: 'medium' },
+    { test: c => c.secondary_dx && c.secondary_dx.includes('E11.9'), msg: 'Diabetes E11.9 — unspecified. Review for complications (E11.40-E11.65) which are HCC codes with higher RAF weight.', level: 'medium' },
+    { test: c => c.drg === '683' || c.drg === '689', msg: 'Pneumonia DRG — verify if respiratory failure present. J96.01 as CC/MCC would upgrade to DRG 177-178.', level: 'medium' },
+    { test: c => parseFloat(c.billed_amount) > 30000 && !c.procedure, msg: 'High billed amount with no procedure code — verify procedure documentation is complete.', level: 'high' },
+  ];
+
+  const results = claims.map(claim => {
+    const risks = RISK_RULES.filter(r => { try { return r.test(claim); } catch(e) { return false; } });
+    const riskLevel = risks.some(r => r.level === 'high') ? 'high' : risks.some(r => r.level === 'medium') ? 'medium' : risks.length ? 'info' : 'ok';
+    return { ...claim, risks, riskLevel };
+  });
+
+  const highRisk = results.filter(r => r.riskLevel === 'high').length;
+  const medRisk = results.filter(r => r.riskLevel === 'medium').length;
+  const clean = results.filter(r => r.riskLevel === 'ok').length;
+
+  renderClaimResults(results, highRisk, medRisk, clean);
+}
+
+function renderClaimResults(results, high, med, clean) {
+  document.getElementById('claim-upload-area').style.display = 'none';
+  const res = document.getElementById('claim-results');
+  res.style.display = 'block';
+
+  const riskColor = { high:'#EF4444', medium:'#FBBF24', info:'#60A5FA', ok:'#4ADE80' };
+  const riskLabel = { high:'High Risk', medium:'Review', info:'Note', ok:'Clean' };
+
+  res.innerHTML = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">' +
+    [
+      {n:results.length, l:'Claims Reviewed', c:'#0EA5E9'},
+      {n:high, l:'High Risk', c:'#EF4444'},
+      {n:med, l:'Needs Review', c:'#FBBF24'},
+      {n:clean, l:'Clean', c:'#4ADE80'},
+    ].map(m => '<div style="background:#061628;border:1px solid rgba(14,165,233,0.15);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:700;color:' + m.c + '">' + m.n + '</div><div style="font-size:11px;color:#607080;margin-top:3px">' + m.l + '</div></div>').join('') +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">' +
+    results.map((r,i) => '<div style="background:#061628;border:1px solid ' + (r.riskLevel==='ok'?'rgba(74,222,128,0.15)':r.riskLevel==='high'?'rgba(239,68,68,0.25)':'rgba(251,191,36,0.2)') + ';border-radius:10px;padding:14px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:' + (r.risks.length?'10px':'0') + '">' +
+      '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:12px;color:#0EA5E9">' + (r.claim_id||'CLM'+i) + '</span>' +
+      (r.drg?'<span style="font-size:11px;color:#607080">DRG ' + r.drg + '</span>':'') +
+      (r.principal_dx?'<span style="font-family:DM Mono,monospace;font-size:11px;color:#A78BFA">' + r.principal_dx + '</span>':'') +
+      '</div><span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:100px;background:rgba(' + (r.riskLevel==='ok'?'74,222,128':r.riskLevel==='high'?'239,68,68':'251,191,36') + ',0.15);color:' + riskColor[r.riskLevel] + '">' + riskLabel[r.riskLevel] + '</span></div>' +
+      r.risks.map(risk => '<div style="font-size:11px;padding:6px 10px;border-radius:6px;margin-bottom:5px;background:rgba(' + (risk.level==='high'?'239,68,68':risk.level==='medium'?'251,191,36':'96,165,250') + ',0.07);border-left:2px solid ' + (risk.level==='high'?'#EF4444':risk.level==='medium'?'#FBBF24':'#60A5FA') + ';color:rgba(245,240,232,0.75)">' + risk.msg + '</div>').join('') +
+      (r.risks.length ? '<button onclick="auditClaimWithAI(' + i + ')" style="margin-top:8px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);border-radius:6px;color:#0EA5E9;font-size:11px;font-weight:600;padding:4px 12px;cursor:pointer;font-family:inherit">🧠 AI Deep Audit This Claim</button>' : '') +
+      '</div>'
+    ).join('') +
+    '</div>' +
+    '<button onclick="document.getElementById(\'claim-upload-area\').style.display=\'block\';document.getElementById(\'claim-results\').style.display=\'none\'" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#607080;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Upload Different File</button>';
+
+  window._claimResults = results;
+}
+
+async function auditClaimWithAI(idx) {
+  const claim = window._claimResults && window._claimResults[idx];
+  if (!claim) return;
+  const prompt = 'Please perform a deep coding audit on this claim:\n\nClaim ID: ' + (claim.claim_id||'Unknown') + '\nDRG: ' + (claim.drg||'Not specified') + '\nPrincipal Diagnosis: ' + (claim.principal_dx||'Not specified') + '\nSecondary Diagnoses: ' + (claim.secondary_dx||'None') + '\nProcedure Code: ' + (claim.procedure||'None') + '\nBilled Amount: $' + (claim.billed_amount||'Unknown') + '\n\nPlease review: (1) Is the principal diagnosis coded to the highest specificity? (2) Are all secondary diagnoses captured including MCCs and CCs? (3) Is the DRG assignment correct? (4) Are there any compliance concerns? (5) What is the risk of a RAC or OIG audit flag on this claim?';
+  document.getElementById('claim-audit-modal')?.remove();
+  addMsg('user', 'Deep audit claim ' + (claim.claim_id||idx));
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: prompt });
+  else window.messages = [{ role:'user', content: prompt }];
+  sendMessage();
+}
+
+// ── 4. PRINT AUDIT REPORT ─────────────────────────────────────
+function printAuditReport() {
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showCodeFlag('Complete a coding session first, then print the audit report.', 'info'); return; }
+  const mode = document.querySelector('.mode-btn.active')?.textContent?.trim()?.slice(2) || 'Coding Audit';
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+  const orgName = localStorage.getItem('sairn_org_name') || 'Health System';
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SAIRNcode Audit Report</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:800px;margin:0 auto;font-size:13px;line-height:1.7}.hdr{border-bottom:3px solid #0284C7;padding-bottom:14px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.brand{font-size:22px;font-weight:700;color:#0C4A6E}.sub{font-size:12px;color:#777;margin-top:3px}.meta{text-align:right;font-size:11px;color:#999}.role-badge{display:inline-block;padding:2px 10px;background:#E0F2FE;border-radius:100px;font-size:10px;font-weight:700;color:#0284C7;margin-top:4px}.msg-block{margin-bottom:14px;padding:14px;border-radius:6px}.msg-block.user{background:#F0F9FF;border-left:3px solid #0EA5E9}.msg-block.ai{background:#FAFAFA;border-left:3px solid #0284C7}.msg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6B7280;margin-bottom:6px}.content{font-size:13px;line-height:1.8;color:#222;white-space:pre-wrap}.disclaimer{margin-top:28px;padding:12px;background:#F0F9FF;border-radius:6px;font-size:11px;color:#9CA3AF;border:1px solid #BAE6FD}.ftr{margin-top:20px;padding-top:10px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:10px;color:#CCC}.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-top:36px}.sig{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#777}@media print{body{padding:20px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">SAIRNcode — ' + orgName + '</div><div class="sub">' + mode + ' — Coding Audit Report</div><div class="role-badge">' + codeUserRole + '</div></div><div class="meta">Date: ' + date + '<br>Generated by SAIRNcode AI<br>FY2026 ICD-10-CM Verified</div></div>');
+  msgs.forEach(m => {
+    win.document.write('<div class="msg-block ' + (m.role==='user'?'user':'ai') + '"><div class="msg-label">' + (m.role==='user'?'Coder Query':'SAIRNcode AI Analysis') + '</div><div class="content">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') + '</div></div>');
+  });
+  win.document.write('<div class="sig-row"><div class="sig">Coder / Auditor Signature &amp; Date</div><div class="sig">Supervisor Review &amp; Date</div><div class="sig">Compliance Sign-Off</div></div>');
+  win.document.write('<div class="disclaimer"><strong>Disclaimer:</strong> SAIRNcode is an AI-powered coding intelligence tool. All code assignments must be verified by a certified coder against official ICD-10-CM, CPT, and CMS guidelines. This report does not constitute a final coding determination.</div>');
+  win.document.write('<div class="ftr"><span>SAIRNcode by SAIRN Technologies · Powered by Claude AI</span><span>sairn.vercel.app/sairncode</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ── 5. SMART CODING FLAGS ─────────────────────────────────────
+function showCodeFlag(msg, type) {
+  const existing = document.getElementById('code-flag');
+  if (existing) existing.remove();
+  const colors = {
+    warn:    { bg:'rgba(251,191,36,0.1)',  border:'#FBBF24', text:'#FBBF24' },
+    danger:  { bg:'rgba(239,68,68,0.1)',   border:'#EF4444', text:'#EF4444' },
+    success: { bg:'rgba(74,222,128,0.1)',  border:'#4ADE80', text:'#4ADE80' },
+    info:    { bg:'rgba(14,165,233,0.1)',  border:'#0EA5E9', text:'#0EA5E9' },
+  };
+  const cl = colors[type] || colors.info;
+  const flag = document.createElement('div');
+  flag.id = 'code-flag';
+  flag.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:' + cl.bg + ';border:1px solid ' + cl.border + ';border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:' + cl.text + ';z-index:999;max-width:560px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+  flag.textContent = msg;
+  document.body.appendChild(flag);
+  setTimeout(() => flag.remove(), 5000);
+}
+
+function checkCodingFlags(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes('unspecified') && (lower.includes('icd') || lower.includes('code')))
+    showCodeFlag('⚠️ Unspecified codes reduce DRG weight and RAF scores. Always query physician for highest specificity.', 'warn');
+  else if (lower.includes('mcc') || lower.includes('major complication'))
+    showCodeFlag('💡 MCC captured — verify it is documented explicitly in the physician note, not just in ancillary results.', 'info');
+  else if (lower.includes('sepsis') && lower.includes('query'))
+    showCodeFlag('⚖️ Sepsis queries must reference Sepsis-3 criteria — organ dysfunction plus suspected infection. Document SOFA score.', 'warn');
+  else if (lower.includes('unbundl') || lower.includes('ncci'))
+    showCodeFlag('🚨 NCCI bundling rules apply — verify the edit has a modifier indicator of 1 before appending modifier 59.', 'danger');
+  else if (lower.includes('rac') || lower.includes('overpayment'))
+    showCodeFlag('🔍 RAC audit risk — ensure all documentation supports medical necessity and matches the coded DRG.', 'warn');
+  else if (lower.includes('hcc') && lower.includes('capture'))
+    showCodeFlag('💡 HCC capture requires annual documentation — confirm the condition is addressed and treated at this encounter.', 'info');
+  else if (lower.includes('drg') && lower.includes('upgrade'))
+    showCodeFlag('📈 DRG upgrade opportunity — verify additional diagnoses are clinically documented before coding.', 'info');
+}
+
+
 </script>
 </body>
 </html>
