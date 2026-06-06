@@ -144,7 +144,11 @@ textarea#userInput:focus{border-color:rgba(236,72,153,0.5)}textarea#userInput::p
   </div>
   <div class="mode-bar">
     <button class="mode-btn" onclick="setMode('Hire Someone','Help me find, interview, and hire the right person')"><span class="mode-icon">🔍</span><span class="mode-label">Hire Someone</span></button><button class="mode-btn" onclick="setMode('HR Documents','Write an offer letter, policy, or HR document')"><span class="mode-icon">📋</span><span class="mode-label">HR Documents</span></button><button class="mode-btn" onclick="setMode('Compliance','Am I doing this legally? What are the rules?')"><span class="mode-icon">⚖️</span><span class="mode-label">Compliance</span></button><button class="mode-btn" onclick="setMode('Employee Issue','I have a performance or conduct situation')"><span class="mode-icon">😤</span><span class="mode-label">Employee Issue</span></button><button class="mode-btn" onclick="setMode('Compensation','What should I pay? How should I structure benefits?')"><span class="mode-icon">💰</span><span class="mode-label">Compensation</span></button>
-    <div class="mode-divider"></div>
+    <div class="mode-divider">
+    <button class="mode-btn" onclick="showEmployeeIntake()"><span class="mode-icon">👥</span><span class="mode-label">Intake Form</span></button>
+    <button class="mode-btn" onclick="showDocGenerator()"><span class="mode-icon">📄</span><span class="mode-label">Generate Doc</span></button>
+    <button class="mode-btn" onclick="showHRHistory()"><span class="mode-icon">🕐</span><span class="mode-label">History</span></button>
+  </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="hire" onclick="startFlow('hire')"><span class="mode-icon">🔍</span><span class="mode-label">the Right Person</span></button><button class="flow-btn mode-btn" data-flow="issue" onclick="startFlow('issue')"><span class="mode-icon">😤</span><span class="mode-label">an Employee Issue</span></button>
   </div>
@@ -162,7 +166,7 @@ textarea#userInput:focus{border-color:rgba(236,72,153,0.5)}textarea#userInput::p
   </div>
   <div class="input-area">
     <textarea id="userInput" placeholder="Ask SAIRN HR anything..." rows="1"></textarea>
-    <button id="sendBtn" onclick="sendMessage()">➤</button>
+    <button id="save-hr-btn" onclick="saveHRSession()" style="background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.2);border-radius:6px;color:#F43F5E;font-size:11px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit">💾 Save</button><button onclick="printHRSummary()" style="background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.2);border-radius:6px;color:#F43F5E;font-size:11px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit">🖨️ Print</button><button id="sendBtn" onclick="sendMessage()">➤</button>
   </div>
 </div>
 <script>
@@ -284,6 +288,7 @@ async function sendMessage() {
       const reply = data.content?.[0]?.text || 'Sorry, I had trouble with that. Please try again.';
       messages.push({role:'assistant',content:reply});
       addMsg('ai', reply);
+      checkHRFlags(reply);
     }
   } catch(e) {
     document.getElementById('typing-indicator')?.remove();
@@ -567,6 +572,272 @@ function showOILBadge() {
 
 document.getElementById('userInput').addEventListener('input',function(){this.style.height='';this.style.height=Math.min(this.scrollHeight,120)+'px';});
 document.getElementById('userInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+
+
+// ══════════════════════════════════════════════════════════════
+// SAIRN HR — ENTERPRISE UPGRADE PATTERNS
+// 1. Save + Session History (HR audit trail)
+// 2. Print (HR documents, compliance summaries)
+// 3. Smart HR Compliance Flags (legal warnings)
+// 4. Employee Intake Form (structured hire/issue intake)
+// 5. HR Document Generator (job descriptions, PIPs, offer letters)
+// ══════════════════════════════════════════════════════════════
+
+// ── 1. SAVE + HISTORY ─────────────────────────────────────────
+let hrHistory = JSON.parse(localStorage.getItem('sairn_hr_history') || '[]');
+
+function saveHRSession() {
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showHRFlag('Start a session first, then save.', 'info'); return; }
+  const session = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+    time: new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}),
+    mode: document.querySelector('.mode-btn.active .mode-label')?.textContent || 'General',
+    preview: lastAI.content.replace(/[#*`]/g,'').slice(0, 130) + '...',
+    messages: [...msgs],
+  };
+  hrHistory.unshift(session);
+  if (hrHistory.length > 100) hrHistory = hrHistory.slice(0, 100);
+  localStorage.setItem('sairn_hr_history', JSON.stringify(hrHistory));
+  const btn = document.getElementById('save-hr-btn');
+  if (btn) { btn.textContent = '✓ Saved'; btn.style.color = '#4ADE80'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; }, 2000); }
+  showHRFlag('HR session saved to audit trail.', 'success');
+}
+
+function showHRHistory() {
+  const ex = document.getElementById('hr-history-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'hr-history-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#100609;border-bottom:1px solid rgba(244,63,94,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">💾 HR Session History</div><div style="font-size:11px;color:#806070;margin-top:2px">' + hrHistory.length + ' saved sessions · HR audit trail</div></div><button onclick="document.getElementById(\'hr-history-modal\').remove()" style="background:none;border:none;color:#806070;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px';
+  if (!hrHistory.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#806070;font-size:14px">No saved HR sessions yet.<br>Build your HR audit trail — save every important session.</div>';
+  } else {
+    hrHistory.forEach((s, i) => {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#1A0810;border:1px solid rgba(244,63,94,0.15);border-radius:10px;padding:16px;transition:border-color .15s;cursor:pointer';
+      card.onmouseenter = () => card.style.borderColor = 'rgba(244,63,94,0.4)';
+      card.onmouseleave = () => card.style.borderColor = 'rgba(244,63,94,0.15)';
+      card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:10px;background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.3);border-radius:100px;padding:2px 10px;color:#F43F5E;font-weight:600">' + s.mode + '</span><div style="display:flex;gap:10px;align-items:center"><span style="font-size:10px;color:#806070">' + s.date + ' · ' + s.time + '</span><button onclick="deleteHRSession(' + i + ',event)" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:5px;color:#EF4444;font-size:10px;padding:2px 8px;cursor:pointer">Delete</button></div></div><div style="font-size:12px;color:rgba(245,240,232,0.55);line-height:1.5;margin-bottom:10px">' + s.preview + '</div><button onclick="restoreHRSession(' + i + ')" style="background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.25);border-radius:6px;color:#F43F5E;font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;font-family:inherit">Restore Session</button>';
+      body.appendChild(card);
+    });
+  }
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function restoreHRSession(idx) {
+  const s = hrHistory[idx];
+  if (!s) return;
+  if (typeof messages !== 'undefined') messages = [...s.messages];
+  const area = document.getElementById('chatArea') || document.getElementById('messages');
+  if (area) { area.innerHTML = ''; s.messages.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content)); }
+  document.getElementById('hr-history-modal')?.remove();
+}
+
+function deleteHRSession(idx, e) {
+  e.stopPropagation();
+  hrHistory.splice(idx, 1);
+  localStorage.setItem('sairn_hr_history', JSON.stringify(hrHistory));
+  document.getElementById('hr-history-modal')?.remove();
+  showHRHistory();
+}
+
+// ── 2. PRINT ──────────────────────────────────────────────────
+function printHRSummary() {
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showHRFlag('Complete a session first, then print.', 'info'); return; }
+  const mode = document.querySelector('.mode-btn.active .mode-label')?.textContent || 'HR Guidance';
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+  const companyName = localStorage.getItem('sairn_hr_company') || 'Your Company';
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SAIRNhr — ' + mode + '</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:750px;margin:0 auto;font-size:13px;line-height:1.7}.hdr{border-bottom:3px solid #BE185D;padding-bottom:14px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.brand{font-size:22px;font-weight:700;color:#831843}.sub{font-size:12px;color:#777;margin-top:3px}.meta{text-align:right;font-size:11px;color:#999}.msg-block{margin-bottom:14px;padding:14px;border-radius:6px}.msg-block.user{background:#FFF1F2;border-left:3px solid #F43F5E}.msg-block.ai{background:#FAFAFA;border-left:3px solid #BE185D}.msg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6B7280;margin-bottom:6px}.content{font-size:13px;line-height:1.8;color:#222;white-space:pre-wrap}.disclaimer{margin-top:28px;padding:12px;background:#FFF1F2;border-radius:6px;font-size:11px;color:#9CA3AF;border:1px solid #FECDD3}.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:32px}.sig{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#777}.ftr{margin-top:20px;padding-top:10px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:10px;color:#CCC}@media print{body{padding:20px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">' + companyName + ' — SAIRNhr</div><div class="sub">' + mode + ' — HR Session Record</div></div><div class="meta">Date: ' + date + '<br>Confidential — HR Use Only</div></div>');
+  msgs.forEach(m => {
+    win.document.write('<div class="msg-block ' + (m.role==='user'?'user':'ai') + '"><div class="msg-label">' + (m.role==='user'?'HR Query':'SAIRNhr AI Guidance') + '</div><div class="content">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') + '</div></div>');
+  });
+  win.document.write('<div class="sig-row"><div class="sig">HR Manager Signature &amp; Date</div><div class="sig">Review / Supervisor Sign-Off</div></div>');
+  win.document.write('<div class="disclaimer"><strong>Confidential:</strong> This document contains HR guidance generated by AI. All actions must be reviewed by qualified HR personnel or employment counsel before implementation. Employment laws vary by state and situation.</div>');
+  win.document.write('<div class="ftr"><span>SAIRNhr by SAIRN Technologies — Confidential HR Record</span><span>sairn.vercel.app/hr</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ── 3. SMART HR COMPLIANCE FLAGS ──────────────────────────────
+function showHRFlag(msg, type) {
+  const existing = document.getElementById('hr-flag');
+  if (existing) existing.remove();
+  const colors = {
+    danger:  { bg:'rgba(239,68,68,0.1)',   border:'#EF4444', text:'#EF4444' },
+    warn:    { bg:'rgba(251,191,36,0.1)',   border:'#FBBF24', text:'#FBBF24' },
+    success: { bg:'rgba(74,222,128,0.1)',   border:'#4ADE80', text:'#4ADE80' },
+    info:    { bg:'rgba(244,63,94,0.1)',    border:'#F43F5E', text:'#F43F5E' },
+  };
+  const cl = colors[type] || colors.info;
+  const flag = document.createElement('div');
+  flag.id = 'hr-flag';
+  flag.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:' + cl.bg + ';border:1px solid ' + cl.border + ';border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:' + cl.text + ';z-index:999;max-width:560px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.35)';
+  flag.textContent = msg;
+  document.body.appendChild(flag);
+  setTimeout(() => flag.remove(), 5000);
+}
+
+function checkHRFlags(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes('fire') || lower.includes('terminat') || lower.includes('let go'))
+    showHRFlag('⚖️ Termination requires documented cause, consistent application, and review for protected class risk before action.', 'warn');
+  else if (lower.includes('discriminat') || lower.includes('harassment') || lower.includes('hostile'))
+    showHRFlag('🚨 Discrimination and harassment claims require immediate written documentation and may require legal counsel.', 'danger');
+  else if (lower.includes('fmla') || lower.includes('medical leave') || lower.includes('maternity'))
+    showHRFlag('⚖️ FMLA applies to employers with 50+ employees. State leave laws may apply to smaller employers — confirm your state.', 'info');
+  else if (lower.includes('non-compete') || lower.includes('noncompete'))
+    showHRFlag('⚖️ Non-compete enforceability varies dramatically by state. Several states ban them entirely. Consult employment counsel.', 'warn');
+  else if (lower.includes('overtime') && (lower.includes('not pay') || lower.includes('exempt')))
+    showHRFlag('🚨 Misclassifying employees as exempt from overtime is one of the most common and costly wage violations. Verify FLSA criteria.', 'danger');
+  else if (lower.includes('independent contractor') || lower.includes('1099'))
+    showHRFlag('⚖️ Worker misclassification as independent contractor is heavily audited by IRS and DOL. Verify classification criteria carefully.', 'warn');
+  else if (lower.includes('background check'))
+    showHRFlag('⚖️ Background checks must comply with FCRA — provide disclosure, obtain consent, and follow adverse action procedures.', 'info');
+  else if (lower.includes('silica') || lower.includes('osha') || lower.includes('safety violation'))
+    showHRFlag('🚨 OSHA violations carry penalties up to $15,625 per violation. Willful violations up to $156,259. Document corrective action immediately.', 'danger');
+}
+
+// ── 4. EMPLOYEE INTAKE FORM ───────────────────────────────────
+function showEmployeeIntake() {
+  const ex = document.getElementById('emp-intake-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'emp-intake-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#100609;border-bottom:1px solid rgba(244,63,94,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">👥 Employee Situation Intake</div><div style="font-size:11px;color:#806070;margin-top:2px">Describe the situation — AI gives you the right HR guidance for your state</div></div><button onclick="document.getElementById(\'emp-intake-modal\').remove()" style="background:none;border:none;color:#806070;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  function sel(id, label, opts) {
+    return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#806070;margin-bottom:5px">' + label + '</div><select id="' + id + '" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none">' + opts.map(o => '<option>' + o + '</option>').join('') + '</select></div>';
+  }
+  function txt(id, label, ph) {
+    return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#806070;margin-bottom:5px">' + label + '</div><textarea id="' + id + '" placeholder="' + ph + '" rows="3" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box"></textarea></div>';
+  }
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:660px;margin:0 auto;width:100%';
+  body.innerHTML =
+    sel('ei-type', 'What Kind of HR Situation Is This?', [
+      'Performance issue — not meeting expectations',
+      'Attendance or tardiness problem',
+      'Workplace conflict between employees',
+      'Harassment or discrimination complaint',
+      'Termination — voluntary resignation',
+      'Termination — involuntary (we are letting them go)',
+      'New hire — creating a job description or offer',
+      'Compensation — setting or adjusting pay',
+      'Leave request — FMLA medical or parental',
+      'Safety incident or OSHA concern',
+      'Policy violation — misconduct',
+      'Other employee relations issue',
+    ]) +
+    sel('ei-state', 'Your State', ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming']) +
+    sel('ei-size', 'Company Size', ['1-10 employees','11-25 employees','26-50 employees','51-100 employees','100-500 employees','500+ employees']) +
+    sel('ei-position', 'Employee Position Type', ['Hourly / non-exempt','Salaried / exempt','Part-time','Contractor / 1099','Manager / supervisor','Executive']) +
+    txt('ei-situation', 'Describe What Happened', 'Be specific — dates, what was observed or reported, any prior warnings or documentation...') +
+    txt('ei-docs', 'What Documentation Exists?', 'Performance reviews, written warnings, emails, incident reports, witness statements, or none...') +
+    sel('ei-urgent', 'How Urgent Is This?', ['Not urgent — building a process','Moderate — needs resolution within weeks','Urgent — needs action this week','Immediate — safety or legal risk right now']) +
+    '<button onclick="submitEmployeeIntake()" style="width:100%;padding:13px;background:linear-gradient(135deg,#F43F5E,#E11D48);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">👥 Get HR Guidance</button>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function submitEmployeeIntake() {
+  const type      = document.getElementById('ei-type')?.value || '';
+  const state     = document.getElementById('ei-state')?.value || '';
+  const size      = document.getElementById('ei-size')?.value || '';
+  const position  = document.getElementById('ei-position')?.value || '';
+  const situation = document.getElementById('ei-situation')?.value || '';
+  const docs      = document.getElementById('ei-docs')?.value || '';
+  const urgent    = document.getElementById('ei-urgent')?.value || '';
+
+  if (!situation.trim()) { showHRFlag('Please describe the situation before submitting.', 'warn'); return; }
+
+  checkHRFlags(type + ' ' + situation);
+
+  const prompt = 'I need HR guidance for the following employee situation:\n\n' +
+    'Situation type: ' + type + '\n' +
+    'State: ' + state + '\n' +
+    'Company size: ' + size + '\n' +
+    'Employee type: ' + position + '\n' +
+    'What happened: ' + situation + '\n' +
+    (docs ? 'Documentation on file: ' + docs + '\n' : 'Documentation: None on file\n') +
+    'Urgency: ' + urgent + '\n\n' +
+    'Please provide: (1) my legal obligations as an employer in ' + state + ' for this situation, (2) the exact steps I should take in order, (3) what documentation I need to create, (4) any compliance risks I should know about, and (5) when I should involve an employment attorney.';
+
+  document.getElementById('emp-intake-modal')?.remove();
+  addMsg('user', type + ' — ' + situation.slice(0, 60) + (situation.length > 60 ? '...' : ''));
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+// ── 5. HR DOCUMENT GENERATOR ──────────────────────────────────
+function showDocGenerator() {
+  const ex = document.getElementById('hr-doc-modal');
+  if (ex) { ex.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'hr-doc-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#100609;border-bottom:1px solid rgba(244,63,94,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">📄 HR Document Generator</div><div style="font-size:11px;color:#806070;margin-top:2px">Select a document type — AI drafts it for your company</div></div><button onclick="document.getElementById(\'hr-doc-modal\').remove()" style="background:none;border:none;color:#806070;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  const docs = [
+    { emoji:'📋', title:'Job Description', desc:'Full job posting with responsibilities, requirements, and compensation range', prompt:'Write a complete job description for the following position: [DETAILS]. Include: job summary, key responsibilities (8-10 bullets), required qualifications, preferred qualifications, physical requirements if any, compensation range guidance, and equal opportunity statement.' },
+    { emoji:'✉️', title:'Offer Letter', desc:'Professional employment offer with all key terms', prompt:'Draft a professional employment offer letter for: [DETAILS]. Include: position title, start date placeholder, compensation, benefits overview, at-will employment statement, and acceptance deadline.' },
+    { emoji:'⚠️', title:'Written Warning', desc:'Documented disciplinary notice for performance or conduct', prompt:'Draft a formal written warning for: [DETAILS]. Include: specific policy or performance standard violated, dates and description of incidents, prior verbal warnings if applicable, expected improvement with timeline, consequences if behavior continues, and employee acknowledgment signature line.' },
+    { emoji:'📈', title:'Performance Improvement Plan', desc:'Structured PIP with goals, timeline, and success metrics', prompt:'Create a 30/60/90-day Performance Improvement Plan for: [DETAILS]. Include: specific performance gaps, SMART goals for improvement, support and resources provided, weekly check-in schedule, success metrics, and consequences if PIP is not met.' },
+    { emoji:'🤝', title:'Separation Agreement', desc:'Voluntary separation with release of claims outline', prompt:'Outline the key terms for a separation agreement for: [DETAILS]. Include: separation date, severance terms, benefits continuation, return of company property, release of claims language overview, non-disparagement, and reference policy. Note: must be reviewed by employment attorney before use.' },
+    { emoji:'📖', title:'Employee Handbook Section', desc:'Policy section for your employee handbook', prompt:'Write a clear, professional employee handbook section on: [DETAILS]. Include: policy statement, scope, procedures, employee responsibilities, manager responsibilities, and consequences for violations. Use plain language appropriate for all education levels.' },
+    { emoji:'📊', title:'Performance Review Template', desc:'Annual or mid-year review form with rating criteria', prompt:'Create a performance review template for: [DETAILS]. Include: rating scale (1-5), core competency sections (job knowledge, communication, teamwork, reliability, initiative), goal review section, development plan, overall rating, and signature lines for employee and manager.' },
+    { emoji:'👋', title:'Termination Letter', desc:'Professional involuntary termination documentation', prompt:'Draft a termination letter for: [DETAILS]. Include: effective date, reason for termination (factual, not emotional), final paycheck information, COBRA continuation notice reference, return of company property instructions, and reminder of any confidentiality obligations. Keep factual and non-accusatory.' },
+  ];
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:700px;margin:0 auto;width:100%';
+
+  const companyInput = '<div style="margin-bottom:16px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#806070;margin-bottom:5px">Company Name (optional)</div><input id="hr-doc-company" type="text" placeholder="Your company name" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>';
+
+  const grid = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    docs.map(d => '<div onclick="selectHRDoc(\'' + d.title + '\',\'' + d.prompt.replace(/'/g,"\\'") + '\')" style="background:#1A0810;border:1px solid rgba(244,63,94,0.15);border-radius:10px;padding:16px;cursor:pointer;transition:border-color .15s" onmouseenter="this.style.borderColor=\'rgba(244,63,94,0.4)\'" onmouseleave="this.style.borderColor=\'rgba(244,63,94,0.15)\'"><div style="font-size:22px;margin-bottom:8px">' + d.emoji + '</div><div style="font-size:13px;font-weight:600;color:#F5F0E8;margin-bottom:4px">' + d.title + '</div><div style="font-size:11px;color:#806070;line-height:1.45">' + d.desc + '</div></div>').join('') +
+    '</div>';
+
+  body.innerHTML = companyInput + '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#806070;margin-bottom:10px">Select Document Type</div>' + grid;
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function selectHRDoc(title, promptTemplate) {
+  const company = document.getElementById('hr-doc-company')?.value?.trim() || 'our company';
+  const details = window.prompt('Describe the details for this ' + title + ':\n(Position title, employee name if relevant, situation details, any specific requirements)');
+  if (!details) return;
+  const prompt = promptTemplate.replace('[DETAILS]', 'Company: ' + company + '. ' + details);
+  document.getElementById('hr-doc-modal')?.remove();
+  addMsg('user', 'Generate a ' + title + ' for: ' + details.slice(0, 80));
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: prompt });
+  sendMessage();
+}
+
+
 </script>
 </body>
 </html>
