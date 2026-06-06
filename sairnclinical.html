@@ -474,9 +474,36 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
   #landing,#app>.topbar,#app>.mode-bar{display:none!important}
   #panel-client{display:block!important}
 }
+
+/* AUTH GATE */
+#auth-gate{position:fixed;inset:0;background:#020F14;display:flex;align-items:center;justify-content:center;z-index:99999;flex-direction:column}
+.auth-box{background:#071820;border:1px solid rgba(6,182,212,0.25);border-radius:20px;padding:44px 40px;width:380px;text-align:center}
+.auth-logo{font-size:48px;margin-bottom:14px}
+.auth-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:#F0F8FA;letter-spacing:-.5px;margin-bottom:6px}
+.auth-title em{font-style:normal;color:#06B6D4}
+.auth-sub{font-size:13px;color:#5A8A94;margin-bottom:28px;line-height:1.5}
+.auth-input{width:100%;background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:12px;padding:14px 16px;color:#F0F8FA;font-size:22px;letter-spacing:8px;text-align:center;outline:none;font-family:inherit;transition:border-color .15s;box-sizing:border-box;margin-bottom:16px}
+.auth-input:focus{border-color:rgba(6,182,212,0.5)}
+.auth-input::placeholder{letter-spacing:2px;font-size:14px;color:#5A8A94}
+.auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,#06B6D4,#0891B2);border:none;border-radius:12px;color:#021018;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(6,182,212,0.3);transition:opacity .15s;letter-spacing:.3px}
+.auth-btn:hover{opacity:.9}
+.auth-error{font-size:12px;color:#EF4444;margin-top:10px;min-height:18px;font-weight:600}
+.auth-hint{font-size:11px;color:#5A8A94;margin-top:16px;line-height:1.6}
 </style>
 </head>
 <body>
+<div id="auth-gate">
+  <div class="auth-box">
+    <div class="auth-logo">🏥</div>
+    <div class="auth-title">SAIRN<em>clinical</em></div>
+    <div class="auth-sub">Hospital &amp; Urgent Care Intelligence Platform<br>Enter your access code to continue</div>
+    <input class="auth-input" type="password" id="auth-pin-input" placeholder="Enter code" maxlength="8" onkeydown="if(event.key==='Enter')checkAuthPin()" autofocus>
+    <button class="auth-btn" onclick="checkAuthPin()">Enter SAIRNclinical →</button>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-hint">Clinician code: 1234 &nbsp;·&nbsp; Admin code: 9999<br>Contact your administrator for access</div>
+  </div>
+</div>
+
 
 <!-- ══ LANDING PAGE ══ -->
 <div id="landing">
@@ -1491,8 +1518,38 @@ function saveAccessCodes() {
 document.addEventListener('DOMContentLoaded', function() {
   // Start on landing
   document.getElementById('landing').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
+  document.getElementById('app').classList.remove('visible');
 });
+
+
+
+// AUTH GATE
+var _AUTH_CODES = { nurse:'1234', admin:'9999' };
+function checkAuthPin() {
+  var pin = (document.getElementById('auth-pin-input')||{}).value||'';
+  var errEl = document.getElementById('auth-error');
+  if (pin === _AUTH_CODES.admin) {
+    document.body.classList.add('is-admin');
+    currentRole = 'Admin';
+    localStorage.setItem('sairn_clinical_role','Admin');
+    _dismissAuthGate();
+  } else if (pin === _AUTH_CODES.nurse) {
+    _dismissAuthGate();
+  } else {
+    if(errEl) errEl.textContent = 'Incorrect code. Please try again.';
+    var inp = document.getElementById('auth-pin-input');
+    if(inp){inp.value='';inp.focus();}
+    setTimeout(function(){if(errEl)errEl.textContent='';},3000);
+  }
+}
+function _dismissAuthGate() {
+  var gate = document.getElementById('auth-gate');
+  if(gate){
+    gate.style.transition='opacity .4s';
+    gate.style.opacity='0';
+    setTimeout(function(){gate.style.display='none';},400);
+  }
+}
 
 </script>
 </body>
