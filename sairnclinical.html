@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNclinical — Hospital and Urgent Care Intelligence Platform</title>
+<meta name="theme-color" content="#020F14">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#020F14;
+  --card:#071820;
+  --a:#06B6D4;
+  --a2:#0891B2;
+  --grad:linear-gradient(135deg,#06B6D4,#0891B2);
+  --ar:rgba(6,182,212,0.1);
+  --ab:rgba(6,182,212,0.3);
+  --text:#F0F8FA;
+  --muted:#5A8A94;
+  --border:rgba(6,182,212,0.1);
+  --border-hi:rgba(6,182,212,0.25);
+  --red:#EF4444;
+  --amber:#F59E0B;
+  --green:#10B981;
+  --purple:#8B5CF6;
+}
+
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(6,182,212,0.3);border-radius:2px}
+
+/* ── LANDING PAGE ── */
+#landing{min-height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* nav */
+.nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:60px;flex-shrink:0;
+  background:rgba(2,15,20,0.9);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-gem{
+  width:34px;height:34px;border-radius:9px;
+  background:var(--grad);display:flex;align-items:center;justify-content:center;
+  font-size:18px;box-shadow:0 4px 14px rgba(6,182,212,0.35);
+}
+.nav-brand{
+  font-family:'Cormorant Garamond',serif;
+  font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px;
+}
+.nav-brand em{font-style:normal;color:var(--a)}
+.nav-badge{font-size:10px;color:var(--muted);letter-spacing:.5px}
+.nav-cta{
+  padding:8px 20px;border-radius:8px;border:none;
+  background:var(--grad);color:#021018;
+  font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;
+  cursor:pointer;letter-spacing:.3px;
+  box-shadow:0 4px 14px rgba(6,182,212,0.3);transition:opacity .15s;
+}
+.nav-cta:hover{opacity:.9}
+
+/* hero */
+.hero{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:60px 40px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.hero-glow{
+  position:absolute;top:-200px;left:50%;transform:translateX(-50%);
+  width:800px;height:800px;border-radius:50%;
+  background:radial-gradient(circle,rgba(6,182,212,0.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.hero-pulse{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:600px;height:600px;border-radius:50%;
+  border:1px solid rgba(6,182,212,0.05);animation:heroPulse 4s ease-in-out infinite;
+}
+.hero-pulse2{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:800px;height:800px;border-radius:50%;
+  border:1px solid rgba(6,182,212,0.03);animation:heroPulse 4s ease-in-out infinite .8s;
+}
+@keyframes heroPulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.5}50%{transform:translate(-50%,-50%) scale(1.05);opacity:1}}
+
+.hero-icon{font-size:52px;margin-bottom:20px;position:relative;z-index:1}
+.hero-eyebrow{
+  font-family:'DM Mono',monospace;font-size:10px;
+  letter-spacing:4px;text-transform:uppercase;
+  color:var(--a);margin-bottom:16px;position:relative;z-index:1;
+}
+.hero-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:68px;font-weight:700;line-height:1.05;
+  letter-spacing:-2px;color:var(--text);
+  margin-bottom:20px;position:relative;z-index:1;max-width:900px;
+}
+.hero-title em{font-style:normal;color:var(--a)}
+.hero-sub{
+  font-size:17px;font-weight:300;color:var(--muted);
+  max-width:600px;line-height:1.7;margin-bottom:40px;
+  position:relative;z-index:1;
+}
+.hero-pills{
+  display:flex;gap:10px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:40px;position:relative;z-index:1;
+}
+.hero-pill{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);
+  border-radius:100px;padding:7px 16px;
+  font-size:12px;font-weight:500;color:var(--a);
+}
+.hero-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--grad);color:#021018;
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;
+  padding:14px 32px;border-radius:100px;border:none;cursor:pointer;
+  box-shadow:0 6px 24px rgba(6,182,212,0.35);
+  transition:all .2s;position:relative;z-index:1;letter-spacing:.3px;
+}
+.hero-btn:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(6,182,212,0.45)}
+
+/* crisis badge */
+.crisis-badge{
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--muted);margin-top:20px;
+  position:relative;z-index:1;
+}
+.crisis-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--a);animation:pulseDot 2s ease-in-out infinite;
+}
+@keyframes pulseDot{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* feature grid */
+.features{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;padding:40px;max-width:1200px;margin:0 auto;width:100%;
+}
+.feat-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:24px;transition:border-color .2s;
+}
+.feat-card:hover{border-color:var(--border-hi)}
+.feat-icon{font-size:28px;margin-bottom:12px}
+.feat-title{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;color:var(--text);margin-bottom:8px}
+.feat-desc{font-size:12px;color:var(--muted);line-height:1.65}
+.feat-badge{
+  display:inline-block;margin-top:10px;
+  font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--a);padding:3px 8px;background:var(--ar);border-radius:4px;
+}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.visible{display:flex}
+
+.topbar{
+  background:#030F18;border-bottom:1px solid var(--border);
+  padding:0 20px;display:flex;align-items:center;
+  justify-content:space-between;height:52px;flex-shrink:0;
+}
+.tb-brand{display:flex;align-items:center;gap:10px}
+.tb-gem{
+  width:30px;height:30px;border-radius:8px;background:var(--grad);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;box-shadow:0 3px 10px rgba(6,182,212,0.3);
+}
+.tb-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:19px;font-weight:700;color:var(--text);letter-spacing:-.3px;
+}
+.tb-name em{font-style:normal;color:var(--a)}
+.tb-nav{display:flex;gap:2px}
+.nav-btn{
+  padding:6px 13px;border-radius:6px;border:none;
+  background:transparent;color:rgba(240,248,250,.45);
+  font-family:'Outfit',sans-serif;font-size:12px;
+  cursor:pointer;transition:all .15s;font-weight:500;
+}
+.nav-btn:hover{color:var(--text);background:rgba(255,255,255,0.05)}
+.nav-btn.active{color:var(--a);background:var(--ar)}
+.nav-btn.admin-only{display:none}
+body.is-admin .nav-btn.admin-only{display:inline-block}
+.tb-right{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted)}
+.tb-role{
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--a);background:var(--ar);border:1px solid var(--ab);
+  border-radius:100px;padding:3px 10px;
+}
+.tb-logout{
+  padding:4px 10px;border-radius:6px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:transparent;color:var(--muted);
+  font-size:11px;font-family:'Outfit',sans-serif;cursor:pointer;
+  transition:all .15s;
+}
+.tb-logout:hover{color:var(--text);border-color:rgba(255,255,255,0.15)}
+
+/* mode bar */
+.mode-bar{
+  display:flex;gap:6px;padding:10px 16px;
+  overflow-x:auto;flex-shrink:0;
+  background:#030F18;border-bottom:1px solid rgba(6,182,212,0.08);
+}
+.mode-bar::-webkit-scrollbar{height:3px}
+.mode-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:7px 13px;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;
+  cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;
+}
+.mode-btn:hover{border-color:var(--border-hi);color:var(--text)}
+.mode-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-icon{font-size:15px}
+
+/* panels */
+.panel{display:none;flex:1;overflow:hidden}
+.panel.active{display:flex;flex-direction:column}
+
+/* chat */
+.chat-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;background:var(--bg)}
+#emptyState{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;flex:1;padding:40px;text-align:center;
+}
+.empty-icon{font-size:48px;margin-bottom:14px;opacity:.4}
+.empty-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--text);margin-bottom:8px;opacity:.6}
+.empty-sub{font-size:13px;color:var(--muted);max-width:400px;line-height:1.6}
+
+.msg-row{display:flex;gap:10px;max-width:820px}
+.msg-row.user-row{flex-direction:row-reverse;align-self:flex-end}
+.msg-avatar{
+  width:30px;height:30px;border-radius:8px;flex-shrink:0;
+  background:var(--grad);display:flex;align-items:center;
+  justify-content:center;font-size:15px;
+  box-shadow:0 3px 10px rgba(6,182,212,0.2);
+}
+.msg-bubble{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 15px;
+  font-size:13px;line-height:1.7;color:var(--text);max-width:680px;
+}
+.msg-row.user-row .msg-bubble{
+  background:rgba(6,182,212,0.08);border-color:var(--border-hi);
+}
+.msg-bubble p{margin-bottom:8px}
+.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble strong{color:var(--a);font-weight:600}
+.msg-bubble ul,.msg-bubble ol{padding-left:18px;margin-bottom:8px}
+.msg-bubble li{margin-bottom:3px}
+.msg-bubble code{
+  background:rgba(6,182,212,0.08);border-radius:4px;
+  padding:1px 5px;font-family:'DM Mono',monospace;font-size:12px;
+}
+.typing-indicator{display:flex;gap:5px;padding:5px 0}
+.typing-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--a);opacity:.35;
+  animation:tPulse 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes tPulse{0%,80%,100%{opacity:.15}40%{opacity:.8}}
+
+/* input area */
+.input-area{
+  padding:14px 16px;background:#030F18;
+  border-top:1px solid var(--border);flex-shrink:0;
+}
+.input-top{
+  display:flex;gap:8px;align-items:flex-end;
+  max-width:900px;margin:0 auto;
+}
+.input-box{
+  flex:1;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;display:flex;align-items:flex-end;
+  padding:8px 12px;gap:8px;transition:border-color .15s;
+}
+.input-box:focus-within{border-color:var(--ab)}
+#userInput{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-family:'Outfit',sans-serif;
+  font-size:13px;resize:none;line-height:1.5;
+  max-height:140px;min-height:22px;
+}
+#userInput::placeholder{color:var(--muted)}
+.voice-btn{
+  width:32px;height:32px;border-radius:7px;border:none;
+  background:rgba(255,255,255,0.05);color:var(--muted);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;transition:all .15s;
+}
+.voice-btn:hover{background:rgba(255,255,255,0.09);color:var(--text)}
+.voice-btn.listening{background:rgba(239,68,68,.15);color:#ef4444;animation:pulse 1s ease-in-out infinite}
+.send-btn{
+  width:36px;height:36px;border-radius:8px;border:none;
+  background:var(--grad);color:#021018;font-weight:700;
+  font-size:16px;cursor:pointer;flex-shrink:0;
+  box-shadow:0 3px 10px rgba(6,182,212,0.25);transition:opacity .15s;
+}
+.send-btn:hover{opacity:.9}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+
+.input-actions{
+  display:flex;gap:6px;justify-content:center;margin-top:8px;
+  max-width:900px;margin-left:auto;margin-right:auto;
+}
+.ia-btn{
+  padding:5px 12px;border-radius:6px;
+  border:1px solid var(--border);background:transparent;
+  color:var(--muted);font-size:10px;font-weight:600;
+  cursor:pointer;font-family:'Outfit',sans-serif;
+  transition:all .15s;letter-spacing:.3px;
+}
+.ia-btn:hover{border-color:var(--ab);color:var(--a)}
+
+/* modal shell */
+.sc-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,0.94);
+  z-index:9999;display:flex;flex-direction:column;overflow:hidden;
+}
+.sc-modal-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:#030F18;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.sc-modal-title{font-size:15px;font-weight:700;color:var(--text)}
+.sc-modal-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.sc-modal-close{
+  background:none;border:none;color:var(--muted);
+  font-size:22px;cursor:pointer;padding:0 6px;flex-shrink:0;
+}
+.sc-modal-body{flex:1;overflow-y:auto;padding:20px}
+
+/* form elements inside modals */
+.sc-field{margin-bottom:14px}
+.sc-field label{
+  display:block;font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--muted);margin-bottom:5px;
+}
+.sc-field input,.sc-field select,.sc-field textarea{
+  width:100%;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);border-radius:8px;
+  padding:9px 12px;color:var(--text);font-size:13px;
+  font-family:'Outfit',sans-serif;outline:none;
+  transition:border-color .15s;box-sizing:border-box;
+}
+.sc-field input:focus,.sc-field select:focus,.sc-field textarea:focus{border-color:var(--ab)}
+.sc-field select option{background:#071820;color:var(--text)}
+.sc-field textarea{resize:vertical;min-height:80px;line-height:1.6}
+.sc-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sc-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* action buttons */
+.sc-btn{
+  padding:12px 20px;border-radius:10px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:'Outfit',sans-serif;
+  transition:all .15s;width:100%;
+}
+.sc-btn.primary{background:var(--grad);border:none;color:#021018;box-shadow:0 4px 14px rgba(6,182,212,0.25)}
+.sc-btn.primary:hover{opacity:.9}
+.sc-btn.secondary{background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.sc-btn.danger{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#EF4444}
+
+/* result cards */
+.sc-result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.sc-result-card{
+  background:var(--card);border:1px solid var(--border-hi);
+  border-radius:10px;padding:12px;
+}
+.sc-result-num{font-size:18px;font-weight:700;color:var(--a);line-height:1.2;word-break:break-word}
+.sc-result-lbl{font-size:11px;font-weight:600;color:var(--text);margin-top:3px}
+.sc-result-sub{font-size:9px;color:var(--muted);margin-top:2px;line-height:1.4}
+
+/* SBAR card */
+.sbar-section{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:16px;margin-bottom:12px;
+}
+.sbar-letter{
+  font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;
+  color:var(--a);float:left;margin-right:12px;line-height:1;
+}
+.sbar-title{font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.sbar-content{font-size:12px;color:var(--muted);line-height:1.65;clear:both}
+
+/* history cards */
+.hist-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:16px;margin-bottom:10px;
+  transition:border-color .15s;cursor:pointer;
+}
+.hist-card:hover{border-color:var(--border-hi)}
+
+/* ESI badge colors */
+.esi-1{background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#EF4444}
+.esi-2{background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.3);color:#F97316}
+.esi-3{background:rgba(234,179,8,0.15);border-color:rgba(234,179,8,0.3);color:#EAB308}
+.esi-4{background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.3);color:#22C55E}
+.esi-5{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:var(--muted)}
+
+/* flags */
+.sc-flag{
+  display:flex;gap:8px;padding:9px 13px;
+  border-radius:7px;font-size:11px;margin-bottom:7px;
+}
+.sc-flag.danger{background:rgba(239,68,68,0.08);color:#EF4444;border-left:2px solid #EF4444}
+.sc-flag.warn{background:rgba(245,158,11,0.08);color:#F59E0B;border-left:2px solid #F59E0B}
+.sc-flag.info{background:rgba(6,182,212,0.08);color:var(--a);border-left:2px solid var(--a)}
+.sc-flag.success{background:rgba(16,185,129,0.08);color:#10B981;border-left:2px solid #10B981}
+
+/* note box */
+.note-box{
+  background:var(--ar);border-left:2px solid var(--a);
+  padding:8px 12px;border-radius:0 6px 6px 0;
+  font-size:11px;color:rgba(6,182,212,.7);margin-bottom:12px;
+}
+
+/* history panel */
+#panel-history{overflow-y:auto}
+.hist-container{max-width:900px;margin:0 auto;padding:20px}
+
+/* admin panel */
+#panel-admin{overflow-y:auto}
+.admin-container{max-width:1000px;margin:0 auto;padding:20px}
+.admin-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:26px;font-weight:700;color:var(--text);margin-bottom:20px;
+}
+
+/* tabs */
+.sc-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px}
+.sc-tab{
+  padding:7px 16px;font-size:12px;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  color:var(--muted);font-weight:500;transition:all .15s;
+}
+.sc-tab.active{color:var(--a);border-bottom-color:var(--a)}
+.sc-tab-panel{display:none}
+.sc-tab-panel.active{display:block}
+
+/* client / patient view */
+#panel-client{overflow-y:auto;background:#0A0E10}
+
+/* emergency alert overlay */
+#emergency-overlay{
+  position:fixed;inset:0;background:rgba(239,68,68,0.12);
+  border:3px solid rgba(239,68,68,0.6);z-index:99999;
+  display:none;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+#emergency-overlay.show{display:flex}
+.emergency-banner{
+  background:#1A0A0A;border:2px solid #EF4444;border-radius:14px;
+  padding:20px 28px;text-align:center;max-width:500px;
+  pointer-events:all;
+}
+.emergency-banner .eb-icon{font-size:32px;margin-bottom:8px}
+.emergency-banner .eb-msg{font-size:15px;font-weight:700;color:#EF4444;margin-bottom:6px}
+.emergency-banner .eb-sub{font-size:12px;color:rgba(239,68,68,.7);margin-bottom:14px}
+.emergency-banner button{
+  padding:9px 20px;background:#EF4444;border:none;border-radius:8px;
+  color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;
+}
+
+@media print{
+  #landing,#app>.topbar,#app>.mode-bar{display:none!important}
+  #panel-client{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LANDING PAGE ══ -->
+<div id="landing">
+  <nav class="nav">
+    <a class="nav-logo" href="#" onclick="return false">
+      <div class="nav-gem">🏥</div>
+      <div class="nav-brand">SAIRN<em>clinical</em></div>
+    </a>
+    <div class="nav-badge">Claude AI · SAIRN Technologies · Built for Clinical Staff</div>
+    <button class="nav-cta" onclick="showPage('ap')">Enter Platform →</button>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-pulse"></div>
+    <div class="hero-pulse2"></div>
+    <div class="hero-icon">🏥</div>
+    <div class="hero-eyebrow">Hospital and Urgent Care AI Intelligence</div>
+    <h1 class="hero-title">Built for the people<br>at the <em>bedside.</em></h1>
+    <p class="hero-sub">SAIRNclinical gives nurses, charge nurses, urgent care teams, and hospital administrators the AI intelligence platform they were never given — while physicians got everything first.</p>
+    <div class="hero-pills">
+      <div class="hero-pill">🧠 Powered by Claude AI</div>
+      <div class="hero-pill">📋 SBAR Documentation</div>
+      <div class="hero-pill">🚨 ESI Triage Guidance</div>
+      <div class="hero-pill">💊 Drug Reference</div>
+      <div class="hero-pill">📊 Joint Commission Prep</div>
+      <div class="hero-pill">🔄 Handoff Intelligence</div>
+    </div>
+    <button class="hero-btn" onclick="showPage('ap')">Enter SAIRNclinical →</button>
+    <div class="crisis-badge">
+      <div class="crisis-dot"></div>
+      <span>48% global nurse burnout rate — documentation is the biggest contributor. We fix that.</span>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feat-card">
+      <div class="feat-icon">📋</div>
+      <div class="feat-title">SBAR Documentation</div>
+      <div class="feat-desc">Generate complete Situation-Background-Assessment-Recommendation notes from quick field inputs. Structured, complete, defensible documentation in under 2 minutes.</div>
+      <span class="feat-badge">Reduces charting time 60%</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🚨</div>
+      <div class="feat-title">ESI Triage Guidance</div>
+      <div class="feat-desc">Emergency Severity Index scoring support for urgent care and ED triage nurses. AI reviews chief complaint, vitals, and history to suggest ESI level and immediate interventions.</div>
+      <span class="feat-badge">ESI Levels 1-5</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔄</div>
+      <div class="feat-title">Patient Handoff</div>
+      <div class="feat-desc">Structure shift-change handoffs in the SBAR format. Reduce the 80% of documentation errors that occur at handoff. Every handoff becomes complete, standardized, and traceable.</div>
+      <span class="feat-badge">80% of errors happen at handoff</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">💊</div>
+      <div class="feat-title">Medication Intelligence</div>
+      <div class="feat-desc">Drug reference, dosing guidance, interaction screening, and administration protocols. Always verify with your pharmacist — but get the context you need at the bedside.</div>
+      <span class="feat-badge">Point-of-care reference</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔬</div>
+      <div class="feat-title">Clinical Protocol Reference</div>
+      <div class="feat-desc">CDC infection control protocols, sepsis bundles, fall prevention, pressure injury prevention, restraint protocols, and rapid response criteria — all in plain language.</div>
+      <span class="feat-badge">Evidence-based</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <div class="feat-title">Joint Commission Prep</div>
+      <div class="feat-desc">Prepare your unit for surveys. Policy documentation, tracer methodology guidance, NPSG compliance checklists, and the questions surveyors are most likely to ask your staff.</div>
+      <span class="feat-badge">Survey ready</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">⚕️</div>
+      <div class="feat-title">Incident Reporting</div>
+      <div class="feat-desc">Structure near-miss and adverse event reports. Root cause analysis guidance, corrective action documentation, and reporting to state agencies and CMS when required.</div>
+      <span class="feat-badge">Risk management</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🏃</div>
+      <div class="feat-title">Rapid Response</div>
+      <div class="feat-desc">MEWS scoring, rapid response team activation criteria, early warning sign recognition, and code documentation templates. Recognize deterioration before it becomes a crisis.</div>
+      <span class="feat-badge">Early warning</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">👩‍⚕️</div>
+      <div class="feat-title">Charge Nurse Tools</div>
+      <div class="feat-desc">Staffing calculations, patient acuity scoring, bed management guidance, staff assignment optimization, and float pool management. Run your unit with intelligence behind you.</div>
+      <span class="feat-badge">Only on SAIRNclinical</span>
+    </div>
+  </div>
+</div><!-- /landing -->
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-gem">🏥</div>
+      <div class="tb-name">SAIRN<em>clinical</em></div>
+    </div>
+    <div class="tb-nav">
+      <button class="nav-btn active" onclick="showPanel('ai')">AI Clinical</button>
+      <button class="nav-btn" onclick="showPanel('sbar')">SBAR Builder</button>
+      <button class="nav-btn" onclick="showPanel('triage')">Triage</button>
+      <button class="nav-btn" onclick="showPanel('history')">History</button>
+      <button class="nav-btn admin-only" onclick="showPanel('admin')">Admin</button>
+    </div>
+    <div class="tb-right">
+      <div class="tb-role" id="role-display">Nurse</div>
+      <button onclick="showRoleSelector()" style="background:var(--ar);border:1px solid var(--ab);border-radius:6px;color:var(--a);font-size:10px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:inherit">Change Role</button>
+      <button class="tb-logout" onclick="showPage('landing')">← Exit</button>
+    </div>
+  </div>
+
+  <!-- mode bar -->
+  <div class="mode-bar">
+    <button class="mode-btn active" onclick="setMode('general',this)"><span class="mode-icon">🧠</span><span class="mode-label">AI Clinical</span></button>
+    <button class="mode-btn" onclick="setMode('sbar',this)"><span class="mode-icon">📋</span><span class="mode-label">Documentation</span></button>
+    <button class="mode-btn" onclick="setMode('triage',this)"><span class="mode-icon">🚨</span><span class="mode-label">Triage</span></button>
+    <button class="mode-btn" onclick="setMode('handoff',this)"><span class="mode-icon">🔄</span><span class="mode-label">Handoff</span></button>
+    <button class="mode-btn" onclick="setMode('meds',this)"><span class="mode-icon">💊</span><span class="mode-label">Medications</span></button>
+    <button class="mode-btn" onclick="setMode('protocols',this)"><span class="mode-icon">🔬</span><span class="mode-label">Protocols</span></button>
+    <button class="mode-btn" onclick="setMode('rapidresponse',this)"><span class="mode-icon">🏃</span><span class="mode-label">Rapid Response</span></button>
+    <button class="mode-btn" onclick="setMode('jcaho',this)"><span class="mode-icon">📊</span><span class="mode-label">Joint Commission</span></button>
+    <button class="mode-btn" onclick="setMode('incident',this)"><span class="mode-icon">⚕️</span><span class="mode-label">Incident Report</span></button>
+    <button class="mode-btn" onclick="setMode('charge',this)"><span class="mode-icon">👩‍⚕️</span><span class="mode-label">Charge Nurse</span></button>
+    <button class="mode-btn" onclick="showSBARBuilder()"><span class="mode-icon">✍️</span><span class="mode-label">SBAR Builder</span></button>
+    <button class="mode-btn" onclick="showTriageForm()"><span class="mode-icon">🩺</span><span class="mode-label">Triage Form</span></button>
+    <button class="mode-btn" onclick="showClinicalHistory()"><span class="mode-icon">🕐</span><span class="mode-label">History</span></button>
+  </div>
+
+  <!-- AI PANEL -->
+  <div class="panel active" id="panel-ai">
+    <div class="chat-wrap">
+      <div class="chat-area" id="chatArea">
+        <div id="emptyState">
+          <div class="empty-icon">🏥</div>
+          <div class="empty-title">SAIRNclinical — Intelligence</div>
+          <div class="empty-sub">Ask anything about clinical care — documentation, triage, protocols, medications, or use the tools above to build SBAR notes, structure triage assessments, and document handoffs.</div>
+        </div>
+      </div>
+      <div class="input-area">
+        <div class="input-top">
+          <div class="input-box">
+            <textarea id="userInput" rows="1" placeholder="Ask SAIRNclinical anything — protocols, medications, documentation, triage guidance..."
+              onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Voice input">🎤</button>
+          </div>
+          <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+        <div class="input-actions">
+          <button id="save-clinical-btn" class="ia-btn" onclick="saveClinicalSession()">💾 Save</button>
+          <button class="ia-btn" onclick="printClinicalSummary()">🖨️ Print</button>
+          <button class="ia-btn" onclick="showSBARBuilder()">📋 SBAR</button>
+          <button class="ia-btn" onclick="showTriageForm()">🚨 Triage</button>
+          <button class="ia-btn" onclick="showHandoffBuilder()">🔄 Handoff</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="panel" id="panel-history">
+    <div class="hist-container">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--text);margin-bottom:18px">📓 Clinical Session History</div>
+      <div id="hist-list"><div style="text-align:center;padding:40px;color:var(--muted)">No saved sessions yet.</div></div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div class="panel" id="panel-admin">
+    <div class="admin-container">
+      <div class="admin-title">Admin — Facility Settings</div>
+      <div class="sc-tabs">
+        <div class="sc-tab active" onclick="switchAdminTab('facility',this)">Facility</div>
+        <div class="sc-tab" onclick="switchAdminTab('access',this)">Access</div>
+      </div>
+      <div class="sc-tab-panel active" id="admin-facility">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:600px">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--a);margin-bottom:14px">Facility Information</div>
+          <div class="sc-field"><label>Facility Name</label><input type="text" id="admin-facility-name" placeholder="e.g. Riverside Medical Center"></div>
+          <div class="sc-field"><label>Facility Type</label>
+            <select id="admin-facility-type">
+              <option>Community Hospital</option>
+              <option>Academic Medical Center</option>
+              <option>Critical Access Hospital</option>
+              <option>Urgent Care Center</option>
+              <option>Emergency Department</option>
+              <option>Long-Term Acute Care</option>
+              <option>Rehabilitation Hospital</option>
+              <option>Specialty Hospital</option>
+            </select>
+          </div>
+          <div class="sc-field"><label>Unit / Department</label><input type="text" id="admin-unit" placeholder="e.g. Medical-Surgical Unit 3, ED, ICU"></div>
+          <div class="sc-field"><label>Bed Count</label><input type="number" id="admin-beds" placeholder="e.g. 24"></div>
+          <button class="sc-btn primary" onclick="saveFacilitySettings()" style="max-width:200px;margin-top:8px">Save Settings</button>
+        </div>
+      </div>
+      <div class="sc-tab-panel" id="admin-access">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:600px">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--a);margin-bottom:14px">Access Codes</div>
+          <div class="note-box">Codes are stored locally. Connect to your facility auth system for production deployment.</div>
+          <div class="sc-grid2" style="margin-bottom:14px">
+            <div class="sc-field"><label>Nurse / Clinician Code</label><input type="password" id="nurse-code-input" value="1234" style="font-size:18px;letter-spacing:5px"></div>
+            <div class="sc-field"><label>Admin / Charge Code</label><input type="password" id="admin-code-input" value="9999" style="font-size:18px;letter-spacing:5px"></div>
+          </div>
+          <button class="sc-btn secondary" onclick="saveAccessCodes()" style="max-width:200px">Update Codes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- Emergency overlay -->
+<div id="emergency-overlay">
+  <div class="emergency-banner">
+    <div class="eb-icon">🚨</div>
+    <div class="eb-msg" id="emergency-msg">CRITICAL PATIENT ALERT</div>
+    <div class="eb-sub" id="emergency-sub">Immediate clinical assessment required</div>
+    <button onclick="document.getElementById('emergency-overlay').classList.remove('show')">Acknowledged</button>
+  </div>
+</div>
+
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// SAIRN CLINICAL — FULL PLATFORM SCRIPT
+// Hospital + Urgent Care AI Intelligence
+// Built by Michael L. Dibert · SAIRN Technologies
+// Claude AI at the core — learning and growing every session
+// ══════════════════════════════════════════════════════════════
+
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID    = "sairnclinical";
+const APP_ICON  = "🏥";
+
+// ── SYSTEM PROMPT ─────────────────────────────────────────────
+const SYSTEM = "You are SAIRNclinical, the world standard AI clinical intelligence platform for hospital and urgent care professionals, powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies. You serve nurses, charge nurses, nurse practitioners, physician assistants, urgent care providers, clinical documentation specialists, infection preventionists, risk managers, and hospital administrators at every level from bedside to C-suite. You are NOT a replacement for clinical judgment — you are the most knowledgeable clinical resource available to support the professionals who provide care. CRITICAL SAFETY RULE: Always remind users that clinical AI guidance must be verified against current facility policies, the patient's specific clinical picture, and the judgment of the treating clinician. Never claim certainty on diagnosis or treatment. DOCUMENTATION: You know SBAR (Situation-Background-Assessment-Recommendation), SOAP notes, nursing assessments, ADL documentation, care plans, discharge summaries, shift notes, and all standard clinical documentation formats. You write in clear, professional clinical language. TRIAGE: You understand Emergency Severity Index (ESI) levels 1-5, Manchester Triage System, Canadian Triage and Acuity Scale (CTAS), chief complaint-based acuity assessment, and vital sign interpretation. ESI-1: Immediate, life threat. ESI-2: High risk, emergent. ESI-3: Urgent, 2+ resources. ESI-4: Less urgent, 1 resource. ESI-5: Non-urgent, no resources. PROTOCOLS: You know CDC infection control guidelines, OSHA bloodborne pathogen standards, Joint Commission National Patient Safety Goals (NPSGs), CMS Conditions of Participation, core measures (SEP-1 sepsis, STK stroke, AMI, pneumonia, heart failure, VTE), fall prevention (Morse Fall Scale, STRATIFY), pressure injury prevention (Braden Scale), restraint protocols, and rapid response team (RRT) criteria. MEDICATIONS: You know drug classifications, common dosing ranges, black box warnings, common interactions, and administration routes. Always recommend pharmacist verification for complex medication questions. SEPSIS: You know Sepsis-3 criteria — life-threatening organ dysfunction caused by dysregulated host response to infection. SOFA score, qSOFA (altered mental status + RR>22 + SBP<100), and the Surviving Sepsis Campaign bundles (Hour-1: lactate, blood cultures, broad-spectrum antibiotics, crystalloid, vasopressors). RAPID RESPONSE: MEWS (Modified Early Warning Score) — score 5+ triggers RRT. Components: respiratory rate, oxygen saturation, temperature, systolic BP, heart rate, AVPU. HANDOFF: SBAR handoff reduces documentation errors by 60% (Mercy Health). Structure every handoff: Situation (who, what, why), Background (history, meds, allergies), Assessment (current status, recent changes, concerns), Recommendation (what the next nurse needs to know and do). CHARGE NURSE: Nurse-patient ratios, acuity-based staffing, float pool management, bed management, throughput optimization, and escalation protocols. You understand that charge nurses are often the most under-supported clinical leaders in any hospital. JOINT COMMISSION: NPSG goals, tracer methodology, survey readiness, documentation standards, environment of care, emergency management, and the questions surveyors are most likely to ask frontline staff. URGENT CARE: Fast track triage, common chief complaints (URI, UTI, laceration, fracture, chest pain workup), antibiotic stewardship, diagnostic workup guidance, disposition decisions, and when to transfer to the ED. LEARNING AND GROWING: Every session makes you more useful to this facility. Ask clarifying questions. Remember context within the conversation. Build on what the user has told you about their unit, their patients, and their challenges.";
+
+// ── STATE ──────────────────────────────────────────────────────
+let CODES = { nurse:'1234', admin:'9999' };
+let currentRole = 'Nurse';
+let messages = [];
+let isLoading = false;
+let clinicalHistory = JSON.parse(localStorage.getItem('sairn_clinical_history') || '[]');
+let recognition = null;
+let isListening = false;
+
+const MODE_PROMPTS = {
+  general:       'General clinical intelligence mode. Answer any clinical question with full expertise.',
+  sbar:          'SBAR Documentation mode. Help structure Situation-Background-Assessment-Recommendation notes. Ask for patient details if not provided.',
+  triage:        'Triage mode. Focus on ESI level guidance, acuity assessment, vital sign interpretation, and immediate intervention priorities. Always recommend clinical verification.',
+  handoff:       'Patient Handoff mode. Structure shift-change handoffs in SBAR format. Reduce errors. Ask for patient name/room, current situation, background, assessment, and what the oncoming nurse needs to know.',
+  meds:          'Medication Intelligence mode. Drug reference, dosing guidance, interactions, and administration protocols. Always recommend pharmacist verification for complex questions.',
+  protocols:     'Clinical Protocol mode. CDC infection control, sepsis bundles, fall prevention, pressure injury, restraint protocols, and evidence-based clinical guidelines.',
+  rapidresponse: 'Rapid Response mode. MEWS scoring, RRT activation criteria, early warning signs, deteriorating patient recognition, and code documentation. Speed matters here.',
+  jcaho:         'Joint Commission Prep mode. NPSG compliance, survey readiness, tracer methodology, documentation standards, and the questions surveyors ask frontline staff.',
+  incident:      'Incident Reporting mode. Structure near-miss and adverse event reports, root cause analysis guidance, corrective action plans, and mandatory reporting requirements.',
+  charge:        'Charge Nurse mode. Staffing calculations, acuity scoring, bed management, assignment optimization, throughput, and unit management. The charge nurse deserves a brilliant partner.',
+};
+
+// ── PAGE / PANEL NAVIGATION ───────────────────────────────────
+function showPage(page) {
+  if (page === 'landing') {
+    document.getElementById('landing').style.display = 'flex';
+    document.getElementById('app').classList.remove('visible');
+  } else if (page === 'ap') {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    loadFacilitySettings();
+    if (!messages.length) showWelcome();
+  }
+}
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tb-nav .nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  const map = { ai:0, sbar:0, triage:0, history:1, admin:2 };
+  const btns = document.querySelectorAll('.tb-nav .nav-btn');
+  if (map[id] !== undefined) btns[map[id]].classList.add('active');
+  if (id === 'history') renderClinicalHistory();
+}
+
+function switchAdminTab(id, el) {
+  document.querySelectorAll('#panel-admin .sc-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#panel-admin .sc-tab-panel').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('admin-' + id).classList.add('active');
+}
+
+// ── MODE ──────────────────────────────────────────────────────
+let currentMode = 'general';
+function setMode(mode, el) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const ph = {
+    general:'Ask anything — protocols, medications, triage guidance, documentation help...',
+    sbar:'Describe the patient situation — I will build the SBAR note...',
+    triage:'Tell me the chief complaint and vitals — I will guide the ESI level...',
+    handoff:'Give me the handoff details — patient, situation, background, concerns...',
+    meds:'Ask about any medication — dosing, interactions, administration...',
+    protocols:'Ask about any clinical protocol — sepsis, falls, infections, restraints...',
+    rapidresponse:'MEWS score, RRT criteria, or describe a deteriorating patient...',
+    jcaho:'Ask about Joint Commission standards, NPSGs, or survey prep...',
+    incident:'Describe the incident or near-miss — I will help structure the report...',
+    charge:'Staff count, census, acuity, or unit management question...',
+  };
+  const inp = document.getElementById('userInput');
+  if (inp) inp.placeholder = ph[mode] || ph.general;
+  messages = [];
+  const area = document.getElementById('chatArea');
+  if (area) area.innerHTML = '';
+  if (!document.getElementById('emptyState')) {
+    const es = document.createElement('div');
+    es.id = 'emptyState';
+    es.className = 'emptyState';
+    es.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:40px;text-align:center';
+    es.innerHTML = '<div style="font-size:40px;margin-bottom:12px;opacity:.35">' + APP_ICON + '</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--text);opacity:.5;margin-bottom:6px">SAIRNclinical — ' + mode.charAt(0).toUpperCase() + mode.slice(1) + ' Mode</div><div style="font-size:12px;color:var(--muted)">' + (MODE_PROMPTS[mode]||'') + '</div>';
+    area.appendChild(es);
+  }
+}
+
+// ── WELCOME MESSAGE ───────────────────────────────────────────
+function showWelcome() {
+  const facility = localStorage.getItem('sairn_clinical_facility') || 'your facility';
+  const unit     = localStorage.getItem('sairn_clinical_unit') || 'your unit';
+  const role     = localStorage.getItem('sairn_clinical_role') || 'Nurse';
+  addMsg('ai', 'Welcome to **SAIRNclinical** — built for ' + role + 's at ' + facility + (unit ? ', ' + unit : '') + '.\n\nI am your clinical intelligence partner. Ask me anything:\n- **Documentation** — SBAR notes, nursing assessments, handoffs\n- **Triage** — ESI level guidance, acuity scoring, urgent care protocols\n- **Medications** — drug reference, interactions, dosing ranges\n- **Protocols** — sepsis, falls, infection control, rapid response\n- **Joint Commission** — survey prep, NPSGs, tracer methodology\n- **Charge Nurse** — staffing, acuity, bed management\n\nUse the **SBAR Builder** and **Triage Form** buttons above for structured tools. Everything you save goes to **History** and can be printed.\n\nWhat can I help you with today?');
+}
+
+// ── CHAT ──────────────────────────────────────────────────────
+function addMsg(role, content) {
+  const area = document.getElementById('chatArea');
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+
+  const row = document.createElement('div');
+  row.className = 'msg-row ' + (role === 'user' ? 'user-row' : '');
+
+  if (role === 'ai') {
+    const av = document.createElement('div');
+    av.className = 'msg-avatar';
+    av.textContent = APP_ICON;
+    row.appendChild(av);
+  }
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatMsg(content);
+  row.appendChild(bubble);
+  area.appendChild(row);
+  area.scrollTop = area.scrollHeight;
+}
+
+function formatMsg(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+
+async function sendMessage() {
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim();
+  if (!text || isLoading) return;
+
+  checkClinicalFlags(text);
+  addMsg('user', text);
+  messages.push({ role:'user', content: text });
+  inp.value = '';
+  inp.style.height = 'auto';
+  isLoading = true;
+
+  // Typing indicator
+  const area = document.getElementById('chatArea');
+  const typing = document.createElement('div');
+  typing.className = 'msg-row';
+  typing.id = 'typing-indicator';
+  typing.innerHTML = '<div class="msg-avatar">' + APP_ICON + '</div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+  area.appendChild(typing);
+  area.scrollTop = area.scrollHeight;
+
+  try {
+    const facilityCtx = buildFacilityContext();
+    const systemPrompt = SYSTEM + (facilityCtx ? '\n\nFACILITY CONTEXT: ' + facilityCtx : '') + '\n\nCURRENT MODE: ' + (MODE_PROMPTS[currentMode] || '') + '\n\nCLINICIAN ROLE: ' + currentRole;
+    const res = await fetch(SAIRN_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: messages.slice(-20),
+        app_id: APP_ID,
+        is_demo: true,
+      }),
+    });
+    const data = await res.json();
+    const reply = data.content && data.content[0] ? data.content[0].text : 'Please try again.';
+    document.getElementById('typing-indicator')?.remove();
+    addMsg('ai', reply);
+    messages.push({ role:'assistant', content: reply });
+    if (messages.length > 40) messages = messages.slice(-40);
+    checkClinicalFlags(reply);
+  } catch(e) {
+    document.getElementById('typing-indicator')?.remove();
+    addMsg('ai', 'Connection error. Check your network and try again.');
+  }
+  isLoading = false;
+}
+
+function buildFacilityContext() {
+  const name  = localStorage.getItem('sairn_clinical_facility') || '';
+  const type  = localStorage.getItem('sairn_clinical_type') || '';
+  const unit  = localStorage.getItem('sairn_clinical_unit') || '';
+  const beds  = localStorage.getItem('sairn_clinical_beds') || '';
+  if (!name && !unit) return '';
+  return [name && 'Facility: ' + name, type && 'Type: ' + type, unit && 'Unit: ' + unit, beds && 'Beds: ' + beds].filter(Boolean).join('. ');
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+// Voice input
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('Voice input requires Chrome.');
+    return;
+  }
+  if (isListening) {
+    recognition && recognition.stop();
+    isListening = false;
+    document.getElementById('voiceBtn').classList.remove('listening');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+  recognition.onresult = function(e) {
+    const t = e.results[0][0].transcript;
+    document.getElementById('userInput').value = t;
+    autoResize(document.getElementById('userInput'));
+  };
+  recognition.onend = function() {
+    isListening = false;
+    document.getElementById('voiceBtn').classList.remove('listening');
+  };
+  recognition.start();
+  isListening = true;
+  document.getElementById('voiceBtn').classList.add('listening');
+}
+
+// ── SMART CLINICAL FLAGS ──────────────────────────────────────
+function showClinicalFlag(msg, type) {
+  const ex = document.getElementById('clinical-flag');
+  if (ex) ex.remove();
+  const colors = {
+    emergency: 'rgba(239,68,68,0.15)',
+    danger:    'rgba(239,68,68,0.1)',
+    warn:      'rgba(245,158,11,0.1)',
+    success:   'rgba(16,185,129,0.1)',
+    info:      'rgba(6,182,212,0.1)',
+  };
+  const textColors = {
+    emergency:'#EF4444', danger:'#EF4444', warn:'#F59E0B', success:'#10B981', info:'#06B6D4'
+  };
+  const flag = document.createElement('div');
+  flag.id = 'clinical-flag';
+  flag.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:' + (colors[type]||colors.info) + ';border:1px solid ' + (textColors[type]||textColors.info) + ';border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:' + (textColors[type]||textColors.info) + ';z-index:999;max-width:580px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+  flag.textContent = msg;
+  document.body.appendChild(flag);
+  setTimeout(() => flag.remove(), type === 'emergency' ? 8000 : 5000);
+}
+
+// Critical clinical patterns
+const CRITICAL_PATTERNS = [
+  { pattern:/chest pain|crushing pressure|radiating.{0,20}(arm|jaw|shoulder)/i,       msg:'🚨 Chest pain with radiation — activate cardiac protocol. 12-lead ECG immediately. Notify physician.', type:'emergency' },
+  { pattern:/stroke|facial droop|arm weakness|sudden.{0,15}speech|FAST/i,              msg:'🚨 Stroke signs — activate stroke protocol NOW. Time to treatment is brain. Last known well time?', type:'emergency' },
+  { pattern:/sepsis|qsofa|sofa score|lactate.*elevated|blood cultures/i,               msg:'⚠️ Sepsis concern — initiate Hour-1 bundle: lactate, blood cultures, broad-spectrum antibiotics, crystalloid. Document time.', type:'warn' },
+  { pattern:/not breathing|apnea|unresponsive|pulseless|code blue/i,                   msg:'🚨 Call code blue immediately. Begin CPR if pulseless. Document time of arrest.', type:'emergency' },
+  { pattern:/anaphylaxis|severe allergic|throat.{0,15}swelling|stridor/i,              msg:'🚨 Anaphylaxis — epinephrine 0.3-0.5mg IM (vastus lateralis). Supine position. Call for help.', type:'emergency' },
+  { pattern:/fall risk|morse.{0,10}score|stratify score/i,                             msg:'⚠️ Fall risk identified — implement fall prevention protocol: low bed, non-skid footwear, call light within reach, bed alarm.', type:'warn' },
+  { pattern:/rapid response|rrt|mews|deteriorat/i,                                     msg:'⚠️ Consider rapid response team activation. MEWS ≥5 or any acute concern warrants RRT call.', type:'warn' },
+  { pattern:/restraint|wrist restraint|vest restraint/i,                               msg:'⚖️ Restraints require physician order, clinical justification, q2h checks, offer of alternatives, and documentation every 2 hours.', type:'info' },
+  { pattern:/medication error|wrong dose|wrong patient|five rights/i,                  msg:'🚨 Medication error — complete incident report immediately. Assess patient. Notify charge nurse and physician.', type:'danger' },
+  { pattern:/pressure injury|stage (2|3|4|unstageable)|wound.{0,20}deteriorat/i,       msg:'⚠️ Pressure injury — complete wound assessment, photograph, notify wound care team, update Braden score, revise care plan.', type:'warn' },
+];
+
+function checkClinicalFlags(text) {
+  const combined = text.toLowerCase();
+  for (const p of CRITICAL_PATTERNS) {
+    if (p.pattern.test(combined)) {
+      showClinicalFlag(p.msg, p.type);
+      if (p.type === 'emergency') {
+        const overlay = document.getElementById('emergency-overlay');
+        const msgEl = document.getElementById('emergency-msg');
+        const subEl = document.getElementById('emergency-sub');
+        if (overlay && msgEl && subEl) {
+          msgEl.textContent = 'CRITICAL CLINICAL ALERT';
+          subEl.textContent = p.msg.replace(/^[🚨⚠️⚖️]+\s*/, '');
+          overlay.classList.add('show');
+          setTimeout(() => overlay.classList.remove('show'), 10000);
+        }
+      }
+      return;
+    }
+  }
+}
+
+// ── SBAR BUILDER ──────────────────────────────────────────────
+function showSBARBuilder() {
+  const ex = document.getElementById('sbar-modal');
+  if (ex) { ex.remove(); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'sbar-modal';
+  modal.className = 'sc-modal';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'sc-modal-hdr';
+  hdr.innerHTML = '<div><div class="sc-modal-title">📋 SBAR Documentation Builder</div><div class="sc-modal-sub">Situation · Background · Assessment · Recommendation — the standard for safe clinical communication</div></div><button class="sc-modal-close" onclick="document.getElementById(\'sbar-modal\').remove()">×</button>';
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.className = 'sc-modal-body';
+  body.style.maxWidth = '700px';
+  body.style.margin = '0 auto';
+
+  function sbarSection(letter, label, color, id, ph) {
+    return '<div class="sbar-section"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div class="sbar-letter" style="color:' + color + '">' + letter + '</div><div><div class="sbar-title" style="color:' + color + '">' + label + '</div></div></div><textarea id="' + id + '" placeholder="' + ph + '" rows="3" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:Outfit,sans-serif;outline:none;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea></div>';
+  }
+
+  const facilityName = localStorage.getItem('sairn_clinical_facility') || '';
+
+  body.innerHTML =
+    '<div class="sc-grid2" style="margin-bottom:14px">' +
+    '<div class="sc-field"><label>Patient Name / Room</label><input type="text" id="sbar-patient" placeholder="e.g. J. Smith, Room 312"></div>' +
+    '<div class="sc-field"><label>Date and Time</label><input type="text" id="sbar-datetime" value="' + new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) + '"></div>' +
+    '</div>' +
+    '<div class="sc-field" style="margin-bottom:14px"><label>Clinician / Nurse Name</label><input type="text" id="sbar-nurse" placeholder="Your name and role"></div>' +
+    sbarSection('S','SITUATION — What is happening right now?','#EF4444','sbar-s','I am calling about [patient name], [age], in [room]. The problem I am calling about is... The patient\'s current vital signs are...') +
+    sbarSection('B','BACKGROUND — Clinical context and history','#F59E0B','sbar-b','The patient was admitted on [date] for [reason]. Relevant medical history includes... Current medications include... Most recent lab values...') +
+    sbarSection('A','ASSESSMENT — Your clinical assessment','#10B981','sbar-a','I think the problem is... I am not sure what the problem is but the patient is deteriorating and I need help... The patient\'s condition has changed because...') +
+    sbarSection('R','RECOMMENDATION — What you need or suggest','#06B6D4','sbar-r','I would like you to... I need you to come evaluate the patient... Can we change the order for... I suggest we transfer the patient to...') +
+    '<div style="display:flex;gap:10px;margin-top:14px">' +
+    '<button onclick="generateSBAR()" class="sc-btn primary" style="flex:2">🧠 AI — Review and Complete This SBAR</button>' +
+    '<button onclick="printSBAR()" class="sc-btn secondary" style="flex:1">🖨️ Print SBAR</button>' +
+    '</div>' +
+    '<div id="sbar-ai-result" style="margin-top:14px"></div>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+async function generateSBAR() {
+  const patient  = document.getElementById('sbar-patient')?.value || '';
+  const datetime = document.getElementById('sbar-datetime')?.value || '';
+  const nurse    = document.getElementById('sbar-nurse')?.value || '';
+  const s        = document.getElementById('sbar-s')?.value || '';
+  const b        = document.getElementById('sbar-b')?.value || '';
+  const a        = document.getElementById('sbar-a')?.value || '';
+  const r        = document.getElementById('sbar-r')?.value || '';
+
+  if (!s.trim()) { showClinicalFlag('Enter the Situation first.', 'warn'); return; }
+
+  const resDiv = document.getElementById('sbar-ai-result');
+  if (resDiv) resDiv.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px">Reviewing SBAR...</div>';
+
+  const prompt = 'Please review and improve this SBAR clinical communication note. Correct any gaps, clarify the clinical picture, and suggest what may be missing. Format as a complete professional SBAR:\n\nPatient: ' + patient + '\nDate/Time: ' + datetime + '\nClinician: ' + nurse + '\n\nS - SITUATION:\n' + s + '\n\nB - BACKGROUND:\n' + (b||'Not provided') + '\n\nA - ASSESSMENT:\n' + (a||'Not provided') + '\n\nR - RECOMMENDATION:\n' + (r||'Not provided');
+
+  try {
+    const res = await fetch(SAIRN_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        max_tokens:1000,
+        system: SYSTEM + '\n\nYou are in SBAR Documentation mode. Review the SBAR provided and return: (1) a complete polished version of the SBAR, (2) any clinical gaps or missing elements, (3) suggested additions for completeness.',
+        messages:[{role:'user',content:prompt}],
+        app_id:APP_ID, is_demo:true,
+      }),
+    });
+    const data = await res.json();
+    const reply = data.content && data.content[0] ? data.content[0].text : 'Could not review SBAR.';
+    if (resDiv) {
+      resDiv.innerHTML = '<div style="background:var(--ar);border:1px solid var(--ab);border-radius:10px;padding:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--a);margin-bottom:10px">🧠 AI SBAR Review</div><div style="font-size:12px;color:var(--text);line-height:1.7">' + formatMsg(reply) + '</div></div>';
+    }
+    messages.push({ role:'user', content: prompt });
+    messages.push({ role:'assistant', content: reply });
+  } catch(e) {
+    if (resDiv) resDiv.innerHTML = '<div style="color:var(--red);font-size:12px">Connection error. Try again.</div>';
+  }
+}
+
+function printSBAR() {
+  const patient  = document.getElementById('sbar-patient')?.value || '';
+  const datetime = document.getElementById('sbar-datetime')?.value || '';
+  const nurse    = document.getElementById('sbar-nurse')?.value || '';
+  const s = document.getElementById('sbar-s')?.value || '';
+  const b = document.getElementById('sbar-b')?.value || '';
+  const a = document.getElementById('sbar-a')?.value || '';
+  const r = document.getElementById('sbar-r')?.value || '';
+  const facility = localStorage.getItem('sairn_clinical_facility') || 'Clinical Facility';
+  const unit     = localStorage.getItem('sairn_clinical_unit') || '';
+
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SBAR — ' + patient + '</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:700px;margin:0 auto;font-size:13px;line-height:1.7}.hdr{border-bottom:3px solid #0891B2;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between}.brand{font-size:20px;font-weight:700;color:#0C4A6E}.meta{font-size:11px;color:#777;text-align:right}.sbar-block{margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}.sbar-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #e5e7eb}.sbar-letter{font-size:24px;font-weight:700;font-family:Georgia,serif;width:28px}.sbar-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6B7280}.sbar-body{padding:12px 14px;font-size:13px;line-height:1.7;color:#222;white-space:pre-wrap;min-height:50px;background:#FAFAFA}.s .sbar-letter{color:#DC2626}.b .sbar-letter{color:#D97706}.a .sbar-letter{color:#059669}.r .sbar-letter{color:#0891B2}.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-top:28px}.sig{border-top:1px solid #999;padding-top:5px;font-size:11px;color:#777}.disclaimer{margin-top:20px;padding:10px;background:#F0F9FF;border-radius:6px;font-size:10px;color:#9CA3AF;border:1px solid #BAE6FD}.ftr{margin-top:18px;font-size:10px;color:#CCC;display:flex;justify-content:space-between;border-top:1px solid #E5E7EB;padding-top:10px}@media print{body{padding:20px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">' + facility + (unit?' — '+unit:'') + '</div><div style="font-size:12px;color:#555;margin-top:2px">SBAR Clinical Communication — ' + (patient||'Patient') + '</div></div><div class="meta">Date/Time: ' + (datetime||new Date().toLocaleString()) + '<br>Clinician: ' + (nurse||'—') + '</div></div>');
+  const sections = [
+    {cls:'s',letter:'S',title:'Situation — What is happening right now',content:s},
+    {cls:'b',letter:'B',title:'Background — Clinical context and history',content:b},
+    {cls:'a',letter:'A',title:'Assessment — Clinical assessment',content:a},
+    {cls:'r',letter:'R',title:'Recommendation — What is needed',content:r},
+  ];
+  sections.forEach(sec => {
+    win.document.write('<div class="sbar-block ' + sec.cls + '"><div class="sbar-hdr"><div class="sbar-letter">' + sec.letter + '</div><div class="sbar-title">' + sec.title + '</div></div><div class="sbar-body">' + (sec.content || '—').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>');
+  });
+  win.document.write('<div class="sig-row"><div class="sig">Sending Clinician &amp; Date</div><div class="sig">Receiving Clinician &amp; Date</div><div class="sig">Supervisor Notified &amp; Date</div></div>');
+  win.document.write('<div class="disclaimer">This SBAR was generated with SAIRNclinical AI assistance. All clinical documentation must be reviewed and verified by the responsible clinician. AI-assisted documentation does not replace clinical judgment.</div>');
+  win.document.write('<div class="ftr"><span>' + facility + ' — SAIRNclinical</span><span>sairn.vercel.app/sairnclinical</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ── TRIAGE FORM ───────────────────────────────────────────────
+function showTriageForm() {
+  const ex = document.getElementById('triage-modal');
+  if (ex) { ex.remove(); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'triage-modal';
+  modal.className = 'sc-modal';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'sc-modal-hdr';
+  hdr.innerHTML = '<div><div class="sc-modal-title">🚨 ESI Triage Assessment</div><div class="sc-modal-sub">Emergency Severity Index — AI-assisted acuity guidance. Always verify with clinical judgment.</div></div><button class="sc-modal-close" onclick="document.getElementById(\'triage-modal\').remove()">×</button>';
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.className = 'sc-modal-body';
+  body.style.maxWidth = '700px';
+  body.style.margin = '0 auto';
+
+  function sel(id, label, opts) {
+    return '<div class="sc-field"><label>' + label + '</label><select id="' + id + '">' + opts.map(o => '<option>' + o + '</option>').join('') + '</select></div>';
+  }
+  function inp(id, label, ph) {
+    return '<div class="sc-field"><label>' + label + '</label><input type="text" id="' + id + '" placeholder="' + ph + '"></div>';
+  }
+  function ta(id, label, ph) {
+    return '<div class="sc-field"><label>' + label + '</label><textarea id="' + id + '" placeholder="' + ph + '" rows="3"></textarea></div>';
+  }
+
+  body.innerHTML =
+    '<div class="note-box">ESI triage guidance is AI-assisted and educational only. Final triage level must always be assigned by a trained, licensed triage nurse with direct patient assessment.</div>' +
+    '<div class="sc-grid2">' +
+    inp('tr-age','Patient Age / Sex','e.g. 54M, 8F, 34F pregnant') +
+    inp('tr-arrival','Arrival Mode','e.g. walk-in, EMS, wheelchair') +
+    '</div>' +
+    ta('tr-complaint','Chief Complaint','Describe the patient\'s main complaint in their own words...') +
+    '<div class="sc-grid3">' +
+    inp('tr-hr','Heart Rate','e.g. 98') +
+    inp('tr-rr','Resp Rate','e.g. 18') +
+    inp('tr-spo2','SpO2','e.g. 98%') +
+    '</div>' +
+    '<div class="sc-grid3">' +
+    inp('tr-sbp','Systolic BP','e.g. 124') +
+    inp('tr-temp','Temperature','e.g. 38.4C / 101.1F') +
+    inp('tr-gcs','GCS / Mental Status','e.g. A&Ox4 or GCS 15') +
+    '</div>' +
+    sel('tr-pain','Pain Scale (0-10)',['0 - No pain','1-2 - Mild','3-4 - Mild-Moderate','5-6 - Moderate','7-8 - Severe','9-10 - Worst possible']) +
+    ta('tr-hx','Brief History / PMH','Onset, duration, associated symptoms, relevant medical history, medications, allergies...') +
+    sel('tr-mechanism','Mechanism (if trauma)',['Not applicable — medical','MVC — low speed','MVC — high speed / rollover','Fall — ground level','Fall — height','Penetrating injury','Blast / explosion','Other trauma']) +
+    '<div style="margin-top:14px"><button onclick="runTriageAssessment()" class="sc-btn primary">🚨 Get ESI Level Guidance and Immediate Actions</button></div>' +
+    '<div id="triage-result" style="margin-top:14px"></div>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+async function runTriageAssessment() {
+  const age      = document.getElementById('tr-age')?.value || '';
+  const complaint= document.getElementById('tr-complaint')?.value || '';
+  const hr       = document.getElementById('tr-hr')?.value || '';
+  const rr       = document.getElementById('tr-rr')?.value || '';
+  const spo2     = document.getElementById('tr-spo2')?.value || '';
+  const sbp      = document.getElementById('tr-sbp')?.value || '';
+  const temp     = document.getElementById('tr-temp')?.value || '';
+  const gcs      = document.getElementById('tr-gcs')?.value || '';
+  const pain     = document.getElementById('tr-pain')?.value || '';
+  const hx       = document.getElementById('tr-hx')?.value || '';
+  const mechanism= document.getElementById('tr-mechanism')?.value || '';
+
+  if (!complaint.trim()) { showClinicalFlag('Enter the chief complaint.', 'warn'); return; }
+
+  checkClinicalFlags(complaint + ' ' + hx);
+
+  const resDiv = document.getElementById('triage-result');
+  if (resDiv) resDiv.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px">Analyzing triage data...</div>';
+
+  const prompt = 'Please provide ESI triage guidance for this patient:\n\n' +
+    'Patient: ' + age + '\n' +
+    'Chief complaint: ' + complaint + '\n' +
+    'Vitals: HR ' + hr + ', RR ' + rr + ', SpO2 ' + spo2 + ', SBP ' + sbp + ', Temp ' + temp + ', ' + gcs + '\n' +
+    'Pain: ' + pain + '\n' +
+    (hx ? 'History: ' + hx + '\n' : '') +
+    (mechanism && !mechanism.includes('Not applicable') ? 'Mechanism: ' + mechanism + '\n' : '') +
+    '\nPlease provide: (1) suggested ESI level with rationale, (2) immediate interventions and assessments to initiate, (3) red flag symptoms to watch for, (4) anticipated resources needed, (5) any vital sign concerns and clinical significance. Remind the triage nurse this is AI-assisted guidance requiring clinical verification.';
+
+  try {
+    const res = await fetch(SAIRN_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        max_tokens:1000,
+        system: SYSTEM + '\n\nYou are in Triage mode. Provide clear, organized ESI guidance.',
+        messages:[{role:'user',content:prompt}],
+        app_id:APP_ID, is_demo:true,
+      }),
+    });
+    const data = await res.json();
+    const reply = data.content && data.content[0] ? data.content[0].text : 'Triage assessment failed.';
+
+    // Detect ESI level for color
+    const esiMatch = reply.match(/ESI.{0,10}([1-5])/i) || reply.match(/level.{0,5}([1-5])/i);
+    const esiLevel = esiMatch ? parseInt(esiMatch[1]) : 0;
+    const esiColors = ['','#EF4444','#F97316','#EAB308','#22C55E','#6B7280'];
+    const esiLabels = ['','Immediate','Emergent','Urgent','Less Urgent','Non-Urgent'];
+    const esiBadge = esiLevel ? '<div style="display:inline-block;padding:6px 16px;border-radius:100px;font-size:13px;font-weight:700;color:#fff;background:' + esiColors[esiLevel] + ';margin-bottom:10px">ESI Level ' + esiLevel + ' — ' + (esiLabels[esiLevel]||'') + '</div><br>' : '';
+
+    if (resDiv) {
+      resDiv.innerHTML = '<div style="background:var(--card);border:1px solid var(--border-hi);border-radius:12px;padding:16px">' + esiBadge + '<div style="font-size:12px;color:var(--text);line-height:1.7">' + formatMsg(reply) + '</div></div>';
+    }
+    messages.push({ role:'user', content: prompt });
+    messages.push({ role:'assistant', content: reply });
+  } catch(e) {
+    if (resDiv) resDiv.innerHTML = '<div style="color:var(--red);font-size:12px">Connection error. Try again.</div>';
+  }
+}
+
+// ── HANDOFF BUILDER ───────────────────────────────────────────
+function showHandoffBuilder() {
+  const ex = document.getElementById('handoff-modal');
+  if (ex) { ex.remove(); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'handoff-modal';
+  modal.className = 'sc-modal';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'sc-modal-hdr';
+  hdr.innerHTML = '<div><div class="sc-modal-title">🔄 Patient Handoff Builder</div><div class="sc-modal-sub">Structure your shift-change handoff — reduce the 80% of errors that happen at handoff</div></div><button class="sc-modal-close" onclick="document.getElementById(\'handoff-modal\').remove()">×</button>';
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.className = 'sc-modal-body';
+  body.style.maxWidth = '700px';
+  body.style.margin = '0 auto';
+
+  body.innerHTML =
+    '<div class="sc-grid2">' +
+    '<div class="sc-field"><label>Patient Name / Room</label><input type="text" id="ho-patient" placeholder="e.g. M. Johnson, Rm 418"></div>' +
+    '<div class="sc-field"><label>Diagnosis / Admission Reason</label><input type="text" id="ho-dx" placeholder="e.g. COPD exacerbation, admitted 2 days ago"></div>' +
+    '</div>' +
+    '<div class="sc-field"><label>Current Clinical Status</label><textarea id="ho-status" placeholder="Current vitals, neuro status, respiratory status, pain level, IV access, O2, foley, drains, wounds..." rows="3"></textarea></div>' +
+    '<div class="sc-field"><label>Active Concerns / Changes This Shift</label><textarea id="ho-concerns" placeholder="Any changes from prior shift? New orders? Lab results pending? Procedures today? Family concerns?" rows="3"></textarea></div>' +
+    '<div class="sc-field"><label>Medications — Key Meds to Know</label><textarea id="ho-meds" placeholder="Anticoagulants, antibiotics, drips, PRNs given, next scheduled doses, allergies..." rows="2"></textarea></div>' +
+    '<div class="sc-field"><label>What the Oncoming Nurse Must Do</label><textarea id="ho-todo" placeholder="Tasks pending, meds due, labs to collect, procedures scheduled, anticipated issues, patient or family concerns..." rows="3"></textarea></div>' +
+    '<div style="margin-top:14px;display:flex;gap:10px">' +
+    '<button onclick="generateHandoff()" class="sc-btn primary" style="flex:2">🧠 AI — Build Complete Handoff Note</button>' +
+    '<button onclick="printHandoff()" class="sc-btn secondary" style="flex:1">🖨️ Print</button>' +
+    '</div>' +
+    '<div id="handoff-result" style="margin-top:14px"></div>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+async function generateHandoff() {
+  const patient  = document.getElementById('ho-patient')?.value || '';
+  const dx       = document.getElementById('ho-dx')?.value || '';
+  const status   = document.getElementById('ho-status')?.value || '';
+  const concerns = document.getElementById('ho-concerns')?.value || '';
+  const meds     = document.getElementById('ho-meds')?.value || '';
+  const todo     = document.getElementById('ho-todo')?.value || '';
+
+  if (!status.trim()) { showClinicalFlag('Enter the current clinical status.', 'warn'); return; }
+
+  const resDiv = document.getElementById('handoff-result');
+  if (resDiv) resDiv.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px">Building handoff note...</div>';
+
+  const prompt = 'Please build a complete, professional shift-change handoff note in SBAR format for:\n\n' +
+    'Patient: ' + patient + '\n' +
+    'Diagnosis: ' + dx + '\n' +
+    'Current status: ' + status + '\n' +
+    (concerns ? 'Concerns/Changes this shift: ' + concerns + '\n' : '') +
+    (meds ? 'Key medications: ' + meds + '\n' : '') +
+    (todo ? 'Pending tasks for oncoming nurse: ' + todo + '\n' : '') +
+    '\nReturn a structured handoff in SBAR format that the oncoming nurse can follow immediately. Clear, concise, and complete. Include any safety concerns prominently.';
+
+  try {
+    const res = await fetch(SAIRN_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        max_tokens:1000,
+        system: SYSTEM,
+        messages:[{role:'user',content:prompt}],
+        app_id:APP_ID, is_demo:true,
+      }),
+    });
+    const data = await res.json();
+    const reply = data.content && data.content[0] ? data.content[0].text : 'Could not generate handoff.';
+    if (resDiv) {
+      resDiv.innerHTML = '<div style="background:var(--ar);border:1px solid var(--ab);border-radius:10px;padding:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--a);margin-bottom:10px">🔄 Complete Handoff Note</div><div style="font-size:12px;color:var(--text);line-height:1.7">' + formatMsg(reply) + '</div></div>';
+    }
+    messages.push({ role:'user', content: prompt });
+    messages.push({ role:'assistant', content: reply });
+  } catch(e) {
+    if (resDiv) resDiv.innerHTML = '<div style="color:var(--red);font-size:12px">Connection error. Try again.</div>';
+  }
+}
+
+function printHandoff() {
+  const msgs = window.messages || [];
+  const lastAI = msgs.filter(m => m.role === 'assistant').pop();
+  const facility = localStorage.getItem('sairn_clinical_facility') || 'Clinical Facility';
+  const patient  = document.getElementById('ho-patient')?.value || 'Patient';
+  const date     = new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  if (!lastAI) { showClinicalFlag('Generate the handoff first.', 'info'); return; }
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Handoff — ' + patient + '</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:32px;color:#111;max-width:700px;margin:0 auto;font-size:13px;line-height:1.7}.hdr{border-bottom:3px solid #0891B2;padding-bottom:10px;margin-bottom:18px;display:flex;justify-content:space-between}.brand{font-size:19px;font-weight:700;color:#0C4A6E}.content{white-space:pre-wrap;font-size:13px;line-height:1.8}.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:28px}.sig{border-top:1px solid #999;padding-top:5px;font-size:11px;color:#777}.ftr{margin-top:18px;font-size:10px;color:#CCC;display:flex;justify-content:space-between;border-top:1px solid #E5E7EB;padding-top:10px}@media print{body{padding:20px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">' + facility + '</div><div style="font-size:12px;color:#555">Patient Handoff — ' + patient + '</div></div><div style="font-size:11px;color:#999;text-align:right">' + date + '</div></div>');
+  win.document.write('<div class="content">' + lastAI.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') + '</div>');
+  win.document.write('<div class="sig-row"><div class="sig">Outgoing Nurse &amp; Date/Time</div><div class="sig">Incoming Nurse &amp; Date/Time</div></div>');
+  win.document.write('<div class="ftr"><span>' + facility + ' — Patient Handoff Record</span><span>SAIRNclinical</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ── ROLE SELECTOR ─────────────────────────────────────────────
+function showRoleSelector() {
+  const ex = document.getElementById('role-modal');
+  if (ex) { ex.remove(); return; }
+  const roles = [
+    { id:'RN', label:'Registered Nurse', desc:'Bedside nursing, assessments, care planning, documentation' },
+    { id:'Charge RN', label:'Charge Nurse', desc:'Unit management, staffing, bed management, escalation' },
+    { id:'NP', label:'Nurse Practitioner', desc:'Advanced practice, diagnosis, prescribing, procedure guidance' },
+    { id:'PA', label:'Physician Assistant', desc:'Advanced practice, clinical decision support' },
+    { id:'LPN/LVN', label:'LPN / LVN', desc:'Practical nursing, care delivery, documentation support' },
+    { id:'Urgent Care', label:'Urgent Care Provider', desc:'Fast track triage, common chief complaints, disposition decisions' },
+    { id:'CNA', label:'CNA / Patient Care Tech', desc:'ADL documentation, vitals, fall prevention, patient safety' },
+    { id:'HIM/CDI', label:'HIM / CDI Specialist', desc:'Clinical documentation improvement, coding bridge' },
+    { id:'Risk Manager', label:'Risk Manager / Compliance', desc:'Incident reporting, Joint Commission, regulatory compliance' },
+    { id:'Admin', label:'Hospital Administrator', desc:'Operational intelligence, staffing, throughput, quality metrics' },
+  ];
+
+  const modal = document.createElement('div');
+  modal.id = 'role-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:9999;display:flex;align-items:center;justify-content:center';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#071820;border:1px solid var(--border-hi);border-radius:16px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto';
+  box.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:21px;font-weight:700;color:var(--text);margin-bottom:6px">Select Your Role</div><div style="font-size:12px;color:var(--muted);margin-bottom:18px">SAIRNclinical adapts to your workflow</div>' +
+    roles.map(r => '<div onclick="setRole(\'' + r.id + '\')" style="background:' + (currentRole===r.id?'var(--ar)':'rgba(255,255,255,0.03)') + ';border:1px solid ' + (currentRole===r.id?'var(--ab)':'rgba(255,255,255,0.07)') + ';border-radius:9px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .15s" onmouseenter="this.style.borderColor=\'var(--ab)\'" onmouseleave="this.style.borderColor=\'' + (currentRole===r.id?'var(--ab)':'rgba(255,255,255,0.07)') + '\'"><div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">' + r.label + '</div><div style="font-size:11px;color:var(--muted)">' + r.desc + '</div></div>' + (currentRole===r.id?'<span style="color:var(--a);font-size:16px">✓</span>':'') + '</div>').join('') +
+    '<button onclick="document.getElementById(\'role-modal\').remove()" style="width:100%;padding:10px;background:var(--ar);border:1px solid var(--ab);border-radius:8px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px">Done</button>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+}
+
+function setRole(role) {
+  currentRole = role;
+  localStorage.setItem('sairn_clinical_role', role);
+  const display = document.getElementById('role-display');
+  if (display) display.textContent = role;
+  document.getElementById('role-modal')?.remove();
+  showClinicalFlag('Role set to ' + role + '.', 'success');
+}
+
+// ── SAVE + HISTORY ─────────────────────────────────────────────
+function saveClinicalSession() {
+  const lastAI = messages.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showClinicalFlag('Start a session first, then save.', 'info'); return; }
+  const session = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+    time: new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+    mode: currentMode,
+    role: currentRole,
+    preview: lastAI.content.replace(/[#*`]/g,'').slice(0,130) + '...',
+    messages: [...messages],
+  };
+  clinicalHistory.unshift(session);
+  if (clinicalHistory.length > 200) clinicalHistory = clinicalHistory.slice(0,200);
+  localStorage.setItem('sairn_clinical_history', JSON.stringify(clinicalHistory));
+  const btn = document.getElementById('save-clinical-btn');
+  if (btn) { btn.textContent = '✓ Saved'; btn.style.color = '#10B981'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; }, 2000); }
+  showClinicalFlag('Clinical session saved.', 'success');
+}
+
+function renderClinicalHistory() {
+  const el = document.getElementById('hist-list');
+  if (!el) return;
+  if (!clinicalHistory.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">No saved clinical sessions yet.</div>';
+    return;
+  }
+  el.innerHTML = clinicalHistory.map((s,i) =>
+    '<div class="hist-card" onclick="restoreClinicalSession(' + i + ')">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+    '<div style="display:flex;gap:8px">' +
+    '<span style="font-size:10px;background:var(--ar);border:1px solid var(--ab);border-radius:100px;padding:2px 10px;color:var(--a);font-weight:600">' + s.mode + '</span>' +
+    '<span style="font-size:10px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);border-radius:100px;padding:2px 10px;color:#8B5CF6;font-weight:600">' + s.role + '</span>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;align-items:center">' +
+    '<span style="font-size:10px;color:var(--muted)">' + s.date + ' · ' + s.time + '</span>' +
+    '<button onclick="deleteClinicalSession(' + i + ',event)" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:5px;color:#EF4444;font-size:10px;padding:2px 8px;cursor:pointer">Delete</button>' +
+    '</div></div>' +
+    '<div style="font-size:12px;color:rgba(240,248,250,0.5);line-height:1.5;margin-bottom:8px">' + s.preview + '</div>' +
+    '<button onclick="restoreClinicalSession(' + i + ')" style="background:var(--ar);border:1px solid var(--ab);border-radius:6px;color:var(--a);font-size:11px;font-weight:600;padding:4px 12px;cursor:pointer;font-family:inherit">Restore Session</button>' +
+    '</div>'
+  ).join('');
+}
+
+function restoreClinicalSession(idx) {
+  const s = clinicalHistory[idx];
+  if (!s) return;
+  messages = [...s.messages];
+  currentMode = s.mode;
+  currentRole = s.role;
+  const area = document.getElementById('chatArea');
+  if (area) { area.innerHTML = ''; messages.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content)); }
+  showPanel('ai');
+}
+
+function deleteClinicalSession(idx, e) {
+  e.stopPropagation();
+  clinicalHistory.splice(idx, 1);
+  localStorage.setItem('sairn_clinical_history', JSON.stringify(clinicalHistory));
+  renderClinicalHistory();
+}
+
+// ── PRINT ─────────────────────────────────────────────────────
+function printClinicalSummary() {
+  const lastAI = messages.filter(m => m.role === 'assistant').pop();
+  if (!lastAI) { showClinicalFlag('Complete a session first, then print.', 'info'); return; }
+  const mode     = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+  const date     = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const facility = localStorage.getItem('sairn_clinical_facility') || 'Clinical Facility';
+  const unit     = localStorage.getItem('sairn_clinical_unit') || '';
+
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SAIRNclinical — ' + mode + '</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:750px;margin:0 auto;font-size:13px;line-height:1.7}.hdr{border-bottom:3px solid #0891B2;padding-bottom:14px;margin-bottom:24px;display:flex;justify-content:space-between}.brand{font-size:20px;font-weight:700;color:#0C4A6E}.meta{text-align:right;font-size:11px;color:#999}.msg-block{margin-bottom:12px;padding:12px;border-radius:6px}.msg-block.user{background:#F0F9FF;border-left:3px solid #06B6D4}.msg-block.ai{background:#FAFAFA;border-left:3px solid #0891B2}.msg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6B7280;margin-bottom:5px}.content{font-size:13px;line-height:1.8;color:#222;white-space:pre-wrap}.disclaimer{margin-top:24px;padding:12px;background:#F0F9FF;border-radius:6px;font-size:10px;color:#9CA3AF;border:1px solid #BAE6FD}.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-top:28px}.sig{border-top:1px solid #999;padding-top:5px;font-size:11px;color:#777}.ftr{margin-top:18px;font-size:10px;color:#CCC;display:flex;justify-content:space-between;border-top:1px solid #E5E7EB;padding-top:10px}@media print{body{padding:20px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">' + facility + (unit?' — '+unit:'') + '</div><div style="font-size:12px;color:#555;margin-top:2px">SAIRNclinical — ' + mode + ' — Clinical Record</div></div><div class="meta">Date: ' + date + '<br>Role: ' + currentRole + '</div></div>');
+  messages.forEach(m => {
+    win.document.write('<div class="msg-block ' + (m.role==='user'?'user':'ai') + '"><div class="msg-label">' + (m.role==='user'?'Clinician':'SAIRNclinical AI') + '</div><div class="content">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') + '</div></div>');
+  });
+  win.document.write('<div class="sig-row"><div class="sig">Clinician Signature &amp; Date</div><div class="sig">Charge Nurse Review</div><div class="sig">Supervisor Sign-Off</div></div>');
+  win.document.write('<div class="disclaimer"><strong>Clinical AI Disclaimer:</strong> SAIRNclinical is an AI-powered clinical intelligence tool. All AI-generated content must be reviewed and verified by a licensed clinician. AI guidance does not replace clinical judgment, facility policies, or provider orders. This document is for reference and quality review purposes.</div>');
+  win.document.write('<div class="ftr"><span>' + facility + ' — SAIRNclinical Powered by Claude AI</span><span>sairn.vercel.app/sairnclinical</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ── FACILITY SETTINGS ─────────────────────────────────────────
+function saveFacilitySettings() {
+  const name  = document.getElementById('admin-facility-name')?.value?.trim() || '';
+  const type  = document.getElementById('admin-facility-type')?.value || '';
+  const unit  = document.getElementById('admin-unit')?.value?.trim() || '';
+  const beds  = document.getElementById('admin-beds')?.value?.trim() || '';
+  if (name) localStorage.setItem('sairn_clinical_facility', name);
+  if (type) localStorage.setItem('sairn_clinical_type', type);
+  if (unit) localStorage.setItem('sairn_clinical_unit', unit);
+  if (beds) localStorage.setItem('sairn_clinical_beds', beds);
+  showClinicalFlag('Facility settings saved.', 'success');
+}
+
+function loadFacilitySettings() {
+  const name  = localStorage.getItem('sairn_clinical_facility');
+  const type  = localStorage.getItem('sairn_clinical_type');
+  const unit  = localStorage.getItem('sairn_clinical_unit');
+  const beds  = localStorage.getItem('sairn_clinical_beds');
+  const role  = localStorage.getItem('sairn_clinical_role');
+  if (name && document.getElementById('admin-facility-name')) document.getElementById('admin-facility-name').value = name;
+  if (unit && document.getElementById('admin-unit')) document.getElementById('admin-unit').value = unit;
+  if (beds && document.getElementById('admin-beds')) document.getElementById('admin-beds').value = beds;
+  if (role) { currentRole = role; const d = document.getElementById('role-display'); if (d) d.textContent = role; }
+}
+
+function saveAccessCodes() {
+  const n = document.getElementById('nurse-code-input')?.value?.trim();
+  const a = document.getElementById('admin-code-input')?.value?.trim();
+  if (!n || !a) { showClinicalFlag('Both codes required.', 'warn'); return; }
+  CODES.nurse = n; CODES.admin = a;
+  showClinicalFlag('Access codes updated.', 'success');
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Start on landing
+  document.getElementById('landing').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+});
+
+</script>
+</body>
+</html>
