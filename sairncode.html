@@ -2325,8 +2325,7 @@ const QUERY_TEMPLATES = [
     id: 'unspecified_dx',
     title: 'Unspecified Diagnosis Query',
     icon: '❓',
-    category: 'Documentation Clarification',
-    when: 'Use when physician documented a condition but did not specify type, stage, or acuity — for example CHF without type, CKD without stage, diabetes without type.',
+    purpose: 'Use when physician documented a condition but did not specify type, stage, or acuity — for example CHF without type, CKD without stage, diabetes without type.',
     template: {
       subject: 'Physician Query — Diagnosis Clarification',
       intro: 'We are reviewing the medical record for [PATIENT NAME], Date of Service [DOS], MRN [MRN]. To ensure the most accurate coding and reimbursement for services rendered, we are requesting clarification regarding the following diagnosis.',
@@ -2339,8 +2338,7 @@ const QUERY_TEMPLATES = [
     id: 'hcc_missing',
     title: 'HCC Condition Not Addressed',
     icon: '🎯',
-    category: 'HCC Risk Adjustment',
-    when: 'Use when a patient has a known HCC condition from a prior visit that was not addressed or documented in the current visit note. CMS requires annual documentation of all active chronic conditions.',
+    purpose: 'Use when a patient has a known HCC condition from a prior visit that was not addressed or documented in the current visit note. CMS requires annual documentation of all active chronic conditions.',
     template: {
       subject: 'Physician Query — Chronic Condition Annual Documentation',
       intro: 'We are reviewing the medical record for [PATIENT NAME], DOS [DOS], MRN [MRN]. As part of our HCC risk adjustment review, we identified a condition previously documented that does not appear to have been addressed in this visit.',
@@ -2353,8 +2351,7 @@ const QUERY_TEMPLATES = [
     id: 'cc_mcc',
     title: 'CC / MCC Clarification',
     icon: '🏥',
-    category: 'DRG Optimization',
-    when: 'Use when a complication or comorbidity (CC) or major complication or comorbidity (MCC) is present in the clinical evidence but not explicitly documented in the note. This affects DRG assignment and hospital reimbursement significantly.',
+    purpose: 'Use when a complication or comorbidity (CC) or major complication or comorbidity (MCC) is present in the clinical evidence but not explicitly documented in the note. This affects DRG assignment and hospital reimbursement significantly.',
     template: {
       subject: 'Physician Query — Complication or Comorbidity Documentation',
       intro: 'We are reviewing the inpatient record for [PATIENT NAME], Admission Date [DATE], MRN [MRN], for DRG assignment purposes. The clinical documentation and diagnostic results suggest the possible presence of a complication or comorbidity that may affect DRG assignment.',
@@ -2367,8 +2364,7 @@ const QUERY_TEMPLATES = [
     id: 'principal_dx',
     title: 'Principal Diagnosis Clarification',
     icon: '🎖️',
-    category: 'Principal Diagnosis',
-    when: 'Use when the principal diagnosis — the condition established after study to be chiefly responsible for the admission — is unclear from the documentation, or when multiple conditions could serve as principal diagnosis.',
+    purpose: 'Use when the principal diagnosis — the condition established after study to be chiefly responsible for the admission — is unclear from the documentation, or when multiple conditions could serve as principal diagnosis.',
     template: {
       subject: 'Physician Query — Principal Diagnosis for Inpatient Admission',
       intro: 'We are reviewing the inpatient record for [PATIENT NAME], Admission Date [DATE], MRN [MRN]. To assign the correct principal diagnosis per UHDDS definitions and ICD-10-CM Official Guidelines, we are requesting clarification.',
@@ -2381,8 +2377,7 @@ const QUERY_TEMPLATES = [
     id: 'sepsis',
     title: 'Sepsis / Infection Query',
     icon: '🦠',
-    category: 'Sepsis Documentation',
-    when: 'Use when clinical indicators suggest sepsis or severe infection but the term sepsis is not explicitly documented. Sepsis (A41.9) as principal diagnosis carries MCC weight and significantly affects DRG.',
+    purpose: 'Use when clinical indicators suggest sepsis or severe infection but the term sepsis is not explicitly documented. Sepsis (A41.9) as principal diagnosis carries MCC weight and significantly affects DRG.',
     template: {
       subject: 'Physician Query — Sepsis Documentation Clarification',
       intro: 'We are reviewing the record for [PATIENT NAME], DOS [DATE], MRN [MRN]. The clinical documentation contains indicators suggesting a systemic infectious process. To ensure accurate coding under Sepsis-3 definitions and ICD-10-CM guidelines, we are requesting clarification.',
