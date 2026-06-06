@@ -149,6 +149,10 @@ textarea#userInput:focus{border-color:rgba(245,158,11,0.5)}textarea#userInput::p
     <button class="mode-btn" onclick="setMode('Side_Income')"><span class="mode-label">Side Income</span></button>
     <button class="mode-btn" onclick="setMode('Insurance_Basics')"><span class="mode-label">Insurance Basics</span></button>
     <button class="mode-btn" onclick="setMode('Net_Worth_Tracker')"><span class="mode-label">Net Worth Tracker</span></button>
+  
+    <button class="mode-btn" onclick="showCSVImporter()"><span class="mode-icon">📊</span><span class="mode-label">Bank Analysis</span></button>
+    <button class="mode-btn" onclick="showNetWorthTracker()"><span class="mode-icon">📈</span><span class="mode-label">Net Worth</span></button>
+    <button class="mode-btn" onclick="showHistory()"><span class="mode-icon">🕐</span><span class="mode-label">History</span></button>
   </div>
     <span class="mode-guided-label">Guided</span>
     <button class="flow-btn mode-btn" data-flow="budget" onclick="startFlow('budget')"><span class="mode-icon">📊</span><span class="mode-label">a Budget</span></button><button class="flow-btn mode-btn" data-flow="debt" onclick="startFlow('debt')"><span class="mode-icon">💳</span><span class="mode-label">My Debt</span></button>
@@ -297,7 +301,7 @@ async function sendMessage() {
       addMsg('ai', msg + '\n\nGet unlimited access at sairn.vercel.app');
     } else {
       const reply = data.content?.[0]?.text || 'Sorry, I had trouble with that. Please try again.';
-      messages.push({role:'assistant',content:reply});
+      messages.push({role:'assistant',content:reply}); checkFinancialFlags(reply);
       addMsg('ai', reply);
     }
   } catch(e) {
@@ -604,6 +608,486 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
 document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+
+// ══════════════════════════════════════════════════════════════
+// SAIRN MONEY — UPGRADE PATTERNS FROM FABRICOR
+// 1. Save + Session History
+// 2. Print / Export to PDF
+// 3. Smart Flags and Warnings
+// 4. Bank Statement CSV Import + Analysis
+// 5. Net Worth Tracker with Range Benchmarking
+// ══════════════════════════════════════════════════════════════
+
+// ── 1. SAVE + HISTORY ─────────────────────────────────────────
+let sessionHistory = JSON.parse(localStorage.getItem('sairn_money_history') || '[]');
+
+function saveSession() {
+  const lastMsg = messages[messages.length - 1];
+  if (!lastMsg || lastMsg.role !== 'assistant') {
+    showMoneyFlag('Nothing to save yet — start a conversation first.', 'info');
+    return;
+  }
+  const session = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+    time: new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}),
+    mode: document.querySelector('.mode-btn.active .mode-label')?.textContent || 'General',
+    preview: lastMsg.content.replace(/[#*`]/g,'').slice(0, 120) + '...',
+    messages: [...messages],
+  };
+  sessionHistory.unshift(session);
+  if (sessionHistory.length > 50) sessionHistory = sessionHistory.slice(0, 50);
+  localStorage.setItem('sairn_money_history', JSON.stringify(sessionHistory));
+  const btn = document.getElementById('save-session-btn');
+  if (btn) { btn.textContent = '✓ Saved'; btn.style.color = '#4ADE80'; setTimeout(() => { btn.textContent = '💾 Save'; btn.style.color = ''; }, 2000); }
+  showMoneyFlag('Session saved to your history.', 'success');
+}
+
+function showHistory() {
+  const ex = document.getElementById('money-history-modal');
+  if (ex) { ex.remove(); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'money-history-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#030D08;border-bottom:1px solid rgba(16,185,129,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">💾 Saved Sessions</div><div style="font-size:11px;color:#6A8070;margin-top:2px">' + sessionHistory.length + ' saved sessions · Tap any to restore</div></div><button onclick="document.getElementById(\'money-history-modal\').remove()" style="background:none;border:none;color:#6A8070;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px';
+
+  if (!sessionHistory.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#6A8070;font-size:14px">No saved sessions yet.<br>Have a conversation then tap 💾 Save.</div>';
+  } else {
+    sessionHistory.forEach((s, i) => {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#051A0E;border:1px solid rgba(16,185,129,0.15);border-radius:10px;padding:16px;cursor:pointer;transition:border-color .15s';
+      card.onmouseenter = () => card.style.borderColor = 'rgba(16,185,129,0.4)';
+      card.onmouseleave = () => card.style.borderColor = 'rgba(16,185,129,0.15)';
+      card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:100px;padding:2px 10px;color:#10B981;font-weight:600">' + s.mode + '</span></div><div style="display:flex;align-items:center;gap:12px"><span style="font-size:10px;color:#6A8070">' + s.date + ' · ' + s.time + '</span><button onclick="deleteSession(' + i + ',event)" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:5px;color:#EF4444;font-size:10px;padding:2px 8px;cursor:pointer">Delete</button></div></div><div style="font-size:12px;color:rgba(245,240,232,0.6);line-height:1.5">' + s.preview + '</div><div style="margin-top:10px"><button style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);border-radius:6px;color:#10B981;font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;font-family:inherit" onclick="restoreSession(' + i + ')">Restore This Session</button></div>';
+      body.appendChild(card);
+    });
+  }
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function restoreSession(idx) {
+  const s = sessionHistory[idx];
+  if (!s) return;
+  messages = [...s.messages];
+  const area = document.getElementById('chatArea');
+  if (area) {
+    area.innerHTML = '';
+    messages.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content));
+  }
+  document.getElementById('money-history-modal')?.remove();
+}
+
+function deleteSession(idx, e) {
+  e.stopPropagation();
+  sessionHistory.splice(idx, 1);
+  localStorage.setItem('sairn_money_history', JSON.stringify(sessionHistory));
+  document.getElementById('money-history-modal')?.remove();
+  showHistory();
+}
+
+// ── 2. PRINT / EXPORT TO PDF ───────────────────────────────────
+function printSummary() {
+  const lastMsg = messages.filter(m => m.role === 'assistant').pop();
+  if (!lastMsg) { showMoneyFlag('Have a conversation first, then print the summary.', 'info'); return; }
+
+  const mode = document.querySelector('.mode-btn.active .mode-label')?.textContent || 'Financial Guidance';
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SAIRNmoney — ' + mode + '</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;padding:40px;color:#111;max-width:750px;margin:0 auto;font-size:14px;line-height:1.7}.hdr{border-bottom:3px solid #059669;padding-bottom:16px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end}.brand{font-size:24px;font-weight:700;color:#065F46}.sub{font-size:12px;color:#777;margin-top:3px}.meta{text-align:right;font-size:11px;color:#999}.section{margin-bottom:24px}.section h2{font-size:16px;font-weight:700;color:#065F46;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #D1FAE5}.content{font-size:13px;line-height:1.8;color:#222;white-space:pre-wrap}.msg-block{margin-bottom:16px;padding:14px;border-radius:6px}.msg-block.user{background:#F0FDF4;border-left:3px solid #10B981}.msg-block.ai{background:#FAFAFA;border-left:3px solid #059669}.msg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6B7280;margin-bottom:6px}.disclaimer{margin-top:32px;padding:14px;background:#F9FAFB;border-radius:6px;font-size:11px;color:#9CA3AF;border:1px solid #E5E7EB}.ftr{margin-top:24px;padding-top:12px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:10px;color:#CCC}@media print{body{padding:24px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">SAIRNmoney</div><div class="sub">' + mode + ' Summary</div></div><div class="meta">Date: ' + date + '<br>Powered by Claude AI</div></div>');
+  win.document.write('<div class="section"><h2>Your Financial Guidance Session</h2>');
+  messages.forEach(m => {
+    win.document.write('<div class="msg-block ' + (m.role==='user'?'user':'ai') + '"><div class="msg-label">' + (m.role==='user'?'You':'SAIRNmoney AI') + '</div><div class="content">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') + '</div></div>');
+  });
+  win.document.write('</div>');
+  win.document.write('<div class="disclaimer"><strong>Important:</strong> This guidance is for educational purposes only. SAIRNmoney is an AI companion, not a licensed financial advisor. Consult a certified financial planner or CPA before making major financial decisions.</div>');
+  win.document.write('<div class="ftr"><span>SAIRNmoney by SAIRN Technologies</span><span>sairn.vercel.app/money</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+}
+
+// ── 3. SMART FLAGS AND WARNINGS ────────────────────────────────
+function showMoneyFlag(msg, type) {
+  const existing = document.getElementById('money-flag');
+  if (existing) existing.remove();
+  const colors = {
+    warn:    { bg:'rgba(251,191,36,0.1)',  border:'#FBBF24', text:'#FBBF24' },
+    danger:  { bg:'rgba(239,68,68,0.1)',   border:'#EF4444', text:'#EF4444' },
+    success: { bg:'rgba(74,222,128,0.1)',  border:'#4ADE80', text:'#4ADE80' },
+    info:    { bg:'rgba(96,165,250,0.1)',  border:'#60A5FA', text:'#60A5FA' },
+  };
+  const c = colors[type] || colors.info;
+  const flag = document.createElement('div');
+  flag.id = 'money-flag';
+  flag.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:' + c.bg + ';border:1px solid ' + c.border + ';border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:' + c.text + ';z-index:999;max-width:500px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+  flag.textContent = msg;
+  document.body.appendChild(flag);
+  setTimeout(() => flag.remove(), 4000);
+}
+
+function checkFinancialFlags(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes('emergency fund') && (lower.includes('no') || lower.includes('zero') || lower.includes("don't have")))
+    showMoneyFlag('⚠️ No emergency fund is a critical risk — this should be your first financial priority.', 'danger');
+  else if (lower.includes('credit card') && lower.includes('minimum'))
+    showMoneyFlag('⚠️ Paying only minimums on credit cards can take 10–20 years to pay off. Let\'s fix this.', 'warn');
+  else if (lower.includes('401k') && (lower.includes('no') || lower.includes('not contributing') || lower.includes("don't")))
+    showMoneyFlag('⚠️ Not contributing to your 401k means leaving free employer match money on the table.', 'warn');
+  else if ((lower.includes('debt') || lower.includes('owe')) && lower.includes('payday'))
+    showMoneyFlag('🚨 Payday loans carry 300–400% APR. This needs to be addressed immediately.', 'danger');
+  else if (lower.includes('budget') && lower.includes('never') || lower.includes('no budget'))
+    showMoneyFlag('💡 Without a budget, most people overspend by 20–30% without realizing it.', 'info');
+}
+
+// ── 4. BANK STATEMENT CSV IMPORT ──────────────────────────────
+function showCSVImporter() {
+  const ex = document.getElementById('csv-modal');
+  if (ex) { ex.remove(); return; }
+
+  const modal = document.createElement('div');
+  modal.id = 'csv-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#030D08;border-bottom:1px solid rgba(16,185,129,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">📊 Bank Statement Analyzer</div><div style="font-size:11px;color:#6A8070;margin-top:2px">Upload your bank statement CSV · AI analyzes your spending · No data stored</div></div><button onclick="document.getElementById(\'csv-modal\').remove()" style="background:none;border:none;color:#6A8070;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px;max-width:700px;margin:0 auto;width:100%';
+
+  body.innerHTML = '<div id="csv-upload-area">' +
+    '<div style="background:#051A0E;border:1px solid rgba(16,185,129,0.15);border-radius:12px;padding:20px;margin-bottom:16px">' +
+    '<div style="font-size:13px;font-weight:600;color:#10B981;margin-bottom:8px">How it works</div>' +
+    '<div style="font-size:12px;color:#6A8070;line-height:1.7">1. Export your bank or credit card statement as CSV<br>2. Upload it here — your data never leaves this page<br>3. The AI analyzes your spending patterns against national averages<br>4. Get a personalized action plan to optimize your finances</div>' +
+    '</div>' +
+    '<div id="csv-drop-zone" style="border:2px dashed rgba(16,185,129,0.3);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .15s" onclick="document.getElementById(\'csv-file-input\').click()">' +
+    '<div style="font-size:36px;margin-bottom:12px">📂</div>' +
+    '<div style="font-size:14px;font-weight:600;color:#F5F0E8;margin-bottom:6px">Click to upload your bank statement CSV</div>' +
+    '<div style="font-size:12px;color:#6A8070">or drag and drop · Works with Chase, BofA, Wells Fargo, Capital One, and most banks</div>' +
+    '</div>' +
+    '<input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="parseMoneyCSV(this)">' +
+    '<div style="margin-top:16px;text-align:center"><button onclick="loadSampleMoneyData()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:8px;color:#10B981;font-size:12px;font-weight:600;padding:8px 18px;cursor:pointer;font-family:inherit">Load Sample Data — Demo</button></div>' +
+    '</div>' +
+    '<div id="csv-results" style="display:none"></div>';
+
+  // Drag and drop
+  modal.appendChild(hdr);
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+
+  setTimeout(() => {
+    const zone = document.getElementById('csv-drop-zone');
+    if (zone) {
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor='rgba(16,185,129,0.6)'; zone.style.background='rgba(16,185,129,0.05)'; });
+      zone.addEventListener('dragleave', () => { zone.style.borderColor='rgba(16,185,129,0.3)'; zone.style.background=''; });
+      zone.addEventListener('drop', e => { e.preventDefault(); zone.style.borderColor='rgba(16,185,129,0.3)'; zone.style.background=''; const f=e.dataTransfer.files[0]; if(f&&f.name.endsWith('.csv')){const r=new FileReader();r.onload=ev=>processMoneyCSV(ev.target.result);r.readAsText(f);}});
+    }
+  }, 100);
+}
+
+function parseMoneyCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => processMoneyCSV(e.target.result);
+  reader.readAsText(file);
+}
+
+function loadSampleMoneyData() {
+  const sample = `Date,Description,Amount,Category
+2026-05-01,AMAZON.COM,-47.23,Shopping
+2026-05-02,STARBUCKS,-6.85,Dining
+2026-05-03,NETFLIX,-15.99,Subscriptions
+2026-05-04,GROCERY STORE,-127.44,Groceries
+2026-05-05,GAS STATION,-58.20,Gas
+2026-05-06,RESTAURANT,-42.18,Dining
+2026-05-07,AMAZON.COM,-89.99,Shopping
+2026-05-08,SPOTIFY,-9.99,Subscriptions
+2026-05-09,PHARMACY,-34.12,Health
+2026-05-10,COFFEE SHOP,-5.40,Dining
+2026-05-11,GROCERY STORE,-98.67,Groceries
+2026-05-12,CLOTHING STORE,-156.78,Shopping
+2026-05-13,GAS STATION,-61.40,Gas
+2026-05-14,RESTAURANT,-78.90,Dining
+2026-05-15,AMAZON.COM,-34.56,Shopping
+2026-05-16,ELECTRIC BILL,-124.00,Utilities
+2026-05-17,INTERNET,-59.99,Utilities
+2026-05-18,PHONE BILL,-85.00,Utilities
+2026-05-19,GROCERY STORE,-143.22,Groceries
+2026-05-20,BAR,-67.40,Dining
+2026-05-21,AMAZON.COM,-23.99,Shopping
+2026-05-22,GAS STATION,-54.80,Gas
+2026-05-23,RESTAURANT,-55.60,Dining
+2026-05-24,GROCERY STORE,-112.33,Groceries
+2026-05-25,UBER,-18.50,Transportation
+2026-05-26,COFFEE SHOP,-12.80,Dining
+2026-05-27,AMAZON PRIME,-14.99,Subscriptions
+2026-05-28,FAST FOOD,-23.45,Dining
+2026-05-29,GAS STATION,-49.20,Gas
+2026-05-30,GROCERY STORE,-88.90,Groceries`;
+  processMoneyCSV(sample);
+}
+
+function processMoneyCSV(csvText) {
+  const lines = csvText.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g,''));
+
+  const dateIdx = headers.findIndex(h => h.includes('date'));
+  const descIdx = headers.findIndex(h => h.includes('desc') || h.includes('name') || h.includes('merchant'));
+  const amtIdx  = headers.findIndex(h => h.includes('amount') || h.includes('amt') || h.includes('debit'));
+  const catIdx  = headers.findIndex(h => h.includes('categ') || h.includes('type'));
+
+  if (amtIdx < 0) {
+    showMoneyFlag('Could not read this CSV format. Try exporting again with Amount column.', 'warn');
+    return;
+  }
+
+  const transactions = lines.slice(1).map(line => {
+    const cols = line.split(',').map(v => v.trim().replace(/"/g,''));
+    const amt = parseFloat(cols[amtIdx]) || 0;
+    return {
+      date: dateIdx >= 0 ? cols[dateIdx] : '',
+      desc: descIdx >= 0 ? cols[descIdx] : cols[1] || '',
+      amount: Math.abs(amt),
+      isExpense: amt < 0 || amt > 0,
+      category: catIdx >= 0 ? cols[catIdx] : guessCategoryFromDesc(cols[descIdx >= 0 ? descIdx : 1] || ''),
+    };
+  }).filter(t => t.amount > 0 && t.amount < 10000);
+
+  // Aggregate by category
+  const cats = {};
+  let total = 0;
+  transactions.forEach(t => {
+    const cat = t.category || 'Other';
+    cats[cat] = (cats[cat] || 0) + t.amount;
+    total += t.amount;
+  });
+
+  // National averages (BLS Consumer Expenditure Survey 2025)
+  const AVERAGES = {
+    'Groceries':     { avg: 412, label: 'Groceries', emoji: '🛒' },
+    'Dining':        { avg: 338, label: 'Dining Out', emoji: '🍽️' },
+    'Gas':           { avg: 180, label: 'Gas', emoji: '⛽' },
+    'Shopping':      { avg: 290, label: 'Shopping', emoji: '🛍️' },
+    'Subscriptions': { avg: 89,  label: 'Subscriptions', emoji: '📱' },
+    'Utilities':     { avg: 320, label: 'Utilities', emoji: '💡' },
+    'Transportation':{ avg: 145, label: 'Transportation', emoji: '🚗' },
+    'Health':        { avg: 156, label: 'Health', emoji: '🏥' },
+    'Entertainment': { avg: 115, label: 'Entertainment', emoji: '🎬' },
+  };
+
+  renderCSVResults(cats, total, transactions.length, AVERAGES);
+}
+
+function guessCategoryFromDesc(desc) {
+  const d = desc.toUpperCase();
+  if (/AMAZON|WALMART|TARGET|COSTCO/.test(d)) return 'Shopping';
+  if (/STARBUCKS|RESTAURANT|MCDONALD|CHIPOTLE|PIZZA|SUSHI|BAR|CAFE|COFFEE|DOORDASH|UBER EATS/.test(d)) return 'Dining';
+  if (/GROCERY|KROGER|SAFEWAY|WHOLE FOODS|TRADER JOE|PUBLIX|ALDI/.test(d)) return 'Groceries';
+  if (/GAS|SHELL|BP|CHEVRON|EXXON|SUNOCO|MARATHON/.test(d)) return 'Gas';
+  if (/NETFLIX|SPOTIFY|HULU|DISNEY|APPLE|GOOGLE|AMAZON PRIME/.test(d)) return 'Subscriptions';
+  if (/ELECTRIC|GAS CO|WATER|INTERNET|AT&T|VERIZON|COMCAST|SPECTRUM/.test(d)) return 'Utilities';
+  if (/UBER|LYFT|TRANSIT|PARKING|TOLL/.test(d)) return 'Transportation';
+  if (/PHARMACY|DOCTOR|DENTAL|MEDICAL|CVS|WALGREENS/.test(d)) return 'Health';
+  return 'Other';
+}
+
+function renderCSVResults(cats, total, txCount, AVERAGES) {
+  const resultsDiv = document.getElementById('csv-results');
+  const uploadArea = document.getElementById('csv-upload-area');
+  if (!resultsDiv) return;
+
+  uploadArea.style.display = 'none';
+  resultsDiv.style.display = 'block';
+
+  // Build analysis
+  const sortedCats = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+  const flags = [];
+  let analysisText = '';
+
+  sortedCats.forEach(([cat, amt]) => {
+    const avg = AVERAGES[cat];
+    if (avg && amt > avg.avg * 1.3) flags.push({ cat, amt, avg: avg.avg, pct: Math.round((amt/avg.avg-1)*100) });
+  });
+
+  // Summary metrics
+  const metricsHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">' +
+    [
+      { n: '$'+total.toFixed(0), l:'Total Spending', s: txCount + ' transactions' },
+      { n: sortedCats[0]?sortedCats[0][0]:'—', l:'Biggest Category', s: sortedCats[0]?'$'+sortedCats[0][1].toFixed(0):'—' },
+      { n: flags.length, l:'Areas Over Budget', s: flags.length ? 'vs national avg' : 'You are on track!' },
+    ].map(m => '<div style="background:#051A0E;border:1px solid rgba(16,185,129,0.15);border-radius:10px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:700;color:#10B981">' + m.n + '</div><div style="font-size:11px;font-weight:600;color:#F5F0E8;margin-top:3px">' + m.l + '</div><div style="font-size:10px;color:#6A8070;margin-top:2px">' + m.s + '</div></div>').join('') +
+    '</div>';
+
+  // Category breakdown with range bars
+  const catsHtml = '<div style="background:#051A0E;border:1px solid rgba(16,185,129,0.15);border-radius:12px;padding:16px;margin-bottom:16px">' +
+    '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#10B981;margin-bottom:14px">Spending vs National Average</div>' +
+    sortedCats.map(([cat, amt]) => {
+      const avg = AVERAGES[cat];
+      const avgAmt = avg ? avg.avg : amt;
+      const pct = Math.min(Math.round(amt/avgAmt*100), 200);
+      const color = pct > 130 ? '#EF4444' : pct > 110 ? '#FBBF24' : '#4ADE80';
+      const emoji = avg ? avg.emoji : '💰';
+      return '<div style="margin-bottom:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<span style="font-size:12px;color:#F5F0E8">' + emoji + ' ' + cat + '</span>' +
+        '<span style="font-size:12px;font-weight:700;color:' + color + '">$' + amt.toFixed(0) + (avg ? ' <span style="font-size:10px;color:#6A8070">/ avg $' + avg.avg + '</span>' : '') + '</span>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden">' +
+        '<div style="width:' + Math.min(pct,100) + '%;height:100%;background:' + color + ';border-radius:4px;transition:width .4s"></div>' +
+        '</div>' +
+        (pct > 130 ? '<div style="font-size:10px;color:#EF4444;margin-top:2px">⚠️ ' + Math.round(pct-100) + '% over national average</div>' : '') +
+        '</div>';
+    }).join('') +
+    '</div>';
+
+  // Flags
+  const flagsHtml = flags.length ? '<div style="margin-bottom:16px">' +
+    flags.map(f => '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-left:3px solid #FBBF24;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px;color:#FBBF24">⚠️ <strong>' + f.cat + '</strong> is $' + (f.amt-f.avg).toFixed(0) + ' (' + f.pct + '%) over the national average. Reducing this one category saves $' + Math.round((f.amt-f.avg)*12).toLocaleString() + '/year.</div>').join('') +
+    '</div>' : '';
+
+  const aiBtn = '<button onclick="analyzeWithAI()" style="width:100%;padding:13px;background:linear-gradient(135deg,#10B981,#059669);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px">🧠 Get AI Action Plan for This Spending</button>';
+  const resetBtn = '<button onclick="document.getElementById(\'csv-upload-area\').style.display=\'block\';document.getElementById(\'csv-results\').style.display=\'none\'" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#6A8070;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Upload Different File</button>';
+
+  resultsDiv.innerHTML = metricsHtml + catsHtml + flagsHtml + aiBtn + resetBtn;
+
+  // Store for AI analysis
+  window._csvAnalysis = { cats, total, txCount, flags };
+}
+
+async function analyzeWithAI() {
+  if (!window._csvAnalysis) return;
+  const { cats, total, flags } = window._csvAnalysis;
+  const breakdown = Object.entries(cats).map(([k,v]) => k + ': $' + v.toFixed(0)).join(', ');
+  const over = flags.map(f => f.cat + ' ($' + f.amt.toFixed(0) + ' vs avg $' + f.avg + ')').join(', ');
+  const prompt = 'I just analyzed my bank statement. Here is my monthly spending breakdown: ' + breakdown + '. Total: $' + total.toFixed(0) + '/month.' + (over ? ' Categories over national average: ' + over + '.' : '') + ' Please give me a specific action plan — which 3 things should I cut first, what is the monthly savings impact of each, and what is the realistic annual savings if I follow this plan?';
+  document.getElementById('csv-modal')?.remove();
+  addMsg('user', prompt);
+  messages.push({ role:'user', content: prompt });
+  document.getElementById('userInput').value = '';
+  await sendMessage();
+}
+
+// ── 5. NET WORTH TRACKER ───────────────────────────────────────
+function showNetWorthTracker() {
+  const ex = document.getElementById('nw-modal');
+  if (ex) { ex.remove(); return; }
+
+  const saved = JSON.parse(localStorage.getItem('sairn_networth') || '{"assets":{},"liabilities":{}}');
+
+  const modal = document.createElement('div');
+  modal.id = 'nw-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#030D08;border-bottom:1px solid rgba(16,185,129,0.2);flex-shrink:0';
+  hdr.innerHTML = '<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">📈 Net Worth Tracker</div><div style="font-size:11px;color:#6A8070;margin-top:2px">Assets minus liabilities — your real financial picture</div></div><button onclick="document.getElementById(\'nw-modal\').remove()" style="background:none;border:none;color:#6A8070;font-size:22px;cursor:pointer">×</button>';
+  modal.appendChild(hdr);
+
+  const assetFields = [
+    ['nw-checking','Checking account'],['nw-savings','Savings account'],
+    ['nw-invest','Investment accounts (brokerage)'],['nw-retire','Retirement accounts (401k/IRA)'],
+    ['nw-home','Home value (if you own)'],['nw-car','Vehicle value'],['nw-other-asset','Other assets'],
+  ];
+  const liabFields = [
+    ['nw-mortgage','Mortgage balance'],['nw-carloan','Car loan balance'],
+    ['nw-student','Student loan balance'],['nw-cc','Credit card balances'],
+    ['nw-medical','Medical debt'],['nw-personal','Personal loans'],['nw-other-liab','Other liabilities'],
+  ];
+
+  function makeField(id, label, savedVal) {
+    return '<div style="margin-bottom:10px"><div style="font-size:10px;color:#6A8070;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">' + label + '</div><input type="number" id="' + id + '" value="' + (savedVal||'') + '" placeholder="$0" min="0" oninput="calcNetWorth()" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:7px 10px;color:#F5F0E8;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>';
+  }
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px';
+  body.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px;margin:0 auto">' +
+    '<div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4ADE80;margin-bottom:14px">Assets — What You Own</div>' +
+    assetFields.map(([id,lbl]) => makeField(id, lbl, saved.assets[id])).join('') + '</div>' +
+    '<div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#EF4444;margin-bottom:14px">Liabilities — What You Owe</div>' +
+    liabFields.map(([id,lbl]) => makeField(id, lbl, saved.liabilities[id])).join('') + '</div>' +
+    '</div>' +
+    '<div id="nw-result" style="max-width:800px;margin:20px auto 0"></div>' +
+    '<div style="max-width:800px;margin:12px auto 0;display:flex;gap:10px">' +
+    '<button onclick="calcNetWorth()" style="flex:1;padding:12px;background:linear-gradient(135deg,#10B981,#059669);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Calculate Net Worth</button>' +
+    '<button onclick="saveNetWorth()" style="flex:1;padding:12px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);border-radius:10px;color:#10B981;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save</button>' +
+    '</div>';
+
+  modal.appendChild(body);
+  document.body.appendChild(modal);
+}
+
+function calcNetWorth() {
+  const assetIds = ['nw-checking','nw-savings','nw-invest','nw-retire','nw-home','nw-car','nw-other-asset'];
+  const liabIds = ['nw-mortgage','nw-carloan','nw-student','nw-cc','nw-medical','nw-personal','nw-other-liab'];
+  const totalAssets = assetIds.reduce((s,id) => s + (parseFloat(document.getElementById(id)?.value)||0), 0);
+  const totalLiab = liabIds.reduce((s,id) => s + (parseFloat(document.getElementById(id)?.value)||0), 0);
+  const nw = totalAssets - totalLiab;
+  const res = document.getElementById('nw-result');
+  if (!res) return;
+
+  // Median net worth by age (Federal Reserve 2025 data)
+  const MEDIANS = [
+    { age:'Under 35', median: 39000 },
+    { age:'35–44',    median: 135600 },
+    { age:'45–54',    median: 247200 },
+    { age:'55–64',    median: 364500 },
+    { age:'65–74',    median: 409900 },
+  ];
+
+  const color = nw >= 0 ? '#4ADE80' : '#EF4444';
+  res.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
+    [
+      { n:'$'+totalAssets.toLocaleString(undefined,{maximumFractionDigits:0}), l:'Total Assets', c:'#4ADE80' },
+      { n:'$'+totalLiab.toLocaleString(undefined,{maximumFractionDigits:0}), l:'Total Liabilities', c:'#EF4444' },
+      { n:'$'+Math.abs(nw).toLocaleString(undefined,{maximumFractionDigits:0}), l:nw>=0?'Net Worth':'Net Deficit', c:color },
+    ].map(m => '<div style="background:#051A0E;border:1px solid rgba(16,185,129,0.15);border-radius:10px;padding:14px;text-align:center"><div style="font-size:20px;font-weight:700;color:'+m.c+'">'+m.n+'</div><div style="font-size:11px;color:#6A8070;margin-top:3px">'+m.l+'</div></div>').join('') +
+  '</div>' +
+  '<div style="background:#051A0E;border:1px solid rgba(16,185,129,0.15);border-radius:12px;padding:16px;margin-bottom:12px">' +
+  '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#10B981;margin-bottom:12px">How You Compare — Median Net Worth by Age (Federal Reserve 2025)</div>' +
+  MEDIANS.map(m => {
+    const pct = Math.min(Math.round(nw/m.median*100),200);
+    const barColor = pct >= 100 ? '#4ADE80' : pct >= 50 ? '#FBBF24' : '#EF4444';
+    return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:#F5F0E8">Age '+m.age+'</span><span style="color:#6A8070">Median: $'+m.median.toLocaleString()+'</span></div><div style="background:rgba(255,255,255,0.06);border-radius:4px;height:5px;overflow:hidden"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+barColor+';border-radius:4px"></div></div></div>';
+  }).join('') +
+  '</div>' +
+  '<button onclick="askAINetWorth('+totalAssets+','+totalLiab+','+nw+')" style="width:100%;padding:12px;background:linear-gradient(135deg,#10B981,#059669);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🧠 Get AI Plan to Grow My Net Worth</button>';
+}
+
+function saveNetWorth() {
+  const assetIds = ['nw-checking','nw-savings','nw-invest','nw-retire','nw-home','nw-car','nw-other-asset'];
+  const liabIds  = ['nw-mortgage','nw-carloan','nw-student','nw-cc','nw-medical','nw-personal','nw-other-liab'];
+  const data = { assets:{}, liabilities:{} };
+  assetIds.forEach(id => { const v=parseFloat(document.getElementById(id)?.value)||0; if(v) data.assets[id]=v; });
+  liabIds.forEach(id  => { const v=parseFloat(document.getElementById(id)?.value)||0; if(v) data.liabilities[id]=v; });
+  localStorage.setItem('sairn_networth', JSON.stringify(data));
+  showMoneyFlag('Net worth saved. It will be here when you return.', 'success');
+}
+
+async function askAINetWorth(assets, liab, nw) {
+  const prompt = 'My current financial snapshot: Total assets $' + assets.toLocaleString() + ', total liabilities $' + liab.toLocaleString() + ', net worth $' + nw.toLocaleString() + '. Please give me a specific 3-step plan to grow my net worth over the next 12 months. What should I focus on first — reducing debt, building assets, or both? What is realistic to achieve?';
+  document.getElementById('nw-modal')?.remove();
+  addMsg('user', prompt);
+  messages.push({ role:'user', content: prompt });
+  await sendMessage();
+}
+
+
 </script>
 </body>
 </html>
