@@ -1324,6 +1324,10 @@ textarea#userInput::placeholder{color:var(--muted)}
 // Merged: Original pricing engine + AI chat + Drawing tool
 // ══════════════════════════════════════════════════════════════════
 
+// ── API ─────────────────────────────────────────────────────────
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
+const APP_ID = 'fabricor';
+
 // ── SYSTEM PROMPT ──────────────────────────────────────────────
 const SYSTEM = "You are Fabricor, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
 
@@ -1570,14 +1574,15 @@ async function sendMessage() {
   try {
     const modeContext = MODE_PROMPTS[currentMode] || '';
     const systemPrompt = SYSTEM + '\n\nCurrent Mode: ' + modeContext;
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(SAIRN_API, {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
         max_tokens:1000,
         system: systemPrompt,
         messages: chatHistory,
+        app_id: APP_ID,
+        is_demo: true,
       }),
     });
     const data = await res.json();
@@ -2298,7 +2303,7 @@ async function getAIDrawingAdvice() {
   sugText.textContent='Analyzing your job...';
 
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:SYSTEM,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch(SAIRN_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_tokens:800,system:SYSTEM,messages:[{role:'user',content:prompt}],app_id:APP_ID,is_demo:true})});
     const data=await res.json();
     const reply=data.content&&data.content[0]?data.content[0].text:'Could not get AI advice. Try again.';
     sugText.innerHTML=reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
