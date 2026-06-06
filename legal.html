@@ -1146,5 +1146,585 @@ console.log('[SAIRN Firewall v2.0] All 9 layers active. Session:', _fwSessionId.
 })();
 
 </script>
+
+<script>
+
+// ================================================================
+// SAIRN UNIVERSAL INTAKE MODULE — Original Design Pattern
+// Structured intake → Claude intelligence → Save → Print
+// Applied to every SAIRN NEXUS consumer app
+// Built by Michael L. Dibert · SAIRN Technologies
+// ================================================================
+
+(function() {
+'use strict';
+
+// ── SHARED UTILITIES ──────────────────────────────────────────
+
+function siField(id, label, ph) {
+  return '<div style="margin-bottom:13px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--m,#9090B0);margin-bottom:4px">' + label + '</div>' +
+    '<textarea id="' + id + '" placeholder="' + ph + '" rows="3" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:var(--w,#F0F0FF);font-size:13px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;line-height:1.6;transition:border-color .15s" onfocus="this.style.borderColor=\'var(--a,#6366F1)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'"></textarea></div>';
+}
+
+function siSelect(id, label, opts) {
+  return '<div style="margin-bottom:13px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--m,#9090B0);margin-bottom:4px">' + label + '</div>' +
+    '<select id="' + id + '" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:var(--w,#F0F0FF);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;transition:border-color .15s" onfocus="this.style.borderColor=\'var(--a,#6366F1)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">' +
+    opts.map(o => '<option>' + o + '</option>').join('') + '</select></div>';
+}
+
+function siInput(id, label, ph) {
+  return '<div style="margin-bottom:13px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--m,#9090B0);margin-bottom:4px">' + label + '</div>' +
+    '<input type="text" id="' + id + '" placeholder="' + ph + '" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:var(--w,#F0F0FF);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;transition:border-color .15s" onfocus="this.style.borderColor=\'var(--a,#6366F1)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'"></div>';
+}
+
+function siGrid2(html) {
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' + html + '</div>';
+}
+
+function buildIntakeModal(id, title, sub, color, bodyHtml) {
+  var modal = document.createElement('div');
+  modal.id = id;
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  modal.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0">' +
+    '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">' + title + '</div>' +
+    '<div style="font-size:11px;color:#808099;margin-top:2px">' + sub + '</div></div>' +
+    '<button onclick="document.getElementById(\'' + id + '\').remove()" style="background:none;border:none;color:#808099;font-size:24px;cursor:pointer;line-height:1">×</button>' +
+    '</div>' +
+    '<div style="flex:1;overflow-y:auto;padding:20px;max-width:680px;margin:0 auto;width:100%">' + bodyHtml + '</div>';
+  return modal;
+}
+
+function submitBtn(label, onclick, color) {
+  color = color || '#6366F1';
+  return '<button onclick="' + onclick + '" style="width:100%;padding:13px;background:' + color + ';border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;box-shadow:0 4px 14px rgba(0,0,0,0.3)">' + label + '</button>';
+}
+
+function dispatchToAI(modalId, userDisplay, fullPrompt) {
+  document.getElementById(modalId) && document.getElementById(modalId).remove();
+  var inp = document.getElementById('userInput');
+  if (inp) inp.value = fullPrompt;
+  if (typeof addMsg === 'function') addMsg('user', userDisplay);
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: fullPrompt });
+  if (inp) inp.value = '';
+  if (typeof sendMessage === 'function') sendMessage();
+}
+
+// ── DETECT WHICH APP WE ARE ───────────────────────────────────
+var APP_NAME = (function() {
+  var t = document.title || '';
+  if (t.includes('SAIRNtype') || t.includes('index'))   return 'type';
+  if (t.includes('SAIRNhealth') || t.includes('health')) return 'health';
+  if (t.includes('SAIRNmoney') || t.includes('money'))  return 'money';
+  if (t.includes('SAIRNlaw') || t.includes('legal'))    return 'law';
+  if (t.includes('SAIRNstudy') || t.includes('study'))  return 'study';
+  if (t.includes('SAIRNlingual') || t.includes('lingual')) return 'lingual';
+  if (t.includes('SAIRNsenior') || t.includes('senior')) return 'senior';
+  if (t.includes('SAIRNhome') || t.includes('home'))    return 'home';
+  // Also check URL
+  var path = window.location.pathname;
+  if (path.includes('health'))  return 'health';
+  if (path.includes('money'))   return 'money';
+  if (path.includes('legal'))   return 'law';
+  if (path.includes('study'))   return 'study';
+  if (path.includes('lingual')) return 'lingual';
+  if (path.includes('senior'))  return 'senior';
+  if (path.includes('home'))    return 'home';
+  return 'type';
+})();
+
+// ── SAVE + HISTORY ─────────────────────────────────────────────
+var HIST_KEY = 'sairn_' + APP_NAME + '_history';
+
+window.savernSaveSession = function() {
+  if (typeof messages === 'undefined') return;
+  var lastAI = null;
+  for (var i = messages.length-1; i >= 0; i--) {
+    if (messages[i].role === 'assistant') { lastAI = messages[i]; break; }
+  }
+  if (!lastAI) { savernFlag('Start a session first, then save.', 'info'); return; }
+  var hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  var mode = '';
+  var modeEl = document.querySelector('.mode-btn.active .mode-label');
+  if (modeEl) mode = modeEl.textContent;
+  hist.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+    time: new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+    mode: mode || 'General',
+    preview: lastAI.content.replace(/[#*`]/g,'').slice(0,130) + '...',
+    messages: messages.slice(),
+  });
+  if (hist.length > 100) hist = hist.slice(0,100);
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+  var btn = document.getElementById('sairn-save-btn');
+  if (btn) { btn.textContent = '✓ Saved'; btn.style.color = '#4ADE80'; setTimeout(function(){ btn.textContent = '💾 Save'; btn.style.color = ''; }, 2000); }
+  savernFlag('Session saved to your history.', 'success');
+};
+
+window.savernShowHistory = function() {
+  var ex = document.getElementById('sairn-hist-modal');
+  if (ex) { ex.remove(); return; }
+  var hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  var modal = document.createElement('div');
+  modal.id = 'sairn-hist-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+  var body = '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0"><div style="font-size:15px;font-weight:700;color:#F0F0FF">📓 Session History</div><button onclick="document.getElementById(\'sairn-hist-modal\').remove()" style="background:none;border:none;color:#808099;font-size:24px;cursor:pointer">×</button></div>';
+  body += '<div style="flex:1;overflow-y:auto;padding:16px;max-width:860px;margin:0 auto;width:100%">';
+  if (!hist.length) {
+    body += '<div style="text-align:center;padding:40px;color:#808099;font-size:14px">No saved sessions yet.</div>';
+  } else {
+    hist.forEach(function(s,i) {
+      body += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:15px;margin-bottom:10px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+        '<span style="font-size:10px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);border-radius:100px;padding:2px 10px;color:#6366F1;font-weight:600">' + s.mode + '</span>' +
+        '<div style="display:flex;gap:10px;align-items:center"><span style="font-size:10px;color:#808099">' + s.date + ' · ' + s.time + '</span>' +
+        '<button onclick="savernDeleteSession(' + i + ')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:5px;color:#EF4444;font-size:10px;padding:2px 8px;cursor:pointer">Delete</button></div></div>' +
+        '<div style="font-size:12px;color:rgba(240,240,255,0.5);line-height:1.5;margin-bottom:8px">' + s.preview + '</div>' +
+        '<button onclick="savernRestoreSession(' + i + ')" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:6px;color:#6366F1;font-size:11px;font-weight:600;padding:4px 12px;cursor:pointer;font-family:inherit">Restore Session</button>' +
+        '</div>';
+    });
+  }
+  body += '</div>';
+  modal.innerHTML = body;
+  document.body.appendChild(modal);
+};
+
+window.savernRestoreSession = function(idx) {
+  var hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  var s = hist[idx];
+  if (!s) return;
+  if (typeof messages !== 'undefined') { messages.length = 0; s.messages.forEach(function(m){ messages.push(m); }); }
+  var area = document.getElementById('chatArea') || document.getElementById('messages');
+  if (area) {
+    area.innerHTML = '';
+    s.messages.forEach(function(m) {
+      if (typeof addMsg === 'function') addMsg(m.role === 'user' ? 'user' : 'ai', m.content);
+    });
+  }
+  document.getElementById('sairn-hist-modal') && document.getElementById('sairn-hist-modal').remove();
+};
+
+window.savernDeleteSession = function(idx) {
+  var hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  hist.splice(idx, 1);
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+  document.getElementById('sairn-hist-modal') && document.getElementById('sairn-hist-modal').remove();
+  window.savernShowHistory();
+};
+
+// ── PRINT ─────────────────────────────────────────────────────
+window.savernPrint = function() {
+  if (typeof messages === 'undefined') return;
+  var lastAI = null;
+  for (var i = messages.length-1; i >= 0; i--) {
+    if (messages[i].role === 'assistant') { lastAI = messages[i]; break; }
+  }
+  if (!lastAI) { savernFlag('Complete a session first, then print.', 'info'); return; }
+  var mode = '';
+  var modeEl = document.querySelector('.mode-btn.active .mode-label');
+  if (modeEl) mode = modeEl.textContent;
+  var date = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  var appTitle = document.title.split('—')[0].trim();
+  var win = window.open('','_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + appTitle + ' — Session</title>');
+  win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:750px;margin:0 auto;font-size:13px;line-height:1.7}.hdr{border-bottom:3px solid #4F46E5;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end}.brand{font-size:20px;font-weight:700;color:#312E81}.meta{font-size:11px;color:#999;text-align:right}.msg-block{margin-bottom:12px;padding:12px;border-radius:6px}.msg-block.user{background:#EEF2FF;border-left:3px solid #6366F1}.msg-block.ai{background:#FAFAFA;border-left:3px solid #4F46E5}.msg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6B7280;margin-bottom:5px}.content{font-size:13px;line-height:1.8;color:#222;white-space:pre-wrap}.disclaimer{margin-top:24px;padding:10px;background:#EEF2FF;border-radius:6px;font-size:10px;color:#9CA3AF;border:1px solid #C7D2FE}.ftr{margin-top:16px;font-size:10px;color:#CCC;display:flex;justify-content:space-between;border-top:1px solid #E5E7EB;padding-top:8px}@media print{body{padding:20px}}</style></head><body>');
+  win.document.write('<div class="hdr"><div><div class="brand">' + appTitle + '</div><div style="font-size:12px;color:#555;margin-top:2px">' + (mode||'Session') + ' — Summary</div></div><div class="meta">Date: ' + date + '</div></div>');
+  messages.forEach(function(m) {
+    win.document.write('<div class="msg-block ' + (m.role==='user'?'user':'ai') + '"><div class="msg-label">' + (m.role==='user'?'You':'AI Response') + '</div><div class="content">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>') + '</div></div>');
+  });
+  win.document.write('<div class="disclaimer">This output was generated by ' + appTitle + ' — AI assistance. Always verify important information with qualified professionals.</div>');
+  win.document.write('<div class="ftr"><span>' + appTitle + ' · SAIRN Technologies · Powered by Claude AI</span><span>sairn.vercel.app</span></div>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+};
+
+// ── FLAG UTILITY ──────────────────────────────────────────────
+window.savernFlag = function(msg, type) {
+  var ex = document.getElementById('sairn-intake-flag');
+  if (ex) ex.remove();
+  var colors = { danger:'#EF4444', warn:'#FBBF24', success:'#4ADE80', info:'#6366F1' };
+  var bgs    = { danger:'rgba(239,68,68,0.1)', warn:'rgba(251,191,36,0.1)', success:'rgba(74,222,128,0.1)', info:'rgba(99,102,241,0.1)' };
+  var f = document.createElement('div');
+  f.id = 'sairn-intake-flag';
+  f.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:' + (bgs[type]||bgs.info) + ';border:1px solid ' + (colors[type]||colors.info) + ';border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:' + (colors[type]||colors.info) + ';z-index:9999;max-width:540px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.35)';
+  f.textContent = msg;
+  document.body.appendChild(f);
+  setTimeout(function(){ f.remove(); }, 4500);
+};
+
+// ================================================================
+// APP-SPECIFIC INTAKE FORMS
+// ================================================================
+
+// ── SAIRNtype — Writing Intake ─────────────────────────────────
+window.showWritingIntake = function() {
+  var ex = document.getElementById('si-type-modal');
+  if (ex) { ex.remove(); return; }
+  var body =
+    siSelect('si-type-format', 'What Are You Writing?', [
+      'Professional email','Formal letter','Business proposal','Cover letter',
+      'Social media post','Blog article or essay','Marketing copy',
+      'Text message or chat','Speech or presentation','Personal note or message','Other',
+    ]) +
+    siSelect('si-type-tone', 'Tone', [
+      'Professional and formal','Friendly and conversational','Persuasive','Empathetic and warm',
+      'Direct and concise','Creative and engaging','Apologetic','Assertive',
+    ]) +
+    siField('si-type-context', 'What Is the Context?', 'Who are you writing to, what is the situation, what happened or what do you need to accomplish?') +
+    siField('si-type-key', 'Key Points to Include', 'List the main points, facts, or requests that must be in the final piece...') +
+    siSelect('si-type-length', 'Length', ['Very short — 1-2 sentences','Short — 1 paragraph','Medium — 2-3 paragraphs','Long — full document']) +
+    submitBtn('✍️ Write It for Me', "savernSubmitWritingIntake()", '#6366F1');
+  document.body.appendChild(buildIntakeModal('si-type-modal', '✍️ Writing Intake Form', 'Tell Claude exactly what to write — get a perfect first draft', '#6366F1', body));
+};
+
+window.savernSubmitWritingIntake = function() {
+  var format  = document.getElementById('si-type-format')?.value || '';
+  var tone    = document.getElementById('si-type-tone')?.value || '';
+  var context = document.getElementById('si-type-context')?.value || '';
+  var key     = document.getElementById('si-type-key')?.value || '';
+  var length  = document.getElementById('si-type-length')?.value || '';
+  if (!context.trim()) { savernFlag('Please describe the context first.', 'warn'); return; }
+  var prompt = 'Please write the following for me:\n\nType: ' + format + '\nTone: ' + tone + '\nLength: ' + length + '\n\nContext and situation:\n' + context + (key ? '\n\nKey points to include:\n' + key : '') + '\n\nWrite a complete, polished piece ready to send or use. Do not include any explanation — just the finished piece.';
+  dispatchToAI('si-type-modal', format + ' — ' + context.slice(0,60), prompt);
+};
+
+// ── SAIRNhealth — Symptom Intake ──────────────────────────────
+window.showHealthIntake = function() {
+  var ex = document.getElementById('si-health-modal');
+  if (ex) { ex.remove(); return; }
+  var body =
+    siField('si-h-symptoms', 'What Symptoms Are You Experiencing?', 'Describe all symptoms — be specific about location, sensation, severity, and when they started...') +
+    siGrid2(
+      siSelect('si-h-duration', 'How Long?', ['Started today','2-3 days','About a week','2-4 weeks','More than a month','Comes and goes']) +
+      siSelect('si-h-severity', 'Severity', ['Mild — noticeable but manageable','Moderate — affecting daily activities','Severe — difficult to function','Very severe'])
+    ) +
+    siGrid2(
+      siSelect('si-h-age', 'Age Group', ['Under 12','12-17','18-39','40-64','65+']) +
+      siSelect('si-h-sex', 'Biological Sex', ['Male','Female','Prefer not to say'])
+    ) +
+    siField('si-h-conditions', 'Known Medical Conditions (if any)', 'e.g. diabetes, hypertension, asthma — or none...') +
+    siField('si-h-meds', 'Current Medications (if any)', 'e.g. metformin, lisinopril — or none...') +
+    siField('si-h-other', 'Anything Else the AI Should Know?', 'Recent travel, sick contacts, stress, unusual foods, recent injuries...') +
+    '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:rgba(239,68,68,0.8)">⚠️ Chest pain, difficulty breathing, or stroke symptoms — call 911 now. Do not use this form.</div>' +
+    submitBtn('🩺 Analyze My Symptoms', "savernSubmitHealthIntake()", '#06B6D4');
+  document.body.appendChild(buildIntakeModal('si-health-modal', '🩺 Symptom Intake Form', 'Structured intake for a thorough AI health analysis', '#06B6D4', body));
+};
+
+window.savernSubmitHealthIntake = function() {
+  var symptoms   = document.getElementById('si-h-symptoms')?.value || '';
+  var duration   = document.getElementById('si-h-duration')?.value || '';
+  var severity   = document.getElementById('si-h-severity')?.value || '';
+  var age        = document.getElementById('si-h-age')?.value || '';
+  var sex        = document.getElementById('si-h-sex')?.value || '';
+  var conditions = document.getElementById('si-h-conditions')?.value || '';
+  var meds       = document.getElementById('si-h-meds')?.value || '';
+  var other      = document.getElementById('si-h-other')?.value || '';
+  if (!symptoms.trim()) { savernFlag('Please describe your symptoms first.', 'warn'); return; }
+  var prompt = 'I need help understanding my health symptoms. Here is my complete intake:\n\nSymptoms: ' + symptoms + '\nDuration: ' + duration + '\nSeverity: ' + severity + '\nAge group: ' + age + '\nBiological sex: ' + sex + (conditions ? '\nKnown conditions: ' + conditions : '') + (meds ? '\nCurrent medications: ' + meds : '') + (other ? '\nAdditional context: ' + other : '') + '\n\nPlease provide: (1) most likely conditions based on these symptoms, (2) red flag symptoms that require emergency care, (3) home care recommendations if appropriate, (4) whether and how urgently to see a doctor, and (5) what type of doctor and what to tell them.';
+  dispatchToAI('si-health-modal', 'Symptom analysis — ' + symptoms.slice(0,60), prompt);
+};
+
+// ── SAIRNstudy — Study Intake ─────────────────────────────────
+window.showStudyIntake = function() {
+  var ex = document.getElementById('si-study-modal');
+  if (ex) { ex.remove(); return; }
+  var body =
+    siInput('si-s-subject', 'Subject or Topic', 'e.g. Algebra 2, World War II, Organic Chemistry, Python programming...') +
+    siGrid2(
+      siSelect('si-s-level', 'Education Level', ['Elementary school','Middle school','High school','College undergraduate','Graduate / professional','Self-taught / adult learner']) +
+      siSelect('si-s-goal', 'What Do You Need?', ['Explain a concept I do not understand','Help me study for an exam','Create a study guide or notes','Quiz me on a topic','Help me with homework or a problem','Build a full learning plan'])
+    ) +
+    siField('si-s-topic', 'Specific Topic or Problem', 'What exactly do you need help with? Be as specific as possible — paste the problem, question, or concept...') +
+    siGrid2(
+      siSelect('si-s-style', 'How Do You Learn Best?', ['Simple plain language','Step-by-step with examples','Visual analogies and metaphors','Detailed technical explanation','Practice problems and quizzes']) +
+      siSelect('si-s-urgency', 'Urgency', ['Just exploring — no deadline','Have time — a few days','Exam or deadline within a week','Need this today'])
+    ) +
+    siField('si-s-struggles', 'What Are You Struggling With?', 'What specific part is confusing or hard? What have you tried already?') +
+    submitBtn('📚 Start My Study Session', "savernSubmitStudyIntake()", '#3B82F6');
+  document.body.appendChild(buildIntakeModal('si-study-modal', '📚 Study Session Intake', 'Tell Claude what you need — get teaching built around how you learn', '#3B82F6', body));
+};
+
+window.savernSubmitStudyIntake = function() {
+  var subject  = document.getElementById('si-s-subject')?.value || '';
+  var level    = document.getElementById('si-s-level')?.value || '';
+  var goal     = document.getElementById('si-s-goal')?.value || '';
+  var topic    = document.getElementById('si-s-topic')?.value || '';
+  var style    = document.getElementById('si-s-style')?.value || '';
+  var urgency  = document.getElementById('si-s-urgency')?.value || '';
+  var struggle = document.getElementById('si-s-struggles')?.value || '';
+  if (!subject.trim() && !topic.trim()) { savernFlag('Please enter the subject or topic.', 'warn'); return; }
+  var prompt = 'I need help studying. Here is my learning intake:\n\nSubject: ' + subject + '\nEducation level: ' + level + '\nWhat I need: ' + goal + '\nSpecific topic or problem: ' + (topic||'See subject above') + '\nLearning style preference: ' + style + '\nUrgency: ' + urgency + (struggle ? '\nWhat I am struggling with: ' + struggle : '') + '\n\nPlease teach me in a way that fits my level and learning style. Start by addressing exactly what I need, then build understanding from there. Use examples that make sense for my level.';
+  dispatchToAI('si-study-modal', goal + ' — ' + (subject||topic).slice(0,60), prompt);
+};
+
+// ── SAIRNlingual — Language Intake ────────────────────────────
+window.showLingualIntake = function() {
+  var ex = document.getElementById('si-lingual-modal');
+  if (ex) { ex.remove(); return; }
+  var LANGS = ['Spanish','French','German','Italian','Portuguese','Mandarin Chinese','Japanese','Korean','Arabic','Russian','Hindi','Dutch','Polish','Turkish','Vietnamese','Thai','Hebrew','Swahili','Greek','Swedish','Other'];
+  var body =
+    siGrid2(
+      siSelect('si-l-native', 'Your Native Language', ['English','Spanish','French','German','Portuguese','Mandarin','Japanese','Korean','Arabic','Russian','Hindi','Other']) +
+      siSelect('si-l-target', 'Language You Are Learning', LANGS)
+    ) +
+    siGrid2(
+      siSelect('si-l-level', 'Your Current Level', ['Complete beginner','Basic — I know some words','Intermediate — I can hold simple conversations','Advanced — fluent but want to improve','Heritage speaker — grew up hearing it']) +
+      siSelect('si-l-goal', 'Your Main Goal', ['Travel — basic survival phrases','Business and professional use','Connect with family or heritage','Academic study','Become fully fluent','Pass a test (DELE, DELF, JLPT, etc.)','Just for fun'])
+    ) +
+    siField('si-l-need', 'What Do You Need Help With Right Now?', 'e.g. I do not understand when to use ser vs estar in Spanish, I want to learn the 100 most useful phrases, I need to practice conversation, I want to understand the grammar rule for...') +
+    siSelect('si-l-session', 'What Kind of Session?', [
+      'Teach me vocabulary — themed word list','Explain a grammar rule in plain language',
+      'Conversation practice — roleplay a scenario','Translate and explain this text',
+      'Common phrases for a specific situation','Pronunciation and accent tips',
+      'Build a full learning plan for my level',
+    ]) +
+    submitBtn('🌍 Start My Language Session', "savernSubmitLingualIntake()", '#F97316');
+  document.body.appendChild(buildIntakeModal('si-lingual-modal', '🌍 Language Learning Intake', 'Tell Claude your level and goals — get a session built for you', '#F97316', body));
+};
+
+window.savernSubmitLingualIntake = function() {
+  var native  = document.getElementById('si-l-native')?.value || 'English';
+  var target  = document.getElementById('si-l-target')?.value || '';
+  var level   = document.getElementById('si-l-level')?.value || '';
+  var goal    = document.getElementById('si-l-goal')?.value || '';
+  var need    = document.getElementById('si-l-need')?.value || '';
+  var session = document.getElementById('si-l-session')?.value || '';
+  if (!target.trim()) { savernFlag('Please select the language you are learning.', 'warn'); return; }
+  var prompt = 'I need help learning ' + target + '. Here is my language learning intake:\n\nNative language: ' + native + '\nLearning: ' + target + '\nCurrent level: ' + level + '\nMain goal: ' + goal + '\nSession type: ' + session + (need ? '\nSpecific question or need: ' + need : '') + '\n\nPlease deliver a ' + session.toLowerCase() + ' session in ' + target + ' that is appropriate for my ' + level.split('—')[0].trim().toLowerCase() + ' level. Explain everything in ' + native + ' when needed. Make it practical and immediately useful.';
+  dispatchToAI('si-lingual-modal', target + ' — ' + session.slice(0,50), prompt);
+};
+
+// ── SAIRNsenior — Senior Life Intake ──────────────────────────
+window.showSeniorIntake = function() {
+  var ex = document.getElementById('si-senior-modal');
+  if (ex) { ex.remove(); return; }
+  var body =
+    siSelect('si-sr-topic', 'What Do You Need Help With Today?', [
+      'Medicare — understanding my coverage','Social Security — benefits and timing',
+      'Prescription medications — questions or interactions','Understanding a medical bill or insurance statement',
+      'Retirement income and budgeting','Veterans benefits (VA)',
+      'Caregiver support — helping a loved one','Recognizing or reporting a scam',
+      'Technology help — phone, computer, or app','Housing — downsizing, assisted living, or aging in place',
+      'Legal questions — will, power of attorney, estate','Staying connected — loneliness or finding community',
+      'Health question — symptoms or condition','Other',
+    ]) +
+    siField('si-sr-situation', 'Tell Me More About Your Situation', 'Describe what is happening and what you need. Take your time — there are no wrong answers...') +
+    siGrid2(
+      siSelect('si-sr-age', 'Age Range', ['60-64','65-69','70-74','75-79','80-84','85+','Helping a parent or loved one']) +
+      siSelect('si-sr-urgency', 'How Urgent Is This?', ['Not urgent — just want to understand','Moderately — need help within a week','Urgent — need guidance now','Very urgent — this is time-sensitive'])
+    ) +
+    siField('si-sr-tried', 'Have You Tried Anything Already?', 'What have you already done or looked into? Who have you spoken with?') +
+    submitBtn('🌟 Get My Guidance', "savernSubmitSeniorIntake()", '#EAB308');
+  document.body.appendChild(buildIntakeModal('si-senior-modal', '🌟 Senior Life Intake', 'Tell Claude what you need — patient, clear, respectful guidance', '#EAB308', body));
+};
+
+window.savernSubmitSeniorIntake = function() {
+  var topic    = document.getElementById('si-sr-topic')?.value || '';
+  var situation= document.getElementById('si-sr-situation')?.value || '';
+  var age      = document.getElementById('si-sr-age')?.value || '';
+  var urgency  = document.getElementById('si-sr-urgency')?.value || '';
+  var tried    = document.getElementById('si-sr-tried')?.value || '';
+  if (!situation.trim()) { savernFlag('Please describe your situation.', 'warn'); return; }
+  var prompt = 'I need guidance on the following. Please respond in plain, clear language — no jargon.\n\nTopic: ' + topic + '\nAge range: ' + age + '\nSituation: ' + situation + '\nUrgency: ' + urgency + (tried ? '\nWhat I have already tried: ' + tried : '') + '\n\nPlease: (1) explain my options in simple, plain language, (2) tell me exactly what steps to take and in what order, (3) tell me who I should contact and what to say, and (4) flag any deadlines or time-sensitive items I should know about. Take your time and be thorough.';
+  dispatchToAI('si-senior-modal', topic + ' — ' + situation.slice(0,60), prompt);
+};
+
+// ── SAIRNhome — Home Intake ────────────────────────────────────
+window.showHomeIntake = function() {
+  var ex = document.getElementById('si-home-modal');
+  if (ex) { ex.remove(); return; }
+  var body =
+    siSelect('si-hm-topic', 'What Do You Need Help With?', [
+      'Buying a home — first-time buyer','Buying a home — repeat buyer',
+      'Selling my home','Understanding my mortgage options',
+      'Refinancing my existing mortgage','Home renovation — planning or budgeting',
+      'Home repair — something is broken or wrong','Understanding my property taxes or assessment',
+      'HOA questions or disputes','Homeowner\'s insurance questions',
+      'Rental property — I am a landlord','Foreclosure or financial hardship',
+      'Moving and transition logistics','Other home question',
+    ]) +
+    siField('si-hm-situation', 'Describe Your Situation', 'What specifically is going on? The more detail you give, the better I can help...') +
+    siGrid2(
+      siSelect('si-hm-stage', 'Where Are You in the Process?', [
+        'Just starting — exploring options','Actively looking or planning','Contract or offer stage',
+        'Closing or recently closed','Already a homeowner — ongoing question',
+      ]) +
+      siSelect('si-hm-state', 'Your State', ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'])
+    ) +
+    siField('si-hm-budget', 'Budget or Price Range (optional)', 'e.g. $280,000 budget, monthly payment around $1,800, renovation budget $30,000...') +
+    submitBtn('🏠 Get Home Guidance', "savernSubmitHomeIntake()", '#FB923C');
+  document.body.appendChild(buildIntakeModal('si-home-modal', '🏠 Home Intake Form', 'Tell Claude your situation — get expert-level homeownership guidance', '#FB923C', body));
+};
+
+window.savernSubmitHomeIntake = function() {
+  var topic    = document.getElementById('si-hm-topic')?.value || '';
+  var situation= document.getElementById('si-hm-situation')?.value || '';
+  var stage    = document.getElementById('si-hm-stage')?.value || '';
+  var state    = document.getElementById('si-hm-state')?.value || '';
+  var budget   = document.getElementById('si-hm-budget')?.value || '';
+  if (!situation.trim()) { savernFlag('Please describe your situation.', 'warn'); return; }
+  var prompt = 'I need homeownership guidance. Here is my intake:\n\nTopic: ' + topic + '\nState: ' + state + '\nWhere I am in the process: ' + stage + '\nSituation: ' + situation + (budget ? '\nBudget: ' + budget : '') + '\n\nPlease provide: (1) a direct assessment of my situation and what I need to know, (2) the exact steps I should take in order, (3) any state-specific rules or considerations for ' + state + ', (4) common mistakes people make in this situation and how to avoid them, and (5) who I should be working with professionally.';
+  dispatchToAI('si-home-modal', topic + ' — ' + situation.slice(0,60), prompt);
+};
+
+// ── SAIRNmoney — Budget Intake ────────────────────────────────
+window.showMoneyIntake = function() {
+  var ex = document.getElementById('si-money-modal');
+  if (ex) { ex.remove(); return; }
+  var body =
+    siSelect('si-mn-topic', 'What Do You Need Help With?', [
+      'Building or fixing my budget','Getting out of debt — debt payoff plan',
+      'Understanding where my money goes','Saving for a specific goal',
+      'Building an emergency fund','Starting to invest','Retirement planning',
+      'My credit score — understanding or improving it','Reducing monthly expenses',
+      'Financial planning after a major life event','Other money question',
+    ]) +
+    siField('si-mn-situation', 'Describe Your Financial Situation', 'Monthly income, main expenses, current debts, what is working, what is not — be as specific as you are comfortable with...') +
+    siGrid2(
+      siSelect('si-mn-income', 'Approximate Monthly Take-Home Income', ['Under $2,000','$2,000-$3,500','$3,500-$5,000','$5,000-$7,500','$7,500-$10,000','Over $10,000','Prefer not to say']) +
+      siSelect('si-mn-urgency', 'How Urgent?', ['Not urgent — planning ahead','Moderate — want to improve','Stressed — need to fix this','Crisis — serious financial pressure'])
+    ) +
+    siField('si-mn-goal', 'What Does Success Look Like in 12 Months?', 'e.g. $5,000 emergency fund, pay off my car, stop living paycheck to paycheck, save for a down payment...') +
+    submitBtn('💰 Build My Financial Plan', "savernSubmitMoneyIntake()", '#10B981');
+  document.body.appendChild(buildIntakeModal('si-money-modal', '💰 Financial Intake Form', 'Tell Claude your situation — get a real personalized money plan', '#10B981', body));
+};
+
+window.savernSubmitMoneyIntake = function() {
+  var topic    = document.getElementById('si-mn-topic')?.value || '';
+  var situation= document.getElementById('si-mn-situation')?.value || '';
+  var income   = document.getElementById('si-mn-income')?.value || '';
+  var urgency  = document.getElementById('si-mn-urgency')?.value || '';
+  var goal     = document.getElementById('si-mn-goal')?.value || '';
+  if (!situation.trim()) { savernFlag('Please describe your financial situation.', 'warn'); return; }
+  var prompt = 'I need financial guidance. Here is my complete intake:\n\nTopic: ' + topic + '\nMonthly take-home income: ' + income + '\nSituation: ' + situation + '\nUrgency: ' + urgency + (goal ? '\n12-month goal: ' + goal : '') + '\n\nPlease provide: (1) an honest assessment of my situation, (2) a specific step-by-step action plan for the next 90 days, (3) one number I should track every week, (4) the most common mistake people in my situation make and how to avoid it, and (5) a realistic 12-month outlook if I execute well.';
+  dispatchToAI('si-money-modal', topic + ' — ' + situation.slice(0,60), prompt);
+};
+
+// ── SAIRNlaw — Legal Intake ─────────────────────────────────
+window.showLegalIntake = function() {
+  var ex = document.getElementById('si-law-modal');
+  if (ex) { ex.remove(); return; }
+  var body =
+    siSelect('si-lw-area', 'Area of Law', [
+      'Tenant rights — landlord dispute','Employment — workplace issue or termination',
+      'Consumer protection — product or service dispute','Small claims court',
+      'Family law — divorce, custody, or support','Personal injury','Criminal — minor offense or rights',
+      'Contract dispute','Immigration basics','Debt collection or bankruptcy',
+      'Estate — will, probate, or inheritance','Business or startup legal question','Other',
+    ]) +
+    siSelect('si-lw-state', 'Your State', ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming']) +
+    siField('si-lw-situation', 'What Happened? Describe Your Situation', 'Be specific — dates, what was said or done, what evidence or documentation you have...') +
+    siGrid2(
+      siSelect('si-lw-role', 'Your Role', ['I am the person affected / plaintiff','I received a complaint / defendant','I am asking on behalf of someone else','Just researching — no active dispute']) +
+      siSelect('si-lw-urgency', 'Urgency', ['No deadline — just want to understand','Moderate — within a few weeks','Urgent — within days','Immediate — hearing or deadline very soon'])
+    ) +
+    submitBtn('⚖️ Get My Legal Guidance', "savernSubmitLegalIntake()", '#7C3AED');
+  document.body.appendChild(buildIntakeModal('si-law-modal', '⚖️ Legal Situation Intake', 'Describe your situation — get clear, plain-language legal guidance for your state', '#7C3AED', body));
+};
+
+window.savernSubmitLegalIntake = function() {
+  var area     = document.getElementById('si-lw-area')?.value || '';
+  var state    = document.getElementById('si-lw-state')?.value || '';
+  var situation= document.getElementById('si-lw-situation')?.value || '';
+  var role     = document.getElementById('si-lw-role')?.value || '';
+  var urgency  = document.getElementById('si-lw-urgency')?.value || '';
+  if (!situation.trim()) { savernFlag('Please describe your situation.', 'warn'); return; }
+  var prompt = 'I need legal guidance. Here is my intake:\n\nArea of law: ' + area + '\nState: ' + state + '\nMy role: ' + role + '\nUrgency: ' + urgency + '\nSituation: ' + situation + '\n\nPlease provide: (1) my legal rights in ' + state + ' for this situation, (2) the exact steps I should take in order, (3) any deadlines or statutes of limitations I must know about, (4) what documentation to gather, and (5) when I should hire an attorney and what type. Always remind me this is general legal information, not legal advice.';
+  dispatchToAI('si-law-modal', area + ' — ' + state + ' — ' + situation.slice(0,50), prompt);
+};
+
+// ================================================================
+// INJECT INTAKE BUTTONS INTO EACH APP'S INPUT AREA
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(injectIntakeButtons, 200);
+});
+setTimeout(injectIntakeButtons, 300);
+
+function injectIntakeButtons() {
+  // Find the input actions area or create one near the send button
+  var sendBtn = document.getElementById('sendBtn');
+  if (!sendBtn) return;
+
+  // Find or create the action row below input
+  var inputArea = sendBtn.closest('.input-area') || sendBtn.closest('.input-wrap') || sendBtn.parentElement;
+  if (!inputArea) return;
+
+  // Don't inject twice
+  if (document.getElementById('sairn-intake-actions')) return;
+
+  var actRow = document.createElement('div');
+  actRow.id = 'sairn-intake-actions';
+  actRow.style.cssText = 'display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:7px;padding:0 4px';
+
+  var INTAKE_CONFIG = {
+    'type':    { icon:'✍️', label:'Writing Intake', fn:'showWritingIntake()' },
+    'health':  { icon:'🩺', label:'Symptom Intake', fn:'showHealthIntake()' },
+    'money':   { icon:'💰', label:'Budget Intake',  fn:'showMoneyIntake()' },
+    'law':     { icon:'⚖️', label:'Legal Intake',   fn:'showLegalIntake()' },
+    'study':   { icon:'📚', label:'Study Intake',   fn:'showStudyIntake()' },
+    'lingual': { icon:'🌍', label:'Language Intake',fn:'showLingualIntake()' },
+    'senior':  { icon:'🌟', label:'Life Intake',    fn:'showSeniorIntake()' },
+    'home':    { icon:'🏠', label:'Home Intake',    fn:'showHomeIntake()' },
+  };
+
+  var btnStyle = 'padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(240,240,255,0.5);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px';
+
+  // Intake button
+  var cfg = INTAKE_CONFIG[APP_NAME];
+  if (cfg) {
+    var intakeBtn = document.createElement('button');
+    intakeBtn.style.cssText = btnStyle;
+    intakeBtn.textContent = cfg.icon + ' ' + cfg.label;
+    intakeBtn.setAttribute('onclick', cfg.fn);
+    intakeBtn.onmouseenter = function(){ this.style.borderColor='rgba(99,102,241,0.4)';this.style.color='rgba(240,240,255,0.9)'; };
+    intakeBtn.onmouseleave = function(){ this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(240,240,255,0.5)'; };
+    actRow.appendChild(intakeBtn);
+  }
+
+  // Save button
+  if (!document.getElementById('sairn-save-btn')) {
+    var saveBtn = document.createElement('button');
+    saveBtn.id = 'sairn-save-btn';
+    saveBtn.style.cssText = btnStyle;
+    saveBtn.textContent = '💾 Save';
+    saveBtn.setAttribute('onclick', 'savernSaveSession()');
+    saveBtn.onmouseenter = function(){ this.style.borderColor='rgba(74,222,128,0.4)';this.style.color='#4ADE80'; };
+    saveBtn.onmouseleave = function(){ this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(240,240,255,0.5)'; };
+    actRow.appendChild(saveBtn);
+  }
+
+  // History button
+  var histBtn = document.createElement('button');
+  histBtn.style.cssText = btnStyle;
+  histBtn.textContent = '🕐 History';
+  histBtn.setAttribute('onclick', 'savernShowHistory()');
+  histBtn.onmouseenter = function(){ this.style.borderColor='rgba(99,102,241,0.4)';this.style.color='rgba(240,240,255,0.9)'; };
+  histBtn.onmouseleave = function(){ this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(240,240,255,0.5)'; };
+  actRow.appendChild(histBtn);
+
+  // Print button
+  var printBtn = document.createElement('button');
+  printBtn.style.cssText = btnStyle;
+  printBtn.textContent = '🖨️ Print';
+  printBtn.setAttribute('onclick', 'savernPrint()');
+  printBtn.onmouseenter = function(){ this.style.borderColor='rgba(99,102,241,0.4)';this.style.color='rgba(240,240,255,0.9)'; };
+  printBtn.onmouseleave = function(){ this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(240,240,255,0.5)'; };
+  actRow.appendChild(printBtn);
+
+  // Insert after the input row
+  var inputRow = sendBtn.closest('.input-top') || sendBtn.parentElement;
+  if (inputRow && inputRow.parentElement) {
+    inputRow.parentElement.insertBefore(actRow, inputRow.nextSibling);
+  } else {
+    inputArea.appendChild(actRow);
+  }
+}
+
+})(); // end IIFE
+
+</script>
 </body>
 </html>
