@@ -109,7 +109,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 <div id="particles"></div>
 <nav class="nav">
   <a class="nav-logo" href="/" onclick="showPage('home');return false">
-    <div class="nav-gem">🏗️</div>
+    <div class="nav-gem">🏢</div>
     <div class="nav-brand">SAIRNbuild</div>
   </a>
   <div class="nav-r">
@@ -120,9 +120,9 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 
 <div id="homePage" class="page active">
   <section class="hero">
-    <div class="crisis-badge">🏗️ Only 1.4% of construction companies have adopted AI — the lowest of any industry worldwide</div>
+    <div class="crisis-badge">🏢 Only 1.4% of construction companies have adopted AI — the lowest of any industry worldwide</div>
     <div class="hero-eyebrow">AI-Native · Claude Powered · Patents Pending · Zero Competitors</div>
-    <div class="hero-icon">🏗️</div>
+    <div class="hero-icon">🏢</div>
     <h1 class="hero-title">SAIRNbuild</h1>
     <p class="hero-sub">Project management, estimating, safety documentation, subcontractor management, job costing, and compliance — all powered by Claude AI. Built for every general contractor, project manager, and superintendent.</p>
     <p class="hero-market">$13T global construction market · 1.4% AI adoption worldwide — the lowest of any industry · Built for every contractor on earth from solo builder to multinational</p>
@@ -291,7 +291,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
   </div>
   <div class="chat-area" id="chatArea">
     <div class="empty-state" id="emptyState">
-      <div class="empty-icon">🏗️</div>
+      <div class="empty-icon">🏢</div>
       <div class="empty-title">SAIRNbuild — Intelligence</div>
       <div class="empty-sub">What do you need today?</div>
       <div class="suggestions">
@@ -312,7 +312,7 @@ const SYSTEM = "You are SAIRNbuild, the world standard AI construction intellige
 const APP_NAME = "SAIRNbuild";
 const SAIRN_API = "https://sairn.vercel.app/api/claude";
 const APP_ID = "contractor";
-const APP_ICON = "🏗️";
+const APP_ICON = "🏢";
 let messages = [], isLoading = false, lastResponse = "";
 const GUIDED_FLOWS = [
   {id:"rfi",emoji:"📋",label:"Draft an RFI",intro:"Let us draft your RFI. What is the conflict or question that needs clarification?",steps:["Which drawing sheets are involved and what is the specific discrepancy?","What is the impact if not clarified — schedule, cost, or safety?"],finish:"Here is your RFI ready for submission. Review the description, add your project number and RFI number, and submit to the appropriate party."},
