@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;700;900&display=swap');
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; background: #030F0A; font-family: 'DM Sans', sans-serif; }
+  .ad { width: 1080px; height: 1080px; position: relative; overflow: hidden; }
+
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 700px 500px at 50% 35%, rgba(16,185,129,0.09) 0%, transparent 70%),
+      #030F0A;
+  }
+
+  .top-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #10B981, #34D399, #10B981); }
+
+  .logo { position: absolute; top: 50px; left: 60px; display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 30px; height: 30px; background: #10B981; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+  .logo-text { font-size: 16px; font-weight: 700; letter-spacing: 4px; color: rgba(255,255,255,0.8); text-transform: uppercase; }
+
+  /* Live rate widget */
+  .rate-widget {
+    position: absolute;
+    top: 130px;
+    left: 60px;
+    right: 60px;
+    background: rgba(10,30,20,0.8);
+    border: 1px solid rgba(16,185,129,0.2);
+    padding: 24px 32px;
+  }
+  .widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .widget-title { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: rgba(16,185,129,0.6); }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #10B981;
+    font-weight: 600;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #10B981; }
+
+  .rates-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .rate-item { display: flex; flex-direction: column; gap: 4px; }
+  .rate-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+  .rate-value { font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; color: #10B981; }
+  .rate-sub { font-size: 10px; color: rgba(255,255,255,0.2); }
+
+  /* Budget breakdown */
+  .budget {
+    position: absolute;
+    top: 340px;
+    left: 60px;
+    right: 60px;
+  }
+
+  .budget-title { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 16px; }
+
+  .budget-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .budget-label { font-size: 15px; color: rgba(255,255,255,0.5); }
+  .budget-bar-wrap { flex: 1; margin: 0 20px; height: 6px; background: rgba(255,255,255,0.06); position: relative; }
+  .budget-bar { height: 100%; position: absolute; left: 0; top: 0; }
+  .budget-bar.income { background: #10B981; width: 100%; }
+  .budget-bar.housing { background: rgba(255,100,100,0.6); width: 32%; }
+  .budget-bar.food { background: rgba(255,180,50,0.5); width: 18%; }
+  .budget-bar.debt { background: rgba(255,80,80,0.5); width: 24%; }
+  .budget-bar.saved { background: #10B981; width: 8%; }
+  .budget-amount { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; min-width: 80px; text-align: right; }
+  .budget-amount.positive { color: #10B981; }
+  .budget-amount.negative { color: rgba(255,80,80,0.7); }
+  .budget-amount.dim { color: rgba(255,255,255,0.35); }
+
+  /* Bottom */
+  .bottom {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 40px 60px 52px;
+    background: linear-gradient(to top, #030F0A 0%, rgba(3,15,10,0.9) 65%, transparent 100%);
+    padding-top: 130px;
+  }
+
+  .headline { font-family: 'DM Sans', sans-serif; font-size: 58px; font-weight: 900; line-height: 0.95; color: #FFFFFF; margin-bottom: 14px; letter-spacing: -2px; }
+  .headline em { color: #10B981; font-style: normal; }
+  .sub { font-size: 17px; color: rgba(255,255,255,0.4); font-weight: 300; line-height: 1.55; margin-bottom: 28px; }
+  .cta-row { display: flex; align-items: center; gap: 24px; }
+  .cta-button { background: #10B981; color: #000; font-weight: 700; font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; padding: 15px 36px; }
+  .price-note { font-size: 13px; color: rgba(255,255,255,0.28); }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="bg"></div>
+  <div class="top-bar"></div>
+
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">SAIRNmoney</div>
+  </div>
+
+  <div class="rate-widget">
+    <div class="widget-header">
+      <div class="widget-title">Live financial data — Federal Reserve</div>
+      <div class="live-badge"><div class="live-dot"></div>Live</div>
+    </div>
+    <div class="rates-grid">
+      <div class="rate-item">
+        <div class="rate-label">Fed Rate</div>
+        <div class="rate-value">4.50%</div>
+        <div class="rate-sub">Current target</div>
+      </div>
+      <div class="rate-item">
+        <div class="rate-label">30yr Mortgage</div>
+        <div class="rate-value">6.82%</div>
+        <div class="rate-sub">National avg</div>
+      </div>
+      <div class="rate-item">
+        <div class="rate-label">HYSA Rate</div>
+        <div class="rate-value">4.85%</div>
+        <div class="rate-sub">Top accounts</div>
+      </div>
+      <div class="rate-item">
+        <div class="rate-label">Inflation CPI</div>
+        <div class="rate-value">3.1%</div>
+        <div class="rate-sub">Year over year</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="budget">
+    <div class="budget-title">Your actual monthly picture</div>
+    <div class="budget-row">
+      <div class="budget-label">Income</div>
+      <div class="budget-bar-wrap"><div class="budget-bar income"></div></div>
+      <div class="budget-amount positive">$5,400</div>
+    </div>
+    <div class="budget-row">
+      <div class="budget-label">Housing</div>
+      <div class="budget-bar-wrap"><div class="budget-bar housing"></div></div>
+      <div class="budget-amount negative">-$1,750</div>
+    </div>
+    <div class="budget-row">
+      <div class="budget-label">Food</div>
+      <div class="budget-bar-wrap"><div class="budget-bar food"></div></div>
+      <div class="budget-amount negative">-$980</div>
+    </div>
+    <div class="budget-row">
+      <div class="budget-label">Debt payments</div>
+      <div class="budget-bar-wrap"><div class="budget-bar debt"></div></div>
+      <div class="budget-amount negative">-$1,280</div>
+    </div>
+    <div class="budget-row" style="border-bottom:none">
+      <div class="budget-label" style="color:rgba(255,255,255,0.8)">Actually saved</div>
+      <div class="budget-bar-wrap"><div class="budget-bar saved"></div></div>
+      <div class="budget-amount positive">$214</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">You got a raise.<br><em>Where did it go?</em></div>
+    <div class="sub">SAIRNmoney builds your real budget — with live Fed rates, debt payoff timelines, and an actual plan. Not a spending tracker. A financial strategy.</div>
+    <div class="cta-row">
+      <div class="cta-button">Build Your Budget →</div>
+      <div class="price-note">$6.99/month · Free to try</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

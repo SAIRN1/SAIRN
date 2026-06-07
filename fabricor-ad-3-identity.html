@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600;700&display=swap');
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; background: #0D0D0D; font-family: 'Barlow', sans-serif; }
+  .ad { width: 1080px; height: 1080px; position: relative; overflow: hidden; background: #0D0D0D; }
+
+  /* Background: textured dark stone */
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.005) 0px, transparent 1px, transparent 60px, rgba(255,255,255,0.005) 61px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,0.005) 0px, transparent 1px, transparent 80px, rgba(255,255,255,0.005) 81px),
+      linear-gradient(160deg, #0A0A0A, #1A1A1A, #0D0D0D);
+  }
+
+  .top-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #C9A84C, #E8C86A, #C9A84C); }
+
+  /* Gold vertical rule */
+  .gold-rule { position: absolute; left: 60px; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, transparent, #C9A84C 30%, #C9A84C 70%, transparent); opacity: 0.4; }
+
+  .logo { position: absolute; top: 52px; left: 90px; display: flex; align-items: center; gap: 12px; }
+  .logo-mark { width: 38px; height: 38px; background: #C9A84C; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+  .logo-text { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 4px; color: #FFFFFF; }
+
+  /* Large center statement */
+  .center-statement {
+    position: absolute;
+    top: 50%;
+    left: 90px;
+    right: 60px;
+    transform: translateY(-50%);
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #C9A84C;
+    margin-bottom: 24px;
+    font-weight: 600;
+  }
+
+  .big-line {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 108px;
+    line-height: 0.88;
+    letter-spacing: 2px;
+    color: #FFFFFF;
+    margin-bottom: 8px;
+  }
+  .big-line.gold { color: #C9A84C; }
+  .big-line.dim { color: rgba(255,255,255,0.2); font-size: 72px; }
+
+  .descriptor {
+    font-size: 18px;
+    color: rgba(255,255,255,0.45);
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-top: 28px;
+    line-height: 1.6;
+    max-width: 620px;
+  }
+
+  /* Bottom CTA strip */
+  .bottom-strip {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 130px;
+    background: rgba(201,168,76,0.08);
+    border-top: 1px solid rgba(201,168,76,0.2);
+    display: flex;
+    align-items: center;
+    padding: 0 90px;
+    justify-content: space-between;
+  }
+  .strip-left { display: flex; flex-direction: column; gap: 4px; }
+  .strip-tag { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+  .strip-url { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; color: rgba(255,255,255,0.5); }
+  .cta-button { background: #C9A84C; color: #000; font-weight: 700; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; padding: 16px 36px; }
+
+  /* Material callouts */
+  .materials {
+    position: absolute;
+    top: 148px;
+    right: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: right;
+  }
+  .mat { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.15); }
+  .mat.active { color: rgba(201,168,76,0.5); }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="bg"></div>
+  <div class="top-bar"></div>
+  <div class="gold-rule"></div>
+
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">FABRICOR</div>
+  </div>
+
+  <div class="materials">
+    <div class="mat active">GRANITE</div>
+    <div class="mat active">MARBLE</div>
+    <div class="mat active">QUARTZ</div>
+    <div class="mat active">QUARTZITE</div>
+    <div class="mat">NOTHING ELSE</div>
+  </div>
+
+  <div class="center-statement">
+    <div class="eyebrow">Built for stone people · By stone people</div>
+    <div class="big-line">NOT FOR</div>
+    <div class="big-line dim">PLUMBERS.</div>
+    <div class="big-line">NOT FOR</div>
+    <div class="big-line dim">CONTRACTORS.</div>
+    <div class="big-line gold">FOR YOU.</div>
+    <div class="descriptor">Fabricor was built from the ground up for countertop fabrication shops. It knows your materials. Your edge profiles. Your markup. Your clients.</div>
+  </div>
+
+  <div class="bottom-strip">
+    <div class="strip-left">
+      <div class="strip-tag">Try it free for 30 days</div>
+      <div class="strip-url">FABRICOR.COM</div>
+    </div>
+    <div class="cta-button">$299/Month →</div>
+  </div>
+</div>
+</body>
+</html>

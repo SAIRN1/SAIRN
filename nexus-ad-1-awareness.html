@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Serif+Display&display=swap');
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; background: #05050F; font-family: 'DM Sans', sans-serif; }
+  .ad { width: 1080px; height: 1080px; position: relative; overflow: hidden; background: #06061A; }
+
+  /* Deep space background */
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 900px 700px at 50% 40%, rgba(99,102,241,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 500px at 80% 80%, rgba(99,102,241,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 400px 400px at 10% 10%, rgba(99,102,241,0.05) 0%, transparent 60%),
+      #06061A;
+  }
+
+  /* Stars */
+  .star { position: absolute; background: #fff; border-radius: 50%; }
+
+  /* Honeycomb visual center */
+  .honeycomb-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -52%);
+    width: 420px;
+    height: 420px;
+  }
+
+  .hex {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .hex svg { width: 100%; height: 100%; }
+  .hex-inner { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .hex-icon { font-size: 20px; }
+  .hex-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); font-weight: 500; }
+
+  /* Center hex — large */
+  .hex-center {
+    width: 150px; height: 150px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Surrounding hexes */
+  .hex-1 { width: 100px; height: 100px; top: calc(50% - 150px); left: calc(50% - 50px); transform: translateX(-50%); }
+  .hex-2 { width: 100px; height: 100px; top: calc(50% - 80px); right: 10px; }
+  .hex-3 { width: 100px; height: 100px; bottom: calc(50% - 150px); right: 10px; }
+  .hex-4 { width: 100px; height: 100px; bottom: calc(50% - 220px); left: calc(50% - 50px); transform: translateX(-50%); }
+  .hex-5 { width: 100px; height: 100px; bottom: calc(50% - 80px); left: 10px; }
+  .hex-6 { width: 100px; height: 100px; top: calc(50% - 80px); left: 10px; }
+
+  /* Logo at top */
+  .logo {
+    position: absolute;
+    top: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: #6366F1;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+  .logo-text {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    color: rgba(255,255,255,0.9);
+    text-transform: uppercase;
+  }
+
+  /* Bottom content */
+  .bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 56px 60px 52px;
+    text-align: center;
+    background: linear-gradient(to top, rgba(6,6,26,0.98) 0%, rgba(6,6,26,0.7) 60%, transparent 100%);
+  }
+
+  .tagline {
+    font-family: 'DM Serif Display', serif;
+    font-size: 58px;
+    line-height: 1.05;
+    color: #FFFFFF;
+    margin-bottom: 16px;
+    letter-spacing: -1px;
+  }
+  .tagline em { color: #6366F1; font-style: normal; }
+
+  .sub {
+    font-size: 17px;
+    color: rgba(255,255,255,0.45);
+    font-weight: 300;
+    margin-bottom: 28px;
+    letter-spacing: 0.3px;
+  }
+
+  .cell-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 28px;
+    border: 1px solid rgba(99,102,241,0.3);
+    background: rgba(99,102,241,0.08);
+  }
+  .count-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .count-num { font-size: 22px; font-weight: 700; color: #6366F1; }
+  .count-lab { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+  .count-sep { width: 1px; height: 30px; background: rgba(99,102,241,0.25); }
+
+  /* Ring glow */
+  .ring-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -52%);
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Connection lines */
+  .connections {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -52%);
+    width: 420px;
+    height: 420px;
+    opacity: 0.15;
+  }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="bg"></div>
+
+  <!-- Stars -->
+  <div class="star" style="width:2px;height:2px;top:80px;left:120px;opacity:0.6"></div>
+  <div class="star" style="width:1px;height:1px;top:150px;right:200px;opacity:0.4"></div>
+  <div class="star" style="width:2px;height:2px;top:200px;left:300px;opacity:0.5"></div>
+  <div class="star" style="width:1px;height:1px;top:600px;right:100px;opacity:0.3"></div>
+  <div class="star" style="width:3px;height:3px;top:350px;right:300px;opacity:0.2"></div>
+  <div class="star" style="width:1px;height:1px;top:450px;left:80px;opacity:0.4"></div>
+
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">SAIRN NEXUS</div>
+  </div>
+
+  <div class="ring-glow"></div>
+
+  <!-- Honeycomb SVG grid -->
+  <div class="honeycomb-ring">
+    <!-- Center hex -->
+    <div class="hex hex-center">
+      <svg viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="75,8 138,42 138,108 75,142 12,108 12,42" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.6)" stroke-width="1.5"/>
+      </svg>
+      <div class="hex-inner">
+        <div style="font-size:28px">🧠</div>
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(99,102,241,0.9);font-weight:600">SAIRN</div>
+      </div>
+    </div>
+
+    <!-- Surrounding hexes -->
+    <div class="hex hex-1">
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" fill="rgba(6,182,212,0.08)" stroke="rgba(6,182,212,0.35)" stroke-width="1"/>
+      </svg>
+      <div class="hex-inner"><div class="hex-icon">❤️</div><div class="hex-label">Health</div></div>
+    </div>
+
+    <div class="hex hex-2">
+      <svg viewBox="0 0 100 100" fill="none">
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.35)" stroke-width="1"/>
+      </svg>
+      <div class="hex-inner"><div class="hex-icon">💰</div><div class="hex-label">Money</div></div>
+    </div>
+
+    <div class="hex hex-3">
+      <svg viewBox="0 0 100 100" fill="none">
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" fill="rgba(124,58,237,0.08)" stroke="rgba(124,58,237,0.35)" stroke-width="1"/>
+      </svg>
+      <div class="hex-inner"><div class="hex-icon">⚖️</div><div class="hex-label">Legal</div></div>
+    </div>
+
+    <div class="hex hex-4">
+      <svg viewBox="0 0 100 100" fill="none">
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.35)" stroke-width="1"/>
+      </svg>
+      <div class="hex-inner"><div class="hex-icon">📚</div><div class="hex-label">Study</div></div>
+    </div>
+
+    <div class="hex hex-5">
+      <svg viewBox="0 0 100 100" fill="none">
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" fill="rgba(249,115,22,0.08)" stroke="rgba(249,115,22,0.35)" stroke-width="1"/>
+      </svg>
+      <div class="hex-inner"><div class="hex-icon">🌍</div><div class="hex-label">Lingual</div></div>
+    </div>
+
+    <div class="hex hex-6">
+      <svg viewBox="0 0 100 100" fill="none">
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" fill="rgba(234,179,8,0.08)" stroke="rgba(234,179,8,0.35)" stroke-width="1"/>
+      </svg>
+      <div class="hex-inner"><div class="hex-icon">🏠</div><div class="hex-label">Home</div></div>
+    </div>
+  </div>
+
+  <!-- Bottom content -->
+  <div class="bottom">
+    <div class="tagline">One platform.<br><em>Every</em> life decision.</div>
+    <div class="sub">8 AI specialists. One subscription.</div>
+    <div class="cell-count">
+      <div class="count-item"><div class="count-num">8</div><div class="count-lab">specialists</div></div>
+      <div class="count-sep"></div>
+      <div class="count-item"><div class="count-num">$49</div><div class="count-lab">per month</div></div>
+      <div class="count-sep"></div>
+      <div class="count-item"><div class="count-num">Free</div><div class="count-lab">to try</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

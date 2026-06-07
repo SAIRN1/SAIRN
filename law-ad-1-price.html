@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;700&display=swap');
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; background: #0A050F; font-family: 'DM Sans', sans-serif; }
+  .ad { width: 1080px; height: 1080px; position: relative; overflow: hidden; }
+
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 800px 600px at 50% 30%, rgba(124,58,237,0.1) 0%, transparent 70%),
+      #0A050F;
+  }
+
+  .top-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #7C3AED, #A78BFA, #7C3AED); }
+
+  .logo { position: absolute; top: 50px; left: 60px; display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 30px; height: 30px; background: #7C3AED; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+  .logo-text { font-size: 16px; font-weight: 700; letter-spacing: 4px; color: rgba(255,255,255,0.8); text-transform: uppercase; }
+
+  /* Big split comparison */
+  .split {
+    position: absolute;
+    top: 130px;
+    left: 60px;
+    right: 60px;
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr;
+    align-items: center;
+    gap: 0;
+  }
+
+  .side { padding: 40px 32px; }
+  .side.attorney { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); }
+  .side.sairn { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.25); }
+
+  .side-label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 16px; }
+  .side-label.purple { color: rgba(124,58,237,0.6); }
+
+  .side-price { font-family: 'Playfair Display', serif; font-size: 72px; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+  .side-price.dim { color: rgba(255,80,80,0.5); }
+  .side-price.bright { color: #7C3AED; }
+
+  .side-period { font-size: 14px; color: rgba(255,255,255,0.3); margin-bottom: 24px; }
+  .side-period.purple { color: rgba(124,58,237,0.6); }
+
+  .feature-list { display: flex; flex-direction: column; gap: 10px; }
+  .feature { font-size: 13px; color: rgba(255,255,255,0.35); display: flex; align-items: flex-start; gap: 8px; }
+  .feature.active { color: rgba(255,255,255,0.6); }
+  .feature.bright { color: #A78BFA; }
+  .feat-icon { flex-shrink: 0; margin-top: 1px; }
+
+  .vs-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .vs-line { width: 1px; height: 40px; background: rgba(255,255,255,0.08); }
+  .vs-text { font-family: 'Playfair Display', serif; font-size: 22px; color: rgba(255,255,255,0.25); }
+
+  /* Bottom */
+  .bottom {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 40px 60px 52px;
+    background: linear-gradient(to top, #0A050F 0%, rgba(10,5,15,0.9) 65%, transparent 100%);
+    padding-top: 100px;
+  }
+
+  .headline { font-family: 'Playfair Display', serif; font-size: 58px; font-weight: 900; line-height: 1.05; color: #FFFFFF; margin-bottom: 14px; }
+  .headline em { color: #7C3AED; font-style: normal; }
+  .sub { font-size: 17px; color: rgba(255,255,255,0.4); font-weight: 300; line-height: 1.55; margin-bottom: 28px; }
+  .cta-row { display: flex; align-items: center; gap: 24px; }
+  .cta-button { background: #7C3AED; color: #fff; font-weight: 700; font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; padding: 15px 36px; }
+  .price-note { font-size: 13px; color: rgba(255,255,255,0.28); }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="bg"></div>
+  <div class="top-bar"></div>
+
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">SAIRNlaw</div>
+  </div>
+
+  <div class="split">
+    <div class="side attorney">
+      <div class="side-label">Traditional attorney</div>
+      <div class="side-price dim">$300</div>
+      <div class="side-period">per hour</div>
+      <div class="feature-list">
+        <div class="feature">⏱ First hour: learning your situation</div>
+        <div class="feature">📞 Voicemail. Call back in 2 days.</div>
+        <div class="feature">📄 Retainer required upfront</div>
+        <div class="feature">📍 One state only</div>
+        <div class="feature">🕙 Office hours only</div>
+      </div>
+    </div>
+
+    <div class="vs-center">
+      <div class="vs-line"></div>
+      <div class="vs-text">vs</div>
+      <div class="vs-line"></div>
+    </div>
+
+    <div class="side sairn">
+      <div class="side-label purple">SAIRNlaw</div>
+      <div class="side-price bright">$6.99</div>
+      <div class="side-period purple">per month</div>
+      <div class="feature-list">
+        <div class="feature bright">✓ Already knows your rights</div>
+        <div class="feature bright">✓ Answers instantly, 24/7</div>
+        <div class="feature bright">✓ No retainer, no contracts</div>
+        <div class="feature bright">✓ All 50 states</div>
+        <div class="feature bright">✓ Upload and analyze documents</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">Know your rights.<br><em>Not their rates.</em></div>
+    <div class="sub">Tenant rights. Employment law. Contract review. Consumer rights. SAIRNlaw knows it all — and explains it in plain English, not billable hours.</div>
+    <div class="cta-row">
+      <div class="cta-button">Try Free →</div>
+      <div class="price-note">$6.99/month · No credit card required</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

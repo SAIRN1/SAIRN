@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;700;900&family=DM+Serif+Display&display=swap');
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; background: #0F0A02; font-family: 'DM Sans', sans-serif; }
+  .ad { width: 1080px; height: 1080px; position: relative; overflow: hidden; }
+
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 900px 700px at 50% 35%, rgba(234,179,8,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 400px at 10% 80%, rgba(234,179,8,0.04) 0%, transparent 60%),
+      #0F0A02;
+  }
+
+  .top-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #EAB308, #FDE047, #EAB308); }
+
+  .logo { position: absolute; top: 50px; left: 60px; display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 30px; height: 30px; background: #EAB308; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+  .logo-text { font-size: 16px; font-weight: 700; letter-spacing: 4px; color: rgba(255,255,255,0.8); text-transform: uppercase; }
+
+  /* Heart icon center piece */
+  .center-piece {
+    position: absolute;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    width: 960px;
+  }
+
+  .scenario-card {
+    background: rgba(20,16,4,0.8);
+    border: 1px solid rgba(234,179,8,0.15);
+    padding: 28px 36px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    text-align: left;
+  }
+  .scenario-card.highlight { border-color: rgba(234,179,8,0.4); background: rgba(234,179,8,0.05); }
+
+  .scenario-icon { font-size: 28px; flex-shrink: 0; margin-top: 4px; }
+  .scenario-text { flex: 1; }
+  .scenario-heading { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
+  .scenario-heading.bright { color: rgba(255,255,255,0.85); }
+  .scenario-sub { font-size: 14px; color: rgba(255,255,255,0.3); line-height: 1.5; }
+  .scenario-sub.gold { color: rgba(234,179,8,0.6); }
+
+  .scenario-status { text-align: right; min-width: 100px; }
+  .status-tag { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 5px 12px; display: inline-block; }
+  .status-tag.bad { color: rgba(255,80,80,0.7); border: 1px solid rgba(255,80,80,0.2); background: rgba(255,80,80,0.06); }
+  .status-tag.good { color: #EAB308; border: 1px solid rgba(234,179,8,0.3); background: rgba(234,179,8,0.06); }
+
+  /* Bottom */
+  .bottom {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 40px 60px 52px;
+    background: linear-gradient(to top, #0F0A02 0%, rgba(15,10,2,0.92) 65%, transparent 100%);
+    padding-top: 110px;
+  }
+
+  .headline { font-family: 'DM Serif Display', serif; font-size: 56px; line-height: 1.05; color: #FFFFFF; margin-bottom: 14px; letter-spacing: -1px; }
+  .headline em { color: #EAB308; font-style: normal; }
+  .sub { font-size: 17px; color: rgba(255,255,255,0.4); font-weight: 300; line-height: 1.55; margin-bottom: 28px; max-width: 820px; }
+  .cta-row { display: flex; align-items: center; gap: 24px; }
+  .cta-button { background: #EAB308; color: #000; font-weight: 700; font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; padding: 15px 36px; }
+  .price-note { font-size: 13px; color: rgba(255,255,255,0.28); }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="bg"></div>
+  <div class="top-bar"></div>
+
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">SAIRNsenior</div>
+  </div>
+
+  <div class="center-piece">
+    <div class="scenario-card">
+      <div class="scenario-icon">📋</div>
+      <div class="scenario-text">
+        <div class="scenario-heading">Medicare paperwork arrived. She's confused.</div>
+        <div class="scenario-sub">You're 800 miles away. The Medicare hotline is on hold. Again.</div>
+      </div>
+      <div class="scenario-status"><div class="status-tag bad">Stressful</div></div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-icon">💊</div>
+      <div class="scenario-text">
+        <div class="scenario-heading">New prescription. No idea what it does.</div>
+        <div class="scenario-sub">The pharmacist was busy. The insert is 8 pages of fine print.</div>
+      </div>
+      <div class="scenario-status"><div class="status-tag bad">Confusing</div></div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-icon">💰</div>
+      <div class="scenario-text">
+        <div class="scenario-heading">Social Security benefits. Is she getting everything?</div>
+        <div class="scenario-sub">Programs that could reduce her costs by hundreds a month — unclaimed.</div>
+      </div>
+      <div class="scenario-status"><div class="status-tag bad">Unknown</div></div>
+    </div>
+
+    <div class="scenario-card highlight">
+      <div class="scenario-icon">🌟</div>
+      <div class="scenario-text">
+        <div class="scenario-heading bright">SAIRNsenior explains everything. Patiently. In plain English.</div>
+        <div class="scenario-sub gold">Medicare · Social Security · Prescriptions · Medical bills · Benefits. 24/7. Never rushed. Never jargon.</div>
+      </div>
+      <div class="scenario-status"><div class="status-tag good">$6.99/mo</div></div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">She deserves better<br>than a <em>hold queue.</em></div>
+    <div class="sub">SAIRNsenior is the patient, knowledgeable companion every older adult deserves. Free to try. $6.99/month after.</div>
+    <div class="cta-row">
+      <div class="cta-button">Give Them SAIRNsenior →</div>
+      <div class="price-note">No credit card · Free 30-day trial</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
