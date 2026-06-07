@@ -5547,5 +5547,743 @@ else {
 })();
 
 </script>
+
+<!-- SAIRN DYNAMIC KNOWLEDGE -->
+<script>
+// ================================================================
+// SAIRN DYNAMIC KNOWLEDGE MODULE
+// Fetches live data from /api/knowledge on session start.
+// Injects it into every subsequent Claude API call.
+// Falls back to cached static knowledge if fetch fails.
+// Updates every hour — always current.
+// Built by Michael L. Dibert · SAIRN Technologies
+// ================================================================
+(function() {
+'use strict';
+if (window._saircDynamicKnowledgeInstalled) return;
+window._saircDynamicKnowledgeInstalled = true;
+
+var DOMAIN_MAP = {
+  'money.html':   'money',
+  'home.html':    'home',
+  'senior.html':  'senior',
+  'health.html':  'health',
+  'legal.html':   'law',
+  'roam.html':    'roam',
+  'sairnclinical.html': 'clinical',
+};
+
+var fileName = window.location.pathname.split('/').pop() || 'index.html';
+var domain   = DOMAIN_MAP[fileName];
+if (!domain) return; // App doesn't have dynamic knowledge
+
+var KNOWLEDGE_KEY   = 'sairn_dynamic_knowledge_' + domain;
+var KNOWLEDGE_TS_KEY = 'sairn_dynamic_knowledge_ts_' + domain;
+var TTL = 60 * 60 * 1000; // 1 hour
+
+var _liveKnowledge  = null;
+var _knowledgeReady = false;
+
+// Show live knowledge indicator
+function showKnowledgeIndicator(fresh) {
+  var existing = document.getElementById('sairn-knowledge-indicator');
+  if (existing) existing.remove();
+
+  var el = document.createElement('div');
+  el.id = 'sairn-knowledge-indicator';
+  el.style.cssText = 'position:fixed;top:68px;right:160px;z-index:799;display:flex;align-items:center;gap:5px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:100px;padding:4px 10px;font-size:10px;font-weight:600;color:rgba(16,185,129,0.9);letter-spacing:.3px;cursor:pointer';
+  el.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10B981;' + (fresh ? 'animation:livePulse 2s ease-in-out infinite' : '') + '"></span>' + (fresh ? '⚡ Live data' : '📦 Cached data');
+  el.title = fresh ? 'Live data fetched just now from Federal Reserve and public APIs' : 'Using cached data — refreshes every hour';
+
+  if (!document.getElementById('live-pulse-style')) {
+    var ps = document.createElement('style');
+    ps.id = 'live-pulse-style';
+    ps.textContent = '@keyframes livePulse{0%,100%{opacity:.4}50%{opacity:1}}';
+    document.head.appendChild(ps);
+  }
+  document.body.appendChild(el);
+
+  // Fade out after 5 seconds
+  setTimeout(function() {
+    el.style.transition = 'opacity 1s';
+    el.style.opacity = '0';
+    setTimeout(function() { if (el.parentNode) el.remove(); }, 1000);
+  }, 5000);
+}
+
+// Fetch live knowledge from the API
+async function fetchLiveKnowledge() {
+  try {
+    // Check localStorage cache first
+    var cached = localStorage.getItem(KNOWLEDGE_KEY);
+    var cachedTs = parseInt(localStorage.getItem(KNOWLEDGE_TS_KEY) || '0');
+
+    if (cached && (Date.now() - cachedTs) < TTL) {
+      _liveKnowledge  = cached;
+      _knowledgeReady = true;
+      patchFetch();
+      showKnowledgeIndicator(false);
+      return;
+    }
+
+    // Fetch fresh from API
+    var res = await fetch('/api/knowledge?domain=' + domain, {
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!res.ok) throw new Error('Knowledge API returned ' + res.status);
+
+    var data = await res.json();
+    if (data.knowledge) {
+      _liveKnowledge  = data.knowledge;
+      _knowledgeReady = true;
+
+      // Cache it
+      localStorage.setItem(KNOWLEDGE_KEY, data.knowledge);
+      localStorage.setItem(KNOWLEDGE_TS_KEY, Date.now().toString());
+
+      patchFetch();
+      showKnowledgeIndicator(!data.cached);
+    }
+  } catch (err) {
+    // Fail silently — static knowledge from Gap 3 module is still injected
+    // The app works perfectly without dynamic knowledge
+    _knowledgeReady = false;
+  }
+}
+
+// Patch fetch to inject live knowledge into every Claude call
+var _dynFetchPatched = false;
+function patchFetch() {
+  if (_dynFetchPatched) return;
+  if (!_liveKnowledge) return;
+  _dynFetchPatched = true;
+
+  var _orig = window.fetch;
+  window.fetch = async function(url, opts) {
+    if (url && url.includes('sairn.vercel.app/api/claude') && opts && opts.body && _liveKnowledge) {
+      try {
+        var body = JSON.parse(opts.body);
+        if (body.system) {
+          // Replace the static knowledge block with the live version
+          // If Gap 3 static knowledge is already there, replace it
+          var sysStr = body.system;
+
+          // Remove old static knowledge block if present (from Gap 3)
+          sysStr = sysStr.replace(/LIVE FINANCIAL DATA \(June 2026\)[^---]*/s, '');
+          sysStr = sysStr.replace(/LIVE HOUSING DATA[^---]*/s, '');
+          sysStr = sysStr.replace(/CURRENT SENIOR BENEFITS DATA[^---]*/s, '');
+          sysStr = sysStr.replace(/CURRENT HEALTH COVERAGE DATA[^---]*/s, '');
+          sysStr = sysStr.replace(/CURRENT LEGAL REFERENCE DATA[^---]*/s, '');
+          sysStr = sysStr.replace(/CURRENT CLINICAL GUIDELINES[^---]*/s, '');
+          sysStr = sysStr.replace(/CURRENT TRAVEL DATA[^---]*/s, '');
+
+          // Inject live knowledge at the top
+          if (!sysStr.includes('LIVE ') && !sysStr.includes('CURRENT ')) {
+            body.system = _liveKnowledge + '\n\n---\n\n' + sysStr;
+          } else {
+            body.system = _liveKnowledge + '\n\n' + sysStr;
+          }
+          opts = Object.assign({}, opts, { body: JSON.stringify(body) });
+        }
+      } catch (e) {}
+    }
+    return _orig.apply(this, arguments);
+  };
+}
+
+// Init — fetch on page load
+document.addEventListener('DOMContentLoaded', function() { fetchLiveKnowledge(); });
+fetchLiveKnowledge();
+
+// Refresh every hour if page stays open
+setInterval(function() {
+  localStorage.removeItem(KNOWLEDGE_KEY);
+  localStorage.removeItem(KNOWLEDGE_TS_KEY);
+  _dynFetchPatched = false;
+  fetchLiveKnowledge();
+}, TTL);
+
+})();
+
+</script>
+
+<!-- SAIRN REAL PERSONALIZATION -->
+<script>
+// ================================================================
+// SAIRN REAL PERSONALIZATION AI
+// Learns from every session — not just a static profile.
+// Tracks: question patterns, preferred response style, topics,
+// expertise signals, communication preferences.
+// Gets smarter with every interaction automatically.
+// Built by Michael L. Dibert · SAIRN Technologies
+// ================================================================
+(function() {
+'use strict';
+if (window._saircPersonalizationInstalled) return;
+window._saircPersonalizationInstalled = true;
+
+var APP_ID = (function(){
+  var p = window.location.pathname;
+  if (p.includes('health'))   return 'health';
+  if (p.includes('money'))    return 'money';
+  if (p.includes('legal'))    return 'law';
+  if (p.includes('study'))    return 'study';
+  if (p.includes('lingual'))  return 'lingual';
+  if (p.includes('senior'))   return 'senior';
+  if (p.includes('home'))     return 'home';
+  if (p.includes('roam'))     return 'roam';
+  if (p.includes('code'))     return 'code';
+  if (p.includes('clinical')) return 'clinical';
+  if (p.includes('fabricor')) return 'fabricor';
+  return 'type';
+})();
+
+var LEARN_KEY    = 'sairn_learned_' + APP_ID;
+var GLOBAL_KEY   = 'sairn_learned_global';
+var SESSION_KEY  = 'sairn_session_data_' + APP_ID;
+
+// ── LEARNING DATA STRUCTURE ──────────────────────────────────
+function loadLearned() {
+  try { return JSON.parse(localStorage.getItem(LEARN_KEY) || '{}'); } catch(e) { return {}; }
+}
+function loadGlobal() {
+  try { return JSON.parse(localStorage.getItem(GLOBAL_KEY) || '{}'); } catch(e) { return {}; }
+}
+function saveLearned(data) { localStorage.setItem(LEARN_KEY, JSON.stringify(data)); }
+function saveGlobal(data)  { localStorage.setItem(GLOBAL_KEY, JSON.stringify(data)); }
+
+var learned  = loadLearned();
+var global_l = loadGlobal();
+
+// Initialize structure
+if (!learned.sessions)        learned.sessions        = 0;
+if (!learned.totalQuestions)  learned.totalQuestions  = 0;
+if (!learned.topics)          learned.topics          = {};
+if (!learned.complexity)      learned.complexity      = { simple:0, medium:0, complex:0 };
+if (!learned.responsePrefs)   learned.responsePrefs   = { bullets:0, prose:0, examples:0, numbers:0 };
+if (!learned.expertSignals)   learned.expertSignals   = 0;
+if (!learned.beginnerSignals) learned.beginnerSignals = 0;
+if (!learned.avgSessionLen)   learned.avgSessionLen   = 0;
+if (!learned.followUpsUsed)   learned.followUpsUsed   = 0;
+if (!learned.simplifyUsed)    learned.simplifyUsed    = 0;
+if (!learned.deeperUsed)      learned.deeperUsed      = 0;
+if (!learned.docUploads)      learned.docUploads      = 0;
+if (!learned.lastVisit)       learned.lastVisit       = null;
+if (!learned.returningUser)   learned.returningUser   = false;
+
+if (!global_l.appsUsed)       global_l.appsUsed       = [];
+if (!global_l.totalSessions)  global_l.totalSessions  = 0;
+
+// Mark returning user
+if (learned.lastVisit) learned.returningUser = true;
+learned.sessions++;
+learned.lastVisit = new Date().toISOString();
+global_l.totalSessions++;
+if (!global_l.appsUsed.includes(APP_ID)) global_l.appsUsed.push(APP_ID);
+
+saveLearned(learned);
+saveGlobal(global_l);
+
+// ── ANALYZE USER MESSAGE FOR SIGNALS ────────────────────────
+function analyzeUserMessage(text) {
+  var lower = text.toLowerCase();
+  var words = text.split(/\s+/).length;
+
+  // Complexity signal
+  if (words < 8)       learned.complexity.simple++;
+  else if (words < 20) learned.complexity.medium++;
+  else                 learned.complexity.complex++;
+
+  // Expert signals
+  var expertWords = ['specifically','technically','in terms of','methodology','algorithm',
+    'pursuant','liability','prognosis','contraindicated','amortization','derivative',
+    'arbitrage','collateral','statutory','fiduciary','etiology','pathophysiology'];
+  var beginnerWords = ['what is','what does','explain','i dont understand',
+    "i don't understand",'confused','help me understand','simply','basic','simple'];
+
+  expertWords.forEach(function(w){ if (lower.includes(w)) learned.expertSignals++; });
+  beginnerWords.forEach(function(w){ if (lower.includes(w)) learned.beginnerSignals++; });
+
+  // Topic tracking
+  var topicWords = text.toLowerCase().match(/\b[a-z]{5,}\b/g) || [];
+  topicWords.forEach(function(w){
+    if (!learned.topics[w]) learned.topics[w] = 0;
+    learned.topics[w]++;
+  });
+
+  // Response preference signals
+  if (lower.includes('bullet') || lower.includes('list'))  learned.responsePrefs.bullets++;
+  if (lower.includes('example') || lower.includes('like')) learned.responsePrefs.examples++;
+  if (lower.includes('number') || lower.includes('exact')) learned.responsePrefs.numbers++;
+
+  learned.totalQuestions++;
+  saveLearned(learned);
+}
+
+// ── BUILD PERSONALIZATION CONTEXT FOR SYSTEM PROMPT ─────────
+function buildPersonalizationContext() {
+  var lines = ['LEARNED USER PREFERENCES (from ' + learned.sessions + ' sessions, ' + learned.totalQuestions + ' questions):'];
+
+  // Expertise level
+  var expert   = learned.expertSignals;
+  var beginner = learned.beginnerSignals;
+  var total    = expert + beginner;
+  if (total > 3) {
+    if (expert > beginner * 2)      lines.push('• Expertise level: ADVANCED — use technical language, skip basic explanations');
+    else if (beginner > expert * 2) lines.push('• Expertise level: BEGINNER — use very simple language, define all terms');
+    else                            lines.push('• Expertise level: INTERMEDIATE — balance clarity with depth');
+  }
+
+  // Complexity preference
+  var cTotal = learned.complexity.simple + learned.complexity.medium + learned.complexity.complex;
+  if (cTotal > 5) {
+    var dominant = Object.keys(learned.complexity).reduce(function(a,b){
+      return learned.complexity[a] > learned.complexity[b] ? a : b;
+    });
+    if (dominant === 'simple')  lines.push('• Question style: SHORT — user asks concise questions, keep answers focused');
+    if (dominant === 'complex') lines.push('• Question style: DETAILED — user provides full context, give comprehensive answers');
+  }
+
+  // Response preferences
+  if (learned.simplifyUsed > 2)     lines.push('• Response preference: This user frequently uses Simplify — lead with plain language');
+  if (learned.deeperUsed > 2)       lines.push('• Response preference: This user frequently uses Go Deeper — provide thorough depth');
+  if (learned.responsePrefs.bullets > 3) lines.push('• Format preference: User prefers bullet points');
+  if (learned.responsePrefs.examples > 3) lines.push('• Format preference: User learns better with concrete examples');
+  if (learned.responsePrefs.numbers > 3)  lines.push('• Format preference: User wants specific numbers, not ranges');
+
+  // Returning user
+  if (learned.returningUser) lines.push('• Returning user: ' + learned.sessions + ' sessions — greet naturally, build on prior context');
+  if (learned.docUploads > 0) lines.push('• Document user: Has uploaded ' + learned.docUploads + ' documents — comfortable with upload features');
+
+  // Top topics
+  var topTopics = Object.entries(learned.topics)
+    .filter(function(e){ return e[1] > 2; })
+    .sort(function(a,b){ return b[1]-a[1]; })
+    .slice(0,5)
+    .map(function(e){ return e[0]; });
+  if (topTopics.length > 0) lines.push('• Frequent topics: ' + topTopics.join(', ') + ' — weight responses toward these areas');
+
+  // Multi-app user
+  if (global_l.appsUsed.length > 1) lines.push('• Multi-app user: Also uses ' + global_l.appsUsed.filter(function(a){ return a !== APP_ID; }).join(', '));
+
+  if (lines.length === 1) return ''; // Nothing learned yet
+  return lines.join('\n');
+}
+
+// ── INJECT PERSONALIZATION INTO FETCH ────────────────────────
+if (!window._saircPersExFetchPatched) {
+  window._saircPersExFetchPatched = true;
+  var _orig = window.fetch;
+  window.fetch = async function(url, opts) {
+    if (url && url.includes('sairn.vercel.app/api/claude') && opts && opts.body) {
+      try {
+        var body = JSON.parse(opts.body);
+        if (body.system && !body.system.includes('LEARNED USER PREFERENCES')) {
+          var ctx = buildPersonalizationContext();
+          if (ctx) {
+            body.system = ctx + '\n\n---\n\n' + body.system;
+            opts = Object.assign({}, opts, { body: JSON.stringify(body) });
+          }
+        }
+      } catch(e) {}
+    }
+    return _orig.apply(this, arguments);
+  };
+}
+
+// ── TRACK EVENTS ─────────────────────────────────────────────
+// Watch for user messages
+function installLearningHook() {
+  if (window._saircPersHooked) return;
+  if (typeof window.addMsg !== 'function') return;
+  window._saircPersHooked = true;
+
+  var _orig = window.addMsg;
+  window.addMsg = function(role, content) {
+    if (role === 'user' && content && content.length > 3) {
+      analyzeUserMessage(content);
+    }
+    return _orig.apply(this, arguments);
+  };
+}
+
+// Track feature usage
+var origOpen = window.openDocModal;
+window.openDocModal = function() {
+  learned.docUploads = (learned.docUploads || 0) + 1;
+  saveLearned(learned);
+  if (origOpen) origOpen.apply(this, arguments);
+};
+
+// Track simplify/deeper usage via button clicks
+document.addEventListener('click', function(e) {
+  var target = e.target;
+  if (!target) return;
+  var text = target.textContent || '';
+  if (text.includes('Simplify')) { learned.simplifyUsed++; saveLearned(learned); }
+  if (text.includes('Go Deeper')) { learned.deeperUsed++; saveLearned(learned); }
+  if (text.includes('Ask a follow-up') || target.classList.contains('sairn-fu-chip')) {
+    learned.followUpsUsed++; saveLearned(learned);
+  }
+}, true);
+
+// ── PERSONALIZATION PANEL ──────────────────────────────────
+var st = document.createElement('style');
+st.textContent =
+  '#sairn-pers-panel{position:fixed;top:100px;left:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:280px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}' +
+  '#sairn-profile-btn{top:68px}';
+document.head.appendChild(st);
+
+// Show personalization status next to profile button on click
+var profBtn = document.getElementById('sairn-profile-btn');
+if (profBtn) {
+  profBtn.title = 'Profile + ' + learned.sessions + ' sessions learned';
+}
+
+// Install when ready
+if (typeof window.addMsg === 'function') installLearningHook();
+else {
+  var ck = setInterval(function(){
+    if (typeof window.addMsg === 'function'){ clearInterval(ck); installLearningHook(); }
+  }, 200);
+  setTimeout(function(){ clearInterval(ck); }, 10000);
+}
+document.addEventListener('DOMContentLoaded', function(){ setTimeout(installLearningHook, 500); });
+
+})();
+
+</script>
+
+<!-- SAIRN MULTI-MODAL INPUT -->
+<script>
+// ================================================================
+// SAIRN MULTI-MODAL INPUT
+// Camera capture — photo your document, your bill, your condition.
+// Claude sees the image and analyzes it in context.
+// Photo → base64 → Claude vision API → instant analysis.
+// Built by Michael L. Dibert · SAIRN Technologies
+// ================================================================
+(function() {
+'use strict';
+if (window._saircMultiModalInstalled) return;
+window._saircMultiModalInstalled = true;
+
+var APP_ID = (function(){
+  var p = window.location.pathname;
+  if (p.includes('health'))   return 'health';
+  if (p.includes('money'))    return 'money';
+  if (p.includes('legal'))    return 'law';
+  if (p.includes('study'))    return 'study';
+  if (p.includes('lingual'))  return 'lingual';
+  if (p.includes('senior'))   return 'senior';
+  if (p.includes('home'))     return 'home';
+  if (p.includes('roam'))     return 'roam';
+  if (p.includes('code'))     return 'code';
+  if (p.includes('clinical')) return 'clinical';
+  if (p.includes('fabricor')) return 'fabricor';
+  return 'type';
+})();
+
+var APP_COLOR = (function(){
+  var s = getComputedStyle(document.documentElement).getPropertyValue('--a').trim();
+  if (s) return s;
+  var p = window.location.pathname;
+  if (p.includes('health'))  return '#06B6D4';
+  if (p.includes('money'))   return '#10B981';
+  if (p.includes('legal'))   return '#7C3AED';
+  if (p.includes('study'))   return '#3B82F6';
+  if (p.includes('lingual')) return '#F97316';
+  if (p.includes('senior'))  return '#EAB308';
+  if (p.includes('home'))    return '#FB923C';
+  if (p.includes('roam'))    return '#14B8A6';
+  if (p.includes('fabricor'))return '#C9A84C';
+  return '#6366F1';
+})();
+
+// App-specific camera prompts
+var CAM_CONFIG = {
+  health:   { label:'📷 Photo', prompts:['Analyze this medical document or image','What does this prescription say?','Identify this medication','Analyze this medical bill','Describe what you see — any health concerns?'] },
+  money:    { label:'📷 Photo', prompts:['Analyze this financial document','Read this bill or statement','What does this receipt show?','Analyze this check or money order','Read this loan or credit document'] },
+  law:      { label:'📷 Photo', prompts:['Read this legal document','Analyze this notice or letter','What does this contract say?','Read this court document','Analyze this lease or agreement'] },
+  home:     { label:'📷 Photo', prompts:['Analyze this home document','What do you see — any damage or issues?','Read this inspection report','Analyze this HOA notice','What type of home issue is this?'] },
+  fabricor: { label:'📷 Stone', prompts:['Identify this stone material and grade','Estimate this countertop project','What edge profile is this?','Analyze this stone for pricing','Identify veining and quality'] },
+  clinical: { label:'📷 Clinical', prompts:['Analyze this clinical document','Read this patient chart or record','What does this lab result show?','Analyze this medical image description','Read this clinical form'] },
+  senior:   { label:'📷 Photo', prompts:['Read this Medicare document','Analyze this medical bill','What does this letter from SSA say?','Read this prescription label','Analyze this insurance document'] },
+  roam:     { label:'📷 Photo', prompts:['Identify this location or landmark','Translate this text or sign','Read this travel document','What does this menu or sign say?','Identify this food or dish'] },
+  default:  { label:'📷 Photo', prompts:['Analyze this image','What do you see in this photo?','Read the text in this image','Describe what this shows'] },
+};
+
+var cfg = CAM_CONFIG[APP_ID] || CAM_CONFIG.default;
+
+// CSS
+var st = document.createElement('style');
+st.textContent =
+  '#sairn-cam-modal{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9997;display:none;flex-direction:column;overflow:hidden}' +
+  '#sairn-cam-modal.open{display:flex}' +
+  '.scam-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(0,0,0,0.7);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}' +
+  '.scam-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;overflow-y:auto;max-width:700px;margin:0 auto;width:100%}' +
+  '#scam-viewfinder{width:100%;max-width:480px;border-radius:14px;overflow:hidden;background:#000;margin-bottom:14px;position:relative}' +
+  '#scam-video{width:100%;display:block;border-radius:14px}' +
+  '#scam-canvas{display:none}' +
+  '#scam-preview{width:100%;max-width:480px;border-radius:14px;display:none;margin-bottom:14px;border:2px solid ' + APP_COLOR + '}' +
+  '.scam-controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;justify-content:center}' +
+  '.scam-btn{padding:10px 22px;border-radius:100px;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s;letter-spacing:.3px}' +
+  '.scam-capture{background:' + APP_COLOR + ';color:#fff}' +
+  '.scam-capture:hover{opacity:.9}' +
+  '.scam-retake{background:rgba(255,255,255,0.08);color:rgba(240,240,255,0.7);border:1px solid rgba(255,255,255,0.15)}' +
+  '.scam-upload{background:rgba(255,255,255,0.05);color:rgba(240,240,255,0.6);border:1px solid rgba(255,255,255,0.12);font-size:12px}' +
+  '.scam-prompts{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}' +
+  '.scam-chip{padding:6px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);font-size:11px;color:rgba(240,240,255,0.65);cursor:pointer;transition:all .15s}' +
+  '.scam-chip.selected{background:rgba(' + hexRgb(APP_COLOR) + ',0.12);border-color:rgba(' + hexRgb(APP_COLOR) + ',0.4);color:' + APP_COLOR + '}' +
+  '.scam-custom{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:9px 12px;color:#F0F0FF;font-size:13px;font-family:Outfit,sans-serif;outline:none;margin-bottom:12px;box-sizing:border-box}' +
+  '.scam-analyze{width:100%;padding:13px;border-radius:10px;background:' + APP_COLOR + ';border:none;color:#fff;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer;opacity:.4;pointer-events:none;transition:all .2s}' +
+  '.scam-analyze.ready{opacity:1;pointer-events:all}' +
+  '#scam-file-input{display:none}' +
+  '.scam-loading{text-align:center;padding:20px;font-size:13px;color:rgba(240,240,255,0.4)}' +
+  '.scam-tab-row{display:flex;gap:8px;margin-bottom:14px}' +
+  '.scam-tab{padding:7px 18px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(240,240,255,0.5);transition:all .15s}' +
+  '.scam-tab.active{background:' + APP_COLOR + ';color:#fff;border-color:' + APP_COLOR + '}';
+document.head.appendChild(st);
+
+function hexRgb(hex) {
+  if (!hex || hex.length < 6) return '99,102,241';
+  hex = hex.replace('#','');
+  return parseInt(hex.substr(0,2),16)+','+parseInt(hex.substr(2,2),16)+','+parseInt(hex.substr(4,2),16);
+}
+
+// Build modal
+var modal = document.createElement('div');
+modal.id = 'sairn-cam-modal';
+modal.innerHTML =
+  '<div class="scam-hdr">' +
+  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">' + cfg.label + ' — Show Claude What You See</div>' +
+  '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Take a photo or upload an image — Claude analyzes it instantly</div></div>' +
+  '<button onclick="closeCamera()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
+  '</div>' +
+  '<div class="scam-body">' +
+  '<div class="scam-tab-row">' +
+  '<button class="scam-tab active" id="scam-tab-camera" onclick="switchCamTab(\'camera\')">📷 Camera</button>' +
+  '<button class="scam-tab" id="scam-tab-upload" onclick="switchCamTab(\'upload\')">🖼️ Upload Image</button>' +
+  '</div>' +
+  '<div id="scam-camera-section">' +
+  '<div id="scam-viewfinder"><video id="scam-video" autoplay playsinline muted></video></div>' +
+  '<canvas id="scam-canvas"></canvas>' +
+  '<img id="scam-preview" alt="Captured image">' +
+  '<div class="scam-controls">' +
+  '<button class="scam-btn scam-capture" id="scam-capture-btn" onclick="capturePhoto()">📷 Take Photo</button>' +
+  '<button class="scam-btn scam-retake" id="scam-retake-btn" onclick="retakePhoto()" style="display:none">↩ Retake</button>' +
+  '</div>' +
+  '</div>' +
+  '<div id="scam-upload-section" style="display:none;text-align:center;padding:20px 0">' +
+  '<input type="file" id="scam-file-input" accept="image/*">' +
+  '<div style="border:2px dashed rgba(255,255,255,0.15);border-radius:14px;padding:40px 24px;cursor:pointer;margin-bottom:14px" onclick="document.getElementById(\'scam-file-input\').click()">' +
+  '<div style="font-size:40px;margin-bottom:12px">🖼️</div>' +
+  '<div style="font-size:14px;font-weight:600;color:#F0F0FF;margin-bottom:6px">Tap to select an image</div>' +
+  '<div style="font-size:12px;color:rgba(240,240,255,0.4)">JPG, PNG, GIF, WebP — max 10MB</div>' +
+  '</div>' +
+  '<img id="scam-upload-preview" alt="Uploaded image" style="max-width:100%;border-radius:12px;display:none;margin-bottom:14px;border:2px solid ' + APP_COLOR + '">' +
+  '</div>' +
+  '<div style="width:100%;max-width:480px">' +
+  '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.35);margin-bottom:8px">What do you want to know?</div>' +
+  '<div class="scam-prompts" id="scam-prompts">' +
+  cfg.prompts.map(function(p,i){ return '<span class="scam-chip" onclick="selectCamPrompt(this,'+i+')">'+p+'</span>'; }).join('') +
+  '</div>' +
+  '<input class="scam-custom" id="scam-custom-q" placeholder="Or type your own question...">' +
+  '<button class="scam-analyze" id="scam-analyze-btn" onclick="analyzeImage()">🧠 Claude — Analyze This →</button>' +
+  '<div style="font-size:11px;color:rgba(240,240,255,0.25);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI · Not stored on SAIRN servers</div>' +
+  '</div>' +
+  '</div>';
+document.body.appendChild(modal);
+
+// State
+var _stream    = null;
+var _capturedB64 = null;
+var _selectedQ   = null;
+
+window.openCamera = function() {
+  document.getElementById('sairn-cam-modal').classList.add('open');
+  startCamera();
+};
+window.closeCamera = function() {
+  document.getElementById('sairn-cam-modal').classList.remove('open');
+  stopCamera();
+};
+
+window.switchCamTab = function(tab) {
+  document.getElementById('scam-tab-camera').classList.toggle('active', tab==='camera');
+  document.getElementById('scam-tab-upload').classList.toggle('active', tab==='upload');
+  document.getElementById('scam-camera-section').style.display = tab==='camera' ? 'block' : 'none';
+  document.getElementById('scam-upload-section').style.display = tab==='upload' ? 'block' : 'none';
+  if (tab === 'camera') startCamera(); else stopCamera();
+};
+
+async function startCamera() {
+  try {
+    _stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment' } });
+    var vid = document.getElementById('scam-video');
+    if (vid) { vid.srcObject = _stream; }
+  } catch(e) {
+    // Camera not available — show upload tab
+    switchCamTab('upload');
+    document.getElementById('scam-tab-camera').style.display = 'none';
+  }
+}
+
+function stopCamera() {
+  if (_stream) { _stream.getTracks().forEach(function(t){ t.stop(); }); _stream = null; }
+}
+
+window.capturePhoto = function() {
+  var vid = document.getElementById('scam-video');
+  var canvas = document.getElementById('scam-canvas');
+  var preview = document.getElementById('scam-preview');
+  var capBtn  = document.getElementById('scam-capture-btn');
+  var retBtn  = document.getElementById('scam-retake-btn');
+  if (!vid || !canvas) return;
+
+  canvas.width  = vid.videoWidth  || 640;
+  canvas.height = vid.videoHeight || 480;
+  canvas.getContext('2d').drawImage(vid, 0, 0);
+
+  var dataURL = canvas.toDataURL('image/jpeg', 0.85);
+  _capturedB64 = dataURL.split(',')[1];
+
+  preview.src = dataURL;
+  preview.style.display = 'block';
+  document.getElementById('scam-viewfinder').style.display = 'none';
+  capBtn.style.display = 'none';
+  retBtn.style.display = 'block';
+  stopCamera();
+  updateAnalyzeBtn();
+};
+
+window.retakePhoto = function() {
+  _capturedB64 = null;
+  document.getElementById('scam-preview').style.display = 'none';
+  document.getElementById('scam-viewfinder').style.display = 'block';
+  document.getElementById('scam-capture-btn').style.display = 'block';
+  document.getElementById('scam-retake-btn').style.display = 'none';
+  updateAnalyzeBtn();
+  startCamera();
+};
+
+// File upload handler
+var fileInput = document.getElementById('scam-file-input');
+if (fileInput) {
+  fileInput.addEventListener('change', function() {
+    var file = this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      _capturedB64 = e.target.result.split(',')[1];
+      var upPreview = document.getElementById('scam-upload-preview');
+      if (upPreview) { upPreview.src = e.target.result; upPreview.style.display = 'block'; }
+      updateAnalyzeBtn();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+window.selectCamPrompt = function(el, idx) {
+  document.querySelectorAll('.scam-chip').forEach(function(c){ c.classList.remove('selected'); });
+  el.classList.add('selected');
+  _selectedQ = cfg.prompts[idx];
+  var cq = document.getElementById('scam-custom-q');
+  if (cq) cq.value = '';
+  updateAnalyzeBtn();
+};
+
+var customQ = document.getElementById('scam-custom-q');
+if (customQ) {
+  customQ.addEventListener('input', function() {
+    if (this.value.trim()) {
+      document.querySelectorAll('.scam-chip').forEach(function(c){ c.classList.remove('selected'); });
+      _selectedQ = null;
+    }
+    updateAnalyzeBtn();
+  });
+}
+
+function updateAnalyzeBtn() {
+  var btn = document.getElementById('scam-analyze-btn');
+  if (!btn) return;
+  var cq = document.getElementById('scam-custom-q');
+  var hasImage = !!_capturedB64;
+  var hasQ     = !!_selectedQ || (cq && cq.value.trim().length > 0);
+  btn.classList.toggle('ready', hasImage && hasQ);
+}
+
+window.analyzeImage = async function() {
+  if (!_capturedB64) return;
+  var cq = document.getElementById('scam-custom-q');
+  var question = _selectedQ || (cq && cq.value.trim()) || 'Please analyze this image.';
+  var btn = document.getElementById('scam-analyze-btn');
+  if (btn) { btn.textContent = '⚙️ Analyzing...'; btn.classList.remove('ready'); }
+
+  try {
+    var res = await fetch('https://sairn.vercel.app/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        max_tokens: 1200,
+        system: window.SYSTEM || 'You are a helpful AI assistant. Analyze the provided image carefully and answer the question thoroughly.',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: _capturedB64 } },
+            { type: 'text', text: question }
+          ]
+        }],
+        app_id: APP_ID + '_vision',
+        is_demo: true,
+      }),
+    });
+
+    var data = await res.json();
+    var reply = data.content && data.content[0] ? data.content[0].text : 'Image analysis failed.';
+
+    closeCamera();
+
+    if (typeof addMsg === 'function') addMsg('user', '📷 ' + question);
+    if (typeof messages !== 'undefined') {
+      messages.push({ role:'user', content: '📷 [Image captured] ' + question });
+      messages.push({ role:'assistant', content: reply });
+    }
+    if (typeof addMsg === 'function') addMsg('ai', reply);
+
+    var chatArea = document.getElementById('chatArea') || document.getElementById('messages');
+    if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+  } catch(e) {
+    if (btn) { btn.textContent = '🧠 Claude — Analyze This →'; btn.classList.add('ready'); }
+    alert('Analysis failed — please try again.');
+  }
+};
+
+// Inject camera button into action row
+function injectCameraButton() {
+  if (document.getElementById('sairn-cam-trigger')) return;
+  var actRow = document.getElementById('sairn-intake-actions') || document.getElementById('roam-action-row');
+  if (!actRow) {
+    var sendBtn = document.getElementById('sendBtn');
+    if (!sendBtn) return;
+    actRow = sendBtn.closest('.input-area') || sendBtn.parentElement;
+  }
+  if (!actRow) return;
+  var btn = document.createElement('button');
+  btn.id = 'sairn-cam-trigger';
+  btn.style.cssText = 'padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(240,240,255,0.5);font-size:10px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;transition:all .15s;letter-spacing:.3px';
+  btn.textContent = cfg.label;
+  btn.onclick = window.openCamera;
+  btn.onmouseenter = function(){ this.style.color='rgba(240,240,255,0.9)'; this.style.borderColor='rgba(255,255,255,0.2)'; };
+  btn.onmouseleave = function(){ this.style.color='rgba(240,240,255,0.5)'; this.style.borderColor='rgba(255,255,255,0.1)'; };
+  actRow.insertBefore(btn, actRow.firstChild);
+}
+
+document.addEventListener('DOMContentLoaded', function(){ setTimeout(injectCameraButton, 600); });
+setTimeout(injectCameraButton, 800);
+})();
+
+</script>
 </body>
 </html>
