@@ -1726,5 +1726,625 @@ function injectIntakeButtons() {
 })(); // end IIFE
 
 </script>
+
+<!-- SAIRN UNIVERSAL LIVE CALCULATION ENGINE + CLIENT CLEAN VIEW -->
+<script>
+// ================================================================
+// SAIRN UNIVERSAL LIVE CALCULATION ENGINE + CLIENT CLEAN VIEW
+// Pattern 3 + Pattern 9 from the first — deployed to all 8 NEXUS cells
+// Built by Michael L. Dibert · SAIRN Technologies
+//
+// FLOW (from the first):
+//   Structured Intake → LIVE CALCULATION → Claude Intelligence
+//   → Save → Print → CLIENT CLEAN VIEW
+// ================================================================
+
+(function() {
+'use strict';
+
+// ── DETECT WHICH APP ─────────────────────────────────────────
+var APP = (function() {
+  var p = window.location.pathname;
+  if (p.includes('health'))  return 'health';
+  if (p.includes('money'))   return 'money';
+  if (p.includes('legal'))   return 'law';
+  if (p.includes('study'))   return 'study';
+  if (p.includes('lingual')) return 'lingual';
+  if (p.includes('senior'))  return 'senior';
+  if (p.includes('home'))    return 'home';
+  return 'type';
+})();
+
+// ── SHARED CALC STYLES ────────────────────────────────────────
+(function injectStyles() {
+  var s = document.createElement('style');
+  s.textContent = [
+    // Calc panel
+    '#sairn-calc-panel{position:fixed;bottom:0;left:0;right:0;z-index:800;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}',
+    '#sairn-calc-panel.open{transform:translateY(0)}',
+    '.calc-panel-inner{background:#070714;border-top:2px solid var(--scp-color,#6366F1);padding:14px 20px 20px;max-width:860px;margin:0 auto}',
+    '.calc-panel-tab{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}',
+    '.calc-panel-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--scp-color,#6366F1)}',
+    '.calc-panel-close{background:none;border:none;color:rgba(240,240,255,0.4);font-size:20px;cursor:pointer;line-height:1;padding:0}',
+    '.calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}',
+    '.calc-metric{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px}',
+    '.calc-metric-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.4);margin-bottom:5px}',
+    '.calc-metric-value{font-size:22px;font-weight:700;color:var(--scp-color,#6366F1);line-height:1;font-family:"Cormorant Garamond",serif}',
+    '.calc-metric-sub{font-size:10px;color:rgba(240,240,255,0.35);margin-top:3px}',
+    '.calc-bar-row{margin-top:10px}',
+    '.calc-bar-label{display:flex;justify-content:space-between;font-size:10px;color:rgba(240,240,255,0.4);margin-bottom:4px}',
+    '.calc-bar-track{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}',
+    '.calc-bar-fill{height:100%;border-radius:3px;transition:width .4s ease}',
+    '.calc-ai-btn{width:100%;margin-top:12px;padding:11px;border-radius:9px;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;transition:opacity .15s}',
+    '.calc-ai-btn:hover{opacity:.88}',
+    // Trigger button
+    '#sairn-calc-trigger{position:fixed;bottom:76px;right:16px;z-index:799;border:none;border-radius:50px;padding:9px 16px;font-family:Outfit,sans-serif;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);transition:all .2s;letter-spacing:.3px}',
+    '#sairn-calc-trigger:hover{transform:translateY(-1px)}',
+    // Client clean view overlay
+    '#sairn-client-view{position:fixed;inset:0;background:#070714;z-index:9000;display:none;flex-direction:column;overflow:hidden}',
+    '#sairn-client-view.open{display:flex}',
+    '.cv-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}',
+    '.cv-brand{display:flex;align-items:center;gap:10px}',
+    '.cv-gem{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}',
+    '.cv-title{font-family:"Cormorant Garamond",serif;font-size:18px;font-weight:700;color:#F0F0FF}',
+    '.cv-actions{display:flex;gap:8px}',
+    '.cv-btn{padding:7px 16px;border-radius:7px;font-family:Outfit,sans-serif;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s}',
+    '.cv-btn:hover{opacity:.88}',
+    '.cv-body{flex:1;overflow-y:auto;padding:28px;max-width:760px;margin:0 auto;width:100%}',
+    '.cv-content{font-size:14px;color:rgba(240,240,255,0.85);line-height:1.85;white-space:pre-wrap}',
+    '.cv-content strong{color:#F0F0FF}',
+    '.cv-meta{font-size:11px;color:rgba(240,240,255,0.3);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.07)}',
+    '.cv-disclaimer{margin-top:24px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;color:rgba(240,240,255,0.3);line-height:1.6}',
+    // Share button in main input area
+    '.sairn-share-btn{padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(240,240,255,0.5);font-size:10px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;transition:all .15s;letter-spacing:.3px}',
+    '.sairn-share-btn:hover{border-color:rgba(255,255,255,0.2);color:rgba(240,240,255,0.85)}',
+  ].join('');
+  document.head.appendChild(s);
+})();
+
+// ── APP CONFIG ────────────────────────────────────────────────
+var CONFIG = {
+  type: {
+    color: '#6366F1', icon: '⌨️', label: 'Writing Analysis',
+    triggerLabel: '✍️ Analyze',
+    disclaimer: 'Writing assistance powered by Claude AI · SAIRN Technologies · sairn.vercel.app',
+    shareLabel: '📋 Clean Copy',
+    shareTitle: 'Your Writing — Powered by SAIRNtype',
+    buildMetrics: function() {
+      var area = document.getElementById('userInput');
+      var text = area ? area.value : '';
+      var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      var chars = text.length;
+      var readTime = Math.max(1, Math.ceil(words / 238));
+      var sentences = (text.match(/[.!?]+/g)||[]).length || 1;
+      var avgWords = words / sentences;
+      var complexity = avgWords > 20 ? 'Complex' : avgWords > 12 ? 'Moderate' : 'Clear';
+      var complexColor = avgWords > 20 ? '#EF4444' : avgWords > 12 ? '#FBBF24' : '#4ADE80';
+      return [
+        { label:'Word Count',    value: words,             sub: 'words typed',      color:'#6366F1' },
+        { label:'Characters',    value: chars,             sub: 'characters',        color:'#6366F1' },
+        { label:'Reading Time',  value: readTime + ' min', sub: 'est. read time',    color:'#6366F1' },
+        { label:'Complexity',    value: complexity,        sub: 'sentence length',   color: complexColor },
+      ];
+    },
+    bars: function() {
+      var area = document.getElementById('userInput');
+      var text = area ? area.value : '';
+      var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      return [
+        { label:'Length', value: Math.min(words, 500), max: 500, good: [50,300], suffix:' words' },
+      ];
+    },
+    aiPrompt: function() {
+      var area = document.getElementById('userInput');
+      var text = area ? area.value : '';
+      return 'Please analyze this writing and provide: (1) overall quality assessment, (2) tone and voice, (3) three specific improvements, (4) a polished rewrite if under 200 words.\n\nText:\n' + text;
+    },
+  },
+
+  health: {
+    color: '#06B6D4', icon: '❤️', label: 'Health Calculator',
+    triggerLabel: '🩺 Calculate',
+    disclaimer: 'AI health guidance for informational purposes only. Not a substitute for professional medical advice. Always consult your doctor.',
+    shareLabel: '🩺 For My Doctor',
+    shareTitle: 'Health Summary — Prepared with SAIRNhealth',
+    buildMetrics: function() {
+      var height = parseFloat(document.getElementById('calc-height')?.value) || 0;
+      var weight = parseFloat(document.getElementById('calc-weight')?.value) || 0;
+      var age    = parseInt(document.getElementById('calc-age')?.value)    || 0;
+      var bmi = (height > 0 && weight > 0) ? weight / ((height/100) * (height/100)) : 0;
+      var bmiLabel = bmi === 0 ? '—' : bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Healthy' : bmi < 30 ? 'Overweight' : 'Obese';
+      var bmiColor = bmi === 0 ? '#6B7280' : bmi < 18.5 ? '#FBBF24' : bmi < 25 ? '#4ADE80' : bmi < 30 ? '#FBBF24' : '#EF4444';
+      var severity = parseInt(document.getElementById('calc-severity')?.value) || 0;
+      var sevLabel = severity === 0 ? '—' : severity <= 3 ? 'Mild' : severity <= 6 ? 'Moderate' : 'Severe';
+      var sevColor = severity <= 3 ? '#4ADE80' : severity <= 6 ? '#FBBF24' : '#EF4444';
+      return [
+        { label:'BMI',            value: bmi > 0 ? bmi.toFixed(1) : '—',  sub: bmiLabel,        color: bmiColor },
+        { label:'Symptom Level',  value: severity > 0 ? severity+'/10' : '—', sub: sevLabel,     color: sevColor },
+        { label:'Age Group',      value: age > 0 ? age : '—',             sub: 'years old',       color:'#06B6D4' },
+      ];
+    },
+    bars: function() {
+      var height = parseFloat(document.getElementById('calc-height')?.value)||0;
+      var weight = parseFloat(document.getElementById('calc-weight')?.value)||0;
+      var bmi = (height>0&&weight>0) ? weight/((height/100)*(height/100)) : 0;
+      return bmi > 0 ? [{ label:'BMI', value: bmi, max: 40, good:[18.5,24.9], suffix:'' }] : [];
+    },
+    aiPrompt: function() {
+      var h = document.getElementById('calc-height')?.value||'';
+      var w = document.getElementById('calc-weight')?.value||'';
+      var age = document.getElementById('calc-age')?.value||'';
+      var sev = document.getElementById('calc-severity')?.value||'';
+      var bmi = (h&&w) ? (parseFloat(w)/((parseFloat(h)/100)**2)).toFixed(1) : 'not calculated';
+      return 'Health assessment with live calculations:\nBMI: '+bmi+'\nHeight: '+h+'cm, Weight: '+w+'kg, Age: '+age+'\nSymptom severity: '+sev+'/10\nProvide: health assessment, BMI interpretation, recommendations.';
+    },
+    extraHTML: function() {
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        calcInput('calc-height','Height (cm)','e.g. 175') +
+        calcInput('calc-weight','Weight (kg)','e.g. 72') +
+        calcInput('calc-age','Age','e.g. 45') +
+        '</div>' +
+        '<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.4);margin-bottom:5px">Symptom Severity (0-10)</div>' +
+        '<input type="range" id="calc-severity" min="0" max="10" value="0" style="width:100%;accent-color:#06B6D4" oninput="window.saircalcUpdate&&window.saircalcUpdate()"></div>';
+    },
+  },
+
+  money: {
+    color: '#10B981', icon: '💰', label: 'Budget Calculator',
+    triggerLabel: '💰 Calculate',
+    disclaimer: 'Financial guidance for informational purposes only. Not professional financial advice. Consult a licensed advisor for major decisions.',
+    shareLabel: '📊 Financial Snapshot',
+    shareTitle: 'Personal Financial Summary — SAIRNmoney',
+    buildMetrics: function() {
+      var income   = parseFloat(document.getElementById('calc-income')?.value)   || 0;
+      var expenses = parseFloat(document.getElementById('calc-expenses')?.value) || 0;
+      var debt     = parseFloat(document.getElementById('calc-debt')?.value)     || 0;
+      var surplus  = income - expenses;
+      var debtMonths = (debt > 0 && surplus > 0) ? Math.ceil(debt / surplus) : 0;
+      var savingsRate = income > 0 ? ((surplus/income)*100) : 0;
+      var srColor = savingsRate >= 20 ? '#4ADE80' : savingsRate >= 10 ? '#FBBF24' : '#EF4444';
+      var surplusColor = surplus >= 0 ? '#4ADE80' : '#EF4444';
+      return [
+        { label:'Monthly Surplus', value: (surplus>=0?'+':'')+'$'+Math.abs(surplus).toFixed(0), sub: surplus>=0?'positive cash flow':'deficit', color: surplusColor },
+        { label:'Savings Rate',    value: savingsRate.toFixed(1)+'%', sub: 'of income saved', color: srColor },
+        { label:'Debt Payoff',     value: debtMonths > 0 ? debtMonths+' mo' : '—', sub: 'at current surplus', color:'#10B981' },
+      ];
+    },
+    bars: function() {
+      var income   = parseFloat(document.getElementById('calc-income')?.value)||0;
+      var expenses = parseFloat(document.getElementById('calc-expenses')?.value)||0;
+      var surplus  = income - expenses;
+      var sr = income > 0 ? (surplus/income)*100 : 0;
+      return income > 0 ? [{ label:'Savings Rate', value: Math.max(0,sr), max:50, good:[15,30], suffix:'%' }] : [];
+    },
+    aiPrompt: function() {
+      var income   = document.getElementById('calc-income')?.value||'0';
+      var expenses = document.getElementById('calc-expenses')?.value||'0';
+      var debt     = document.getElementById('calc-debt')?.value||'0';
+      var surplus  = (parseFloat(income)-parseFloat(expenses)).toFixed(0);
+      var sr = parseFloat(income)>0?((parseFloat(surplus)/parseFloat(income))*100).toFixed(1):0;
+      return 'Budget analysis with live calculations:\nMonthly income: $'+income+'\nMonthly expenses: $'+expenses+'\nTotal debt: $'+debt+'\nCalculated surplus: $'+surplus+'/mo\nSavings rate: '+sr+'%\nProvide: assessment, 90-day action plan, debt payoff strategy.';
+    },
+    extraHTML: function() {
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        calcInput('calc-income','Monthly Income ($)','e.g. 4500') +
+        calcInput('calc-expenses','Monthly Expenses ($)','e.g. 3200') +
+        calcInput('calc-debt','Total Debt ($)','e.g. 8500') +
+        '</div>';
+    },
+  },
+
+  law: {
+    color: '#7C3AED', icon: '⚖️', label: 'Legal Timeline',
+    triggerLabel: '⚖️ Calculate',
+    disclaimer: 'This is general legal information, not legal advice. Always consult a licensed attorney for your specific situation.',
+    shareLabel: '⚖️ Rights Summary',
+    shareTitle: 'Know Your Rights — Prepared with SAIRNlaw',
+    buildMetrics: function() {
+      var state    = document.getElementById('calc-state')?.value    || '';
+      var caseType = document.getElementById('calc-case')?.value     || '';
+      var amount   = parseFloat(document.getElementById('calc-damages')?.value) || 0;
+      // Statute of limitations by case type
+      var solMap = {'Contract':5,'Personal Injury':2,'Property Damage':4,'Employment':300,'Tenant':2,'Consumer':6,'Debt':6,'Other':3};
+      var sol = solMap[caseType] || 3;
+      var solLabel = caseType.includes('Employment') ? '300 days (EEOC)' : sol + ' years';
+      return [
+        { label:'Statute of Limitations', value: solLabel,            sub: caseType || 'select case type', color:'#7C3AED' },
+        { label:'Potential Damages',       value: amount>0?'$'+amount.toLocaleString():'—', sub:'estimated claim value',  color:'#7C3AED' },
+        { label:'State',                   value: state||'—',          sub:'jurisdiction',                   color:'#7C3AED' },
+      ];
+    },
+    bars: function() { return []; },
+    aiPrompt: function() {
+      var state    = document.getElementById('calc-state')?.value||'';
+      var caseType = document.getElementById('calc-case')?.value||'';
+      var damages  = document.getElementById('calc-damages')?.value||'';
+      return 'Legal situation assessment:\nState: '+state+'\nCase type: '+caseType+'\nEstimated damages: $'+damages+'\nProvide: rights in this state, recommended next steps, statute of limitations, documentation needed, when to hire an attorney.';
+    },
+    extraHTML: function() {
+      var states = 'AL,AK,AZ,AR,CA,CO,CT,DE,FL,GA,HI,ID,IL,IN,IA,KS,KY,LA,ME,MD,MA,MI,MN,MS,MO,MT,NE,NV,NH,NJ,NM,NY,NC,ND,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VT,VA,WA,WV,WI,WY'.split(',');
+      var caseTypes = ['Contract','Personal Injury','Property Damage','Employment','Tenant','Consumer','Debt','Other'];
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        calcSelect('calc-state','State',states) +
+        calcSelect('calc-case','Case Type',caseTypes) +
+        calcInput('calc-damages','Est. Damages ($)','e.g. 5000') +
+        '</div>';
+    },
+  },
+
+  study: {
+    color: '#3B82F6', icon: '📚', label: 'Study Planner',
+    triggerLabel: '📚 Plan',
+    disclaimer: 'Study guidance powered by Claude AI · SAIRNstudy · SAIRN Technologies',
+    shareLabel: '📋 Study Guide',
+    shareTitle: 'Study Notes — Prepared with SAIRNstudy',
+    buildMetrics: function() {
+      var hours   = parseFloat(document.getElementById('calc-hours')?.value)   || 0;
+      var days    = parseInt(document.getElementById('calc-days')?.value)      || 1;
+      var topics  = parseInt(document.getElementById('calc-topics')?.value)    || 1;
+      var dailyH  = hours / Math.max(days, 1);
+      var minsPerTopic = hours > 0 ? Math.floor((hours * 60) / topics) : 0;
+      var readiness = hours >= 10 ? 'Strong' : hours >= 5 ? 'Moderate' : 'Light';
+      var readColor = hours >= 10 ? '#4ADE80' : hours >= 5 ? '#FBBF24' : '#EF4444';
+      return [
+        { label:'Daily Study',     value: dailyH.toFixed(1)+'h',          sub:'hours per day',       color:'#3B82F6' },
+        { label:'Per Topic',       value: minsPerTopic+'min',             sub:'minutes per topic',    color:'#3B82F6' },
+        { label:'Readiness',       value: readiness,                      sub: hours+'h total planned',color: readColor },
+      ];
+    },
+    bars: function() {
+      var hours = parseFloat(document.getElementById('calc-hours')?.value)||0;
+      return hours > 0 ? [{ label:'Study Readiness', value: Math.min(hours, 20), max:20, good:[8,20], suffix:'h' }] : [];
+    },
+    aiPrompt: function() {
+      var hours  = document.getElementById('calc-hours')?.value||'0';
+      var days   = document.getElementById('calc-days')?.value||'1';
+      var topics = document.getElementById('calc-topics')?.value||'1';
+      return 'Study plan request:\nTotal hours available: '+hours+'\nDays until exam/deadline: '+days+'\nTopics to cover: '+topics+'\nCalculated: '+parseFloat(hours)/parseInt(days)+'h/day, '+Math.floor(parseFloat(hours)*60/parseInt(topics))+'min/topic\nBuild a specific study schedule and topic priority list.';
+    },
+    extraHTML: function() {
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        calcInput('calc-hours','Total Study Hours','e.g. 15') +
+        calcInput('calc-days','Days Available','e.g. 7') +
+        calcInput('calc-topics','Topics to Cover','e.g. 5') +
+        '</div>';
+    },
+  },
+
+  lingual: {
+    color: '#F97316', icon: '🌍', label: 'Progress Tracker',
+    triggerLabel: '🌍 Track',
+    disclaimer: 'Language learning guidance powered by Claude AI · SAIRNlingual · SAIRN Technologies',
+    shareLabel: '📋 Phrase Sheet',
+    shareTitle: 'Language Reference Sheet — SAIRNlingual',
+    buildMetrics: function() {
+      var vocab   = parseInt(document.getElementById('calc-vocab')?.value)   || 0;
+      var weeks   = parseInt(document.getElementById('calc-weeks')?.value)   || 1;
+      var minsDay = parseInt(document.getElementById('calc-mins')?.value)    || 0;
+      // B2 fluency ≈ 3000-4000 words
+      var target = 3000;
+      var pct = Math.min(100, Math.round((vocab/target)*100));
+      var level = vocab < 300 ? 'A1' : vocab < 600 ? 'A2' : vocab < 1200 ? 'B1' : vocab < 3000 ? 'B2' : 'C1+';
+      var wordsPerWeek = minsDay > 0 ? Math.round(minsDay * 7 / 30) : 0;
+      var weeksTo = (wordsPerWeek > 0 && vocab < target) ? Math.ceil((target-vocab)/wordsPerWeek) : 0;
+      return [
+        { label:'CEFR Level',      value: level,                          sub: vocab+' words known',   color:'#F97316' },
+        { label:'Fluency Progress',value: pct+'%',                        sub: 'toward B2',            color:'#F97316' },
+        { label:'To B2 Fluency',   value: weeksTo > 0 ? weeksTo+'wk' : '—', sub:'at current pace',   color:'#F97316' },
+      ];
+    },
+    bars: function() {
+      var vocab = parseInt(document.getElementById('calc-vocab')?.value)||0;
+      return vocab > 0 ? [{ label:'Progress to B2', value: Math.min(vocab,3000), max:3000, good:[1200,3000], suffix:' words' }] : [];
+    },
+    aiPrompt: function() {
+      var vocab = document.getElementById('calc-vocab')?.value||'0';
+      var weeks = document.getElementById('calc-weeks')?.value||'1';
+      var mins  = document.getElementById('calc-mins')?.value||'0';
+      return 'Language progress assessment:\nVocabulary known: '+vocab+' words\nWeeks studying: '+weeks+'\nMinutes per day: '+mins+'\nBuild a personalized next-steps learning plan to reach the next level.';
+    },
+    extraHTML: function() {
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        calcInput('calc-vocab','Vocabulary Known','e.g. 500') +
+        calcInput('calc-weeks','Weeks Studying','e.g. 8') +
+        calcInput('calc-mins','Minutes/Day','e.g. 30') +
+        '</div>';
+    },
+  },
+
+  senior: {
+    color: '#EAB308', icon: '🌟', label: 'Benefit Estimator',
+    triggerLabel: '🌟 Estimate',
+    disclaimer: 'Benefit estimates are approximate. Always verify with official SSA, Medicare, or VA sources for your actual benefits.',
+    shareLabel: '🌟 Family Summary',
+    shareTitle: 'Benefits Summary — Prepared with SAIRNsenior',
+    buildMetrics: function() {
+      var age      = parseInt(document.getElementById('calc-sr-age')?.value)    || 0;
+      var income   = parseFloat(document.getElementById('calc-sr-income')?.value)  || 0;
+      var meds     = parseInt(document.getElementById('calc-sr-meds')?.value)    || 0;
+      // SSA full retirement age 67 for most; early at 62 = 70% of benefit
+      var ssEligible = age >= 62 ? 'Eligible' : 'Not yet';
+      var ssColor    = age >= 62 ? '#4ADE80' : '#EF4444';
+      var medicareEl = age >= 65 ? 'Eligible' : 'Not yet';
+      var medColor   = age >= 65 ? '#4ADE80' : '#EF4444';
+      var partD = meds > 3 ? 'Consider Part D' : 'Review Part D';
+      return [
+        { label:'Social Security',  value: ssEligible,  sub: age>=62?'can file now':((62-age)+' years away'),  color: ssColor  },
+        { label:'Medicare',         value: medicareEl,  sub: age>=65?'Part A & B available':((65-age)+' years away'), color: medColor },
+        { label:'Medications',      value: meds > 0 ? meds : '—', sub: partD,  color:'#EAB308' },
+      ];
+    },
+    bars: function() { return []; },
+    aiPrompt: function() {
+      var age    = document.getElementById('calc-sr-age')?.value||'';
+      var income = document.getElementById('calc-sr-income')?.value||'';
+      var meds   = document.getElementById('calc-sr-meds')?.value||'0';
+      return 'Senior benefits assessment:\nAge: '+age+'\nApproximate monthly income: $'+income+'\nNumber of medications: '+meds+'\nProvide: Social Security options and timing, Medicare coverage guide, prescription cost reduction options, any other benefits they may qualify for.';
+    },
+    extraHTML: function() {
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        calcInput('calc-sr-age','Your Age','e.g. 63') +
+        calcInput('calc-sr-income','Monthly Income ($)','e.g. 2400') +
+        calcInput('calc-sr-meds','# of Medications','e.g. 4') +
+        '</div>';
+    },
+  },
+
+  home: {
+    color: '#FB923C', icon: '🏠', label: 'Mortgage Calculator',
+    triggerLabel: '🏠 Calculate',
+    disclaimer: 'Mortgage calculations are estimates. Actual rates, taxes, and insurance will vary. Consult a licensed lender.',
+    shareLabel: '🏠 Lender Report',
+    shareTitle: 'Home Affordability Analysis — SAIRNhome',
+    buildMetrics: function() {
+      var price   = parseFloat(document.getElementById('calc-price')?.value)   || 0;
+      var down    = parseFloat(document.getElementById('calc-down')?.value)    || 0;
+      var rate    = parseFloat(document.getElementById('calc-rate')?.value)    || 7.0;
+      var income  = parseFloat(document.getElementById('calc-h-income')?.value)|| 0;
+      var loan    = price - down;
+      var monthlyRate = (rate/100)/12;
+      var n = 360; // 30 years
+      var payment = loan > 0 && monthlyRate > 0
+        ? (loan * monthlyRate * Math.pow(1+monthlyRate,n)) / (Math.pow(1+monthlyRate,n)-1)
+        : 0;
+      var dti = income > 0 ? ((payment / (income/12)) * 100) : 0;
+      var dtiColor = dti <= 28 ? '#4ADE80' : dti <= 36 ? '#FBBF24' : '#EF4444';
+      var dtiLabel = dti <= 28 ? 'Good' : dti <= 36 ? 'Borderline' : 'High';
+      return [
+        { label:'Monthly Payment', value: payment>0?'$'+Math.round(payment).toLocaleString():'—', sub:'principal + interest', color:'#FB923C' },
+        { label:'Loan Amount',     value: loan>0?'$'+loan.toLocaleString():'—',                   sub:'after down payment',    color:'#FB923C' },
+        { label:'DTI Ratio',       value: dti>0?dti.toFixed(1)+'%':'—',                           sub: dtiLabel,               color: dtiColor  },
+      ];
+    },
+    bars: function() {
+      var price  = parseFloat(document.getElementById('calc-price')?.value)||0;
+      var down   = parseFloat(document.getElementById('calc-down')?.value)||0;
+      var rate   = parseFloat(document.getElementById('calc-rate')?.value)||7;
+      var income = parseFloat(document.getElementById('calc-h-income')?.value)||0;
+      var loan   = price - down;
+      var mr = (rate/100)/12;
+      var payment = loan>0&&mr>0 ? (loan*mr*Math.pow(1+mr,360))/(Math.pow(1+mr,360)-1) : 0;
+      var dti = income > 0 ? ((payment/(income/12))*100) : 0;
+      return dti > 0 ? [{ label:'DTI Ratio', value: dti, max:50, good:[0,28], suffix:'%' }] : [];
+    },
+    aiPrompt: function() {
+      var price  = document.getElementById('calc-price')?.value||'0';
+      var down   = document.getElementById('calc-down')?.value||'0';
+      var rate   = document.getElementById('calc-rate')?.value||'7';
+      var income = document.getElementById('calc-h-income')?.value||'0';
+      var loan   = parseFloat(price)-parseFloat(down);
+      var mr     = (parseFloat(rate)/100)/12;
+      var pmt    = loan>0 ? Math.round((loan*mr*Math.pow(1+mr,360))/(Math.pow(1+mr,360)-1)) : 0;
+      return 'Home affordability analysis:\nHome price: $'+price+'\nDown payment: $'+down+'\nInterest rate: '+rate+'%\nAnnual income: $'+income+'\nCalculated monthly payment: $'+pmt+'\nProvide: affordability assessment, what lenders will look for, steps to get pre-approved, any red flags.';
+    },
+    extraHTML: function() {
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        calcInput('calc-price','Home Price ($)','e.g. 285000') +
+        calcInput('calc-down','Down Payment ($)','e.g. 20000') +
+        calcInput('calc-rate','Interest Rate (%)','e.g. 7.0') +
+        calcInput('calc-h-income','Annual Income ($)','e.g. 75000') +
+        '</div>';
+    },
+  },
+};
+
+// ── FIELD HELPERS ─────────────────────────────────────────────
+function calcInput(id, label, ph) {
+  return '<div><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.4);margin-bottom:4px">'+label+'</div>' +
+    '<input type="number" id="'+id+'" placeholder="'+ph+'" oninput="window.saircalcUpdate&&window.saircalcUpdate()" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px 10px;color:#F0F0FF;font-size:13px;font-family:Outfit,sans-serif;outline:none;box-sizing:border-box"></div>';
+}
+function calcSelect(id, label, opts) {
+  return '<div><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.4);margin-bottom:4px">'+label+'</div>' +
+    '<select id="'+id+'" onchange="window.saircalcUpdate&&window.saircalcUpdate()" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px 10px;color:#F0F0FF;font-size:13px;font-family:Outfit,sans-serif;outline:none;box-sizing:border-box">' +
+    opts.map(function(o){return'<option>'+o+'</option>';}).join('') + '</select></div>';
+}
+
+// ── GET CURRENT APP CONFIG ────────────────────────────────────
+var cfg = CONFIG[APP] || CONFIG.type;
+
+// ── BUILD CALC PANEL ─────────────────────────────────────────
+function buildCalcPanel() {
+  if (document.getElementById('sairn-calc-panel')) return;
+
+  // Trigger button
+  var trigger = document.createElement('button');
+  trigger.id = 'sairn-calc-trigger';
+  trigger.textContent = cfg.triggerLabel;
+  trigger.style.cssText = 'background:'+cfg.color+';color:#021018;font-family:Outfit,sans-serif';
+  trigger.onclick = toggleCalcPanel;
+  document.body.appendChild(trigger);
+
+  // Panel
+  var panel = document.createElement('div');
+  panel.id = 'sairn-calc-panel';
+  panel.innerHTML = '<div class="calc-panel-inner" style="--scp-color:'+cfg.color+'">' +
+    '<div class="calc-panel-tab"><span class="calc-panel-title">'+cfg.icon+' '+cfg.label+'</span>' +
+    '<button class="calc-panel-close" onclick="toggleCalcPanel()">×</button></div>' +
+    (cfg.extraHTML ? cfg.extraHTML() : '') +
+    '<div class="calc-grid" id="calc-metrics-grid"></div>' +
+    '<div id="calc-bars-container"></div>' +
+    '<button class="calc-ai-btn" id="calc-ai-btn" style="background:'+cfg.color+';color:#021018" onclick="saircalcSendToAI()">🧠 Claude — Review My Numbers →</button>' +
+    '</div>';
+  document.body.appendChild(panel);
+
+  window.saircalcUpdate = updateCalcPanel;
+  updateCalcPanel();
+}
+
+function toggleCalcPanel() {
+  var panel = document.getElementById('sairn-calc-panel');
+  if (!panel) return;
+  panel.classList.toggle('open');
+}
+
+function updateCalcPanel() {
+  var metrics = cfg.buildMetrics();
+  var grid = document.getElementById('calc-metrics-grid');
+  if (!grid) return;
+
+  grid.innerHTML = metrics.map(function(m) {
+    return '<div class="calc-metric">' +
+      '<div class="calc-metric-label">'+m.label+'</div>' +
+      '<div class="calc-metric-value" style="color:'+m.color+'">'+m.value+'</div>' +
+      '<div class="calc-metric-sub">'+m.sub+'</div>' +
+      '</div>';
+  }).join('');
+
+  // Range bars
+  var barsEl = document.getElementById('calc-bars-container');
+  if (barsEl && cfg.bars) {
+    var bars = cfg.bars();
+    barsEl.innerHTML = bars.map(function(b) {
+      var pct = Math.min(100, (b.value / b.max) * 100);
+      var inGood = b.value >= b.good[0] && b.value <= b.good[1];
+      var color = inGood ? '#4ADE80' : b.value < b.good[0] ? '#FBBF24' : '#EF4444';
+      var label = inGood ? 'On target' : b.value < b.good[0] ? 'Below target' : 'Above target';
+      return '<div class="calc-bar-row"><div class="calc-bar-label"><span>'+b.label+'</span><span>'+b.value.toFixed(1)+b.suffix+' — '+label+'</span></div>' +
+        '<div class="calc-bar-track"><div class="calc-bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div></div>';
+    }).join('');
+  }
+}
+
+async function saircalcSendToAI() {
+  var prompt = cfg.aiPrompt ? cfg.aiPrompt() : '';
+  if (!prompt) return;
+  toggleCalcPanel();
+  if (typeof addMsg === 'function') addMsg('user', cfg.label + ' — Live calculation sent to Claude');
+  if (typeof messages !== 'undefined') messages.push({ role:'user', content: prompt });
+  if (typeof sendMessage === 'function') sendMessage();
+}
+
+// ── CLIENT CLEAN VIEW ─────────────────────────────────────────
+function buildClientView() {
+  if (document.getElementById('sairn-client-view')) return;
+
+  var overlay = document.createElement('div');
+  overlay.id = 'sairn-client-view';
+  overlay.innerHTML =
+    '<div class="cv-hdr">' +
+    '<div class="cv-brand">' +
+    '<div class="cv-gem" style="background:'+cfg.color+'">'+cfg.icon+'</div>' +
+    '<div class="cv-title" style="color:'+cfg.color+'">'+cfg.shareTitle+'</div>' +
+    '</div>' +
+    '<div class="cv-actions">' +
+    '<button class="cv-btn" style="background:'+cfg.color+';color:#021018" onclick="printClientView()">🖨️ Print</button>' +
+    '<button class="cv-btn" style="background:rgba(255,255,255,0.06);color:rgba(240,240,255,0.7);border:1px solid rgba(255,255,255,0.1)" onclick="copyClientView()">📋 Copy</button>' +
+    '<button class="cv-btn" style="background:rgba(255,255,255,0.06);color:rgba(240,240,255,0.7);border:1px solid rgba(255,255,255,0.1)" onclick="closeClientView()">✕ Close</button>' +
+    '</div>' +
+    '</div>' +
+    '<div class="cv-body">' +
+    '<div class="cv-meta" id="cv-meta"></div>' +
+    '<div class="cv-content" id="cv-content"></div>' +
+    '<div class="cv-disclaimer">'+cfg.disclaimer+'</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+window.openClientView = function() {
+  buildClientView();
+  // Get last AI response
+  var lastAI = null;
+  if (typeof messages !== 'undefined') {
+    for (var i = messages.length-1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') { lastAI = messages[i]; break; }
+    }
+  }
+  if (!lastAI) {
+    if (typeof showClinicalFlag === 'function') showClinicalFlag('Complete a session first, then share.', 'info');
+    else alert('Complete a session first, then open the share view.');
+    return;
+  }
+  var overlay = document.getElementById('sairn-client-view');
+  var meta    = document.getElementById('cv-meta');
+  var content = document.getElementById('cv-content');
+  if (meta)    meta.textContent    = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) + ' · Powered by Claude AI · SAIRN Technologies';
+  if (content) content.innerHTML   = lastAI.content.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  overlay.classList.add('open');
+};
+
+window.closeClientView = function() {
+  var el = document.getElementById('sairn-client-view');
+  if (el) el.classList.remove('open');
+};
+
+window.printClientView = function() {
+  var content = document.getElementById('cv-content')?.innerText || '';
+  var w = window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+cfg.shareTitle+'</title>');
+  w.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:40px;max-width:760px;margin:0 auto;font-size:13px;color:#111;line-height:1.75}.hdr{border-bottom:3px solid '+cfg.color+';padding-bottom:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end}.brand{font-size:20px;font-weight:700;color:#111}.meta{font-size:11px;color:#999}.content{white-space:pre-wrap;line-height:1.85}.disclaimer{margin-top:28px;padding:10px;background:#F9FAFB;border-radius:6px;font-size:10px;color:#9CA3AF;border:1px solid #E5E7EB}.sig{margin-top:32px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}.sig-line{border-top:1px solid #D1D5DB;padding-top:8px;font-size:10px;color:#9CA3AF}@media print{body{padding:20px}}</style></head><body>');
+  w.document.write('<div class="hdr"><div class="brand">'+cfg.shareTitle+'</div><div class="meta">'+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})+'</div></div>');
+  w.document.write('<div class="content">'+content+'</div>');
+  w.document.write('<div class="disclaimer">'+cfg.disclaimer+'</div>');
+  w.document.write('<div class="sig"><div class="sig-line">Signature</div><div class="sig-line">Date</div><div class="sig-line">Name (Print)</div></div>');
+  w.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  w.document.close();
+};
+
+window.copyClientView = function() {
+  var content = document.getElementById('cv-content')?.innerText || '';
+  navigator.clipboard.writeText(content).then(function() {
+    var btn = document.querySelector('.cv-btn');
+    // Flash feedback
+  });
+};
+
+// ── INJECT SHARE BUTTON ───────────────────────────────────────
+function injectShareButton() {
+  if (document.getElementById('sairn-share-trigger')) return;
+  // Find the action row where save/history/print buttons live
+  var actRow = document.getElementById('sairn-intake-actions');
+  if (!actRow) {
+    // Try finding send button parent
+    var sendBtn = document.getElementById('sendBtn');
+    if (!sendBtn) return;
+    actRow = sendBtn.closest('.input-area') || sendBtn.closest('.input-wrap') || sendBtn.parentElement;
+  }
+  if (!actRow) return;
+
+  var shareBtn = document.createElement('button');
+  shareBtn.id = 'sairn-share-trigger';
+  shareBtn.className = 'sairn-share-btn';
+  shareBtn.textContent = cfg.shareLabel;
+  shareBtn.onclick = window.openClientView;
+  actRow.appendChild(shareBtn);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    buildCalcPanel();
+    buildClientView();
+    injectShareButton();
+  }, 300);
+});
+setTimeout(function() {
+  buildCalcPanel();
+  buildClientView();
+  injectShareButton();
+}, 500);
+
+})();
+
+</script>
 </body>
 </html>
