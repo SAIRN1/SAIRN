@@ -82,6 +82,159 @@ textarea#userInput:focus{border-color:rgba(236,72,153,0.5)}textarea#userInput::p
 </style>
 </head>
 <body>
+<!-- SAIRN AUTH GATE -->
+<script>
+// ================================================================
+// SAIRN UNIVERSAL AUTH GATE — Pattern 1 from the first
+// Role-based PIN auth: User (1234) + Admin (9999)
+// Deployed to all 8 SAIRN NEXUS consumer apps
+// Built by Michael L. Dibert · SAIRN Technologies
+// ================================================================
+(function() {
+'use strict';
+
+// Skip if already present
+if (document.getElementById('sairn-auth-gate')) return;
+
+// Detect app color from existing CSS variable or body style
+var APP_COLOR = (function() {
+  var style = getComputedStyle(document.documentElement);
+  var a = style.getPropertyValue('--a').trim() || style.getPropertyValue('--ab').trim();
+  if (a) return a;
+  var path = window.location.pathname;
+  if (path.includes('health'))  return '#06B6D4';
+  if (path.includes('money'))   return '#10B981';
+  if (path.includes('legal'))   return '#7C3AED';
+  if (path.includes('study'))   return '#3B82F6';
+  if (path.includes('lingual')) return '#F97316';
+  if (path.includes('senior'))  return '#EAB308';
+  if (path.includes('home'))    return '#FB923C';
+  return '#6366F1';
+})();
+
+var APP_ICON = (function() {
+  var path = window.location.pathname;
+  if (path.includes('health'))  return '❤️';
+  if (path.includes('money'))   return '💰';
+  if (path.includes('legal'))   return '⚖️';
+  if (path.includes('study'))   return '📚';
+  if (path.includes('lingual')) return '🌍';
+  if (path.includes('senior'))  return '🌟';
+  if (path.includes('home'))    return '🏠';
+  return '⌨️';
+})();
+
+var APP_NAME = (function() {
+  var t = document.title || '';
+  var m = t.match(/SAIRN\w+/);
+  return m ? m[0] : 'SAIRN NEXUS';
+})();
+
+// Auth codes — from the first
+var _NEXUS_CODES = { user: '1234', admin: '9999' };
+
+// Inject CSS
+var style = document.createElement('style');
+style.textContent =
+  '#sairn-auth-gate{position:fixed;inset:0;background:rgba(7,7,20,0.98);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}' +
+  '.sag-box{background:#0A0A1E;border:2px solid ' + APP_COLOR + ';border-radius:20px;padding:44px 40px;width:360px;max-width:92vw;text-align:center;box-shadow:0 0 60px rgba(0,0,0,0.6)}' +
+  '.sag-icon{font-size:52px;display:block;margin-bottom:16px}' +
+  '.sag-title{font-family:"Cormorant Garamond",serif;font-size:30px;font-weight:700;color:#fff;margin-bottom:8px}' +
+  '.sag-title em{font-style:normal;color:' + APP_COLOR + '}' +
+  '.sag-sub{font-size:13px;color:rgba(240,240,255,0.5);margin-bottom:28px;line-height:1.6}' +
+  '.sag-input{width:100%;background:#fff;border:2px solid ' + APP_COLOR + ';border-radius:10px;padding:14px 16px;color:#021018;font-size:26px;font-weight:700;letter-spacing:10px;text-align:center;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:16px;transition:box-shadow .2s}' +
+  '.sag-input:focus{box-shadow:0 0 0 3px ' + APP_COLOR + '44}' +
+  '.sag-input::placeholder{letter-spacing:2px;font-size:14px;font-weight:400;color:#999}' +
+  '.sag-btn{width:100%;padding:15px;background:' + APP_COLOR + ';border:none;border-radius:10px;color:#021018;font-family:Outfit,sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.4px}' +
+  '.sag-btn:hover{opacity:.9;transform:translateY(-1px)}' +
+  '.sag-btn:active{transform:translateY(0)}' +
+  '.sag-error{font-size:12px;color:#EF4444;margin-top:10px;min-height:18px;font-weight:600}' +
+  '.sag-hint{font-size:11px;color:rgba(240,240,255,0.3);margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.07);line-height:1.7}' +
+  '.sag-hint strong{color:rgba(240,240,255,0.5);font-weight:500}' +
+  'body.sairn-locked{overflow:hidden}';
+document.head.appendChild(style);
+
+// Build gate HTML
+var gate = document.createElement('div');
+gate.id = 'sairn-auth-gate';
+gate.innerHTML =
+  '<div class="sag-box">' +
+  '<span class="sag-icon">' + APP_ICON + '</span>' +
+  '<div class="sag-title">SAIRN<em>' + APP_NAME.replace('SAIRN','').toLowerCase() + '</em></div>' +
+  '<div class="sag-sub">Enter your access code to continue</div>' +
+  '<input class="sag-input" type="password" id="sag-pin" placeholder="Enter code" maxlength="8" autocomplete="off">' +
+  '<button class="sag-btn" id="sag-submit">Enter ' + APP_NAME + ' →</button>' +
+  '<div class="sag-error" id="sag-error"></div>' +
+  '<div class="sag-hint"><strong>Member code:</strong> 1234 &nbsp;·&nbsp; <strong>Admin code:</strong> 9999<br>Contact SAIRN support for access</div>' +
+  '</div>';
+
+document.body.appendChild(gate);
+document.body.classList.add('sairn-locked');
+
+// Focus input
+setTimeout(function() {
+  var inp = document.getElementById('sag-pin');
+  if (inp) inp.focus();
+}, 100);
+
+// Wire up
+function checkCode() {
+  var pin = (document.getElementById('sag-pin') || {}).value || '';
+  var errEl = document.getElementById('sag-error');
+  if (pin === _NEXUS_CODES.admin) {
+    document.body.classList.add('is-admin');
+    localStorage.setItem('sairn_role', 'admin');
+    dismissGate();
+  } else if (pin === _NEXUS_CODES.user) {
+    localStorage.setItem('sairn_role', 'user');
+    dismissGate();
+  } else {
+    if (errEl) errEl.textContent = 'Incorrect code — try again';
+    var inp = document.getElementById('sag-pin');
+    if (inp) { inp.value = ''; inp.focus(); }
+    setTimeout(function(){ if (errEl) errEl.textContent = ''; }, 3000);
+  }
+}
+
+function dismissGate() {
+  var g = document.getElementById('sairn-auth-gate');
+  if (!g) return;
+  g.style.transition = 'opacity .4s';
+  g.style.opacity = '0';
+  setTimeout(function(){
+    g.style.display = 'none';
+    document.body.classList.remove('sairn-locked');
+  }, 400);
+}
+
+document.getElementById('sag-submit').addEventListener('click', checkCode);
+document.getElementById('sag-pin').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') checkCode();
+});
+
+// Session persistence — stay logged in for 8 hours
+var lastAuth = localStorage.getItem('sairn_auth_ts');
+var role = localStorage.getItem('sairn_role');
+if (lastAuth && role) {
+  var elapsed = Date.now() - parseInt(lastAuth);
+  if (elapsed < 8 * 60 * 60 * 1000) {
+    if (role === 'admin') document.body.classList.add('is-admin');
+    dismissGate();
+    return;
+  }
+}
+
+// Store auth timestamp on success
+var origDismiss = dismissGate;
+dismissGate = function() {
+  localStorage.setItem('sairn_auth_ts', Date.now().toString());
+  origDismiss();
+};
+
+})();
+
+</script>
+
 <div id="particles"></div>
 <nav class="nav">
   <a class="nav-logo" href="/" onclick="showPage('home');return false">
