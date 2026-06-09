@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/pricing",
+      "destination": "/pricing.html"
+    },
+    {
       "source": "/api/stripe/checkout",
       "destination": "/api/stripe-checkout.js"
     },
