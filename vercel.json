@@ -1,46 +1,173 @@
 {
   "rewrites": [
-    { "source": "/lingual",              "destination": "/lingual.html"              },
-    { "source": "/health",               "destination": "/health.html"               },
-    { "source": "/money",                "destination": "/money.html"                },
-    { "source": "/legal",                "destination": "/legal.html"                },
-    { "source": "/study",                "destination": "/study.html"                },
-    { "source": "/roam",                 "destination": "/roam.html"                 },
-    { "source": "/senior",               "destination": "/senior.html"               },
-    { "source": "/mind",                 "destination": "/mind.html"                 },
-    { "source": "/kitchen",              "destination": "/kitchen.html"              },
-    { "source": "/family",               "destination": "/family.html"               },
-    { "source": "/career",               "destination": "/career.html"               },
-    { "source": "/home-app",             "destination": "/home.html"                 },
-    { "source": "/shield",               "destination": "/shield.html"               },
-    { "source": "/daily",                "destination": "/daily.html"                },
-    { "source": "/contractor",           "destination": "/contractor.html"           },
-    { "source": "/biz",                  "destination": "/biz.html"                  },
-    { "source": "/pay",                  "destination": "/pay.html"                  },
-    { "source": "/hr",                   "destination": "/hr.html"                   },
-    { "source": "/sairnscape",           "destination": "/sairnscape.html"           },
-    { "source": "/sairnflow",            "destination": "/sairnflow.html"            },
-    { "source": "/sairnvet",             "destination": "/sairnvet.html"             },
-    { "source": "/sairnfix",             "destination": "/sairnfix.html"             },
-    { "source": "/sairnfuneral",         "destination": "/sairnfuneral.html"         },
-    { "source": "/sairniq",              "destination": "/sairniq.html"              },
-    { "source": "/sairnlearn",           "destination": "/sairnlearn.html"           },
-    { "source": "/sairnlearn-dashboard", "destination": "/sairnlearn_dashboard.html" },
-    { "source": "/sairnlaw",             "destination": "/sairnlaw.html"             },
-    { "source": "/sairnhealth",          "destination": "/sairnhealth.html"          },
-    { "source": "/sairncare",            "destination": "/sairncare.html"            },
-    { "source": "/sairnbuild",           "destination": "/sairnbuild.html"           },
-    { "source": "/sairngrow",            "destination": "/sairngrow.html"            },
-    { "source": "/sairngive",            "destination": "/sairngive.html"            },
-    { "source": "/sairngov",             "destination": "/sairngov.html"             },
-    { "source": "/network",              "destination": "/sairn_network.html"        },
-    { "source": "/fabricor",             "destination": "/fabricor.html"             },
-    { "source": "/sairnvets",            "destination": "/sairnvets.html"            },
-    { "source": "/sairnhope",            "destination": "/sairnhope.html"            },
-    { "source": "/sairnfriend",          "destination": "/sairnfriend.html"          },
-    { "source": "/careteam",             "destination": "/sairnlearn_careteam.html"  },
-    { "source": "/sairncode",            "destination": "/sairncode.html"            },
-    { "source": "/memory",               "destination": "/memory_settings.html"      }
+    {
+      "source": "/api/stripe/checkout",
+      "destination": "/api/stripe-checkout.js"
+    },
+    {
+      "source": "/lingual",
+      "destination": "/lingual.html"
+    },
+    {
+      "source": "/health",
+      "destination": "/health.html"
+    },
+    {
+      "source": "/money",
+      "destination": "/money.html"
+    },
+    {
+      "source": "/legal",
+      "destination": "/legal.html"
+    },
+    {
+      "source": "/study",
+      "destination": "/study.html"
+    },
+    {
+      "source": "/roam",
+      "destination": "/roam.html"
+    },
+    {
+      "source": "/senior",
+      "destination": "/senior.html"
+    },
+    {
+      "source": "/mind",
+      "destination": "/mind.html"
+    },
+    {
+      "source": "/kitchen",
+      "destination": "/kitchen.html"
+    },
+    {
+      "source": "/family",
+      "destination": "/family.html"
+    },
+    {
+      "source": "/career",
+      "destination": "/career.html"
+    },
+    {
+      "source": "/home-app",
+      "destination": "/home.html"
+    },
+    {
+      "source": "/shield",
+      "destination": "/shield.html"
+    },
+    {
+      "source": "/daily",
+      "destination": "/daily.html"
+    },
+    {
+      "source": "/contractor",
+      "destination": "/contractor.html"
+    },
+    {
+      "source": "/biz",
+      "destination": "/biz.html"
+    },
+    {
+      "source": "/pay",
+      "destination": "/pay.html"
+    },
+    {
+      "source": "/hr",
+      "destination": "/hr.html"
+    },
+    {
+      "source": "/sairnscape",
+      "destination": "/sairnscape.html"
+    },
+    {
+      "source": "/sairnflow",
+      "destination": "/sairnflow.html"
+    },
+    {
+      "source": "/sairnvet",
+      "destination": "/sairnvet.html"
+    },
+    {
+      "source": "/sairnfix",
+      "destination": "/sairnfix.html"
+    },
+    {
+      "source": "/sairnfuneral",
+      "destination": "/sairnfuneral.html"
+    },
+    {
+      "source": "/sairniq",
+      "destination": "/sairniq.html"
+    },
+    {
+      "source": "/sairnlearn",
+      "destination": "/sairnlearn.html"
+    },
+    {
+      "source": "/sairnlearn-dashboard",
+      "destination": "/sairnlearn_dashboard.html"
+    },
+    {
+      "source": "/sairnlaw",
+      "destination": "/sairnlaw.html"
+    },
+    {
+      "source": "/sairnhealth",
+      "destination": "/sairnhealth.html"
+    },
+    {
+      "source": "/sairncare",
+      "destination": "/sairncare.html"
+    },
+    {
+      "source": "/sairnbuild",
+      "destination": "/sairnbuild.html"
+    },
+    {
+      "source": "/sairngrow",
+      "destination": "/sairngrow.html"
+    },
+    {
+      "source": "/sairngive",
+      "destination": "/sairngive.html"
+    },
+    {
+      "source": "/sairngov",
+      "destination": "/sairngov.html"
+    },
+    {
+      "source": "/network",
+      "destination": "/sairn_network.html"
+    },
+    {
+      "source": "/fabricor",
+      "destination": "/fabricor.html"
+    },
+    {
+      "source": "/sairnvets",
+      "destination": "/sairnvets.html"
+    },
+    {
+      "source": "/sairnhope",
+      "destination": "/sairnhope.html"
+    },
+    {
+      "source": "/sairnfriend",
+      "destination": "/sairnfriend.html"
+    },
+    {
+      "source": "/careteam",
+      "destination": "/sairnlearn_careteam.html"
+    },
+    {
+      "source": "/sairncode",
+      "destination": "/sairncode.html"
+    },
+    {
+      "source": "/memory",
+      "destination": "/memory_settings.html"
+    }
   ],
   "cleanUrls": true,
   "trailingSlash": false
