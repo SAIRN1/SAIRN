@@ -5172,12 +5172,11 @@ setTimeout(injectCameraButton, 800);
 </section>
 <script>
 async function startCheckout(e,priceId,planName){
-const btn=e.currentTarget||e.target;btn.textContent="Loading...";btn.disabled=true;
 try{
 const res=await fetch("/api/stripe/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({priceId,planName})});
 const data=await res.json();
-if(data.url){window.location.href=data.url;}else{alert("Could not start checkout.");btn.textContent="Subscribe";btn.disabled=false;}
-}catch(e){alert("Checkout error.");btn.textContent="Subscribe";btn.disabled=false;}
+if(data.url){window.location.href=data.url;}else{alert("Could not start checkout. Plan: "+planName);}
+}catch(err){alert("Checkout error: "+err.message);}
 }
 </script></body>
 </html>
