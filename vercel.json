@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/stonedesk-hr",
+      "destination": "/stonedesk-hr.html"
+    },
+    {
       "source": "/sairncomm",
       "destination": "/sairncomm.html"
     },
