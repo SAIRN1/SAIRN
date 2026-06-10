@@ -655,6 +655,23 @@ textarea#userInput::placeholder{color:var(--muted)}
   #panel-client{display:block!important;background:#fff;padding:0}
   .estimate-page{box-shadow:none;border-radius:0;max-width:100%}
 }
+
+/* ── BUSINESS INTELLIGENCE MODULE ── */
+.biz-kpi{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.biz-kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px}
+.biz-kpi-val{font-size:26px;font-weight:800;color:var(--a);line-height:1}
+.biz-kpi-sub{font-size:10px;color:var(--muted);margin-top:4px}
+.biz-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+.biz-row label{font-size:12px;color:var(--muted);flex:1}
+.biz-input-wrap{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0 8px;min-width:130px}
+.biz-input-wrap span{font-size:12px;color:var(--muted);flex-shrink:0}
+.biz-input-wrap input{background:transparent;border:none;outline:none;width:80px;font-size:13px;font-weight:600;color:var(--text);padding:6px 4px;font-family:inherit;text-align:right}
+.machine-row,.employee-row{display:grid;gap:8px;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;align-items:center;font-size:12px}
+.machine-row{grid-template-columns:2fr 1fr 1fr 1fr auto}
+.employee-row{grid-template-columns:2fr 1fr 1fr 1fr auto}
+.machine-row input,.employee-row input,.machine-row select,.employee-row select{background:transparent;border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;color:var(--text);font-family:inherit;width:100%;outline:none}
+.biz-del-btn{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:4px;color:#EF4444;font-size:11px;cursor:pointer;padding:4px 8px;flex-shrink:0}
+
 </style>
 </head>
 <body>
@@ -842,6 +859,7 @@ dismissGate = function() {
       <button class="nav-btn"        onclick="showPanel('quote')"  >Quote Builder</button>
       <button class="nav-btn"        onclick="showPanel('draw')"   >Drawing Tool</button>
       <button class="nav-btn"        onclick="showPanel('history')">History</button>
+      <button class="nav-btn" onclick="showPanel('business')">Business</button>
       <button class="nav-btn admin-only" onclick="showPanel('admin')">Admin</button>
     </div>
     <div class="topbar-right">
@@ -1431,6 +1449,220 @@ dismissGate = function() {
     </div>
   </div>
 
+
+  <!-- ══ BUSINESS INTELLIGENCE PANEL ══ -->
+  <div class="panel" id="panel-business">
+    <div style="max-width:1100px;margin:0 auto;padding:20px 16px">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)">📊 Business Intelligence</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">True cost · Operating overhead · Marketing · HR</div>
+        </div>
+        <button onclick="saveBizData()" style="padding:8px 18px;background:var(--a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Save All</button>
+      </div>
+
+      <!-- KPI ROW -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="biz-kpi-row">
+        <div class="biz-kpi" id="kpi-cost-sqft">
+          <div class="biz-kpi-label">True Cost / SqFt</div>
+          <div class="biz-kpi-val" id="kpi-cost-sqft-val">—</div>
+          <div class="biz-kpi-sub">after all overhead</div>
+        </div>
+        <div class="biz-kpi" id="kpi-monthly-overhead">
+          <div class="biz-kpi-label">Monthly Overhead</div>
+          <div class="biz-kpi-val" id="kpi-overhead-val">—</div>
+          <div class="biz-kpi-sub">fixed + variable</div>
+        </div>
+        <div class="biz-kpi" id="kpi-labor-cost">
+          <div class="biz-kpi-label">Labor Cost / SqFt</div>
+          <div class="biz-kpi-val" id="kpi-labor-val">—</div>
+          <div class="biz-kpi-sub">based on shop capacity</div>
+        </div>
+        <div class="biz-kpi" id="kpi-marketing-roi">
+          <div class="biz-kpi-label">Marketing ROI</div>
+          <div class="biz-kpi-val" id="kpi-roi-val">—</div>
+          <div class="biz-kpi-sub">revenue per $ spent</div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="q-tabs" style="margin-bottom:20px">
+        <button class="q-tab active" onclick="showBizTab('operating',this)">🏭 Operating Costs</button>
+        <button class="q-tab" onclick="showBizTab('machinery',this)">⚙️ Machinery</button>
+        <button class="q-tab" onclick="showBizTab('marketing',this)">📣 Marketing</button>
+        <button class="q-tab" onclick="showBizTab('hr',this)">👥 HR & Labor</button>
+      </div>
+
+      <!-- ── OPERATING COSTS TAB ── -->
+      <div class="q-tab-panel active" id="biztab-operating">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+          <!-- Fixed Costs -->
+          <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:14px">Fixed Monthly Costs</div>
+            <div class="biz-row"><label>Building (mortgage or lease)</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-building" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Property insurance</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-insurance" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Equipment loan / lease</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-equip-loan" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Software & subscriptions</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-software" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Other fixed</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-fixed-other" placeholder="0" oninput="calcBiz()"></div></div>
+            <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+              <span style="color:var(--muted)">Fixed Total</span>
+              <span style="color:var(--a)" id="biz-fixed-total">$0</span>
+            </div>
+          </div>
+
+          <!-- Variable Costs -->
+          <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:14px">Variable Monthly Costs</div>
+            <div class="biz-row"><label>Electricity</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-electric" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Water & sewer</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-water" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Blades, pads & consumables</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-consumables" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Vehicle / delivery</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-vehicle" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Maintenance & repairs</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-maintenance" placeholder="0" oninput="calcBiz()"></div></div>
+            <div class="biz-row"><label>Waste disposal / slurry</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-waste" placeholder="0" oninput="calcBiz()"></div></div>
+            <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+              <span style="color:var(--muted)">Variable Total</span>
+              <span style="color:var(--a)" id="biz-variable-total">$0</span>
+            </div>
+          </div>
+
+          <!-- Production Input -->
+          <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;grid-column:1/-1">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:14px">Shop Production Capacity</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+              <div class="biz-row"><label>Monthly sqft produced</label><div class="biz-input-wrap"><input type="number" id="biz-sqft-month" placeholder="500" oninput="calcBiz()"><span>sqft</span></div></div>
+              <div class="biz-row"><label>Material cost / sqft (avg slab)</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-material-sqft" placeholder="18" oninput="calcBiz()"></div></div>
+              <div class="biz-row"><label>Selling price / sqft (avg)</label><div class="biz-input-wrap"><span>$</span><input type="number" id="biz-sell-sqft" placeholder="85" oninput="calcBiz()"></div></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- True Cost Breakdown -->
+        <div style="background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:12px;padding:20px;margin-top:16px">
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:14px">💡 True Cost Breakdown</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="true-cost-breakdown">
+            <div style="text-align:center">
+              <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Material</div>
+              <div style="font-size:22px;font-weight:800;color:var(--a)" id="tc-material">—</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5)">per sqft</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Labor</div>
+              <div style="font-size:22px;font-weight:800;color:var(--a)" id="tc-labor">—</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5)">per sqft</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Overhead</div>
+              <div style="font-size:22px;font-weight:800;color:var(--a)" id="tc-overhead">—</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5)">per sqft</div>
+            </div>
+            <div style="text-align:center;border-left:1px solid rgba(255,255,255,.2);padding-left:12px">
+              <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Gross Margin</div>
+              <div style="font-size:28px;font-weight:800;color:#4ADE80" id="tc-margin">—</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5)">per sqft profit</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MACHINERY TAB ── -->
+      <div class="q-tab-panel" id="biztab-machinery">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--a)">Equipment Amortization</div>
+            <button onclick="addMachine()" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">+ Add Equipment</button>
+          </div>
+          <div id="machine-list"></div>
+          <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+            <span style="color:var(--muted)">Total Monthly Amortization</span>
+            <span style="color:var(--a)" id="machine-total">$0/mo</span>
+          </div>
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px">
+          <div style="font-size:11px;color:var(--muted);line-height:1.6">
+            <strong style="color:var(--text)">Amortization formula:</strong> Equipment value ÷ useful life in months. 
+            A $150,000 CNC saw with a 10-year life = $1,250/month. This monthly cost flows into your overhead calculation and true cost per square foot.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MARKETING TAB ── -->
+      <div class="q-tab-panel" id="biztab-marketing">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+          <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:14px">Monthly Marketing Budget</div>
+            <div class="biz-row"><label>Google / digital ads</label><div class="biz-input-wrap"><span>$</span><input type="number" id="mkt-google" placeholder="0" oninput="calcMarketing()"></div></div>
+            <div class="biz-row"><label>Social media</label><div class="biz-input-wrap"><span>$</span><input type="number" id="mkt-social" placeholder="0" oninput="calcMarketing()"></div></div>
+            <div class="biz-row"><label>Print / direct mail</label><div class="biz-input-wrap"><span>$</span><input type="number" id="mkt-print" placeholder="0" oninput="calcMarketing()"></div></div>
+            <div class="biz-row"><label>Trade shows / events</label><div class="biz-input-wrap"><span>$</span><input type="number" id="mkt-events" placeholder="0" oninput="calcMarketing()"></div></div>
+            <div class="biz-row"><label>Referral / incentives</label><div class="biz-input-wrap"><span>$</span><input type="number" id="mkt-referral" placeholder="0" oninput="calcMarketing()"></div></div>
+            <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+              <span style="color:var(--muted)">Total Budget</span>
+              <span style="color:var(--a)" id="mkt-total">$0</span>
+            </div>
+          </div>
+
+          <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:14px">Results This Month</div>
+            <div class="biz-row"><label>Leads generated</label><div class="biz-input-wrap"><input type="number" id="mkt-leads" placeholder="0" oninput="calcMarketing()"><span>leads</span></div></div>
+            <div class="biz-row"><label>Jobs closed</label><div class="biz-input-wrap"><input type="number" id="mkt-closed" placeholder="0" oninput="calcMarketing()"><span>jobs</span></div></div>
+            <div class="biz-row"><label>Revenue from marketing</label><div class="biz-input-wrap"><span>$</span><input type="number" id="mkt-revenue" placeholder="0" oninput="calcMarketing()"></div></div>
+            <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div style="text-align:center;padding:10px;background:rgba(232,133,10,0.1);border-radius:8px">
+                  <div style="font-size:10px;color:var(--muted)">Cost Per Lead</div>
+                  <div style="font-size:20px;font-weight:800;color:var(--a)" id="mkt-cpl">—</div>
+                </div>
+                <div style="text-align:center;padding:10px;background:rgba(232,133,10,0.1);border-radius:8px">
+                  <div style="font-size:10px;color:var(--muted)">Marketing ROI</div>
+                  <div style="font-size:20px;font-weight:800;color:#4ADE80" id="mkt-roi">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── HR TAB ── -->
+      <div class="q-tab-panel" id="biztab-hr">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--a)">Employee Labor Costs</div>
+            <button onclick="addEmployee()" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">+ Add Employee</button>
+          </div>
+          <div id="employee-list"></div>
+          <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div style="text-align:center;padding:10px;background:rgba(232,133,10,0.1);border-radius:8px">
+              <div style="font-size:10px;color:var(--muted)">Total Monthly Labor</div>
+              <div style="font-size:18px;font-weight:800;color:var(--a)" id="hr-total-labor">$0</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:rgba(232,133,10,0.1);border-radius:8px">
+              <div style="font-size:10px;color:var(--muted)">Labor Cost / SqFt</div>
+              <div style="font-size:18px;font-weight:800;color:var(--a)" id="hr-labor-sqft">—</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:rgba(232,133,10,0.1);border-radius:8px">
+              <div style="font-size:10px;color:var(--muted)">Labor % of Revenue</div>
+              <div style="font-size:18px;font-weight:800;color:var(--a)" id="hr-labor-pct">—</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px">
+          <div style="font-size:11px;color:var(--muted);line-height:1.65">
+            <strong style="color:var(--text)">Industry benchmark:</strong> Labor should be 20–30% of revenue in a healthy stone shop. 
+            Above 35% means you're underpricing or overstaffed. Below 18% may indicate quality or capacity issues.
+            This data feeds directly into your True Cost / SqFt calculation above.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ══ CLIENT ESTIMATE PANEL ══ -->
   <div class="panel" id="panel-client">
     <div class="client-container">
@@ -1614,7 +1846,7 @@ function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
-  const navMap = { ai:0, quote:1, draw:2, history:3, admin:4 };
+  const navMap = { ai:0, quote:1, draw:2, history:3, business:4, admin:5 };
   const btns = document.querySelectorAll('.topbar-nav .nav-btn');
   if (navMap[id] !== undefined) btns[navMap[id]].classList.add('active');
   if (id === 'client') buildEstimate();
@@ -6851,6 +7083,194 @@ function injectCameraButton() {
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(injectCameraButton, 600); });
 setTimeout(injectCameraButton, 800);
 })();
+
+
+
+// ═══════════════════════════════════════════════
+// BUSINESS INTELLIGENCE MODULE
+// ═══════════════════════════════════════════════
+
+function showBizTab(id, el) {
+  document.querySelectorAll('#panel-business .q-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#panel-business .q-tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('biztab-' + id).classList.add('active');
+}
+
+// ── MACHINES ──
+let machines = [];
+function addMachine() {
+  machines.push({ name: '', value: 0, life: 120 });
+  renderMachines();
+}
+function removeMachine(i) {
+  machines.splice(i, 1);
+  renderMachines();
+}
+function renderMachines() {
+  const el = document.getElementById('machine-list');
+  if (!machines.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No equipment added. Click + Add Equipment.</div>';
+    document.getElementById('machine-total').textContent = '$0/mo';
+    calcBiz(); return;
+  }
+  el.innerHTML = '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;padding:0 0 6px;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px"><span>Equipment Name</span><span>Value ($)</span><span>Life (mo)</span><span>Monthly ($)</span><span></span></div>' +
+  machines.map((m,i) => {
+    const monthly = m.life > 0 ? (m.value / m.life).toFixed(2) : '0.00';
+    return '<div class="machine-row">' +
+      '<input value="' + (m.name||'') + '" placeholder="e.g. CNC Saw" onchange="machines[' + i + '].name=this.value;calcBiz()">' +
+      '<input type="number" value="' + (m.value||'') + '" placeholder="150000" onchange="machines[' + i + '].value=parseFloat(this.value)||0;renderMachines()">' +
+      '<input type="number" value="' + (m.life||120) + '" placeholder="120" onchange="machines[' + i + '].life=parseFloat(this.value)||120;renderMachines()">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--a);padding:5px 0">$' + monthly + '</div>' +
+      '<button class="biz-del-btn" onclick="removeMachine(' + i + ')">✕</button>' +
+    '</div>';
+  }).join('');
+  const total = machines.reduce((s,m) => s + (m.life>0 ? m.value/m.life : 0), 0);
+  document.getElementById('machine-total').textContent = '$' + total.toFixed(0) + '/mo';
+  calcBiz();
+}
+
+// ── EMPLOYEES ──
+let employees = [];
+function addEmployee() {
+  employees.push({ name: '', role: 'fabricator', hourlyRate: 22, hoursWeek: 40 });
+  renderEmployees();
+}
+function removeEmployee(i) {
+  employees.splice(i, 1);
+  renderEmployees();
+}
+function renderEmployees() {
+  const el = document.getElementById('employee-list');
+  if (!employees.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No employees added. Click + Add Employee.</div>';
+    document.getElementById('hr-total-labor').textContent = '$0';
+    calcBiz(); return;
+  }
+  el.innerHTML = '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;padding:0 0 6px;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px"><span>Name / Role</span><span>Role</span><span>$/hr</span><span>hrs/wk</span><span></span></div>' +
+  employees.map((e,i) => {
+    const monthly = (e.hourlyRate * e.hoursWeek * 4.33 * 1.15).toFixed(0); // 15% benefits/taxes
+    return '<div class="employee-row">' +
+      '<input value="' + (e.name||'') + '" placeholder="Employee name" onchange="employees[' + i + '].name=this.value">' +
+      '<select onchange="employees[' + i + '].role=this.value">' +
+        '<option value="fabricator"' + (e.role==='fabricator'?' selected':'') + '>Fabricator</option>' +
+        '<option value="installer"' + (e.role==='installer'?' selected':'') + '>Installer</option>' +
+        '<option value="templater"' + (e.role==='templater'?' selected':'') + '>Templater</option>' +
+        '<option value="manager"' + (e.role==='manager'?' selected':'') + '>Manager</option>' +
+        '<option value="admin"' + (e.role==='admin'?' selected':'') + '>Admin</option>' +
+        '<option value="sales"' + (e.role==='sales'?' selected':'') + '>Sales</option>' +
+      '</select>' +
+      '<input type="number" value="' + (e.hourlyRate||22) + '" placeholder="22" onchange="employees[' + i + '].hourlyRate=parseFloat(this.value)||0;renderEmployees()">' +
+      '<input type="number" value="' + (e.hoursWeek||40) + '" placeholder="40" onchange="employees[' + i + '].hoursWeek=parseFloat(this.value)||40;renderEmployees()">' +
+      '<div style="font-size:12px;font-weight:700;color:var(--a);padding:5px 0;white-space:nowrap">$' + monthly + '/mo</div>' +
+    '</div>';
+  }).join('');
+  const totalLabor = employees.reduce((s,e) => s + (e.hourlyRate * e.hoursWeek * 4.33 * 1.15), 0);
+  document.getElementById('hr-total-labor').textContent = '$' + totalLabor.toFixed(0);
+  calcBiz();
+}
+
+// ── MAIN CALC ──
+function calcBiz() {
+  const v = id => parseFloat(document.getElementById(id)?.value) || 0;
+
+  // Fixed costs
+  const fixed = v('biz-building') + v('biz-insurance') + v('biz-equip-loan') + v('biz-software') + v('biz-fixed-other');
+  document.getElementById('biz-fixed-total').textContent = '$' + fixed.toLocaleString();
+
+  // Variable costs
+  const variable = v('biz-electric') + v('biz-water') + v('biz-consumables') + v('biz-vehicle') + v('biz-maintenance') + v('biz-waste');
+  document.getElementById('biz-variable-total').textContent = '$' + variable.toLocaleString();
+
+  // Machine amortization
+  const machineAmo = machines.reduce((s,m) => s + (m.life>0 ? m.value/m.life : 0), 0);
+
+  // Labor
+  const totalLabor = employees.reduce((s,e) => s + (e.hourlyRate * e.hoursWeek * 4.33 * 1.15), 0);
+
+  // Total overhead (non-material, non-labor)
+  const overhead = fixed + variable + machineAmo;
+  const totalMonthly = overhead + totalLabor;
+
+  // Production
+  const sqftMonth = v('biz-sqft-month') || 500;
+  const materialSqft = v('biz-material-sqft') || 18;
+  const sellSqft = v('biz-sell-sqft') || 85;
+
+  // Per sqft costs
+  const overheadPerSqft = overhead / sqftMonth;
+  const laborPerSqft = totalLabor / sqftMonth;
+  const trueCost = materialSqft + laborPerSqft + overheadPerSqft;
+  const margin = sellSqft - trueCost;
+
+  // Update true cost breakdown
+  document.getElementById('tc-material').textContent = '$' + materialSqft.toFixed(2);
+  document.getElementById('tc-labor').textContent = '$' + laborPerSqft.toFixed(2);
+  document.getElementById('tc-overhead').textContent = '$' + overheadPerSqft.toFixed(2);
+  document.getElementById('tc-margin').textContent = '$' + margin.toFixed(2);
+  document.getElementById('tc-margin').style.color = margin > 0 ? '#4ADE80' : '#EF4444';
+
+  // KPIs
+  document.getElementById('kpi-cost-sqft-val').textContent = '$' + trueCost.toFixed(2);
+  document.getElementById('kpi-overhead-val').textContent = '$' + totalMonthly.toFixed(0);
+  document.getElementById('kpi-labor-val').textContent = '$' + laborPerSqft.toFixed(2);
+
+  // HR tab calcs
+  const monthRevenue = sellSqft * sqftMonth;
+  document.getElementById('hr-labor-sqft').textContent = '$' + laborPerSqft.toFixed(2);
+  document.getElementById('hr-labor-pct').textContent = monthRevenue > 0 ? (totalLabor/monthRevenue*100).toFixed(1) + '%' : '—';
+}
+
+function calcMarketing() {
+  const v = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const total = v('mkt-google') + v('mkt-social') + v('mkt-print') + v('mkt-events') + v('mkt-referral');
+  document.getElementById('mkt-total').textContent = '$' + total.toLocaleString();
+  const leads = v('mkt-leads');
+  const revenue = v('mkt-revenue');
+  document.getElementById('mkt-cpl').textContent = leads > 0 ? '$' + (total/leads).toFixed(0) : '—';
+  document.getElementById('mkt-roi').textContent = total > 0 ? (revenue/total).toFixed(1) + 'x' : '—';
+  // Update KPI
+  document.getElementById('kpi-roi-val').textContent = total > 0 ? (revenue/total).toFixed(1) + 'x' : '—';
+}
+
+function saveBizData() {
+  const ids = ['biz-building','biz-insurance','biz-equip-loan','biz-software','biz-fixed-other',
+    'biz-electric','biz-water','biz-consumables','biz-vehicle','biz-maintenance','biz-waste',
+    'biz-sqft-month','biz-material-sqft','biz-sell-sqft',
+    'mkt-google','mkt-social','mkt-print','mkt-events','mkt-referral','mkt-leads','mkt-closed','mkt-revenue'];
+  const data = {};
+  ids.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+  data._machines = JSON.stringify(machines);
+  data._employees = JSON.stringify(employees);
+  localStorage.setItem('stondesk_biz', JSON.stringify(data));
+  // Show confirmation
+  const btn = document.querySelector('#panel-business button[onclick="saveBizData()"]');
+  if (btn) { btn.textContent = '✓ Saved!'; btn.style.background = '#16a34a'; setTimeout(() => { btn.textContent = 'Save All'; btn.style.background = ''; }, 2000); }
+}
+
+function loadBizData() {
+  try {
+    const raw = localStorage.getItem('stondesk_biz');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    Object.keys(data).forEach(id => {
+      if (id.startsWith('_')) return;
+      const el = document.getElementById(id);
+      if (el) el.value = data[id];
+    });
+    if (data._machines) { machines = JSON.parse(data._machines); renderMachines(); }
+    if (data._employees) { employees = JSON.parse(data._employees); renderEmployees(); }
+    calcBiz();
+    calcMarketing();
+  } catch(e) {}
+}
+
+// Load on startup
+document.addEventListener('DOMContentLoaded', function() {
+  loadBizData();
+  renderMachines();
+  renderEmployees();
+});
 
 </script>
 </body></html>
