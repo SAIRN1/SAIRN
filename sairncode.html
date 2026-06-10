@@ -515,7 +515,6 @@ var SAIRN_MODES = {
   icd11: {label:'ICD-11 Prep', ph:'Enter an ICD-10 code or diagnosis. I will show the ICD-11 equivalent, post-coordination logic, and transition guidance.'},
   outcome: {label:'Outcome Tracker', ph:'Describe the code suggested and whether it was accepted, denied, or modified. I will analyze patterns and provide feedback.'}
 };
-function openProfileModal(){console.log("Profile modal - coming soon");}
 function setModeById(id){
   var m=SAIRN_MODES[id];
   if(!m) return;
@@ -2718,7 +2717,7 @@ function printDocTemplate(tmpl) {
 
   win.document.write('<div class="sig-line"><div class="sig">Provider Signature &amp; Date</div><div class="sig">Reviewed by Coder / Auditor &amp; Date</div></div>');
   win.document.write('<div class="footer"><div>Confidential — For Clinical and Coding Use Only</div><div>SAIRNcode AI — sairn.vercel.app/sairncode</div></div>');
-  win.document.write('<scr'+'ipt>window.onload=function(){window.print();}<\/scr'+'ipt>
+  win.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>');
 <!-- ── PRODUCTIVITY DASHBOARD MODAL ── -->
 <div id="prod-dashboard" style="display:none;position:fixed;inset:0;background:rgba(2,11,24,0.97);z-index:99999;overflow-y:auto;padding:24px">
   <div style="max-width:900px;margin:0 auto">
@@ -2783,6 +2782,9 @@ function openDashboard(){
     'No activity yet.';
   document.getElementById('prod-dashboard').style.display='block';
 }
+</script>
+<script>
+function openProfileModal(){console.log("SAIRNcode - Profile modal coming soon");}
 </script>
 </body></html>');
   win.document.close();
