@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNcomm — Medical Coding Communication Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#f0f4f8;--surface:#fff;--border:#e2e8f0;--text:#1a202c;--muted:#718096;
+  --blue:#2563eb;--blue-light:#eff6ff;--blue-dark:#1d4ed8;--blue-border:#bfdbfe;
+  --green:#16a34a;--green-light:#f0fdf4;
+  --amber:#d97706;--amber-light:#fffbeb;
+  --red:#dc2626;--red-light:#fef2f2;
+  --purple:#7c3aed;--purple-light:#f5f3ff;
+  --r:8px;--rlg:12px;--sh:0 1px 3px rgba(0,0,0,.1);--shlg:0 4px 16px rgba(0,0,0,.12);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* AUTH */
+#auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1e3a5f,#2563eb);display:flex;align-items:center;justify-content:center;z-index:9999}
+.auth-card{background:#fff;border-radius:var(--rlg);padding:2.5rem;width:420px;max-width:95vw;box-shadow:var(--shlg)}
+.auth-logo{display:flex;align-items:center;gap:.75rem;margin-bottom:.25rem}
+.auth-logo-icon{width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.auth-logo-name{font-size:1.4rem;font-weight:800;color:var(--blue)}
+.auth-tagline{font-size:.8rem;color:var(--muted);margin-bottom:2rem}
+.auth-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;border-bottom:2px solid var(--border)}
+.auth-tab{padding:.5rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none}
+.auth-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.auth-form{display:flex;flex-direction:column;gap:.85rem}
+.auth-form input,.auth-form select{padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:var(--r);font-size:.88rem;font-family:inherit;outline:none;transition:border .2s}
+.auth-form input:focus,.auth-form select:focus{border-color:var(--blue)}
+.auth-form select option{background:#fff}
+.auth-btn{padding:.75rem;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:.9rem;font-weight:700;cursor:pointer;transition:background .2s}
+.auth-btn:hover{background:var(--blue-dark)}
+.auth-error{color:var(--red);font-size:.8rem;padding:.5rem;background:var(--red-light);border-radius:var(--r);display:none}
+.auth-divider{text-align:center;font-size:.75rem;color:var(--muted);margin:.25rem 0}
+
+/* APP LAYOUT */
+#app{display:none;height:100vh;display:grid;grid-template-columns:280px 1fr;grid-template-rows:56px 1fr}
+.topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;box-shadow:var(--sh)}
+.topbar-brand{display:flex;align-items:center;gap:.6rem}
+.topbar-icon{width:30px;height:30px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.topbar-name{font-size:1rem;font-weight:800;color:var(--blue)}
+.topbar-right{display:flex;align-items:center;gap:.75rem}
+.user-badge{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
+.user-role{padding:.15rem .55rem;background:var(--blue-light);color:var(--blue);border-radius:4px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.signout-btn{padding:.3rem .75rem;border:1px solid var(--border);border-radius:var(--r);font-size:.75rem;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s}
+.signout-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:.85rem 1rem;border-bottom:1px solid var(--border)}
+.new-thread-btn{width:100%;padding:.6rem;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem;transition:background .2s}
+.new-thread-btn:hover{background:var(--blue-dark)}
+.sidebar-filters{display:flex;gap:.35rem;padding:.6rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.filter-chip{padding:.2rem .65rem;border:1px solid var(--border);border-radius:20px;font-size:.72rem;cursor:pointer;background:transparent;color:var(--muted);transition:all .12s}
+.filter-chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.thread-list{flex:1;overflow-y:auto}
+.thread-item{padding:.85rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.thread-item:hover{background:var(--bg)}
+.thread-item.active{background:var(--blue-light);border-left:3px solid var(--blue)}
+.thread-subject{font-size:.82rem;font-weight:600;margin-bottom:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thread-meta{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.thread-type{padding:.1rem .45rem;border-radius:4px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.type-cdi{background:#ede9fe;color:#7c3aed}
+.type-denial{background:#fee2e2;color:#dc2626}
+.type-general{background:#e0f2fe;color:#0369a1}
+.type-audit{background:#fef3c7;color:#d97706}
+.type-coding_question{background:#dcfce7;color:#16a34a}
+.thread-time{font-size:.7rem;color:var(--muted)}
+.thread-status{padding:.1rem .4rem;border-radius:4px;font-size:.65rem;font-weight:600}
+.status-open{background:var(--green-light);color:var(--green)}
+.status-pending{background:var(--amber-light);color:var(--amber)}
+.status-resolved{background:var(--bg);color:var(--muted)}
+.unread-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.sidebar-empty{padding:2rem 1rem;text-align:center;color:var(--muted);font-size:.82rem}
+
+/* MAIN CHAT AREA */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.chat-header{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
+.chat-header-info .chat-subject{font-size:.95rem;font-weight:700}
+.chat-header-info .chat-meta{font-size:.75rem;color:var(--muted);margin-top:.2rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.chat-header-actions{display:flex;gap:.4rem;align-items:center;flex-shrink:0}
+.hdr-btn{padding:.3rem .7rem;border:1px solid var(--border);border-radius:var(--r);font-size:.75rem;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s;white-space:nowrap}
+.hdr-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.hdr-btn.danger:hover{border-color:var(--green);color:var(--green);background:var(--green-light)}
+.chat-messages{flex:1;overflow-y:auto;padding:1.1rem;display:flex;flex-direction:column;gap:.75rem}
+.no-thread{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:2rem}
+.no-thread-icon{font-size:2.5rem;margin-bottom:.85rem}
+.no-thread-title{font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:.35rem}
+.no-thread-sub{font-size:.82rem;max-width:320px;line-height:1.5}
+
+/* MESSAGES */
+.msg{display:flex;gap:.6rem;max-width:100%}
+.msg.me{flex-direction:row-reverse}
+.msg.system{justify-content:center}
+.msg-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;margin-top:2px}
+.msg.me .msg-av{background:var(--blue);color:#fff}
+.msg.them .msg-av{background:#e2e8f0;color:var(--text)}
+.msg.claude .msg-av{background:#7c3aed;color:#fff}
+.msg.guest .msg-av{background:#d97706;color:#fff}
+.msg-body{max-width:72%}
+.msg-sender{font-size:.7rem;color:var(--muted);margin-bottom:.2rem}
+.msg.me .msg-sender{text-align:right}
+.msg-bubble{padding:.7rem .9rem;border-radius:10px;font-size:.84rem;line-height:1.6}
+.msg.me .msg-bubble{background:var(--blue);color:#fff;border-bottom-right-radius:3px}
+.msg.them .msg-bubble,.msg.guest .msg-bubble{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:3px}
+.msg.claude .msg-bubble{background:var(--purple-light);border:1px solid #ddd6fe;border-bottom-left-radius:3px}
+.msg.system .msg-bubble{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-size:.75rem;color:var(--muted);padding:.4rem .85rem}
+.msg-bubble strong{font-weight:700}
+.msg-bubble ul{margin:.3rem 0 .3rem 1rem}
+.msg-bubble li{margin-bottom:.2rem}
+.msg-time{font-size:.68rem;color:var(--muted);margin-top:.2rem}
+.msg.me .msg-time{text-align:right}
+.typing-msg{display:flex;gap:.25rem;align-items:center;padding:.6rem .8rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;width:fit-content}
+.tdot{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:tb .8s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:.15s}.tdot:nth-child(3){animation-delay:.3s}
+@keyframes tb{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+/* INPUT */
+.chat-input-area{padding:.75rem 1.25rem;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.chat-input-row{display:flex;gap:.5rem;align-items:flex-end}
+.chat-input-row textarea{flex:1;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:var(--r);font-size:.84rem;font-family:inherit;resize:none;outline:none;transition:border .2s;min-height:40px;max-height:120px;line-height:1.5}
+.chat-input-row textarea:focus{border-color:var(--blue)}
+.send-btn{padding:.6rem 1rem;background:var(--blue);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-size:.84rem;font-weight:700;transition:background .2s;flex-shrink:0}
+.send-btn:hover{background:var(--blue-dark)}
+.send-btn:disabled{opacity:.4;cursor:not-allowed}
+.input-actions{display:flex;gap:.4rem;margin-top:.35rem;flex-wrap:wrap}
+.inp-btn{padding:.2rem .65rem;border:1px solid var(--border);border-radius:20px;font-size:.72rem;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s}
+.inp-btn:hover{border-color:var(--blue);color:var(--blue)}
+.inp-btn.claude-btn{border-color:#ddd6fe;color:var(--purple)}
+.inp-btn.claude-btn:hover{background:var(--purple-light)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--rlg);width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:var(--shlg)}
+.modal-hdr{padding:1.1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-size:.95rem;font-weight:700}
+.modal-x{background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted)}
+.modal-body{padding:1.25rem 1.5rem}
+.modal-footer{padding:.85rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:.5rem;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface)}
+.btn-primary{padding:.55rem 1.2rem;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:.85rem;font-weight:600;cursor:pointer}
+.btn-secondary{padding:.55rem 1.2rem;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;cursor:pointer}
+.fg{margin-bottom:.85rem}
+.fg label{display:block;font-size:.78rem;font-weight:600;margin-bottom:.3rem}
+.fg input,.fg select,.fg textarea{width:100%;padding:.55rem .75rem;border:1.5px solid var(--border);border-radius:var(--r);font-size:.83rem;font-family:inherit;outline:none;transition:border .2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue)}
+.fg textarea{resize:vertical;min-height:80px}
+.fg select option{background:#fff}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.disclaimer{font-size:.75rem;color:var(--muted);background:var(--bg);border-radius:var(--r);padding:.6rem .85rem;margin-top:.5rem;line-height:1.55}
+
+/* GUEST VIEW */
+#guest-screen{display:none;min-height:100vh;background:var(--bg);padding:2rem 1rem}
+.guest-card{background:var(--surface);border-radius:var(--rlg);max-width:680px;margin:0 auto;box-shadow:var(--shlg);overflow:hidden}
+.guest-header{background:var(--blue);color:#fff;padding:1.25rem 1.5rem}
+.guest-header h1{font-size:1.1rem;font-weight:700;margin-bottom:.2rem}
+.guest-header p{font-size:.8rem;opacity:.85}
+.guest-body{padding:1.5rem}
+.guest-messages{border:1px solid var(--border);border-radius:var(--r);padding:1rem;margin-bottom:1.25rem;max-height:350px;overflow-y:auto;display:flex;flex-direction:column;gap:.65rem}
+.guest-reply-area{display:flex;flex-direction:column;gap:.6rem}
+.guest-reply-area textarea{width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:var(--r);font-size:.85rem;font-family:inherit;resize:vertical;min-height:90px;outline:none}
+.guest-reply-area textarea:focus{border-color:var(--blue)}
+.guest-name-row{display:flex;gap:.5rem}
+.guest-name-row input{flex:1;padding:.55rem .75rem;border:1.5px solid var(--border);border-radius:var(--r);font-size:.83rem;font-family:inherit;outline:none}
+.guest-name-row input:focus{border-color:var(--blue)}
+.guest-send-btn{padding:.65rem 1.5rem;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:.88rem;font-weight:700;cursor:pointer;align-self:flex-start}
+.guest-disclaimer{font-size:.72rem;color:var(--muted);margin-top:.85rem;line-height:1.6;padding:.6rem;background:var(--bg);border-radius:var(--r)}
+.guest-upsell{margin-top:1.25rem;padding:1rem;background:var(--blue-light);border:1px solid var(--blue-border);border-radius:var(--r);font-size:.8rem;color:var(--blue)}
+.guest-upsell strong{display:block;margin-bottom:.25rem;font-size:.85rem}
+
+/* PARTICIPANTS PANEL */
+.participants-panel{border-top:1px solid var(--border);padding:.75rem 1.25rem;background:var(--bg);flex-shrink:0}
+.participants-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.5rem}
+.participant-list{display:flex;gap:.5rem;flex-wrap:wrap}
+.participant-chip{display:flex;align-items:center;gap:.35rem;padding:.2rem .65rem;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:.75rem}
+.participant-dot{width:6px;height:6px;border-radius:50%}
+.dot-online{background:var(--green)}
+.dot-offline{background:var(--border)}
+.invite-btn{padding:.2rem .65rem;background:transparent;border:1px dashed var(--blue-border);border-radius:20px;font-size:.75rem;color:var(--blue);cursor:pointer;transition:all .15s}
+.invite-btn:hover{background:var(--blue-light)}
+
+/* NOTIFICATIONS */
+.notif{position:fixed;bottom:1rem;right:1rem;background:var(--text);color:#fff;padding:.75rem 1.1rem;border-radius:var(--r);font-size:.82rem;max-width:320px;z-index:9000;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.notif.show{opacity:1;transform:translateY(0)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  #app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  #app.show-sidebar .sidebar{display:flex;position:fixed;inset:0 auto 0 0;width:85vw;z-index:100}
+}
+@media print{#auth-screen,#guest-screen,.sidebar,.topbar,.chat-input-area,.participants-panel{display:none!important}.main{display:block}}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">💬</div>
+      <div class="auth-logo-name">SAIRNcomm</div>
+    </div>
+    <div class="auth-tagline">Medical coding communication — coders, physicians, and facilities in one place</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+    <div id="signin-form" class="auth-form">
+      <input type="email" id="si-email" placeholder="Email address" autocomplete="email">
+      <input type="password" id="si-password" placeholder="Password" autocomplete="current-password">
+      <button class="auth-btn" onclick="signIn()">Sign In →</button>
+      <div class="auth-error" id="si-error"></div>
+    </div>
+    <div id="signup-form" class="auth-form" style="display:none">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+        <input type="text" id="su-name" placeholder="Full name">
+        <input type="email" id="su-email" placeholder="Email address">
+      </div>
+      <input type="password" id="su-password" placeholder="Password (min 8 chars)">
+      <input type="text" id="su-org" placeholder="Organization / Facility name">
+      <select id="su-org-type">
+        <option value="">Organization type...</option>
+        <option value="hospital">Hospital / Health System</option>
+        <option value="coding_firm">Coding Firm / HIM Company</option>
+        <option value="practice">Physician Practice / Clinic</option>
+        <option value="asc">Ambulatory Surgery Center</option>
+        <option value="snf">Skilled Nursing Facility</option>
+        <option value="fqhc">FQHC / Rural Health Clinic</option>
+        <option value="va">VA / Military</option>
+        <option value="other">Other</option>
+      </select>
+      <select id="su-role">
+        <option value="">Your role...</option>
+        <option value="facility_admin">Facility Administrator</option>
+        <option value="coding_supervisor">Coding Supervisor</option>
+        <option value="hospital_coder">Hospital Coder</option>
+        <option value="contracted_coder">Contracted Coder</option>
+        <option value="firm_admin">Coding Firm Admin</option>
+        <option value="firm_coder">Coding Firm Coder</option>
+        <option value="physician">Physician / Provider</option>
+        <option value="billing_staff">Billing Staff</option>
+      </select>
+      <button class="auth-btn" onclick="signUp()">Create Account →</button>
+      <div class="auth-error" id="su-error"></div>
+      <div class="disclaimer">By creating an account you agree that SAIRNcomm may be used to communicate about coding matters. Do not include patient names or MRNs — use encounter/claim numbers only. Enterprise BAA required for PHI.</div>
+    </div>
+    <div class="auth-divider" style="margin-top:.75rem">
+      <a href="#" onclick="showGuestView('demo')" style="font-size:.75rem;color:var(--blue)">Received an invite link? Click here</a>
+    </div>
+  </div>
+</div>
+
+<!-- GUEST VIEW (for physicians and non-app users) -->
+<div id="guest-screen">
+  <div class="guest-card">
+    <div class="guest-header">
+      <h1 id="guest-subject">Coding Communication</h1>
+      <p>💬 SAIRNcomm — Secure medical coding communication platform</p>
+    </div>
+    <div class="guest-body">
+      <div class="guest-messages" id="guest-messages"></div>
+      <div class="guest-reply-area">
+        <textarea id="guest-reply" placeholder="Type your response here..." rows="4"></textarea>
+        <div class="guest-name-row">
+          <input type="text" id="guest-name-input" placeholder="Your name (optional)">
+          <button class="guest-send-btn" onclick="sendGuestReply()">Send Reply →</button>
+        </div>
+      </div>
+      <div class="guest-disclaimer">
+        ⚠️ <strong>HIPAA Notice:</strong> This communication may contain protected health information. Do not include patient names or MRNs in your response — use encounter numbers only. This platform is secured and encrypted.
+      </div>
+      <div class="guest-upsell" id="guest-upsell" style="display:none">
+        <strong>💬 Get SAIRNcomm for your facility</strong>
+        Your team has been using SAIRNcomm to communicate coding questions. Get full access — real-time threads, Claude AI coding assistance, multi-facility support. <a href="https://sairn.vercel.app" target="_blank" style="color:var(--blue);font-weight:600">Learn more →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-icon">💬</div>
+      <div class="topbar-name">SAIRNcomm</div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-badge">
+        <span id="user-name-display">—</span>
+        <span class="user-role" id="user-role-display">—</span>
+      </div>
+      <div id="org-name-display" style="font-size:.75rem;color:var(--muted)"></div>
+      <button class="signout-btn" onclick="signOut()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <button class="new-thread-btn" onclick="openNewThread()">+ New Thread</button>
+    </div>
+    <div class="sidebar-filters">
+      <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-chip" onclick="setFilter('open',this)">Open</button>
+      <button class="filter-chip" onclick="setFilter('cdi_query',this)">CDI</button>
+      <button class="filter-chip" onclick="setFilter('denial',this)">Denial</button>
+      <button class="filter-chip" onclick="setFilter('audit',this)">Audit</button>
+    </div>
+    <div class="thread-list" id="thread-list">
+      <div class="sidebar-empty">Loading threads...</div>
+    </div>
+  </div>
+
+  <!-- MAIN AREA -->
+  <div class="main" id="main-area">
+    <div class="no-thread" id="no-thread-view">
+      <div class="no-thread-icon">💬</div>
+      <div class="no-thread-title">SAIRNcomm</div>
+      <div class="no-thread-sub">Select a thread to start communicating, or create a new one. Coders, physicians, and facilities — all in one place.</div>
+    </div>
+
+    <div id="thread-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="chat-subject" id="thread-subject-display">—</div>
+          <div class="chat-meta">
+            <span id="thread-type-badge"></span>
+            <span id="thread-case-ref"></span>
+            <span id="thread-status-badge"></span>
+            <span id="thread-org-display" style="font-size:.7rem;color:var(--muted)"></span>
+          </div>
+        </div>
+        <div class="chat-header-actions">
+          <button class="hdr-btn" onclick="openInviteGuest()">+ Invite</button>
+          <button class="hdr-btn" onclick="askClaude()">🤖 Ask Claude</button>
+          <button class="hdr-btn danger" id="resolve-btn" onclick="resolveThread()">✓ Resolve</button>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chat-messages"></div>
+
+      <div class="participants-panel">
+        <div class="participants-label">Participants</div>
+        <div class="participant-list" id="participant-list">
+          <span style="font-size:.78rem;color:var(--muted)">Loading...</span>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <textarea id="msg-input" placeholder="Type a message... (Enter to send, Shift+Enter for new line)" rows="1"
+            onkeydown="handleMsgKey(event)" oninput="autoGrow(this)"></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+        <div class="input-actions">
+          <button class="inp-btn claude-btn" onclick="askClaude()">🤖 @Claude — Ask AI coding question</button>
+          <button class="inp-btn" onclick="insertCaseRef()">📋 Insert case reference</button>
+          <button class="inp-btn" onclick="openInviteGuest()">📧 Invite physician/guest</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW THREAD MODAL -->
+<div class="modal-bg" id="new-thread-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title">New Communication Thread</span>
+      <button class="modal-x" onclick="closeModal('new-thread-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <label>Thread Subject</label>
+        <input type="text" id="nt-subject" placeholder="e.g., CDI Query — Encounter #ENC-2026-4421">
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label>Type</label>
+          <select id="nt-type">
+            <option value="general">General</option>
+            <option value="cdi_query">CDI Query</option>
+            <option value="denial">Denial</option>
+            <option value="audit">Audit</option>
+            <option value="coding_question">Coding Question</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Priority</label>
+          <select id="nt-priority">
+            <option value="normal">Normal</option>
+            <option value="urgent">Urgent</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Case / Claim / Encounter Reference (optional)</label>
+        <input type="text" id="nt-case-ref" placeholder="e.g., CLM-2026-88234 or ENC-4421 — no patient names or MRNs">
+      </div>
+      <div class="fg">
+        <label>Opening Message</label>
+        <textarea id="nt-message" placeholder="Describe the coding question, denial reason, or documentation concern..." rows="4"></textarea>
+      </div>
+      <div class="disclaimer">⚠️ Do not include patient names, dates of birth, or MRNs. Use encounter/claim reference numbers only. This thread is visible to all members of your organization.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('new-thread-modal')">Cancel</button>
+      <button class="btn-primary" onclick="createThread()">Create Thread →</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE GUEST MODAL -->
+<div class="modal-bg" id="invite-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title">Invite Guest (Physician / External)</span>
+      <button class="modal-x" onclick="closeModal('invite-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.55">Send a secure link to a physician, contracted coder, or anyone who doesn't have a SAIRNcomm account. They can view and reply without creating an account. The link expires in 72 hours.</p>
+      <div class="fg">
+        <label>Guest Name</label>
+        <input type="text" id="inv-name" placeholder="Dr. Smith or Jane Doe, CPC">
+      </div>
+      <div class="fg">
+        <label>Email Address</label>
+        <input type="email" id="inv-email" placeholder="physician@hospital.org">
+      </div>
+      <div class="fg">
+        <label>Message (optional)</label>
+        <textarea id="inv-message" placeholder="Short note explaining what you need from them..." rows="3"></textarea>
+      </div>
+      <div class="disclaimer">The guest will receive a secure link to view this thread and respond. They will NOT see other threads. After 3 responses, they'll be prompted to consider SAIRNcomm for their facility.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('invite-modal')">Cancel</button>
+      <button class="btn-primary" onclick="sendGuestInvite()">Send Invite →</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<script>
+'use strict';
+
+const SUPABASE_URL = 'https://ohzqfwndmuowbswpbxxp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_R859bkP1WDish-9HUdMOqg_QbGWHNO9';
+const SAIRN_API    = 'https://sairn.vercel.app/api/claude';
+const APP_ID       = 'sairncomm';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// STATE
+let currentUser    = null;
+let currentProfile = null;
+let currentOrg     = null;
+let currentThread  = null;
+let currentFilter  = 'all';
+let threads        = [];
+let msgSubscription = null;
+let threadSubscription = null;
+
+// ── NOTIFICATIONS ────────────────────────────────────────────────
+function notify(msg, type) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#1a202c';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── AUTH ─────────────────────────────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('signin-form').style.display = tab === 'signin' ? 'flex' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'flex' : 'none';
+}
+
+async function signIn() {
+  const email    = document.getElementById('si-email').value.trim();
+  const password = document.getElementById('si-password').value;
+  const errEl    = document.getElementById('si-error');
+  errEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent = 'Enter email and password.'; errEl.style.display = 'block'; return; }
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    await initApp(data.user);
+  } catch (e) {
+    errEl.textContent = e.message || 'Sign in failed. Please try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function signUp() {
+  const name    = document.getElementById('su-name').value.trim();
+  const email   = document.getElementById('su-email').value.trim();
+  const password = document.getElementById('su-password').value;
+  const orgName  = document.getElementById('su-org').value.trim();
+  const orgType  = document.getElementById('su-org-type').value;
+  const role     = document.getElementById('su-role').value;
+  const errEl    = document.getElementById('su-error');
+  errEl.style.display = 'none';
+  if (!name || !email || !password || !orgName || !orgType || !role) {
+    errEl.textContent = 'Please fill in all fields.';
+    errEl.style.display = 'block'; return;
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = 'block'; return;
+  }
+  try {
+    // 1. Create org
+    const { data: orgData, error: orgErr } = await db.from('organizations').insert({
+      name: orgName, type: orgType, tier: 'team'
+    }).select().single();
+    if (orgErr) throw orgErr;
+
+    // 2. Sign up auth user
+    const { data: authData, error: authErr } = await db.auth.signUp({ email, password,
+      options: { data: { name, org_id: orgData.id, role } }
+    });
+    if (authErr) throw authErr;
+
+    // 3. Create profile
+    if (authData.user) {
+      const { error: profileErr } = await db.from('profiles').insert({
+        id: authData.user.id, org_id: orgData.id, name, email, role
+      });
+      if (profileErr) console.error('Profile error:', profileErr);
+    }
+
+    notify('Account created! Check your email to confirm, then sign in.', 'success');
+    switchAuthTab('signin');
+    document.getElementById('si-email').value = email;
+  } catch (e) {
+    errEl.textContent = e.message || 'Sign up failed. Please try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function signOut() {
+  cleanup();
+  await db.auth.signOut();
+  currentUser = currentProfile = currentOrg = currentThread = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+async function initApp(user) {
+  currentUser = user;
+  // Load profile + org
+  const { data: profile } = await db.from('profiles')
+    .select('*, organizations(*)')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile) {
+    notify('Profile not found. Please contact support.', 'error'); return;
+  }
+  currentProfile = profile;
+  currentOrg = profile.organizations;
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'grid';
+  document.getElementById('user-name-display').textContent = profile.name;
+  document.getElementById('user-role-display').textContent = profile.role.replace(/_/g, ' ');
+  document.getElementById('org-name-display').textContent = currentOrg?.name || '';
+
+  // Update last_seen
+  await db.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id);
+
+  await loadThreads();
+  subscribeToThreads();
+}
+
+// ── THREADS ──────────────────────────────────────────────────────
+async function loadThreads() {
+  const { data, error } = await db.from('threads')
+    .select('*')
+    .eq('org_id', currentOrg.id)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (error) { notify('Error loading threads.', 'error'); return; }
+  threads = data || [];
+  renderThreadList();
+}
+
+function setFilter(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderThreadList();
+}
+
+function renderThreadList() {
+  const el = document.getElementById('thread-list');
+  let filtered = threads;
+  if (currentFilter !== 'all') {
+    if (['open','pending','resolved','closed'].includes(currentFilter)) {
+      filtered = threads.filter(t => t.status === currentFilter);
+    } else {
+      filtered = threads.filter(t => t.type === currentFilter);
+    }
+  }
+  if (!filtered.length) {
+    el.innerHTML = `<div class="sidebar-empty">No threads found.<br><br><button onclick="openNewThread()" style="padding:.4rem .9rem;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:.78rem;cursor:pointer">Start one →</button></div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(t => `
+    <div class="thread-item ${currentThread?.id === t.id ? 'active' : ''}" onclick="openThread('${t.id}')">
+      <div class="thread-subject">${escHtml(t.subject)}</div>
+      <div class="thread-meta">
+        <span class="thread-type type-${t.type}">${t.type.replace(/_/g,' ')}</span>
+        <span class="thread-status status-${t.status}">${t.status}</span>
+        <span class="thread-time">${timeAgo(t.created_at)}</span>
+        ${t.priority === 'urgent' ? '<span style="font-size:.65rem;color:var(--red);font-weight:700">URGENT</span>' : ''}
+      </div>
+    </div>`).join('');
+}
+
+function subscribeToThreads() {
+  if (threadSubscription) db.removeChannel(threadSubscription);
+  threadSubscription = db.channel('org-threads-' + currentOrg.id)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'threads',
+      filter: `org_id=eq.${currentOrg.id}`
+    }, () => { loadThreads(); })
+    .subscribe();
+}
+
+async function openThread(threadId) {
+  if (msgSubscription) db.removeChannel(msgSubscription);
+  const thread = threads.find(t => t.id === threadId);
+  if (!thread) return;
+  currentThread = thread;
+  renderThreadList();
+
+  // Show thread view
+  document.getElementById('no-thread-view').style.display = 'none';
+  const tv = document.getElementById('thread-view');
+  tv.style.display = 'flex';
+
+  // Header
+  document.getElementById('thread-subject-display').textContent = thread.subject;
+  document.getElementById('thread-type-badge').innerHTML = `<span class="thread-type type-${thread.type}">${thread.type.replace(/_/g,' ')}</span>`;
+  document.getElementById('thread-case-ref').textContent = thread.case_ref ? `📋 ${thread.case_ref}` : '';
+  document.getElementById('thread-status-badge').innerHTML = `<span class="thread-status status-${thread.status}">${thread.status}</span>`;
+  document.getElementById('thread-org-display').textContent = currentOrg?.name || '';
+  document.getElementById('resolve-btn').textContent = thread.status === 'resolved' ? '↺ Reopen' : '✓ Resolve';
+
+  await loadMessages(threadId);
+  await loadParticipants(threadId);
+  subscribeToMessages(threadId);
+
+  // Add self as participant if not already
+  await db.from('thread_participants').upsert({
+    thread_id: threadId, user_id: currentUser.id, role: 'participant'
+  }, { onConflict: 'thread_id,user_id', ignoreDuplicates: true });
+
+  document.getElementById('msg-input').focus();
+}
+
+async function loadMessages(threadId) {
+  const el = document.getElementById('chat-messages');
+  const { data, error } = await db.from('messages')
+    .select('*, profiles(name, role)')
+    .eq('thread_id', threadId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+
+  if (error) { el.innerHTML = '<div style="padding:1rem;color:var(--red);font-size:.82rem">Error loading messages.</div>'; return; }
+
+  if (!data.length) {
+    el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);font-size:.82rem">No messages yet. Start the conversation below.</div>';
+    return;
+  }
+
+  el.innerHTML = data.map(m => renderMessage(m)).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderMessage(m) {
+  const isMe     = m.sender_id === currentUser?.id;
+  const isClaude = m.msg_type === 'claude';
+  const isSystem = m.msg_type === 'system';
+  const isGuest  = !m.sender_id && m.sender_guest_token;
+  const cls = isSystem ? 'system' : isMe ? 'me' : isClaude ? 'claude' : isGuest ? 'guest' : 'them';
+  const senderName = isClaude ? 'Claude AI' : isGuest ? 'Guest' : (m.profiles?.name || 'Unknown');
+  const initials = senderName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+  const content = formatContent(m.content);
+  if (isSystem) return `<div class="msg system"><div class="msg-bubble">${content}</div></div>`;
+  return `<div class="msg ${cls}">
+    <div class="msg-av">${initials}</div>
+    <div class="msg-body">
+      ${!isMe ? `<div class="msg-sender">${escHtml(senderName)}${m.profiles?.role ? ` · ${m.profiles.role.replace(/_/g,' ')}` : ''}</div>` : ''}
+      <div class="msg-bubble">${content}</div>
+      <div class="msg-time">${timeAgo(m.created_at)}</div>
+    </div>
+  </div>`;
+}
+
+function subscribeToMessages(threadId) {
+  msgSubscription = db.channel('thread-msgs-' + threadId)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'messages',
+      filter: `thread_id=eq.${threadId}`
+    }, async (payload) => {
+      const m = payload.new;
+      // Fetch sender profile if needed
+      if (m.sender_id && m.sender_id !== currentUser?.id) {
+        const { data } = await db.from('profiles').select('name,role').eq('id', m.sender_id).single();
+        m.profiles = data;
+        notify(`New message from ${data?.name || 'someone'}`, 'info');
+      }
+      const el = document.getElementById('chat-messages');
+      const empty = el.querySelector('[style*="No messages"]');
+      if (empty) empty.remove();
+      el.insertAdjacentHTML('beforeend', renderMessage(m));
+      el.scrollTop = el.scrollHeight;
+    })
+    .subscribe();
+}
+
+async function loadParticipants(threadId) {
+  const { data } = await db.from('thread_participants')
+    .select('*, profiles(name, role, last_seen)')
+    .eq('thread_id', threadId);
+
+  const el = document.getElementById('participant-list');
+  if (!data?.length) { el.innerHTML = ''; }
+  else {
+    el.innerHTML = data.map(p => {
+      const name = p.guest_name || p.profiles?.name || 'Guest';
+      const isOnline = p.profiles?.last_seen && (new Date() - new Date(p.profiles.last_seen)) < 300000;
+      return `<span class="participant-chip">
+        <span class="participant-dot ${isOnline ? 'dot-online' : 'dot-offline'}"></span>
+        ${escHtml(name)}
+      </span>`;
+    }).join('');
+  }
+  // Add invite button
+  el.insertAdjacentHTML('beforeend', `<button class="invite-btn" onclick="openInviteGuest()">+ Invite</button>`);
+}
+
+// ── SEND MESSAGE ─────────────────────────────────────────────────
+async function sendMessage() {
+  const inp = document.getElementById('msg-input');
+  const text = inp.value.trim();
+  if (!text || !currentThread) return;
+  inp.value = ''; inp.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  try {
+    const { error } = await db.from('messages').insert({
+      thread_id: currentThread.id,
+      sender_id: currentUser.id,
+      content: text,
+      msg_type: 'user'
+    });
+    if (error) throw error;
+  } catch (e) {
+    notify('Failed to send message. Try again.', 'error');
+    inp.value = text;
+  }
+  document.getElementById('send-btn').disabled = false;
+  inp.focus();
+}
+
+function handleMsgKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── CLAUDE AI IN THREAD ──────────────────────────────────────────
+async function askClaude() {
+  if (!currentThread) { notify('Open a thread first.', 'info'); return; }
+  const question = prompt('What coding question should Claude answer in this thread?');
+  if (!question?.trim()) return;
+
+  // Show typing
+  const el = document.getElementById('chat-messages');
+  const typingId = 'typing-' + Date.now();
+  el.insertAdjacentHTML('beforeend', `<div id="${typingId}" class="msg claude">
+    <div class="msg-av">AI</div>
+    <div class="msg-body"><div class="typing-msg"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>
+  </div>`);
+  el.scrollTop = el.scrollHeight;
+
+  try {
+    const context = `Thread subject: ${currentThread.subject}\nThread type: ${currentThread.type}\nCase reference: ${currentThread.case_ref || 'none'}\n\nQuestion from coder: ${question}`;
+    const res = await fetch(SAIRN_API, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 1000, app_id: APP_ID,
+        system: 'You are SAIRNcomm AI — an expert medical coding assistant embedded in a secure coding communication thread. Answer coding questions with specific ICD-10, CPT, DRG, or compliance guidance. Be concise and actionable. FY2026 guidelines apply.',
+        messages: [{ role: 'user', content: context }]
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Unable to get AI response.';
+    document.getElementById(typingId)?.remove();
+
+    // Save Claude message to thread
+    await db.from('messages').insert({
+      thread_id: currentThread.id,
+      sender_id: currentUser.id,
+      content: `**@Claude was asked:** ${question}\n\n${reply}`,
+      msg_type: 'claude'
+    });
+  } catch (e) {
+    document.getElementById(typingId)?.remove();
+    notify('Claude AI error. Try again.', 'error');
+  }
+}
+
+// ── CREATE THREAD ────────────────────────────────────────────────
+async function createThread() {
+  const subject  = document.getElementById('nt-subject').value.trim();
+  const type     = document.getElementById('nt-type').value;
+  const priority = document.getElementById('nt-priority').value;
+  const caseRef  = document.getElementById('nt-case-ref').value.trim();
+  const message  = document.getElementById('nt-message').value.trim();
+  if (!subject) { notify('Enter a subject.', 'error'); return; }
+
+  try {
+    // Create thread
+    const { data: thread, error: tErr } = await db.from('threads').insert({
+      org_id: currentOrg.id,
+      subject, type, priority,
+      case_ref: caseRef || null,
+      created_by: currentUser.id,
+      status: 'open'
+    }).select().single();
+    if (tErr) throw tErr;
+
+    // Add creator as participant
+    await db.from('thread_participants').insert({
+      thread_id: thread.id, user_id: currentUser.id, role: 'creator'
+    });
+
+    // Add opening message
+    if (message) {
+      await db.from('messages').insert({
+        thread_id: thread.id, sender_id: currentUser.id,
+        content: message, msg_type: 'user'
+      });
+    }
+
+    // Add system message
+    await db.from('messages').insert({
+      thread_id: thread.id, sender_id: currentUser.id,
+      content: `Thread created by ${currentProfile.name} · ${new Date().toLocaleDateString()}`,
+      msg_type: 'system'
+    });
+
+    closeModal('new-thread-modal');
+    ['nt-subject','nt-case-ref','nt-message'].forEach(id => document.getElementById(id).value = '');
+    await loadThreads();
+    openThread(thread.id);
+    notify('Thread created.', 'success');
+  } catch (e) {
+    notify('Error creating thread: ' + (e.message || 'Unknown error'), 'error');
+  }
+}
+
+// ── INVITE GUEST ─────────────────────────────────────────────────
+async function sendGuestInvite() {
+  if (!currentThread) { notify('Open a thread first.', 'error'); return; }
+  const name    = document.getElementById('inv-name').value.trim();
+  const email   = document.getElementById('inv-email').value.trim();
+  const message = document.getElementById('inv-message').value.trim();
+  if (!email) { notify('Enter an email address.', 'error'); return; }
+
+  try {
+    const token = crypto.randomUUID();
+    const { error } = await db.from('guest_invites').insert({
+      thread_id: currentThread.id,
+      invited_by: currentUser.id,
+      email, name: name || null, token,
+      expires_at: new Date(Date.now() + 72 * 3600000).toISOString()
+    });
+    if (error) throw error;
+
+    // Add participant entry
+    await db.from('thread_participants').insert({
+      thread_id: currentThread.id,
+      guest_email: email, guest_name: name || email,
+      guest_token: token,
+      guest_token_expires_at: new Date(Date.now() + 72 * 3600000).toISOString(),
+      role: 'guest'
+    });
+
+    // System message
+    await db.from('messages').insert({
+      thread_id: currentThread.id, sender_id: currentUser.id,
+      content: `Guest invite sent to ${name || email}. They can respond via secure link (expires 72hrs).`,
+      msg_type: 'system'
+    });
+
+    const guestUrl = `${window.location.href.split('?')[0]}?token=${token}`;
+    closeModal('invite-modal');
+    document.getElementById('inv-name').value = '';
+    document.getElementById('inv-email').value = '';
+    document.getElementById('inv-message').value = '';
+
+    // Copy link to clipboard
+    navigator.clipboard.writeText(guestUrl).catch(() => {});
+    notify(`Invite link copied! Send it to ${name || email}. Link expires in 72 hours.`, 'success');
+  } catch (e) {
+    notify('Error creating invite: ' + (e.message || 'Unknown'), 'error');
+  }
+}
+
+// ── GUEST VIEW ───────────────────────────────────────────────────
+async function showGuestView(token) {
+  if (token === 'demo') {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('guest-screen').style.display = 'block';
+    document.getElementById('guest-subject').textContent = 'CDI Query — Encounter Reference';
+    document.getElementById('guest-messages').innerHTML = `
+      <div class="msg them" style="margin-bottom:.5rem">
+        <div class="msg-av">SC</div>
+        <div class="msg-body">
+          <div class="msg-sender">Sarah Chen, CCS · Hospital Coder</div>
+          <div class="msg-bubble">Dr. Smith, we have a documentation question on encounter ENC-2026-4421. The patient presented with acute respiratory failure, but we need clarification on whether this was Type 1 (hypoxemic) or Type 2 (hypercapnic) to assign the most specific ICD-10 code. Could you please clarify in the medical record?</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Real token flow
+  const { data: invite } = await db.from('guest_invites')
+    .select('*, threads(*)')
+    .eq('token', token)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (!invite) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('guest-screen').style.display = 'block';
+    document.getElementById('guest-subject').textContent = 'Link Expired';
+    document.getElementById('guest-messages').innerHTML = '<div style="padding:1rem;color:var(--red);font-size:.85rem">This invite link has expired or is invalid. Please contact the person who sent it.</div>';
+    return;
+  }
+
+  // Load thread messages
+  const { data: msgs } = await db.from('messages')
+    .select('*, profiles(name, role)')
+    .eq('thread_id', invite.thread_id)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('guest-screen').style.display = 'block';
+  document.getElementById('guest-subject').textContent = invite.threads?.subject || 'Coding Communication';
+
+  const msgsEl = document.getElementById('guest-messages');
+  msgsEl.innerHTML = (msgs || []).filter(m => m.msg_type !== 'system').map(m => {
+    const name = m.profiles?.name || 'Coder';
+    const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    return `<div class="msg them">
+      <div class="msg-av">${initials}</div>
+      <div class="msg-body">
+        <div class="msg-sender">${escHtml(name)}${m.profiles?.role ? ` · ${m.profiles.role.replace(/_/g,' ')}` : ''}</div>
+        <div class="msg-bubble">${formatContent(m.content)}</div>
+        <div class="msg-time">${timeAgo(m.created_at)}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:1rem;color:var(--muted);font-size:.82rem">No messages yet.</div>';
+
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  // Show upsell after 3 responses
+  await db.from('guest_invites').update({ response_count: (invite.response_count || 0) + 1 }).eq('id', invite.id);
+  if ((invite.response_count || 0) >= 2) {
+    document.getElementById('guest-upsell').style.display = 'block';
+  }
+
+  // Store token for reply
+  window._guestToken = token;
+  window._guestThreadId = invite.thread_id;
+}
+
+async function sendGuestReply() {
+  const content = document.getElementById('guest-reply').value.trim();
+  const name = document.getElementById('guest-name-input').value.trim();
+  if (!content || !window._guestThreadId) return;
+
+  try {
+    await db.from('messages').insert({
+      thread_id: window._guestThreadId,
+      sender_guest_token: window._guestToken,
+      content: (name ? `**${name}:** ` : '') + content,
+      msg_type: 'user'
+    });
+    document.getElementById('guest-reply').value = '';
+    notify('Reply sent successfully.', 'success');
+    // Reload messages
+    setTimeout(() => showGuestView(window._guestToken), 500);
+  } catch (e) {
+    notify('Error sending reply.', 'error');
+  }
+}
+
+// ── THREAD ACTIONS ────────────────────────────────────────────────
+async function resolveThread() {
+  if (!currentThread) return;
+  const newStatus = currentThread.status === 'resolved' ? 'open' : 'resolved';
+  const { error } = await db.from('threads').update({
+    status: newStatus,
+    resolved_at: newStatus === 'resolved' ? new Date().toISOString() : null
+  }).eq('id', currentThread.id);
+  if (error) { notify('Error updating thread.', 'error'); return; }
+  currentThread.status = newStatus;
+  document.getElementById('resolve-btn').textContent = newStatus === 'resolved' ? '↺ Reopen' : '✓ Resolve';
+  document.getElementById('thread-status-badge').innerHTML = `<span class="thread-status status-${newStatus}">${newStatus}</span>`;
+  await db.from('messages').insert({
+    thread_id: currentThread.id, sender_id: currentUser.id,
+    content: `Thread marked as ${newStatus} by ${currentProfile.name}.`,
+    msg_type: 'system'
+  });
+  await loadThreads();
+  notify(`Thread ${newStatus}.`, 'success');
+}
+
+function insertCaseRef() {
+  const ref = prompt('Enter case/claim/encounter reference (no patient names or MRNs):');
+  if (!ref) return;
+  const inp = document.getElementById('msg-input');
+  inp.value = (inp.value + ' [Case: ' + ref + ']').trim();
+  inp.focus();
+}
+
+// ── MODALS ────────────────────────────────────────────────────────
+function openNewThread() {
+  document.getElementById('new-thread-modal').classList.add('open');
+  setTimeout(() => document.getElementById('nt-subject').focus(), 100);
+}
+function openInviteGuest() {
+  if (!currentThread) { notify('Open a thread first.', 'info'); return; }
+  document.getElementById('invite-modal').classList.add('open');
+  setTimeout(() => document.getElementById('inv-name').focus(), 100);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── UTILITIES ─────────────────────────────────────────────────────
+function escHtml(t) {
+  return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatContent(text) {
+  if (!text) return '';
+  let t = escHtml(text);
+  t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+  return t;
+}
+function timeAgo(ts) {
+  const d = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (d < 60) return 'just now';
+  if (d < 3600) return Math.floor(d/60) + 'm ago';
+  if (d < 86400) return Math.floor(d/3600) + 'h ago';
+  return Math.floor(d/86400) + 'd ago';
+}
+function cleanup() {
+  if (msgSubscription) db.removeChannel(msgSubscription);
+  if (threadSubscription) db.removeChannel(threadSubscription);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+(async function init() {
+  // Check for guest token in URL
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  if (token) { await showGuestView(token); return; }
+
+  // Check existing session
+  const { data: { session } } = await db.auth.getSession();
+  if (session) { await initApp(session.user); return; }
+
+  // Listen for auth changes
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) await initApp(session.user);
+  });
+})();
+
+// Close modals on background click
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
