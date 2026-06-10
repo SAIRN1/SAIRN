@@ -864,8 +864,26 @@ dismissGate = function() {
 <div id="app">
   <div class="topbar">
     <div class="topbar-brand">
-      <div class="topbar-gem">🪨</div>
-      <div class="topbar-name">Fabri<em>cor</em></div>
+      <div style="width:44px;height:48px;overflow:hidden;position:relative;flex-shrink:0">
+        <svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:48px;position:absolute;top:0;left:0">
+          <defs>
+            <clipPath id="sdClip">
+              <text x="4" y="82" font-family="Georgia,serif" font-size="88" font-weight="900" font-style="italic">S</text>
+            </clipPath>
+            <pattern id="sdHex" x="0" y="0" width="18" height="20" patternUnits="userSpaceOnUse">
+              <polygon points="9,1 16,5 16,13 9,17 2,13 2,5" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.6"/>
+            </pattern>
+          </defs>
+          <text x="4" y="82" font-family="Georgia,serif" font-size="88" font-weight="900" font-style="italic" fill="white">S</text>
+          <rect x="-10" y="-20" width="120" height="150" fill="url(#sdHex)" clip-path="url(#sdClip)">
+            <animateTransform attributeName="transform" type="translate" from="0,0" to="0,-20" dur="1.4s" repeatCount="indefinite"/>
+          </rect>
+          <rect x="4" y="-90" width="72" height="30" fill="rgba(255,255,255,0.18)" clip-path="url(#sdClip)">
+            <animateTransform attributeName="transform" type="translate" from="0,0" to="0,180" dur="2.2s" repeatCount="indefinite"/>
+          </rect>
+        </svg>
+      </div>
+      <div class="topbar-name"><span style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px">S</span><span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85)">tone</span><span style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px">D</span><span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85)">esk</span><sup style="font-size:9px;color:rgba(255,255,255,0.6);vertical-align:super;margin-left:1px">™</sup></div>
     </div>
     <div class="topbar-nav">
       <button class="nav-btn active" onclick="showPanel('ai')"     >AI Shop</button>
