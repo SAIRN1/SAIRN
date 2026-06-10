@@ -1815,8 +1815,8 @@ async function doRegister(){
   }catch(e){errEl.textContent='Connection error - try again.';}
 }
 
-function doLogout() {
-  await fetch('https://fabricor-production.up.railway.app/api/auth/logout', {method:'POST', credentials:'include'});
+async function doLogout() {
+  try{await fetch('https://fabricor-production.up.railway.app/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){}
   currentUser = null;
   document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('app').classList.remove('visible');
