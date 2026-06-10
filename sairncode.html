@@ -515,6 +515,7 @@ var SAIRN_MODES = {
   icd11: {label:'ICD-11 Prep', ph:'Enter an ICD-10 code or diagnosis. I will show the ICD-11 equivalent, post-coordination logic, and transition guidance.'},
   outcome: {label:'Outcome Tracker', ph:'Describe the code suggested and whether it was accepted, denied, or modified. I will analyze patterns and provide feedback.'}
 };
+function openProfileModal(){console.log("Profile modal - coming soon");}
 function setModeById(id){
   var m=SAIRN_MODES[id];
   if(!m) return;
@@ -2961,7 +2962,7 @@ function printQuery(tmpl) {
   win.document.write('</div>');
 
   win.document.write('<div class="footer"><div>Physician Query — Confidential — For Coding and Compliance Purposes Only</div><div>SAIRNcode AI — sairn.vercel.app/sairncode</div></div>');
-  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
   win.document.close();
 }
 
