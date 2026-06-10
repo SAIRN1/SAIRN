@@ -1665,6 +1665,11 @@ async function doRegister(){
   }catch(e){errEl.textContent='Connection error - try again.';}
 }
 
+
+// Safety stubs for missing functions
+function openProfileModal(){console.log('Profile modal not yet built');}
+var quoteCounter = parseInt(localStorage.getItem('quoteCounter')||'0');
+var edgeAssignments = {};
 async function doLogout() {
   try{await fetch('https://fabricor-production.up.railway.app/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){}
   currentUser = null;
