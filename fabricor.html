@@ -854,21 +854,21 @@ dismissGate = function() {
     </div>
     <div id="auth-login-form">
       <label>Email</label>
-      <input type="email" id="auth-email" placeholder="you@yourshop.com" onkeydown="if(event.key==='Enter')doLogin()">
-      <label style="margin-top:10px">Password</label>
-      <input type="password" id="auth-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <input type="email" id="auth-email" placeholder="you@yourshop.com" style="width:100%;margin-bottom:8px" onkeydown="if(event.key==='Enter')doLogin()">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••" style="width:100%" onkeydown="if(event.key==='Enter')doLogin()">
       <div class="auth-error" id="auth-error"></div>
       <button class="auth-btn" onclick="doLogin()">Sign In to StoneDesk™</button>
     </div>
     <div id="auth-register-form" style="display:none">
       <label>Shop Name</label>
-      <input type="text" id="auth-shopname" placeholder="Your Fabrication Shop">
-      <label style="margin-top:8px">Your Name</label>
-      <input type="text" id="auth-name" placeholder="John Smith">
-      <label style="margin-top:8px">Email</label>
-      <input type="email" id="auth-reg-email" placeholder="you@yourshop.com">
-      <label style="margin-top:8px">Password</label>
-      <input type="password" id="auth-reg-password" placeholder="Min 8 characters" onkeydown="if(event.key==='Enter')doRegister()">
+      <input type="text" id="auth-shopname" placeholder="Your Fabrication Shop" style="width:100%;margin-bottom:8px">
+      <label>Your Name</label>
+      <input type="text" id="auth-name" placeholder="John Smith" style="width:100%;margin-bottom:8px">
+      <label>Email</label>
+      <input type="email" id="auth-reg-email" placeholder="you@yourshop.com" style="width:100%;margin-bottom:8px">
+      <label>Password</label>
+      <input type="password" id="auth-reg-password" placeholder="Min 8 characters" style="width:100%" onkeydown="if(event.key==='Enter')doRegister()">
       <div class="auth-error" id="auth-reg-error"></div>
       <button class="auth-btn" onclick="doRegister()">Create Free Account</button>
     </div>
@@ -1915,7 +1915,54 @@ async function doRegister() {
   } catch(e) { errEl.textContent = 'Connection error. Try again.'; }
 }
 
-async function doLogout() {
+async function selectAuthTab(tab,el){
+  document.querySelectorAll('.role-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('auth-login-form').style.display=tab==='login'?'block':'none';
+  document.getElementById('auth-register-form').style.display=tab==='register'?'block':'none';
+}
+const RAILWAY='https://fabricor-production.up.railway.app';
+let currentUser=null;
+async function doLogin(){
+  const email=document.getElementById('auth-email').value.trim();
+  const password=document.getElementById('auth-password').value;
+  const errEl=document.getElementById('auth-error');
+  errEl.textContent='';
+  if(!email||!password){errEl.textContent='Please enter email and password';return;}
+  try{
+    const res=await fetch(RAILWAY+'/api/auth/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const data=await res.json();
+    if(!res.ok){errEl.textContent=data.error||'Login failed';return;}
+    currentUser=data.user;
+    shopName=data.user.shopName||'My Shop';
+    loginRole=data.user.role==='admin'?'admin':'sales';
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app').style.display='';
+    if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
+  }catch(e){errEl.textContent='Connection error. Try again.';}
+}
+async function doRegister(){
+  const sn=document.getElementById('auth-shopname').value.trim();
+  const name=document.getElementById('auth-name').value.trim();
+  const email=document.getElementById('auth-reg-email').value.trim();
+  const password=document.getElementById('auth-reg-password').value;
+  const errEl=document.getElementById('auth-reg-error');
+  errEl.textContent='';
+  if(!sn||!name||!email||!password){errEl.textContent='All fields required';return;}
+  if(password.length<8){errEl.textContent='Password must be 8+ characters';return;}
+  try{
+    const res=await fetch(RAILWAY+'/api/auth/register',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,name,shopName:sn})});
+    const data=await res.json();
+    if(!res.ok){errEl.textContent=data.error||'Registration failed';return;}
+    currentUser=data.user;
+    shopName=data.user.shopName||sn;
+    loginRole='admin';
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app').style.display='';
+    if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
+  }catch(e){errEl.textContent='Connection error. Try again.';}
+}
+function doLogout() {
   await fetch('https://fabricor-production.up.railway.app/api/auth/logout', {method:'POST', credentials:'include'});
   currentUser = null;
   document.getElementById('auth-screen').style.display = 'flex';
