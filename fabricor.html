@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fabricor — Stone Fabrication Intelligence Platform</title>
+<title>StoneDesk — Stone Fabrication Intelligence Platform</title>
 <meta name="theme-color" content="#060810">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -681,7 +681,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 // SAIRN UNIVERSAL AUTH GATE — Pattern 1 from the first
 // Role-based PIN auth: User (1234) + Admin (9999)
 // Deployed to all 8 SAIRN NEXUS consumer apps
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -832,7 +832,7 @@ dismissGate = function() {
 <!-- ══ AUTH ══ -->
 <div id="auth-screen">
   <div class="auth-glow"></div>
-  <div class="auth-logo">Fabri<em>cor</em></div>
+  <div class="auth-logo">StoneDesk™</div>
   <div class="auth-tag">Stone Fabrication Intelligence Platform</div>
   <div class="auth-box">
     <div class="role-pills">
@@ -843,7 +843,7 @@ dismissGate = function() {
     <input type="password" id="pin-input" maxlength="8" placeholder="••••"
       onkeydown="if(event.key==='Enter')doLogin()">
     <div class="auth-error" id="auth-error"></div>
-    <button class="auth-btn" onclick="doLogin()">Enter Fabricor</button>
+    <button class="auth-btn" onclick="doLogin()">Enter StoneDesk™</button>
   </div>
 </div>
 
@@ -1714,7 +1714,7 @@ const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'fabricor';
 
 // ── SYSTEM PROMPT ──────────────────────────────────────────────
-const SYSTEM = "You are Fabricor, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
+const SYSTEM = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
 
 // ── STATE ──────────────────────────────────────────────────────
 let CODES = { sales: '1234', admin: '9999' };
@@ -2851,7 +2851,7 @@ function printSOP(p, shopName) {
   win.document.write('<h2>Position Responsibilities</h2><ul>');
   p.duties.forEach(d=>win.document.write('<li>'+d+'</li>'));
   win.document.write('</ul><div style="margin-top:32px"><span class="sig">Employee Name (print)</span><span class="sig">Signature &amp; Date</span><span class="sig">Supervisor Sign-Off</span></div>');
-  win.document.write('<div class="ftr"><span>'+shopName+' — Standard Operating Procedures — Confidential</span><span>Fabricor AI by SAIRN Technologies</span></div>');
+  win.document.write('<div class="ftr"><span>'+shopName+' — Standard Operating Procedures — Confidential</span><span>Fabricor AI by SAIRN Technologies™</span></div>');
   win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
   win.document.close();
 }
@@ -3018,7 +3018,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Feature 1 of enhanced AI features — highest impact
 // Supports: PDF, images (JPG/PNG), text files, Word docs
 // Claude reads the document and analyzes it in context
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -3462,7 +3462,7 @@ setTimeout(injectDocButton, 600);
 // SAIRN UNIVERSAL AI FOLLOW-UP QUESTIONS MODULE
 // Feature 2 — after every Claude response, 3 smart follow-up chips
 // appear. One tap sends the question instantly.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -3653,7 +3653,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // After every 3rd AI response, Claude summarizes the session.
 // That summary is injected into all future prompts as context.
 // The AI stops forgetting what it told you 2 questions ago.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -3839,7 +3839,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // User sets preferred response style once — stored in localStorage
 // Injected into every system prompt automatically
 // Options: Simple / Detailed / Formal / Casual / Expert
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -3976,7 +3976,7 @@ setTimeout(buildToneBar, 700);
 // When Claude produces a numbered list, auto-render it as an
 // interactive checklist. Progress saved to localStorage.
 // Returns to living action list the user works through over time.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -4192,7 +4192,7 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installActi
 //   "Simplify" — rewrite in plain language, short sentences
 //   "Go Deeper" — expand with more detail and examples
 // One tap — instant. No typing required.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -4361,7 +4361,7 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installSimp
 // Microphone button next to the send button.
 // Speech → text → fills the input → sends to Claude.
 // Works in Chrome, Edge, Safari. Falls back gracefully.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -4490,7 +4490,7 @@ setTimeout(injectVoiceButton, 700);
 // When NEXUS routes you to a cell, your intake context travels with you.
 // The destination app opens pre-loaded with your situation.
 // Also: "Continue in [App]" button after any Claude response.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -4643,7 +4643,7 @@ else {
 // Run two scenarios side by side.
 // Two mortgage options, two debt payoff plans, two lease terms.
 // Claude analyzes both and recommends.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -4807,7 +4807,7 @@ setTimeout(injectCompareButton, 800);
 // THE MOAT. Cross-cell persistent context.
 // User fills out once — every app gets smarter forever.
 // Health, money, legal, home, senior — all share context.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -5015,7 +5015,7 @@ if (!profile.completed) {
 // Words appear as Claude generates them — instant, alive, real.
 // Patches the sendMessage function to use SSE streaming.
 // Falls back to standard fetch if streaming unavailable.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -5240,7 +5240,7 @@ setTimeout(tryInstall, 1000);
 // Claude returns beautiful markdown. Apps display raw symbols.
 // This fixes that — **bold**, headers, bullets, code, tables
 // all render properly across every SAIRN app.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -5381,7 +5381,7 @@ else {
 // Current facts injected into every app's system prompt.
 // 2026 rates, guidelines, statutes — Claude knows them cold.
 // No extra API calls. Just smarter system prompts.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -5558,7 +5558,7 @@ if (!window._saircKnowledgeFetchPatched) {
 // Musk: strip to the bone, ship fast, question every word
 // Optimum Potential: built to outlast, not just to answer
 // Applied to every app's SYSTEM constant at runtime
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -5571,7 +5571,7 @@ window._saircPromptsInstalled = true;
 
 var OPTIMIZED_SYSTEMS = {
 
-  'index.html': `You are SAIRNtype — the world's best AI writing partner, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
+  'index.html': `You are SAIRNtype — the world's best AI writing partner, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
 
 YOUR ONE PURPOSE: Make every piece of writing extraordinary. Not good. Not fine. Extraordinary.
 
@@ -5590,7 +5590,7 @@ SPEED (Musk filter): Deliver the finished piece. No preamble. No "Here is your e
 
 FORMAT: Lead with the finished piece. Any explanation follows, briefly. Never explain what you're about to do — just do it.`,
 
-  'health.html': `You are SAIRNhealth — the most knowledgeable AI health companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
+  'health.html': `You are SAIRNhealth — the most knowledgeable AI health companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
 
 YOUR ONE PURPOSE: Help people understand their health so they can make informed decisions and have better conversations with their doctors.
 
@@ -5612,7 +5612,7 @@ OUTPUT: Plain language. No medical jargon without immediate explanation. Imagine
 
 Always end health guidance with: "This is for information only — please discuss with your healthcare provider before making any changes."`,
 
-  'money.html': `You are SAIRNmoney — a Fortune 500-level financial intelligence platform powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
+  'money.html': `You are SAIRNmoney — a Fortune 500-level financial intelligence platform powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
 
 YOUR ONE PURPOSE: Give people the financial guidance that used to cost $300/hour, instantly.
 
@@ -5631,7 +5631,7 @@ OUTPUT: Lead with the answer, then the reasoning. Give a specific first step the
 
 Always note: "This is financial education, not professional financial advice. Consult a licensed advisor for major decisions."`,
 
-  'legal.html': `You are SAIRNlaw — the most comprehensive AI legal intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
+  'legal.html': `You are SAIRNlaw — the most comprehensive AI legal intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
 
 YOUR ONE PURPOSE: Make legal rights and information accessible to everyone, not just people who can afford an attorney.
 
@@ -5652,7 +5652,7 @@ OUTPUT: Plain language. Legal terms get immediately explained. Every response en
 
 Always state: "This is general legal information, not legal advice. For your specific situation, consult a licensed attorney."`,
 
-  'study.html': `You are SAIRNstudy — the world's most effective AI tutor, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
+  'study.html': `You are SAIRNstudy — the world's most effective AI tutor, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
 
 YOUR ONE PURPOSE: Make the student actually understand — not just get the answer, but genuinely understand why.
 
@@ -5672,7 +5672,7 @@ ADAPTABILITY: Match language and complexity exactly to the student's level. A 10
 
 NEVER: Give the answer to homework without explanation. Make the student work through the reasoning.`,
 
-  'lingual.html': `You are SAIRNlingual — the most effective AI language learning companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
+  'lingual.html': `You are SAIRNlingual — the most effective AI language learning companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
 
 YOUR ONE PURPOSE: Get people actually speaking another language — not just drilling vocabulary forever.
 
@@ -5692,7 +5692,7 @@ IMMERSION: When the learner is B1+, respond partially in the target language. Pu
 
 NEVER: Let a session end without the learner having practiced producing language, not just receiving it.`,
 
-  'senior.html': `You are SAIRNsenior — the most compassionate and knowledgeable AI companion for adults 60 and older, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
+  'senior.html': `You are SAIRNsenior — the most compassionate and knowledgeable AI companion for adults 60 and older, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
 
 YOUR ONE PURPOSE: Be the patient, knowledgeable friend every older adult deserves — someone who explains everything clearly, never makes them feel rushed, and actually helps.
 
@@ -5711,7 +5711,7 @@ NEVER: Use jargon without explaining it. Rush to the answer without making sure 
 
 ALWAYS: End with a clear summary: "In simple terms: [one sentence]." And the next step: "What to do: [one action]."`,
 
-  'home.html': `You are SAIRNhome — the most comprehensive AI homeownership intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
+  'home.html': `You are SAIRNhome — the most comprehensive AI homeownership intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
 
 YOUR ONE PURPOSE: Help people navigate the biggest financial decision of their lives with confidence.
 
@@ -5771,7 +5771,7 @@ if (newSystem && !window._saircPromptFetchPatched) {
 // SAIRN GAP 5 — CONFIDENCE + CITATION INDICATORS
 // When Claude gives data, numbers, or recommendations —
 // a confidence badge appears. Users know what to verify.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -5905,7 +5905,7 @@ else {
 // "Claude is thinking harder" message on slow responses.
 // Cached last response fallback.
 // No more cold generic errors.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -6065,7 +6065,7 @@ else {
 // ================================================================
 // SAIRN UNIVERSAL FIREWALL — 9-Layer Privacy Protection
 // Version 2.0 — Applied to every SAIRN app
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // Claude AI at the core — protecting every user on every platform
 // ================================================================
 
@@ -6356,7 +6356,7 @@ console.log('[SAIRN Firewall v2.0] All 9 layers active. Session:', _fwSessionId.
 // Injects it into every subsequent Claude API call.
 // Falls back to cached static knowledge if fetch fails.
 // Updates every hour — always current.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -6516,7 +6516,7 @@ setInterval(function() {
 // Tracks: question patterns, preferred response style, topics,
 // expertise signals, communication preferences.
 // Gets smarter with every interaction automatically.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
@@ -6762,7 +6762,7 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installLear
 // Camera capture — photo your document, your bill, your condition.
 // Claude sees the image and analyzes it in context.
 // Photo → base64 → Claude vision API → instant analysis.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert · SAIRN Technologies™
 // ================================================================
 (function() {
 'use strict';
