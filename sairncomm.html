@@ -795,8 +795,27 @@ function autoGrow(el) {
 // ── CLAUDE AI IN THREAD ──────────────────────────────────────────
 async function askClaude() {
   if (!currentThread) { notify('Open a thread first.', 'info'); return; }
-  const question = prompt('What coding question should Claude answer in this thread?');
-  if (!question?.trim()) return;
+  const existing = document.getElementById('claude-input-row');
+  if (existing) { existing.remove(); return; }
+  const row = document.createElement('div');
+  row.id = 'claude-input-row';
+  row.style.cssText = 'display:flex;gap:.5rem;padding:.5rem 1.25rem;background:#f5f3ff;border-top:1px solid #ddd6fe;flex-shrink:0;align-items:center;';
+  row.innerHTML = '<input id="claude-q" type="text" placeholder="Ask Claude a coding question..." style="flex:1;padding:.5rem .75rem;border:1.5px solid #7c3aed;border-radius:8px;font-size:.83rem;font-family:inherit;outline:none;">' +
+    '<button onclick="submitClaude()" style="padding:.5rem 1rem;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.83rem;font-weight:700;cursor:pointer;white-space:nowrap;">Ask</button>' +
+    '<button onclick="document.getElementById('claude-input-row').remove()" style="padding:.5rem .75rem;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;cursor:pointer;">✕</button>';
+  const inputArea = document.querySelector('.chat-input-area');
+  inputArea.parentNode.insertBefore(row, inputArea);
+  const qEl = document.getElementById('claude-q');
+  qEl.focus();
+  qEl.addEventListener('keydown', e => { if (e.key === 'Enter') submitClaude(); });
+}
+
+async function submitClaude() {
+  const qEl = document.getElementById('claude-q');
+  const question = qEl?.value?.trim();
+  if (!question) return;
+  document.getElementById('claude-input-row')?.remove();
+  if (!currentThread) return;
 
   // Show typing
   const el = document.getElementById('chat-messages');
@@ -1045,8 +1064,12 @@ async function resolveThread() {
 }
 
 function insertCaseRef() {
-  const ref = prompt('Enter case/claim/encounter reference (no patient names or MRNs):');
-  if (!ref) return;
+  const ref = window.prompt ? prompt('Enter case/claim/encounter reference (no patient names or MRNs):') : null;
+  if (!ref) { 
+    const inp = document.getElementById('msg-input');
+    inp.value = (inp.value + ' [Case: ENC-').trim();
+    inp.focus(); return;
+  }
   const inp = document.getElementById('msg-input');
   inp.value = (inp.value + ' [Case: ' + ref + ']').trim();
   inp.focus();
