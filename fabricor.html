@@ -1638,7 +1638,7 @@ async function doLogin(){
     shopName=(data.user.shop_name||data.user.shopName)||'My Shop';
     loginRole=data.user.role==='admin'?'admin':'sales';
     document.getElementById('auth-screen').style.display='none';
-    document.getElementById('app').style.display='';
+    document.getElementById('app').classList.add('visible');
     if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
   }catch(e){errEl.textContent='Connection error - try again.';}
 }
@@ -1660,7 +1660,7 @@ async function doRegister(){
     shopName=(data.user.shop_name||data.user.shopName)||sn;
     loginRole='admin';
     document.getElementById('auth-screen').style.display='none';
-    document.getElementById('app').style.display='';
+    document.getElementById('app').classList.add('visible');
     if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
   }catch(e){errEl.textContent='Connection error - try again.';}
 }
@@ -1668,7 +1668,8 @@ async function doRegister(){
 async function doLogout() {
   try{await fetch('https://fabricor-production.up.railway.app/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){}
   currentUser = null;
-  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('app').classList.remove('visible');
   document.getElementById('app').classList.remove('visible');
   document.body.classList.remove('is-admin');
   document.getElementById('pin-input').value = '';
