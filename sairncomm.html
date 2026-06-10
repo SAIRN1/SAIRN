@@ -840,16 +840,22 @@ async function submitClaude() {
     const reply = data.content?.[0]?.text || 'Unable to get AI response.';
     document.getElementById(typingId)?.remove();
 
+    // Show reply immediately in UI regardless of DB save
+    const replyMsg = {id: 'local-'+Date.now(), thread_id: currentThread.id, sender_id: currentUser.id, content: '**@Claude was asked:** ' + question + '\n\n' + reply, msg_type: 'claude', created_at: new Date().toISOString()};
+    const chatEl = document.getElementById('chat-messages');
+    chatEl.insertAdjacentHTML('beforeend', renderMessage(replyMsg));
+    chatEl.scrollTop = chatEl.scrollHeight;
     // Save Claude message to thread
-    await db.from('messages').insert({
+    const {error: saveErr} = await db.from('messages').insert({
       thread_id: currentThread.id,
       sender_id: currentUser.id,
-      content: `**@Claude was asked:** ${question}\n\n${reply}`,
+      content: '**@Claude was asked:** ' + question + '\n\n' + reply,
       msg_type: 'claude'
     });
+    if (saveErr) notify('Response shown but not saved: ' + saveErr.message, 'error');
   } catch (e) {
     document.getElementById(typingId)?.remove();
-    notify('Claude AI error. Try again.', 'error');
+    notify('Claude error: ' + (e.message || JSON.stringify(e)), 'error');
   }
 }
 
