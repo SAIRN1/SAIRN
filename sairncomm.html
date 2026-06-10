@@ -483,7 +483,12 @@ function notify(msg, type) {
 // ── AUTH ─────────────────────────────────────────────────────────
 function switchAuthTab(tab) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.auth-tab').forEach(t => {
+    if ((tab === 'signin' && t.textContent.includes('Sign In')) ||
+        (tab === 'signup' && t.textContent.includes('Create'))) {
+      t.classList.add('active');
+    }
+  });
   document.getElementById('signin-form').style.display = tab === 'signin' ? 'flex' : 'none';
   document.getElementById('signup-form').style.display = tab === 'signup' ? 'flex' : 'none';
 }
