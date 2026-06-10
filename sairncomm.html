@@ -802,7 +802,7 @@ async function askClaude() {
   row.style.cssText = 'display:flex;gap:.5rem;padding:.5rem 1.25rem;background:#f5f3ff;border-top:1px solid #ddd6fe;flex-shrink:0;align-items:center;';
   row.innerHTML = '<input id="claude-q" type="text" placeholder="Ask Claude a coding question..." style="flex:1;padding:.5rem .75rem;border:1.5px solid #7c3aed;border-radius:8px;font-size:.83rem;font-family:inherit;outline:none;">' +
     '<button onclick="submitClaude()" style="padding:.5rem 1rem;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.83rem;font-weight:700;cursor:pointer;white-space:nowrap;">Ask</button>' +
-    '<button onclick="document.getElementById('claude-input-row').remove()" style="padding:.5rem .75rem;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;cursor:pointer;">✕</button>';
+    '<button onclick="document.getElementById(\'claude-input-row\').remove()" style="padding:.5rem .75rem;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;cursor:pointer;">✕</button>';
   const inputArea = document.querySelector('.chat-input-area');
   inputArea.parentNode.insertBefore(row, inputArea);
   const qEl = document.getElementById('claude-q');
