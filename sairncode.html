@@ -424,10 +424,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
     <button class="mode-btn" onclick="setMode('Specialty Coding','Cardiology, orthopedics, oncology, radiology, OB, and all other specialties')"><span>💊</span><span class="mode-label">Specialty</span></button>
     <button class="mode-btn" onclick="setMode('Audit Report','Generate audit findings, corrective action plans, or provider education summaries')"><span>📝</span><span class="mode-label">Audit Report</span></button>
     <button class="mode-btn" onclick="setMode('HCC Coding','HCC risk adjustment coding, annual documentation requirements, hierarchy rules, and RAF score analysis')"><span>🎯</span><span class="mode-label">HCC</span></button>
-    <button class="mode-btn new-feature" onclick="setMode('CDI Query Generator','You are a world-class Clinical Documentation Improvement specialist. When given a diagnosis or clinical scenario, generate a compliant physician query using the AHIMA guidelines. Include: query type (clarification/leading/non-leading), supporting clinical indicators from the documentation, specific diagnosis options to present, and expected DRG/revenue impact. Always format queries professionally for physician review.')"><span>📋</span>CDI Query</button>
-      <button class="mode-btn new-feature" onclick="setMode('Denial Prevention','You are an expert medical billing denial prevention specialist. Analyze the claim details provided and: 1) Score denial risk (Low/Medium/High) for top payers 2) Identify specific denial triggers 3) Provide exact documentation fixes needed 4) Cite the payer LCD/NCD or CMS rule causing the risk 5) Give the exact appeal language if denied. Be specific with payer names and policy numbers.')"><span>🛡️</span>Denial Prevention</button>
-      <button class="mode-btn new-feature" onclick="setMode('ICD-11 Prep','You are an ICD-11 transition expert. The US morbidity billing transition is projected for 2027-2029. Help coders prepare now by: explaining ICD-11 post-coordination clustering logic, mapping ICD-10 codes to ICD-11 stem+extension combinations, identifying the 76.5% of ICD-10 codes with NO direct ICD-11 match, and explaining the 28-chapter structure vs ICD-10s 22 chapters. Always show side-by-side ICD-10 vs ICD-11 comparison.')"><span>🔮</span>ICD-11 Prep</button>
-      <button class="mode-btn new-feature" onclick="setMode('Outcome Tracker','You are a coding quality analyst. Help track whether AI-suggested codes were accepted, denied, or modified. Analyze patterns in: denial reasons by payer, most frequently changed codes, documentation gaps causing downcoding, and revenue impact of coding decisions. Provide actionable feedback to improve first-pass acceptance rates.')"><span>📊</span>Outcome Tracker</button>
+    <button class="mode-btn new-feature" onclick="setModeById('cdi')"><span>📋</span>CDI Query</button>
+      <button class="mode-btn new-feature" onclick="setModeById('denial')"><span>🛡️</span>Denial Prevention</button>
+      <button class="mode-btn new-feature" onclick="setModeById('icd11')"><span>🔮</span>ICD-11 Prep</button>
+      <button class="mode-btn new-feature" onclick="setModeById('outcome')"><span>📊</span>Outcome Tracker</button>
       <button class="mode-btn" onclick="setMode('Certification','CPC, CCS, RHIA exam prep, 2026 code changes, and coding education')"><span>🎓</span><span class="mode-label">Certification</span></button>
     <div class="mode-divider"></div>
     <span class="mode-guided-label">Guided</span>
@@ -507,6 +507,19 @@ function startFlow(id){const f=GUIDED_FLOWS.find(function(x){return x.id===id;})
 function useSuggestion(el){document.getElementById("userInput").value=el.textContent;sendMessage();}
 function addMsg(role,content){const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg "+role;const formatted=content.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");if(role==="ai"){div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+formatted+"</p></div>";lastResponse=content;setTimeout(function(){showSaveBar();},600);}else{div.innerHTML="<div class=\"msg-bubble\">"+content+"</div>";}area.appendChild(div);area.scrollTop=area.scrollHeight;}
 function showTyping(){const area=document.getElementById("chatArea");const div=document.createElement("div");div.className="msg ai";div.id="typing-indicator";div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><div class=\"typing\"><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div><div class=\"typing-dot\"></div></div></div>";area.appendChild(div);area.scrollTop=area.scrollHeight;}
+
+// Safe mode definitions (no apostrophes in onclick)
+var SAIRN_MODES = {
+  cdi: {label:'CDI Query Generator', ph:'Describe the clinical scenario and diagnosis in question. I will generate a compliant AHIMA physician query with DRG impact analysis.'},
+  denial: {label:'Denial Prevention', ph:'Describe the claim, diagnosis codes, procedure codes, and payer. I will score denial risk and provide exact fixes.'},
+  icd11: {label:'ICD-11 Prep', ph:'Enter an ICD-10 code or diagnosis. I will show the ICD-11 equivalent, post-coordination logic, and transition guidance.'},
+  outcome: {label:'Outcome Tracker', ph:'Describe the code suggested and whether it was accepted, denied, or modified. I will analyze patterns and provide feedback.'}
+};
+function setModeById(id){
+  var m=SAIRN_MODES[id];
+  if(!m) return;
+  if(typeof setMode==='function') setMode(m.label, m.ph);
+}
 async function sendMessage(){
   // Track productivity stats
   if(typeof activeMode !== 'undefined'){
