@@ -23,7 +23,7 @@ const APPS = new Set([
   'sairnhealth','sairnmoney','sairnsenior','sairnroam',
   'sairnlegal','sairnstudy','sairnlingual',
   // Fallback - accept any sairn prefixed app
-  'test'
+  'test','sairncomm','doc_analysis','followup_gen','memory_builder'
 ]);
 
 export default async function handler(req, res) {
