@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/sairncomm",
+      "destination": "/sairncomm.html"
+    },
+    {
       "source": "/pricing",
       "destination": "/pricing.html"
     },
