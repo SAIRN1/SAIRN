@@ -1635,7 +1635,7 @@ async function doLogin(){
     const data=await res.json();
     if(!res.ok){errEl.textContent=data.error||'Login failed';return;}
     currentUser=data.user;
-    shopName=data.user.shopName||'My Shop';
+    shopName=(data.user.shop_name||data.user.shopName)||'My Shop';
     loginRole=data.user.role==='admin'?'admin':'sales';
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app').style.display='';
@@ -1657,7 +1657,7 @@ async function doRegister(){
     const data=await res.json();
     if(!res.ok){errEl.textContent=data.error||'Registration failed';return;}
     currentUser=data.user;
-    shopName=data.user.shopName||sn;
+    shopName=(data.user.shop_name||data.user.shopName)||sn;
     loginRole='admin';
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app').style.display='';
