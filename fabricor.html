@@ -1640,6 +1640,7 @@ async function doLogin(){
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app').classList.add('visible');
     if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
+    dbLoadAll();
   }catch(e){errEl.textContent='Connection error - try again.';}
 }
 
@@ -1670,6 +1671,59 @@ async function doRegister(){
 function openProfileModal(){console.log('Profile modal not yet built');}
 var quoteCounter = parseInt(localStorage.getItem('quoteCounter')||'0');
 var edgeAssignments = {};
+
+// ── RAILWAY DB SYNC ───────────────────────────────────────────
+async function dbSaveQuoteHistory(){
+  if(!currentUser) return;
+  try{ await fetch(RAILWAY+'/api/quote-history',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({history:quoteHistory})}); }catch(e){}
+}
+async function dbLoadQuoteHistory(){
+  if(!currentUser) return;
+  try{
+    const r=await fetch(RAILWAY+'/api/quote-history',{credentials:'include'});
+    if(r.ok){const d=await r.json();if(d.history&&d.history.length){quoteHistory=d.history;renderHistory();}}
+  }catch(e){}
+}
+async function dbSaveSettings(){
+  if(!currentUser) return;
+  const settings={
+    shopName:localStorage.getItem('fab_shop_name')||'',
+    shopEmail:localStorage.getItem('fab_shop_email')||'',
+    shopPhone:localStorage.getItem('fab_shop_phone')||'',
+    shopAddr:localStorage.getItem('fab_shop_addr')||''
+  };
+  try{ await fetch(RAILWAY+'/api/shop-settings',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({settings})}); }catch(e){}
+}
+async function dbLoadSettings(){
+  if(!currentUser) return;
+  try{
+    const r=await fetch(RAILWAY+'/api/shop-settings',{credentials:'include'});
+    if(r.ok){
+      const d=await r.json();
+      if(d.settings&&Object.keys(d.settings).length){
+        if(d.settings.shopName){dbSaveSettings();localStorage.setItem('fab_shop_name',d.settings.shopName);}
+        if(d.settings.shopEmail){localStorage.setItem('fab_shop_email',d.settings.shopEmail);}
+        if(d.settings.shopPhone){localStorage.setItem('fab_shop_phone',d.settings.shopPhone);}
+        if(d.settings.shopAddr){localStorage.setItem('fab_shop_addr',d.settings.shopAddr);}
+      }
+    }
+  }catch(e){}
+}
+async function dbSaveBizData(data){
+  if(!currentUser) return;
+  try{ await fetch(RAILWAY+'/api/biz-data',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({data})}); }catch(e){}
+}
+async function dbLoadBizData(){
+  if(!currentUser) return;
+  try{
+    const r=await fetch(RAILWAY+'/api/biz-data',{credentials:'include'});
+    if(r.ok){const d=await r.json();if(d.data&&Object.keys(d.data).length){localStorage.setItem('stondesk_biz',JSON.stringify(d.data));}}
+  }catch(e){}
+}
+async function dbLoadAll(){
+  await Promise.all([dbLoadQuoteHistory(),dbLoadSettings(),dbLoadBizData()]);
+  console.log('DB data loaded');
+}
 async function doLogout() {
   try{await fetch('https://fabricor-production.up.railway.app/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){}
   currentUser = null;
@@ -2019,6 +2073,7 @@ function saveQuote() {
   };
   quoteHistory.unshift(q);
   renderHistory();
+  dbSaveQuoteHistory();
   currentQuoteNum = 'Q-' + (quoteCounter++);
   document.getElementById('quote-num').value = currentQuoteNum;
   // Flash confirmation
@@ -7088,7 +7143,7 @@ function saveBizData() {
   ids.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
   data._machines = JSON.stringify(machines);
   data._employees = JSON.stringify(employees);
-  localStorage.setItem('stondesk_biz', JSON.stringify(data));
+  localStorage.setItem('stondesk_biz', JSON.stringify(data));dbSaveBizData(data);
   // Show confirmation
   const btn = document.querySelector('#panel-business button[onclick="saveBizData()"]');
   if (btn) { btn.textContent = '✓ Saved!'; btn.style.background = '#16a34a'; setTimeout(() => { btn.textContent = 'Save All'; btn.style.background = ''; }, 2000); }
