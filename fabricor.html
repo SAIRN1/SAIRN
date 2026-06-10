@@ -29,6 +29,10 @@
   --stone:#f0f4fb;
   --stone-dark:#d1d9e6;
   --success:#1a6b3c;
+  --fin-pos:#16a34a;
+  --fin-neg:#dc2626;
+  --fin-warn:#f97316;
+  --fin-neutral:#0f1f3d;
   --success-bg:#e0f4ea;
   --warn:#92400e;
   --warn-bg:#fef3c7;
@@ -672,6 +676,15 @@ textarea#userInput::placeholder{color:var(--muted)}
 .machine-row input,.employee-row input,.machine-row select,.employee-row select{background:transparent;border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;color:var(--text);font-family:inherit;width:100%;outline:none}
 .biz-del-btn{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:4px;color:#EF4444;font-size:11px;cursor:pointer;padding:4px 8px;flex-shrink:0}
 
+
+/* Financial Color System */
+.fin-pos{color:#16a34a !important;font-weight:700}
+.fin-neg{color:#dc2626 !important;font-weight:700}
+.fin-warn{color:#f97316 !important;font-weight:700}
+.fin-neutral{color:#0f1f3d !important;font-weight:700}
+.fin-pos-bg{background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.2);border-radius:6px;padding:2px 8px}
+.fin-neg-bg{background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:6px;padding:2px 8px}
+.fin-warn-bg{background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:6px;padding:2px 8px}
 </style>
 </head>
 <body>
@@ -7208,7 +7221,7 @@ function calcBiz() {
   document.getElementById('tc-labor').textContent = '$' + laborPerSqft.toFixed(2);
   document.getElementById('tc-overhead').textContent = '$' + overheadPerSqft.toFixed(2);
   document.getElementById('tc-margin').textContent = '$' + margin.toFixed(2);
-  document.getElementById('tc-margin').style.color = margin > 0 ? '#4ADE80' : '#EF4444';
+  const m=document.getElementById('tc-margin');m.style.color=margin>20?'#16a34a':margin>5?'#0f1f3d':margin>0?'#f97316':'#dc2626';
 
   // KPIs
   document.getElementById('kpi-cost-sqft-val').textContent = '$' + trueCost.toFixed(2);
@@ -7218,7 +7231,7 @@ function calcBiz() {
   // HR tab calcs
   const monthRevenue = sellSqft * sqftMonth;
   document.getElementById('hr-labor-sqft').textContent = '$' + laborPerSqft.toFixed(2);
-  document.getElementById('hr-labor-pct').textContent = monthRevenue > 0 ? (totalLabor/monthRevenue*100).toFixed(1) + '%' : '—';
+  const lpct=monthRevenue>0?(totalLabor/monthRevenue*100):0;const lpctEl=document.getElementById('hr-labor-pct');lpctEl.textContent=lpct>0?lpct.toFixed(1)+'%':'—';lpctEl.style.color=lpct<20?'#16a34a':lpct<30?'#0f1f3d':lpct<35?'#f97316':'#dc2626';
 }
 
 function calcMarketing() {
