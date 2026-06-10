@@ -2783,9 +2783,6 @@ function openDashboard(){
   document.getElementById('prod-dashboard').style.display='block';
 }
 </script>
-<script>
-function openProfileModal(){console.log("SAIRNcode - Profile modal coming soon");}
-</script>
 </body></html>');
   win.document.close();
 }
@@ -5434,7 +5431,6 @@ document.head.appendChild(st);
 var profBtn = document.createElement('div');
 profBtn.id = 'sairn-profile-btn';
 profBtn.innerHTML = '<span class="spb-dot ' + (profile.completed ? 'complete' : 'incomplete') + '"></span><span id="spb-label">' + (profile.completed ? '✓ Your Profile' : 'Set Up Profile') + '</span>';
-profBtn.onclick = openProfileModal;
 document.body.appendChild(profBtn);
 
 function sel(id, label, opts, val) {
@@ -5496,6 +5492,7 @@ modal.innerHTML =
 document.body.appendChild(modal);
 
 window.openProfileModal  = function() { document.getElementById('sairn-profile-modal').classList.add('open'); };
+if(document.getElementById('sairn-profile-btn')) document.getElementById('sairn-profile-btn').onclick = window.openProfileModal;
 window.closeProfileModal = function() { document.getElementById('sairn-profile-modal').classList.remove('open'); };
 
 window.saveProfileData = function() {
