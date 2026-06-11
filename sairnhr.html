@@ -113,6 +113,36 @@ body{color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh
 /* PIP */
 .pip-stage{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
 .pip-stage-num{width:28px;height:28px;border-radius:50%;background:var(--a);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* PTO */
+.pto-bar{background:var(--surface-2);border-radius:100px;height:8px;overflow:hidden;margin-top:6px}
+.pto-fill{height:100%;border-radius:100px;background:var(--a);transition:width .3s}
+/* 9-BOX */
+.ninebox-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:600px}
+.nb-cell{padding:14px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.nb-cell:hover{border-color:var(--a)}
+.nb-cell.selected{border-color:var(--a);box-shadow:0 0 0 3px rgba(27,58,107,0.2)}
+.nb-label{font-size:11px;font-weight:700;margin-bottom:4px}
+.nb-desc{font-size:10px;color:var(--muted);line-height:1.4}
+/* ATS */
+.ats-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;overflow-x:auto}
+.ats-col{background:var(--surface-2);border-radius:10px;padding:12px;min-height:200px}
+.ats-col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.ats-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.ats-card:hover{border-color:var(--a);box-shadow:0 2px 8px rgba(27,58,107,0.1)}
+/* PULSE */
+.pulse-q{background:var(--surface-2);border-radius:10px;padding:14px;margin-bottom:10px}
+.pulse-stars{display:flex;gap:6px;margin-top:8px}
+.pulse-star{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pulse-star.active{background:var(--a);border-color:var(--a);color:#fff}
+/* ATTRITION */
+.risk-meter{height:12px;border-radius:100px;background:linear-gradient(90deg,#16a34a,#f97316,#dc2626);position:relative;margin:12px 0}
+.risk-needle{position:absolute;top:-4px;width:4px;height:20px;background:var(--text);border-radius:2px;transform:translateX(-50%);transition:left .5s}
+/* LMS */
+.course-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.course-icon{width:44px;height:44px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.course-progress{background:var(--surface-2);border-radius:100px;height:6px;margin-top:6px;overflow:hidden}
+.course-fill{height:100%;border-radius:100px;background:var(--green);transition:width .3s}
 </style>
 </head>
 <body>
@@ -179,6 +209,14 @@ body{color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh
     <button class="sh-nav-btn" onclick="shPanel('compensation',this)">💰 Compensation</button>
     <button class="sh-nav-btn" onclick="shPanel('jobs',this)">📝 Job Builder</button>
     <button class="sh-nav-btn" onclick="shPanel('termination',this)">🚪 Termination</button>
+    <button class="sh-nav-btn" onclick="shPanel('pto',this)">📅 PTO & Leave</button>
+    <button class="sh-nav-btn" onclick="shPanel('performance',this)">⭐ Performance</button>
+    <button class="sh-nav-btn" onclick="shPanel('ats',this)">🎯 Recruiting</button>
+    <button class="sh-nav-btn" onclick="shPanel('ninebox',this)">📊 9-Box</button>
+    <button class="sh-nav-btn" onclick="shPanel('attrition',this)">🔮 Attrition AI</button>
+    <button class="sh-nav-btn" onclick="shPanel('pulse',this)">💬 Pulse Survey</button>
+    <button class="sh-nav-btn" onclick="shPanel('lms',this)">🎓 Training</button>
+    <button class="sh-nav-btn" onclick="shPanel('investigation',this)">🔍 Investigations</button>
   </div>
 
   <div class="sh-main">
@@ -380,6 +418,212 @@ body{color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh
       </div>
     </div>
 
+
+
+    <!-- PTO & LEAVE -->
+    <div id="panel-pto" class="sh-panel">
+      <div class="sh-section-title">PTO & Leave Management</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="pto-vacation">15</div><div class="sh-kpi-label">Vacation Days Remaining</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="pto-sick">8</div><div class="sh-kpi-label">Sick Days Remaining</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="pto-used">7</div><div class="sh-kpi-label">Days Used YTD</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" id="pto-pending">2</div><div class="sh-kpi-label">Pending Requests</div></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📅 Request Time Off</div>
+        <div class="sh-form-grid">
+          <div class="sh-fg"><label>Leave Type</label><select id="pto-type"><option>Vacation</option><option>Sick Leave</option><option>Personal</option><option>FMLA</option><option>Parental Leave</option><option>Bereavement</option><option>Jury Duty</option></select></div>
+          <div class="sh-fg"><label>Employee</label><input id="pto-emp" placeholder="Employee name"></div>
+          <div class="sh-fg"><label>Start Date</label><input id="pto-start" type="date"></div>
+          <div class="sh-fg"><label>End Date</label><input id="pto-end" type="date"></div>
+        </div>
+        <div class="sh-fg"><label>Notes</label><input id="pto-notes" placeholder="Optional notes"></div>
+        <button class="sh-btn-sm" onclick="shSubmitPTO()">Submit Request</button>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">⚖️ State Leave Law Quick Reference</div>
+        <div id="pto-state-laws"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📋 Leave Requests</div>
+        <table class="sh-table"><thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="pto-requests"></tbody></table>
+      </div>
+    </div>
+
+    <!-- PERFORMANCE REVIEWS -->
+    <div id="panel-performance" class="sh-panel">
+      <div class="sh-section-title">Performance Management</div>
+      <div class="sh-card">
+        <div class="sh-card-title">⭐ New Performance Review</div>
+        <div class="sh-form-grid">
+          <div class="sh-fg"><label>Employee</label><input id="perf-emp" placeholder="Employee name"></div>
+          <div class="sh-fg"><label>Review Type</label><select id="perf-type"><option>Annual Review</option><option>Mid-Year Review</option><option>90-Day Review</option><option>360° Peer Review</option></select></div>
+          <div class="sh-fg"><label>Review Period</label><input id="perf-period" placeholder="e.g. Jan-Dec 2026"></div>
+          <div class="sh-fg"><label>Reviewer</label><input id="perf-reviewer" placeholder="Manager name"></div>
+        </div>
+        <div class="sh-fg"><label>Goal Achievement</label><textarea id="perf-goals" style="width:100%;height:70px;resize:vertical" placeholder="Describe goal progress and outcomes..."></textarea></div>
+        <div class="sh-fg"><label>Strengths</label><textarea id="perf-strengths" style="width:100%;height:60px;resize:vertical" placeholder="Key strengths demonstrated this period..."></textarea></div>
+        <div class="sh-fg"><label>Development Areas</label><textarea id="perf-develop" style="width:100%;height:60px;resize:vertical" placeholder="Areas for growth and improvement..."></textarea></div>
+        <div class="sh-fg"><label>Overall Rating</label>
+          <select id="perf-rating">
+            <option value="5">5 — Exceptional (top 5%)</option>
+            <option value="4">4 — Exceeds Expectations</option>
+            <option value="3" selected>3 — Meets Expectations</option>
+            <option value="2">2 — Below Expectations</option>
+            <option value="1">1 — Unsatisfactory</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="sh-btn-sm" onclick="shGenerateReview()">🤖 Generate Review with AI</button>
+          <button class="sh-btn-outline" onclick="shPrintReview()">🖨️ Print</button>
+        </div>
+      </div>
+      <div class="sh-card" id="perf-output" style="display:none">
+        <div class="sh-card-title">📄 Generated Performance Review</div>
+        <div id="perf-content" style="font-size:13px;line-height:1.8"></div>
+      </div>
+    </div>
+
+    <!-- ATS - RECRUITING -->
+    <div id="panel-ats" class="sh-panel">
+      <div class="sh-section-title">Applicant Tracking System</div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
+        <button class="sh-btn-sm" onclick="shAddCandidate()">+ Add Candidate</button>
+        <button class="sh-btn-outline" onclick="shAddRole()">+ New Role</button>
+        <select id="ats-role-filter" onchange="shFilterATS()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text)">
+          <option value="all">All Roles</option>
+        </select>
+      </div>
+      <div class="ats-board" id="ats-board"></div>
+    </div>
+
+    <!-- 9-BOX TALENT GRID -->
+    <div id="panel-ninebox" class="sh-panel">
+      <div class="sh-section-title">9-Box Talent Grid</div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div>
+          <div style="display:flex;align-items:center;margin-bottom:8px">
+            <div style="font-size:12px;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);margin-right:8px">POTENTIAL →</div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px;text-align:center">← PERFORMANCE →</div>
+              <div class="ninebox-grid" id="ninebox-grid"></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:280px">
+          <div class="sh-card">
+            <div class="sh-card-title">👤 Place Employee</div>
+            <div class="sh-fg"><label>Employee Name</label><input id="nb-emp" placeholder="Employee name"></div>
+            <div class="sh-fg"><label>Performance (1-3)</label><select id="nb-perf"><option value="1">1 — Low</option><option value="2" selected>2 — Medium</option><option value="3">3 — High</option></select></div>
+            <div class="sh-fg"><label>Potential (1-3)</label><select id="nb-pot"><option value="1">1 — Low</option><option value="2" selected>2 — Medium</option><option value="3">3 — High</option></select></div>
+            <button class="sh-btn-sm" onclick="shPlaceEmployee()">Place on Grid</button>
+          </div>
+          <div class="sh-card">
+            <div class="sh-card-title">📋 Talent Roster</div>
+            <div id="nb-roster" style="font-size:13px;color:var(--muted)">No employees placed yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTRITION AI -->
+    <div id="panel-attrition" class="sh-panel">
+      <div class="sh-section-title">Predictive Attrition Model</div>
+      <div class="sh-card">
+        <div class="sh-card-title">🔮 Attrition Risk Assessment</div>
+        <div class="sh-form-grid">
+          <div class="sh-fg"><label>Employee Name</label><input id="atr-name" placeholder="Employee name"></div>
+          <div class="sh-fg"><label>Tenure</label><select id="atr-tenure"><option value="5">Less than 6 months</option><option value="4">6-12 months</option><option value="3">1-2 years</option><option value="2">2-4 years</option><option value="1">4+ years</option></select></div>
+          <div class="sh-fg"><label>Compensation vs Market</label><select id="atr-comp"><option value="5">More than 15% below market</option><option value="4">10-15% below market</option><option value="3">At market rate</option><option value="2">5-10% above market</option><option value="1">More than 10% above market</option></select></div>
+          <div class="sh-fg"><label>Manager Effectiveness</label><select id="atr-mgr"><option value="5">Poor — employee has complained</option><option value="4">Below average</option><option value="3">Average</option><option value="2">Good</option><option value="1">Excellent</option></select></div>
+          <div class="sh-fg"><label>Last Promotion</label><select id="atr-promo"><option value="4">Never promoted</option><option value="3">More than 2 years ago</option><option value="2">1-2 years ago</option><option value="1">Within last year</option></select></div>
+          <div class="sh-fg"><label>Recent Peer Departures</label><select id="atr-peers"><option value="3">3+ peers left recently</option><option value="2">1-2 peers left</option><option value="1">No recent departures</option></select></div>
+        </div>
+        <button class="sh-btn-sm" onclick="shCalcAttrition()">Calculate Attrition Risk</button>
+        <div id="atr-result" style="margin-top:16px"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📊 Flight Risk Register</div>
+        <table class="sh-table"><thead><tr><th>Employee</th><th>Risk Level</th><th>Top Factor</th><th>Recommended Action</th></tr></thead>
+        <tbody id="atr-register"></tbody></table>
+      </div>
+    </div>
+
+    <!-- PULSE SURVEY -->
+    <div id="panel-pulse" class="sh-panel">
+      <div class="sh-section-title">Pulse Survey & Engagement</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="pulse-enps">+42</div><div class="sh-kpi-label">eNPS Score</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" id="pulse-responses">0</div><div class="sh-kpi-label">Responses This Month</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="pulse-avg">—</div><div class="sh-kpi-label">Avg Engagement Score</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" id="pulse-trend">→</div><div class="sh-kpi-label">Trend vs Last Month</div></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">💬 Monthly Pulse Survey</div>
+        <div id="pulse-questions"></div>
+        <button class="sh-btn-sm" onclick="shSubmitPulse()" style="margin-top:12px">Submit Survey</button>
+      </div>
+      <div class="sh-card" id="pulse-results-card" style="display:none">
+        <div class="sh-card-title">📊 AI Engagement Analysis</div>
+        <div id="pulse-analysis" style="font-size:13px;line-height:1.8"></div>
+      </div>
+    </div>
+
+    <!-- LMS - TRAINING -->
+    <div id="panel-lms" class="sh-panel">
+      <div class="sh-section-title">Learning & Training Management</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="lms-complete">0</div><div class="sh-kpi-label">Courses Completed</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="lms-due">3</div><div class="sh-kpi-label">Due This Month</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="lms-overdue">0</div><div class="sh-kpi-label">Overdue</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" id="lms-certs">0</div><div class="sh-kpi-label">Active Certifications</div></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📚 Required Training Courses</div>
+        <div id="lms-courses"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">🏆 Certifications Tracker</div>
+        <table class="sh-table"><thead><tr><th>Employee</th><th>Certification</th><th>Issued</th><th>Expires</th><th>Status</th></tr></thead>
+        <tbody id="lms-certs-table"></tbody></table>
+        <button class="sh-btn-sm" style="margin-top:12px" onclick="shAddCert()">+ Add Certification</button>
+      </div>
+    </div>
+
+    <!-- INVESTIGATION MANAGER -->
+    <div id="panel-investigation" class="sh-panel">
+      <div class="sh-section-title">Workplace Investigation Manager</div>
+      <div style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px">
+        <strong style="color:var(--red)">⚖️ Legal Requirement:</strong> Acknowledge complaints within 72 hours. Target resolution: 30 days. All investigations must be documented. External investigator required for C-suite allegations.
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">🔍 Open New Investigation</div>
+        <div class="sh-form-grid">
+          <div class="sh-fg"><label>Case Type</label><select id="inv-type"><option>Harassment</option><option>Discrimination</option><option>Retaliation</option><option>Safety Violation</option><option>Policy Violation</option><option>Theft/Fraud</option></select></div>
+          <div class="sh-fg"><label>Date of Incident</label><input id="inv-date" type="date"></div>
+          <div class="sh-fg"><label>Complainant</label><input id="inv-complainant" placeholder="Name (keep confidential)"></div>
+          <div class="sh-fg"><label>Respondent</label><input id="inv-respondent" placeholder="Person being investigated"></div>
+          <div class="sh-fg"><label>Assigned Investigator</label><input id="inv-investigator" placeholder="HR or external investigator"></div>
+          <div class="sh-fg"><label>Severity</label><select id="inv-severity"><option>Low — Policy issue</option><option>Medium — Conduct issue</option><option>High — Legal exposure</option><option>Critical — Immediate action required</option></select></div>
+        </div>
+        <div class="sh-fg"><label>Incident Description</label><textarea id="inv-desc" style="width:100%;height:80px;resize:vertical" placeholder="Detailed description of the alleged incident..."></textarea></div>
+        <div class="sh-fg"><label>Witnesses</label><input id="inv-witnesses" placeholder="List witness names (comma separated)"></div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="sh-btn-sm" onclick="shOpenCase()">Open Investigation Case</button>
+          <button class="sh-btn-outline" onclick="shGenInvPlan()">🤖 Generate Investigation Plan</button>
+        </div>
+      </div>
+      <div class="sh-card" id="inv-plan-card" style="display:none">
+        <div class="sh-card-title">📋 AI Investigation Plan</div>
+        <div id="inv-plan-content" style="font-size:13px;line-height:1.8"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📁 Active Cases</div>
+        <table class="sh-table"><thead><tr><th>Case #</th><th>Type</th><th>Opened</th><th>Stage</th><th>Severity</th><th>Action</th></tr></thead>
+        <tbody id="inv-cases"></tbody></table>
+      </div>
+    </div>
   </div><!-- /sh-main -->
 </div><!-- /sh-app -->
 
@@ -751,6 +995,372 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(res.ok){const data=await res.json();shCurrentUser=data.user;shShowApp();}
   }catch(e){}
 });
+</script>
+<script>
+
+// PTO
+var ptoRequests=JSON.parse(localStorage.getItem('sairnhr_pto')||'[]');
+function shInitPTO(){
+  const laws=[
+    {state:'California',req:'3-10 days paid sick leave. CFRA: 12 weeks. PDL: 4 months disability. No cap on accrual payout at termination.',color:'red'},
+    {state:'New York',req:'56 hours paid sick/safe leave. NY Paid Family Leave: 12 weeks at 67% of pay. Final pay: next regular payday.',color:'orange'},
+    {state:'Washington',req:'1 hour per 40 worked sick leave. WA PFML: 12 weeks medical + 12 weeks family.',color:'orange'},
+    {state:'Colorado',req:'48 hours paid sick leave. FAMLI: up to 12 weeks.',color:'orange'},
+    {state:'Texas',req:'No state paid sick leave law. Final pay: within 6 days of discharge.',color:'blue'},
+    {state:'Federal FMLA',req:'12 weeks unpaid. 50+ employees. 12 months tenure. 1,250 hours worked.',color:'blue'},
+  ];
+  document.getElementById('pto-state-laws').innerHTML=laws.map(l=>
+    '<div class="compliance-item"><span class="compliance-icon">📍</span><div class="compliance-text"><div class="compliance-law">'+l.state+'</div><div class="compliance-detail">'+l.req+'</div></div><span class="badge badge-'+l.color+'">Review</span></div>'
+  ).join('');
+  renderPTORequests();
+}
+function renderPTORequests(){
+  const tb=document.getElementById('pto-requests');
+  if(!ptoRequests.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No requests yet</td></tr>';return;}
+  tb.innerHTML=ptoRequests.map((r,i)=>
+    '<tr><td>'+r.emp+'</td><td>'+r.type+'</td><td>'+r.start+' to '+r.end+'</td><td>'+r.days+'</td><td><span class="badge badge-'+(r.status==='Approved'?'green':r.status==='Denied'?'red':'orange')+'">'+r.status+'</span></td><td><button onclick="shApprovePTO('+i+')" style="font-size:11px;padding:3px 8px;background:var(--green);color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:4px">✓</button><button onclick="shDenyPTO('+i+')" style="font-size:11px;padding:3px 8px;background:var(--red);color:#fff;border:none;border-radius:4px;cursor:pointer">✗</button></td></tr>'
+  ).join('');
+}
+function shSubmitPTO(){
+  const start=document.getElementById('pto-start').value;
+  const end=document.getElementById('pto-end').value;
+  const emp=document.getElementById('pto-emp').value||'Employee';
+  if(!start||!end){alert('Please select dates');return;}
+  const days=Math.max(1,Math.round((new Date(end)-new Date(start))/(1000*60*60*24))+1);
+  ptoRequests.push({emp,type:document.getElementById('pto-type').value,start,end,days,status:'Pending',notes:document.getElementById('pto-notes').value});
+  localStorage.setItem('sairnhr_pto',JSON.stringify(ptoRequests));
+  renderPTORequests();
+  shNotify('PTO request submitted');
+}
+function shApprovePTO(i){ptoRequests[i].status='Approved';localStorage.setItem('sairnhr_pto',JSON.stringify(ptoRequests));renderPTORequests();}
+function shDenyPTO(i){ptoRequests[i].status='Denied';localStorage.setItem('sairnhr_pto',JSON.stringify(ptoRequests));renderPTORequests();}
+
+// PERFORMANCE
+async function shGenerateReview(){
+  const emp=document.getElementById('perf-emp').value||'[Employee]';
+  const type=document.getElementById('perf-type').value;
+  const period=document.getElementById('perf-period').value||'2026';
+  const reviewer=document.getElementById('perf-reviewer').value||'[Manager]';
+  const rating=document.getElementById('perf-rating').value;
+  const ratingLabel=['','Unsatisfactory','Below Expectations','Meets Expectations','Exceeds Expectations','Exceptional'][rating];
+  const goals=document.getElementById('perf-goals').value||'[Goals not provided]';
+  const strengths=document.getElementById('perf-strengths').value||'[Strengths not provided]';
+  const develop=document.getElementById('perf-develop').value||'[Development areas not provided]';
+  const prompt='Generate a professional '+type+' for: Employee: '+emp+', Reviewer: '+reviewer+', Period: '+period+', Overall Rating: '+ratingLabel+' ('+rating+'/5). Goal Achievement: '+goals+'. Strengths: '+strengths+'. Development Areas: '+develop+'. Format as a complete professional performance review with all standard sections including summary, ratings, comments, goals for next period, and signature lines.';
+  document.getElementById('perf-output').style.display='block';
+  document.getElementById('perf-content').innerHTML='<div style="color:var(--muted)">Generating performance review...</div>';
+  try{
+    const res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,app_id:'sairnhr',system:'You are SAIRNhr AI — expert CHRO. Generate professional, legally sound performance review documents.',messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    document.getElementById('perf-content').innerHTML=(data.content?.[0]?.text||'Error').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  }catch(e){document.getElementById('perf-content').innerHTML='Error generating. Try again.';}
+}
+function shPrintReview(){
+  const content=document.getElementById('perf-content').innerText||'No review generated.';
+  const emp=document.getElementById('perf-emp').value||'Employee';
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Performance Review — '+emp+'</title><style>body{font-family:Arial,sans-serif;padding:32px;font-size:13px;line-height:1.8}h1{color:#1B3A6B;border-bottom:2px solid #1B3A6B;padding-bottom:8px}.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:32px}.sig{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#777}.footer{margin-top:20px;padding-top:10px;border-top:1px solid #eee;font-size:10px;color:#bbb;text-align:center}@media print{body{padding:16px}}</style></head><body>');
+  w.document.write('<h1>Performance Review — '+emp+'</h1><div style="white-space:pre-wrap">'+content+'</div>');
+  w.document.write('<div class="sig-row"><div class="sig">Employee Signature & Date</div><div class="sig">Manager Signature & Date</div><div class="sig">HR Signature & Date</div></div>');
+  w.document.write('<div class="footer">SAIRNhr™ by SAIRN Technologies™ · Confidential</div>');
+  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
+  w.document.close();
+}
+
+// ATS
+var atsData=JSON.parse(localStorage.getItem('sairnhr_ats')||'{"roles":["Software Engineer","Operations Manager"],"candidates":[]}');
+var atsStages=['Applied','Phone Screen','Interview','Offer','Hired'];
+function shInitATS(){
+  const sel=document.getElementById('ats-role-filter');
+  sel.innerHTML='<option value="all">All Roles</option>'+atsData.roles.map(r=>'<option>'+r+'</option>').join('');
+  shRenderATS();
+}
+function shRenderATS(){
+  const filter=document.getElementById('ats-role-filter').value;
+  const board=document.getElementById('ats-board');
+  board.innerHTML=atsStages.map(stage=>{
+    const cards=atsData.candidates.filter(c=>(filter==='all'||c.role===filter)&&c.stage===stage);
+    return '<div class="ats-col"><div class="ats-col-title"><span>'+stage+'</span><span style="background:var(--a);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">'+cards.length+'</span></div>'+
+      cards.map((c,i)=>'<div class="ats-card" onclick="shMoveCandidate('+atsData.candidates.indexOf(c)+')"><div style="font-size:13px;font-weight:600">'+c.name+'</div><div style="font-size:11px;color:var(--muted)">'+c.role+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Applied: '+c.applied+'</div></div>').join('')+
+    '</div>';
+  }).join('');
+}
+function shFilterATS(){shRenderATS();}
+function shAddCandidate(){
+  const name=prompt('Candidate name:');if(!name)return;
+  const role=prompt('Role applied for ('+atsData.roles.join('/')+'):');if(!role)return;
+  atsData.candidates.push({name,role,stage:'Applied',applied:new Date().toLocaleDateString()});
+  localStorage.setItem('sairnhr_ats',JSON.stringify(atsData));
+  shRenderATS();shNotify('Candidate added');
+}
+function shAddRole(){
+  const role=prompt('New role title:');if(!role)return;
+  atsData.roles.push(role);
+  localStorage.setItem('sairnhr_ats',JSON.stringify(atsData));
+  shInitATS();shNotify('Role added');
+}
+function shMoveCandidate(i){
+  const c=atsData.candidates[i];
+  const curIdx=atsStages.indexOf(c.stage);
+  if(curIdx<atsStages.length-1){
+    c.stage=atsStages[curIdx+1];
+    localStorage.setItem('sairnhr_ats',JSON.stringify(atsData));
+    shRenderATS();shNotify(c.name+' moved to '+c.stage);
+  }
+}
+
+// 9-BOX
+var nbData=JSON.parse(localStorage.getItem('sairnhr_nb')||'[]');
+var nbLabels={
+  '3-3':'⭐ Star','3-2':'🚀 High Performer','3-1':'🔑 Backbone',
+  '2-3':'💎 High Potential','2-2':'💪 Core Player','2-1':'📈 Developing',
+  '1-3':'❓ Enigma','1-2':'⚠️ Underperformer','1-1':'🚪 Exit'
+};
+var nbColors={
+  '3-3':'rgba(22,163,74,0.15)','3-2':'rgba(22,163,74,0.1)','3-1':'rgba(27,58,107,0.08)',
+  '2-3':'rgba(22,163,74,0.08)','2-2':'rgba(27,58,107,0.06)','2-1':'rgba(249,115,22,0.08)',
+  '1-3':'rgba(249,115,22,0.1)','1-2':'rgba(220,38,38,0.08)','1-1':'rgba(220,38,38,0.15)'
+};
+function shInitNineBox(){
+  const grid=document.getElementById('ninebox-grid');
+  const order=['3-3','3-2','3-1','2-3','2-2','2-1','1-3','1-2','1-1'];
+  // Render from high potential (top) to low (bottom)
+  const rows=['1-3','1-2','1-1','2-3','2-2','2-1','3-3','3-2','3-1'];
+  grid.innerHTML=rows.map(key=>{
+    const emps=nbData.filter(e=>e.perf+'-'+e.pot===key);
+    return '<div class="nb-cell" style="background:'+nbColors[key]+'" title="'+nbLabels[key]+'"><div class="nb-label">'+nbLabels[key]+'</div>'+
+      emps.map(e=>'<div style="font-size:10px;background:rgba(27,58,107,0.1);border-radius:4px;padding:2px 6px;margin-top:3px">'+e.name+'</div>').join('')+'</div>';
+  }).join('');
+  renderNBRoster();
+}
+function renderNBRoster(){
+  const el=document.getElementById('nb-roster');
+  if(!nbData.length){el.innerHTML='<div style="color:var(--muted)">No employees placed yet.</div>';return;}
+  el.innerHTML='<table class="sh-table"><thead><tr><th>Employee</th><th>Box</th><th>Action</th></tr></thead><tbody>'+
+    nbData.map((e,i)=>'<tr><td>'+e.name+'</td><td>'+nbLabels[e.perf+'-'+e.pot]+'</td><td><button onclick="nbData.splice('+i+',1);localStorage.setItem('sairnhr_nb',JSON.stringify(nbData));shInitNineBox()" style="font-size:11px;padding:2px 6px;background:var(--red);color:#fff;border:none;border-radius:4px;cursor:pointer">Remove</button></td></tr>'
+  ).join('')+'</tbody></table>';
+}
+function shPlaceEmployee(){
+  const name=document.getElementById('nb-emp').value.trim();
+  if(!name){alert('Enter employee name');return;}
+  const perf=document.getElementById('nb-perf').value;
+  const pot=document.getElementById('nb-pot').value;
+  nbData=nbData.filter(e=>e.name!==name);
+  nbData.push({name,perf,pot});
+  localStorage.setItem('sairnhr_nb',JSON.stringify(nbData));
+  document.getElementById('nb-emp').value='';
+  shInitNineBox();
+  shNotify(name+' placed in '+nbLabels[perf+'-'+pot]);
+}
+
+// ATTRITION
+var atrRegister=JSON.parse(localStorage.getItem('sairnhr_atr')||'[]');
+function shCalcAttrition(){
+  const name=document.getElementById('atr-name').value||'Employee';
+  const score=parseInt(document.getElementById('atr-tenure').value)+
+    parseInt(document.getElementById('atr-comp').value)+
+    parseInt(document.getElementById('atr-mgr').value)+
+    parseInt(document.getElementById('atr-promo').value)+
+    parseInt(document.getElementById('atr-peers').value);
+  const max=22;const pct=Math.round((score/max)*100);
+  const risk=score>=15?'Critical':score>=11?'High':score>=7?'Medium':'Low';
+  const riskColor={'Low':'green','Medium':'blue','High':'orange','Critical':'red'}[risk];
+  const actions={'Low':'Continue regular 1:1s. Schedule career development conversation.','Medium':'Schedule retention conversation. Review compensation vs market. Identify growth opportunities.','High':'Immediate manager conversation required. Consider counter-offer, promotion, or role change. Involve HR.','Critical':'Urgent intervention required. Senior leadership conversation. Have succession plan ready.'};
+  const result=document.getElementById('atr-result');
+  result.innerHTML='<div style="margin-bottom:12px"><div style="font-size:14px;font-weight:700;color:var(--text)">'+name+' — Risk Score: '+score+'/'+max+' ('+pct+'%)</div></div>'+
+    '<div class="risk-meter"><div class="risk-needle" style="left:'+pct+'%"></div></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:12px"><span>Low</span><span>Medium</span><span>High</span><span>Critical</span></div>'+
+    '<div style="margin-bottom:10px"><span class="badge badge-'+riskColor+'" style="font-size:13px;padding:6px 16px">'+risk+' Risk</span></div>'+
+    '<div class="sh-card" style="margin-top:0"><div style="font-size:13px"><strong>Recommended Action:</strong> '+actions[risk]+'</div></div>';
+  // Add to register
+  atrRegister=atrRegister.filter(r=>r.name!==name);
+  atrRegister.push({name,risk,score,action:actions[risk].slice(0,60)+'...'});
+  localStorage.setItem('sairnhr_atr',JSON.stringify(atrRegister));
+  renderAtrRegister();
+}
+function renderAtrRegister(){
+  const tb=document.getElementById('atr-register');
+  const colors={'Low':'green','Medium':'blue','High':'orange','Critical':'red'};
+  tb.innerHTML=atrRegister.map(r=>
+    '<tr><td>'+r.name+'</td><td><span class="badge badge-'+colors[r.risk]+'">'+r.risk+'</span></td><td>Score: '+r.score+'/22</td><td style="font-size:11px">'+r.action+'</td></tr>'
+  ).join('');
+  if(!atrRegister.length) tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">No employees assessed yet</td></tr>';
+}
+
+// PULSE SURVEY
+var pulseScores={};
+var pulseResponses=JSON.parse(localStorage.getItem('sairnhr_pulse')||'[]');
+function shInitPulse(){
+  const questions=[
+    {id:'q1',text:'I feel valued and appreciated at work.'},
+    {id:'q2',text:'I have the resources and support I need to do my job well.'},
+    {id:'q3',text:'My manager supports my professional development.'},
+    {id:'q4',text:'I see a positive future for myself at this company.'},
+    {id:'q5',text:'I would recommend this company as a great place to work.'},
+  ];
+  document.getElementById('pulse-questions').innerHTML=questions.map(q=>
+    '<div class="pulse-q"><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">'+q.text+'</div>'+
+    '<div class="pulse-stars">'+[1,2,3,4,5].map(n=>
+      '<div class="pulse-star" id="'+q.id+'-'+n+'" onclick="shRatePulse(''+q.id+'','+n+')">'+n+'</div>'
+    ).join('')+'</div></div>'
+  ).join('')+
+  '<div class="sh-fg" style="margin-top:8px"><label>Open Feedback (optional — anonymous)</label><textarea id="pulse-open" style="width:100%;height:60px;resize:vertical" placeholder="What is one thing we could improve?"></textarea></div>';
+  renderPulseKPIs();
+}
+function shRatePulse(qid,val){
+  pulseScores[qid]=val;
+  for(let i=1;i<=5;i++){
+    const el=document.getElementById(qid+'-'+i);
+    if(el) el.classList.toggle('active',i<=val);
+  }
+}
+async function shSubmitPulse(){
+  const answered=Object.keys(pulseScores).length;
+  if(answered<3){shNotify('Please answer at least 3 questions','orange');return;}
+  const avg=(Object.values(pulseScores).reduce((a,b)=>a+b,0)/answered).toFixed(1);
+  const open=document.getElementById('pulse-open').value;
+  pulseResponses.push({date:new Date().toLocaleDateString(),scores:{...pulseScores},avg,open});
+  localStorage.setItem('sairnhr_pulse',JSON.stringify(pulseResponses));
+  renderPulseKPIs();
+  // AI analysis
+  document.getElementById('pulse-results-card').style.display='block';
+  document.getElementById('pulse-analysis').innerHTML='<div style="color:var(--muted)">Analyzing engagement data...</div>';
+  const prompt='Analyze this pulse survey result: Average score '+avg+'/5. Scores: '+JSON.stringify(pulseScores)+'. Open feedback: "'+open+'". Provide: 1) eNPS interpretation 2) Top engagement strengths 3) Key concerns to address 4) 3 specific actions HR should take this week. Be direct and actionable.';
+  try{
+    const res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,app_id:'sairnhr',system:'You are an expert organizational psychologist and employee engagement specialist. Analyze survey data and provide direct, actionable recommendations.',messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    document.getElementById('pulse-analysis').innerHTML=(data.content?.[0]?.text||'Error').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  }catch(e){document.getElementById('pulse-analysis').innerHTML='Error analyzing. Try again.';}
+  shNotify('Survey submitted — thank you!');
+  pulseScores={};
+}
+function renderPulseKPIs(){
+  if(!pulseResponses.length)return;
+  const last=pulseResponses[pulseResponses.length-1];
+  document.getElementById('pulse-responses').textContent=pulseResponses.length;
+  document.getElementById('pulse-avg').textContent=last.avg;
+  const promoters=pulseResponses.filter(r=>r.scores.q5>=4).length;
+  const detractors=pulseResponses.filter(r=>r.scores.q5<=2).length;
+  const enps=Math.round(((promoters-detractors)/pulseResponses.length)*100);
+  document.getElementById('pulse-enps').textContent=(enps>=0?'+':'')+enps;
+  document.getElementById('pulse-enps').style.color=enps>=50?'var(--green)':enps>=30?'var(--a)':enps>=0?'var(--orange)':'var(--red)';
+  if(pulseResponses.length>1){
+    const prev=pulseResponses[pulseResponses.length-2];
+    const trend=parseFloat(last.avg)-parseFloat(prev.avg);
+    document.getElementById('pulse-trend').textContent=trend>0?'↑ +'+trend.toFixed(1):trend<0?'↓ '+trend.toFixed(1):'→ Stable';
+    document.getElementById('pulse-trend').style.color=trend>0?'var(--green)':trend<0?'var(--red)':'var(--muted)';
+  }
+}
+
+// LMS
+var lmsData=JSON.parse(localStorage.getItem('sairnhr_lms')||'{"completions":[],"certs":[]}');
+function shInitLMS(){
+  const courses=[
+    {id:'silica',icon:'🫁',title:'Silica Dust Hazard Training',desc:'OSHA 1910.1053 — Required for ALL stone/construction workers. Annual renewal.',required:true,due:'Annual'},
+    {id:'harassment',icon:'⚖️',title:'Workplace Harassment Prevention',desc:'Federal and state requirements. Supervisors: 2 hrs. Employees: 1 hr.',required:true,due:'Annual'},
+    {id:'safety',icon:'🦺',title:'Shop Safety Orientation',desc:'Emergency procedures, first aid locations, equipment hazards.',required:true,due:'On hire'},
+    {id:'ppe',icon:'😷',title:'PPE Use and Selection',desc:'Respirators, safety glasses, gloves, steel-toe boots — fit testing required.',required:true,due:'On hire'},
+    {id:'flsa',icon:'💰',title:'FLSA Compliance for Managers',desc:'Overtime rules, exempt/non-exempt, record-keeping requirements.',required:false,due:'Recommended'},
+    {id:'interview',icon:'🎯',title:'Legal Interviewing Techniques',desc:'Prohibited questions, bias avoidance, structured interview methods.',required:false,due:'Recommended'},
+  ];
+  document.getElementById('lms-courses').innerHTML=courses.map(c=>{
+    const done=lmsData.completions.includes(c.id);
+    return '<div class="course-card"><div class="course-icon">'+c.icon+'</div><div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:2px"><span style="font-size:13px;font-weight:700">'+c.title+'</span>'+(c.required?'<span class="badge badge-red">Required</span>':'<span class="badge badge-blue">Recommended</span>')+'</div><div style="font-size:12px;color:var(--muted)">'+c.desc+'</div><div style="font-size:11px;color:var(--a);margin-top:2px">Due: '+c.due+'</div><div class="course-progress"><div class="course-fill" style="width:'+(done?'100':'0')+'%"></div></div></div><button onclick="shMarkComplete(''+c.id+'')" style="padding:6px 12px;background:'+(done?'var(--green)':'var(--a)')+';color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;flex-shrink:0">'+(done?'✓ Done':'Mark Complete')+'</button></div>';
+  }).join('');
+  renderLMSCerts();
+  document.getElementById('lms-complete').textContent=lmsData.completions.length;
+}
+function shMarkComplete(id){
+  if(!lmsData.completions.includes(id)){lmsData.completions.push(id);}
+  localStorage.setItem('sairnhr_lms',JSON.stringify(lmsData));
+  shInitLMS();shNotify('Training marked complete');
+}
+function renderLMSCerts(){
+  const tb=document.getElementById('lms-certs-table');
+  if(!lmsData.certs.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">No certifications tracked yet</td></tr>';return;}
+  const today=new Date();
+  tb.innerHTML=lmsData.certs.map((c,i)=>{
+    const exp=new Date(c.expires);
+    const days=Math.round((exp-today)/(1000*60*60*24));
+    const status=days<0?'<span class="badge badge-red">Expired</span>':days<30?'<span class="badge badge-orange">Expires Soon</span>':'<span class="badge badge-green">Active</span>';
+    return '<tr><td>'+c.employee+'</td><td>'+c.cert+'</td><td>'+c.issued+'</td><td>'+c.expires+'</td><td>'+status+'</td></tr>';
+  }).join('');
+  document.getElementById('lms-certs').textContent=lmsData.certs.filter(c=>new Date(c.expires)>new Date()).length;
+}
+function shAddCert(){
+  const employee=prompt('Employee name:');if(!employee)return;
+  const cert=prompt('Certification name:');if(!cert)return;
+  const issued=prompt('Issue date (YYYY-MM-DD):');if(!issued)return;
+  const expires=prompt('Expiry date (YYYY-MM-DD):');if(!expires)return;
+  lmsData.certs.push({employee,cert,issued,expires});
+  localStorage.setItem('sairnhr_lms',JSON.stringify(lmsData));
+  renderLMSCerts();shNotify('Certification added');
+}
+
+// INVESTIGATIONS
+var invCases=JSON.parse(localStorage.getItem('sairnhr_inv')||'[]');
+function shOpenCase(){
+  const type=document.getElementById('inv-type').value;
+  const date=document.getElementById('inv-date').value||new Date().toLocaleDateString();
+  const complainant=document.getElementById('inv-complainant').value||'[Confidential]';
+  const respondent=document.getElementById('inv-respondent').value;
+  const severity=document.getElementById('inv-severity').value;
+  if(!respondent){alert('Please enter respondent name');return;}
+  const caseNum='INV-'+String(invCases.length+1).padStart(4,'0');
+  invCases.push({caseNum,type,date,complainant,respondent,severity,stage:'Intake',opened:new Date().toLocaleDateString()});
+  localStorage.setItem('sairnhr_inv',JSON.stringify(invCases));
+  renderInvCases();shNotify('Case '+caseNum+' opened');
+}
+async function shGenInvPlan(){
+  const type=document.getElementById('inv-type').value;
+  const desc=document.getElementById('inv-desc').value||'[No description provided]';
+  const witnesses=document.getElementById('inv-witnesses').value||'None identified';
+  const severity=document.getElementById('inv-severity').value;
+  const prompt='Generate a professional workplace investigation plan for: Case type: '+type+', Severity: '+severity+'. Description: '+desc+'. Witnesses: '+witnesses+'. Include: 1) Immediate steps (first 72 hours) 2) Interview order and key questions for each party 3) Documents to preserve 4) Timeline with milestones 5) Findings template 6) Legal considerations. Follow SHRM best practices.';
+  document.getElementById('inv-plan-card').style.display='block';
+  document.getElementById('inv-plan-content').innerHTML='<div style="color:var(--muted)">Generating investigation plan...</div>';
+  try{
+    const res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,app_id:'sairnhr',system:'You are SAIRNhr AI — expert workplace investigator and employment attorney. Generate professional, legally sound investigation plans following SHRM and EEOC best practices.',messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    document.getElementById('inv-plan-content').innerHTML=(data.content?.[0]?.text||'Error').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  }catch(e){document.getElementById('inv-plan-content').innerHTML='Error. Try again.';}
+}
+function renderInvCases(){
+  const tb=document.getElementById('inv-cases');
+  const stages=['Intake','Assigned','Investigation','Findings','Resolution','Closed'];
+  const sevColors={'Low — Policy issue':'blue','Medium — Conduct issue':'orange','High — Legal exposure':'red','Critical — Immediate action required':'red'};
+  if(!invCases.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No active cases</td></tr>';return;}
+  tb.innerHTML=invCases.map((c,i)=>{
+    const curStage=stages.indexOf(c.stage);
+    const nextStage=curStage<stages.length-1?stages[curStage+1]:null;
+    const sevKey=Object.keys(sevColors).find(k=>c.severity.includes(k.split(' —')[0]))||'Low — Policy issue';
+    return '<tr><td style="font-weight:700;color:var(--a)">'+c.caseNum+'</td><td>'+c.type+'</td><td>'+c.opened+'</td><td><span class="badge badge-blue">'+c.stage+'</span></td><td><span class="badge badge-'+(sevColors[c.severity]||'blue')+'">'+c.severity.split(' —')[0]+'</span></td><td>'+(nextStage?'<button onclick="invCases['+i+'].stage=''+nextStage+'';localStorage.setItem('sairnhr_inv',JSON.stringify(invCases));renderInvCases()" style="font-size:11px;padding:3px 8px;background:var(--a);color:#fff;border:none;border-radius:4px;cursor:pointer">→ '+nextStage+'</button>':'<span class="badge badge-green">Closed</span>')+'</td></tr>';
+  }).join('');
+}
+
+// NOTIFICATION
+function shNotify(msg,color){
+  let n=document.getElementById('sh-notif');
+  if(!n){n=document.createElement('div');n.id='sh-notif';n.style.cssText='position:fixed;bottom:16px;right:16px;background:var(--text);color:#fff;padding:12px 16px;border-radius:8px;font-size:13px;z-index:9000;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none';document.body.appendChild(n);}
+  if(color==='orange') n.style.background='var(--orange)';
+  else n.style.background='var(--text)';
+  n.textContent=msg;
+  n.style.opacity='1';n.style.transform='translateY(0)';
+  setTimeout(()=>{n.style.opacity='0';n.style.transform='translateY(8px)';},3000);
+}
+
+// UPDATE shInitAll
+var _origInitAll=shInitAll;
+function shInitAll(){
+  _origInitAll();
+  shInitPTO();
+  shInitATS();
+  shInitNineBox();
+  shInitLMS();
+  shInitPulse();
+  renderAtrRegister();
+  renderInvCases();
+}
 </script>
 </body>
 </html>
