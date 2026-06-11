@@ -1362,10 +1362,10 @@ function shInitAll(){
   renderInvCases();
 }
 
-function shRemoveFromNB(i){nbData.splice(i,1);localStorage.setItem('sairnhr_nb',JSON.stringify(nbData));shInitNineBox();}
-function shRatePulseById(el){var parts=el.id.split('-');var qid=parts[1];var val=parseInt(parts[2]);shRatePulse(qid,val);}
-function shMarkById(el){var id=el.getAttribute('data-cid');shMarkComplete(id);}
-function shAdvanceCase(i){var stages=['Intake','Assigned','Investigation','Findings','Resolution','Closed'];var cur=stages.indexOf(invCases[i].stage);if(cur<stages.length-1){invCases[i].stage=stages[cur+1];localStorage.setItem('sairnhr_inv',JSON.stringify(invCases));renderInvCases();}}
+function shNBRemove(i){nbData.splice(i,1);localStorage.setItem('sairnhr_nb',JSON.stringify(nbData));shInitNineBox();}
+function shPulseStar(el){var id=el.id;var parts=id.split('-');var qid=parts[0];var val=parseInt(parts[1]);shRatePulse(qid,val);}
+function shMarkById(el){var id=el.getAttribute('data-courseid');shMarkComplete(id);}
+function shCaseAdvance(i){var stages=['Intake','Assigned','Investigation','Findings','Resolution','Closed'];var cur=stages.indexOf(invCases[i].stage);if(cur<stages.length-1){invCases[i].stage=stages[cur+1];localStorage.setItem('sairnhr_inv',JSON.stringify(invCases));renderInvCases();}}
 </script>
 </body>
 </html>
