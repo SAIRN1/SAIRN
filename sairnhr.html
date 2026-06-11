@@ -261,6 +261,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <button class="sh-nav-btn" onclick="shPanel('headcount',this)">📊 Headcount</button>
     <button class="sh-nav-btn" onclick="shPanel('workercomp',this)">🦺 Workers Comp</button>
     <button class="sh-nav-btn" onclick="shPanel('selfservice',this)">👤 Self-Service</button>
+    <button class="sh-nav-btn" onclick="shPanel('garnishments',this)">🔒 Garnishments</button>
   </nav>
 
   <!-- CONTENT -->
@@ -401,6 +402,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
       <div id="pay-tab-register">
         <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
           <button class="sh-btn-primary" onclick="shRunPayroll()">▶ Run Payroll</button>
+        <button class="sh-btn-secondary" onclick="shGenW2()">📄 W-2 Generator</button>
+        <button class="sh-btn-secondary" onclick="shPanel('garnishments',this)">🔒 Garnishments</button>
           <button class="sh-btn-outline" onclick="shAddPayEmployee()">+ Add Employee</button>
           <div style="margin-left:auto;font-size:12px;color:var(--muted)">Period: <strong id="pay-period-label">—</strong></div>
         </div>
@@ -1348,6 +1351,21 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
         </div>
       </div>
     </div>
+  
+    <!-- ── GARNISHMENTS ── -->
+    <div id="panel-garnishments" class="sh-panel">
+      <div class="sh-section-title">🔒 Wage Garnishments</div>
+      <div style="background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.7">
+        <strong>Legal obligation:</strong> Employers must honor valid garnishment orders or face personal liability.
+        <strong>Priority order:</strong> Child support → IRS levies → Student loans → Creditor garnishments.
+        <strong>Max withholding:</strong> 25% of disposable earnings per CCPA.
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <button class="sh-btn-primary" onclick="shAddGarnishment()">+ Add Garnishment Order</button>
+        <button class="sh-btn-outline" onclick="shInitGarnishments()">↻ Refresh</button>
+      </div>
+      <div class="sh-card"><div id="garnishment-list"></div></div>
+    </div>
   </div><!-- /sh-content -->
 </div><!-- /sh-app -->
 
@@ -1799,6 +1817,38 @@ function shCalcPaycheck(){
     '<div style="padding:8px;background:linear-gradient(135deg,rgba(22,163,74,.1),rgba(22,163,74,.05));border-radius:8px;border:1px solid rgba(22,163,74,.3)"><div style="font-size:11px;color:var(--green)">NET PAY</div><div style="font-weight:900;color:var(--green);font-size:18px">$'+net.toFixed(2)+'</div></div>'+
     '</div><div style="margin-top:10px;font-size:11px;color:var(--muted)">Annual gross: $'+annualGross.toLocaleString()+' | Annual net est: $'+(net*freq).toLocaleString(undefined,{maximumFractionDigits:0})+'</div>';
 }
+
+function shInitGarnishments(){
+  var data=JSON.parse(localStorage.getItem("sh_garnishments")||"[]");
+  var el=document.getElementById("garnishment-list");if(!el)return;
+  if(!data.length){el.innerHTML="<div style='color:var(--muted);font-size:13px'>No garnishments on file.</div>";return;}
+  el.innerHTML="<table class='sh-table'><thead><tr><th>Employee</th><th>Type</th><th>Per Paycheck</th><th>Priority</th><th>Case #</th><th>Status</th><th></th></tr></thead><tbody>"+
+    data.map(function(g,i){
+      return "<tr><td><strong>"+escHtml(g.employee)+"</strong></td><td>"+escHtml(g.type)+"</td>"+
+        "<td style='color:var(--red);font-weight:700'>$"+parseFloat(g.amount).toFixed(2)+"</td>"+
+        "<td>"+escHtml(g.priority)+"</td><td style='font-size:11px'>"+escHtml(g.caseNum||"—")+"</td>"+
+        "<td><span class='badge badge-"+(g.active?"green":"gray")+"'>"+
+          (g.active?"Active":"Satisfied")+"</span></td>"+
+        "<td><button onclick='shSatisfyGarnishment("+i+")' class='sh-btn-sm' style='font-size:10px;padding:3px 6px'>Done</button></td></tr>";
+    }).join("")+"</tbody></table>";
+}
+function shAddGarnishment(){
+  var emp=prompt("Employee name:");if(!emp)return;
+  var type=prompt("Type:\n1=Child Support  2=IRS Tax Levy  3=Student Loan  4=Creditor  5=State Tax","Child Support")||"Child Support";
+  var amount=parseFloat(prompt("Amount per paycheck ($):"));if(!amount||isNaN(amount))return;
+  var priority=prompt("Priority (1=highest):","1")||"1";
+  var caseNum=prompt("Case / Order number (optional):")||"";
+  var data=JSON.parse(localStorage.getItem("sh_garnishments")||"[]");
+  data.push({employee:emp,type:type,amount:amount,priority:priority,caseNum:caseNum,active:true,added:new Date().toISOString().slice(0,10)});
+  localStorage.setItem("sh_garnishments",JSON.stringify(data));
+  shInitGarnishments();shNotify("Garnishment added — applies next payroll","orange");
+}
+function shSatisfyGarnishment(i){
+  var data=JSON.parse(localStorage.getItem("sh_garnishments")||"[]");
+  if(!data[i])return;data[i].active=false;
+  localStorage.setItem("sh_garnishments",JSON.stringify(data));
+  shInitGarnishments();shNotify("Garnishment marked satisfied","green");
+}
 function shGenJournal(){
   var gross=payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0);},0);
   if(!gross){shNotify('Add employees to payroll register first','red');return;}
@@ -1829,6 +1879,55 @@ function shRenderPayHistory(){
       '<span>Gross: <strong style="color:var(--text)">$'+r.gross.toFixed(2)+'</strong></span>'+
       '<span>Net: <strong style="color:var(--green)">$'+r.net.toFixed(2)+'</strong></span></div></div>';
   }).join('');
+}
+
+function shGenW2(){
+  var yr=new Date().getFullYear()-1;
+  if(!payrollRegister.length){shNotify("No payroll data to generate W-2s.","");return;}
+  var company=localStorage.getItem("sh_company_name")||prompt("Your company name:")||"[Company Name]";
+  localStorage.setItem("sh_company_name",company);
+  var addr=prompt("Employer address:",localStorage.getItem("sh_addr")||"123 Main St, Cleveland OH 44001")||"";
+  localStorage.setItem("sh_addr",addr);
+  var ein=prompt("Employer EIN:",localStorage.getItem("sh_ein")||"XX-XXXXXXX")||"XX-XXXXXXX";
+  localStorage.setItem("sh_ein",ein);
+  var byEmp={};
+  payrollRegister.forEach(function(r){
+    var n=r.name||"Unknown";
+    if(!byEmp[n])byEmp[n]={name:n,gross:0,fed:0,ss:0,medicare:0,state:0};
+    byEmp[n].gross+=parseFloat(r.gross)||0;
+    byEmp[n].fed+=parseFloat(r.fedTax)||0;
+    byEmp[n].ss+=parseFloat(r.ss)||((parseFloat(r.gross)||0)*0.062);
+    byEmp[n].medicare+=parseFloat(r.medicare)||((parseFloat(r.gross)||0)*0.0145);
+    byEmp[n].state+=parseFloat(r.stateTax)||0;
+  });
+  var rows=Object.values(byEmp);
+  var css="body{font-family:Arial,sans-serif;padding:20px}.w2{border:2px solid #000;padding:16px;margin:20px 0;max-width:700px;page-break-after:always}";
+  css+=".w2-title{background:#000;color:#fff;padding:6px 12px;font-weight:bold;font-size:13px;margin-bottom:12px}";
+  css+=".w2-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.w2-box{border:1px solid #000;padding:6px}";
+  css+=".lbl{font-size:9px;color:#666}.val{font-size:14px;font-weight:bold}@media print{.np{display:none}}";
+  var w2=window.open("","_blank");
+  var out="<!DOCTYPE html><html><head><title>W-2 Forms "+yr+"</title><style>"+css+"</style></head><body>";
+  out+="<div class='np' style='margin-bottom:16px'><button onclick='window.print()' style='padding:10px 20px;background:#1B3A6B;color:#fff;border:none;border-radius:6px;cursor:pointer'>Print All W-2s</button></div>";
+  out+="<div class='np' style='padding:10px;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;font-size:12px;margin-bottom:16px'>SSNs shown as XXX-XX-XXXX for security. Replace with actual SSNs before filing with SSA. Deadline: Jan 31.</div>";
+  rows.forEach(function(e){
+    out+="<div class='w2'><div class='w2-title'>W-2 Wage and Tax Statement — "+yr+"</div><div class='w2-grid'>";
+    out+="<div class='w2-box'><div class='lbl'>a Employee SSN</div><div class='val'>XXX-XX-XXXX</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>b Employer EIN</div><div class='val'>"+escHtml(ein)+"</div></div>";
+    out+="<div class='w2-box' style='grid-column:span 2'><div class='lbl'>c Employer</div><div class='val'>"+escHtml(company)+", "+escHtml(addr)+"</div></div>";
+    out+="<div class='w2-box' style='grid-column:span 2'><div class='lbl'>e Employee name</div><div class='val'>"+escHtml(e.name)+"</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>1 Wages</div><div class='val'>$"+e.gross.toFixed(2)+"</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>2 Federal tax withheld</div><div class='val'>$"+e.fed.toFixed(2)+"</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>3 SS wages</div><div class='val'>$"+e.gross.toFixed(2)+"</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>4 SS tax withheld</div><div class='val'>$"+e.ss.toFixed(2)+"</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>5 Medicare wages</div><div class='val'>$"+e.gross.toFixed(2)+"</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>6 Medicare tax</div><div class='val'>$"+e.medicare.toFixed(2)+"</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>16 State wages</div><div class='val'>$"+e.gross.toFixed(2)+"</div></div>";
+    out+="<div class='w2-box'><div class='lbl'>17 State income tax</div><div class='val'>$"+e.state.toFixed(2)+"</div></div>";
+    out+="</div></div>";
+  });
+  out+="</body></html>";
+  w2.document.write(out);w2.document.close();
+  shNotify("W-2s generated for "+rows.length+" employee(s) — "+yr,"green");
 }
 
 // ══ TIME & ATTENDANCE ════════════════════════════════════════════
@@ -2101,6 +2200,30 @@ function shRenderFMLAList(){
       return '<tr><td>'+escHtml(f.name)+'</td><td>'+escHtml(f.reason)+'</td><td>'+escHtml(f.start)+'</td><td>'+escHtml(f.end)+'</td>'+
         '<td>'+f.weeksTaken+'/12</td><td><span class="badge badge-'+(f.status==='Active'?'orange':'green')+'">'+f.status+'</span></td></tr>';
     }).join('')+'</tbody></table>';
+}
+
+async function shFMLAAI(){
+  var typeNum=prompt("Generate FMLA document:\n1 — Eligibility Notice\n2 — Rights & Responsibilities\n3 — Designation (Approved)\n4 — Designation (Denied)\n5 — FMLA Policy\nEnter 1-5:","1")||"1";
+  var types={"1":"FMLA Eligibility Notice","2":"FMLA Rights and Responsibilities Notice","3":"FMLA Designation Notice — Approved","4":"FMLA Designation Notice — Denied","5":"Company FMLA Policy"};
+  var docType=types[typeNum]||types["1"];
+  var employee=prompt("Employee name:");if(!employee)return;
+  var reason=prompt("Reason for leave:","serious health condition")||"serious health condition";
+  var company=localStorage.getItem("sh_company_name")||"[Company Name]";
+  shNotify("Generating "+docType+"...","");
+  try{
+    var res=await fetch(SH_CLAUDE,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+        system:"You are SAIRNhr AI — expert in FMLA compliance per current DOL regulations. Generate legally accurate FMLA documents.",
+        messages:[{role:"user",content:"Generate a "+docType+" for:\nEmployee: "+employee+"\nCompany: "+company+"\nLeave reason: "+reason+"\nDate: "+new Date().toLocaleDateString()+"\n\nUse 2026 FMLA regulations. Include all legally required elements. Note where employer fills in specifics. Note the required delivery timeframes (5 business days of request, 2 days of designation decision)."}]})});
+    var data=await res.json();
+    var text=data.content&&data.content[0]?data.content[0].text:"Error.";
+    var w=window.open("","_blank");
+    w.document.write("<!DOCTYPE html><html><head><title>"+docType+"</title><style>body{font-family:Arial,sans-serif;padding:40px;max-width:700px;margin:auto;line-height:1.7;font-size:13px}@media print{button{display:none}}</style></head><body>");
+    w.document.write("<button onclick='window.print()' style='padding:8px 16px;background:#1B3A6B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px'>Print Document</button>");
+    w.document.write("<pre style='white-space:pre-wrap;font-family:Arial,sans-serif;font-size:13px;line-height:1.7'>"+escHtml(text)+"</pre>");
+    w.document.write("</body></html>");w.document.close();
+    shNotify(docType+" ready — review before providing to employee","green");
+  }catch(e){shNotify("Error generating FMLA document","");}
 }
 
 // ══ PERFORMANCE ══════════════════════════════════════════════════
@@ -2797,6 +2920,32 @@ function shCalcFinalPay(){
     '<div style="font-size:12px;color:var(--muted);margin-top:4px"><strong>COBRA Notice:</strong> Must be sent within 14 days of qualifying event.</div>'+
     '</div>';
 }
+
+async function shGenTermLetter(){
+  var employee=prompt("Employee full name:");if(!employee)return;
+  var typeNum=prompt("Termination type:\n1 — Performance issues\n2 — Misconduct\n3 — Layoff / RIF\n4 — Mutual separation\n5 — End of contract\nEnter 1-5:","1")||"1";
+  var termTypes={"1":"involuntary termination for performance","2":"involuntary termination for misconduct","3":"layoff / reduction in force","4":"mutual separation","5":"end of contract period"};
+  var reason=termTypes[typeNum]||termTypes["1"];
+  var lastDay=prompt("Last day of employment (YYYY-MM-DD):",new Date().toISOString().slice(0,10))||"";
+  var state=prompt("Which state? (affects final pay law):","Ohio")||"Ohio";
+  var company=localStorage.getItem("sh_company_name")||"[Company Name]";
+  shNotify("AI drafting termination letter...","");
+  try{
+    var res=await fetch(SH_CLAUDE,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,
+        system:"You are SAIRNhr AI — expert HR attorney. Draft termination letters that minimize legal risk and are professional and compassionate.",
+        messages:[{role:"user",content:"Draft a termination letter:\nEmployee: "+employee+"\nCompany: "+company+"\nReason category: "+reason+"\nLast day: "+lastDay+"\nState: "+state+"\n\nInclude: formal notice, effective date, reason (professional, non-defamatory), final paycheck timing per "+state+" law, COBRA notice reference, return of company property, confidentiality/non-disparagement reminder, signature lines. Avoid admissions of liability. Clear and professional."}]})});
+    var data=await res.json();
+    var text=data.content&&data.content[0]?data.content[0].text:"Error.";
+    var w=window.open("","_blank");
+    w.document.write("<!DOCTYPE html><html><head><title>Termination Letter — "+escHtml(employee)+"</title><style>body{font-family:Georgia,serif;padding:48px;max-width:700px;margin:auto;line-height:1.8;font-size:13px}@media print{button{display:none}}</style></head><body>");
+    w.document.write("<button onclick='window.print()' style='font-family:Arial;padding:8px 16px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px'>Print Termination Letter</button>");
+    w.document.write("<div style='font-family:Arial;font-size:11px;color:#dc2626;padding:8px;border:1px solid #dc2626;border-radius:4px;margin-bottom:16px'>⚠️ Review with legal counsel before delivery. Retain a signed copy in the employee file.</div>");
+    w.document.write("<pre style='white-space:pre-wrap;font-family:Georgia,serif;font-size:13px;line-height:1.8'>"+escHtml(text)+"</pre>");
+    w.document.write("</body></html>");w.document.close();
+    shNotify("Termination letter drafted — review with counsel","green");
+  }catch(e){shNotify("Error generating termination letter","");}
+}
 async function shGenTermLetter(){
   var name=document.getElementById('termlet-name').value.trim();
   if(!name){shNotify('Enter employee name','red');return;}
@@ -2994,6 +3143,30 @@ function shPrintJD(){
   w.document.write('<div class="footer">SAIRNhr™ by SAIRN Technologies™</div>');
   w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
   w.document.close();
+}
+
+async function shGenOfferLetter(){
+  var candidate=prompt("Candidate full name:");if(!candidate)return;
+  var role=prompt("Job title being offered:");if(!role)return;
+  var salary=prompt("Annual salary (e.g. $55,000) or hourly rate:")||"[Compensation TBD]";
+  var start=prompt("Proposed start date:")||"[Start Date TBD]";
+  var company=localStorage.getItem("sh_company_name")||prompt("Your company name:")||"[Company]";
+  localStorage.setItem("sh_company_name",company);
+  shNotify("AI drafting offer letter...","");
+  try{
+    var res=await fetch(SH_CLAUDE,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,
+        system:"You are SAIRNhr AI. Draft professional, legally sound employment offer letters.",
+        messages:[{role:"user",content:"Draft a professional at-will employment offer letter:\nCandidate: "+candidate+"\nRole: "+role+"\nCompany: "+company+"\nCompensation: "+salary+"\nStart Date: "+start+"\n\nInclude: formal greeting, position and title, compensation, standard benefits reference, at-will employment statement, offer expires in 5 business days, signature lines for employer and candidate. Professional and warm tone. Ready to print and sign."}]})});
+    var data=await res.json();
+    var text=data.content&&data.content[0]?data.content[0].text:"Error generating letter.";
+    var w=window.open("","_blank");
+    w.document.write("<!DOCTYPE html><html><head><title>Offer Letter — "+escHtml(candidate)+"</title><style>body{font-family:Georgia,serif;padding:48px;max-width:700px;margin:auto;line-height:1.8;font-size:13px}@media print{button{display:none}}</style></head><body>");
+    w.document.write("<button onclick='window.print()' style='font-family:Arial;padding:8px 16px;background:#1B3A6B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px'>Print Offer Letter</button>");
+    w.document.write("<pre style='white-space:pre-wrap;font-family:Georgia,serif;font-size:13px;line-height:1.8'>"+escHtml(text)+"</pre>");
+    w.document.write("</body></html>");w.document.close();
+    shNotify("Offer letter drafted for "+candidate,"green");
+  }catch(e){shNotify("Error generating offer letter","");}
 }
 
 // ══ HR AI CHAT ═══════════════════════════════════════════════════
@@ -3600,6 +3773,41 @@ function shOnboardingStats(){
   alert('Onboarding Stats:\nActive: '+active+'\nTotal started: '+total+'\nChecklist completion: '+
     Math.round((Object.values(onbChecks).filter(Boolean).length/Math.max(Object.keys(onbChecks).length,1))*100)+'%');
 }
+
+async function shPredictivePerformance(){
+  var recentHires=employees.filter(function(e){
+    if(!e.hireDate)return false;
+    return (new Date()-new Date(e.hireDate))/(1000*60*60*24)<=180;
+  });
+  if(!recentHires.length){shNotify("No employees hired in the last 180 days","");return;}
+  shNotify("Running predictive model on "+recentHires.length+" recent hire(s)...","");
+  var signals=recentHires.map(function(e){
+    var name=e.firstName+" "+e.lastName;
+    var onbDone=Object.keys(onbChecks).filter(function(k){return onbChecks[k];}).length;
+    var onbTotal=Math.max(Object.keys(onbChecks).length,20);
+    var ptoCnt=ptoRequests.filter(function(r){return r.name===name;}).length;
+    var daysSince=Math.round((new Date()-new Date(e.hireDate))/(1000*60*60*24));
+    return {name:name,title:e.title||"",dept:e.department||"",daysSinceHire:daysSince,
+      onboardingCompletion:Math.round((onbDone/onbTotal)*100)+"%",
+      earlyPTORequests:ptoCnt,pulseParticipated:pulseHistory.length>0};
+  });
+  try{
+    var res=await fetch(SH_CLAUDE,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+        system:"You are SAIRNhr AI — expert in predictive HR analytics. Analyze onboarding signals to predict 6-month performance trajectory.",
+        messages:[{role:"user",content:"Predict 6-month performance for these recent hires based on onboarding signals:\n"+JSON.stringify(signals)+"\n\nFor each person:\n1. Predicted performance: High / On-Track / At-Risk (with confidence %)\n2. Key signals driving the prediction\n3. Top risk factor to watch\n4. One specific manager action in next 30 days\n\nResearch shows: onboarding completion rate, early absence patterns, and engagement predict 80% of 90-day performance. Be direct and actionable."}]})});
+    var data=await res.json();
+    var text=data.content&&data.content[0]?data.content[0].text:"No predictions generated.";
+    var w=window.open("","_blank");
+    w.document.write("<!DOCTYPE html><html><head><title>Predictive Performance Report</title><style>body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:auto;line-height:1.7;font-size:13px}h1{color:#1B3A6B;font-size:18px}@media print{button{display:none}}</style></head><body>");
+    w.document.write("<h1>Predictive Performance Analysis</h1>");
+    w.document.write("<p style='color:#666;font-size:12px;margin-bottom:20px'>"+new Date().toLocaleDateString()+" · "+recentHires.length+" recent hire(s) analyzed · Based on onboarding signals</p>");
+    w.document.write("<button onclick='window.print()' style='padding:8px 16px;background:#1B3A6B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px'>Print Report</button>");
+    w.document.write("<pre style='white-space:pre-wrap;font-family:Arial,sans-serif;font-size:13px;line-height:1.7'>"+escHtml(text)+"</pre>");
+    w.document.write("</body></html>");w.document.close();
+    shNotify("Performance predictions ready for "+recentHires.length+" employee(s)","green");
+  }catch(e){shNotify("Error running predictive model","");}
+}
 var _origOnbCheck=shOnbCheck;
 shOnbCheck=function(key,el){_origOnbCheck(key,el);shUpdateOnbProgress();};
 var _origOnbTab=shOnbTab;
@@ -4064,6 +4272,7 @@ shInitAll=function(){
   shInitHeadcount();
   shInitWorkersComp();
   shInitSelfService();
+  shInitGarnishments();
 };
 
 // Add new panels to shPanel lazy init
@@ -4077,6 +4286,7 @@ shPanel=function(id,btn){
     'headcount':shInitHeadcount,
     'workercomp':shInitWorkersComp,
     'selfservice':shInitSelfService,
+    'garnishments':shInitGarnishments,
   };
   if(extra[id]) setTimeout(extra[id],50);
 };
