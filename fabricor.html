@@ -742,6 +742,37 @@ textarea#userInput::placeholder{color:var(--muted)}
 .qbo-dot.on{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,0.2)}
 .qbo-dot.off{background:#dc2626}
 
+
+/* ══ INSTALL TRACKER / INVENTORY / VENDORS ═══════════════════ */
+.job-row{display:flex;align-items:center;gap:10px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;border-left:4px solid var(--border)}
+.job-row.red{border-left-color:#dc2626}
+.job-row.yellow{border-left-color:#ca8a04}
+.job-row.green{border-left-color:#16a34a}
+.job-day-badge{min-width:52px;height:52px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.job-day-badge.red{background:rgba(220,38,38,0.12);color:#dc2626}
+.job-day-badge.yellow{background:rgba(202,138,4,0.12);color:#ca8a04}
+.job-day-badge.green{background:rgba(22,163,74,0.12);color:#16a34a}
+.job-day-badge .day-num{font-size:22px;font-weight:900;line-height:1}
+.progress-bar{height:6px;border-radius:3px;background:var(--border);margin-top:5px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .4s}
+.inv-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.inv-row:last-child{border:none}
+.inv-level{height:8px;border-radius:4px;flex:1;background:var(--border);overflow:hidden;min-width:80px}
+.inv-fill{height:100%;border-radius:4px}
+.vendor-tab{padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;background:none;border:1px solid var(--border);color:var(--muted);transition:all .15s}
+.vendor-tab.active{background:var(--a);color:#fff;border-color:var(--a)}
+.vendor-logo{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.product-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.product-row:last-child{border:none}
+.product-row:hover{background:var(--surface-2)}
+.qty-input{width:60px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;color:var(--text);text-align:center;outline:none}
+.order-cart{position:fixed;bottom:20px;right:20px;background:var(--a);color:#fff;border-radius:14px;padding:14px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);z-index:7000;display:none;align-items:center;gap:10px}
+.order-cart.show{display:flex}
+.reorder-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.reorder-dot.red{background:#dc2626}
+.reorder-dot.yellow{background:#ca8a04}
+.reorder-dot.green{background:#16a34a}
+
 </style>
 </head>
 <body>
@@ -813,6 +844,9 @@ textarea#userInput::placeholder{color:var(--muted)}
       <button class="nav-btn"        onclick="showPanel('draw')"   >Drawing Tool</button>
       <button class="nav-btn"        onclick="showPanel('history')">History</button>
       <button class="nav-btn" onclick="showPanel('business')">Business</button>
+      <button class="nav-btn" onclick="showPanel('schedule')">📅 Schedule</button>
+      <button class="nav-btn" onclick="showPanel('inventory')">📦 Inventory</button>
+      <button class="nav-btn" onclick="showPanel('vendors')">🛒 Vendors</button>
       <button class="nav-btn" onclick="showPanel('customers')">👥 Customers</button>
       <button class="nav-btn" onclick="showPanel('photos')">📷 Photos</button>
       <button class="nav-btn" onclick="showPanel('warranty')">🛡️ Warranty</button>
@@ -1893,6 +1927,207 @@ textarea#userInput::placeholder{color:var(--muted)}
     </div>
   </div>
 
+
+  <!-- ══ SCHEDULE / INSTALL TRACKER ══ -->
+  <div class="panel" id="panel-schedule">
+    <div style="padding:20px;max-width:1100px;margin:0 auto">
+      <div id="sched-alerts-zone"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">📅 Install Schedule Tracker</h2>
+        <button class="q-btn primary" onclick="schedAddJob()">+ Add Job</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:18px">Standard turnaround: <strong>10–14 days</strong> template-to-install. 10 days target. Red = overdue or at risk. Yellow = approaching deadline. Green = on track.</p>
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
+        <div class="kpi"><div class="kpi-val" id="sched-total">0</div><div class="kpi-label">Total Jobs</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="sched-green">0</div><div class="kpi-label">On Track ≤10d</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#ca8a04" id="sched-yellow">0</div><div class="kpi-label">Approaching 14d</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#dc2626" id="sched-red">0</div><div class="kpi-label">Overdue &gt;14d</div></div>
+        <div class="kpi"><div class="kpi-val" id="sched-avg">—</div><div class="kpi-label">Avg Days</div></div>
+      </div>
+      <!-- Add job form -->
+      <div id="sched-form" style="display:none;background:var(--card);border:1px solid var(--a);border-radius:12px;padding:18px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">New Job</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="fg"><label>Customer Name</label><input id="sj-name" placeholder="Full name"></div>
+          <div class="fg"><label>Job # / Reference</label><input id="sj-jobnum" placeholder="e.g. J-2026-041"></div>
+          <div class="fg"><label>Material</label><input id="sj-mat" placeholder="e.g. Calacatta Marble"></div>
+          <div class="fg"><label>Template Date</label><input id="sj-template" type="date"></div>
+          <div class="fg"><label>Target Install Date</label><input id="sj-target" type="date"></div>
+          <div class="fg"><label>Stage</label>
+            <select id="sj-stage">
+              <option value="templated">Templated — Awaiting Fab</option>
+              <option value="cutting">CNC Cutting</option>
+              <option value="polishing">Polishing / Finishing</option>
+              <option value="qa">QA Inspection</option>
+              <option value="ready">Ready for Install</option>
+              <option value="installed">Installed ✓</option>
+            </select>
+          </div>
+          <div class="fg"><label>Sqft</label><input id="sj-sqft" type="number" placeholder="0"></div>
+          <div class="fg"><label>Installer</label><input id="sj-installer" placeholder="Crew name"></div>
+          <div class="fg"><label>Volume Note</label>
+            <select id="sj-volume">
+              <option value="normal">Normal — Target 10 days</option>
+              <option value="high">High Volume — Allow 12-14 days</option>
+              <option value="rush">Rush Job — 5-7 days</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label>Notes</label><textarea id="sj-notes" style="width:100%;height:50px;resize:vertical" placeholder="Sink cutouts, edge profile, special instructions..."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="q-btn primary" onclick="schedSave()">Save Job</button>
+          <button class="q-btn" onclick="document.getElementById('sched-form').style.display='none'">Cancel</button>
+        </div>
+      </div>
+      <!-- Filter bar -->
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <input id="sched-search" placeholder="🔍 Search jobs..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" oninput="renderSchedule()">
+        <select id="sched-filter" onchange="renderSchedule()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <option value="">All Stages</option>
+          <option value="templated">Templated</option>
+          <option value="cutting">CNC Cutting</option>
+          <option value="polishing">Polishing</option>
+          <option value="qa">QA</option>
+          <option value="ready">Ready</option>
+          <option value="installed">Installed</option>
+        </select>
+        <select id="sched-urgency" onchange="renderSchedule()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <option value="">All Urgency</option>
+          <option value="red">🔴 Overdue</option>
+          <option value="yellow">🟡 At Risk</option>
+          <option value="green">🟢 On Track</option>
+        </select>
+      </div>
+      <div id="sched-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ INVENTORY PANEL ══ -->
+  <div class="panel" id="panel-inventory">
+    <div style="padding:20px;max-width:1100px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">📦 Shop Inventory</h2>
+        <div style="display:flex;gap:8px">
+          <button class="q-btn" onclick="invAddItem()">+ Add Item</button>
+          <button class="q-btn primary" onclick="showPanel('vendors')">🛒 Order Low Stock</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Red = below minimum — order now. Yellow = approaching minimum. Green = stocked. Auto-reorder builds a cart in the Vendors tab.</p>
+      <!-- Category tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="vendor-tab active" id="invtab-all" onclick="invSetTab('all',this)">All</button>
+        <button class="vendor-tab" id="invtab-tooling" onclick="invSetTab('tooling',this)">Tooling</button>
+        <button class="vendor-tab" id="invtab-blades" onclick="invSetTab('blades',this)">Blades</button>
+        <button class="vendor-tab" id="invtab-adhesives" onclick="invSetTab('adhesives',this)">Adhesives</button>
+        <button class="vendor-tab" id="invtab-chemicals" onclick="invSetTab('chemicals',this)">Chemicals</button>
+        <button class="vendor-tab" id="invtab-safety" onclick="invSetTab('safety',this)">Safety/PPE</button>
+        <button class="vendor-tab" id="invtab-abrasives" onclick="invSetTab('abrasives',this)">Abrasives</button>
+        <button class="vendor-tab" id="invtab-hardware" onclick="invSetTab('hardware',this)">Hardware</button>
+      </div>
+      <!-- Summary KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi"><div class="kpi-val" style="color:#dc2626" id="inv-low">0</div><div class="kpi-label">Low Stock — Order Now</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#ca8a04" id="inv-warn">0</div><div class="kpi-label">Running Low</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="inv-ok">0</div><div class="kpi-label">Well Stocked</div></div>
+      </div>
+      <!-- Add item form -->
+      <div id="inv-form" style="display:none;background:var(--card);border:1px solid var(--a);border-radius:12px;padding:18px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">Add Inventory Item</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="fg"><label>Item Name</label><input id="ii-name" placeholder="e.g. Segmented Blade 14in"></div>
+          <div class="fg"><label>Category</label>
+            <select id="ii-cat"><option value="tooling">Tooling</option><option value="blades">Blades</option><option value="adhesives">Adhesives</option><option value="chemicals">Chemicals</option><option value="safety">Safety/PPE</option><option value="abrasives">Abrasives</option><option value="hardware">Hardware</option></select>
+          </div>
+          <div class="fg"><label>Vendor</label>
+            <select id="ii-vendor"><option value="gmr">GMR Stone</option><option value="granquartz">Granquartz</option><option value="braxton">Braxton-Bragg</option><option value="other">Other</option></select>
+          </div>
+          <div class="fg"><label>Current Qty</label><input id="ii-qty" type="number" placeholder="0" min="0"></div>
+          <div class="fg"><label>Minimum (reorder point)</label><input id="ii-min" type="number" placeholder="2" min="0"></div>
+          <div class="fg"><label>Unit</label><input id="ii-unit" placeholder="e.g. each, box, gallon"></div>
+          <div class="fg"><label>Unit Cost ($)</label><input id="ii-cost" type="number" placeholder="0.00" step="0.01"></div>
+          <div class="fg"><label>Reorder Qty</label><input id="ii-reorder" type="number" placeholder="5" min="1"></div>
+          <div class="fg"><label>Vendor SKU / Part #</label><input id="ii-sku" placeholder="Optional"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="q-btn primary" onclick="invSaveItem()">Save Item</button>
+          <button class="q-btn" onclick="document.getElementById('inv-form').style.display='none'">Cancel</button>
+        </div>
+      </div>
+      <div id="inv-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ VENDORS PANEL ══ -->
+  <div class="panel" id="panel-vendors">
+    <div style="padding:20px;max-width:1100px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">🛒 Vendor Ordering</h2>
+        <div style="display:flex;gap:8px">
+          <button class="q-btn" onclick="vendorAddCustom()">+ Add Vendor</button>
+          <button class="q-btn primary" onclick="vendorBuildAutoOrder()">⚡ Auto-Build Low Stock Order</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Click a vendor to browse products and add to cart. Auto-Build creates a pre-set order from all low-stock items.</p>
+      <!-- Vendor tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap" id="vendor-tabs">
+        <button class="vendor-tab active" onclick="vendorSetTab('gmr',this)">🏔️ GMR Stone</button>
+        <button class="vendor-tab" onclick="vendorSetTab('granquartz',this)">💎 Granquartz</button>
+        <button class="vendor-tab" onclick="vendorSetTab('braxton',this)">🔧 Braxton-Bragg</button>
+        <button class="vendor-tab" onclick="vendorSetTab('custom',this)" id="custom-vendors-tab" style="display:none">+ Custom</button>
+      </div>
+      <!-- Vendor info header -->
+      <div id="vendor-header" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="vendor-logo" id="v-logo">🏔️</div>
+          <div style="flex:1">
+            <div style="font-size:16px;font-weight:700;color:var(--text)" id="v-name">GMR Stone</div>
+            <div style="font-size:12px;color:var(--muted)" id="v-desc">Premium stone tools, blades, adhesives and fabrication supplies</div>
+            <div style="display:flex;gap:12px;margin-top:6px">
+              <a id="v-website" href="https://www.gmrstone.com" target="_blank" style="font-size:12px;color:var(--a);text-decoration:none">🌐 Visit Website</a>
+              <a id="v-phone" href="tel:18005551234" style="font-size:12px;color:var(--a);text-decoration:none">📞 Call</a>
+              <a id="v-email" href="mailto:orders@gmrstone.com" style="font-size:12px;color:var(--a);text-decoration:none">✉️ Email Orders</a>
+            </div>
+          </div>
+          <button class="q-btn primary" id="v-order-btn" onclick="vendorPlaceOrder()">📤 Place Order</button>
+        </div>
+      </div>
+      <!-- Category filter for products -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap" id="vcat-tabs">
+        <button class="vendor-tab active" onclick="vCatSet('all',this)">All</button>
+        <button class="vendor-tab" onclick="vCatSet('blades',this)">Blades</button>
+        <button class="vendor-tab" onclick="vCatSet('tooling',this)">Tooling</button>
+        <button class="vendor-tab" onclick="vCatSet('adhesives',this)">Adhesives</button>
+        <button class="vendor-tab" onclick="vCatSet('chemicals',this)">Chemicals</button>
+        <button class="vendor-tab" onclick="vCatSet('abrasives',this)">Abrasives</button>
+        <button class="vendor-tab" onclick="vCatSet('safety',this)">Safety</button>
+        <button class="vendor-tab" onclick="vCatSet('hardware',this)">Hardware</button>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:1fr 80px 90px 90px 100px;padding:10px 12px;background:var(--surface-2);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
+          <span>Product</span><span>SKU</span><span>Unit Price</span><span>Qty Order</span><span>Action</span>
+        </div>
+        <div id="vendor-products"></div>
+      </div>
+      <!-- Cart summary -->
+      <div id="vendor-cart-summary" style="display:none;background:var(--card);border:1px solid var(--a);border-radius:12px;padding:16px;margin-top:16px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px">🛒 Order Cart</div>
+        <div id="cart-items"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:15px;font-weight:700">Total: <span id="cart-total" style="color:var(--a)">$0.00</span></div>
+          <div style="display:flex;gap:8px">
+            <button class="q-btn" onclick="cartClear()">Clear Cart</button>
+            <button class="q-btn primary" onclick="vendorPlaceOrder()">📤 Submit Order</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Floating cart button -->
+  <div class="order-cart" id="floating-cart" onclick="document.getElementById('vendor-cart-summary').scrollIntoView({behavior:'smooth'})">
+    🛒 <span id="cart-count">0</span> items — <span id="cart-float-total">$0.00</span>
+  </div>
+
 </div><!-- /app -->
 
 <script>
@@ -2041,7 +2276,7 @@ function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
-  const navMap = { ai:0, quote:1, draw:2, history:3, business:4, customers:5, photos:6, warranty:7, integrations:8, admin:9 };
+  const navMap = { ai:0, quote:1, draw:2, history:3, business:4, schedule:5, inventory:6, vendors:7, customers:8, photos:9, warranty:10, integrations:11, admin:12 };
   const btns = document.querySelectorAll('.topbar-nav .nav-btn');
   if (navMap[id] !== undefined) btns[navMap[id]].classList.add('active');
   if (id === 'client') buildEstimate();
@@ -7990,6 +8225,570 @@ function escHtml(s) {
       }
       runAlertScan();
     }, 500);
+  });
+})();
+
+
+// ══════════════════════════════════════════════════════════════════
+// STONEDESK TIER 4 — SCHEDULE TRACKER, INVENTORY, VENDOR ORDERING
+// ══════════════════════════════════════════════════════════════════
+
+// ── DATA ─────────────────────────────────────────────────────
+var sdJobs=[];var sdInventory=[];var sdCart={};var sdVendorTab='gmr';var sdInvCat='all';var sdVCat='all';
+
+function loadSD4Data(){
+  try{sdJobs=JSON.parse(localStorage.getItem('sd_jobs')||'[]');}catch(e){}
+  try{sdInventory=JSON.parse(localStorage.getItem('sd_inventory')||'[]');}catch(e){}
+  try{sdCart=JSON.parse(localStorage.getItem('sd_cart')||'{}');}catch(e){}
+}
+function saveSD4(){
+  localStorage.setItem('sd_jobs',JSON.stringify(sdJobs));
+  localStorage.setItem('sd_inventory',JSON.stringify(sdInventory));
+  localStorage.setItem('sd_cart',JSON.stringify(sdCart));
+}
+
+// ── VENDOR CATALOG ────────────────────────────────────────────
+var VENDORS={
+  gmr:{
+    name:'GMR Stone',logo:'🏔️',
+    website:'https://www.gmrstone.com',
+    phone:'tel:18005553467',
+    email:'mailto:orders@gmrstone.com',
+    desc:'Premium stone fabrication tools, diamond blades, adhesives and supplies',
+    products:[
+      {id:'gmr001',name:'14" Segmented Turbo Diamond Blade',sku:'GMR-BL-14T',cat:'blades',price:89.99,unit:'each'},
+      {id:'gmr002',name:'14" Continuous Rim Wet Blade (Marble)',sku:'GMR-BL-14CR',cat:'blades',price:74.99,unit:'each'},
+      {id:'gmr003',name:'10" Bridge Saw Blade — Granite',sku:'GMR-BL-10G',cat:'blades',price:129.99,unit:'each'},
+      {id:'gmr004',name:'4.5" Grinding Cup Wheel — Double Row',sku:'GMR-CW-45D',cat:'tooling',price:34.99,unit:'each'},
+      {id:'gmr005',name:'4" Core Bit — Sink Hole Faucet',sku:'GMR-CB-4F',cat:'tooling',price:44.99,unit:'each'},
+      {id:'gmr006',name:'3" Core Bit — Faucet Hole',sku:'GMR-CB-3F',cat:'tooling',price:38.99,unit:'each'},
+      {id:'gmr007',name:'Polishing Pad Set 50-3000 Grit (7pc)',sku:'GMR-PP-7PC',cat:'abrasives',price:59.99,unit:'set'},
+      {id:'gmr008',name:'4" Polishing Pads — 400 Grit (10pk)',sku:'GMR-PP-400',cat:'abrasives',price:24.99,unit:'pack'},
+      {id:'gmr009',name:'4" Polishing Pads — 1500 Grit (10pk)',sku:'GMR-PP-1500',cat:'abrasives',price:24.99,unit:'pack'},
+      {id:'gmr010',name:'4" Polishing Pads — 3000 Grit (10pk)',sku:'GMR-PP-3000',cat:'abrasives',price:26.99,unit:'pack'},
+      {id:'gmr011',name:'Stone Color Epoxy — Beige 300ml',sku:'GMR-EP-BEI',cat:'adhesives',price:18.99,unit:'each'},
+      {id:'gmr012',name:'Stone Color Epoxy — Gray 300ml',sku:'GMR-EP-GRY',cat:'adhesives',price:18.99,unit:'each'},
+      {id:'gmr013',name:'Stone Color Epoxy — White 300ml',sku:'GMR-EP-WHT',cat:'adhesives',price:18.99,unit:'each'},
+      {id:'gmr014',name:'Seam Setter Clamps — Pair',sku:'GMR-SC-PR',cat:'tooling',price:54.99,unit:'pair'},
+      {id:'gmr015',name:'Stone Profiler Router Bit — Ogee 3cm',sku:'GMR-RB-OG3',cat:'tooling',price:89.99,unit:'each'},
+      {id:'gmr016',name:'Stone Profiler Router Bit — Bullnose 2cm',sku:'GMR-RB-BN2',cat:'tooling',price:79.99,unit:'each'},
+      {id:'gmr017',name:'Stone Sealer — Penetrating 1 Gallon',sku:'GMR-SS-1G',cat:'chemicals',price:42.99,unit:'gallon'},
+      {id:'gmr018',name:'Acetone Cleaner — 1 Gallon',sku:'GMR-AC-1G',cat:'chemicals',price:19.99,unit:'gallon'},
+      {id:'gmr019',name:'Silicone — Clear Food Safe 10oz',sku:'GMR-SI-CLR',cat:'adhesives',price:8.99,unit:'tube'},
+      {id:'gmr020',name:'Lifting Suction Cups — 2-Cup Set',sku:'GMR-LS-2C',cat:'hardware',price:64.99,unit:'set'},
+      {id:'gmr021',name:'Stone Cradles — Plastic (4pk)',sku:'GMR-CR-4PK',cat:'hardware',price:32.99,unit:'pack'},
+      {id:'gmr022',name:'P100 Half-Face Respirator',sku:'GMR-RS-HF',cat:'safety',price:34.99,unit:'each'},
+      {id:'gmr023',name:'P100 Replacement Cartridges (2pk)',sku:'GMR-RS-RC',cat:'safety',price:14.99,unit:'pair'},
+      {id:'gmr024',name:'Disposable N95 Respirators (20pk)',sku:'GMR-RS-N95',cat:'safety',price:24.99,unit:'box'},
+      {id:'gmr025',name:'Safety Glasses — Anti-Fog (6pk)',sku:'GMR-SG-6PK',cat:'safety',price:19.99,unit:'pack'},
+    ]
+  },
+  granquartz:{
+    name:'Granquartz',logo:'💎',
+    website:'https://www.granquartz.com',
+    phone:'tel:18005285252',
+    email:'mailto:customerservice@granquartz.com',
+    desc:'Full-line stone fabrication supplier — tools, machinery, epoxy, consumables',
+    products:[
+      {id:'gq001',name:'14" Premium Turbo Blade — Wet/Dry',sku:'GQ-T14WD',cat:'blades',price:94.99,unit:'each'},
+      {id:'gq002',name:'14" Marble/Travertine Thin Blade',sku:'GQ-MT14',cat:'blades',price:82.99,unit:'each'},
+      {id:'gq003',name:'Calibrated Polishing System 50-3000 (8 disc)',sku:'GQ-CPS8',cat:'abrasives',price:69.99,unit:'set'},
+      {id:'gq004',name:'4" Frankfurt Abrasives — 60 Grit (10pk)',sku:'GQ-FA60',cat:'abrasives',price:29.99,unit:'pack'},
+      {id:'gq005',name:'4" Frankfurt Abrasives — 120 Grit (10pk)',sku:'GQ-FA120',cat:'abrasives',price:29.99,unit:'pack'},
+      {id:'gq006',name:'4" Frankfurt Abrasives — 400 Grit (10pk)',sku:'GQ-FA400',cat:'abrasives',price:29.99,unit:'pack'},
+      {id:'gq007',name:'Tenax Tefill Chip Repair Kit',sku:'GQ-TFX-CK',cat:'adhesives',price:36.99,unit:'kit'},
+      {id:'gq008',name:'Tenax Ultra Color Epoxy — Transparent',sku:'GQ-TFX-TR',cat:'adhesives',price:22.99,unit:'tube'},
+      {id:'gq009',name:'Tenax Ultra Color Epoxy — Travertine',sku:'GQ-TFX-TR2',cat:'adhesives',price:22.99,unit:'tube'},
+      {id:'gq010',name:'Akemi Color Epoxy Adhesive 310ml',sku:'GQ-AK-310',cat:'adhesives',price:19.99,unit:'each'},
+      {id:'gq011',name:'Porous Plus Stone Sealer 1 Quart',sku:'GQ-PP-QT',cat:'chemicals',price:29.99,unit:'quart'},
+      {id:'gq012',name:'Dry Treat Stain Proof 1 Liter',sku:'GQ-DT-1L',cat:'chemicals',price:74.99,unit:'liter'},
+      {id:'gq013',name:'Stone Degreaser/Cleaner 1 Gallon',sku:'GQ-DC-1G',cat:'chemicals',price:24.99,unit:'gallon'},
+      {id:'gq014',name:'Countertop Wax & Polish 32oz',sku:'GQ-WP-32',cat:'chemicals',price:18.99,unit:'bottle'},
+      {id:'gq015',name:'4.5" Diamond Cup Wheel — Turbo Row',sku:'GQ-CW45T',cat:'tooling',price:39.99,unit:'each'},
+      {id:'gq016',name:'Ogee Router Bit — 3cm Full Bull',sku:'GQ-RB-FB3',cat:'tooling',price:94.99,unit:'each'},
+      {id:'gq017',name:'7" Rubber Backer Pad — 5/8-11',sku:'GQ-RB-7',cat:'tooling',price:22.99,unit:'each'},
+      {id:'gq018',name:'Vacuum Suction Cup — 4.5" Single',sku:'GQ-VS-45',cat:'hardware',price:29.99,unit:'each'},
+      {id:'gq019',name:'A-Frame Stone Cart — Powder Coated',sku:'GQ-AFC',cat:'hardware',price:179.99,unit:'each'},
+      {id:'gq020',name:'Silicone Caulk — Almond 10oz',sku:'GQ-SC-ALM',cat:'adhesives',price:9.99,unit:'tube'},
+      {id:'gq021',name:'Tyvek Disposable Coveralls (25pk)',sku:'GQ-DC-25',cat:'safety',price:44.99,unit:'case'},
+      {id:'gq022',name:'Silica Dust Monitor — Badge (5pk)',sku:'GQ-SM-5PK',cat:'safety',price:89.99,unit:'pack'},
+      {id:'gq023',name:'Half-Face Respirator — Silica Rated',sku:'GQ-RS-SF',cat:'safety',price:39.99,unit:'each'},
+      {id:'gq024',name:'Knee Pads — Professional Grade',sku:'GQ-KP-PRO',cat:'safety',price:34.99,unit:'pair'},
+      {id:'gq025',name:'Diamond Hand Pads — 4 Grit Set',sku:'GQ-HP-4S',cat:'abrasives',price:49.99,unit:'set'},
+    ]
+  },
+  braxton:{
+    name:'Braxton-Bragg',logo:'🔧',
+    website:'https://www.braxton-bragg.com',
+    phone:'tel:18003280388',
+    email:'mailto:sales@braxton-bragg.com',
+    desc:'Industry-leading stone tools, hardware, shop supplies and education',
+    products:[
+      {id:'bb001',name:'Stadea 14" Premium Turbo Blade HPW',sku:'BB-ST14HP',cat:'blades',price:99.99,unit:'each'},
+      {id:'bb002',name:'Alpha Professional 4" Bullnose Bit 2cm',sku:'BB-AP-BN2',cat:'tooling',price:89.99,unit:'each'},
+      {id:'bb003',name:'Alpha Professional 4" Ogee Bit 3cm',sku:'BB-AP-OG3',cat:'tooling',price:94.99,unit:'each'},
+      {id:'bb004',name:'Alpha Ceramica Polishing Pads 7-Piece Set',sku:'BB-AC-7PC',cat:'abrasives',price:64.99,unit:'set'},
+      {id:'bb005',name:'Alpha Gold Series Pads 50-3000 (7pc)',sku:'BB-AG-7PC',cat:'abrasives',price:74.99,unit:'set'},
+      {id:'bb006',name:'4" 50 Grit Wet Polishing Pad (10pk)',sku:'BB-WP50',cat:'abrasives',price:27.99,unit:'pack'},
+      {id:'bb007',name:'4" 800 Grit Wet Polishing Pad (10pk)',sku:'BB-WP800',cat:'abrasives',price:27.99,unit:'pack'},
+      {id:'bb008',name:'4" 3000 Grit Buffing Pad (10pk)',sku:'BB-WP3K',cat:'abrasives',price:29.99,unit:'pack'},
+      {id:'bb009',name:'Countertop Epoxy — 2-Part Clear',sku:'BB-EP-2PC',cat:'adhesives',price:28.99,unit:'kit'},
+      {id:'bb010',name:'Super Glue — Granite Grade Med 2oz',sku:'BB-SG-MED',cat:'adhesives',price:14.99,unit:'tube'},
+      {id:'bb011',name:'Super Glue — Fast Set 2oz',sku:'BB-SG-FS',cat:'adhesives',price:14.99,unit:'tube'},
+      {id:'bb012',name:'Color Match Epoxy Chips — 50pc',sku:'BB-CME-50',cat:'adhesives',price:12.99,unit:'pack'},
+      {id:'bb013',name:'511 Impregnator Sealer 1 Quart',sku:'BB-511-QT',cat:'chemicals',price:26.99,unit:'quart'},
+      {id:'bb014',name:'511 Impregnator Sealer 1 Gallon',sku:'BB-511-1G',cat:'chemicals',price:79.99,unit:'gallon'},
+      {id:'bb015',name:'MB Stone Care Cleaner 1 Gallon',sku:'BB-MB-1G',cat:'chemicals',price:32.99,unit:'gallon'},
+      {id:'bb016',name:'Acetone — 1 Gallon Industrial',sku:'BB-ACE-1G',cat:'chemicals',price:21.99,unit:'gallon'},
+      {id:'bb017',name:'Seam Setter Pro Heavy Duty',sku:'BB-SS-PRO',cat:'hardware',price:69.99,unit:'each'},
+      {id:'bb018',name:'Carbon Brackets — L-Bracket 3pk',sku:'BB-CB-3PK',cat:'hardware',price:19.99,unit:'pack'},
+      {id:'bb019',name:'Dishwasher Brackets — 12pk',sku:'BB-DWB-12',cat:'hardware',price:16.99,unit:'pack'},
+      {id:'bb020',name:'Template Material — 1/4" 4x8 Sheet',sku:'BB-TM-48',cat:'hardware',price:34.99,unit:'sheet'},
+      {id:'bb021',name:'P100 Full-Face Respirator',sku:'BB-RS-FF',cat:'safety',price:89.99,unit:'each'},
+      {id:'bb022',name:'Silica Wristwatch Dosimeter',sku:'BB-SWD-1',cat:'safety',price:129.99,unit:'each'},
+      {id:'bb023',name:'Cut-Resistant Gloves Level A6 (3 pairs)',sku:'BB-CRG-3',cat:'safety',price:39.99,unit:'3-pack'},
+      {id:'bb024',name:'Safety Helmet w/ Face Shield',sku:'BB-SH-FS',cat:'safety',price:49.99,unit:'each'},
+      {id:'bb025',name:'Wet/Dry Vacuum HEPA Filter 5gal',sku:'BB-VF-5G',cat:'tooling',price:44.99,unit:'each'},
+      {id:'bb026',name:'Diamond Hand Polishing Set — 8pc',sku:'BB-DHP-8',cat:'abrasives',price:54.99,unit:'set'},
+      {id:'bb027',name:'Grinding Stone — Frankfurt 36 Grit',sku:'BB-GS-36',cat:'abrasives',price:8.99,unit:'each'},
+    ]
+  }
+};
+
+var _activeVendor='gmr';
+
+// ── SCHEDULE / INSTALL TRACKER ────────────────────────────────
+function schedAddJob(){
+  document.getElementById('sched-form').style.display='block';
+  document.getElementById('sj-template').value=new Date().toISOString().split('T')[0];
+  // Default target = 10 days out
+  var t=new Date();t.setDate(t.getDate()+10);
+  document.getElementById('sj-target').value=t.toISOString().split('T')[0];
+  document.getElementById('sched-form').scrollIntoView({behavior:'smooth'});
+}
+
+function schedSave(){
+  var name=document.getElementById('sj-name').value.trim();
+  if(!name){alert('Customer name required');return;}
+  var templateDate=document.getElementById('sj-template').value;
+  var targetDate=document.getElementById('sj-target').value;
+  var job={
+    id:'JOB'+Date.now(),
+    customer:name,
+    jobNum:document.getElementById('sj-jobnum').value.trim()||('J-'+Date.now().toString().slice(-5)),
+    material:document.getElementById('sj-mat').value.trim(),
+    templateDate:templateDate,
+    targetDate:targetDate,
+    stage:document.getElementById('sj-stage').value,
+    sqft:parseFloat(document.getElementById('sj-sqft').value)||0,
+    installer:document.getElementById('sj-installer').value.trim(),
+    volume:document.getElementById('sj-volume').value,
+    notes:document.getElementById('sj-notes').value.trim(),
+    createdAt:new Date().toISOString(),
+    installedAt:null
+  };
+  sdJobs.unshift(job);saveSD4();
+  document.getElementById('sched-form').style.display='none';
+  renderSchedule();runSchedAlerts();
+}
+
+function schedDaysFromTemplate(job){
+  if(!job.templateDate) return 0;
+  return Math.floor((Date.now()-new Date(job.templateDate).getTime())/86400000);
+}
+
+function schedUrgency(job){
+  if(job.stage==='installed') return 'done';
+  var days=schedDaysFromTemplate(job);
+  var limit=job.volume==='rush'?7:job.volume==='high'?14:10;
+  if(days>limit+2) return 'red';
+  if(days>limit-2) return 'yellow';
+  return 'green';
+}
+
+function schedUpdateStage(id,stage){
+  var j=sdJobs.find(x=>x.id===id);
+  if(!j) return;
+  j.stage=stage;
+  if(stage==='installed') j.installedAt=new Date().toISOString();
+  saveSD4();renderSchedule();runSchedAlerts();
+}
+
+function schedDelete(id){
+  if(!confirm('Delete this job?')) return;
+  sdJobs=sdJobs.filter(x=>x.id!==id);
+  saveSD4();renderSchedule();runSchedAlerts();
+}
+
+function renderSchedule(){
+  var search=(document.getElementById('sched-search')||{}).value||'';
+  var filter=(document.getElementById('sched-filter')||{}).value||'';
+  var urgFilter=(document.getElementById('sched-urgency')||{}).value||'';
+  var list=sdJobs;
+  if(search) list=list.filter(j=>(j.customer+j.jobNum+j.material).toLowerCase().includes(search.toLowerCase()));
+  if(filter) list=list.filter(j=>j.stage===filter);
+  if(urgFilter) list=list.filter(j=>schedUrgency(j)===urgFilter);
+  var el=document.getElementById('sched-list');if(!el) return;
+  if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px">No jobs found. Add your first job above.</div>';return;}
+  var stageLabels={templated:'Templated',cutting:'CNC Cutting',polishing:'Polishing',qa:'QA',ready:'Ready',installed:'Installed ✓'};
+  el.innerHTML=list.map(j=>{
+    var days=schedDaysFromTemplate(j);
+    var urg=schedUrgency(j);
+    var limit=j.volume==='rush'?7:j.volume==='high'?14:10;
+    var pct=Math.min(100,Math.round((days/limit)*100));
+    var fillColor=urg==='red'?'#dc2626':urg==='yellow'?'#ca8a04':'#16a34a';
+    var badge=urg==='done'?'✓':days+'d';
+    return '<div class="job-row '+urg+'">' +
+      '<div class="job-day-badge '+urg+'"><div class="day-num">'+badge+'</div><div style="font-size:9px">'+
+        (urg==='done'?'done':urg==='red'?'OVERDUE':urg==='yellow'?'at risk':'on track')+'</div></div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">' +
+          '<span style="font-size:14px;font-weight:700;color:var(--text)">'+escHtml(j.customer)+'</span>' +
+          '<span style="font-size:11px;color:var(--muted)">'+escHtml(j.jobNum)+'</span>' +
+          '<span style="font-size:11px;padding:1px 7px;border-radius:20px;background:rgba(27,58,107,0.1);color:var(--a);font-weight:600">'+stageLabels[j.stage]+'</span>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--muted)">'+
+          (j.material?escHtml(j.material)+' · ':'')+(j.sqft?j.sqft+'sqft · ':'')+'Template: '+new Date(j.templateDate).toLocaleDateString()+
+          (j.targetDate?' · Target: '+new Date(j.targetDate).toLocaleDateString():'') +
+          (j.installer?' · Crew: '+escHtml(j.installer):'') +
+        '</div>' +
+        (urg!=='done'?'<div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>':'') +
+        (j.notes?'<div style="font-size:11px;color:var(--muted);margin-top:4px">'+escHtml(j.notes)+'</div>':'') +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
+        '<select onchange="schedUpdateStage(''+j.id+'',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
+          ['templated','cutting','polishing','qa','ready','installed'].map(s=>'<option value="'+s+'"'+(j.stage===s?' selected':'')+'>'+stageLabels[s]+'</option>').join('')+
+        '</select>' +
+        '<button onclick="schedDelete(''+j.id+'')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // Update KPIs
+  var all=sdJobs.filter(j=>j.stage!=='installed');
+  var green=all.filter(j=>schedUrgency(j)==='green').length;
+  var yellow=all.filter(j=>schedUrgency(j)==='yellow').length;
+  var red=all.filter(j=>schedUrgency(j)==='red').length;
+  var installed=sdJobs.filter(j=>j.stage==='installed');
+  var avgDays=installed.length?Math.round(installed.filter(j=>j.installedAt&&j.templateDate).reduce((s,j)=>s+Math.floor((new Date(j.installedAt)-new Date(j.templateDate))/86400000),0)/Math.max(1,installed.length)):null;
+  var sv=(id,v)=>{var el=document.getElementById(id);if(el)el.textContent=v;};
+  sv('sched-total',sdJobs.length);sv('sched-green',green);sv('sched-yellow',yellow);sv('sched-red',red);
+  sv('sched-avg',avgDays!=null?avgDays+'d avg':'—');
+}
+
+function runSchedAlerts(){
+  var alerts=[];
+  sdJobs.filter(j=>j.stage!=='installed').forEach(j=>{
+    var days=schedDaysFromTemplate(j);
+    var limit=j.volume==='rush'?7:j.volume==='high'?14:10;
+    if(days>limit+2) alerts.push({level:'red',msg:'🔴 '+j.customer+' ('+j.jobNum+') — '+days+'d since template. OVERDUE '+limit+'d target',panel:'schedule'});
+    else if(days>limit-2) alerts.push({level:'yellow',msg:'🟡 '+j.customer+' ('+j.jobNum+') — '+days+'d since template. Approaching '+limit+'d deadline',panel:'schedule'});
+  });
+  var zone=document.getElementById('sched-alerts-zone');
+  if(zone){
+    var reds=alerts.filter(a=>a.level==='red');
+    var yellows=alerts.filter(a=>a.level==='yellow');
+    var html='';
+    if(reds.length) html+='<div class="urgency-banner red"><span class="urgency-icon">🚨</span><span>'+reds.length+' job(s) OVERDUE — immediate action required</span></div>';
+    else if(yellows.length) html+='<div class="urgency-banner yellow"><span class="urgency-icon">⚠️</span><span>'+yellows.length+' job(s) approaching deadline</span></div>';
+    else if(sdJobs.filter(j=>j.stage!=='installed').length) html+='<div class="urgency-banner green"><span class="urgency-icon">✅</span><span>All jobs on track</span></div>';
+    zone.innerHTML=html;
+  }
+  // Send alerts if settings configured
+  if(window.sdAlertSettings&&window.sdAlertSettings.overdue){
+    alerts.filter(a=>a.level==='red').forEach(a=>{
+      if(typeof sendAlertEmail==='function') sendAlertEmail(a.msg,'red');
+    });
+  }
+}
+
+// ── INVENTORY ─────────────────────────────────────────────────
+var DEFAULT_INVENTORY=[
+  {id:'inv001',name:'14" Diamond Blade — Turbo',cat:'blades',vendor:'gmr',qty:3,min:2,unit:'each',cost:89.99,reorderQty:4,sku:'GMR-BL-14T'},
+  {id:'inv002',name:'Polishing Pad Set 50-3000',cat:'abrasives',vendor:'gmr',qty:2,min:2,unit:'set',cost:59.99,reorderQty:3,sku:'GMR-PP-7PC'},
+  {id:'inv003',name:'Color Epoxy — Beige',cat:'adhesives',vendor:'gmr',qty:8,min:4,unit:'each',cost:18.99,reorderQty:12,sku:'GMR-EP-BEI'},
+  {id:'inv004',name:'Color Epoxy — Gray',cat:'adhesives',vendor:'gmr',qty:6,min:4,unit:'each',cost:18.99,reorderQty:12,sku:'GMR-EP-GRY'},
+  {id:'inv005',name:'Color Epoxy — White',cat:'adhesives',vendor:'gmr',qty:5,min:4,unit:'each',cost:18.99,reorderQty:12,sku:'GMR-EP-WHT'},
+  {id:'inv006',name:'Stone Sealer 1 Gallon',cat:'chemicals',vendor:'granquartz',qty:2,min:1,unit:'gallon',cost:42.99,reorderQty:4,sku:'GQ-PP-QT'},
+  {id:'inv007',name:'Acetone 1 Gallon',cat:'chemicals',vendor:'braxton',qty:3,min:2,unit:'gallon',cost:21.99,reorderQty:6,sku:'BB-ACE-1G'},
+  {id:'inv008',name:'P100 Respirator Cartridges',cat:'safety',vendor:'gmr',qty:6,min:4,unit:'pair',cost:14.99,reorderQty:10,sku:'GMR-RS-RC'},
+  {id:'inv009',name:'Silicone Caulk — Clear',cat:'adhesives',vendor:'gmr',qty:12,min:6,unit:'tube',cost:8.99,reorderQty:24,sku:'GMR-SI-CLR'},
+  {id:'inv010',name:'Carbon Brackets L-Bracket',cat:'hardware',vendor:'braxton',qty:24,min:12,unit:'each',cost:6.66,reorderQty:36,sku:'BB-CB-3PK'},
+  {id:'inv011',name:'Dishwasher Brackets',cat:'hardware',vendor:'braxton',qty:18,min:12,unit:'each',cost:1.42,reorderQty:48,sku:'BB-DWB-12'},
+  {id:'inv012',name:'Template Material 4x8 Sheet',cat:'hardware',vendor:'braxton',qty:4,min:3,unit:'sheet',cost:34.99,reorderQty:8,sku:'BB-TM-48'},
+  {id:'inv013',name:'4" Cup Wheel — Double Row',cat:'tooling',vendor:'gmr',qty:3,min:2,unit:'each',cost:34.99,reorderQty:4,sku:'GMR-CW-45D'},
+  {id:'inv014',name:'Super Glue — Medium Grade',cat:'adhesives',vendor:'braxton',qty:10,min:6,unit:'tube',cost:14.99,reorderQty:12,sku:'BB-SG-MED'},
+  {id:'inv015',name:'N95 Disposable Respirators',cat:'safety',vendor:'gmr',qty:15,min:10,unit:'each',cost:1.25,reorderQty:40,sku:'GMR-RS-N95'},
+];
+
+function invLevelColor(item){
+  if(item.qty<=0) return 'red';
+  if(item.qty<=item.min) return 'red';
+  if(item.qty<=item.min*1.5) return 'yellow';
+  return 'green';
+}
+
+function invAddItem(){
+  document.getElementById('inv-form').style.display='block';
+  document.getElementById('inv-form').scrollIntoView({behavior:'smooth'});
+}
+
+function invSaveItem(){
+  var name=document.getElementById('ii-name').value.trim();
+  if(!name){alert('Item name required');return;}
+  var item={
+    id:'INV'+Date.now(),
+    name:name,
+    cat:document.getElementById('ii-cat').value,
+    vendor:document.getElementById('ii-vendor').value,
+    qty:parseInt(document.getElementById('ii-qty').value)||0,
+    min:parseInt(document.getElementById('ii-min').value)||2,
+    unit:document.getElementById('ii-unit').value.trim()||'each',
+    cost:parseFloat(document.getElementById('ii-cost').value)||0,
+    reorderQty:parseInt(document.getElementById('ii-reorder').value)||5,
+    sku:document.getElementById('ii-sku').value.trim()
+  };
+  sdInventory.push(item);saveSD4();
+  document.getElementById('inv-form').style.display='none';
+  renderInventory();
+}
+
+function invUpdateQty(id,delta){
+  var item=sdInventory.find(x=>x.id===id);
+  if(!item) return;
+  item.qty=Math.max(0,item.qty+delta);
+  saveSD4();renderInventory();
+}
+
+function invDelete(id){
+  if(!confirm('Delete this item?')) return;
+  sdInventory=sdInventory.filter(x=>x.id!==id);
+  saveSD4();renderInventory();
+}
+
+function invSetTab(cat,btn){
+  sdInvCat=cat;
+  document.querySelectorAll('#panel-inventory .vendor-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderInventory();
+}
+
+function renderInventory(){
+  var list=sdInventory;
+  if(sdInvCat!=='all') list=list.filter(i=>i.cat===sdInvCat);
+  // Sort: red first, yellow, green
+  list.sort((a,b)=>{
+    var ord={red:0,yellow:1,green:2};
+    return ord[invLevelColor(a)]-ord[invLevelColor(b)];
+  });
+  var el=document.getElementById('inv-list');if(!el) return;
+  if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px">No items in this category.</div>';return;}
+  var vNames={gmr:'GMR',granquartz:'Granquartz',braxton:'Braxton-Bragg',other:'Other'};
+  el.innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+
+    '<div style="display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px;padding:10px 14px;background:var(--surface-2);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">'+
+    '<span>Item</span><span>Status</span><span>Stock Level</span><span>Qty / Min</span><span>Unit Cost</span><span>Actions</span></div>'+
+    list.map(item=>{
+      var color=invLevelColor(item);
+      var fillColor=color==='red'?'#dc2626':color==='yellow'?'#ca8a04':'#16a34a';
+      var pct=Math.min(100,Math.round((item.qty/Math.max(1,item.min*2))*100));
+      return '<div class="inv-row" style="display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px;align-items:center">'+
+        '<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+escHtml(item.name)+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+vNames[item.vendor]+(item.sku?' · '+item.sku:'')+'</div></div>'+
+        '<span class="item-urgency '+color+'">'+
+          (color==='red'?(item.qty<=0?'Out':'Low'):color==='yellow'?'Warning':'OK')+'</span>'+
+        '<div class="inv-level"><div class="inv-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>'+
+        '<div style="font-size:12px">'+item.qty+' '+item.unit+' <span style="color:var(--muted)">(min '+item.min+')</span></div>'+
+        '<div style="font-size:12px">
++(item.cost||0).toFixed(2)+'</div>'+
+        '<div style="display:flex;gap:4px">'+
+          '<button onclick="invUpdateQty(''+item.id+'',1)" style="padding:3px 7px;background:rgba(22,163,74,0.12);color:#16a34a;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">+</button>'+
+          '<button onclick="invUpdateQty(''+item.id+'',-1)" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">−</button>'+
+          '<button onclick="invDelete(''+item.id+'')" style="padding:3px 6px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:5px;font-size:11px;cursor:pointer">×</button>'+
+        '</div>'+
+      '</div>';
+    }).join('')+'</div>';
+  // KPIs
+  var all=sdInventory;
+  var low=all.filter(i=>invLevelColor(i)==='red').length;
+  var warn=all.filter(i=>invLevelColor(i)==='yellow').length;
+  var ok=all.filter(i=>invLevelColor(i)==='green').length;
+  var sv=(id,v)=>{var el=document.getElementById(id);if(el)el.textContent=v;};
+  sv('inv-low',low);sv('inv-warn',warn);sv('inv-ok',ok);
+}
+
+// ── VENDOR ORDERING ───────────────────────────────────────────
+function vendorSetTab(vKey,btn){
+  _activeVendor=vKey;sdVCat='all';
+  document.querySelectorAll('#vendor-tabs .vendor-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // Reset vcat tabs
+  document.querySelectorAll('#vcat-tabs .vendor-tab').forEach(b=>b.classList.remove('active'));
+  var firstVcat=document.querySelector('#vcat-tabs .vendor-tab');
+  if(firstVcat) firstVcat.classList.add('active');
+  renderVendor();
+}
+
+function vCatSet(cat,btn){
+  sdVCat=cat;
+  document.querySelectorAll('#vcat-tabs .vendor-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderVendor();
+}
+
+function renderVendor(){
+  var v=VENDORS[_activeVendor];
+  if(!v) return;
+  var set=(id,val)=>{var el=document.getElementById(id);if(el)el.textContent=val;};
+  var seta=(id,attr,val)=>{var el=document.getElementById(id);if(el)el[attr]=val;};
+  set('v-logo',v.logo);set('v-name',v.name);set('v-desc',v.desc);
+  seta('v-website','href',v.website);seta('v-website','textContent','🌐 '+v.website.replace('https://',''));
+  seta('v-phone','href',v.phone);seta('v-email','href',v.email);
+  var products=v.products;
+  if(sdVCat!=='all') products=products.filter(p=>p.cat===sdVCat);
+  var el=document.getElementById('vendor-products');if(!el) return;
+  if(!products.length){el.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted)">No products in this category from '+v.name+'</div>';return;}
+  el.innerHTML=products.map(p=>{
+    var cartQty=sdCart[p.id]||0;
+    var lowStockItem=sdInventory.find(i=>i.sku===p.sku&&invLevelColor(i)==='red');
+    return '<div class="product-row">'+
+      '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">'+
+        (lowStockItem?'<span class="reorder-dot red"></span>':'')+escHtml(p.name)+'</div>'+
+        '<div style="font-size:11px;color:var(--muted)">'+p.cat+'</div></div>'+
+      '<span style="font-size:11px;color:var(--muted)">'+p.sku+'</span>'+
+      '<span style="font-size:13px;font-weight:700;color:var(--a)">
++p.price.toFixed(2)+'</span>'+
+      '<input type="number" class="qty-input" id="vpqty-'+p.id+'" value="'+cartQty+'" min="0" onchange="cartUpdate(''+_activeVendor+'',''+p.id+'',this.value)">'+
+      '<button onclick="cartAdd(''+_activeVendor+'',''+p.id+'',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
+    '</div>';
+  }).join('');
+}
+
+function cartAdd(vKey,productId,qty){
+  var p=VENDORS[vKey].products.find(x=>x.id===productId);
+  if(!p) return;
+  sdCart[productId]=(sdCart[productId]||0)+parseInt(qty);
+  saveSD4();renderCart();
+  // Update input
+  var inp=document.getElementById('vpqty-'+productId);
+  if(inp) inp.value=sdCart[productId];
+}
+
+function cartUpdate(vKey,productId,val){
+  var qty=parseInt(val)||0;
+  if(qty<=0) delete sdCart[productId];
+  else sdCart[productId]=qty;
+  saveSD4();renderCart();
+}
+
+function cartClear(){
+  sdCart={};saveSD4();renderCart();renderVendor();
+}
+
+function renderCart(){
+  var allProducts=[];
+  Object.values(VENDORS).forEach(v=>v.products.forEach(p=>allProducts.push({...p,vendor:v.name})));
+  var items=Object.entries(sdCart).map(([id,qty])=>{
+    var p=allProducts.find(x=>x.id===id);
+    return p?{...p,qty}:null;
+  }).filter(Boolean);
+  var total=items.reduce((s,i)=>s+i.price*i.qty,0);
+  var count=items.reduce((s,i)=>s+i.qty,0);
+  var cartEl=document.getElementById('vendor-cart-summary');
+  var cartItems=document.getElementById('cart-items');
+  var floatCart=document.getElementById('floating-cart');
+  if(cartEl) cartEl.style.display=items.length?'block':'none';
+  if(floatCart) floatCart.className='order-cart'+(count>0?' show':'');
+  if(document.getElementById('cart-count')) document.getElementById('cart-count').textContent=count;
+  if(document.getElementById('cart-float-total')) document.getElementById('cart-float-total').textContent='
++total.toFixed(2);
+  if(document.getElementById('cart-total')) document.getElementById('cart-total').textContent='
++total.toFixed(2);
+  if(cartItems) cartItems.innerHTML=items.map(i=>
+    '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">'+
+    '<span style="flex:1;font-weight:500">'+escHtml(i.name)+'</span>'+
+    '<span style="color:var(--muted);font-size:11px">'+i.vendor+'</span>'+
+    '<span style="color:var(--muted)">×'+i.qty+'</span>'+
+    '<span style="font-weight:700;color:var(--a)">
++(i.price*i.qty).toFixed(2)+'</span>'+
+    '<button onclick="cartUpdate(''+_activeVendor+'',''+i.id+'',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
+    '</div>'
+  ).join('');
+}
+
+function vendorBuildAutoOrder(){
+  // Find all low-stock items and add their reorder qty to cart
+  sdCart={};
+  var matched=0;
+  sdInventory.filter(i=>invLevelColor(i)==='red').forEach(i=>{
+    // Find matching product across all vendors
+    var found=null;
+    Object.values(VENDORS).forEach(v=>{
+      if(!found) found=v.products.find(p=>p.sku===i.sku||p.name.toLowerCase().includes(i.name.toLowerCase().split(' ')[0]));
+    });
+    if(found){sdCart[found.id]=(sdCart[found.id]||0)+i.reorderQty;matched++;}
+  });
+  saveSD4();
+  renderCart();renderVendor();
+  var msg=matched>0?'Auto-order built: '+matched+' low-stock items added to cart.':'No matching products found for low-stock items. Add items manually.';
+  alert(msg);
+}
+
+function vendorAddCustom(){
+  var name=prompt('Vendor name:');if(!name) return;
+  var website=prompt('Website URL (e.g. https://vendor.com):','https://');
+  var phone=prompt('Phone number:','');
+  // Add to vendor tabs
+  var key='custom_'+Date.now();
+  VENDORS[key]={name:name,logo:'🏪',website:website||'#',phone:'tel:'+phone,email:'mailto:orders@vendor.com',desc:'Custom vendor',products:[]};
+  var tabBar=document.getElementById('vendor-tabs');
+  if(tabBar){
+    var btn=document.createElement('button');
+    btn.className='vendor-tab';
+    btn.textContent='🏪 '+name;
+    btn.onclick=function(){vendorSetTab(key,this);};
+    tabBar.appendChild(btn);
+  }
+}
+
+function vendorPlaceOrder(){
+  var allProducts=[];
+  Object.values(VENDORS).forEach(v=>v.products.forEach(p=>allProducts.push({...p,vendor:v.name})));
+  var items=Object.entries(sdCart).map(([id,qty])=>{
+    var p=allProducts.find(x=>x.id===id);return p?{...p,qty}:null;
+  }).filter(Boolean);
+  if(!items.length){alert('Cart is empty. Add items first.');return;}
+  var total=items.reduce((s,i)=>s+i.price*i.qty,0);
+  var orderText=items.map(i=>i.qty+'x '+i.name+' ('+i.sku+') @ 
++i.price.toFixed(2)+' = 
++(i.price*i.qty).toFixed(2)).join('\n');
+  var subject='StoneDesk Purchase Order — 
++total.toFixed(2);
+  var body='Purchase Order\n\nDate: '+new Date().toLocaleDateString()+'\nShop: '+
+    (localStorage.getItem('fab_shop_name')||'Stone Fabrication Shop')+'\n\nItems:\n'+orderText+'\n\nTotal: 
++total.toFixed(2);
+  // Open email to the active vendor
+  var v=VENDORS[_activeVendor];
+  var emailLink='mailto:'+v.email.replace('mailto:','')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  window.open(emailLink,'_blank');
+  // Also update inventory quantities
+  if(confirm('Order submitted! Update inventory counts to reflect ordered quantities?')){
+    items.forEach(item=>{
+      var inv=sdInventory.find(i=>i.sku===item.sku||i.name.toLowerCase()===item.name.toLowerCase());
+      if(inv) inv.qty+=item.qty;
+    });
+    saveSD4();renderInventory();
+  }
+  sdCart={};saveSD4();renderCart();renderVendor();
+}
+
+// ── INIT SD4 ─────────────────────────────────────────────────
+(function initSD4(){
+  loadSD4Data();
+  // Seed default inventory if empty
+  if(!sdInventory.length){sdInventory=DEFAULT_INVENTORY.slice();saveSD4();}
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(function(){
+      renderSchedule();renderInventory();renderCart();renderVendor();runSchedAlerts();
+    },600);
   });
 })();
 
