@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNhr™ — AI Human Resources Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#f0f4fb;
+  --border:#d1d9e6;--text:#0f1f3d;--muted:#5a6a7e;
+  --a:#1B3A6B;--a2:#2a5298;
+  --grad:linear-gradient(135deg,#1B3A6B,#2a5298);
+  --green:#16a34a;--red:#dc2626;--orange:#f97316;
+}
+html{background:var(--bg)}
+body{color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+
+/* AUTH */
+#sh-auth{display:flex;position:fixed;inset:0;background:var(--grad);z-index:99999;align-items:center;justify-content:center;flex-direction:column}
+.sh-auth-box{background:#fff;border-radius:16px;padding:32px;width:380px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.sh-auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.sh-auth-title{font-size:20px;font-weight:800;color:var(--a)}
+.sh-auth-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.sh-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.sh-tab{flex:1;padding:8px;background:none;border:none;border-bottom:2px solid transparent;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.sh-tab.active{color:var(--a);border-bottom-color:var(--a)}
+.sh-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block}
+.sh-input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;color:var(--text);outline:none;margin-bottom:14px}
+.sh-input:focus{border-color:var(--a)}
+.sh-btn{width:100%;padding:12px;background:var(--grad);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+.sh-err{font-size:12px;color:var(--red);min-height:16px;margin-bottom:10px}
+
+/* APP */
+#sh-app{display:none;min-height:100vh;flex-direction:column}
+#sh-app.visible{display:flex}
+
+/* TOPBAR */
+.sh-topbar{background:var(--grad);height:58px;display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;position:sticky;top:0;z-index:100}
+.sh-topbar-brand{display:flex;align-items:center;gap:10px}
+.sh-topbar-name{font-size:17px;font-weight:800;color:#fff;letter-spacing:.3px}
+.sh-topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.sh-topbar-user{font-size:12px;color:rgba(255,255,255,0.7)}
+.sh-topbar-out{padding:5px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:6px;background:transparent;color:rgba(255,255,255,0.7);font-size:11px;cursor:pointer}
+
+/* NAV TABS */
+.sh-nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;flex-shrink:0}
+.sh-nav-btn{padding:12px 18px;background:none;border:none;border-bottom:2px solid transparent;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.sh-nav-btn.active{color:var(--a);border-bottom-color:var(--a);font-weight:700}
+
+/* MAIN */
+.sh-main{flex:1;padding:24px;max-width:1100px;margin:0 auto;width:100%}
+.sh-panel{display:none}.sh-panel.active{display:block}
+
+/* CARDS */
+.sh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:24px}
+.sh-kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.sh-kpi-val{font-size:28px;font-weight:800;color:var(--a);line-height:1}
+.sh-kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:6px}
+.sh-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.sh-card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sh-section-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px}
+
+/* FORMS */
+.sh-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sh-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.sh-fg label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sh-fg input,.sh-fg select,.sh-fg textarea{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none}
+.sh-fg input:focus,.sh-fg select:focus{border-color:var(--a)}
+.sh-btn-sm{padding:8px 16px;background:var(--a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.sh-btn-outline{padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--muted)}
+
+/* TABLE */
+.sh-table{width:100%;border-collapse:collapse;font-size:13px}
+.sh-table th{background:var(--surface-2);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.sh-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+.sh-table tr:hover td{background:var(--surface-2)}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 10px;border-radius:100px;font-size:11px;font-weight:700}
+.badge-green{background:rgba(22,163,74,0.1);color:var(--green)}
+.badge-red{background:rgba(220,38,38,0.1);color:var(--red)}
+.badge-orange{background:rgba(249,115,22,0.1);color:var(--orange)}
+.badge-blue{background:rgba(27,58,107,0.1);color:var(--a)}
+
+/* COMPLIANCE */
+.compliance-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;margin-bottom:8px;background:var(--surface-2);border:1px solid var(--border)}
+.compliance-icon{font-size:20px;flex-shrink:0}
+.compliance-text{flex:1}
+.compliance-law{font-size:13px;font-weight:700;color:var(--text)}
+.compliance-detail{font-size:12px;color:var(--muted);margin-top:2px}
+.compliance-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}
+
+/* AI CHAT */
+.sh-chat{display:flex;flex-direction:column;height:500px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.sh-chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.sh-msg{max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6}
+.sh-msg.user{background:var(--a);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.sh-msg.ai{background:var(--surface-2);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.sh-chat-input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border)}
+.sh-chat-input input{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;outline:none}
+.sh-chat-input button{padding:8px 16px;background:var(--a);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+
+/* CHECKLIST */
+.sh-check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.sh-check-item:last-child{border:none}
+.sh-check-item input[type=checkbox]{margin-top:2px;accent-color:var(--a);width:16px;height:16px;flex-shrink:0;cursor:pointer}
+.sh-check-label{font-size:13px;font-weight:600;color:var(--text)}
+.sh-check-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.sh-check-warn{font-size:11px;color:var(--red);margin-top:2px}
+
+/* PIP */
+.pip-stage{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.pip-stage-num{width:28px;height:28px;border-radius:50%;background:var(--a);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="sh-auth">
+  <div class="sh-auth-box">
+    <div class="sh-auth-logo">
+      <div style="width:40px;height:44px;overflow:hidden;position:relative;flex-shrink:0"><svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" style="width:40px;height:44px;position:absolute;top:0;left:0"><defs><clipPath id="shAuthClip"><text x="4" y="82" font-family="Georgia,serif" font-size="88" font-weight="900" font-style="italic">S</text></clipPath><pattern id="shAuthHex" x="0" y="0" width="18" height="20" patternUnits="userSpaceOnUse"><polygon points="9,1 16,5 16,13 9,17 2,13 2,5" fill="none" stroke="rgba(27,58,107,0.5)" stroke-width="1.6"/></pattern></defs><text x="4" y="82" font-family="Georgia,serif" font-size="88" font-weight="900" font-style="italic" fill="#1B3A6B">S</text><rect x="-10" y="-20" width="120" height="150" fill="url(#shAuthHex)" clip-path="url(#shAuthClip)"><animateTransform attributeName="transform" type="translate" from="0,0" to="0,-20" dur="1.4s" repeatCount="indefinite"/></rect></svg></div>
+      <div>
+        <div class="sh-auth-title">SAIRNhr™</div>
+        <div class="sh-auth-sub">AI Human Resources Intelligence Platform</div>
+      </div>
+    </div>
+    <div class="sh-tabs">
+      <button class="sh-tab active" onclick="shSelectTab('login',this)">Sign In</button>
+      <button class="sh-tab" onclick="shSelectTab('register',this)">Register</button>
+    </div>
+    <div id="sh-login-form">
+      <span class="sh-label">Email</span>
+      <input class="sh-input" id="sh-email" type="email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')shLogin()">
+      <span class="sh-label">Password</span>
+      <input class="sh-input" id="sh-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')shLogin()">
+      <div class="sh-err" id="sh-login-err"></div>
+      <button class="sh-btn" onclick="shLogin()">Sign In to SAIRNhr™</button>
+    </div>
+    <div id="sh-reg-form" style="display:none">
+      <span class="sh-label">Company Name</span>
+      <input class="sh-input" id="sh-reg-org" type="text" placeholder="Acme Corp">
+      <span class="sh-label">Your Name</span>
+      <input class="sh-input" id="sh-reg-name" type="text" placeholder="Jane Smith">
+      <span class="sh-label">Email</span>
+      <input class="sh-input" id="sh-reg-email" type="email" placeholder="you@company.com">
+      <span class="sh-label">Password</span>
+      <input class="sh-input" id="sh-reg-pass" type="password" placeholder="Min 8 characters" onkeydown="if(event.key==='Enter')shRegister()">
+      <div class="sh-err" id="sh-reg-err"></div>
+      <button class="sh-btn" onclick="shRegister()">Create Free Account</button>
+    </div>
+  </div>
+  <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:16px">SAIRN Technologies™ · Powered by Claude AI</div>
+</div>
+
+<!-- APP -->
+<div id="sh-app">
+  <!-- TOPBAR -->
+  <div class="sh-topbar">
+    <div class="sh-topbar-brand">
+      <div style="width:36px;height:40px;overflow:hidden;position:relative;flex-shrink:0"><svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:40px;position:absolute;top:0;left:0"><defs><clipPath id="shClip"><text x="4" y="82" font-family="Georgia,serif" font-size="88" font-weight="900" font-style="italic">S</text></clipPath><pattern id="shHex" x="0" y="0" width="18" height="20" patternUnits="userSpaceOnUse"><polygon points="9,1 16,5 16,13 9,17 2,13 2,5" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.6"/></pattern></defs><text x="4" y="82" font-family="Georgia,serif" font-size="88" font-weight="900" font-style="italic" fill="white">S</text><rect x="-10" y="-20" width="120" height="150" fill="url(#shHex)" clip-path="url(#shClip)"><animateTransform attributeName="transform" type="translate" from="0,0" to="0,-20" dur="1.4s" repeatCount="indefinite"/></rect><rect x="4" y="-90" width="72" height="30" fill="rgba(255,255,255,0.18)" clip-path="url(#shClip)"><animateTransform attributeName="transform" type="translate" from="0,0" to="0,180" dur="2.2s" repeatCount="indefinite"/></rect></svg></div>
+      <div class="sh-topbar-name"><span style="font-size:18px;font-weight:900">S</span><span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85)">AIRN</span><span style="font-size:18px;font-weight:900">hr</span><sup style="font-size:9px;color:rgba(255,255,255,0.6);vertical-align:super">™</sup></div>
+    </div>
+    <div class="sh-topbar-right">
+      <span class="sh-topbar-user" id="sh-topbar-user"></span>
+      <button class="sh-topbar-out" onclick="shLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="sh-nav">
+    <button class="sh-nav-btn active" onclick="shPanel('dashboard',this)">📊 Dashboard</button>
+    <button class="sh-nav-btn" onclick="shPanel('ai',this)">🤖 HR AI</button>
+    <button class="sh-nav-btn" onclick="shPanel('onboarding',this)">✅ Onboarding</button>
+    <button class="sh-nav-btn" onclick="shPanel('compliance',this)">⚖️ Compliance</button>
+    <button class="sh-nav-btn" onclick="shPanel('pip',this)">📋 PIP Builder</button>
+    <button class="sh-nav-btn" onclick="shPanel('compensation',this)">💰 Compensation</button>
+    <button class="sh-nav-btn" onclick="shPanel('jobs',this)">📝 Job Builder</button>
+    <button class="sh-nav-btn" onclick="shPanel('termination',this)">🚪 Termination</button>
+  </div>
+
+  <div class="sh-main">
+
+    <!-- DASHBOARD -->
+    <div id="panel-dashboard" class="sh-panel active">
+      <div class="sh-section-title">HR Dashboard</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" id="kpi-employees">—</div><div class="sh-kpi-label">Active Employees</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" id="kpi-onboarding" style="color:var(--orange)">—</div><div class="sh-kpi-label">Onboarding In Progress</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" id="kpi-compliance" style="color:var(--green)">—</div><div class="sh-kpi-label">Compliance Items Due</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" id="kpi-pips" style="color:var(--red)">—</div><div class="sh-kpi-label">Active PIPs</div></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">⚠️ Compliance Alerts</div>
+        <div id="dash-alerts">
+          <div class="compliance-item"><span class="compliance-icon">📋</span><div class="compliance-text"><div class="compliance-law">I-9 Verification Deadline</div><div class="compliance-detail">New hires must complete I-9 within 3 business days — $272-$2,701 per violation</div></div><span class="badge badge-red">Action Required</span></div>
+          <div class="compliance-item"><span class="compliance-icon">🫁</span><div class="compliance-text"><div class="compliance-law">Silica Training — Annual Renewal</div><div class="compliance-detail">OSHA 1910.1053 — retain records 30 years. California SB 20 by July 1 each year</div></div><span class="badge badge-orange">Review</span></div>
+          <div class="compliance-item"><span class="compliance-icon">⚖️</span><div class="compliance-text"><div class="compliance-law">FLSA Exempt Classification Review</div><div class="compliance-detail">Salary threshold: $684/week minimum. Misclassification = biggest FLSA exposure</div></div><span class="badge badge-blue">Monitor</span></div>
+        </div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📅 30-Day HR Calendar</div>
+        <div id="dash-calendar" style="font-size:13px;color:var(--muted)">Loading HR calendar...</div>
+      </div>
+    </div>
+
+    <!-- HR AI -->
+    <div id="panel-ai" class="sh-panel">
+      <div class="sh-section-title">HR AI Assistant</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="sh-btn-outline" onclick="shAskHR('What are the FMLA eligibility requirements?')">FMLA Rules</button>
+        <button class="sh-btn-outline" onclick="shAskHR('Draft a PIP template for performance issues')">PIP Template</button>
+        <button class="sh-btn-outline" onclick="shAskHR('What are the steps to legally terminate an employee?')">Termination Steps</button>
+        <button class="sh-btn-outline" onclick="shAskHR('How do I classify exempt vs non-exempt under FLSA?')">FLSA Classification</button>
+        <button class="sh-btn-outline" onclick="shAskHR('What documentation is required for workplace harassment investigation?')">Investigation Docs</button>
+        <button class="sh-btn-outline" onclick="shAskHR('Generate a compensation band structure for a 50-person company')">Comp Bands</button>
+      </div>
+      <div class="sh-chat">
+        <div class="sh-chat-msgs" id="sh-chat-msgs">
+          <div class="sh-msg ai">Welcome to SAIRNhr™ AI — your CHRO, labor attorney, and compensation consultant in one. Ask me anything about employment law, HR compliance, investigations, compensation, terminations, or building world-class people systems. What can I help you with today?</div>
+        </div>
+        <div class="sh-chat-input">
+          <input id="sh-chat-inp" placeholder="Ask any HR question..." onkeydown="if(event.key==='Enter')shSendHR()">
+          <button onclick="shSendHR()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ONBOARDING -->
+    <div id="panel-onboarding" class="sh-panel">
+      <div class="sh-section-title">Employee Onboarding Checklist</div>
+      <div class="sh-card">
+        <div class="sh-card-title">👤 New Hire Information</div>
+        <div class="sh-form-grid">
+          <div class="sh-fg"><label>Employee Name</label><input id="ob-name" placeholder="Full legal name"></div>
+          <div class="sh-fg"><label>Start Date</label><input id="ob-start" type="date"></div>
+          <div class="sh-fg"><label>Position</label><input id="ob-position" placeholder="Job title"></div>
+          <div class="sh-fg"><label>Department</label><input id="ob-dept" placeholder="Department"></div>
+          <div class="sh-fg"><label>Manager</label><input id="ob-mgr" placeholder="Direct manager name"></div>
+          <div class="sh-fg"><label>Employment Type</label><select id="ob-type"><option>Full-time W-2</option><option>Part-time W-2</option><option>Contractor 1099</option></select></div>
+        </div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📋 Pre-boarding (Before Day 1)</div>
+        <div id="checklist-pre"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📁 Required Federal Forms</div>
+        <div id="checklist-forms"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📅 90-Day Milestones</div>
+        <div id="checklist-90"></div>
+      </div>
+      <button class="sh-btn-sm" onclick="shPrintOnboarding()">🖨️ Print Onboarding Packet</button>
+    </div>
+
+    <!-- COMPLIANCE -->
+    <div id="panel-compliance" class="sh-panel">
+      <div class="sh-section-title">Federal & State Compliance Dashboard</div>
+      <div class="sh-card">
+        <div class="sh-card-title">🇺🇸 Federal Law Requirements</div>
+        <div id="compliance-federal"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">🫁 OSHA Silica Standard (1910.1053)</div>
+        <div style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:14px;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--red)">⚠️ Engineered stone (quartz) is 93% crystalline silica — FATAL if inhaled</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Silicosis is irreversible. PEL: 0.05 mg/m³. Annual training required. Records: 30 years.</div>
+        </div>
+        <div id="compliance-silica"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📊 Compliance Tracker</div>
+        <table class="sh-table">
+          <thead><tr><th>Requirement</th><th>Frequency</th><th>Next Due</th><th>Status</th></tr></thead>
+          <tbody id="compliance-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PIP BUILDER -->
+    <div id="panel-pip" class="sh-panel">
+      <div class="sh-section-title">Performance Improvement Plan Builder</div>
+      <div class="sh-card">
+        <div class="sh-card-title">📝 PIP Details</div>
+        <div class="sh-form-grid">
+          <div class="sh-fg"><label>Employee Name</label><input id="pip-name" placeholder="Employee full name"></div>
+          <div class="sh-fg"><label>Manager Name</label><input id="pip-mgr" placeholder="Manager name"></div>
+          <div class="sh-fg"><label>Position</label><input id="pip-pos" placeholder="Job title"></div>
+          <div class="sh-fg"><label>PIP Start Date</label><input id="pip-start" type="date"></div>
+          <div class="sh-fg"><label>PIP Duration</label><select id="pip-duration"><option>30 days</option><option>60 days</option><option>90 days</option></select></div>
+          <div class="sh-fg"><label>HR Present</label><select id="pip-hr"><option>Yes — HR involved</option><option>No — Manager only (not recommended)</option></select></div>
+        </div>
+        <div class="sh-fg"><label>Performance Issues (be specific with examples and dates)</label><textarea id="pip-issues" style="width:100%;height:80px;resize:vertical"></textarea></div>
+        <div class="sh-fg"><label>Expected Improvement (SMART goals)</label><textarea id="pip-goals" style="width:100%;height:80px;resize:vertical"></textarea></div>
+        <div class="sh-fg"><label>Support Provided</label><textarea id="pip-support" style="width:100%;height:60px;resize:vertical" placeholder="Training, coaching, resources provided..."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="sh-btn-sm" onclick="shGeneratePIP()">🤖 Generate PIP with AI</button>
+          <button class="sh-btn-outline" onclick="shPrintPIP()">🖨️ Print PIP</button>
+        </div>
+      </div>
+      <div class="sh-card" id="pip-output" style="display:none">
+        <div class="sh-card-title">📄 Generated PIP Document</div>
+        <div id="pip-content" style="font-size:13px;line-height:1.8;color:var(--text)"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📅 PIP Stages</div>
+        <div id="pip-stages"></div>
+      </div>
+    </div>
+
+    <!-- COMPENSATION -->
+    <div id="panel-compensation" class="sh-panel">
+      <div class="sh-section-title">Compensation Intelligence</div>
+      <div class="sh-card">
+        <div class="sh-card-title">💰 Pay Band Calculator</div>
+        <div class="sh-form-grid">
+          <div class="sh-fg"><label>Job Title</label><input id="comp-title" placeholder="e.g. Senior Software Engineer"></div>
+          <div class="sh-fg"><label>Location</label><select id="comp-loc"><option>National Average</option><option>New York City (+25%)</option><option>San Francisco (+30%)</option><option>Austin, TX (+5%)</option><option>Columbus, OH (base)</option><option>Chicago (+10%)</option><option>Boston (+15%)</option></select></div>
+          <div class="sh-fg"><label>Years Experience</label><select id="comp-exp"><option>0-2 years</option><option>3-5 years</option><option>6-9 years</option><option>10+ years</option></select></div>
+          <div class="sh-fg"><label>Company Size</label><select id="comp-size"><option>1-50 employees</option><option>51-200 employees</option><option>201-1000 employees</option><option>1000+ employees</option></select></div>
+        </div>
+        <button class="sh-btn-sm" onclick="shCalcComp()">Calculate Pay Band</button>
+        <div id="comp-result" style="margin-top:16px"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">⚖️ FLSA Classification Test</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Salary threshold: $684/week ($35,568/year). Misclassification is the #1 FLSA exposure.</div>
+        <div class="sh-fg"><label>Weekly Salary</label><input id="flsa-salary" type="number" placeholder="Enter weekly salary" oninput="shFLSACheck()"></div>
+        <div class="sh-fg"><label>Duties Test</label><select id="flsa-duties" onchange="shFLSACheck()"><option value="">Select primary duties...</option><option value="executive">Executive (manages 2+ employees, has hiring authority)</option><option value="admin">Administrative (office work, exercises discretion)</option><option value="professional">Professional (advanced knowledge, degree required)</option><option value="outside">Outside Sales (primary duty = making sales outside office)</option><option value="computer">Computer (systems analyst, programmer, engineer)</option><option value="none">None of the above</option></select></div>
+        <div id="flsa-result" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- JOB BUILDER -->
+    <div id="panel-jobs" class="sh-panel">
+      <div class="sh-section-title">Job Description Builder</div>
+      <div class="sh-card">
+        <div class="sh-card-title">📝 Job Details</div>
+        <div class="sh-form-grid">
+          <div class="sh-fg"><label>Job Title</label><input id="jb-title" placeholder="e.g. CNC Operator"></div>
+          <div class="sh-fg"><label>Department</label><input id="jb-dept" placeholder="e.g. Production"></div>
+          <div class="sh-fg"><label>Reports To</label><input id="jb-reports" placeholder="e.g. Production Manager"></div>
+          <div class="sh-fg"><label>FLSA Status</label><select id="jb-flsa"><option>Non-Exempt (hourly)</option><option>Exempt (salaried)</option></select></div>
+          <div class="sh-fg"><label>Employment Type</label><select id="jb-type"><option>Full-time</option><option>Part-time</option><option>Contract</option></select></div>
+          <div class="sh-fg"><label>Pay Range</label><input id="jb-pay" placeholder="e.g. $18-$24/hr or $55,000-$70,000"></div>
+        </div>
+        <div class="sh-fg"><label>Key Responsibilities (one per line)</label><textarea id="jb-duties" style="width:100%;height:80px;resize:vertical" placeholder="Operate CNC bridge saw safely..."></textarea></div>
+        <div class="sh-fg"><label>Required Qualifications</label><textarea id="jb-reqs" style="width:100%;height:60px;resize:vertical" placeholder="2+ years stone fabrication experience..."></textarea></div>
+        <button class="sh-btn-sm" onclick="shGenerateJD()">🤖 Generate Job Description with AI</button>
+      </div>
+      <div class="sh-card" id="jb-output" style="display:none">
+        <div class="sh-card-title">📄 Generated Job Description</div>
+        <div id="jb-content" style="font-size:13px;line-height:1.8"></div>
+        <button class="sh-btn-outline" style="margin-top:12px" onclick="shPrintJD()">🖨️ Print</button>
+      </div>
+    </div>
+
+    <!-- TERMINATION -->
+    <div id="panel-termination" class="sh-panel">
+      <div class="sh-section-title">Termination Checklist & Legal Guardrails</div>
+      <div style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--red)">⚠️ Legal Review Required Before Termination</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Never terminate: during FMLA leave, within 90 days of protected activity (retaliation), based on protected class, or without documentation.</div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">🚫 Legal Stop Signs — Consult Counsel If Any Apply</div>
+        <div id="term-stopsigns"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">✅ Pre-Termination Checklist</div>
+        <div id="term-checklist"></div>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📅 Final Pay & Benefits</div>
+        <div id="term-pay"></div>
+      </div>
+    </div>
+
+  </div><!-- /sh-main -->
+</div><!-- /sh-app -->
+
+<script>
+const SH_RAILWAY='https://fabricor-production.up.railway.app';
+const SH_CLAUDE='https://sairn.vercel.app/api/claude';
+let shCurrentUser=null;
+let shChatHistory=[];
+
+// AUTH
+function shSelectTab(tab,el){
+  document.querySelectorAll('.sh-tab').forEach(t=>{t.classList.remove('active')});
+  el.classList.add('active');
+  document.getElementById('sh-login-form').style.display=tab==='login'?'block':'none';
+  document.getElementById('sh-reg-form').style.display=tab==='register'?'block':'none';
+}
+async function shLogin(){
+  const email=document.getElementById('sh-email').value.trim();
+  const pass=document.getElementById('sh-pass').value;
+  const err=document.getElementById('sh-login-err');
+  err.textContent='';
+  if(!email||!pass){err.textContent='Please enter email and password';return;}
+  try{
+    const res=await fetch(SH_RAILWAY+'/api/auth/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const data=await res.json();
+    if(!res.ok){err.textContent=data.error||'Login failed';return;}
+    shCurrentUser=data.user;
+    shShowApp();
+  }catch(e){err.textContent='Connection error — try again.';}
+}
+async function shRegister(){
+  const org=document.getElementById('sh-reg-org').value.trim();
+  const name=document.getElementById('sh-reg-name').value.trim();
+  const email=document.getElementById('sh-reg-email').value.trim();
+  const pass=document.getElementById('sh-reg-pass').value;
+  const err=document.getElementById('sh-reg-err');
+  err.textContent='';
+  if(!org||!name||!email||!pass){err.textContent='All fields required';return;}
+  if(pass.length<8){err.textContent='Password must be 8+ characters';return;}
+  try{
+    const res=await fetch(SH_RAILWAY+'/api/auth/register',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass,name,shopName:org})});
+    const data=await res.json();
+    if(!res.ok){err.textContent=data.error||'Registration failed';return;}
+    shCurrentUser=data.user;
+    shShowApp();
+  }catch(e){err.textContent='Connection error — try again.';}
+}
+async function shLogout(){
+  try{await fetch(SH_RAILWAY+'/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){}
+  shCurrentUser=null;
+  document.getElementById('sh-auth').style.display='flex';
+  document.getElementById('sh-app').classList.remove('visible');
+}
+function shShowApp(){
+  document.getElementById('sh-auth').style.display='none';
+  document.getElementById('sh-app').classList.add('visible');
+  document.getElementById('sh-topbar-user').textContent=shCurrentUser.shopName||shCurrentUser.name||'';
+  shInitAll();
+}
+
+// NAV
+function shPanel(id,btn){
+  document.querySelectorAll('.sh-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sh-nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// INIT ALL PANELS
+function shInitAll(){
+  shInitDashboard();
+  shInitOnboarding();
+  shInitCompliance();
+  shInitPIP();
+  shInitTermination();
+}
+
+// DASHBOARD
+function shInitDashboard(){
+  document.getElementById('kpi-employees').textContent='—';
+  document.getElementById('kpi-onboarding').textContent='0';
+  document.getElementById('kpi-compliance').textContent='3';
+  document.getElementById('kpi-pips').textContent='0';
+  const cal=document.getElementById('dash-calendar');
+  const today=new Date();
+  const items=[
+    {days:0,text:'Complete I-9 for any new hires started today'},
+    {days:7,text:'30-day check-in scheduled for employees who started last month'},
+    {days:14,text:'Review FLSA classifications for any reclassified positions'},
+    {days:30,text:'Annual silica training renewal reminder — send to all shop employees'},
+  ];
+  cal.innerHTML=items.map(i=>{
+    const d=new Date(today);d.setDate(d.getDate()+i.days);
+    return '<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="color:var(--muted);min-width:80px">'+d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span><span>'+i.text+'</span></div>';
+  }).join('');
+}
+
+// ONBOARDING
+function shInitOnboarding(){
+  const pre=[
+    {text:'Send welcome email with first-day details',sub:'Include parking, dress code, schedule, who to ask for'},
+    {text:'Set up workstation, computer, and system access',sub:'IT setup must be complete BEFORE Day 1'},
+    {text:'Assign onboarding buddy',sub:'Peer mentor for first 30 days'},
+    {text:'Prepare ID badge and access cards',sub:''},
+    {text:'Schedule first-week meetings',sub:'HR orientation, team introductions, manager 1:1'},
+  ];
+  const forms=[
+    {text:'W-4 — Federal Income Tax Withholding',sub:'Employee completes withholding allowances',warn:''},
+    {text:'I-9 — Employment Eligibility Verification',sub:'Must complete within 3 business days of hire',warn:'⚠️ Federal law: $272–$2,701 per violation. Verify ORIGINAL documents in person.'},
+    {text:'State Tax Withholding Form',sub:'Varies by state — provide correct state form',warn:''},
+    {text:'Direct Deposit Authorization',sub:'Bank account and routing number',warn:''},
+    {text:'Emergency Contact Form',sub:'Name, relationship, phone number',warn:''},
+    {text:'Benefits Enrollment',sub:'Must complete within 30-day enrollment window',warn:'⚠️ Missing the enrollment window = wait until open enrollment'},
+    {text:'At-Will Employment Acknowledgment',sub:'Employee acknowledges at-will employment status',warn:''},
+    {text:'Confidentiality / NDA Agreement',sub:'Protect company trade secrets and client data',warn:''},
+    {text:'Drug Testing Authorization (if applicable)',sub:'Pre-employment screening where permitted by state',warn:''},
+    {text:'Silica Hazard Training Acknowledgment',sub:'Required for ALL stone fabrication workers',warn:'⚠️ Engineered quartz is 93% crystalline silica. FATAL. No exceptions.'},
+  ];
+  const milestones=[
+    {text:'Day 1: Culture orientation, facilities tour, system training',sub:'First impression sets the tone'},
+    {text:'Day 7: First 1:1 with manager — role clarity and 30-day goals',sub:''},
+    {text:'Day 30: First formal check-in — how is onboarding going?',sub:'Catch issues before they become problems'},
+    {text:'Day 60: Independent contribution assessment',sub:'Are they meeting expectations? Any support needed?'},
+    {text:'Day 90: 90-day review — performance, culture fit, development plan',sub:'This is the decision point for long-term retention'},
+  ];
+  document.getElementById('checklist-pre').innerHTML=pre.map(i=>shCheckItem(i)).join('');
+  document.getElementById('checklist-forms').innerHTML=forms.map(i=>shCheckItem(i)).join('');
+  document.getElementById('checklist-90').innerHTML=milestones.map(i=>shCheckItem(i)).join('');
+}
+function shCheckItem(i){
+  return '<div class="sh-check-item"><input type="checkbox"><div><div class="sh-check-label">'+i.text+'</div>'+(i.sub?'<div class="sh-check-sub">'+i.sub+'</div>':'')+(i.warn?'<div class="sh-check-warn">'+i.warn+'</div>':'')+'</div></div>';
+}
+
+// COMPLIANCE
+function shInitCompliance(){
+  const federal=[
+    {law:'FLSA',scope:'All employers',req:'Minimum wage ($7.25/hr federal), overtime (1.5x for >40hrs/week), child labor',threshold:'$684/week for exempt salary minimum'},
+    {law:'FMLA',scope:'50+ employees',req:'12 weeks unpaid leave — serious health condition, birth/adoption, military',threshold:'Employee must have 12 months tenure, 1,250 hours worked'},
+    {law:'ADA',scope:'15+ employees',req:'Reasonable accommodation for disabilities, no discrimination',threshold:'Interactive process required — document all accommodation discussions'},
+    {law:'Title VII',scope:'15+ employees',req:'No discrimination based on race, color, religion, sex, national origin',threshold:'EEOC charge must be filed within 180-300 days of violation'},
+    {law:'ADEA',scope:'20+ employees',req:'No age discrimination for employees 40+',threshold:'Separation agreements require 21-day consideration period, 7-day revocation'},
+    {law:'WARN Act',scope:'100+ employees',req:'60-day advance notice for mass layoffs or plant closings',threshold:'50+ employees affected OR 33% of workforce'},
+    {law:'OSHA',scope:'Most employers',req:'Safe workplace free from recognized hazards',threshold:'Silica PEL: 0.05 mg/m³ as 8-hour TWA'},
+  ];
+  document.getElementById('compliance-federal').innerHTML=federal.map(f=>
+    '<div class="compliance-item"><span class="compliance-icon">📜</span><div class="compliance-text"><div class="compliance-law">'+f.law+' — '+f.scope+'</div><div class="compliance-detail">'+f.req+'</div><div class="compliance-detail" style="color:var(--a);margin-top:2px">→ '+f.threshold+'</div></div></div>'
+  ).join('');
+
+  const silica=[
+    {text:'Written Exposure Control Plan',req:'Annual review and update'},
+    {text:'Air monitoring / exposure assessment',req:'Determine employee exposure levels'},
+    {text:'Engineering controls (wet cutting, LEV)',req:'Primary control method — before PPE'},
+    {text:'Respirator program (N95 minimum)',req:'NIOSH-approved P100 for high-exposure tasks'},
+    {text:'Medical surveillance program',req:'For exposures at or above action level (0.025 mg/m³)'},
+    {text:'Employee training — annually',req:'Covers hazards, controls, symptoms of silicosis'},
+    {text:'Record retention',req:'30 YEARS for exposure records and medical records'},
+  ];
+  document.getElementById('compliance-silica').innerHTML=silica.map(s=>
+    '<div class="sh-check-item"><input type="checkbox"><div><div class="sh-check-label">'+s.text+'</div><div class="sh-check-sub">'+s.req+'</div></div></div>'
+  ).join('');
+
+  const tracker=[
+    ['I-9 Verification','Per hire','Within 3 days','<span class="badge badge-orange">Ongoing</span>'],
+    ['Silica Training','Annual','July 1 (CA) / Annual','<span class="badge badge-blue">Monitor</span>'],
+    ['OSHA 300 Log','Annual','Feb 1 posting deadline','<span class="badge badge-green">Current</span>'],
+    ['FLSA Classification Review','Annual','Year-end','<span class="badge badge-blue">Monitor</span>'],
+    ['EEO-1 Report (100+ employees)','Annual','March 31','<span class="badge badge-blue">Monitor</span>'],
+    ['Benefits Open Enrollment','Annual','Company-specific','<span class="badge badge-green">Current</span>'],
+    ['Workers Comp Insurance','Annual','Policy renewal date','<span class="badge badge-green">Current</span>'],
+    ['State Unemployment Tax','Quarterly','Last day of month after quarter','<span class="badge badge-blue">Monitor</span>'],
+  ];
+  document.getElementById('compliance-table').innerHTML=tracker.map(r=>
+    '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td></tr>'
+  ).join('');
+}
+
+// PIP
+function shInitPIP(){
+  const stages=[
+    {num:1,title:'Week 1-2: Issue Documentation',text:'Document specific performance gaps with examples, dates, and measurable impact. Share documented concerns with employee in meeting with HR present.'},
+    {num:2,title:'Week 2: PIP Meeting',text:'Present PIP document. Employee receives copy. Explain consequences if performance not met. Employee may respond in writing within 5 business days.'},
+    {num:3,title:'During PIP: Weekly Check-ins',text:'Manager and HR conduct weekly documented check-ins. Track progress against SMART goals. Provide coaching and support. Document all conversations.'},
+    {num:4,title:'Mid-Point Review',text:'Formal progress assessment at 50% of PIP duration. Determine: on track, needs adjustment, or not meeting expectations. Documented and signed.'},
+    {num:5,title:'Final Review',text:'Assess all PIP goals. If met: remove PIP, acknowledge improvement. If not met: proceed to termination with full documentation. HR and legal review required.'},
+  ];
+  document.getElementById('pip-stages').innerHTML=stages.map(s=>
+    '<div class="pip-stage"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div class="pip-stage-num">'+s.num+'</div><div style="font-size:13px;font-weight:700">'+s.title+'</div></div><div style="font-size:13px;color:var(--muted);padding-left:38px">'+s.text+'</div></div>'
+  ).join('');
+}
+async function shGeneratePIP(){
+  const name=document.getElementById('pip-name').value||'[Employee Name]';
+  const mgr=document.getElementById('pip-mgr').value||'[Manager]';
+  const pos=document.getElementById('pip-pos').value||'[Position]';
+  const duration=document.getElementById('pip-duration').value;
+  const issues=document.getElementById('pip-issues').value||'[Performance issues]';
+  const goals=document.getElementById('pip-goals').value||'[SMART goals]';
+  const support=document.getElementById('pip-support').value||'[Support provided]';
+  const prompt='Generate a professional, legally sound Performance Improvement Plan for: Employee: '+name+', Position: '+pos+', Manager: '+mgr+', Duration: '+duration+'. Performance issues: '+issues+'. Expected improvements (SMART goals): '+goals+'. Support provided: '+support+'. Include all required sections: purpose, specific performance concerns with examples, measurable goals with deadlines, support resources, consequences, and signature lines. Format professionally.';
+  document.getElementById('pip-output').style.display='block';
+  document.getElementById('pip-content').innerHTML='<div style="color:var(--muted)">Generating PIP document...</div>';
+  try{
+    const res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,app_id:'sairnhr',system:'You are SAIRNhr AI — expert CHRO and HR attorney. Generate professional, legally sound HR documents.',messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const text=data.content?.[0]?.text||'Unable to generate';
+    document.getElementById('pip-content').innerHTML=text.replace(/\n/g,'<br>');
+  }catch(e){document.getElementById('pip-content').innerHTML='Error generating PIP. Please try again.';}
+}
+
+// TERMINATION
+function shInitTermination(){
+  const stops=[
+    {text:'Employee is currently on approved FMLA leave',warn:'Terminating during FMLA = FMLA retaliation claim'},
+    {text:'Employee recently filed an EEOC charge or internal complaint',warn:'Within 90 days = presumption of retaliation'},
+    {text:'Employee is pregnant or recently returned from parental leave',warn:'Pregnancy Discrimination Act + FMLA exposure'},
+    {text:'Employee is 40+ years old and being replaced by younger worker',warn:'ADEA exposure — requires Older Workers Benefit Protection Act compliance'},
+    {text:'No documented performance issues on file',warn:'At-will does not mean zero documentation — juries expect paper trail'},
+    {text:'Employee has threatened or filed a workers comp claim',warn:'Workers comp retaliation claims are expensive'},
+  ];
+  document.getElementById('term-stopsigns').innerHTML=stops.map(s=>
+    '<div class="sh-check-item"><input type="checkbox"><div><div class="sh-check-label">'+s.text+'</div><div class="sh-check-warn">⚠️ '+s.warn+'</div></div></div>'
+  ).join('');
+
+  const checks=[
+    {text:'Performance documentation is complete and signed',sub:'Minimum: verbal warning → written warning → final written → termination'},
+    {text:'HR and legal have reviewed the decision',sub:'Never a manager decision alone for involuntary termination'},
+    {text:'Separation meeting is scheduled with HR present',sub:'Private location, brief (15-30 min), no surprises'},
+    {text:'Termination letter drafted and reviewed',sub:'State reason clearly but concisely — less is more'},
+    {text:'IT access revocation scheduled',sub:'Disable email and systems access same day — ideally same hour'},
+    {text:'Company property return process ready',sub:'Laptop, keys, badge, phone — provide list with receipt'},
+    {text:'COBRA notification prepared',sub:'Must provide written notice within 14 days of qualifying event'},
+    {text:'Separation agreement reviewed (if applicable)',sub:'21 days to consider / 7-day revocation window for ADEA claims'},
+  ];
+  document.getElementById('term-checklist').innerHTML=checks.map(i=>shCheckItem(i)).join('');
+
+  const pay=[
+    {text:'Final paycheck timing',sub:'California: same day as termination. Most states: next regular payday. CHECK YOUR STATE LAW.'},
+    {text:'Accrued PTO payout',sub:'State-specific — some states require payout, others do not. Check state law.'},
+    {text:'COBRA election notice',sub:'14-day deadline from qualifying event. Provide written notice.'},
+    {text:'401(k) / benefits information',sub:'Provide plan documents and rollover options'},
+    {text:'Unemployment notice',sub:'Most states require providing information about unemployment benefits'},
+  ];
+  document.getElementById('term-pay').innerHTML=pay.map(i=>shCheckItem(i)).join('');
+}
+
+// COMPENSATION
+function shFLSACheck(){
+  const salary=parseFloat(document.getElementById('flsa-salary').value)||0;
+  const duties=document.getElementById('flsa-duties').value;
+  const result=document.getElementById('flsa-result');
+  if(!salary&&!duties){result.innerHTML='';return;}
+  const threshold=684;
+  const meetsThreshold=salary>=threshold;
+  let html='';
+  if(salary>0){
+    html+='<div style="font-size:13px;margin-bottom:8px">Salary: <strong>$'+salary.toFixed(2)+'/week</strong> — Threshold: <strong>$'+threshold+'/week</strong> — ';
+    html+=meetsThreshold?'<span style="color:var(--green)">✓ Meets salary threshold</span>':'<span style="color:var(--red)">✗ Below salary threshold — MUST be non-exempt</span>';
+    html+='</div>';
+  }
+  if(duties==='none'){
+    html+='<div class="badge badge-orange">Non-Exempt Required — duties test not met</div>';
+  } else if(duties&&meetsThreshold){
+    html+='<div class="badge badge-green">Likely Exempt — meets salary + duties test</div><div style="font-size:12px;color:var(--muted);margin-top:6px">⚠️ Consult employment counsel to confirm. Document the duties analysis.</div>';
+  } else if(duties&&!meetsThreshold){
+    html+='<div class="badge badge-red">Non-Exempt — salary below threshold regardless of duties</div>';
+  }
+  result.innerHTML=html;
+}
+function shCalcComp(){
+  const title=document.getElementById('comp-title').value||'this role';
+  const loc=document.getElementById('comp-loc').value;
+  const exp=document.getElementById('comp-exp').value;
+  const size=document.getElementById('comp-size').value;
+  const result=document.getElementById('comp-result');
+  result.innerHTML='<div style="color:var(--muted);font-size:13px">Calculating compensation band...</div>';
+  const prompt='Generate a compensation band analysis for: Job title: '+title+', Location: '+loc+', Experience: '+exp+', Company size: '+size+'. Include: salary range (min/mid/max), compa-ratio targets, total compensation notes (bonus, equity, benefits), and 2-3 benchmark sources. Format as a clean compensation analysis.';
+  fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,app_id:'sairnhr',system:'You are SAIRNhr AI — expert compensation consultant with Fortune 500 experience. Provide specific, data-driven compensation analysis.',messages:[{role:'user',content:prompt}]})})
+  .then(r=>r.json()).then(data=>{
+    result.innerHTML='<div style="font-size:13px;line-height:1.8;color:var(--text)">'+(data.content?.[0]?.text||'Unable to calculate').replace(/\n/g,'<br>')+'</div>';
+  }).catch(()=>{result.innerHTML='<div style="color:var(--red)">Error calculating. Please try again.</div>';});
+}
+
+// JOB BUILDER
+async function shGenerateJD(){
+  const title=document.getElementById('jb-title').value||'[Title]';
+  const dept=document.getElementById('jb-dept').value||'[Department]';
+  const reports=document.getElementById('jb-reports').value||'[Manager]';
+  const flsa=document.getElementById('jb-flsa').value;
+  const type=document.getElementById('jb-type').value;
+  const pay=document.getElementById('jb-pay').value||'[Pay range]';
+  const duties=document.getElementById('jb-duties').value||'[Duties]';
+  const reqs=document.getElementById('jb-reqs').value||'[Requirements]';
+  const prompt='Generate a professional job description for: Title: '+title+', Department: '+dept+', Reports to: '+reports+', FLSA: '+flsa+', Type: '+type+', Pay: '+pay+'. Key responsibilities: '+duties+'. Qualifications: '+reqs+'. Include: compelling summary, responsibilities list, qualifications (required and preferred), physical requirements, EEO statement. Format professionally.';
+  document.getElementById('jb-output').style.display='block';
+  document.getElementById('jb-content').innerHTML='<div style="color:var(--muted)">Generating job description...</div>';
+  try{
+    const res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,app_id:'sairnhr',system:'You are SAIRNhr AI — expert HR professional. Generate professional, legally compliant job descriptions.',messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    document.getElementById('jb-content').innerHTML=(data.content?.[0]?.text||'Unable to generate').replace(/\n/g,'<br>');
+  }catch(e){document.getElementById('jb-content').innerHTML='Error. Please try again.';}
+}
+
+// HR AI CHAT
+async function shAskHR(question){
+  document.getElementById('sh-chat-inp').value=question;
+  shSendHR();
+}
+async function shSendHR(){
+  const inp=document.getElementById('sh-chat-inp');
+  const text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  const msgs=document.getElementById('sh-chat-msgs');
+  msgs.innerHTML+='<div class="sh-msg user">'+text+'</div>';
+  msgs.innerHTML+='<div class="sh-msg ai" id="sh-typing">Thinking...</div>';
+  msgs.scrollTop=msgs.scrollHeight;
+  shChatHistory.push({role:'user',content:text});
+  try{
+    const res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,app_id:'sairnhr',system:'You are SAIRNhr™ AI — CHRO + labor attorney + compensation consultant combined. Federal and state employment law expert. Lead with direct answer then legal framework. Always note state law variations. Include specific timeframes. End with: This is HR best practice guidance — consult employment counsel for your specific situation.',messages:shChatHistory})});
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Unable to get response.';
+    shChatHistory.push({role:'assistant',content:reply});
+    document.getElementById('sh-typing').outerHTML='<div class="sh-msg ai">'+reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')+'</div>';
+  }catch(e){document.getElementById('sh-typing').outerHTML='<div class="sh-msg ai">Connection error. Please try again.</div>';}
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// PRINT FUNCTIONS
+function shPrintOnboarding(){
+  const name=document.getElementById('ob-name').value||'New Employee';
+  const start=document.getElementById('ob-start').value||'TBD';
+  const pos=document.getElementById('ob-position').value||'Position TBD';
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Onboarding Packet — '+name+'</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#111;font-size:13px}.header{border-bottom:3px solid #1B3A6B;padding-bottom:14px;margin-bottom:20px}.title{font-size:20px;font-weight:700;color:#1B3A6B}h3{color:#1B3A6B;margin:16px 0 8px}li{margin-bottom:6px}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#999;display:flex;justify-content:space-between}@media print{body{padding:16px}}</style></head><body>');
+  w.document.write('<div class="header"><div class="title">Employee Onboarding Packet</div><div>'+name+' · '+pos+' · Start: '+start+'</div></div>');
+  w.document.write('<h3>Pre-boarding Checklist</h3><ul><li>Send welcome email</li><li>Set up workstation and system access</li><li>Assign onboarding buddy</li><li>Prepare ID badge and access</li><li>Schedule first-week meetings</li></ul>');
+  w.document.write('<h3>Required Federal Forms (Day 1)</h3><ul><li>W-4 Federal Withholding</li><li>I-9 Employment Eligibility (within 3 business days — REQUIRED)</li><li>State Tax Form</li><li>Direct Deposit Authorization</li><li>Emergency Contact Form</li><li>Benefits Enrollment (within 30 days)</li><li>At-Will Acknowledgment</li><li>Confidentiality Agreement</li><li>Silica Training Acknowledgment (stone workers)</li></ul>');
+  w.document.write('<h3>90-Day Milestones</h3><ul><li>Day 1: Orientation</li><li>Day 7: First manager 1:1</li><li>Day 30: Check-in</li><li>Day 60: Progress review</li><li>Day 90: 90-day formal review</li></ul>');
+  w.document.write('<div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:40px"><div style="border-top:1px solid #999;padding-top:6px;font-size:11px">Employee Signature & Date</div><div style="border-top:1px solid #999;padding-top:6px;font-size:11px">HR Signature & Date</div></div>');
+  w.document.write('<div class="footer"><span>SAIRNhr™ by SAIRN Technologies™</span><span>sairn.vercel.app/sairnhr</span></div>');
+  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
+  w.document.close();
+}
+function shPrintPIP(){
+  const content=document.getElementById('pip-content').innerText||'No PIP generated yet.';
+  const name=document.getElementById('pip-name').value||'Employee';
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>PIP — '+name+'</title><style>body{font-family:Arial,sans-serif;padding:32px;font-size:13px;line-height:1.8}h1{color:#1B3A6B;border-bottom:2px solid #1B3A6B;padding-bottom:8px}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#999;text-align:center}@media print{body{padding:16px}}</style></head><body>');
+  w.document.write('<h1>Performance Improvement Plan</h1><div style="white-space:pre-wrap">'+content+'</div>');
+  w.document.write('<div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px"><div style="border-top:1px solid #999;padding-top:6px;font-size:11px">Employee Signature & Date</div><div style="border-top:1px solid #999;padding-top:6px;font-size:11px">Manager Signature & Date</div><div style="border-top:1px solid #999;padding-top:6px;font-size:11px">HR Signature & Date</div></div>');
+  w.document.write('<div class="footer">SAIRNhr™ by SAIRN Technologies™ · Confidential</div>');
+  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
+  w.document.close();
+}
+function shPrintJD(){
+  const content=document.getElementById('jb-content').innerText||'';
+  const title=document.getElementById('jb-title').value||'Job Description';
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>'+title+'</title><style>body{font-family:Arial,sans-serif;padding:32px;font-size:13px;line-height:1.8}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#999;text-align:center}@media print{body{padding:16px}}</style></head><body>');
+  w.document.write('<div style="white-space:pre-wrap">'+content+'</div>');
+  w.document.write('<div class="footer">SAIRNhr™ by SAIRN Technologies™</div>');
+  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
+  w.document.close();
+}
+
+// AUTO SESSION CHECK
+document.addEventListener('DOMContentLoaded',async()=>{
+  try{
+    const res=await fetch(SH_RAILWAY+'/api/auth/me',{credentials:'include'});
+    if(res.ok){const data=await res.json();shCurrentUser=data.user;shShowApp();}
+  }catch(e){}
+});
+</script>
+</body>
+</html>
