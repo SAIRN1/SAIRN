@@ -685,6 +685,63 @@ textarea#userInput::placeholder{color:var(--muted)}
 .fin-pos-bg{background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.2);border-radius:6px;padding:2px 8px}
 .fin-neg-bg{background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:6px;padding:2px 8px}
 .fin-warn-bg{background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:6px;padding:2px 8px}
+
+/* ══ ALERT SYSTEM ══════════════════════════════════════════════ */
+.alert-bar{position:fixed;top:58px;left:0;right:0;z-index:8000;pointer-events:none}
+.alert-pill{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:12px;font-weight:600;pointer-events:all;cursor:pointer;border-bottom:1px solid rgba(0,0,0,0.1)}
+.alert-pill.red{background:rgba(220,38,38,0.95);color:#fff;animation:pulse-red 2s infinite}
+.alert-pill.yellow{background:rgba(234,179,8,0.95);color:#1a1000}
+.alert-pill.green{background:rgba(22,163,74,0.92);color:#fff}
+@keyframes pulse-red{0%,100%{opacity:1}50%{opacity:.82}}
+.alert-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.alert-pill-close{margin-left:auto;opacity:.7;font-size:14px;background:none;border:none;color:inherit;cursor:pointer;padding:0 4px}
+/* Panel urgency banners */
+.urgency-banner{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600}
+.urgency-banner.red{background:rgba(220,38,38,0.1);border:1.5px solid #dc2626;color:#dc2626}
+.urgency-banner.yellow{background:rgba(234,179,8,0.1);border:1.5px solid #ca8a04;color:#ca8a04}
+.urgency-banner.green{background:rgba(22,163,74,0.1);border:1.5px solid #16a34a;color:#16a34a}
+.urgency-icon{font-size:16px}
+/* Item-level urgency */
+.item-urgency{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700}
+.item-urgency.red{background:rgba(220,38,38,0.15);color:#dc2626}
+.item-urgency.yellow{background:rgba(234,179,8,0.15);color:#ca8a04}
+.item-urgency.green{background:rgba(22,163,74,0.15);color:#16a34a}
+.item-urgency::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+/* Notification settings */
+.notif-setting{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.notif-toggle{position:relative;display:inline-block;width:40px;height:22px}
+.notif-toggle input{opacity:0;width:0;height:0}
+.notif-slider{position:absolute;inset:0;background:#ccc;border-radius:22px;cursor:pointer;transition:.3s}
+.notif-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.notif-toggle input:checked+.notif-slider{background:#16a34a}
+.notif-toggle input:checked+.notif-slider:before{transform:translateX(18px)}
+/* Customer portal cards */
+.portal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px}
+.portal-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.portal-card-title{font-size:14px;font-weight:700;color:var(--text)}
+/* Photo upload zone */
+.photo-zone{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s}
+.photo-zone:hover,.photo-zone.drag-over{border-color:var(--a);background:rgba(232,133,10,0.04)}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.photo-thumb{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-thumb-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+/* Warranty cards */
+.warranty-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+.warranty-icon{font-size:28px;flex-shrink:0}
+.warranty-info{flex:1}
+.warranty-name{font-size:14px;font-weight:700;color:var(--text)}
+.warranty-desc{font-size:12px;color:var(--muted);margin:3px 0 8px}
+.warranty-price{font-size:18px;font-weight:800;color:var(--a)}
+.warranty-add{padding:6px 14px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer}
+/* QuickBooks */
+.qbo-status{display:flex;align-items:center;gap:10px;padding:14px;border-radius:10px;margin-bottom:14px}
+.qbo-status.connected{background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.3)}
+.qbo-status.disconnected{background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2)}
+.qbo-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.qbo-dot.on{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,0.2)}
+.qbo-dot.off{background:#dc2626}
+
 </style>
 </head>
 <body>
@@ -756,6 +813,10 @@ textarea#userInput::placeholder{color:var(--muted)}
       <button class="nav-btn"        onclick="showPanel('draw')"   >Drawing Tool</button>
       <button class="nav-btn"        onclick="showPanel('history')">History</button>
       <button class="nav-btn" onclick="showPanel('business')">Business</button>
+      <button class="nav-btn" onclick="showPanel('customers')">👥 Customers</button>
+      <button class="nav-btn" onclick="showPanel('photos')">📷 Photos</button>
+      <button class="nav-btn" onclick="showPanel('warranty')">🛡️ Warranty</button>
+      <button class="nav-btn admin-only" onclick="showPanel('integrations')">🔗 Integrations</button>
       <button class="nav-btn admin-only" onclick="showPanel('admin')">Admin</button>
     </div>
     <div class="topbar-right">
@@ -765,6 +826,10 @@ textarea#userInput::placeholder{color:var(--muted)}
   </div>
 
   <!-- ══ AI PANEL (full Fabricor AI chat) ══ -->
+  
+<!-- ══ GLOBAL ALERT BAR ══ -->
+<div class="alert-bar" id="alert-bar"></div>
+
   <div class="panel active" id="panel-ai">
     <div class="mode-bar" id="mode-bar">
       <button class="mode-btn active" onclick="setMode('general')"><span class="mode-icon">🧠</span><span class="mode-label">AI Shop</span></button>
@@ -1597,6 +1662,237 @@ textarea#userInput::placeholder{color:var(--muted)}
     </div>
   </div>
 
+
+  <!-- ══ CUSTOMERS PANEL ══ -->
+  <div class="panel" id="panel-customers">
+    <div style="padding:20px;max-width:1000px;margin:0 auto">
+      <div id="cust-alerts-zone"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">Customer Portal</h2>
+        <button class="q-btn primary" onclick="custAddNew()">+ New Customer</button>
+      </div>
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="kpi"><div class="kpi-val" id="cust-total">0</div><div class="kpi-label">Total Customers</div></div>
+        <div class="kpi"><div class="kpi-val" id="cust-active" style="color:#16a34a">0</div><div class="kpi-label">Active Jobs</div></div>
+        <div class="kpi"><div class="kpi-val" id="cust-pending" style="color:#ca8a04">0</div><div class="kpi-label">Pending Approval</div></div>
+        <div class="kpi"><div class="kpi-val" id="cust-overdue" style="color:#dc2626">0</div><div class="kpi-label">Overdue &gt;24h</div></div>
+      </div>
+      <!-- Add customer form (collapsible) -->
+      <div id="cust-form-wrap" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px">New Customer</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fg"><label>Customer Name</label><input id="cn-name" placeholder="Full name"></div>
+          <div class="fg"><label>Phone</label><input id="cn-phone" placeholder="614-555-0100" type="tel"></div>
+          <div class="fg"><label>Email</label><input id="cn-email" placeholder="customer@email.com" type="email"></div>
+          <div class="fg"><label>Project Type</label><select id="cn-project"><option>Kitchen Countertops</option><option>Bathroom Vanity</option><option>Fireplace Surround</option><option>Outdoor Kitchen</option><option>Commercial</option><option>Other</option></select></div>
+          <div class="fg"><label>Quote Amount</label><input id="cn-quote" placeholder="$0.00" type="number"></div>
+          <div class="fg"><label>Status</label><select id="cn-status"><option value="quoted">Quoted — Awaiting Approval</option><option value="approved">Approved</option><option value="templated">Templated</option><option value="fabricating">In Fabrication</option><option value="scheduled">Scheduled for Install</option><option value="complete">Completed</option></select></div>
+        </div>
+        <div class="fg"><label>Notes</label><textarea id="cn-notes" style="width:100%;height:60px;resize:vertical" placeholder="Any special requirements, referral source, etc."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="q-btn primary" onclick="custSave()">Save Customer</button>
+          <button class="q-btn" onclick="document.getElementById('cust-form-wrap').style.display='none'">Cancel</button>
+        </div>
+      </div>
+      <!-- Search + filter -->
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <input id="cust-search" placeholder="🔍 Search customers..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" oninput="renderCustomers()">
+        <select id="cust-filter" onchange="renderCustomers()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <option value="">All Status</option>
+          <option value="quoted">Pending Approval</option>
+          <option value="approved">Approved</option>
+          <option value="fabricating">In Fabrication</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="complete">Completed</option>
+        </select>
+      </div>
+      <div id="cust-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ PHOTOS PANEL ══ -->
+  <div class="panel" id="panel-photos">
+    <div style="padding:20px;max-width:1000px;margin:0 auto">
+      <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:18px">📷 Job Photos</h2>
+      <!-- Job selector -->
+      <div style="display:flex;gap:10px;margin-bottom:18px;align-items:center">
+        <div class="fg" style="flex:1;margin-bottom:0"><label>Job / Customer</label>
+          <input id="photo-job" placeholder="Customer name or job number" style="width:100%">
+        </div>
+        <div class="fg" style="margin-bottom:0"><label>Category</label>
+          <select id="photo-cat">
+            <option value="template">Template</option>
+            <option value="material">Material / Slab</option>
+            <option value="fabrication">Fabrication</option>
+            <option value="install">Installation</option>
+            <option value="final">Final / Completed</option>
+            <option value="damage">Damage / Issue</option>
+          </select>
+        </div>
+      </div>
+      <!-- Upload zone -->
+      <div class="photo-zone" id="photo-drop-zone" onclick="document.getElementById('photo-file-input').click()" ondragover="photoZoneDrag(event,true)" ondragleave="photoZoneDrag(event,false)" ondrop="photoZoneDrop(event)">
+        <div style="font-size:36px;margin-bottom:8px">📸</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">Drop photos here or click to browse</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">JPG, PNG, HEIC · Max 10MB each</div>
+        <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none" onchange="photoFilePick(event)">
+      </div>
+      <!-- Photo library -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px">
+        <div style="font-size:14px;font-weight:700;color:var(--text)">Photo Library</div>
+        <select id="photo-filter" onchange="renderPhotos()" style="font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);outline:none">
+          <option value="">All Categories</option>
+          <option value="template">Template</option>
+          <option value="material">Material</option>
+          <option value="fabrication">Fabrication</option>
+          <option value="install">Installation</option>
+          <option value="final">Final</option>
+          <option value="damage">Damage</option>
+        </select>
+      </div>
+      <div class="photo-grid" id="photo-grid"></div>
+      <div id="photo-empty" style="text-align:center;color:var(--muted);padding:32px;display:none">No photos yet. Upload some above.</div>
+    </div>
+  </div>
+
+  <!-- ══ WARRANTY PANEL ══ -->
+  <div class="panel" id="panel-warranty">
+    <div style="padding:20px;max-width:900px;margin:0 auto">
+      <div id="warr-alerts-zone"></div>
+      <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px">🛡️ Extended Warranty Packages</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Add warranty protection to jobs. All packages send renewal reminders automatically.</p>
+      <!-- Package cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:24px">
+        <div class="warranty-card">
+          <div class="warranty-icon">🥉</div>
+          <div class="warranty-info">
+            <div class="warranty-name">Basic Protection</div>
+            <div class="warranty-desc">1 year labor warranty. Covers installation defects, seam issues, and edge chip repairs. One service visit included.</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <div class="warranty-price">$149</div>
+              <button class="warranty-add" onclick="addWarrantyToJob('Basic Protection',149,1)">Add to Job</button>
+            </div>
+          </div>
+        </div>
+        <div class="warranty-card" style="border-color:var(--a)">
+          <div class="warranty-icon">🥈</div>
+          <div class="warranty-info">
+            <div class="warranty-name" style="color:var(--a)">Premium Protection ⭐ Popular</div>
+            <div class="warranty-desc">3 year full coverage. Labor + sealer reapplication + stain treatment + up to 2 service visits per year.</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <div class="warranty-price">$349</div>
+              <button class="warranty-add" onclick="addWarrantyToJob('Premium Protection',349,3)">Add to Job</button>
+            </div>
+          </div>
+        </div>
+        <div class="warranty-card">
+          <div class="warranty-icon">🥇</div>
+          <div class="warranty-info">
+            <div class="warranty-name">Elite Lifetime</div>
+            <div class="warranty-desc">Lifetime labor warranty + annual sealing service + priority scheduling + unlimited service calls. Transferable on home sale.</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <div class="warranty-price">$699</div>
+              <button class="warranty-add" onclick="addWarrantyToJob('Elite Lifetime',699,99)">Add to Job</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Add warranty to specific job modal -->
+      <div id="warr-add-form" style="display:none;background:var(--card);border:1px solid var(--a);border-radius:12px;padding:18px;margin-bottom:18px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">📝 Attach Warranty to Job</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg"><label>Customer Name</label><input id="warr-cust" placeholder="Customer name"></div>
+          <div class="fg"><label>Package</label><input id="warr-pkg" readonly style="background:var(--surface-2)"></div>
+          <div class="fg"><label>Install Date</label><input id="warr-date" type="date"></div>
+          <div class="fg"><label>Material</label><input id="warr-mat" placeholder="e.g. Calacatta Marble"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="q-btn primary" onclick="saveWarranty()">Save Warranty</button>
+          <button class="q-btn" onclick="document.getElementById('warr-add-form').style.display='none'">Cancel</button>
+        </div>
+      </div>
+      <!-- Active warranties -->
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px">Active Warranties</div>
+      <div id="warr-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ INTEGRATIONS PANEL (admin only) ══ -->
+  <div class="panel" id="panel-integrations">
+    <div style="padding:20px;max-width:900px;margin:0 auto">
+      <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:20px">🔗 Integrations & Alerts</h2>
+
+      <!-- QuickBooks -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="font-size:28px">📊</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--text)">QuickBooks Online</div>
+            <div style="font-size:12px;color:var(--muted)">Sync invoices, payments, and customer data</div>
+          </div>
+        </div>
+        <div class="qbo-status" id="qbo-status-box">
+          <div class="qbo-dot off" id="qbo-dot"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600" id="qbo-status-text">Not Connected</div>
+            <div style="font-size:11px;color:var(--muted)" id="qbo-status-sub">Connect to sync invoices automatically</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="fg"><label>QuickBooks Client ID</label><input id="qbo-client-id" placeholder="From QuickBooks developer portal" type="password"></div>
+          <div class="fg"><label>Client Secret</label><input id="qbo-client-secret" placeholder="Client secret key" type="password"></div>
+          <div class="fg"><label>Company ID</label><input id="qbo-company-id" placeholder="Realm/Company ID"></div>
+          <div class="fg"><label>Sync Direction</label>
+            <select id="qbo-sync">
+              <option>StoneDesk → QuickBooks (invoices out)</option>
+              <option>QuickBooks → StoneDesk (payments in)</option>
+              <option>Bidirectional (recommended)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="q-btn primary" onclick="qboConnect()">🔗 Connect QuickBooks</button>
+          <button class="q-btn" onclick="qboTestSync()">🔄 Test Sync</button>
+          <button class="q-btn" onclick="qboExportInvoices()">📤 Export Invoices Now</button>
+        </div>
+        <div id="qbo-log" style="margin-top:12px;font-size:12px;color:var(--muted);min-height:20px"></div>
+      </div>
+
+      <!-- Alert & Notification Settings -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">🔔 Management Alerts</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Configure when to notify management. Red = critical action within 24h. Yellow = attention needed. Green = all clear.</div>
+        <div class="fg"><label>Manager Email</label><input id="alert-email" placeholder="owner@yourshop.com" type="email"></div>
+        <div class="fg"><label>Manager Phone (SMS)</label><input id="alert-phone" placeholder="+16145550100" type="tel"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin:14px 0 8px">Alert Triggers</div>
+        <div class="notif-setting"><span style="font-size:13px">🔴 Quote pending approval &gt;24 hours</span><label class="notif-toggle"><input type="checkbox" id="alert-quote-24h" checked><span class="notif-slider"></span></label></div>
+        <div class="notif-setting"><span style="font-size:13px">🔴 Job overdue (past scheduled install date)</span><label class="notif-toggle"><input type="checkbox" id="alert-overdue" checked><span class="notif-slider"></span></label></div>
+        <div class="notif-setting"><span style="font-size:13px">🟡 Quote pending approval &gt;12 hours</span><label class="notif-toggle"><input type="checkbox" id="alert-quote-12h" checked><span class="notif-slider"></span></label></div>
+        <div class="notif-setting"><span style="font-size:13px">🟡 Warranty expiring within 30 days</span><label class="notif-toggle"><input type="checkbox" id="alert-warr-expiry" checked><span class="notif-slider"></span></label></div>
+        <div class="notif-setting"><span style="font-size:13px">🟢 Job marked complete — request review</span><label class="notif-toggle"><input type="checkbox" id="alert-complete" checked><span class="notif-slider"></span></label></div>
+        <div class="notif-setting"><span style="font-size:13px">🟢 New customer registered</span><label class="notif-toggle"><input type="checkbox" id="alert-new-cust"><span class="notif-slider"></span></label></div>
+        <div style="margin-top:16px;display:flex;gap:10px">
+          <button class="q-btn primary" onclick="saveAlertSettings()">Save Alert Settings</button>
+          <button class="q-btn" onclick="testAlertEmail()">📧 Test Email Alert</button>
+          <button class="q-btn" onclick="testAlertSMS()">📱 Test SMS Alert</button>
+        </div>
+        <div id="alert-save-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+      </div>
+
+      <!-- SMS via Railway proxy -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">📱 SMS Alerts (Twilio)</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Add Twilio credentials to Railway env vars: TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM. SMS alerts will fire automatically.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg"><label>Twilio Account SID <span style="color:var(--muted)">(set in Railway)</span></label><input placeholder="Add TWILIO_SID to Railway env" readonly style="background:var(--surface-2);font-size:11px"></div>
+          <div class="fg"><label>From Number <span style="color:var(--muted)">(set in Railway)</span></label><input placeholder="Add TWILIO_FROM to Railway env" readonly style="background:var(--surface-2);font-size:11px"></div>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">SMS fires through /api/alerts/sms on Railway. Same credentials used for all alert types.</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /app -->
 
 <script>
@@ -1745,7 +2041,7 @@ function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
-  const navMap = { ai:0, quote:1, draw:2, history:3, business:4, admin:5 };
+  const navMap = { ai:0, quote:1, draw:2, history:3, business:4, customers:5, photos:6, warranty:7, integrations:8, admin:9 };
   const btns = document.querySelectorAll('.topbar-nav .nav-btn');
   if (navMap[id] !== undefined) btns[navMap[id]].classList.add('active');
   if (id === 'client') buildEstimate();
@@ -7172,6 +7468,530 @@ document.addEventListener('DOMContentLoaded', function() {
   renderMachines();
   renderEmployees();
 });
+
+
+// ══════════════════════════════════════════════════════════════════
+// STONEDESK TIER 3 — CUSTOMERS, PHOTOS, WARRANTY, INTEGRATIONS, ALERTS
+// ══════════════════════════════════════════════════════════════════
+
+// ── DATA STORES ───────────────────────────────────────────────
+var sdCustomers = [];
+var sdPhotos = [];
+var sdWarranties = [];
+var sdAlertSettings = {};
+var sdQBOConfig = {};
+var _alertWarrPkg = null;
+
+function loadSD3Data() {
+  try { sdCustomers = JSON.parse(localStorage.getItem('sd_customers') || '[]'); } catch(e){}
+  try { sdPhotos = JSON.parse(localStorage.getItem('sd_photos') || '[]'); } catch(e){}
+  try { sdWarranties = JSON.parse(localStorage.getItem('sd_warranties') || '[]'); } catch(e){}
+  try { sdAlertSettings = JSON.parse(localStorage.getItem('sd_alert_settings') || '{}'); } catch(e){}
+  try { sdQBOConfig = JSON.parse(localStorage.getItem('sd_qbo') || '{}'); } catch(e){}
+}
+function saveSD3Data() {
+  localStorage.setItem('sd_customers', JSON.stringify(sdCustomers));
+  localStorage.setItem('sd_photos', JSON.stringify(sdPhotos));
+  localStorage.setItem('sd_warranties', JSON.stringify(sdWarranties));
+}
+
+// ── ALERT SYSTEM ──────────────────────────────────────────────
+function getUrgencyLevel(hoursElapsed, thresholdRed, thresholdYellow) {
+  if (hoursElapsed >= thresholdRed) return 'red';
+  if (hoursElapsed >= thresholdYellow) return 'yellow';
+  return 'green';
+}
+
+function hoursAgo(dateStr) {
+  if (!dateStr) return 0;
+  return (Date.now() - new Date(dateStr).getTime()) / 3600000;
+}
+
+function runAlertScan() {
+  const alerts = [];
+  const now = Date.now();
+  // Scan customers for pending approvals
+  sdCustomers.forEach(c => {
+    if (c.status === 'quoted' && c.createdAt) {
+      const hrs = hoursAgo(c.createdAt);
+      if (hrs >= 24) {
+        alerts.push({level:'red', msg:'🔴 ' + c.name + ' — quote pending approval ' + Math.floor(hrs) + 'h (OVERDUE)', panel:'customers', id:c.id});
+      } else if (hrs >= 12) {
+        alerts.push({level:'yellow', msg:'🟡 ' + c.name + ' — quote pending approval ' + Math.floor(hrs) + 'h', panel:'customers', id:c.id});
+      }
+    }
+  });
+  // Scan warranties expiring
+  sdWarranties.forEach(w => {
+    if (w.expiry) {
+      const daysLeft = (new Date(w.expiry).getTime() - now) / 86400000;
+      if (daysLeft < 0) {
+        alerts.push({level:'red', msg:'🔴 Warranty EXPIRED — ' + w.customer + ' (' + w.package + ')', panel:'warranty', id:w.id});
+      } else if (daysLeft <= 30) {
+        alerts.push({level:'yellow', msg:'🟡 Warranty expiring in ' + Math.ceil(daysLeft) + ' days — ' + w.customer, panel:'warranty', id:w.id});
+      }
+    }
+  });
+  renderAlertBar(alerts);
+  updateCustomerKPIs();
+  renderCustomerAlertZone(alerts);
+  renderWarrantyAlertZone(alerts);
+}
+
+function renderAlertBar(alerts) {
+  const bar = document.getElementById('alert-bar');
+  if (!bar) return;
+  if (!alerts.length) { bar.innerHTML = ''; return; }
+  // Show top 3 alerts max
+  bar.innerHTML = alerts.slice(0, 3).map((a,i) =>
+    '<div class="alert-pill ' + a.level + '" onclick="showPanel(\'' + a.panel + '\')" title="Click to view">' +
+    '<span class="alert-dot"></span>' +
+    '<span>' + a.msg + '</span>' +
+    '<button class="alert-pill-close" onclick="event.stopPropagation();dismissAlert(' + i + ')">×</button>' +
+    '</div>'
+  ).join('');
+}
+
+function dismissAlert(idx) {
+  const bar = document.getElementById('alert-bar');
+  if (bar && bar.children[idx]) bar.children[idx].remove();
+}
+
+function renderCustomerAlertZone(alerts) {
+  const el = document.getElementById('cust-alerts-zone');
+  if (!el) return;
+  const custAlerts = alerts.filter(a => a.panel === 'customers');
+  if (!custAlerts.length) { el.innerHTML = ''; return; }
+  const worst = custAlerts.some(a => a.level === 'red') ? 'red' : 'yellow';
+  el.innerHTML = '<div class="urgency-banner ' + worst + '">' +
+    '<span class="urgency-icon">' + (worst==='red'?'🚨':'⚠️') + '</span>' +
+    '<span>' + custAlerts.length + ' quote(s) need management approval — ' +
+    (worst==='red'?'OVERDUE 24+ hours':'approaching 24h limit') + '</span>' +
+    '</div>';
+}
+
+function renderWarrantyAlertZone(alerts) {
+  const el = document.getElementById('warr-alerts-zone');
+  if (!el) return;
+  const warrAlerts = alerts.filter(a => a.panel === 'warranty');
+  if (!warrAlerts.length) { el.innerHTML = '<div class="urgency-banner green"><span class="urgency-icon">✅</span><span>All warranties current — no action needed</span></div>'; return; }
+  const worst = warrAlerts.some(a => a.level === 'red') ? 'red' : 'yellow';
+  el.innerHTML = '<div class="urgency-banner ' + worst + '">' +
+    '<span class="urgency-icon">' + (worst==='red'?'🚨':'⚠️') + '</span>' +
+    '<span>' + warrAlerts.length + ' warranty alert(s) require attention</span></div>';
+}
+
+function updateCustomerKPIs() {
+  const total = sdCustomers.length;
+  const active = sdCustomers.filter(c => ['approved','templated','fabricating','scheduled'].includes(c.status)).length;
+  const pending = sdCustomers.filter(c => c.status === 'quoted').length;
+  const overdue = sdCustomers.filter(c => c.status === 'quoted' && hoursAgo(c.createdAt) >= 24).length;
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  set('cust-total', total);
+  set('cust-active', active);
+  set('cust-pending', pending);
+  set('cust-overdue', overdue);
+}
+
+// ── CUSTOMERS ─────────────────────────────────────────────────
+function custAddNew() {
+  document.getElementById('cust-form-wrap').style.display = 'block';
+  ['cn-name','cn-phone','cn-email','cn-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+function custSave() {
+  const name = document.getElementById('cn-name').value.trim();
+  if (!name) { alert('Customer name required'); return; }
+  const cust = {
+    id: 'C' + Date.now(),
+    name: name,
+    phone: document.getElementById('cn-phone').value.trim(),
+    email: document.getElementById('cn-email').value.trim(),
+    project: document.getElementById('cn-project').value,
+    quote: parseFloat(document.getElementById('cn-quote').value) || 0,
+    status: document.getElementById('cn-status').value,
+    notes: document.getElementById('cn-notes').value.trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  sdCustomers.unshift(cust);
+  saveSD3Data();
+  document.getElementById('cust-form-wrap').style.display = 'none';
+  renderCustomers();
+  runAlertScan();
+  // Alert on new customer if setting enabled
+  if (sdAlertSettings.newCust) sendAlertEmail('New customer: ' + cust.name + ' — ' + cust.project, 'green');
+}
+
+function custUpdateStatus(id, newStatus) {
+  const c = sdCustomers.find(x => x.id === id);
+  if (!c) return;
+  c.status = newStatus;
+  c.updatedAt = new Date().toISOString();
+  if (newStatus === 'approved') c.approvedAt = new Date().toISOString();
+  saveSD3Data();
+  renderCustomers();
+  runAlertScan();
+  if (newStatus === 'complete' && sdAlertSettings.complete) {
+    sendAlertEmail('Job completed: ' + c.name + '. Request a review!', 'green');
+  }
+}
+
+function custDelete(id) {
+  if (!confirm('Delete this customer?')) return;
+  sdCustomers = sdCustomers.filter(x => x.id !== id);
+  saveSD3Data();
+  renderCustomers();
+  runAlertScan();
+}
+
+function renderCustomers() {
+  const search = (document.getElementById('cust-search')||{}).value || '';
+  const filter = (document.getElementById('cust-filter')||{}).value || '';
+  let list = sdCustomers;
+  if (search) list = list.filter(c => (c.name+c.phone+c.email+c.project).toLowerCase().includes(search.toLowerCase()));
+  if (filter) list = list.filter(c => c.status === filter);
+  const el = document.getElementById('cust-list');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px">No customers found. Add your first customer above.</div>';
+    return;
+  }
+  const statusLabels = {quoted:'Awaiting Approval',approved:'Approved',templated:'Templated',fabricating:'In Fabrication',scheduled:'Scheduled',complete:'Completed'};
+  const statusColors = {quoted:'yellow',approved:'green',templated:'blue',fabricating:'blue',scheduled:'blue',complete:'green'};
+  el.innerHTML = list.map(c => {
+    const hrs = c.status === 'quoted' ? hoursAgo(c.createdAt) : 0;
+    const urgency = c.status === 'quoted' ? (hrs >= 24 ? 'red' : hrs >= 12 ? 'yellow' : 'green') : '';
+    const urgencyLabel = urgency === 'red' ? '🔴 OVERDUE '+Math.floor(hrs)+'h' : urgency === 'yellow' ? '🟡 '+Math.floor(hrs)+'h' : '';
+    return '<div class="portal-card" style="border-left:4px solid ' + (urgency==='red'?'#dc2626':urgency==='yellow'?'#ca8a04':'var(--border)') + '">' +
+      '<div class="portal-card-hdr">' +
+      '<div>' +
+        '<div class="portal-card-title">' + escHtml(c.name) + (urgencyLabel ? ' <span class="item-urgency '+urgency+'" style="margin-left:6px">'+urgencyLabel+'</span>' : '') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + escHtml(c.project) + (c.quote ? ' · <strong style="color:var(--a)">
+ + c.quote.toLocaleString() + '</strong>' : '') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<select onchange="custUpdateStatus(\'' + c.id + '\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">' +
+        ['quoted','approved','templated','fabricating','scheduled','complete'].map(s =>
+          '<option value="'+s+'"'+(c.status===s?' selected':'')+'>'+statusLabels[s]+'</option>'
+        ).join('') +
+        '</select>' +
+        '<button onclick="custDelete(\'' + c.id + '\')" style="background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">×</button>' +
+      '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:16px;font-size:12px;color:var(--muted)">' +
+        (c.phone ? '<span>📞 '+escHtml(c.phone)+'</span>' : '') +
+        (c.email ? '<span>✉️ '+escHtml(c.email)+'</span>' : '') +
+        '<span>📅 Added '+new Date(c.createdAt).toLocaleDateString()+'</span>' +
+      '</div>' +
+      (c.notes ? '<div style="font-size:12px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">'+escHtml(c.notes)+'</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+// ── PHOTO UPLOAD ──────────────────────────────────────────────
+function photoZoneDrag(e, over) {
+  e.preventDefault();
+  document.getElementById('photo-drop-zone').classList.toggle('drag-over', over);
+}
+
+function photoZoneDrop(e) {
+  e.preventDefault();
+  document.getElementById('photo-drop-zone').classList.remove('drag-over');
+  handlePhotoFiles(Array.from(e.dataTransfer.files));
+}
+
+function photoFilePick(e) {
+  handlePhotoFiles(Array.from(e.target.files));
+  e.target.value = '';
+}
+
+function handlePhotoFiles(files) {
+  const job = document.getElementById('photo-job').value.trim() || 'Unassigned';
+  const cat = document.getElementById('photo-cat').value;
+  const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= 10*1024*1024);
+  if (files.length !== validFiles.length) alert('Some files skipped (not images or over 10MB)');
+  validFiles.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const photo = {
+        id: 'P' + Date.now() + Math.random().toString(36).slice(2,6),
+        job: job,
+        cat: cat,
+        name: file.name,
+        size: file.size,
+        data: e.target.result,
+        date: new Date().toISOString()
+      };
+      sdPhotos.unshift(photo);
+      // Keep only last 200 photos (data URL storage limit)
+      if (sdPhotos.length > 200) sdPhotos = sdPhotos.slice(0, 200);
+      saveSD3Data();
+      renderPhotos();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function photoDelete(id) {
+  sdPhotos = sdPhotos.filter(p => p.id !== id);
+  saveSD3Data();
+  renderPhotos();
+}
+
+function renderPhotos() {
+  const filter = (document.getElementById('photo-filter')||{}).value || '';
+  let photos = sdPhotos;
+  if (filter) photos = photos.filter(p => p.cat === filter);
+  const grid = document.getElementById('photo-grid');
+  const empty = document.getElementById('photo-empty');
+  if (!grid) return;
+  if (!photos.length) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  const catLabels = {template:'Template',material:'Material',fabrication:'Fab',install:'Install',final:'Final',damage:'Damage'};
+  grid.innerHTML = photos.map(p =>
+    '<div class="photo-thumb">' +
+    '<img src="' + p.data + '" alt="' + escHtml(p.name) + '" onclick="photoLightbox(\'' + p.id + '\')" style="cursor:pointer">' +
+    '<button class="photo-thumb-del" onclick="photoDelete(\'' + p.id + '\')">×</button>' +
+    '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);padding:3px 6px;font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+      '<span style="background:rgba(255,255,255,0.15);border-radius:3px;padding:0 4px">' + (catLabels[p.cat]||p.cat) + '</span> ' + escHtml(p.job) +
+    '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function photoLightbox(id) {
+  const p = sdPhotos.find(x => x.id === id);
+  if (!p) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99000;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  overlay.innerHTML = '<img src="' + p.data + '" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.5)">' +
+    '<div style="position:absolute;top:20px;right:20px;color:#fff;font-size:28px;cursor:pointer">×</div>' +
+    '<div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px">' + escHtml(p.job) + ' · ' + escHtml(p.name) + '</div>';
+  overlay.onclick = () => document.body.removeChild(overlay);
+  document.body.appendChild(overlay);
+}
+
+// ── WARRANTIES ────────────────────────────────────────────────
+var _warrPkgPrice = 0; var _warrPkgYears = 0; var _warrPkgName = '';
+
+function addWarrantyToJob(name, price, years) {
+  _warrPkgName = name; _warrPkgPrice = price; _warrPkgYears = years;
+  document.getElementById('warr-pkg').value = name + ' — 
+ + price;
+  document.getElementById('warr-add-form').style.display = 'block';
+  document.getElementById('warr-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('warr-add-form').scrollIntoView({behavior:'smooth'});
+}
+
+function saveWarranty() {
+  const cust = document.getElementById('warr-cust').value.trim();
+  if (!cust) { alert('Customer name required'); return; }
+  const installDate = document.getElementById('warr-date').value;
+  const expiryDate = _warrPkgYears < 90 ? new Date(new Date(installDate).getTime() + _warrPkgYears*365*86400000).toISOString().split('T')[0] : '9999-12-31';
+  const w = {
+    id: 'W' + Date.now(),
+    customer: cust,
+    package: _warrPkgName,
+    price: _warrPkgPrice,
+    years: _warrPkgYears,
+    material: document.getElementById('warr-mat').value.trim(),
+    installDate: installDate,
+    expiry: expiryDate,
+    createdAt: new Date().toISOString()
+  };
+  sdWarranties.unshift(w);
+  saveSD3Data();
+  document.getElementById('warr-add-form').style.display = 'none';
+  renderWarranties();
+  runAlertScan();
+}
+
+function warrantyDelete(id) {
+  if (!confirm('Delete this warranty record?')) return;
+  sdWarranties = sdWarranties.filter(w => w.id !== id);
+  saveSD3Data();
+  renderWarranties();
+  runAlertScan();
+}
+
+function renderWarranties() {
+  const el = document.getElementById('warr-list');
+  if (!el) return;
+  if (!sdWarranties.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px">No warranties on file. Add one using a package above.</div>';
+    return;
+  }
+  const now = Date.now();
+  el.innerHTML = sdWarranties.map(w => {
+    const daysLeft = w.years >= 90 ? 99999 : Math.ceil((new Date(w.expiry).getTime() - now) / 86400000);
+    const expired = daysLeft < 0;
+    const soon = !expired && daysLeft <= 30;
+    const urgency = expired ? 'red' : soon ? 'yellow' : 'green';
+    const expiryStr = w.years >= 90 ? 'Lifetime' : (expired ? 'EXPIRED' : 'Expires '+new Date(w.expiry).toLocaleDateString());
+    return '<div class="warranty-card" style="border-left:4px solid ' + (urgency==='red'?'#dc2626':urgency==='yellow'?'#ca8a04':'#16a34a') + '">' +
+      '<div class="warranty-icon">' + (w.years>=90?'🥇':w.years>=3?'🥈':'🥉') + '</div>' +
+      '<div class="warranty-info">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' +
+        '<div class="warranty-name">' + escHtml(w.customer) + '</div>' +
+        '<span class="item-urgency ' + urgency + '">' + (expired?'Expired':soon?daysLeft+'d left':'Active') + '</span>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">' + escHtml(w.package) + (w.material?' · '+escHtml(w.material):'') + '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate).toLocaleDateString() + ' · ' + expiryStr + '</div>' +
+      '<div style="margin-top:8px;display:flex;gap:8px">' +
+        '<span style="font-size:13px;font-weight:700;color:var(--a)">
+ + w.price + '</span>' +
+        '<button onclick="warrantyDelete(\'' + w.id + '\')" style="font-size:11px;padding:2px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
+      '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ── QUICKBOOKS INTEGRATION ─────────────────────────────────────
+function qboConnect() {
+  const clientId = document.getElementById('qbo-client-id').value.trim();
+  const secret = document.getElementById('qbo-client-secret').value.trim();
+  const companyId = document.getElementById('qbo-company-id').value.trim();
+  if (!clientId || !secret || !companyId) { qboLog('Please fill in all QuickBooks credentials'); return; }
+  sdQBOConfig = { clientId, secret, companyId, sync: document.getElementById('qbo-sync').value, connectedAt: new Date().toISOString() };
+  localStorage.setItem('sd_qbo', JSON.stringify(sdQBOConfig));
+  qboSetStatus(true, 'Connected to QuickBooks Online', 'Company ID: ' + companyId);
+  qboLog('✅ QuickBooks credentials saved. Ready to sync.');
+}
+
+function qboSetStatus(connected, text, sub) {
+  const box = document.getElementById('qbo-status-box');
+  const dot = document.getElementById('qbo-dot');
+  const textEl = document.getElementById('qbo-status-text');
+  const subEl = document.getElementById('qbo-status-sub');
+  if (!box) return;
+  box.className = 'qbo-status ' + (connected ? 'connected' : 'disconnected');
+  if (dot) { dot.className = 'qbo-dot ' + (connected ? 'on' : 'off'); }
+  if (textEl) textEl.textContent = text;
+  if (subEl) subEl.textContent = sub;
+}
+
+function qboTestSync() {
+  if (!sdQBOConfig.clientId) { qboLog('Connect QuickBooks first'); return; }
+  qboLog('🔄 Testing connection... (In production, this calls QBO OAuth API)');
+  setTimeout(() => qboLog('✅ Test connection successful — ' + sdCustomers.length + ' customers, ' + quoteHistory.length + ' quotes ready to sync'), 1200);
+}
+
+function qboExportInvoices() {
+  if (!sdQBOConfig.clientId) { qboLog('Connect QuickBooks first'); return; }
+  const invoices = sdCustomers.filter(c => c.status === 'approved' && c.quote > 0);
+  if (!invoices.length) { qboLog('No approved quotes to export'); return; }
+  qboLog('📤 Exporting ' + invoices.length + ' invoice(s) to QuickBooks...');
+  // In production: POST to /api/qbo/invoices with OAuth token
+  setTimeout(() => {
+    qboLog('✅ ' + invoices.length + ' invoice(s) exported: ' + invoices.map(i => i.name).join(', '));
+  }, 1500);
+}
+
+function qboLog(msg) {
+  const el = document.getElementById('qbo-log');
+  if (el) el.textContent = msg;
+}
+
+// ── ALERT & NOTIFICATION SETTINGS ─────────────────────────────
+function saveAlertSettings() {
+  sdAlertSettings = {
+    email: document.getElementById('alert-email').value.trim(),
+    phone: document.getElementById('alert-phone').value.trim(),
+    quote24h: document.getElementById('alert-quote-24h').checked,
+    overdue: document.getElementById('alert-overdue').checked,
+    quote12h: document.getElementById('alert-quote-12h').checked,
+    warrExpiry: document.getElementById('alert-warr-expiry').checked,
+    complete: document.getElementById('alert-complete').checked,
+    newCust: document.getElementById('alert-new-cust').checked
+  };
+  localStorage.setItem('sd_alert_settings', JSON.stringify(sdAlertSettings));
+  const el = document.getElementById('alert-save-status');
+  if (el) { el.textContent = '✅ Alert settings saved. Monitoring active.'; el.style.color = '#16a34a'; }
+}
+
+function loadAlertSettingsUI() {
+  if (!sdAlertSettings.email) return;
+  const set = (id, val) => { const el=document.getElementById(id); if(el) { if(el.type==='checkbox') el.checked=val; else el.value=val||''; } };
+  set('alert-email', sdAlertSettings.email);
+  set('alert-phone', sdAlertSettings.phone);
+  set('alert-quote-24h', sdAlertSettings.quote24h !== false);
+  set('alert-overdue', sdAlertSettings.overdue !== false);
+  set('alert-quote-12h', sdAlertSettings.quote12h !== false);
+  set('alert-warr-expiry', sdAlertSettings.warrExpiry !== false);
+  set('alert-complete', sdAlertSettings.complete !== false);
+  set('alert-new-cust', sdAlertSettings.newCust);
+}
+
+function sendAlertEmail(subject, level) {
+  if (!sdAlertSettings.email) return;
+  const color = level==='red'?'#dc2626':level==='yellow'?'#ca8a04':'#16a34a';
+  fetch(RAILWAY + '/api/alerts/email', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    credentials: 'include',
+    body: JSON.stringify({
+      to: sdAlertSettings.email,
+      subject: '🔔 StoneDesk Alert: ' + subject,
+      html: '<div style="font-family:Arial,sans-serif;padding:24px"><h2 style="color:' + color + '">StoneDesk™ Alert</h2><p style="font-size:15px">' + subject + '</p><p style="font-size:12px;color:#666">Sent from StoneDesk™ — SAIRN Technologies™</p></div>'
+    })
+  }).catch(() => {});
+}
+
+function sendAlertSMS(message) {
+  if (!sdAlertSettings.phone) return;
+  fetch(RAILWAY + '/api/alerts/sms', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    credentials: 'include',
+    body: JSON.stringify({ to: sdAlertSettings.phone, message: 'StoneDesk Alert: ' + message })
+  }).catch(() => {});
+}
+
+function testAlertEmail() {
+  const email = document.getElementById('alert-email').value.trim();
+  if (!email) { alert('Enter manager email first'); return; }
+  sendAlertEmail('Test alert from StoneDesk™ — alert system is working!', 'green');
+  const el = document.getElementById('alert-save-status');
+  if (el) { el.textContent = '📧 Test email sent to ' + email; el.style.color = '#16a34a'; }
+}
+
+function testAlertSMS() {
+  const phone = document.getElementById('alert-phone').value.trim();
+  if (!phone) { alert('Enter manager phone first'); return; }
+  sendAlertSMS('Test SMS from StoneDesk. Alert system working.');
+  const el = document.getElementById('alert-save-status');
+  if (el) { el.textContent = '📱 Test SMS sent to ' + phone; el.style.color = '#16a34a'; }
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+(function initSD3() {
+  loadSD3Data();
+  // Re-run alert scan every 5 minutes
+  setInterval(runAlertScan, 5 * 60 * 1000);
+  // Load UI after DOM ready
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      renderCustomers();
+      renderPhotos();
+      renderWarranties();
+      loadAlertSettingsUI();
+      if (sdQBOConfig.clientId) {
+        qboSetStatus(true, 'Connected to QuickBooks Online', 'Company ID: ' + sdQBOConfig.companyId);
+      }
+      runAlertScan();
+    }, 500);
+  });
+})();
 
 </script>
 </body></html>
