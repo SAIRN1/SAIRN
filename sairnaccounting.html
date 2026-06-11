@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIRNaccounting™</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#F4FAF6;--surface:#FFFFFF;--surface-2:#EDF7F1;--border:#C3E0CC;--text:#0D2418;--muted:#4A7A5A;--a:#16a34a;--a2:#15803d;--navy:#0D2418;--green:#16a34a;--red:#dc2626;--orange:#f97316;--amber:#d97706;--grad:linear-gradient(135deg,#16a34a,#15803d);--a-light:rgba(22,163,74,.08);}
+body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+#sa-auth{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0D2418 0%,#16a34a 100%)}
+.sa-auth-box{background:#fff;border-radius:20px;padding:40px;width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center}
+.sa-auth-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
+.sa-auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.sa-auth-box input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:Outfit,sans-serif;outline:none;margin-bottom:12px;transition:border .2s}
+.sa-auth-box input:focus{border-color:var(--a)}
+.sa-btn-auth{width:100%;padding:13px;background:var(--grad);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif}
+.sa-err{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+#sa-app{display:none;min-height:100vh;flex-direction:column}
+#sa-app.visible{display:flex}
+.sa-topbar{background:var(--grad);color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;gap:16px;flex-shrink:0;box-shadow:0 2px 8px rgba(22,163,74,.3)}
+.sa-topbar-logo{font-size:18px;font-weight:900;letter-spacing:-0.5px;white-space:nowrap}
+.sa-topbar-logo span{opacity:.7;font-weight:400}
+.sa-topbar-user{margin-left:auto;font-size:12px;opacity:.85;font-weight:500}
+.sa-topbar-logout{background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:Outfit,sans-serif;font-weight:600}
+.sa-layout{display:flex;flex:1;overflow:hidden}
+.sa-nav{width:200px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:12px 0}
+.sa-nav-section{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding:12px 16px 4px}
+.sa-nav-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 16px;background:none;border:none;text-align:left;font-size:13px;font-family:Outfit,sans-serif;color:var(--text);cursor:pointer;transition:all .15s;font-weight:500}
+.sa-nav-btn:hover{background:var(--a-light);color:var(--a)}
+.sa-nav-btn.active{background:var(--a-light);color:var(--a);font-weight:700;border-right:3px solid var(--a)}
+.sa-nav-btn .ni{font-size:15px;width:20px;text-align:center}
+.sa-content{flex:1;overflow-y:auto;padding:20px}
+.sa-panel{display:none}
+.sa-panel.active{display:block}
+.sa-section-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:16px}
+.sa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+.sa-kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.sa-kpi-val{font-size:24px;font-weight:800;color:var(--a);line-height:1}
+.sa-kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.sa-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.sa-card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+.sa-btn-primary{padding:9px 18px;background:var(--grad);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif}
+.sa-btn-outline{padding:8px 16px;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--muted);font-family:Outfit,sans-serif;font-weight:600}
+.sa-btn-outline:hover{border-color:var(--a);color:var(--a)}
+.sa-btn-secondary{padding:8px 14px;background:var(--a-light);border:1px solid rgba(22,163,74,.3);border-radius:8px;font-size:12px;cursor:pointer;color:var(--a);font-family:Outfit,sans-serif;font-weight:600}
+.sa-btn-danger{padding:5px 10px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);border-radius:6px;font-size:11px;cursor:pointer;color:var(--red);font-family:Outfit,sans-serif}
+.sa-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.sa-fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sa-fg input,.sa-fg select,.sa-fg textarea{background:var(--surface-2);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;font-family:Outfit,sans-serif;width:100%}
+.sa-fg input:focus,.sa-fg select:focus{border-color:var(--a)}
+.sa-table{width:100%;border-collapse:collapse;font-size:13px}
+.sa-table th{text-align:left;padding:9px 12px;background:var(--surface-2);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.sa-table td{padding:10px 12px;border-bottom:1px solid var(--border)}
+.sa-table tr:hover td{background:var(--a-light)}
+.sa-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.sa-tab{padding:8px 16px;font-size:13px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:Outfit,sans-serif;font-weight:600;margin-bottom:-2px}
+.sa-tab.active{color:var(--a);border-bottom-color:var(--a)}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge-green{background:rgba(22,163,74,.12);color:#15803d}
+.badge-red{background:rgba(220,38,38,.1);color:#dc2626}
+.badge-orange{background:rgba(249,115,22,.12);color:#ea580c}
+.badge-amber{background:rgba(217,119,6,.12);color:#b45309}
+.badge-gray{background:rgba(0,0,0,.06);color:var(--muted)}
+.badge-navy{background:rgba(13,36,24,.08);color:var(--navy)}
+.sa-progress{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.sa-progress-bar{height:100%;background:var(--grad);border-radius:4px;transition:width .4s}
+.sa-chat-msgs{overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--surface-2);min-height:260px;display:flex;flex-direction:column;gap:10px}
+.sa-msg-user{align-self:flex-end;background:var(--a);color:#fff;padding:8px 14px;border-radius:14px 14px 4px 14px;font-size:13px;max-width:80%;line-height:1.5}
+.sa-msg-ai{align-self:flex-start;background:var(--surface);border:1px solid var(--border);padding:8px 14px;border-radius:14px 14px 14px 4px;font-size:13px;max-width:85%;line-height:1.6;white-space:pre-wrap}
+.sa-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.sa-chip{background:var(--a-light);border:1px solid rgba(22,163,74,.25);color:var(--a);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif}
+.sa-chip:hover{background:rgba(22,163,74,.15)}
+.je-row{display:grid;grid-template-columns:2fr 3fr 1fr 1fr 60px;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);align-items:center}
+.je-header{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sa-notif{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(10px);transition:all .3s;max-width:320px}
+.sa-notif.show{opacity:1;transform:translateY(0)}
+@media(max-width:768px){.sa-nav{width:56px}.sa-nav-btn span:not(.ni){display:none}.sa-nav-section{display:none}.sa-content{padding:12px}}
+</style>
+</head>
+<body>
+<div id="sa-auth">
+  <div class="sa-auth-box">
+    <div style="font-size:48px;margin-bottom:8px">💰</div>
+    <div class="sa-auth-title">SAIRNaccounting™</div>
+    <div class="sa-auth-sub">AI-Powered Accounting — Big 4 Intelligence at SMB Price</div>
+    <input type="email" id="sa-email" placeholder="Email address" autocomplete="email">
+    <input type="password" id="sa-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')saLogin()">
+    <button class="sa-btn-auth" onclick="saLogin()">Sign In to SAIRNaccounting</button>
+    <div class="sa-err" id="sa-login-err"></div>
+    <div style="margin-top:16px;font-size:11px;color:var(--muted)">SAIRNaccounting™ · SAIRN Technologies™ · Flat rate, no per-user fees</div>
+  </div>
+</div>
+<div id="sa-app">
+  <div class="sa-topbar">
+    <div class="sa-topbar-logo">SAIRN<span>accounting</span>™</div>
+    <div style="font-size:11px;opacity:.7;background:rgba(255,255,255,.1);padding:3px 10px;border-radius:20px">AI CFO · Big 4 CPA · Tax Attorney</div>
+    <div class="sa-topbar-user" id="sa-user-label">—</div>
+    <button class="sa-topbar-logout" onclick="saLogout()">Sign Out</button>
+  </div>
+  <div class="sa-layout">
+    <nav class="sa-nav">
+      <div class="sa-nav-section">Overview</div>
+      <button class="sa-nav-btn active" onclick="saPanel('dashboard',this)"><span class="ni">📊</span><span>Dashboard</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('ai',this)"><span class="ni">🤖</span><span>AI CFO</span></button>
+      <div class="sa-nav-section">Transactions</div>
+      <button class="sa-nav-btn" onclick="saPanel('gl',this)"><span class="ni">📒</span><span>General Ledger</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('invoices',this)"><span class="ni">📄</span><span>Invoices (AR)</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('bills',this)"><span class="ni">📑</span><span>Bills (AP)</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('bankrec',this)"><span class="ni">🏦</span><span>Bank Rec</span></button>
+      <div class="sa-nav-section">Payroll</div>
+      <button class="sa-nav-btn" onclick="saPanel('payrolljrnl',this)"><span class="ni">💰</span><span>Payroll Journal</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('contractors',this)"><span class="ni">📎</span><span>Contractors</span></button>
+      <div class="sa-nav-section">Intelligence</div>
+      <button class="sa-nav-btn" onclick="saPanel('cashflow',this)"><span class="ni">📈</span><span>Cash Flow</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('anomaly',this)"><span class="ni">🔍</span><span>Anomaly AI</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('budget',this)"><span class="ni">🎯</span><span>Budget vs Actual</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('tax',this)"><span class="ni">⚖️</span><span>Tax Calculator</span></button>
+      <div class="sa-nav-section">Reports</div>
+      <button class="sa-nav-btn" onclick="saPanel('reports',this)"><span class="ni">📋</span><span>Reports</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('coa',this)"><span class="ni">🗂️</span><span>Chart of Accounts</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('receipts',this)"><span class="ni">🧾</span><span>Receipts</span></button>
+    </nav>
+    <div class="sa-content">
+
+      <!-- DASHBOARD -->
+      <div id="panel-dashboard" class="sa-panel active">
+        <div class="sa-section-title">📊 Financial Command Center</div>
+        <div class="sa-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="kpi-cash" style="color:var(--green)">$0</div><div class="sa-kpi-label">Cash Balance</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="kpi-ar" style="color:var(--amber)">$0</div><div class="sa-kpi-label">AR Outstanding</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="kpi-ap" style="color:var(--red)">$0</div><div class="sa-kpi-label">AP Due</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="kpi-revenue" style="color:var(--green)">$0</div><div class="sa-kpi-label">Revenue (MTD)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="kpi-expenses" style="color:var(--red)">$0</div><div class="sa-kpi-label">Expenses (MTD)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="kpi-net">$0</div><div class="sa-kpi-label">Net Income (MTD)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="kpi-runway" style="color:var(--amber)">--</div><div class="sa-kpi-label">Cash Runway</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="kpi-overdue" style="color:var(--red)">0</div><div class="sa-kpi-label">Overdue Invoices</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="sa-card">
+            <div class="sa-card-title">📈 Revenue vs Expenses — Last 6 Months</div>
+            <div id="dash-rev-chart" style="height:100px;display:flex;align-items:flex-end;gap:6px;padding-top:8px"></div>
+            <div style="display:flex;gap:16px;margin-top:8px;font-size:11px"><span style="color:var(--green)">■ Revenue</span><span style="color:var(--red);opacity:.7">■ Expenses</span></div>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-title">⚠️ Action Required</div>
+            <div id="dash-actions"></div>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-title">💡 AI CFO Insights</div>
+            <div id="dash-ai-insights" style="font-size:13px;color:var(--muted);line-height:1.7">Click below to get AI CFO analysis of your current financials.</div>
+            <button class="sa-btn-secondary" style="margin-top:10px" onclick="saDashAI()">✨ Generate AI Insights</button>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-title">🔔 Upcoming Tax Deadlines</div>
+            <div id="dash-deadlines"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI CFO -->
+      <div id="panel-ai" class="sa-panel">
+        <div class="sa-section-title">🤖 AI CFO — Big 4 CPA + CFO + Tax Attorney</div>
+        <div style="display:grid;grid-template-columns:1fr 280px;gap:14px">
+          <div class="sa-card">
+            <div class="sa-chips" id="sa-chips">
+              <span class="sa-chip" onclick="saSendChip(this)">Analyze my cash flow</span>
+              <span class="sa-chip" onclick="saSendChip(this)">Journal entry for payroll</span>
+              <span class="sa-chip" onclick="saSendChip(this)">Q4 tax planning strategy</span>
+              <span class="sa-chip" onclick="saSendChip(this)">Accounts receivable aging</span>
+              <span class="sa-chip" onclick="saSendChip(this)">COGS vs revenue ratio</span>
+              <span class="sa-chip" onclick="saSendChip(this)">How to record owner draw</span>
+              <span class="sa-chip" onclick="saSendChip(this)">Depreciation methods 2026</span>
+              <span class="sa-chip" onclick="saSendChip(this)">1099 vs W-2 tax impact</span>
+              <span class="sa-chip" onclick="saSendChip(this)">Section 179 deduction 2026</span>
+              <span class="sa-chip" onclick="saSendChip(this)">Bank reconciliation steps</span>
+              <span class="sa-chip" onclick="saSendChip(this)">Estimated quarterly taxes</span>
+              <span class="sa-chip" onclick="saSendChip(this)">Ohio business tax rates 2026</span>
+            </div>
+            <div class="sa-chat-msgs" id="sa-chat-msgs"></div>
+            <div id="sa-thinking" style="display:none;font-size:12px;color:var(--muted);margin-top:6px">✨ AI CFO analyzing...</div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <input type="text" id="sa-chat-input" class="sa-input-field" placeholder="Ask anything — journal entries, tax strategy, cash flow, financial analysis..." onkeydown="if(event.key==='Enter')saSendAI()">
+              <button class="sa-btn-primary" onclick="saSendAI()">Send</button>
+            </div>
+          </div>
+          <div>
+            <div class="sa-card" style="margin-bottom:12px">
+              <div class="sa-card-title" style="font-size:12px">🧠 AI CFO Capabilities</div>
+              <div style="font-size:12px;color:var(--muted);line-height:2">
+                ✓ Big 4 CPA knowledge<br>
+                ✓ CFO-level strategy<br>
+                ✓ Tax attorney guidance<br>
+                ✓ GAAP journal entries (Dr/Cr)<br>
+                ✓ 2026 payroll tax rates<br>
+                ✓ Cash flow analysis<br>
+                ✓ Anomaly detection<br>
+                ✓ Budget variance analysis<br>
+                ✓ Payroll tax compliance<br>
+                ✓ S-Corp vs LLC vs C-Corp
+              </div>
+            </div>
+            <div class="sa-card" style="background:rgba(220,38,38,.03);border-color:rgba(220,38,38,.15)">
+              <div class="sa-card-title" style="font-size:11px;color:var(--red)">⚠️ Disclaimer</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.7">AI CFO provides guidance based on general principles. Verify material decisions with a licensed CPA or tax attorney.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GENERAL LEDGER -->
+      <div id="panel-gl" class="sa-panel">
+        <div class="sa-section-title">📒 General Ledger</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="gl-kpi-entries">0</div><div class="sa-kpi-label">Total Entries</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="gl-kpi-debits">$0</div><div class="sa-kpi-label">Total Debits</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="gl-kpi-credits">$0</div><div class="sa-kpi-label">Total Credits</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="gl-kpi-balance" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Out of Balance</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <button class="sa-btn-primary" onclick="saOpenJE()">+ Journal Entry</button>
+          <button class="sa-btn-outline" onclick="saGenJournalAI()">✨ AI Journal Entry</button>
+          <button class="sa-btn-secondary" onclick="saExportGL()">⬇ Export GL CSV</button>
+          <select id="gl-account-filter" onchange="saRenderGL()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;font-family:Outfit,sans-serif">
+            <option value="">All Accounts</option>
+            <option value="1">Assets (1000s)</option>
+            <option value="2">Liabilities (2000s)</option>
+            <option value="3">Equity (3000s)</option>
+            <option value="4">Revenue (4000s)</option>
+            <option value="5">Expenses (5000+)</option>
+          </select>
+          <input type="month" id="gl-month-filter" onchange="saRenderGL()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+        </div>
+        <div id="je-modal" style="display:none;background:var(--surface);border:1.5px solid var(--a);border-radius:12px;padding:20px;margin-bottom:16px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+            New Journal Entry
+            <button onclick="document.getElementById('je-modal').style.display='none'" class="sa-btn-outline" style="font-size:11px;padding:4px 10px">X Close</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px">
+            <div class="sa-fg" style="margin:0"><label>Date</label><input type="date" id="je-date"></div>
+            <div class="sa-fg" style="margin:0"><label>Description / Memo</label><input type="text" id="je-memo" placeholder="e.g. Monthly rent payment"></div>
+          </div>
+          <div id="je-lines">
+            <div class="je-row je-header"><div>Account</div><div>Description</div><div>Debit</div><div>Credit</div><div></div></div>
+          </div>
+          <button class="sa-btn-outline" style="font-size:12px;margin-top:8px" onclick="saAddJELine()">+ Add Line</button>
+          <div id="je-balance-check" style="margin-top:10px;font-size:12px;font-weight:700"></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="sa-btn-primary" onclick="saPostJE()">Post Entry</button>
+            <button class="sa-btn-outline" onclick="saAIJournalSuggest()">✨ AI Suggest Accounts</button>
+          </div>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Date</th><th>Ref</th><th>Account</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th>Posted by</th></tr></thead>
+            <tbody id="gl-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- INVOICES (AR) -->
+      <div id="panel-invoices" class="sa-panel">
+        <div class="sa-section-title">📄 Invoices — Accounts Receivable</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="inv-kpi-total" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Total Outstanding</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="inv-kpi-current">$0</div><div class="sa-kpi-label">Current (0-30d)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="inv-kpi-over30" style="color:var(--orange)">$0</div><div class="sa-kpi-label">31-60 Days</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="inv-kpi-over60" style="color:var(--red)">$0</div><div class="sa-kpi-label">60+ Days</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="inv-kpi-collected" style="color:var(--green)">$0</div><div class="sa-kpi-label">Collected (MTD)</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sa-btn-primary" onclick="saNewInvoice()">+ New Invoice</button>
+          <button class="sa-btn-outline" onclick="saInvoiceAI()">✨ AI Collections Strategy</button>
+          <button class="sa-btn-secondary" onclick="saExportAR()">⬇ Export AR Aging</button>
+        </div>
+        <div class="sa-tabs">
+          <button class="sa-tab active" onclick="saInvTab('open',this)">Open</button>
+          <button class="sa-tab" onclick="saInvTab('overdue',this)">Overdue</button>
+          <button class="sa-tab" onclick="saInvTab('paid',this)">Paid</button>
+          <button class="sa-tab" onclick="saInvTab('all',this)">All</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Due Date</th><th style="text-align:right">Amount</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="inv-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BILLS (AP) -->
+      <div id="panel-bills" class="sa-panel">
+        <div class="sa-section-title">📑 Bills — Accounts Payable</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bill-kpi-total" style="color:var(--red)">$0</div><div class="sa-kpi-label">Total Owed</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bill-kpi-due7" style="color:var(--orange)">$0</div><div class="sa-kpi-label">Due in 7 Days</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bill-kpi-overdue" style="color:var(--red)">$0</div><div class="sa-kpi-label">Overdue</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bill-kpi-paid" style="color:var(--green)">$0</div><div class="sa-kpi-label">Paid (MTD)</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="saNewBill()">+ Enter Bill</button>
+          <button class="sa-btn-outline" onclick="saBillAI()">✨ AI Cash Flow Advice</button>
+          <button class="sa-btn-secondary" onclick="saExportAP()">⬇ Export AP Aging</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Bill #</th><th>Vendor</th><th>Date</th><th>Due</th><th style="text-align:right">Amount</th><th>Category</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="bill-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BANK RECONCILIATION -->
+      <div id="panel-bankrec" class="sa-panel">
+        <div class="sa-section-title">🏦 Bank Reconciliation</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec-kpi-bank" style="color:var(--green)">$0</div><div class="sa-kpi-label">Bank Statement Balance</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec-kpi-book">$0</div><div class="sa-kpi-label">Book Balance (GL)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec-kpi-diff" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Difference</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec-kpi-cleared" style="color:var(--green)">0</div><div class="sa-kpi-label">Reconciliations Posted</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div class="sa-card">
+            <div class="sa-card-title">🏦 Bank Statement</div>
+            <div class="sa-fg"><label>Statement Date</label><input type="date" id="rec-date"></div>
+            <div class="sa-fg"><label>Ending Balance per Bank ($)</label><input type="number" id="rec-bank-bal" placeholder="0.00" oninput="saCalcRec()"></div>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-title">📒 Book Adjustments</div>
+            <div class="sa-fg"><label>GL Cash Balance (1010 — auto)</label><input type="number" id="rec-book-bal" readonly style="background:var(--surface-2)"></div>
+            <div class="sa-fg"><label>Outstanding Checks ($)</label><input type="number" id="rec-outstanding" placeholder="0.00" oninput="saCalcRec()"></div>
+            <div class="sa-fg"><label>Deposits in Transit ($)</label><input type="number" id="rec-deposits" placeholder="0.00" oninput="saCalcRec()"></div>
+          </div>
+        </div>
+        <div class="sa-card">
+          <div class="sa-card-title">📋 Reconciliation Summary</div>
+          <div id="rec-summary" style="font-size:13px"></div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="sa-btn-primary" onclick="saPostRec()">Post Reconciliation</button>
+            <button class="sa-btn-secondary" onclick="saRecAI()">✨ AI Discrepancy Analysis</button>
+          </div>
+        </div>
+        <div class="sa-card" style="margin-top:14px">
+          <div class="sa-card-title">📅 Reconciliation History</div>
+          <div id="rec-history"></div>
+        </div>
+      </div>
+
+      <!-- PAYROLL JOURNAL -->
+      <div id="panel-payrolljrnl" class="sa-panel">
+        <div class="sa-section-title">💰 Payroll Journal — Auto-Generated from SAIRNhr</div>
+        <div style="background:linear-gradient(135deg,rgba(22,163,74,.08),rgba(21,128,61,.04));border:1.5px solid rgba(22,163,74,.3);border-radius:12px;padding:16px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--a);margin-bottom:6px">🔗 SAIRNhr Integration Bridge</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.9">Run payroll in SAIRNhr — journal entries auto-generate here. No spreadsheet. No manual entry. No errors.<br>
+          <strong>Pay Period Entry:</strong> Dr 6010 Wages / Cr 2100 Accrued Wages / Cr 2110 FIT / Cr 2120 SIT / Cr 2130 FICA<br>
+          <strong>Pay Date Entry:</strong> Dr 2100 Accrued Wages / Cr 1010 Cash (net) + Dr 2110+2120+2130 / Cr 1010 (tax deposits)</div>
+        </div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="pj-kpi-runs">0</div><div class="sa-kpi-label">Payroll Runs (YTD)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="pj-kpi-gross">$0</div><div class="sa-kpi-label">Gross Wages (YTD)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="pj-kpi-taxes" style="color:var(--orange)">$0</div><div class="sa-kpi-label">Taxes Withheld (YTD)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="pj-kpi-net" style="color:var(--green)">$0</div><div class="sa-kpi-label">Net Pay (YTD)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="pj-kpi-fica" style="color:var(--navy)">$0</div><div class="sa-kpi-label">Employer FICA (YTD)</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sa-btn-primary" onclick="saGenPayrollJE()">+ Generate Payroll Entry</button>
+          <button class="sa-btn-outline" onclick="saImportFromHR()">📥 Import from SAIRNhr</button>
+          <button class="sa-btn-secondary" onclick="saPayrollTaxCalc()">🧮 2026 Tax Calculator</button>
+          <button class="sa-btn-secondary" onclick="saExportPayrollJrnl()">⬇ Export</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Period</th><th>Pay Date</th><th>Employees</th><th>Gross</th><th>FIT</th><th>FICA (EE)</th><th>FICA (ER)</th><th>Net Pay</th><th>Status</th></tr></thead>
+            <tbody id="pj-tbody"></tbody>
+          </table>
+        </div>
+        <div class="sa-card" id="pj-je-preview" style="display:none;margin-top:14px">
+          <div class="sa-card-title">📒 Journal Entry Preview</div>
+          <div id="pj-je-lines"></div>
+        </div>
+      </div>
+
+      <!-- CONTRACTORS -->
+      <div id="panel-contractors" class="sa-panel">
+        <div class="sa-section-title">📎 Contractor Payments &amp; 1099-NEC</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="acc-con-total">$0</div><div class="sa-kpi-label">Paid YTD</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="acc-con-need1099" style="color:var(--orange)">0</div><div class="sa-kpi-label">Need 1099-NEC (>=600)</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="acc-con-missing-w9" style="color:var(--red)">0</div><div class="sa-kpi-label">Missing W-9</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="acc-con-count" style="color:var(--green)">0</div><div class="sa-kpi-label">Active Contractors</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="saNewContractorPay()">+ Log Payment</button>
+          <button class="sa-btn-outline" onclick="saGen1099Report()">📄 1099-NEC Report</button>
+          <button class="sa-btn-secondary" onclick="saContractorJE()">📒 View GL Entries</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Contractor</th><th>EIN/SSN</th><th>W-9</th><th>Paid YTD</th><th>1099 Required</th><th>GL Account</th><th>Action</th></tr></thead>
+            <tbody id="acc-con-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CASH FLOW -->
+      <div id="panel-cashflow" class="sa-panel">
+        <div class="sa-section-title">📈 Cash Flow Forecast</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="cf-kpi-today" style="color:var(--green)">$0</div><div class="sa-kpi-label">Current Cash</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="cf-kpi-30" style="color:var(--amber)">$0</div><div class="sa-kpi-label">30-Day Forecast</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="cf-kpi-60">$0</div><div class="sa-kpi-label">60-Day Forecast</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="cf-kpi-90">$0</div><div class="sa-kpi-label">90-Day Forecast</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="cf-kpi-burn" style="color:var(--red)">$0</div><div class="sa-kpi-label">Monthly Burn Rate</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="saBuildForecast()">📊 Rebuild Forecast</button>
+          <button class="sa-btn-outline" onclick="saCFAI()">✨ AI Analysis</button>
+          <button class="sa-btn-secondary" onclick="saScenarioAnalysis()">🔀 Scenario Mode</button>
+        </div>
+        <div class="sa-card">
+          <div class="sa-card-title">📅 30 / 60 / 90 Day Cash Flow Projection</div>
+          <div id="cf-chart" style="display:flex;gap:8px;align-items:flex-end;height:120px;padding:8px 0"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="sa-card">
+            <div class="sa-card-title">📥 Expected Inflows</div>
+            <div id="cf-inflows"></div>
+            <button class="sa-btn-outline" style="margin-top:10px;font-size:12px" onclick="saAddInflow()">+ Add Expected Payment</button>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-title">📤 Expected Outflows</div>
+            <div id="cf-outflows"></div>
+            <button class="sa-btn-outline" style="margin-top:10px;font-size:12px" onclick="saAddOutflow()">+ Add Expected Expense</button>
+          </div>
+        </div>
+        <div class="sa-card" id="cf-ai-output" style="display:none;margin-top:14px"></div>
+      </div>
+
+      <!-- ANOMALY -->
+      <div id="panel-anomaly" class="sa-panel">
+        <div class="sa-section-title">🔍 Anomaly Detection — AI Forensic Accounting</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="anm-kpi-flagged" style="color:var(--red)">0</div><div class="sa-kpi-label">Flagged</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="anm-kpi-reviewed" style="color:var(--green)">0</div><div class="sa-kpi-label">Reviewed</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="anm-kpi-avg" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Avg Transaction</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="anm-kpi-last">--</div><div class="sa-kpi-label">Last Scan</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="saRunAnomalyScan()">🔍 Run Anomaly Scan</button>
+          <button class="sa-btn-secondary" onclick="saSetThresholds()">⚙️ Set Thresholds</button>
+        </div>
+        <div class="sa-card" style="background:rgba(220,38,38,.03);border-color:rgba(220,38,38,.2);margin-bottom:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">⚠️ AI Monitors For</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.9;display:grid;grid-template-columns:1fr 1fr;gap:4px">
+            <div>• Transactions 3x above 90-day average</div>
+            <div>• Duplicate transactions (same amount + vendor)</div>
+            <div>• Unusual vendor — never paid before</div>
+            <div>• Round-number transactions ($5,000 / $10,000)</div>
+            <div>• Weekend or after-hours postings</div>
+            <div>• Expense account misclassifications</div>
+          </div>
+        </div>
+        <div class="sa-card">
+          <div class="sa-card-title">🚨 Flagged Transactions</div>
+          <div id="anm-flagged-list"></div>
+        </div>
+        <div class="sa-card" id="anm-ai-output" style="display:none;margin-top:14px"></div>
+      </div>
+
+      <!-- BUDGET VS ACTUAL -->
+      <div id="panel-budget" class="sa-panel">
+        <div class="sa-section-title">🎯 Budget vs Actual</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bud-kpi-rev-budget" style="color:var(--green)">$0</div><div class="sa-kpi-label">Revenue Budget</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bud-kpi-rev-actual">$0</div><div class="sa-kpi-label">Revenue Actual</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bud-kpi-exp-budget" style="color:var(--red)">$0</div><div class="sa-kpi-label">Expense Budget</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bud-kpi-exp-actual" style="color:var(--red)">$0</div><div class="sa-kpi-label">Expense Actual</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="bud-kpi-variance">$0</div><div class="sa-kpi-label">Net Variance</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="saSetBudget()">+ Set Budget Line</button>
+          <button class="sa-btn-outline" onclick="saBudgetAI()">✨ AI Variance Analysis</button>
+          <button class="sa-btn-secondary" onclick="saExportBudget()">⬇ Export Report</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Account</th><th>Type</th><th style="text-align:right">Budget</th><th style="text-align:right">Actual</th><th style="text-align:right">Variance</th><th>Progress</th><th>Status</th></tr></thead>
+            <tbody id="bud-tbody"></tbody>
+          </table>
+        </div>
+        <div class="sa-card" id="bud-ai-output" style="display:none;margin-top:14px"></div>
+      </div>
+
+      <!-- TAX CALCULATOR -->
+      <div id="panel-tax" class="sa-panel">
+        <div class="sa-section-title">⚖️ Tax Calculator &amp; Planner 2026</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="tax-kpi-est" style="color:var(--red)">$0</div><div class="sa-kpi-label">Est. Tax Liability</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="tax-kpi-paid" style="color:var(--green)">$0</div><div class="sa-kpi-label">Taxes Paid YTD</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="tax-kpi-due" style="color:var(--orange)">$0</div><div class="sa-kpi-label">Est. Remaining Due</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="tax-kpi-next-due" style="color:var(--amber)">Sep 15</div><div class="sa-kpi-label">Next Quarterly Due</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="sa-card">
+            <div class="sa-card-title">🧮 Tax Liability Estimator</div>
+            <div class="sa-fg"><label>Business Type</label>
+              <select id="tax-biz-type" onchange="saCalcTax()">
+                <option value="scorp">S-Corporation</option>
+                <option value="sole">Sole Proprietor / Schedule C</option>
+                <option value="llc">Single-Member LLC</option>
+                <option value="partner">Partnership / Multi-Member LLC</option>
+                <option value="ccorp">C-Corporation</option>
+              </select>
+            </div>
+            <div class="sa-fg"><label>Net Business Income (YTD $)</label><input type="number" id="tax-income" placeholder="0" oninput="saCalcTax()"></div>
+            <div class="sa-fg"><label>State</label>
+              <select id="tax-state" onchange="saCalcTax()">
+                <option value="OH">Ohio — 3% pass-through</option>
+                <option value="TX">Texas — No state income tax</option>
+                <option value="FL">Florida — No state income tax</option>
+                <option value="CA">California — 13.3% top rate</option>
+                <option value="NY">New York — 10.9% top rate</option>
+                <option value="IL">Illinois — 4.95% flat</option>
+              </select>
+            </div>
+            <div class="sa-fg"><label>Estimated Payments Made YTD ($)</label><input type="number" id="tax-paid" placeholder="0" oninput="saCalcTax()"></div>
+            <div id="tax-result" style="margin-top:8px"></div>
+          </div>
+          <div>
+            <div class="sa-card" style="margin-bottom:12px">
+              <div class="sa-card-title">📅 2026 Estimated Tax Deadlines</div>
+              <div style="font-size:12px;line-height:2.2">
+                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>Q1 (Jan-Mar)</span><span style="font-weight:700">April 15, 2026</span></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>Q2 (Apr-May)</span><span style="font-weight:700">June 16, 2026</span></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>Q3 (Jun-Aug)</span><span style="font-weight:700;color:var(--orange)">Sep 15, 2026</span></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Q4 (Sep-Dec)</span><span style="font-weight:700">Jan 15, 2027</span></div>
+              </div>
+            </div>
+            <div class="sa-card">
+              <div class="sa-card-title">💡 2026 Payroll Tax Rates</div>
+              <div style="font-size:12px;color:var(--muted);line-height:2">
+                SS Employee: <strong>6.2%</strong> (wage base $176,100)<br>
+                SS Employer: <strong>6.2%</strong><br>
+                Medicare EE: <strong>1.45%</strong> | ER: <strong>1.45%</strong><br>
+                Additional Medicare: <strong>0.9%</strong> over $200K<br>
+                FUTA: <strong>0.6%</strong> employer (first $7K)<br>
+                SUTA OH new employer: <strong>2.7%</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sa-card" style="margin-top:14px">
+          <div class="sa-card-title">✨ AI Tax Strategy</div>
+          <button class="sa-btn-primary" onclick="saTaxStrategyAI()">Get AI Tax Planning Advice</button>
+          <div id="tax-ai-output" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div id="panel-reports" class="sa-panel">
+        <div class="sa-section-title">📋 Financial Reports</div>
+        <div class="sa-card" style="margin-bottom:16px">
+          <div class="sa-card-title">⚙️ Report Settings</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div class="sa-fg" style="margin:0"><label>Period</label>
+              <select id="rpt-period"><option>This Month</option><option>This Quarter</option><option>YTD</option><option>Last Year</option></select>
+            </div>
+            <div class="sa-fg" style="margin:0"><label>Company Name</label><input type="text" id="rpt-company" placeholder="Your Company Name"></div>
+            <div class="sa-fg" style="margin:0"><label>Basis</label>
+              <select id="rpt-basis"><option>Cash Basis</option><option>Accrual Basis</option></select>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
+          <div class="sa-card" style="text-align:center;padding:24px">
+            <div style="font-size:32px;margin-bottom:8px">📊</div>
+            <div style="font-weight:700;font-size:14px">Profit &amp; Loss</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Revenue, Expenses, Net Income</div>
+            <button class="sa-btn-primary" style="margin-top:12px;width:100%" onclick="saGenPL()">Generate P&amp;L</button>
+          </div>
+          <div class="sa-card" style="text-align:center;padding:24px">
+            <div style="font-size:32px;margin-bottom:8px">⚖️</div>
+            <div style="font-weight:700;font-size:14px">Balance Sheet</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Assets, Liabilities, Equity</div>
+            <button class="sa-btn-primary" style="margin-top:12px;width:100%" onclick="saGenBS()">Generate Balance Sheet</button>
+          </div>
+          <div class="sa-card" style="text-align:center;padding:24px">
+            <div style="font-size:32px;margin-bottom:8px">💵</div>
+            <div style="font-weight:700;font-size:14px">Cash Flow Statement</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Operating, Investing, Financing</div>
+            <button class="sa-btn-primary" style="margin-top:12px;width:100%" onclick="saGenCFS()">Generate CFS</button>
+          </div>
+          <div class="sa-card" style="text-align:center;padding:24px">
+            <div style="font-size:32px;margin-bottom:8px">📄</div>
+            <div style="font-weight:700;font-size:14px">AR Aging</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Outstanding receivables by age</div>
+            <button class="sa-btn-outline" style="margin-top:12px;width:100%" onclick="saGenARaging()">Generate AR Aging</button>
+          </div>
+          <div class="sa-card" style="text-align:center;padding:24px">
+            <div style="font-size:32px;margin-bottom:8px">📑</div>
+            <div style="font-weight:700;font-size:14px">AP Aging</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Outstanding payables by age</div>
+            <button class="sa-btn-outline" style="margin-top:12px;width:100%" onclick="saGenAPaging()">Generate AP Aging</button>
+          </div>
+          <div class="sa-card" style="text-align:center;padding:24px">
+            <div style="font-size:32px;margin-bottom:8px">⚖️</div>
+            <div style="font-weight:700;font-size:14px">Tax Summary</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Payroll taxes, estimated tax</div>
+            <button class="sa-btn-outline" style="margin-top:12px;width:100%" onclick="saGenTaxSum()">Generate Tax Summary</button>
+          </div>
+        </div>
+        <div id="rpt-output"></div>
+      </div>
+
+      <!-- CHART OF ACCOUNTS -->
+      <div id="panel-coa" class="sa-panel">
+        <div class="sa-section-title">🗂️ Chart of Accounts</div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="saAddAccount()">+ Add Account</button>
+          <button class="sa-btn-outline" onclick="saLoadDefaultCOA()">📋 Load GAAP Default COA</button>
+          <button class="sa-btn-secondary" onclick="saExportCOA()">⬇ Export COA</button>
+        </div>
+        <div class="sa-tabs">
+          <button class="sa-tab active" onclick="saCOATab('all',this)">All</button>
+          <button class="sa-tab" onclick="saCOATab('assets',this)">Assets</button>
+          <button class="sa-tab" onclick="saCOATab('liabilities',this)">Liabilities</button>
+          <button class="sa-tab" onclick="saCOATab('equity',this)">Equity</button>
+          <button class="sa-tab" onclick="saCOATab('revenue',this)">Revenue</button>
+          <button class="sa-tab" onclick="saCOATab('expenses',this)">Expenses</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Code</th><th>Account Name</th><th>Type</th><th>Normal Balance</th><th>GL Balance</th><th>Action</th></tr></thead>
+            <tbody id="coa-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RECEIPTS -->
+      <div id="panel-receipts" class="sa-panel">
+        <div class="sa-section-title">🧾 Receipt Capture — AI-Extracted</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec2-kpi-total" style="color:var(--green)">0</div><div class="sa-kpi-label">Receipts Captured</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec2-kpi-amount">$0</div><div class="sa-kpi-label">Total Amount</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec2-kpi-unmatched" style="color:var(--orange)">0</div><div class="sa-kpi-label">Unmatched to GL</div></div>
+        </div>
+        <div style="background:var(--surface-2);border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('receipt-upload').click()">
+          <div style="font-size:36px;margin-bottom:8px">📸</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)">Drop receipt image or click to upload</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">JPG, PNG, PDF — AI extracts vendor, amount, date, category automatically</div>
+          <input type="file" id="receipt-upload" accept="image/*,.pdf" style="display:none" onchange="saProcessReceipt(this)">
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="document.getElementById('receipt-upload').click()">📸 Capture Receipt</button>
+          <button class="sa-btn-outline" onclick="saManualReceipt()">+ Manual Entry</button>
+          <button class="sa-btn-secondary" onclick="saMatchReceipts()">🔗 Match All to GL</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Date</th><th>Vendor</th><th style="text-align:right">Amount</th><th>Category</th><th>GL Account</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="receipt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="sa-notif" id="sa-notif"></div>
+<script>
+
+// ============================================================
+// SAIRNaccounting JS — SAIRN Technologies
+// Forest green #16a34a | Auth: SA_RAILWAY | Proxy: SA_CLAUDE
+// ============================================================
+var SA_RAILWAY='https://fabricor-production.up.railway.app';
+var SA_CLAUDE='https://sairn.vercel.app/api/claude';
+var saCurrentUser=null;
+
+// DATA
+var glEntries=saLoad('sa_gl',[]);
+var invoices=saLoad('sa_invoices',[]);
+var bills=saLoad('sa_bills',[]);
+var coaAccounts=saLoad('sa_coa',[]);
+var payrollRuns=saLoad('sa_payroll_runs',[]);
+var budgetLines=saLoad('sa_budget',[]);
+var recHistory=saLoad('sa_rec_history',[]);
+var cashFlowItems=saLoad('sa_cf_items',{inflows:[],outflows:[]});
+var accContractors=saLoad('sa_acc_contractors',[]);
+var receipts=saLoad('sa_receipts',[]);
+var anomalyFlags=saLoad('sa_anomaly',[]);
+var entryRef=saLoad('sa_ref_counter',1000);
+var jeLines=[];
+var invTabFilter='open';
+var coaFilter='all';
+var amber='#d97706';
+
+// ============================================================
+// AUTH
+// ============================================================
+async function saLogin(){
+  var email=document.getElementById('sa-email').value.trim();
+  var pass=document.getElementById('sa-pass').value;
+  var err=document.getElementById('sa-login-err');
+  err.textContent='';
+  if(!email||!pass){err.textContent='Please enter email and password.';return;}
+  try{
+    var res=await fetch(SA_RAILWAY+'/api/auth/login',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass})});
+    var data=await res.json();
+    if(!res.ok){err.textContent=data.error||'Login failed';return;}
+    saCurrentUser=data.user;saShowApp();
+  }catch(e){err.textContent='Connection error — try again.';}
+}
+function saShowApp(){
+  document.getElementById('sa-auth').style.display='none';
+  document.getElementById('sa-app').classList.add('visible');
+  var ul=document.getElementById('sa-user-label');
+  if(ul)ul.textContent=(saCurrentUser&&saCurrentUser.name)||'User';
+  saInitAll();
+}
+async function saLogout(){
+  try{await fetch(SA_RAILWAY+'/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){}
+  saCurrentUser=null;
+  document.getElementById('sa-app').classList.remove('visible');
+  document.getElementById('sa-auth').style.display='flex';
+}
+document.addEventListener('DOMContentLoaded',async function(){
+  try{
+    var res=await fetch(SA_RAILWAY+'/api/auth/me',{credentials:'include'});
+    if(res.ok){var data=await res.json();saCurrentUser=data.user;saShowApp();}
+  }catch(e){}
+});
+
+// ============================================================
+// NAV
+// ============================================================
+function saPanel(id,btn){
+  document.querySelectorAll('.sa-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.sa-nav-btn').forEach(function(b){b.classList.remove('active');});
+  var p=document.getElementById('panel-'+id);
+  if(p)p.classList.add('active');
+  if(btn)btn.classList.add('active');
+  var lazy={
+    gl:saInitGL,invoices:saInitInvoices,bills:saInitBills,
+    bankrec:saInitBankRec,payrolljrnl:saInitPayrollJrnl,
+    contractors:saInitAccContractors,cashflow:saInitCashFlow,
+    anomaly:saInitAnomaly,budget:saInitBudget,tax:saInitTax,
+    reports:saInitReports,coa:saInitCOA,receipts:saInitReceipts
+  };
+  if(lazy[id])setTimeout(lazy[id],50);
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function saNotify(msg,color){
+  var n=document.getElementById('sa-notif');
+  n.style.background=color==='green'?'#16a34a':color==='red'?'#dc2626':color==='orange'?'#f97316':'#0D2418';
+  n.textContent=msg;n.classList.add('show');
+  setTimeout(function(){n.classList.remove('show');},3200);
+}
+function saSave(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
+function saLoad(key,def){try{var r=localStorage.getItem(key);return r?JSON.parse(r):def;}catch(e){return def;}}
+function escHtml(s){if(s===null||s===undefined)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function saSum(arr){return arr.reduce(function(a,b){return a+b;},0);}
+function daysDiff(dateStr,now){var d=new Date(dateStr);return Math.round((now-d)/(1000*60*60*24));}
+function saFmt(n){return '$'+Math.abs(parseFloat(n)||0).toLocaleString(undefined,{maximumFractionDigits:0});}
+function saFmt2(n){return '$'+(parseFloat(n)||0).toFixed(2);}
+
+function saAccountBalance(code){
+  var bal=0;
+  glEntries.forEach(function(e){
+    e.lines.forEach(function(l){
+      if(parseInt(l.account)===parseInt(code)){
+        bal+=parseFloat(l.debit)||0;
+        bal-=parseFloat(l.credit)||0;
+      }
+    });
+  });
+  return bal;
+}
+
+// ============================================================
+// INIT ALL
+// ============================================================
+function saInitAll(){
+  if(coaAccounts.length===0)saLoadDefaultCOA();
+  saInitDashboard();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function saInitDashboard(){
+  var cash=saAccountBalance(1010);
+  var ar=Math.abs(saAccountBalance(1100));
+  var ap=Math.abs(saAccountBalance(2010));
+  var now=new Date();var mo=now.getMonth(),yr=now.getFullYear();
+  var rev=0,exp=0;
+  glEntries.forEach(function(e){
+    var d=new Date(e.date);
+    if(d.getMonth()===mo&&d.getFullYear()===yr){
+      e.lines.forEach(function(l){
+        var code=parseInt(l.account);
+        if(code>=4000&&code<5000)rev+=parseFloat(l.credit)||0;
+        if(code>=5000)exp+=parseFloat(l.debit)||0;
+      });
+    }
+  });
+  var net=rev-exp;
+  var overdue=invoices.filter(function(i){return i.status==='Open'&&new Date(i.dueDate)<now;}).length;
+  var runway=exp>0&&cash>0?Math.round(cash/exp)+' mo':'--';
+
+  var d;
+  d=document.getElementById('kpi-cash');if(d){d.textContent=saFmt(cash);d.style.color=cash>=0?'var(--green)':'var(--red)';}
+  d=document.getElementById('kpi-ar');if(d)d.textContent=saFmt(ar);
+  d=document.getElementById('kpi-ap');if(d)d.textContent=saFmt(ap);
+  d=document.getElementById('kpi-revenue');if(d)d.textContent=saFmt(rev);
+  d=document.getElementById('kpi-expenses');if(d)d.textContent=saFmt(exp);
+  d=document.getElementById('kpi-net');if(d){d.textContent=saFmt(net);d.style.color=net>=0?'var(--green)':'var(--red)';}
+  d=document.getElementById('kpi-runway');if(d)d.textContent=runway;
+  d=document.getElementById('kpi-overdue');if(d)d.textContent=overdue;
+
+  // 6-month bar chart
+  var chart=document.getElementById('dash-rev-chart');
+  if(chart){
+    var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var bars=[];
+    for(var m=5;m>=0;m--){
+      var mon=((now.getMonth()-m+12)%12);
+      var yrr=now.getFullYear()-(now.getMonth()-m<0?1:0);
+      var r2=0,x2=0;
+      glEntries.forEach(function(e){
+        var d2=new Date(e.date);
+        if(d2.getMonth()===mon&&d2.getFullYear()===yrr){
+          e.lines.forEach(function(l){
+            var code=parseInt(l.account);
+            if(code>=4000&&code<5000)r2+=parseFloat(l.credit)||0;
+            if(code>=5000)x2+=parseFloat(l.debit)||0;
+          });
+        }
+      });
+      bars.push({month:months[mon],rev:r2,exp:x2});
+    }
+    var maxV=Math.max.apply(null,bars.map(function(b){return Math.max(b.rev,b.exp);}));
+    if(maxV<1)maxV=1;
+    chart.innerHTML=bars.map(function(b){
+      var rh=Math.max(2,Math.round((b.rev/maxV)*90));
+      var eh=Math.max(2,Math.round((b.exp/maxV)*90));
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'+
+        '<div style="width:100%;display:flex;gap:2px;align-items:flex-end;height:90px">'+
+        '<div style="flex:1;background:var(--green);border-radius:3px 3px 0 0;height:'+rh+'px"></div>'+
+        '<div style="flex:1;background:var(--red);opacity:.6;border-radius:3px 3px 0 0;height:'+eh+'px"></div></div>'+
+        '<div style="font-size:9px;color:var(--muted)">'+b.month+'</div></div>';
+    }).join('');
+  }
+
+  // Actions
+  var acts=document.getElementById('dash-actions');
+  if(acts){
+    var list=[];
+    var overdueInv=invoices.filter(function(i){return i.status==='Open'&&new Date(i.dueDate)<now;});
+    if(overdueInv.length)list.push({c:'red',t:overdueInv.length+' overdue invoice(s) need collection'});
+    var dueBills=bills.filter(function(b){var dx=new Date(b.dueDate);return b.status==='Open'&&dx<=new Date(now.getTime()+7*86400000);});
+    if(dueBills.length)list.push({c:'orange',t:dueBills.length+' bill(s) due within 7 days'});
+    var uncat=receipts.filter(function(r){return !r.account;});
+    if(uncat.length)list.push({c:'amber',t:uncat.length+' unmatched receipt(s) need GL coding'});
+    if(!list.length)list.push({c:'green',t:'All clear — no urgent actions needed'});
+    acts.innerHTML=list.map(function(a){
+      var col=a.c==='red'?'#dc2626':a.c==='orange'?'#f97316':a.c==='amber'?'#d97706':'#16a34a';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0"></div><span>'+escHtml(a.t)+'</span></div>';
+    }).join('');
+  }
+
+  // Deadlines
+  var dl=document.getElementById('dash-deadlines');
+  if(dl){
+    var items=[
+      {date:'Sep 15, 2026',label:'Q3 Estimated Tax Payment',urgent:true},
+      {date:'Oct 31, 2026',label:'FUTA (Form 940) deposit',urgent:false},
+      {date:'Jan 15, 2027',label:'Q4 Estimated Tax Payment',urgent:false},
+      {date:'Jan 31, 2027',label:'W-2 and 1099-NEC deadline',urgent:false},
+    ];
+    dl.innerHTML=items.map(function(i){
+      return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+        '<span>'+escHtml(i.label)+'</span><span style="color:'+(i.urgent?'var(--orange)':'var(--muted)')+';font-weight:700">'+escHtml(i.date)+'</span></div>';
+    }).join('');
+  }
+}
+
+async function saDashAI(){
+  var out=document.getElementById('dash-ai-insights');
+  if(out)out.textContent='Analyzing...';
+  var cash=saAccountBalance(1010);var ar=Math.abs(saAccountBalance(1100));
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+        system:'You are SAIRNaccounting AI. Big 4 CPA + CFO. Be direct and concise.',
+        messages:[{role:'user',content:'3 key CFO insights for: Cash $'+cash+', AR $'+ar+', Open invoices: '+invoices.filter(function(i){return i.status==='Open';}).length+', GL entries: '+glEntries.length+'. Focus on cash position, collections priority, one strategic action. Bullet format.'}]})});
+    var data=await res.json();
+    if(out)out.textContent=data.content&&data.content[0]?data.content[0].text:'No insights.';
+  }catch(e){if(out)out.textContent='Error generating insights.';}
+}
+
+// ============================================================
+// AI CFO
+// ============================================================
+async function saSendAI(){
+  var input=document.getElementById('sa-chat-input');
+  var msgs=document.getElementById('sa-chat-msgs');
+  var thinking=document.getElementById('sa-thinking');
+  var msg=(input?input.value:'').trim();if(!msg)return;
+  if(input)input.value='';
+  var uDiv=document.createElement('div');uDiv.className='sa-msg-user';uDiv.textContent=msg;
+  msgs.appendChild(uDiv);msgs.scrollTop=msgs.scrollHeight;
+  if(thinking)thinking.style.display='block';
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:'You are SAIRNaccounting AI — Big 4 CPA + CFO + Tax Attorney. SAIRN Technologies. Always cite account codes (Dr XXXX, Cr XXXX) for journal entries. Provide exact 2026 rates. End every recommendation with the risk if ignored.',
+        messages:[{role:'user',content:msg}]})});
+    var data=await res.json();
+    var text=data.content&&data.content[0]?data.content[0].text:'Unable to get response.';
+    var aDiv=document.createElement('div');aDiv.className='sa-msg-ai';aDiv.textContent=text;
+    msgs.appendChild(aDiv);msgs.scrollTop=msgs.scrollHeight;
+  }catch(e){
+    var eDiv=document.createElement('div');eDiv.className='sa-msg-ai';eDiv.textContent='Connection error.';
+    msgs.appendChild(eDiv);
+  }
+  if(thinking)thinking.style.display='none';
+}
+function saSendChip(el){
+  var input=document.getElementById('sa-chat-input');
+  if(input){input.value=el.textContent;saSendAI();}
+}
+
+// ============================================================
+// GENERAL LEDGER
+// ============================================================
+function saInitGL(){saRenderGL();saUpdateGLKPIs();}
+function saUpdateGLKPIs(){
+  var dr=0,cr=0;
+  glEntries.forEach(function(e){
+    e.lines.forEach(function(l){dr+=parseFloat(l.debit)||0;cr+=parseFloat(l.credit)||0;});
+  });
+  var d;
+  d=document.getElementById('gl-kpi-entries');if(d)d.textContent=glEntries.length;
+  d=document.getElementById('gl-kpi-debits');if(d)d.textContent=saFmt2(dr);
+  d=document.getElementById('gl-kpi-credits');if(d)d.textContent=saFmt2(cr);
+  var diff=Math.abs(dr-cr);
+  d=document.getElementById('gl-kpi-balance');if(d){d.textContent=saFmt2(diff);d.style.color=diff<0.01?'var(--green)':'var(--orange)';}
+}
+function saRenderGL(){
+  var tbody=document.getElementById('gl-tbody');if(!tbody)return;
+  var af=(document.getElementById('gl-account-filter')||{}).value||'';
+  var mf=(document.getElementById('gl-month-filter')||{}).value||'';
+  var rows=[];
+  glEntries.forEach(function(entry){
+    entry.lines.forEach(function(line){
+      var code=String(parseInt(line.account)||0);
+      if(af&&!code.startsWith(af))return;
+      if(mf&&!entry.date.startsWith(mf))return;
+      rows.push({date:entry.date,ref:entry.ref,account:line.account+' -- '+saGetAccountName(line.account),memo:line.memo||entry.memo,debit:line.debit,credit:line.credit,user:entry.user||'Admin'});
+    });
+  });
+  rows.sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">No journal entries yet. Click + Journal Entry to begin.</td></tr>';return;}
+  tbody.innerHTML=rows.map(function(r){
+    return '<tr><td>'+escHtml(r.date)+'</td><td style="font-size:11px;color:var(--muted)">'+escHtml(r.ref)+'</td>'+
+      '<td style="font-size:12px">'+escHtml(r.account)+'</td>'+
+      '<td style="font-size:12px">'+escHtml(r.memo||'')+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:var(--navy)">'+((parseFloat(r.debit)||0)?saFmt2(r.debit):'')+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:var(--muted)">'+((parseFloat(r.credit)||0)?saFmt2(r.credit):'')+'</td>'+
+      '<td style="font-size:11px;color:var(--muted)">'+escHtml(r.user)+'</td></tr>';
+  }).join('');
+}
+
+function saOpenJE(){
+  jeLines=[{account:'',memo:'',debit:'',credit:''}];
+  var d=document.getElementById('je-date');if(d)d.value=new Date().toISOString().slice(0,10);
+  saRenderJELines();
+  document.getElementById('je-modal').style.display='block';
+  var el=document.getElementById('je-balance-check');if(el)el.textContent='';
+}
+function saRenderJELines(){
+  var cont=document.getElementById('je-lines');if(!cont)return;
+  var acctOpts=coaAccounts.map(function(a){return '<option value="'+escHtml(a.code)+'">'+escHtml(a.code)+' -- '+escHtml(a.name)+'</option>';}).join('');
+  var html='<div class="je-row je-header"><div>Account</div><div>Description</div><div>Debit</div><div>Credit</div><div></div></div>';
+  html+=jeLines.map(function(l,i){
+    return '<div class="je-row">'+
+      '<select onchange="jeLines['+i+'].account=this.value;saCheckJEBalance()" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Outfit,sans-serif">'+
+        '<option value="">Select account</option>'+acctOpts+'</select>'+
+      '<input type="text" value="'+escHtml(l.memo||'')+'" onchange="jeLines['+i+'].memo=this.value" placeholder="Description" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Outfit,sans-serif">'+
+      '<input type="number" value="'+escHtml(l.debit||'')+'" oninput="jeLines['+i+'].debit=this.value;saCheckJEBalance()" placeholder="0.00" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Outfit,sans-serif">'+
+      '<input type="number" value="'+escHtml(l.credit||'')+'" oninput="jeLines['+i+'].credit=this.value;saCheckJEBalance()" placeholder="0.00" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Outfit,sans-serif">'+
+      '<button onclick="jeLines.splice('+i+',1);saRenderJELines()" class="sa-btn-danger" style="font-size:11px;padding:5px 8px">X</button></div>';
+  }).join('');
+  cont.innerHTML=html;
+}
+function saAddJELine(){jeLines.push({account:'',memo:'',debit:'',credit:''});saRenderJELines();}
+function saCheckJEBalance(){
+  var dr=jeLines.reduce(function(s,l){return s+(parseFloat(l.debit)||0);},0);
+  var cr=jeLines.reduce(function(s,l){return s+(parseFloat(l.credit)||0);},0);
+  var diff=Math.abs(dr-cr);
+  var el=document.getElementById('je-balance-check');if(!el)return;
+  if(diff<0.01)el.innerHTML='<span style="color:var(--green)">Balanced -- Dr $'+dr.toFixed(2)+' = Cr $'+cr.toFixed(2)+'</span>';
+  else el.innerHTML='<span style="color:var(--red)">Out of balance by $'+diff.toFixed(2)+'</span>';
+}
+function saPostJE(){
+  var dr=jeLines.reduce(function(s,l){return s+(parseFloat(l.debit)||0);},0);
+  var cr=jeLines.reduce(function(s,l){return s+(parseFloat(l.credit)||0);},0);
+  if(Math.abs(dr-cr)>0.01){saNotify('Journal entry must balance (Dr = Cr)','red');return;}
+  if(jeLines.some(function(l){return !l.account;})){saNotify('All lines need an account selected','red');return;}
+  var memo=(document.getElementById('je-memo')||{}).value||'Manual journal entry';
+  var date=(document.getElementById('je-date')||{}).value||new Date().toISOString().slice(0,10);
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  var entry={ref:'JE-'+entryRef,date:date,memo:memo,
+    lines:jeLines.map(function(l){return {account:l.account,memo:l.memo,debit:parseFloat(l.debit)||0,credit:parseFloat(l.credit)||0};}),
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()};
+  glEntries.unshift(entry);saSave('sa_gl',glEntries);
+  document.getElementById('je-modal').style.display='none';
+  saRenderGL();saUpdateGLKPIs();saInitDashboard();
+  saNotify('Journal entry posted: '+entry.ref,'green');
+}
+async function saGenJournalAI(){
+  var memo=(document.getElementById('je-memo')||{}).value||prompt('Describe the transaction:');
+  if(!memo)return;
+  saNotify('AI suggesting accounts...','');
+  try{
+    var acctList=coaAccounts.slice(0,50).map(function(a){return a.code+' '+a.name;}).join(', ');
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,
+        system:'You are SAIRNaccounting AI. Respond ONLY with valid JSON array, no other text.',
+        messages:[{role:'user',content:'Journal entry for: "'+memo+'". Accounts available: '+acctList+'. Return JSON array: [{account:"code",memo:"desc",debit:0,credit:0}]. One side debit, other credit. Use 0 for unused side.'}]})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]?data.content[0].text:'').replace(/```json|```/g,'').trim();
+    var suggested=JSON.parse(text);
+    if(Array.isArray(suggested)&&suggested.length){
+      jeLines=suggested;saRenderJELines();
+      setTimeout(saCheckJEBalance,100);
+      saNotify('AI suggested '+suggested.length+' lines','green');
+    }
+  }catch(e){saNotify('Could not parse AI suggestion -- try rephrasing','');}
+}
+function saAIJournalSuggest(){saGenJournalAI();}
+function saExportGL(){
+  var rows=['Date,Ref,Account,Memo,Debit,Credit'];
+  glEntries.forEach(function(e){
+    e.lines.forEach(function(l){
+      rows.push([e.date,e.ref,l.account+' '+saGetAccountName(l.account),l.memo||e.memo,l.debit||0,l.credit||0].join(','));
+    });
+  });
+  var sep=String.fromCharCode(13,10);
+  var blob=new Blob([rows.join(sep)],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='general_ledger.csv';a.click();
+}
+
+// ============================================================
+// INVOICES (AR)
+// ============================================================
+function saInitInvoices(){saRenderInvoices(invTabFilter);saUpdateARKPIs();}
+function saUpdateARKPIs(){
+  var now=new Date();
+  var open=invoices.filter(function(i){return i.status==='Open';});
+  var total=saSum(open.map(function(i){return parseFloat(i.amount)||0;}));
+  var c30=saSum(open.filter(function(i){var dv=daysDiff(i.dueDate,now);return dv>=0&&dv<=30;}).map(function(i){return parseFloat(i.amount)||0;}));
+  var o30=saSum(open.filter(function(i){var dv=daysDiff(i.dueDate,now);return dv>30&&dv<=60;}).map(function(i){return parseFloat(i.amount)||0;}));
+  var o60=saSum(open.filter(function(i){return daysDiff(i.dueDate,now)>60;}).map(function(i){return parseFloat(i.amount)||0;}));
+  var mo=now.getMonth(),yr=now.getFullYear();
+  var collected=saSum(invoices.filter(function(i){if(i.status!=='Paid')return false;var pd=new Date(i.paidDate||i.dueDate);return pd.getMonth()===mo&&pd.getFullYear()===yr;}).map(function(i){return parseFloat(i.amount)||0;}));
+  var d;
+  d=document.getElementById('inv-kpi-total');if(d)d.textContent=saFmt(total);
+  d=document.getElementById('inv-kpi-current');if(d)d.textContent=saFmt(c30);
+  d=document.getElementById('inv-kpi-over30');if(d)d.textContent=saFmt(o30);
+  d=document.getElementById('inv-kpi-over60');if(d)d.textContent=saFmt(o60);
+  d=document.getElementById('inv-kpi-collected');if(d)d.textContent=saFmt(collected);
+}
+function saInvTab(tab,el){
+  invTabFilter=tab;
+  document.querySelectorAll('#panel-invoices .sa-tab').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  saRenderInvoices(tab);
+}
+function saRenderInvoices(tab){
+  var tbody=document.getElementById('inv-tbody');if(!tbody)return;
+  var now=new Date();
+  var list=invoices.filter(function(i){
+    if(tab==='open')return i.status==='Open'&&new Date(i.dueDate)>=now;
+    if(tab==='overdue')return i.status==='Open'&&new Date(i.dueDate)<now;
+    if(tab==='paid')return i.status==='Paid';
+    return true;
+  });
+  if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No invoices. Click + New Invoice.</td></tr>';return;}
+  tbody.innerHTML=list.map(function(inv,i){
+    var dv=daysDiff(inv.dueDate,now);var overdue=inv.status==='Open'&&dv>0;
+    return '<tr>'+
+      '<td style="font-weight:700">'+escHtml(inv.num)+'</td>'+
+      '<td>'+escHtml(inv.customer)+'</td>'+
+      '<td>'+escHtml(inv.date)+'</td>'+
+      '<td style="color:'+(overdue?'var(--red)':'inherit')+'">'+escHtml(inv.dueDate)+(overdue?' ('+dv+'d)':'')+'</td>'+
+      '<td style="text-align:right;font-weight:700">'+saFmt2(inv.amount)+'</td>'+
+      '<td><span class="badge badge-'+(inv.status==='Paid'?'green':overdue?'red':'amber')+'">'+escHtml(inv.status)+'</span></td>'+
+      '<td><button onclick="saMarkInvPaid('+invoices.indexOf(inv)+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 8px">'+(inv.status==='Paid'?'Paid':'Mark Paid')+'</button></td></tr>';
+  }).join('');
+}
+function saNewInvoice(){
+  var customer=prompt('Customer name:');if(!customer)return;
+  var amount=parseFloat(prompt('Invoice amount ($):'));if(!amount||isNaN(amount))return;
+  var terms=parseInt(prompt('Payment terms (days):','30'))||30;
+  var date=new Date().toISOString().slice(0,10);
+  var due=new Date(Date.now()+terms*86400000).toISOString().slice(0,10);
+  var num='INV-'+(1000+invoices.length+1);
+  invoices.unshift({num:num,customer:customer,amount:amount,date:date,dueDate:due,status:'Open'});
+  saSave('sa_invoices',invoices);
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'AR-'+entryRef,date:date,memo:'Invoice '+num+' -- '+customer,
+    lines:[{account:'1100',memo:'Accounts Receivable',debit:amount,credit:0},{account:'4010',memo:'Service Revenue',debit:0,credit:amount}],
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  saRenderInvoices(invTabFilter);saUpdateARKPIs();saInitDashboard();
+  saNotify('Invoice '+num+' created -- Dr 1100 AR / Cr 4010 Revenue','green');
+}
+function saMarkInvPaid(idx){
+  var inv=invoices[idx];if(!inv||inv.status==='Paid')return;
+  inv.status='Paid';inv.paidDate=new Date().toISOString().slice(0,10);
+  saSave('sa_invoices',invoices);
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'CR-'+entryRef,date:inv.paidDate,memo:'Payment received -- '+inv.num+' '+inv.customer,
+    lines:[{account:'1010',memo:'Cash received',debit:inv.amount,credit:0},{account:'1100',memo:'Clear AR',debit:0,credit:inv.amount}],
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  saRenderInvoices(invTabFilter);saUpdateARKPIs();saInitDashboard();
+  saNotify('Invoice paid -- Dr 1010 Cash / Cr 1100 AR posted','green');
+}
+async function saInvoiceAI(){
+  var overdue=invoices.filter(function(i){return i.status==='Open'&&new Date(i.dueDate)<new Date();});
+  if(!overdue.length){saNotify('No overdue invoices','');return;}
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+        system:'You are SAIRNaccounting AI CFO and collections expert.',
+        messages:[{role:'user',content:'Collections strategy for overdue invoices: '+JSON.stringify(overdue.map(function(i){return {customer:i.customer,amount:i.amount,daysPastDue:daysDiff(i.dueDate,new Date())};}))+'\\nProvide: 1) Priority order, 2) Email script for top overdue, 3) When to escalate, 4) Bad debt reserve recommendation.'}]})});
+    var data=await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'No strategy.');
+  }catch(e){}
+}
+function saExportAR(){
+  var rows=['Invoice #,Customer,Date,Due Date,Amount,Status'];
+  invoices.forEach(function(i){rows.push([i.num,i.customer,i.date,i.dueDate,i.amount,i.status].join(','));});
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ar_aging.csv';a.click();
+}
+
+// ============================================================
+// BILLS (AP)
+// ============================================================
+function saInitBills(){saRenderBills();saUpdateAPKPIs();}
+function saUpdateAPKPIs(){
+  var now=new Date();
+  var open=bills.filter(function(b){return b.status==='Open';});
+  var total=saSum(open.map(function(b){return parseFloat(b.amount)||0;}));
+  var due7=saSum(open.filter(function(b){var dx=new Date(b.dueDate);return dx<=new Date(now.getTime()+7*86400000)&&dx>=now;}).map(function(b){return parseFloat(b.amount)||0;}));
+  var overdue=saSum(open.filter(function(b){return new Date(b.dueDate)<now;}).map(function(b){return parseFloat(b.amount)||0;}));
+  var mo=now.getMonth(),yr=now.getFullYear();
+  var paid=saSum(bills.filter(function(b){if(b.status!=='Paid')return false;var pd=new Date(b.paidDate||b.dueDate);return pd.getMonth()===mo&&pd.getFullYear()===yr;}).map(function(b){return parseFloat(b.amount)||0;}));
+  var d;
+  d=document.getElementById('bill-kpi-total');if(d)d.textContent=saFmt(total);
+  d=document.getElementById('bill-kpi-due7');if(d)d.textContent=saFmt(due7);
+  d=document.getElementById('bill-kpi-overdue');if(d)d.textContent=saFmt(overdue);
+  d=document.getElementById('bill-kpi-paid');if(d)d.textContent=saFmt(paid);
+}
+function saRenderBills(){
+  var tbody=document.getElementById('bill-tbody');if(!tbody)return;
+  var now=new Date();
+  if(!bills.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No bills. Click + Enter Bill.</td></tr>';return;}
+  tbody.innerHTML=bills.map(function(b,i){
+    var overdue=b.status==='Open'&&new Date(b.dueDate)<now;
+    return '<tr>'+
+      '<td style="font-weight:700">'+escHtml(b.num||'BILL-'+(i+1))+'</td>'+
+      '<td>'+escHtml(b.vendor)+'</td>'+
+      '<td>'+escHtml(b.date)+'</td>'+
+      '<td style="color:'+(overdue?'var(--red)':'inherit')+'">'+escHtml(b.dueDate)+'</td>'+
+      '<td style="text-align:right;font-weight:700">'+saFmt2(b.amount)+'</td>'+
+      '<td><span class="badge badge-gray" style="font-size:9px">'+escHtml(b.category||'Uncategorized')+'</span></td>'+
+      '<td><span class="badge badge-'+(b.status==='Paid'?'green':overdue?'red':'amber')+'">'+escHtml(b.status)+'</span></td>'+
+      '<td><button onclick="saPayBill('+i+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 8px">'+(b.status==='Paid'?'Paid':'Pay')+'</button></td></tr>';
+  }).join('');
+}
+function saNewBill(){
+  var vendor=prompt('Vendor name:');if(!vendor)return;
+  var amount=parseFloat(prompt('Bill amount ($):'));if(!amount||isNaN(amount))return;
+  var category=prompt('Expense category (e.g. 6100 Rent):','6200 Office')||'6200 Office';
+  var dueDate=prompt('Due date:',new Date(Date.now()+30*86400000).toISOString().slice(0,10))||new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+  var date=new Date().toISOString().slice(0,10);
+  var num='BILL-'+(1000+bills.length+1);
+  var acctCode=category.split(' ')[0]||'6200';
+  bills.unshift({num:num,vendor:vendor,amount:amount,category:category,date:date,dueDate:dueDate,status:'Open',acctCode:acctCode});
+  saSave('sa_bills',bills);
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'AP-'+entryRef,date:date,memo:'Bill '+num+' -- '+vendor,
+    lines:[{account:acctCode,memo:category,debit:amount,credit:0},{account:'2010',memo:'Accounts Payable',debit:0,credit:amount}],
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  saRenderBills();saUpdateAPKPIs();saInitDashboard();
+  saNotify('Bill '+num+' entered -- Dr '+acctCode+' / Cr 2010 AP posted','green');
+}
+function saPayBill(i){
+  var b=bills[i];if(!b||b.status==='Paid')return;
+  b.status='Paid';b.paidDate=new Date().toISOString().slice(0,10);
+  saSave('sa_bills',bills);
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'PY-'+entryRef,date:b.paidDate,memo:'Payment -- '+b.num+' '+b.vendor,
+    lines:[{account:'2010',memo:'Clear AP',debit:b.amount,credit:0},{account:'1010',memo:'Cash paid',debit:0,credit:b.amount}],
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  saRenderBills();saUpdateAPKPIs();saInitDashboard();
+  saNotify('Bill paid -- Dr 2010 AP / Cr 1010 Cash posted','green');
+}
+async function saBillAI(){
+  var open=bills.filter(function(b){return b.status==='Open';});
+  var cash=saAccountBalance(1010);
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+        system:'You are SAIRNaccounting AI CFO.',
+        messages:[{role:'user',content:'Cash: $'+cash+'. Open bills: '+JSON.stringify(open.map(function(b){return {vendor:b.vendor,amount:b.amount,dueDate:b.dueDate};}))+'\\nAdvise: 1) Payment priority, 2) Which to defer, 3) Cash flow impact.'}]})});
+    var data=await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'No advice.');
+  }catch(e){}
+}
+function saExportAP(){
+  var rows=['Bill #,Vendor,Date,Due Date,Amount,Category,Status'];
+  bills.forEach(function(b){rows.push([b.num||'',b.vendor,b.date,b.dueDate,b.amount,b.category||'',b.status].join(','));});
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ap_aging.csv';a.click();
+}
+
+// ============================================================
+// BANK RECONCILIATION
+// ============================================================
+function saInitBankRec(){
+  var bookBal=saAccountBalance(1010);
+  var el=document.getElementById('rec-book-bal');if(el)el.value=bookBal.toFixed(2);
+  var d=document.getElementById('rec-date');if(d)d.value=new Date().toISOString().slice(0,10);
+  var el2=document.getElementById('rec-kpi-cleared');if(el2)el2.textContent=recHistory.length;
+  saRenderRecHistory();saCalcRec();
+}
+function saCalcRec(){
+  var bankBal=parseFloat((document.getElementById('rec-bank-bal')||{}).value)||0;
+  var bookBal=parseFloat((document.getElementById('rec-book-bal')||{}).value)||0;
+  var outstanding=parseFloat((document.getElementById('rec-outstanding')||{}).value)||0;
+  var deposits=parseFloat((document.getElementById('rec-deposits')||{}).value)||0;
+  var adjustedBank=bankBal-outstanding+deposits;
+  var diff=Math.abs(adjustedBank-bookBal);
+  var d;
+  d=document.getElementById('rec-kpi-bank');if(d)d.textContent=saFmt2(bankBal);
+  d=document.getElementById('rec-kpi-book');if(d)d.textContent=saFmt2(bookBal);
+  d=document.getElementById('rec-kpi-diff');if(d){d.textContent=saFmt2(diff);d.style.color=diff<0.01?'var(--green)':'var(--orange)';}
+  var summary=document.getElementById('rec-summary');
+  if(summary){
+    summary.innerHTML='<div style="font-size:13px;line-height:2.4">'+
+      '<div style="display:flex;justify-content:space-between"><span>Bank Statement Balance</span><span style="font-weight:700">'+saFmt2(bankBal)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;color:var(--muted)"><span>Less: Outstanding Checks</span><span>('+saFmt2(outstanding)+')</span></div>'+
+      '<div style="display:flex;justify-content:space-between;color:var(--muted)"><span>Add: Deposits in Transit</span><span>'+saFmt2(deposits)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;border-top:2px solid var(--border);margin-top:6px;padding-top:6px;font-weight:800"><span>Adjusted Bank Balance</span><span>'+saFmt2(adjustedBank)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between"><span>Book Balance (GL 1010)</span><span style="font-weight:800">'+saFmt2(bookBal)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;border-top:2px solid '+(diff<0.01?'var(--green)':'var(--red)')+';margin-top:6px;padding-top:6px;font-weight:900;font-size:15px;color:'+(diff<0.01?'var(--green)':'var(--red)')+'">'+
+      '<span>'+(diff<0.01?'RECONCILED':'DIFFERENCE')+'</span><span>'+(diff<0.01?'$0.00':saFmt2(diff))+'</span></div></div>';
+  }
+}
+function saPostRec(){
+  var diff=parseFloat((document.getElementById('rec-kpi-diff')||{}).textContent.replace(/[$,]/g,''))||0;
+  if(diff>0.01){saNotify('Cannot post -- reconciliation not balanced','red');return;}
+  var date=(document.getElementById('rec-date')||{}).value;
+  var bankBal=parseFloat((document.getElementById('rec-bank-bal')||{}).value)||0;
+  recHistory.unshift({date:date,bankBal:bankBal,bookBal:saAccountBalance(1010),status:'Reconciled',posted:new Date().toISOString()});
+  saSave('sa_rec_history',recHistory);saRenderRecHistory();
+  var el=document.getElementById('rec-kpi-cleared');if(el)el.textContent=recHistory.length;
+  saNotify('Bank reconciliation posted for '+date,'green');
+}
+function saRenderRecHistory(){
+  var el=document.getElementById('rec-history');if(!el)return;
+  if(!recHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">No reconciliations posted yet.</div>';return;}
+  el.innerHTML='<table class="sa-table"><thead><tr><th>Date</th><th>Bank Balance</th><th>Book Balance</th><th>Status</th></tr></thead><tbody>'+
+    recHistory.map(function(r){return '<tr><td>'+escHtml(r.date)+'</td><td>'+saFmt2(r.bankBal)+'</td><td>'+saFmt2(r.bookBal)+'</td><td><span class="badge badge-green">'+escHtml(r.status)+'</span></td></tr>';}).join('')+
+    '</tbody></table>';
+}
+async function saRecAI(){
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+        system:'You are SAIRNaccounting AI -- bank reconciliation expert.',
+        messages:[{role:'user',content:'Bank reconciliation shows a difference. Common causes and step-by-step troubleshooting checklist to find the discrepancy.'}]})});
+    var data=await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+
+// ============================================================
+// PAYROLL JOURNAL
+// ============================================================
+function saInitPayrollJrnl(){saRenderPayrollJrnl();saUpdatePJKPIs();}
+function saUpdatePJKPIs(){
+  var tG=saSum(payrollRuns.map(function(r){return parseFloat(r.gross)||0;}));
+  var tT=saSum(payrollRuns.map(function(r){return (parseFloat(r.fed)||0)+(parseFloat(r.state)||0)+(parseFloat(r.fica)||0);}));
+  var tN=saSum(payrollRuns.map(function(r){return parseFloat(r.net)||0;}));
+  var tEr=saSum(payrollRuns.map(function(r){return parseFloat(r.erFica)||0;}));
+  var d;
+  d=document.getElementById('pj-kpi-runs');if(d)d.textContent=payrollRuns.length;
+  d=document.getElementById('pj-kpi-gross');if(d)d.textContent=saFmt(tG);
+  d=document.getElementById('pj-kpi-taxes');if(d)d.textContent=saFmt(tT);
+  d=document.getElementById('pj-kpi-net');if(d)d.textContent=saFmt(tN);
+  d=document.getElementById('pj-kpi-fica');if(d)d.textContent=saFmt(tEr);
+}
+function saRenderPayrollJrnl(){
+  var tbody=document.getElementById('pj-tbody');if(!tbody)return;
+  if(!payrollRuns.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">No payroll runs. Click + Generate Payroll Entry.</td></tr>';return;}
+  tbody.innerHTML=payrollRuns.map(function(r,i){
+    return '<tr>'+
+      '<td style="font-size:12px">'+escHtml(r.period)+'</td>'+
+      '<td>'+escHtml(r.payDate)+'</td>'+
+      '<td>'+escHtml(String(r.employees))+'</td>'+
+      '<td style="font-weight:700">'+saFmt2(r.gross)+'</td>'+
+      '<td style="color:var(--orange)">'+saFmt2(r.fed)+'</td>'+
+      '<td style="color:var(--navy)">'+saFmt2(r.fica)+'</td>'+
+      '<td style="color:var(--navy)">'+saFmt2(r.erFica)+'</td>'+
+      '<td style="color:var(--green);font-weight:700">'+saFmt2(r.net)+'</td>'+
+      '<td><span class="badge badge-'+(r.posted?'green':'amber')+'">'+(r.posted?'Posted':'Pending')+'</span>'+
+        (!r.posted?'<button onclick="saPostPayrollJE('+i+')" style="margin-left:4px;font-size:10px;padding:2px 6px;background:var(--a-light);color:var(--a);border:1px solid rgba(22,163,74,.3);border-radius:4px;cursor:pointer">Post</button>':'')+
+      '</td></tr>';
+  }).join('');
+}
+function saGenPayrollJE(){
+  var gross=parseFloat(prompt('Gross wages for this pay period ($):'));if(!gross||isNaN(gross))return;
+  var emps=parseInt(prompt('Number of employees:','5'))||1;
+  var period=prompt('Pay period (e.g. Jun 1-15 2026):',new Date().toISOString().slice(0,7))||'';
+  var payDate=prompt('Pay date:',new Date(Date.now()+7*86400000).toISOString().slice(0,10))||new Date().toISOString().slice(0,10);
+  var fed=gross*0.12;var stateTax=gross*0.03;
+  var eeFica=(gross*0.062)+(gross*0.0145);
+  var erFica=eeFica;
+  var net=gross-fed-stateTax-eeFica;
+  var run={period:period,payDate:payDate,employees:emps,gross:gross,fed:fed,state:stateTax,fica:eeFica,erFica:erFica,net:net,posted:false};
+  payrollRuns.unshift(run);saSave('sa_payroll_runs',payrollRuns);
+  var preview=document.getElementById('pj-je-preview');
+  var jeL=document.getElementById('pj-je-lines');
+  if(preview&&jeL){
+    preview.style.display='block';
+    jeL.innerHTML=
+      '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">Pay Period Entry (Accrue Wages)</div>'+
+      saJELineHtml('Dr','6010','Wages Expense',gross)+
+      saJELineHtml('Cr','2110','Fed Income Tax Payable',fed)+
+      saJELineHtml('Cr','2120','State Income Tax Payable',stateTax)+
+      saJELineHtml('Cr','2130','FICA Payable (EE)',eeFica)+
+      saJELineHtml('Cr','2100','Accrued Wages (net)',net)+
+      '<div style="height:1px;background:var(--border);margin:10px 0"></div>'+
+      '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">Pay Date Entry (Disburse Cash)</div>'+
+      saJELineHtml('Dr','2100','Accrued Wages',net)+
+      saJELineHtml('Dr','6020','Payroll Tax Expense (ER FICA)',erFica)+
+      saJELineHtml('Cr','2130','FICA Payable (ER)',erFica)+
+      saJELineHtml('Cr','1010','Cash -- Net Payroll',net)+
+      '<div style="margin-top:12px"><button class="sa-btn-primary" onclick="saPostPayrollJE(0)">Post Both Entries to GL</button></div>';
+  }
+  saRenderPayrollJrnl();saUpdatePJKPIs();
+  saNotify('Payroll entry created for '+emps+' employee(s) -- review and post','green');
+}
+function saJELineHtml(dr,acct,name,amount){
+  var isDr=dr==='Dr';
+  return '<div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+    '<span style="min-width:20px;font-weight:700;color:'+(isDr?'var(--navy)':'var(--muted)')+'">'+dr+'</span>'+
+    '<span style="min-width:40px;color:var(--muted)">'+escHtml(acct)+'</span>'+
+    '<span style="flex:1">'+escHtml(name)+'</span>'+
+    '<span style="font-weight:700;min-width:90px;text-align:right">'+saFmt2(amount)+'</span></div>';
+}
+function saPostPayrollJE(i){
+  var r=payrollRuns[i];if(!r)return;
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'PR-'+entryRef,date:r.payDate,memo:'Payroll -- '+r.period+' ('+r.employees+' employees)',
+    lines:[
+      {account:'6010',memo:'Wages Expense',debit:r.gross,credit:0},
+      {account:'2110',memo:'Fed Income Tax Payable',debit:0,credit:r.fed},
+      {account:'2120',memo:'State Income Tax Payable',debit:0,credit:r.state},
+      {account:'2130',memo:'FICA Payable (EE)',debit:0,credit:r.fica},
+      {account:'2100',memo:'Accrued Wages',debit:0,credit:r.net},
+      {account:'2100',memo:'Clear Accrued Wages',debit:r.net,credit:0},
+      {account:'6020',memo:'Payroll Tax Expense (ER FICA)',debit:r.erFica,credit:0},
+      {account:'2130',memo:'FICA Payable (ER)',debit:0,credit:r.erFica},
+      {account:'1010',memo:'Cash -- Net payroll disbursement',debit:0,credit:r.net}
+    ],user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  payrollRuns[i].posted=true;saSave('sa_payroll_runs',payrollRuns);
+  saRenderPayrollJrnl();saUpdatePJKPIs();saInitDashboard();
+  saNotify('Payroll journal entries posted to GL','green');
+}
+function saImportFromHR(){saNotify('SAIRNpro bridge -- run payroll in SAIRNhr and journal entries auto-appear here','');}
+function saPayrollTaxCalc(){
+  var gross=parseFloat(prompt('Gross wages ($):'));if(!gross)return;
+  var fed=gross*0.12;var state=gross*0.03;var ss=gross*0.062;var med=gross*0.0145;
+  var net=gross-fed-state-ss-med;
+  alert('2026 Payroll Tax Breakdown:\n\nGross: $'+gross.toFixed(2)+'\nFed Tax (12% est): ($'+fed.toFixed(2)+')\nState OH (3%): ($'+state.toFixed(2)+')\nSS EE (6.2%): ($'+ss.toFixed(2)+')\nMedicare EE (1.45%): ($'+med.toFixed(2)+')\n\nNet Pay: $'+net.toFixed(2)+'\n\nEmployer cost:\nSS ER (6.2%): $'+ss.toFixed(2)+'\nMedicare ER (1.45%): $'+med.toFixed(2)+'\nTotal cost to employer: $'+(gross+ss+med).toFixed(2));
+}
+function saExportPayrollJrnl(){
+  var rows=['Period,Pay Date,Employees,Gross,FIT,State,FICA EE,ER FICA,Net Pay,Posted'];
+  payrollRuns.forEach(function(r){rows.push([r.period,r.payDate,r.employees,r.gross,r.fed,r.state,r.fica,r.erFica,r.net,r.posted?'Yes':'No'].join(','));});
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='payroll_journal.csv';a.click();
+}
+
+// ============================================================
+// CONTRACTORS
+// ============================================================
+function saInitAccContractors(){saRenderAccContractors();saUpdateConKPIs();}
+function saUpdateConKPIs(){
+  var total=saSum(accContractors.map(function(c){return parseFloat(c.paidYTD)||0;}));
+  var need=accContractors.filter(function(c){return (parseFloat(c.paidYTD)||0)>=600;}).length;
+  var missing=accContractors.filter(function(c){return !c.w9;}).length;
+  var d;
+  d=document.getElementById('acc-con-total');if(d)d.textContent=saFmt(total);
+  d=document.getElementById('acc-con-need1099');if(d)d.textContent=need;
+  d=document.getElementById('acc-con-missing-w9');if(d)d.textContent=missing;
+  d=document.getElementById('acc-con-count');if(d)d.textContent=accContractors.length;
+}
+function saRenderAccContractors(){
+  var tbody=document.getElementById('acc-con-tbody');if(!tbody)return;
+  if(!accContractors.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No contractors. Click + Log Payment.</td></tr>';return;}
+  tbody.innerHTML=accContractors.map(function(c,i){
+    var need=(parseFloat(c.paidYTD)||0)>=600;
+    return '<tr>'+
+      '<td><strong>'+escHtml(c.name)+'</strong></td>'+
+      '<td style="font-size:11px;color:var(--muted)">'+escHtml(c.ein||'Not provided')+'</td>'+
+      '<td><span class="badge badge-'+(c.w9?'green':'red')+'">'+(c.w9?'W-9 on file':'Missing')+'</span></td>'+
+      '<td style="font-weight:700">'+saFmt2(c.paidYTD)+'</td>'+
+      '<td><span class="badge badge-'+(need?'orange':'gray')+'">'+(need?'Required (>=$600)':'Not yet')+'</span></td>'+
+      '<td style="font-size:11px;color:var(--muted)">'+escHtml(c.account||'6400')+'</td>'+
+      '<td><button onclick="saLogConPayment('+i+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 6px">+Pay</button></td></tr>';
+  }).join('');
+}
+function saNewContractorPay(){
+  var name=prompt('Contractor name:');if(!name)return;
+  var amount=parseFloat(prompt('Payment amount ($):'));if(!amount||isNaN(amount))return;
+  var existing=accContractors.find(function(c){return c.name.toLowerCase()===name.toLowerCase();});
+  if(existing){
+    existing.paidYTD=(parseFloat(existing.paidYTD)||0)+amount;
+  } else {
+    var w9=confirm('W-9 on file for this contractor?');
+    var ein=prompt('EIN or SSN (last 4 only):')||'';
+    accContractors.push({name:name,ein:ein,w9:w9,paidYTD:amount,account:'6400'});
+  }
+  saSave('sa_acc_contractors',accContractors);
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'CON-'+entryRef,date:new Date().toISOString().slice(0,10),memo:'Contractor payment -- '+name,
+    lines:[{account:'6400',memo:'Professional Services',debit:amount,credit:0},{account:'1010',memo:'Cash',debit:0,credit:amount}],
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  saRenderAccContractors();saUpdateConKPIs();saInitDashboard();
+  var ytd=existing?existing.paidYTD:amount;
+  saNotify('Payment logged for '+name+(ytd>=600?' -- 1099-NEC required!':''),'green');
+}
+function saLogConPayment(i){saNewContractorPay();}
+function saGen1099Report(){
+  var need=accContractors.filter(function(c){return (parseFloat(c.paidYTD)||0)>=600;});
+  if(!need.length){saNotify('No contractors at $600 threshold yet','');return;}
+  var msg='1099-NEC Filing Summary 2026\n\n';
+  need.forEach(function(c){msg+=c.name+': $'+parseFloat(c.paidYTD).toFixed(2)+(c.w9?'':' WARNING: W-9 MISSING')+'\n';});
+  msg+='\nDeadline: January 31, 2027\nFile Copy A with IRS. Provide Copy B to each contractor.\nE-file required if 10+ forms (IRS FIRE system).';
+  alert(msg);
+}
+function saContractorJE(){saPanel('gl',null);saNotify('All contractor payments are auto-posted to GL','green');}
+
+// ============================================================
+// CASH FLOW
+// ============================================================
+function saInitCashFlow(){saRenderCFItems();saBuildForecast();}
+function saBuildForecast(){
+  var cash=saAccountBalance(1010);
+  var ar=Math.abs(saAccountBalance(1100));
+  var ap=Math.abs(saAccountBalance(2010));
+  var now=new Date();var mo=now.getMonth(),yr=now.getFullYear();
+  var monthlyExp=0;
+  glEntries.forEach(function(e){
+    var d=new Date(e.date);
+    if(d.getMonth()===mo&&d.getFullYear()===yr){
+      e.lines.forEach(function(l){if(parseInt(l.account)>=5000)monthlyExp+=parseFloat(l.debit)||0;});
+    }
+  });
+  var inflowTotal=saSum(cashFlowItems.inflows.map(function(i){return parseFloat(i.amount)||0;}));
+  var outflowTotal=saSum(cashFlowItems.outflows.map(function(i){return parseFloat(i.amount)||0;}));
+  var f30=cash+(ar*0.7)-ap-monthlyExp+inflowTotal-outflowTotal;
+  var f60=f30+(ar*0.2)-monthlyExp+inflowTotal-outflowTotal;
+  var f90=f60-monthlyExp+inflowTotal-outflowTotal;
+  var d;
+  d=document.getElementById('cf-kpi-today');if(d){d.textContent=saFmt(cash);d.style.color=cash>=0?'var(--green)':'var(--red)';}
+  d=document.getElementById('cf-kpi-30');if(d){d.textContent=saFmt(f30);d.style.color=f30>=0?'var(--green)':'var(--red)';}
+  d=document.getElementById('cf-kpi-60');if(d){d.textContent=saFmt(f60);d.style.color=f60>=0?'var(--green)':'var(--red)';}
+  d=document.getElementById('cf-kpi-90');if(d){d.textContent=saFmt(f90);d.style.color=f90>=0?'var(--green)':'var(--red)';}
+  d=document.getElementById('cf-kpi-burn');if(d)d.textContent=saFmt(monthlyExp);
+  var chart=document.getElementById('cf-chart');
+  if(chart){
+    var pts=[{label:'Now',val:cash},{label:'30d',val:f30},{label:'60d',val:f60},{label:'90d',val:f90}];
+    var maxV=Math.max.apply(null,pts.map(function(p){return Math.abs(p.val);}));
+    if(maxV<1)maxV=1;
+    chart.innerHTML=pts.map(function(p){
+      var h=Math.max(4,Math.round((Math.abs(p.val)/maxV)*100));
+      var c=p.val>=0?'var(--green)':'var(--red)';
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'+
+        '<div style="font-size:10px;font-weight:700;color:'+c+'">'+saFmt(p.val)+'</div>'+
+        '<div style="width:100%;background:'+c+';border-radius:4px 4px 0 0;height:'+h+'px;min-height:4px"></div>'+
+        '<div style="font-size:10px;color:var(--muted)">'+escHtml(p.label)+'</div></div>';
+    }).join('');
+  }
+}
+function saRenderCFItems(){
+  var inf=document.getElementById('cf-inflows');
+  var outf=document.getElementById('cf-outflows');
+  if(inf)inf.innerHTML=cashFlowItems.inflows.length?cashFlowItems.inflows.map(function(i){
+    return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span>'+escHtml(i.desc)+'</span><span style="color:var(--green);font-weight:700">'+saFmt(i.amount)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:12px">No expected inflows added.</div>';
+  if(outf)outf.innerHTML=cashFlowItems.outflows.length?cashFlowItems.outflows.map(function(i){
+    return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span>'+escHtml(i.desc)+'</span><span style="color:var(--red);font-weight:700">'+saFmt(i.amount)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:12px">No expected outflows added.</div>';
+}
+function saAddInflow(){var desc=prompt('Description:');if(!desc)return;var amount=parseFloat(prompt('Amount ($):'));if(!amount)return;cashFlowItems.inflows.push({desc:desc,amount:amount});saSave('sa_cf_items',cashFlowItems);saRenderCFItems();saBuildForecast();}
+function saAddOutflow(){var desc=prompt('Description:');if(!desc)return;var amount=parseFloat(prompt('Amount ($):'));if(!amount)return;cashFlowItems.outflows.push({desc:desc,amount:amount});saSave('sa_cf_items',cashFlowItems);saRenderCFItems();saBuildForecast();}
+async function saCFAI(){
+  var cash=saAccountBalance(1010);var ar=Math.abs(saAccountBalance(1100));var ap=Math.abs(saAccountBalance(2010));
+  var out=document.getElementById('cf-ai-output');if(out)out.style.display='block';
+  if(out)out.innerHTML='<div class="sa-card-title">AI Cash Flow Analysis</div><div style="color:var(--muted)">Analyzing...</div>';
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNaccounting AI CFO specializing in cash flow management.',
+        messages:[{role:'user',content:'Cash position: $'+cash+', AR: $'+ar+', AP: $'+ap+', Expected inflows: '+JSON.stringify(cashFlowItems.inflows)+', Outflows: '+JSON.stringify(cashFlowItems.outflows)+'\\nProvide: 1) Cash runway, 2) Collection priorities, 3) Payment deferral options, 4) 90-day strategic recommendation, 5) Warning signs.'}]})});
+    var data=await res.json();
+    if(out)out.innerHTML='<div class="sa-card-title">AI Cash Flow Analysis</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content&&data.content[0]?data.content[0].text:'No analysis.')+'</div>';
+  }catch(e){if(out)out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+function saScenarioAnalysis(){saNotify('Add expected inflows and outflows above to model scenarios','');}
+
+// ============================================================
+// ANOMALY DETECTION
+// ============================================================
+function saInitAnomaly(){saRenderAnomalyFlags();}
+function saRenderAnomalyFlags(){
+  var el=document.getElementById('anm-flagged-list');if(!el)return;
+  if(!anomalyFlags.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">No anomalies flagged. Click Run Anomaly Scan.</div>';return;}
+  el.innerHTML='<table class="sa-table"><thead><tr><th>Date</th><th>Transaction</th><th>Amount</th><th>Flag Reason</th><th>Severity</th><th>Action</th></tr></thead><tbody>'+
+    anomalyFlags.map(function(f,i){
+      return '<tr><td>'+escHtml(f.date)+'</td><td>'+escHtml(f.desc)+'</td><td style="font-weight:700">'+saFmt2(f.amount)+'</td>'+
+        '<td style="font-size:11px;color:var(--muted)">'+escHtml(f.reason)+'</td>'+
+        '<td><span class="badge badge-'+(f.severity==='High'?'red':f.severity==='Medium'?'orange':'amber')+'">'+escHtml(f.severity)+'</span></td>'+
+        '<td><button onclick="saReviewAnomaly('+i+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 6px">'+(f.reviewed?'Done':'Review')+'</button></td></tr>';
+    }).join('')+'</tbody></table>';
+  var d;
+  d=document.getElementById('anm-kpi-flagged');if(d)d.textContent=anomalyFlags.filter(function(f){return !f.reviewed;}).length;
+  d=document.getElementById('anm-kpi-reviewed');if(d)d.textContent=anomalyFlags.filter(function(f){return f.reviewed;}).length;
+}
+async function saRunAnomalyScan(){
+  if(!glEntries.length){saNotify('No GL entries to scan','');return;}
+  saNotify('Scanning...','');
+  var amounts=glEntries.flatMap(function(e){return e.lines.map(function(l){return parseFloat(l.debit)||parseFloat(l.credit)||0;});}).filter(Boolean);
+  var avg=amounts.length?saSum(amounts)/amounts.length:0;
+  var newFlags=[];
+  var seen={};
+  glEntries.forEach(function(e){
+    e.lines.forEach(function(l){
+      var amt=parseFloat(l.debit)||parseFloat(l.credit)||0;
+      if(amt>avg*3&&amt>500)newFlags.push({date:e.date,desc:e.memo,amount:amt,reason:'3x above avg ($'+Math.round(avg)+')',severity:'High',reviewed:false});
+      if(amt>=1000&&amt%1000===0&&amt>5000)newFlags.push({date:e.date,desc:e.memo,amount:amt,reason:'Large round-number transaction',severity:'Medium',reviewed:false});
+      var key=Math.round(amt)+':'+e.date;
+      if(seen[key]&&amt>100)newFlags.push({date:e.date,desc:e.memo,amount:amt,reason:'Possible duplicate transaction',severity:'High',reviewed:false});
+      seen[key]=true;
+    });
+  });
+  anomalyFlags=newFlags;saSave('sa_anomaly',anomalyFlags);
+  var d;
+  d=document.getElementById('anm-kpi-avg');if(d)d.textContent=saFmt(avg);
+  d=document.getElementById('anm-kpi-last');if(d)d.textContent='Just now';
+  saRenderAnomalyFlags();
+  if(!newFlags.length){saNotify('No anomalies detected -- financials look clean','green');}
+  else{
+    saNotify(newFlags.length+' anomalies flagged','orange');
+    var out=document.getElementById('anm-ai-output');if(out)out.style.display='block';
+    if(out)out.innerHTML='<div class="sa-card-title">AI Forensic Analysis</div><div style="color:var(--muted)">Analyzing flags...</div>';
+    try{
+      var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+          system:'You are SAIRNaccounting AI -- fraud detection and forensic accounting expert.',
+          messages:[{role:'user',content:'Review flagged transactions: '+JSON.stringify(newFlags.slice(0,10))+'\\nProvide: 1) Risk level for each, 2) Legitimate vs concerning, 3) Investigation steps for highest risk items, 4) Overall assessment.'}]})});
+      var data=await res.json();
+      if(out)out.innerHTML='<div class="sa-card-title">AI Forensic Analysis</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content&&data.content[0]?data.content[0].text:'No analysis.')+'</div>';
+    }catch(e){}
+  }
+}
+function saReviewAnomaly(i){anomalyFlags[i].reviewed=true;saSave('sa_anomaly',anomalyFlags);saRenderAnomalyFlags();}
+function saSetThresholds(){saNotify('Default threshold: flag transactions 3x above 90-day average','');}
+
+// ============================================================
+// BUDGET VS ACTUAL
+// ============================================================
+function saInitBudget(){saRenderBudget();saUpdateBudgetKPIs();}
+function saUpdateBudgetKPIs(){
+  var rBud=saSum(budgetLines.filter(function(b){return b.type==='Revenue';}).map(function(b){return parseFloat(b.budget)||0;}));
+  var eBud=saSum(budgetLines.filter(function(b){return b.type==='Expense';}).map(function(b){return parseFloat(b.budget)||0;}));
+  var rAct=0,eAct=0;
+  glEntries.forEach(function(e){e.lines.forEach(function(l){
+    var code=parseInt(l.account);
+    if(code>=4000&&code<5000)rAct+=parseFloat(l.credit)||0;
+    if(code>=5000)eAct+=parseFloat(l.debit)||0;
+  });});
+  var netVar=(rAct-rBud)-(eAct-eBud);
+  var d;
+  d=document.getElementById('bud-kpi-rev-budget');if(d)d.textContent=saFmt(rBud);
+  d=document.getElementById('bud-kpi-rev-actual');if(d)d.textContent=saFmt(rAct);
+  d=document.getElementById('bud-kpi-exp-budget');if(d)d.textContent=saFmt(eBud);
+  d=document.getElementById('bud-kpi-exp-actual');if(d)d.textContent=saFmt(eAct);
+  d=document.getElementById('bud-kpi-variance');if(d){d.textContent=(netVar>=0?'+':'')+saFmt(netVar);d.style.color=netVar>=0?'var(--green)':'var(--red)';}
+}
+function saRenderBudget(){
+  var tbody=document.getElementById('bud-tbody');if(!tbody)return;
+  if(!budgetLines.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No budget lines. Click + Set Budget Line.</td></tr>';return;}
+  tbody.innerHTML=budgetLines.map(function(b,i){
+    var act=0;
+    glEntries.forEach(function(e){e.lines.forEach(function(l){
+      if(l.account===b.account){if(b.type==='Revenue')act+=parseFloat(l.credit)||0;else act+=parseFloat(l.debit)||0;}
+    });});
+    var bud=parseFloat(b.budget)||0;
+    var pct=bud?Math.min(200,Math.round((act/bud)*100)):0;
+    var vAmt=b.type==='Revenue'?act-bud:bud-act;
+    var vColor=vAmt>=0?'var(--green)':'var(--red)';
+    var status=pct>=100?'green':pct>=80?'orange':'red';
+    return '<tr>'+
+      '<td style="font-size:12px">'+escHtml(b.account)+'</td>'+
+      '<td><span class="badge badge-'+(b.type==='Revenue'?'green':'navy')+'">'+escHtml(b.type)+'</span></td>'+
+      '<td style="text-align:right;font-weight:700">'+saFmt(bud)+'</td>'+
+      '<td style="text-align:right">'+saFmt(act)+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:'+vColor+'">'+(vAmt>=0?'+':'')+saFmt(vAmt)+'</td>'+
+      '<td><div class="sa-progress" style="width:80px"><div class="sa-progress-bar" style="width:'+Math.min(100,pct)+'%;background:'+(pct>=100?'var(--green)':pct>=80?'var(--orange)':'var(--red)')+'"></div></div></td>'+
+      '<td><span class="badge badge-'+status+'">'+pct+'%</span></td></tr>';
+  }).join('');
+}
+function saSetBudget(){
+  var account=prompt('Account code + name (e.g. 4010 Service Revenue):');if(!account)return;
+  var type=prompt('Type (Revenue or Expense):','Revenue')||'Expense';
+  var budget=parseFloat(prompt('Annual budget amount ($):'));if(!budget||isNaN(budget))return;
+  budgetLines.push({account:account,type:type,budget:budget});
+  saSave('sa_budget',budgetLines);saRenderBudget();saUpdateBudgetKPIs();
+  saNotify('Budget line added','green');
+}
+async function saBudgetAI(){
+  var out=document.getElementById('bud-ai-output');if(out)out.style.display='block';
+  if(out)out.innerHTML='<div class="sa-card-title">AI Variance Analysis</div><div style="color:var(--muted)">Analyzing...</div>';
+  var rBud=saSum(budgetLines.filter(function(b){return b.type==='Revenue';}).map(function(b){return parseFloat(b.budget)||0;}));
+  var rAct=0;glEntries.forEach(function(e){e.lines.forEach(function(l){if(parseInt(l.account)>=4000&&parseInt(l.account)<5000)rAct+=parseFloat(l.credit)||0;});});
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+        system:'You are SAIRNaccounting AI CFO and budget analyst.',
+        messages:[{role:'user',content:'Budget vs actual: Revenue budget $'+rBud+', actual $'+rAct+'. Budget lines: '+JSON.stringify(budgetLines)+'\\nProvide: 1) Overall budget health, 2) Largest variances and causes, 3) Corrective actions, 4) Year-end revised forecast.'}]})});
+    var data=await res.json();
+    if(out)out.innerHTML='<div class="sa-card-title">AI Variance Analysis</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content&&data.content[0]?data.content[0].text:'No analysis.')+'</div>';
+  }catch(e){if(out)out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+function saExportBudget(){
+  var rows=['Account,Type,Budget,Actual,Variance'];
+  budgetLines.forEach(function(b){
+    var act=0;glEntries.forEach(function(e){e.lines.forEach(function(l){if(l.account===b.account){if(b.type==='Revenue')act+=parseFloat(l.credit)||0;else act+=parseFloat(l.debit)||0;}});});
+    rows.push([b.account,b.type,b.budget,act.toFixed(2),(act-parseFloat(b.budget)).toFixed(2)].join(','));
+  });
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budget_vs_actual.csv';a.click();
+}
+
+// ============================================================
+// TAX CALCULATOR
+// ============================================================
+function saInitTax(){saCalcTax();}
+function saCalcTax(){
+  var income=parseFloat((document.getElementById('tax-income')||{}).value)||0;
+  var paid=parseFloat((document.getElementById('tax-paid')||{}).value)||0;
+  var bizType=(document.getElementById('tax-biz-type')||{}).value||'sole';
+  var state=(document.getElementById('tax-state')||{}).value||'OH';
+  if(!income){var r=document.getElementById('tax-result');if(r)r.innerHTML='';return;}
+  var stateRates={OH:0.03,CA:0.133,TX:0,FL:0,NY:0.109,IL:0.0495};
+  var stateRate=stateRates[state]||0.05;
+  var fedRate,seRate=0;
+  if(bizType==='ccorp'){fedRate=0.21;}
+  else if(bizType==='scorp'){fedRate=income<178150?0.22:income<383900?0.24:0.32;seRate=0;}
+  else{
+    fedRate=income<94050?0.22:income<201050?0.24:income<383900?0.32:0.35;
+    seRate=0.1413;
+  }
+  var fedTax=income*fedRate;var seTax=income*seRate;var stateTax=income*stateRate;
+  var totalEst=fedTax+seTax+stateTax;var remaining=Math.max(0,totalEst-paid);
+  var d;
+  d=document.getElementById('tax-kpi-est');if(d)d.textContent=saFmt(totalEst);
+  d=document.getElementById('tax-kpi-paid');if(d)d.textContent=saFmt(paid);
+  d=document.getElementById('tax-kpi-due');if(d)d.textContent=saFmt(remaining);
+  var res=document.getElementById('tax-result');
+  if(res)res.innerHTML='<div style="margin-top:14px;font-size:13px;line-height:2.2">'+
+    '<div style="display:flex;justify-content:space-between"><span>Federal Income Tax ('+Math.round(fedRate*100)+'%)</span><span style="font-weight:700;color:var(--red)">'+saFmt(fedTax)+'</span></div>'+
+    (seRate?'<div style="display:flex;justify-content:space-between"><span>Self-Employment Tax (14.1%)</span><span style="font-weight:700;color:var(--red)">'+saFmt(seTax)+'</span></div>':'')+
+    '<div style="display:flex;justify-content:space-between"><span>'+escHtml(state)+' State Tax ('+Math.round(stateRate*100)+'%)</span><span style="font-weight:700;color:var(--orange)">'+saFmt(stateTax)+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;border-top:2px solid var(--border);margin-top:6px;padding-top:6px;font-weight:800"><span>Total Est. Tax</span><span style="color:var(--red)">'+saFmt(totalEst)+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between"><span>Less: Paid YTD</span><span style="color:var(--green)">('+saFmt(paid)+')</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-weight:900;font-size:15px;color:'+(remaining>0?'var(--red)':'var(--green)')+'"><span>Remaining Due</span><span>'+saFmt(remaining)+'</span></div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:8px">Estimated rates. Consult a CPA for exact calculation.</div></div>';
+}
+async function saTaxStrategyAI(){
+  var income=parseFloat((document.getElementById('tax-income')||{}).value)||0;
+  var bizType=(document.getElementById('tax-biz-type')||{}).value||'sole';
+  var state=(document.getElementById('tax-state')||{}).value||'OH';
+  var out=document.getElementById('tax-ai-output');
+  if(out)out.innerHTML='<div style="color:var(--muted)">Generating 2026 tax strategy...</div>';
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+        system:'You are SAIRNaccounting AI -- Big 4 tax attorney and CPA. Provide specific, actionable 2026 tax strategy.',
+        messages:[{role:'user',content:'Tax strategy for: Business type: '+bizType+', Net income: $'+income+', State: '+state+'.\\nProvide: 1) Top 3 deductions to maximize, 2) Retirement account strategy (SEP-IRA / Solo 401k), 3) Section 179 opportunity, 4) Entity structure recommendation, 5) Year-end moves before Dec 31.\\nInclude estimated tax savings for each recommendation.'}]})});
+    var data=await res.json();
+    if(out)out.innerHTML='<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content&&data.content[0]?data.content[0].text:'No strategy.')+'</div>';
+  }catch(e){if(out)out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+
+// ============================================================
+// REPORTS
+// ============================================================
+function saInitReports(){}
+function rptPrint(title,content){
+  var company=(document.getElementById('rpt-company')||{}).value||'Your Company';
+  var period=(document.getElementById('rpt-period')||{}).value||'This Month';
+  var basis=(document.getElementById('rpt-basis')||{}).value||'Cash Basis';
+  var css='body{font-family:Arial,sans-serif;padding:40px;max-width:700px;margin:auto}h1{font-size:18px}h2{font-size:14px;font-weight:600;margin:20px 0 8px;border-bottom:2px solid #0D2418;padding-bottom:4px}.row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}.total{font-weight:900;border-top:2px solid #0D2418;margin-top:6px;padding-top:6px;font-size:15px}@media print{button{display:none}}';
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>'+escHtml(title)+'</title><style>'+css+'</style></head><body>');
+  w.document.write('<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print Report</button>');
+  w.document.write('<h1>'+escHtml(company)+'<br><small style="font-size:13px;font-weight:400">'+escHtml(title)+' | '+escHtml(period)+' | '+escHtml(basis)+'<br>Generated '+new Date().toLocaleDateString()+'</small></h1>');
+  w.document.write(content);
+  w.document.write('<div style="margin-top:40px;font-size:10px;color:#666">Generated by SAIRNaccounting -- SAIRN Technologies</div>');
+  w.document.write('</body></html>');
+  w.document.close();
+}
+function saGenPL(){
+  var rev={},exp={};
+  glEntries.forEach(function(e){e.lines.forEach(function(l){
+    var code=parseInt(l.account);
+    if(code>=4000&&code<5000){if(!rev[l.account])rev[l.account]={name:saGetAccountName(l.account),amount:0};rev[l.account].amount+=parseFloat(l.credit)||0;}
+    if(code>=5000){if(!exp[l.account])exp[l.account]={name:saGetAccountName(l.account),amount:0};exp[l.account].amount+=parseFloat(l.debit)||0;}
+  });});
+  var totalRev=saSum(Object.values(rev).map(function(x){return x.amount;}));
+  var totalExp=saSum(Object.values(exp).map(function(x){return x.amount;}));
+  var net=totalRev-totalExp;
+  var html='<h2>REVENUE</h2>';
+  Object.values(rev).forEach(function(r){html+='<div class="row"><span>'+escHtml(r.name)+'</span><span>'+saFmt2(r.amount)+'</span></div>';});
+  html+='<div class="row total"><span>Total Revenue</span><span>'+saFmt2(totalRev)+'</span></div>';
+  html+='<h2>EXPENSES</h2>';
+  Object.values(exp).forEach(function(e){html+='<div class="row"><span>'+escHtml(e.name)+'</span><span>('+saFmt2(e.amount)+')</span></div>';});
+  html+='<div class="row total"><span>Total Expenses</span><span>('+saFmt2(totalExp)+')</span></div>';
+  html+='<div class="row total" style="color:'+(net>=0?'#16a34a':'#dc2626')+'"><span>NET INCOME</span><span>'+(net<0?'('+saFmt2(Math.abs(net))+')':saFmt2(net))+'</span></div>';
+  rptPrint('Profit & Loss Statement',html);
+  saNotify('P&L Statement generated','green');
+}
+function saGenBS(){
+  var assets={},liab={},equity={};
+  glEntries.forEach(function(e){e.lines.forEach(function(l){
+    var code=parseInt(l.account);var dr=parseFloat(l.debit)||0;var cr=parseFloat(l.credit)||0;
+    if(code<2000){if(!assets[l.account])assets[l.account]={name:saGetAccountName(l.account),bal:0};assets[l.account].bal+=dr-cr;}
+    else if(code<3000){if(!liab[l.account])liab[l.account]={name:saGetAccountName(l.account),bal:0};liab[l.account].bal+=cr-dr;}
+    else if(code<4000){if(!equity[l.account])equity[l.account]={name:saGetAccountName(l.account),bal:0};equity[l.account].bal+=cr-dr;}
+  });});
+  var totA=saSum(Object.values(assets).map(function(x){return x.bal;}));
+  var totL=saSum(Object.values(liab).map(function(x){return x.bal;}));
+  var totE=saSum(Object.values(equity).map(function(x){return x.bal;}));
+  var retEarn=totA-totL-totE;
+  var html='<h2>ASSETS</h2>';
+  Object.values(assets).filter(function(x){return x.bal!==0;}).forEach(function(a){html+='<div class="row"><span>'+escHtml(a.name)+'</span><span>'+saFmt2(a.bal)+'</span></div>';});
+  html+='<div class="row total"><span>TOTAL ASSETS</span><span>'+saFmt2(totA)+'</span></div>';
+  html+='<h2>LIABILITIES</h2>';
+  Object.values(liab).filter(function(x){return x.bal!==0;}).forEach(function(l){html+='<div class="row"><span>'+escHtml(l.name)+'</span><span>'+saFmt2(l.bal)+'</span></div>';});
+  html+='<div class="row total"><span>TOTAL LIABILITIES</span><span>'+saFmt2(totL)+'</span></div>';
+  html+='<h2>EQUITY</h2>';
+  Object.values(equity).filter(function(x){return x.bal!==0;}).forEach(function(e){html+='<div class="row"><span>'+escHtml(e.name)+'</span><span>'+saFmt2(e.bal)+'</span></div>';});
+  html+='<div class="row"><span>Retained Earnings</span><span>'+saFmt2(retEarn)+'</span></div>';
+  html+='<div class="row total"><span>TOTAL EQUITY</span><span>'+saFmt2(totE+retEarn)+'</span></div>';
+  html+='<div class="row total" style="font-size:16px"><span>TOTAL LIABILITIES + EQUITY</span><span>'+saFmt2(totL+totE+retEarn)+'</span></div>';
+  rptPrint('Balance Sheet',html);
+  saNotify('Balance Sheet generated','green');
+}
+function saGenCFS(){
+  var cash=saAccountBalance(1010);
+  var net=0;var ar=Math.abs(saAccountBalance(1100));var ap=Math.abs(saAccountBalance(2010));
+  glEntries.forEach(function(e){e.lines.forEach(function(l){var code=parseInt(l.account);if(code>=4000&&code<5000)net+=parseFloat(l.credit)||0;if(code>=5000)net-=parseFloat(l.debit)||0;});});
+  var cfo=net-ar+ap;
+  var html='<h2>OPERATING ACTIVITIES</h2>';
+  html+='<div class="row"><span>Net Income</span><span>'+saFmt2(net)+'</span></div>';
+  html+='<div class="row"><span>Increase in Accounts Receivable</span><span>('+saFmt2(ar)+')</span></div>';
+  html+='<div class="row"><span>Increase in Accounts Payable</span><span>'+saFmt2(ap)+'</span></div>';
+  html+='<div class="row total"><span>Net Cash from Operations</span><span>'+saFmt2(cfo)+'</span></div>';
+  html+='<h2>INVESTING ACTIVITIES</h2><div class="row" style="color:#666"><span>No investing activity</span><span>$0.00</span></div>';
+  html+='<h2>FINANCING ACTIVITIES</h2><div class="row" style="color:#666"><span>No financing activity</span><span>$0.00</span></div>';
+  html+='<div class="row total" style="font-size:16px"><span>NET CHANGE IN CASH</span><span>'+saFmt2(cfo)+'</span></div>';
+  html+='<div class="row"><span>Ending Cash Balance (1010)</span><span>'+saFmt2(cash)+'</span></div>';
+  rptPrint('Cash Flow Statement',html);
+  saNotify('Cash Flow Statement generated','green');
+}
+function saGenARaging(){saPanel('invoices',null);saNotify('AR Aging -- see Invoices panel','');}
+function saGenAPaging(){saPanel('bills',null);saNotify('AP Aging -- see Bills panel','');}
+function saGenTaxSum(){saPanel('tax',null);saNotify('Tax Summary -- see Tax Calculator','');}
+
+// ============================================================
+// CHART OF ACCOUNTS
+// ============================================================
+function saInitCOA(){saRenderCOA(coaFilter);}
+function saCOATab(tab,el){
+  coaFilter=tab;
+  document.querySelectorAll('#panel-coa .sa-tab').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  saRenderCOA(tab);
+}
+function saRenderCOA(tab){
+  var tbody=document.getElementById('coa-tbody');if(!tbody)return;
+  var list=coaAccounts.filter(function(a){
+    var code=parseInt(a.code);
+    if(tab==='all')return true;
+    if(tab==='assets')return code<2000;
+    if(tab==='liabilities')return code>=2000&&code<3000;
+    if(tab==='equity')return code>=3000&&code<4000;
+    if(tab==='revenue')return code>=4000&&code<5000;
+    if(tab==='expenses')return code>=5000;
+    return true;
+  });
+  if(!list.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No accounts. Click Load GAAP Default COA.</td></tr>';return;}
+  tbody.innerHTML=list.map(function(a,i){
+    var code=parseInt(a.code);
+    var type=code<2000?'Asset':code<3000?'Liability':code<4000?'Equity':code<5000?'Revenue':'Expense';
+    var normalBal=code<3000||code>=5000?'Debit':'Credit';
+    var bal=saAccountBalance(code);
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--a)">'+escHtml(a.code)+'</td>'+
+      '<td>'+escHtml(a.name)+'</td>'+
+      '<td><span class="badge badge-'+(type==='Asset'?'green':type==='Revenue'?'navy':type==='Expense'?'red':'orange')+'">'+escHtml(type)+'</span></td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+escHtml(normalBal)+'</td>'+
+      '<td style="font-weight:700;color:'+(Math.abs(bal)>0?'var(--text)':'var(--muted)')+'">'+saFmt2(Math.abs(bal))+'</td>'+
+      '<td><button onclick="saDeleteAccount('+coaAccounts.indexOf(a)+')" class="sa-btn-danger" style="font-size:10px;padding:2px 6px">Del</button></td></tr>';
+  }).join('');
+}
+function saAddAccount(){
+  var code=prompt('Account code (e.g. 1050):');if(!code)return;
+  var name=prompt('Account name:');if(!name)return;
+  coaAccounts.push({code:code,name:name});
+  coaAccounts.sort(function(a,b){return parseInt(a.code)-parseInt(b.code);});
+  saSave('sa_coa',coaAccounts);saRenderCOA(coaFilter);
+  saNotify('Account added: '+code+' -- '+name,'green');
+}
+function saDeleteAccount(i){
+  if(!confirm('Delete account?'))return;
+  coaAccounts.splice(i,1);saSave('sa_coa',coaAccounts);saRenderCOA(coaFilter);
+}
+function saExportCOA(){
+  var rows=['Code,Name'];
+  coaAccounts.forEach(function(a){rows.push(a.code+','+a.name);});
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='chart_of_accounts.csv';a.click();
+}
+function saGetAccountName(code){
+  var a=coaAccounts.find(function(x){return String(x.code)===String(code)||parseInt(x.code)===parseInt(code);});
+  return a?a.name:'Account '+code;
+}
+function saLoadDefaultCOA(){
+  coaAccounts=[
+    {code:'1010',name:'Cash -- Checking'},{code:'1020',name:'Cash -- Savings'},{code:'1030',name:'Petty Cash'},
+    {code:'1100',name:'Accounts Receivable'},{code:'1110',name:'Allowance for Doubtful Accounts'},
+    {code:'1200',name:'Inventory'},{code:'1300',name:'Prepaid Expenses'},
+    {code:'1500',name:'Equipment'},{code:'1510',name:'Accumulated Depreciation'},
+    {code:'2010',name:'Accounts Payable'},{code:'2100',name:'Accrued Wages Payable'},
+    {code:'2110',name:'Federal Income Tax Payable'},{code:'2120',name:'State Income Tax Payable'},
+    {code:'2130',name:'FICA Payable'},{code:'2140',name:'Health Insurance Payable'},
+    {code:'2150',name:'401(k) Payable'},{code:'2200',name:'Short-term Loans'},{code:'2500',name:'Long-term Debt'},
+    {code:'3010',name:'Owner Equity'},{code:'3020',name:'Retained Earnings'},{code:'3030',name:'Owner Distributions'},
+    {code:'4010',name:'Service Revenue'},{code:'4020',name:'Product Sales Revenue'},{code:'4030',name:'Other Income'},
+    {code:'5010',name:'Cost of Goods Sold'},
+    {code:'6010',name:'Wages and Salaries'},{code:'6020',name:'Payroll Tax Expense'},
+    {code:'6030',name:'Employee Benefits'},{code:'6040',name:'Workers Compensation'},
+    {code:'6100',name:'Rent'},{code:'6110',name:'Utilities'},{code:'6120',name:'Business Insurance'},
+    {code:'6200',name:'Office Supplies'},{code:'6210',name:'Software and Subscriptions'},
+    {code:'6300',name:'Marketing and Advertising'},{code:'6400',name:'Professional Services'},
+    {code:'6500',name:'Travel and Entertainment'},{code:'6600',name:'Depreciation Expense'},
+    {code:'6700',name:'Interest Expense'},{code:'6800',name:'Bank Fees'}
+  ];
+  saSave('sa_coa',coaAccounts);saRenderCOA('all');
+  saNotify('GAAP Chart of Accounts loaded -- '+coaAccounts.length+' accounts','green');
+}
+
+// ============================================================
+// RECEIPTS
+// ============================================================
+function saInitReceipts(){saRenderReceipts();saUpdateReceiptKPIs();}
+function saUpdateReceiptKPIs(){
+  var d;
+  d=document.getElementById('rec2-kpi-total');if(d)d.textContent=receipts.length;
+  d=document.getElementById('rec2-kpi-amount');if(d)d.textContent=saFmt(saSum(receipts.map(function(r){return parseFloat(r.amount)||0;})));
+  d=document.getElementById('rec2-kpi-unmatched');if(d)d.textContent=receipts.filter(function(r){return !r.account;}).length;
+}
+function saRenderReceipts(){
+  var tbody=document.getElementById('receipt-tbody');if(!tbody)return;
+  if(!receipts.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No receipts. Upload an image or add manually.</td></tr>';return;}
+  tbody.innerHTML=receipts.map(function(r,i){
+    return '<tr>'+
+      '<td>'+escHtml(r.date)+'</td>'+
+      '<td>'+escHtml(r.vendor||'Unknown')+'</td>'+
+      '<td style="text-align:right;font-weight:700">'+saFmt2(r.amount||0)+'</td>'+
+      '<td>'+escHtml(r.category||'--')+'</td>'+
+      '<td style="font-size:11px;color:var(--muted)">'+escHtml(r.account||'Unmatched')+'</td>'+
+      '<td><span class="badge badge-'+(r.account?'green':'amber')+'">'+(r.account?'Matched':'Pending')+'</span></td>'+
+      '<td><button onclick="saMatchReceipt('+i+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 6px">'+(r.account?'OK':'Match')+'</button></td></tr>';
+  }).join('');
+}
+async function saProcessReceipt(input){
+  var file=input.files[0];if(!file)return;
+  saNotify('AI reading receipt...','');
+  var reader=new FileReader();
+  reader.onload=async function(ev){
+    var b64=ev.target.result.split(',')[1];
+    try{
+      var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,
+          system:'You are SAIRNaccounting AI. Extract receipt data. Respond ONLY with valid JSON.',
+          messages:[{role:'user',content:[
+            {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
+            {type:'text',text:'Extract from this receipt: vendor name, amount (number only), date (YYYY-MM-DD format), category (one of: Office Supplies, Software, Travel, Meals, Utilities, Professional Services, Equipment, Marketing, Other). Respond ONLY with JSON: {"vendor":"","amount":0,"date":"","category":""}'}
+          ]}]})});
+      var data=await res.json();
+      var text=(data.content&&data.content[0]?data.content[0].text:'{}').replace(/```json|```/g,'').trim();
+      var extracted=JSON.parse(text);
+      receipts.unshift({vendor:extracted.vendor||'Unknown',amount:extracted.amount||0,date:extracted.date||new Date().toISOString().slice(0,10),category:extracted.category||'',account:'',uploaded:new Date().toISOString()});
+      saSave('sa_receipts',receipts);saRenderReceipts();saUpdateReceiptKPIs();
+      saNotify('Receipt captured: '+saFmt2(extracted.amount||0)+' from '+(extracted.vendor||'vendor'),'green');
+    }catch(e){saNotify('Could not read receipt -- try manual entry','orange');}
+  };
+  reader.readAsDataURL(file);
+}
+function saManualReceipt(){
+  var vendor=prompt('Vendor name:');if(!vendor)return;
+  var amount=parseFloat(prompt('Amount ($):'));if(!amount||isNaN(amount))return;
+  var category=prompt('Category:','Office Supplies')||'Office Supplies';
+  receipts.unshift({vendor:vendor,amount:amount,date:new Date().toISOString().slice(0,10),category:category,account:'',uploaded:new Date().toISOString()});
+  saSave('sa_receipts',receipts);saRenderReceipts();saUpdateReceiptKPIs();
+  saNotify('Receipt added','green');
+}
+function saMatchReceipt(i){
+  var acct=prompt('GL account code (e.g. 6200):',receipts[i].account||'6200');if(!acct)return;
+  receipts[i].account=acct;saSave('sa_receipts',receipts);
+  saRenderReceipts();saUpdateReceiptKPIs();
+  saNotify('Receipt matched to account '+acct,'green');
+}
+function saMatchReceipts(){saNotify('Click Match on each receipt to assign a GL account','');}
+
+// Add input field style
+(function(){
+  var s=document.createElement('style');
+  s.textContent='.sa-input-field{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif;outline:none;background:var(--surface-2)}.sa-input-field:focus{border-color:var(--a)}';
+  document.head.appendChild(s);
+})();
+
+</script>
+</body>
+</html>
