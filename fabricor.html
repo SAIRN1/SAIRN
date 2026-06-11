@@ -8318,8 +8318,7 @@ function renderCustomers() {
       '<div class="portal-card-hdr">' +
       '<div>' +
         '<div class="portal-card-title">' + escHtml(c.name) + (urgencyLabel ? ' <span class="item-urgency '+urgency+'" style="margin-left:6px">'+urgencyLabel+'</span>' : '') + '</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + escHtml(c.project) + (c.quote ? ' · <strong style="color:var(--a)">
- + c.quote.toLocaleString() + '</strong>' : '') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + escHtml(c.project) + (c.quote ? ' · <strong style="color:var(--a)">$' + c.quote.toLocaleString() + '</strong>' : '') + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px">' +
         '<select onchange="custUpdateStatus(\'' + c.id + '\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">' +
@@ -8432,8 +8431,7 @@ var _warrPkgPrice = 0; var _warrPkgYears = 0; var _warrPkgName = '';
 
 function addWarrantyToJob(name, price, years) {
   _warrPkgName = name; _warrPkgPrice = price; _warrPkgYears = years;
-  document.getElementById('warr-pkg').value = name + ' — 
- + price;
+  document.getElementById('warr-pkg').value = name + ' — $' + price;
   document.getElementById('warr-add-form').style.display = 'block';
   document.getElementById('warr-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('warr-add-form').scrollIntoView({behavior:'smooth'});
@@ -8494,8 +8492,7 @@ function renderWarranties() {
       '<div style="font-size:12px;color:var(--muted)">' + escHtml(w.package) + (w.material?' · '+escHtml(w.material):'') + '</div>' +
       '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate).toLocaleDateString() + ' · ' + expiryStr + '</div>' +
       '<div style="margin-top:8px;display:flex;gap:8px">' +
-        '<span style="font-size:13px;font-weight:700;color:var(--a)">
- + w.price + '</span>' +
+        '<span style="font-size:13px;font-weight:700;color:var(--a)">$' + w.price + '</span>' +
         '<button onclick="warrantyDelete(\'' + w.id + '\')" style="font-size:11px;padding:2px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
       '</div>' +
       '</div></div>';
@@ -8872,10 +8869,10 @@ function renderSchedule(){
         (j.notes?'<div style="font-size:11px;color:var(--muted);margin-top:4px">'+escHtml(j.notes)+'</div>':'') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
-        '<select onchange="schedUpdateStage(''+j.id+'',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
+        '<select onchange="schedUpdateStage(\'' + j.id + '\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
           ['templated','cutting','polishing','qa','ready','installed'].map(s=>'<option value="'+s+'"'+(j.stage===s?' selected':'')+'>'+stageLabels[s]+'</option>').join('')+
         '</select>' +
-        '<button onclick="schedDelete(''+j.id+'')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
+        '<button onclick="schedDelete(\'' + j.id + '\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -9013,12 +9010,11 @@ function renderInventory(){
           (color==='red'?(item.qty<=0?'Out':'Low'):color==='yellow'?'Warning':'OK')+'</span>'+
         '<div class="inv-level"><div class="inv-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>'+
         '<div style="font-size:12px">'+item.qty+' '+item.unit+' <span style="color:var(--muted)">(min '+item.min+')</span></div>'+
-        '<div style="font-size:12px">
-+(item.cost||0).toFixed(2)+'</div>'+
+        '<div style="font-size:12px">$' + (item.cost||0).toFixed(2)+'</div>'+
         '<div style="display:flex;gap:4px">'+
-          '<button onclick="invUpdateQty(''+item.id+'',1)" style="padding:3px 7px;background:rgba(22,163,74,0.12);color:#16a34a;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">+</button>'+
-          '<button onclick="invUpdateQty(''+item.id+'',-1)" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">−</button>'+
-          '<button onclick="invDelete(''+item.id+'')" style="padding:3px 6px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:5px;font-size:11px;cursor:pointer">×</button>'+
+          '<button onclick="invUpdateQty(\'' + item.id + '\',1)" style="padding:3px 7px;background:rgba(22,163,74,0.12);color:#16a34a;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">+</button>'+
+          '<button onclick="invUpdateQty(\'' + item.id + '\',-1)" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">−</button>'+
+          '<button onclick="invDelete(\'' + item.id + '\')" style="padding:3px 6px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:5px;font-size:11px;cursor:pointer">×</button>'+
         '</div>'+
       '</div>';
     }).join('')+'</div>';
@@ -9070,10 +9066,9 @@ function renderVendor(){
         (lowStockItem?'<span class="reorder-dot red"></span>':'')+escHtml(p.name)+'</div>'+
         '<div style="font-size:11px;color:var(--muted)">'+p.cat+'</div></div>'+
       '<span style="font-size:11px;color:var(--muted)">'+p.sku+'</span>'+
-      '<span style="font-size:13px;font-weight:700;color:var(--a)">
-+p.price.toFixed(2)+'</span>'+
-      '<input type="number" class="qty-input" id="vpqty-'+p.id+'" value="'+cartQty+'" min="0" onchange="cartUpdate(''+_activeVendor+'',''+p.id+'',this.value)">'+
-      '<button onclick="cartAdd(''+_activeVendor+'',''+p.id+'',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
+      '<span style="font-size:13px;font-weight:700;color:var(--a)">$' + p.price.toFixed(2)+'</span>'+
+      '<input type="number" class="qty-input" id="vpqty-'+p.id+'" value="'+cartQty+'" min="0" onchange="cartUpdate(\'' + _activeVendor + '\',\'' + p.id + '\',this.value)">'+
+      '<button onclick="cartAdd(\'' + _activeVendor + '\',\'' + p.id + '\',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
     '</div>';
   }).join('');
 }
@@ -9114,18 +9109,15 @@ function renderCart(){
   if(cartEl) cartEl.style.display=items.length?'block':'none';
   if(floatCart) floatCart.className='order-cart'+(count>0?' show':'');
   if(document.getElementById('cart-count')) document.getElementById('cart-count').textContent=count;
-  if(document.getElementById('cart-float-total')) document.getElementById('cart-float-total').textContent='
-+total.toFixed(2);
-  if(document.getElementById('cart-total')) document.getElementById('cart-total').textContent='
-+total.toFixed(2);
+  if(document.getElementById('cart-float-total')) document.getElementById('cart-float-total').textContent='$' + total.toFixed(2);
+  if(document.getElementById('cart-total')) document.getElementById('cart-total').textContent='$' + total.toFixed(2);
   if(cartItems) cartItems.innerHTML=items.map(i=>
     '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">'+
     '<span style="flex:1;font-weight:500">'+escHtml(i.name)+'</span>'+
     '<span style="color:var(--muted);font-size:11px">'+i.vendor+'</span>'+
     '<span style="color:var(--muted)">×'+i.qty+'</span>'+
-    '<span style="font-weight:700;color:var(--a)">
-+(i.price*i.qty).toFixed(2)+'</span>'+
-    '<button onclick="cartUpdate(''+_activeVendor+'',''+i.id+'',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
+    '<span style="font-weight:700;color:var(--a)">$' + (i.price*i.qty).toFixed(2)+'</span>'+
+    '<button onclick="cartUpdate(\'' + _activeVendor + '\',\'' + i.id + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
     '</div>'
   ).join('');
 }
@@ -9173,14 +9165,10 @@ function vendorPlaceOrder(){
   }).filter(Boolean);
   if(!items.length){alert('Cart is empty. Add items first.');return;}
   var total=items.reduce((s,i)=>s+i.price*i.qty,0);
-  var orderText=items.map(i=>i.qty+'x '+i.name+' ('+i.sku+') @ 
-+i.price.toFixed(2)+' = 
-+(i.price*i.qty).toFixed(2)).join('\n');
-  var subject='StoneDesk Purchase Order — 
-+total.toFixed(2);
+  var orderText=items.map(i=>i.qty+'x '+i.name+' ('+i.sku+') @ $' + i.price.toFixed(2)+' = $' + (i.price*i.qty).toFixed(2)).join('\n');
+  var subject='StoneDesk Purchase Order — $' + total.toFixed(2);
   var body='Purchase Order\n\nDate: '+new Date().toLocaleDateString()+'\nShop: '+
-    (localStorage.getItem('fab_shop_name')||'Stone Fabrication Shop')+'\n\nItems:\n'+orderText+'\n\nTotal: 
-+total.toFixed(2);
+    (localStorage.getItem('fab_shop_name')||'Stone Fabrication Shop')+'\n\nItems:\n'+orderText+'\n\nTotal: $' + total.toFixed(2);
   // Open email to the active vendor
   var v=VENDORS[_activeVendor];
   var emailLink='mailto:'+v.email.replace('mailto:','')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
@@ -9254,8 +9242,8 @@ function showExecRolePicker(){
   overlay.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--a);border-radius:14px;padding:18px 24px;z-index:9000;box-shadow:0 8px 40px rgba(0,0,0,.3);min-width:320px;text-align:center';
   overlay.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Select your executive role</div>'+
     '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">'+
-    ['ceo','cfo','cto'].map(r=>'<button onclick="setExecRoleAndClose(''+r+'')" style="padding:8px 18px;border-radius:8px;border:2px solid var(--a);background:transparent;color:var(--a);font-size:13px;font-weight:800;cursor:pointer;text-transform:uppercase">'+r.toUpperCase()+'</button>').join('')+
-    '<button onclick="setExecRoleAndClose('admin')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Admin Only</button>'+
+    ['ceo','cfo','cto'].map(r=>'<button onclick="setExecRoleAndClose(\'' + r + '\')" style="padding:8px 18px;border-radius:8px;border:2px solid var(--a);background:transparent;color:var(--a);font-size:13px;font-weight:800;cursor:pointer;text-transform:uppercase">'+r.toUpperCase()+'</button>').join('')+
+    '<button onclick="setExecRoleAndClose(\'admin\')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Admin Only</button>'+
     '</div>'+
     '<div style="font-size:11px;color:var(--muted)">This unlocks the Executive Suite & private channel</div>';
   document.body.appendChild(overlay);
@@ -9404,9 +9392,9 @@ function renderRemakes(){
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">' +
           (r.status==='open'&&!r.approvedExtension&&document.body.classList.contains('is-exec')?
-            '<button onclick="remakeApprove(''+r.id+'')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve Ext.</button>':'') +
-          (r.status==='open'?'<button onclick="remakeComplete(''+r.id+'')" style="padding:4px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Mark Done</button>':'') +
-          '<button onclick="remakeDelete(''+r.id+'')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer">×</button>' +
+            '<button onclick="remakeApprove(\'' + r.id + '\')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve Ext.</button>':'') +
+          (r.status==='open'?'<button onclick="remakeComplete(\'' + r.id + '\')" style="padding:4px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Mark Done</button>':'') +
+          '<button onclick="remakeDelete(\'' + r.id + '\')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer">×</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -9530,7 +9518,7 @@ function renderExecRemakes(){
       '<span class="item-urgency '+urg+'" style="flex-shrink:0">'+typeLabels[r.type]+'</span>'+
       '<span style="font-weight:600;flex:1">'+escHtml(r.customer)+'</span>'+
       '<span style="color:var(--muted)">'+Math.round(hrs)+'h elapsed</span>'+
-      (urg==='red'&&!r.approvedExtension?'<button onclick="remakeApprove(''+r.id+'')" style="padding:3px 8px;background:#16a34a;color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">Approve</button>':
+      (urg==='red'&&!r.approvedExtension?'<button onclick="remakeApprove(\'' + r.id + '\')" style="padding:3px 8px;background:#16a34a;color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">Approve</button>':
        r.approvedExtension?'<span style="font-size:10px;color:#16a34a;font-weight:700">Approved ✓</span>':'') +
     '</div>';
   }).join('');
@@ -9651,7 +9639,7 @@ function renderComms(){
   function renderThread(t,canRespond){
     var open=t._open;
     return '<div class="comms-thread">'+
-      '<div class="comms-thread-hdr" onclick="toggleThread(''+t.id+'')">' +
+      '<div class="comms-thread-hdr" onclick="toggleThread(\'' + t.id + '\')">' +
         '<div style="flex:1">' +
           '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">'+
             '<span style="font-size:13px;font-weight:700;color:var(--text)">'+escHtml(t.subject)+'</span>'+
@@ -9667,9 +9655,9 @@ function renderComms(){
         (t.response?'<div style="background:var(--surface-2);border-radius:8px;padding:10px;margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">RESPONSE FROM '+escHtml(t.respondedBy)+' · '+new Date(t.respondedAt).toLocaleDateString()+'</div><div style="font-size:13px">'+escHtml(t.response)+'</div></div>':'')+
         (canRespond&&t.status==='open'?'<div style="display:flex;gap:8px;margin-top:8px"><textarea id="resp-'+t.id+'" placeholder="Write response..." style="flex:1;height:60px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;color:var(--text);resize:vertical;outline:none"></textarea></div>'+
           '<div style="display:flex;gap:6px;margin-top:6px">'+
-            '<button onclick="commsRespond(''+t.id+'')" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Respond</button>'+
-            (['remake_ext','shower_ext','request'].includes(t.category)?'<button onclick="commsApprove(''+t.id+'')" style="padding:5px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓ Approve</button>':'')+
-            '<button onclick="commsClose(''+t.id+'')" style="padding:5px 12px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'+
+            '<button onclick="commsRespond(\'' + t.id + '\')" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Respond</button>'+
+            (['remake_ext','shower_ext','request'].includes(t.category)?'<button onclick="commsApprove(\'' + t.id + '\')" style="padding:5px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓ Approve</button>':'')+
+            '<button onclick="commsClose(\'' + t.id + '\')" style="padding:5px 12px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'+
           '</div>':'') +
       '</div>'+
     '</div>';
@@ -9817,10 +9805,8 @@ function renderMarkdown(txt){
   t=t.replace(/^#{1,3} (.+)$/gm,'<div style="font-weight:700;margin:8px 0 4px">$1</div>');
   t=t.replace(/^[•-] (.+)$/gm,'<div style="padding-left:12px;margin:2px 0">• $1</div>');
   t=t.replace(/^(d+). (.+)$/gm,'<div style="padding-left:12px;margin:2px 0">$1. $2</div>');
-  t=t.replace(/
-{2,}/g,'<br><br>');
-  t=t.replace(/
-/g,'<br>');
+  t=t.replace(/\n{2,}/g,'<br><br>');
+  t=t.replace(/\n/g,'<br>');
   return t;
 }
 
@@ -9893,17 +9879,8 @@ async function runEmailTriage(){
     ' Priority scale: 1=Respond today (urgent, time-sensitive, high impact), 2=Respond this week, 3=Delegate, 4=Read and archive, 5=Unsubscribe/ignore.'+
     ' Sort results by priority ascending (1 first). Be decisive. Every email gets a priority.';
 
-  var emails=raw.split(/
----+
-/).map(e=>e.trim()).filter(Boolean);
-  var prompt='Triage these '+emails.length+' email(s):
-
-'+emails.map((e,i)=>'EMAIL '+(i+1)+':
-'+e).join('
-
----
-
-');
+  var emails=raw.split(/\n---+\n/).map(e=>e.trim()).filter(Boolean);
+  var prompt='Triage these '+emails.length+' email(s):\n'+emails.map((e,i)=>'EMAIL '+(i+1)+':\n'+e).join('\n---\n')+'\n';
 
   try{
     var res=await fetch('https://sairn.vercel.app/api/claude',{
