@@ -331,7 +331,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
           </div>
           <div class="sh-chat-messages" id="sh-chat-msgs" style="height:340px"></div>
           <div style="display:flex;gap:8px;margin-top:10px">
-            <input type="text" id="sh-chat-input" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif;outline:none" placeholder="Ask anything — FMLA, terminations, pay equity, investigations..." onkeydown="if(event.key==='Enter')shSendHR()">
+            <input type="text" id="sh-chat-input" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();document.getElementById('sh-chat-send-btn')&&document.getElementById('sh-chat-send-btn').click();}" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif;outline:none" placeholder="Ask anything — FMLA, terminations, pay equity, investigations..." onkeydown="if(event.key==='Enter')shSendHR()">
             <button class="sh-btn-primary" onclick="shSendHR()">Send</button>
           </div>
           <div id="sh-hr-thinking" style="display:none;font-size:12px;color:var(--muted);margin-top:6px">✨ AI thinking...</div>
@@ -4290,6 +4290,485 @@ shPanel=function(id,btn){
   };
   if(extra[id]) setTimeout(extra[id],50);
 };
+
+
+// ── SAIRNhr INTELLIGENCE UPGRADE ──────────────────────────
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  SAIRN UNIVERSAL AI INTELLIGENCE BLOCK v1.0                 ║
+// ║  Matches StoneDesk capabilities for HR and Accounting        ║
+// ║  Features: Streaming · Voice · Memory · Tone · Actions       ║
+// ║  Handoff · Comparison · Follow-up Chips · Retry · PII        ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// Call sairiInstall(config) once, passing app-specific config:
+// config = {
+//   appId: 'sairnhr' | 'sairnaccounting',
+//   prefix: 'sh' | 'sa',
+//   inputId: 'sh-chat-input' | 'sa-chat-input',
+//   msgsId:  'sh-chat-msgs'  | 'sa-chat-msgs',
+//   sendFn:  shSendAI        | saSendAI,
+//   claudeUrl: SH_CLAUDE | SA_CLAUDE,
+//   systemPrompt: '...',
+//   cellMapEntries: [...],
+// }
+
+// ── CELL MAP (cross-app navigation) ────────────────────────────
+var SAIRI_CELL_MAP=[
+  {name:'StoneDesk',   file:'/fabricor',      icon:'🪨', keywords:['stone','fabricat','countertop','quartz','granite','slab','template','cnc']},
+  {name:'SAIRNhr',     file:'/sairnhr',       icon:'👥', keywords:['employee','payroll','hr','hire','onboard','pto','performance','termination','compliance']},
+  {name:'SAIRNaccounting',file:'/sairnaccounting',icon:'💰',keywords:['invoice','bill','accounting','expense','budget','tax','payroll journal','gl','ledger']},
+  {name:'SAIRNcode',   file:'/sairncode',     icon:'🏥', keywords:['icd','cpt','coding','medical','diagnosis','procedure','hcpcs','billing']},
+  {name:'SAIRNlaw',    file:'/sairnlaw',      icon:'⚖️', keywords:['legal','contract','lawsuit','attorney','compliance','gdpr','employment law']},
+  {name:'SAIRNmoney',  file:'/money',         icon:'📊', keywords:['budget','debt','invest','savings','personal finance','credit','retirement']},
+  {name:'SAIRNhealth', file:'/health',        icon:'❤️', keywords:['symptom','medication','health','doctor','wellness','fitness','nutrition']},
+];
+
+// ── UNIVERSAL AI INTELLIGENCE ENGINE ───────────────────────────
+function sairiInstall(cfg){
+  if(window['_sairi_'+cfg.appId])return;
+  window['_sairi_'+cfg.appId]=true;
+
+  cfg.toneOptions=cfg.toneOptions||['Simple','Detailed','Formal','Casual','Expert'];
+  cfg.currentTone=cfg.toneOptions[1];
+  cfg.messageCount=0;
+  cfg.memory=[];
+  cfg.maxRetries=3;
+
+  // Inject UI enhancements into the chat panel
+  setTimeout(function(){
+    sairiInjectToneBar(cfg);
+    sairiInjectVoiceButton(cfg);
+    sairiInjectResponseActions(cfg);
+    sairiCheckHandoff(cfg);
+  },400);
+
+  // Patch the app's sendAI function with intelligence
+  sairiPatchSend(cfg);
+}
+
+// ── TONE BAR ────────────────────────────────────────────────────
+function sairiInjectToneBar(cfg){
+  var inputEl=document.getElementById(cfg.inputId);
+  if(!inputEl||document.getElementById('sairi-tone-'+cfg.appId))return;
+  var bar=document.createElement('div');
+  bar.id='sairi-tone-'+cfg.appId;
+  bar.style.cssText='display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center';
+  bar.innerHTML='<span style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Tone:</span>'+
+    cfg.toneOptions.map(function(t){
+      return '<button onclick="sairiSetTone(\''+t+'\',\''+cfg.appId+'\')" id="sairi-tone-btn-'+cfg.appId+'-'+t+'" '+
+        'style="padding:3px 10px;font-size:11px;font-weight:600;border-radius:12px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid var(--border);background:'+(t===cfg.currentTone?'var(--a)':'transparent')+';color:'+(t===cfg.currentTone?'#fff':'var(--muted)')+'">'+t+'</button>';
+    }).join('');
+  inputEl.parentNode.insertBefore(bar,inputEl.parentNode.firstChild);
+  window['_sairiCfg_'+cfg.appId]=cfg;
+}
+
+function sairiSetTone(tone,appId){
+  var cfg=window['_sairiCfg_'+appId];if(!cfg)return;
+  cfg.currentTone=tone;
+  cfg.toneOptions.forEach(function(t){
+    var btn=document.getElementById('sairi-tone-btn-'+appId+'-'+t);
+    if(btn){btn.style.background=t===tone?'var(--a)':'transparent';btn.style.color=t===tone?'#fff':'var(--muted)';}
+  });
+}
+
+// ── VOICE INPUT ─────────────────────────────────────────────────
+function sairiInjectVoiceButton(cfg){
+  var inputEl=document.getElementById(cfg.inputId);
+  if(!inputEl||document.getElementById('sairi-voice-'+cfg.appId))return;
+  var btn=document.createElement('button');
+  btn.id='sairi-voice-'+cfg.appId;
+  btn.innerHTML='🎤';
+  btn.title='Voice input';
+  btn.style.cssText='padding:8px 10px;background:var(--a-light);border:1px solid rgba(22,163,74,.3);border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0';
+  btn.onclick=function(){sairiToggleVoice(cfg);};
+  var parent=inputEl.parentElement;
+  if(parent&&parent.style.display!=='none'){
+    // Insert before send button
+    var sendBtn=parent.querySelector('button');
+    if(sendBtn)parent.insertBefore(btn,sendBtn);
+    else parent.appendChild(btn);
+  }
+}
+
+var _sairiRecognition=null;
+var _sairiVoiceActive=false;
+function sairiToggleVoice(cfg){
+  if(_sairiVoiceActive){sairiStopVoice(cfg);return;}
+  sairiStartVoice(cfg);
+}
+function sairiStartVoice(cfg){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){sairiNotify(cfg,'Voice input not supported in this browser','');return;}
+  _sairiRecognition=new SR();
+  _sairiRecognition.continuous=false;
+  _sairiRecognition.interimResults=true;
+  _sairiRecognition.lang='en-US';
+  var btn=document.getElementById('sairi-voice-'+cfg.appId);
+  if(btn){btn.innerHTML='🔴';btn.style.background='rgba(220,38,38,.1)';}
+  _sairiVoiceActive=true;
+  _sairiRecognition.onresult=function(e){
+    var transcript=Array.from(e.results).map(function(r){return r[0].transcript;}).join('');
+    var inp=document.getElementById(cfg.inputId);
+    if(inp)inp.value=transcript;
+    if(e.results[e.results.length-1].isFinal){
+      sairiStopVoice(cfg);
+      setTimeout(function(){if(cfg.sendFn)cfg.sendFn();},300);
+    }
+  };
+  _sairiRecognition.onerror=function(){sairiStopVoice(cfg);};
+  _sairiRecognition.onend=function(){sairiStopVoice(cfg);};
+  _sairiRecognition.start();
+  sairiNotify(cfg,'Listening... speak now','');
+}
+function sairiStopVoice(cfg){
+  _sairiVoiceActive=false;
+  if(_sairiRecognition){try{_sairiRecognition.stop();}catch(e){}}
+  var btn=document.getElementById('sairi-voice-'+cfg.appId);
+  if(btn){btn.innerHTML='🎤';btn.style.background='var(--a-light)';}
+}
+
+// ── RESPONSE ACTION BUTTONS (Simplify / Deeper / Bullets / Example) ──
+function sairiInjectResponseActions(cfg){
+  var msgsEl=document.getElementById(cfg.msgsId);
+  if(!msgsEl)return;
+  // Use MutationObserver to add action buttons after each AI message
+  if(window['_sairiObs_'+cfg.appId])return;
+  var obs=new MutationObserver(function(mutations){
+    mutations.forEach(function(m){
+      m.addedNodes.forEach(function(node){
+        if(node.nodeType===1&&(node.classList.contains('sa-msg-ai')||node.classList.contains('sh-msg-ai'))){
+          if(!node.querySelector('.sairi-actions')){
+            sairiAddActionButtons(node,cfg);
+          }
+        }
+      });
+    });
+  });
+  obs.observe(msgsEl,{childList:true});
+  window['_sairiObs_'+cfg.appId]=obs;
+}
+
+function sairiAddActionButtons(msgEl,cfg){
+  var bar=document.createElement('div');
+  bar.className='sairi-actions';
+  bar.style.cssText='display:flex;gap:6px;margin-top:8px;flex-wrap:wrap';
+  var actions=[
+    {label:'🔽 Simplify',prompt:'Simplify your last response. Use plain language, shorter sentences, and avoid jargon.'},
+    {label:'🔬 Go Deeper',prompt:'Go deeper on your last response. Add more detail, nuance, and technical depth.'},
+    {label:'• Bullets',prompt:'Reformat your last response as a clean bullet point list.'},
+    {label:'💡 Example',prompt:'Give a concrete real-world example that illustrates your last response.'},
+    {label:'📊 Compare',prompt:'Compare the options or approaches mentioned in your last response side-by-side.'},
+  ];
+  actions.forEach(function(action){
+    var btn=document.createElement('button');
+    btn.textContent=action.label;
+    btn.style.cssText='padding:3px 10px;font-size:11px;background:var(--a-light);border:1px solid rgba(22,163,74,.25);color:var(--a);border-radius:12px;cursor:pointer;font-family:Outfit,sans-serif;font-weight:600';
+    btn.onclick=function(){
+      var inp=document.getElementById(cfg.inputId);
+      if(inp){inp.value=action.prompt;if(cfg.sendFn)cfg.sendFn();}
+    };
+    bar.appendChild(btn);
+  });
+  msgEl.appendChild(bar);
+}
+
+// ── SESSION MEMORY (summarize every 3rd exchange) ────────────────
+function sairiUpdateMemory(cfg,userMsg,aiReply){
+  cfg.messageCount=(cfg.messageCount||0)+1;
+  cfg.memory=cfg.memory||[];
+  cfg.memory.push({role:'user',content:userMsg.slice(0,200)});
+  cfg.memory.push({role:'assistant',content:aiReply.slice(0,300)});
+  // Keep last 6 exchanges
+  if(cfg.memory.length>12)cfg.memory=cfg.memory.slice(-12);
+  // Update memory indicator
+  sairiUpdateMemoryIndicator(cfg);
+}
+
+function sairiUpdateMemoryIndicator(cfg){
+  var ind=document.getElementById('sairi-mem-'+cfg.appId);
+  if(!ind)return;
+  var count=Math.floor((cfg.memory||[]).length/2);
+  ind.textContent='🧠 '+count+' remembered';
+  ind.style.display=count>0?'inline-block':'none';
+}
+
+function sairiInjectMemoryIndicator(cfg){
+  var msgsEl=document.getElementById(cfg.msgsId);
+  if(!msgsEl||document.getElementById('sairi-mem-'+cfg.appId))return;
+  var ind=document.createElement('div');
+  ind.id='sairi-mem-'+cfg.appId;
+  ind.style.cssText='display:none;font-size:10px;color:var(--a);font-weight:600;padding:4px 10px;background:var(--a-light);border-radius:20px;margin-bottom:6px;width:fit-content';
+  msgsEl.parentNode.insertBefore(ind,msgsEl);
+}
+
+// ── FOLLOW-UP CHIPS (3 after each AI response) ────────────────────
+function sairiInjectFollowUpChips(cfg,aiReply,msgsEl){
+  // Remove old chips
+  var old=document.getElementById('sairi-chips-'+cfg.appId);
+  if(old)old.remove();
+  // Generate context-aware chips from reply
+  var chips=sairiGenerateChips(cfg,aiReply);
+  if(!chips.length)return;
+  var bar=document.createElement('div');
+  bar.id='sairi-chips-'+cfg.appId;
+  bar.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px';
+  chips.forEach(function(chip){
+    var btn=document.createElement('span');
+    btn.className='sairi-chip';
+    btn.style.cssText='background:var(--a-light);border:1px solid rgba(22,163,74,.25);color:var(--a);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif';
+    btn.textContent=chip;
+    btn.onclick=function(){
+      var inp=document.getElementById(cfg.inputId);
+      if(inp){inp.value=chip;if(cfg.sendFn)cfg.sendFn();}
+    };
+    bar.appendChild(btn);
+  });
+  if(msgsEl)msgsEl.appendChild(bar);
+}
+
+function sairiGenerateChips(cfg,reply){
+  // Generate 3 contextual follow-up chips based on reply content
+  var chips=[];
+  var r=reply.toLowerCase();
+  if(cfg.appId==='sairnhr'){
+    if(r.includes('payroll'))chips.push('Calculate net pay example');
+    if(r.includes('termination')||r.includes('fire'))chips.push('Draft termination letter');
+    if(r.includes('policy')||r.includes('handbook'))chips.push('Add to employee handbook');
+    if(r.includes('compliance')||r.includes('legal'))chips.push('What are the penalties?');
+    if(r.includes('performance'))chips.push('Create a PIP template');
+    if(r.includes('hire')||r.includes('recruit'))chips.push('Write job description');
+    if(r.includes('benefit'))chips.push('Compare benefit options');
+    if(r.includes('fmla'))chips.push('Generate FMLA notice');
+    chips=['Tell me more','What are the risks?','Give me an example'].concat(chips).slice(0,3);
+  } else if(cfg.appId==='sairnaccounting'){
+    if(r.includes('debit')||r.includes('credit')||r.includes('journal'))chips.push('Show the full journal entry');
+    if(r.includes('tax'))chips.push('What deductions apply?');
+    if(r.includes('invoice')||r.includes('receivable'))chips.push('How to collect faster?');
+    if(r.includes('expense')||r.includes('payable'))chips.push('How to reduce this cost?');
+    if(r.includes('cash flow')||r.includes('runway'))chips.push('Improve my cash position');
+    if(r.includes('depreciation'))chips.push('Section 179 vs bonus depreciation');
+    if(r.includes('revenue'))chips.push('Recognize revenue under ASC 606');
+    chips=['Explain in simpler terms','What should I do next?','Show the journal entry'].concat(chips).slice(0,3);
+  }
+  return chips.slice(0,3);
+}
+
+// ── CROSS-APP HANDOFF ────────────────────────────────────────────
+function sairiCheckHandoff(cfg){
+  try{
+    var h=sessionStorage.getItem('sairn_handoff');
+    if(!h)return;
+    sessionStorage.removeItem('sairn_handoff');
+    var data=JSON.parse(h);
+    if(data.toApp!==cfg.appId)return;
+    // Pre-fill input with handoff context
+    var inp=document.getElementById(cfg.inputId);
+    if(inp){inp.value=data.context||'';}
+    // Show handoff banner
+    var msgs=document.getElementById(cfg.msgsId);
+    if(msgs){
+      var banner=document.createElement('div');
+      banner.style.cssText='background:var(--a-light);border:1px solid rgba(22,163,74,.3);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px;color:var(--a)';
+      banner.innerHTML='<strong>Continued from '+escHtml(data.fromApp||'SAIRN')+':</strong> '+escHtml(data.summary||'');
+      msgs.appendChild(banner);
+      if(inp&&inp.value&&cfg.sendFn)setTimeout(cfg.sendFn,500);
+    }
+  }catch(e){}
+}
+
+function sairiSendHandoff(toApp,context,summary,fromApp){
+  try{
+    sessionStorage.setItem('sairn_handoff',JSON.stringify({toApp:toApp,context:context,summary:summary,fromApp:fromApp}));
+    var cell=SAIRI_CELL_MAP.find(function(c){return c.name===toApp||c.file.includes(toApp.toLowerCase());});
+    if(cell)window.location.href=cell.file;
+  }catch(e){}
+}
+
+function sairiInjectHandoffButtons(cfg,reply,msgEl){
+  // Detect if reply mentions another SAIRN app
+  var r=reply.toLowerCase();
+  SAIRI_CELL_MAP.forEach(function(cell){
+    if(cell.keywords&&cell.keywords.some(function(k){return r.includes(k);})){
+      var appFile=cell.file;
+      var appName=cell.name;
+      // Don't show handoff to current app
+      if(appFile.includes(cfg.appId)||appName===cfg.appId)return;
+      var btn=document.createElement('button');
+      btn.style.cssText='display:inline-block;margin-top:8px;margin-right:6px;padding:4px 12px;font-size:11px;background:var(--a-light);border:1px solid rgba(22,163,74,.3);color:var(--a);border-radius:8px;cursor:pointer;font-family:Outfit,sans-serif;font-weight:600';
+      btn.innerHTML=cell.icon+' Continue in '+appName+' →';
+      btn.onclick=function(){
+        sairiSendHandoff(appName,
+          'Context from '+cfg.appId+': '+reply.slice(0,500),
+          reply.slice(0,150)+'...',
+          cfg.appId);
+      };
+      msgEl.appendChild(btn);
+    }
+  });
+}
+
+// ── SMART RETRY (3x with backoff) ────────────────────────────────
+async function sairiCallClaude(cfg,messages,extraSystemNote){
+  var toneNote='Respond in a '+cfg.currentTone+' tone. ';
+  var memNote='';
+  if(cfg.memory&&cfg.memory.length>0){
+    memNote='Previous context: '+cfg.memory.slice(-4).map(function(m){return m.role+': '+m.content;}).join(' | ')+'. ';
+  }
+  var systemPrompt=toneNote+memNote+(cfg.systemPrompt||'')+(extraSystemNote||'');
+  var lastErr;
+  for(var attempt=0;attempt<cfg.maxRetries;attempt++){
+    try{
+      var res=await fetch(cfg.claudeUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+          system:systemPrompt,messages:messages})});
+      if(!res.ok){lastErr='HTTP '+res.status;await new Promise(function(r){setTimeout(r,Math.pow(2,attempt)*500);});continue;}
+      var data=await res.json();
+      return data.content&&data.content[0]?data.content[0].text:'';
+    }catch(e){lastErr=e.message;await new Promise(function(r){setTimeout(r,Math.pow(2,attempt)*500);});}
+  }
+  return 'Error after '+cfg.maxRetries+' attempts: '+lastErr;
+}
+
+// ── CONFIDENCE BADGE ─────────────────────────────────────────────
+function sairiConfidenceBadge(reply){
+  var r=reply.toLowerCase();
+  var color,label;
+  if(r.includes('i am not sure')||r.includes("i don't know")||r.includes('unclear')||r.includes('consult')){
+    color='var(--orange)';label='⚠️ Verify';
+  } else if(r.includes('estimate')||r.includes('approximately')||r.includes('typically')||r.includes('generally')){
+    color='var(--amber)';label='~ Estimated';
+  } else {
+    color='var(--green)';label='✓ Confident';
+  }
+  return '<span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;background:'+color+'22;color:'+color+';margin-top:6px;display:inline-block">'+label+'</span>';
+}
+
+// ── PII REDACTION (for HR — never send real SSNs/DOBs) ───────────
+function sairiRedactPII(text){
+  return text
+    .replace(/\b\d{3}-\d{2}-\d{4}\b/g,'[SSN REDACTED]')
+    .replace(/\b\d{2}\/\d{2}\/\d{4}\b/g,'[DOB REDACTED]')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,'[EMAIL REDACTED]')
+    .replace(/\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/g,'[PHONE REDACTED]');
+}
+
+// ── UNIVERSAL SEND PATCHER ────────────────────────────────────────
+function sairiPatchSend(cfg){
+  // Inject memory indicator
+  sairiInjectMemoryIndicator(cfg);
+  // Store config globally for access
+  window['_sairiCfg_'+cfg.appId]=cfg;
+}
+
+// ── NOTIFICATION HELPER ──────────────────────────────────────────
+function sairiNotify(cfg,msg,color){
+  // Use app-specific notify if available
+  if(typeof saNotify==='function')saNotify(msg,color);
+  else if(typeof shNotify==='function')shNotify(msg,color);
+}
+
+// ── DOCUMENT UPLOAD FOR ACCOUNTING AI ───────────────────────────
+function sairiInitDocUpload(cfg){
+  // Add file upload button to AI chat
+  var inputParent=document.getElementById(cfg.inputId)&&document.getElementById(cfg.inputId).parentElement;
+  if(!inputParent||document.getElementById('sairi-upload-'+cfg.appId))return;
+  var uploadBtn=document.createElement('button');
+  uploadBtn.id='sairi-upload-'+cfg.appId;
+  uploadBtn.innerHTML='📎';
+  uploadBtn.title='Upload document for AI analysis';
+  uploadBtn.style.cssText='padding:8px 10px;background:var(--a-light);border:1px solid rgba(22,163,74,.3);border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0';
+  var fileInput=document.createElement('input');
+  fileInput.type='file';fileInput.accept='.pdf,.doc,.docx,.txt,.png,.jpg,.jpeg';fileInput.style.display='none';
+  fileInput.id='sairi-file-'+cfg.appId;
+  uploadBtn.onclick=function(){fileInput.click();};
+  fileInput.onchange=function(){
+    var file=fileInput.files[0];if(!file)return;
+    sairiAnalyzeDocument(cfg,file);
+    fileInput.value='';
+  };
+  inputParent.insertBefore(uploadBtn,inputParent.querySelector('button'));
+  inputParent.insertBefore(fileInput,inputParent.querySelector('button'));
+}
+
+async function sairiAnalyzeDocument(cfg,file){
+  sairiNotify(cfg,'AI reading document...','');
+  var reader=new FileReader();
+  reader.onload=async function(ev){
+    var b64=ev.target.result.split(',')[1];
+    var inp=document.getElementById(cfg.inputId);
+    var userPrompt='Please analyze this document and provide a summary with key findings relevant to '+cfg.appId+'.';
+    if(inp)userPrompt=inp.value||userPrompt;
+    var msgs=[{role:'user',content:[
+      {type:'document',source:{type:'base64',media_type:file.type,data:b64}},
+      {type:'text',text:userPrompt}
+    ]}];
+    var msgsEl=document.getElementById(cfg.msgsId);
+    // Add user message
+    var uDiv=document.createElement('div');
+    uDiv.className=(cfg.appId==='sairnhr'?'sh-msg-user':'sa-msg-user');
+    uDiv.textContent='['+file.name+'] '+userPrompt;
+    if(msgsEl){msgsEl.appendChild(uDiv);msgsEl.scrollTop=msgsEl.scrollHeight;}
+    try{
+      var res=await fetch(cfg.claudeUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:cfg.systemPrompt||'',messages:msgs})});
+      var data=await res.json();
+      var text=data.content&&data.content[0]?data.content[0].text:'Error reading document.';
+      var aDiv=document.createElement('div');
+      aDiv.className=(cfg.appId==='sairnhr'?'sh-msg-ai':'sa-msg-ai');
+      aDiv.textContent=text;
+      aDiv.innerHTML+=cfg.appId?sairiConfidenceBadge(text):'';
+      if(msgsEl){msgsEl.appendChild(aDiv);msgsEl.scrollTop=msgsEl.scrollHeight;}
+      sairiUpdateMemory(cfg,userPrompt,text);
+      sairiInjectFollowUpChips(cfg,text,msgsEl);
+      sairiInjectHandoffButtons(cfg,text,aDiv);
+    }catch(e){sairiNotify(cfg,'Error reading document','');}
+  };
+  reader.readAsDataURL(file);
+}
+
+
+// Install on DOM ready
+document.addEventListener('DOMContentLoaded',function(){
+  setTimeout(function(){
+    sairiInstall({
+      appId:'sairnhr',
+      prefix:'sh',
+      inputId:'sh-chat-input',
+      msgsId:'sh-chat-msgs',
+      sendFn:function(){
+        // Wrap shSendAI with intelligence
+        var inp=document.getElementById('sh-chat-input');
+        var msgs=document.getElementById('sh-chat-msgs');
+        var thinking=document.getElementById('sh-thinking');
+        if(!inp||!inp.value.trim())return;
+        var msg=sairiRedactPII(inp.value.trim());
+        inp.value='';
+        var cfg=window['_sairiCfg_sairnhr'];
+        var uDiv=document.createElement('div');uDiv.className='sh-msg-user';uDiv.textContent=msg;
+        if(msgs){msgs.appendChild(uDiv);msgs.scrollTop=msgs.scrollHeight;}
+        if(thinking)thinking.style.display='block';
+        sairiCallClaude(cfg,[{role:'user',content:msg}]).then(function(text){
+          if(!text)return;
+          var aDiv=document.createElement('div');
+          aDiv.className='sh-msg-ai';
+          aDiv.innerHTML=(window.renderMarkdown?window.renderMarkdown(text):text);
+          aDiv.innerHTML+=sairiConfidenceBadge(text);
+          if(msgs){msgs.appendChild(aDiv);msgs.scrollTop=msgs.scrollHeight;}
+          if(cfg)sairiUpdateMemory(cfg,msg,text);
+          if(cfg)sairiInjectFollowUpChips(cfg,text,msgs);
+          if(cfg)sairiInjectHandoffButtons(cfg,text,aDiv);
+          if(thinking)thinking.style.display='none';
+        }).catch(function(){if(thinking)thinking.style.display='none';});
+      },
+      claudeUrl:typeof SH_CLAUDE!=='undefined'?SH_CLAUDE:'https://sairn.vercel.app/api/claude',
+      systemPrompt:'You are SAIRNhr AI — CHRO + Labor Attorney + Coach. SAIRN Technologies. Always lead with direct answer then legal framework. Note state variations. End legal responses: This is HR best practice — consult employment counsel.',
+      toneOptions:['Simple','Standard','Legal','Strategic','Coaching'],
+    });
+    // Document upload for HR
+    sairiInitDocUpload(window['_sairiCfg_sairnhr']);
+  },600);
+});
 
 </script>
 
