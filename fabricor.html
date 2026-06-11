@@ -955,6 +955,7 @@ body.is-exec .exec-only-block{display:block}
       <button class="nav-btn exec-only" onclick="showPanel('executive')">👔 Executive</button>
       <button class="nav-btn" onclick="showPanel('comms')">💬 Comms</button>
       <button class="nav-btn admin-only" onclick="showPanel('integrations')">🔗 Integrations</button>
+      <button class="nav-btn" onclick="showPanel('template')">&#128208; Templates</button>
       <button class="nav-btn admin-only" onclick="showPanel('admin')">Admin</button>
     </div>
     <div class="topbar-right">
@@ -2540,9 +2541,366 @@ body.is-exec .exec-only-block{display:block}
     </div>
   </div>
 
+  <div id="panel-template" class="panel">
+    <div style="padding:20px;max-width:1100px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin:0">&#128208; Template Manager</h2>
+          <p style="font-size:12px;color:var(--muted);margin:4px 0 0">Upload and track digital templates from LT-2D3D, Proliner, Flexijet and more</p>
+        </div>
+        <button class="btn-primary" onclick="tmOpenUpload()">+ Upload Template File</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="kpi"><div class="kpi-val" id="tm-kpi-total">0</div><div class="kpi-label">Total Templates</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#f97316" id="tm-kpi-pending">0</div><div class="kpi-label">Awaiting CNC</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#dc2626" id="tm-kpi-issues">0</div><div class="kpi-label">Issues Flagged</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="tm-kpi-done">0</div><div class="kpi-label">Sent to CNC</div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <select id="tm-filter-status" onchange="tmRender()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text)">
+          <option value="">All Statuses</option>
+          <option value="received">Received</option>
+          <option value="reviewed">Reviewed</option>
+          <option value="sent_cnc">Sent to CNC</option>
+          <option value="issues">Issues Found</option>
+          <option value="remeasure">Needs Re-Measure</option>
+        </select>
+        <select id="tm-filter-device" onchange="tmRender()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text)">
+          <option value="">All Devices</option>
+          <option value="lt2d3d">LT-2D3D (Laser Products)</option>
+          <option value="proliner">Prodim Proliner</option>
+          <option value="flexijet">Flexijet 3D</option>
+          <option value="leica">Leica 3D Disto</option>
+          <option value="other">Other / Manual</option>
+        </select>
+        <select id="tm-filter-type" onchange="tmRender()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text)">
+          <option value="">All Job Types</option>
+          <option value="kitchen">Kitchen</option>
+          <option value="bath">Bathroom</option>
+          <option value="shower">Shower/Vertical</option>
+          <option value="fireplace">Fireplace</option>
+          <option value="island">Island</option>
+          <option value="outdoor">Outdoor</option>
+          <option value="other">Other/Custom</option>
+        </select>
+        <input type="text" id="tm-search" oninput="tmRender()" placeholder="Search customer or job..." style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:160px;background:var(--surface);color:var(--text)">
+      </div>
+      <div id="tm-list"></div>
+    </div>
+  </div>
+
+  <div id="tm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border-radius:16px;padding:28px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <h3 style="font-size:18px;font-weight:800;color:var(--navy);margin:0">Upload Template File</h3>
+        <button onclick="tmCloseModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">&#10005;</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="fg"><label>Customer Name *</label><input type="text" id="tm-cust-name" placeholder="e.g. Johnson Residence"></div>
+        <div class="fg"><label>Job / Project ID</label><input type="text" id="tm-job-id" placeholder="e.g. JOB-2026-0142"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="fg"><label>Job Type *</label>
+          <select id="tm-job-type">
+            <option value="kitchen">Kitchen</option><option value="bath">Bathroom</option>
+            <option value="shower">Shower / Vertical</option><option value="fireplace">Fireplace Surround</option>
+            <option value="island">Island</option><option value="outdoor">Outdoor / BBQ</option><option value="other">Other / Custom</option>
+          </select>
+        </div>
+        <div class="fg"><label>Templating Device Used</label>
+          <select id="tm-device">
+            <option value="lt2d3d">LT-2D3D (Laser Products)</option><option value="proliner">Prodim Proliner</option>
+            <option value="flexijet">Flexijet 3D</option><option value="leica">Leica 3D Disto</option><option value="other">Other / Manual</option>
+          </select>
+        </div>
+      </div>
+      <div id="tm-dropzone" ondragover="event.preventDefault();this.style.background='#e6f1fb'" ondragleave="this.style.background=''" ondrop="tmHandleDrop(event)"
+        style="border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:background .2s;margin-bottom:16px;background:var(--surface-2)"
+        onclick="document.getElementById('tm-file-input').click()">
+        <div style="font-size:36px;margin-bottom:10px">&#128193;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px">Click to upload or drag &amp; drop</div>
+        <div style="font-size:12px;color:var(--muted)">Accepts: DXF, DWG, PDF, PNG, JPG, ZIP (max 50MB)</div>
+        <input type="file" id="tm-file-input" style="display:none" multiple accept=".dxf,.dwg,.pdf,.png,.jpg,.jpeg,.zip" onchange="tmHandleFiles(this.files)">
+      </div>
+      <div id="tm-file-list" style="margin-bottom:16px"></div>
+      <div class="fg" style="margin-bottom:16px">
+        <label>Field Notes (overhangs, cutouts, edge details, special instructions)</label>
+        <textarea id="tm-notes" rows="4" placeholder="e.g. 1.5in overhang all sides. Farmhouse sink cutout 33x21. Waterfall left side. Right wall not square."></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="fg"><label>Est. Sqft</label><input type="number" id="tm-sqft" placeholder="e.g. 48.5" step="0.1"></div>
+        <div class="fg"><label>Edge Profile</label>
+          <select id="tm-edge">
+            <option value="eased">Eased</option><option value="bullnose">Bullnose</option><option value="ogee">Ogee</option>
+            <option value="beveled">Beveled</option><option value="mitered">Mitered/Waterfall</option><option value="dupont">DuPont</option><option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="fg"><label>Sink/Cutouts</label>
+          <select id="tm-cutouts">
+            <option value="none">None</option><option value="undermount">Undermount Sink</option><option value="farmhouse">Farmhouse/Apron</option>
+            <option value="dropin">Drop-in Sink</option><option value="cooktop">Cooktop Cutout</option><option value="multi">Multiple Cutouts</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Flag Any Issues</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--surface-2)"><input type="checkbox" value="wall_not_square" class="tm-flag"> Wall not square</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--surface-2)"><input type="checkbox" value="missing_dims" class="tm-flag"> Missing dimensions</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--surface-2)"><input type="checkbox" value="seam_needed" class="tm-flag"> Seam placement needed</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--surface-2)"><input type="checkbox" value="remeasure" class="tm-flag"> Re-measure required</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--surface-2)"><input type="checkbox" value="customer_present" class="tm-flag"> Customer was present</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:100px;background:var(--surface-2)"><input type="checkbox" value="sig_obtained" class="tm-flag"> Customer signature obtained</label>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div class="fg"><label>Templater Name</label><input type="text" id="tm-templater" placeholder="Who did the template?"></div>
+        <div class="fg"><label>Template Date</label><input type="date" id="tm-date"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-primary" style="flex:1" onclick="tmSaveRecord()">&#128190; Save Template Record</button>
+        <button class="btn-secondary" onclick="tmCloseModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tm-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;align-items:center;justify-content:center">
+    <div id="tm-detail-body" style="background:var(--surface);border-radius:16px;padding:28px;max-width:700px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)"></div>
+  </div>
 </div><!-- /app -->
 
 <script>
+
+// ════════════════════════════════════════════════════════════════
+// TEMPLATE MANAGER — Digital Template Upload & Tracking
+// Supports: LT-2D3D, Prodim Proliner, Flexijet 3D, Leica, Manual
+// Formats: DXF, DWG, PDF, PNG/JPG (site photos), ZIP
+// ════════════════════════════════════════════════════════════════
+var tmRecords=[];
+var tmPendingFiles=[];
+var TM_KEY='sd_templates';
+var TM_STATUS={
+  received:{label:'Received',color:'#1B3A6B',bg:'rgba(27,58,107,0.1)'},
+  reviewed:{label:'Reviewed',color:'#0e7490',bg:'rgba(14,116,144,0.1)'},
+  sent_cnc:{label:'Sent to CNC',color:'#16a34a',bg:'rgba(22,163,74,0.1)'},
+  issues:{label:'Issues Found',color:'#dc2626',bg:'rgba(220,38,38,0.1)'},
+  remeasure:{label:'Needs Re-Measure',color:'#f97316',bg:'rgba(249,115,22,0.1)'}
+};
+var TM_DEVICE={lt2d3d:'LT-2D3D',proliner:'Proliner',flexijet:'Flexijet 3D',leica:'Leica 3D',other:'Manual/Other'};
+var TM_JOBTYPE={kitchen:'Kitchen',bath:'Bathroom',shower:'Shower/Vert',fireplace:'Fireplace',island:'Island',outdoor:'Outdoor',other:'Custom'};
+
+function tmLoad(){
+  try{var r=localStorage.getItem(TM_KEY);if(r)tmRecords=JSON.parse(r);}catch(e){}
+  tmRender();tmUpdateKPIs();
+}
+function tmSave(){localStorage.setItem(TM_KEY,JSON.stringify(tmRecords));}
+
+function tmOpenUpload(){
+  document.getElementById('tm-modal').style.display='flex';
+  document.getElementById('tm-date').value=new Date().toISOString().slice(0,10);
+  tmPendingFiles=[];
+  document.getElementById('tm-file-list').innerHTML='';
+}
+function tmCloseModal(){
+  document.getElementById('tm-modal').style.display='none';
+  ['tm-cust-name','tm-job-id','tm-notes','tm-sqft','tm-templater'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.querySelectorAll('.tm-flag').forEach(function(cb){cb.checked=false;});
+  tmPendingFiles=[];document.getElementById('tm-file-list').innerHTML='';
+}
+function tmHandleDrop(e){
+  e.preventDefault();document.getElementById('tm-dropzone').style.background='';tmHandleFiles(e.dataTransfer.files);
+}
+function tmHandleFiles(files){
+  var listEl=document.getElementById('tm-file-list');
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    if(f.size>50*1024*1024){notify('File "'+f.name+'" exceeds 50MB','red');continue;}
+    (function(file){
+      var reader=new FileReader();
+      reader.onload=function(ev){
+        var ext=file.name.split('.').pop().toLowerCase();
+        var icons={dxf:'DXF',dwg:'DWG',pdf:'PDF',zip:'ZIP',png:'IMG',jpg:'IMG',jpeg:'IMG'};
+        var isImg=['png','jpg','jpeg'].includes(ext);
+        var item=document.createElement('div');
+        item.style.cssText='display:flex;align-items:center;padding:8px 12px;background:var(--surface-2);border-radius:8px;margin-bottom:6px;font-size:12px;border:1px solid var(--border)';
+        item.innerHTML=(isImg&&ev.target.result?'<img src="'+ev.target.result+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px;margin-right:8px">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px;margin-right:8px">'+(icons[ext]||'FILE')+'</span>')+'<div><div style="font-weight:700;color:var(--navy)">'+escHtml(file.name)+'</div><div style="color:var(--muted)">'+(file.size/1024/1024).toFixed(2)+' MB</div></div>';
+        listEl.appendChild(item);
+        var pending={name:file.name,size:file.size,ext:ext,b64:ev.target.result};
+        tmPendingFiles.push(pending);
+      };
+      reader.readAsDataURL(file);
+    })(f);
+  }
+}
+function tmGetFlags(){var f=[];document.querySelectorAll('.tm-flag:checked').forEach(function(cb){f.push(cb.value);});return f;}
+
+function tmSaveRecord(){
+  var custName=document.getElementById('tm-cust-name').value.trim();
+  if(!custName){notify('Customer name is required','red');return;}
+  var flags=tmGetFlags();
+  var hasIssues=flags.includes('missing_dims')||flags.includes('remeasure');
+  var status=hasIssues?'issues':'received';
+  var record={
+    id:'tm_'+Date.now(),custName:custName,
+    jobId:document.getElementById('tm-job-id').value.trim(),
+    jobType:document.getElementById('tm-job-type').value,
+    device:document.getElementById('tm-device').value,
+    notes:document.getElementById('tm-notes').value.trim(),
+    sqft:parseFloat(document.getElementById('tm-sqft').value)||0,
+    edge:document.getElementById('tm-edge').value,
+    cutouts:document.getElementById('tm-cutouts').value,
+    flags:flags,
+    templater:document.getElementById('tm-templater').value.trim(),
+    date:document.getElementById('tm-date').value,
+    status:status,files:tmPendingFiles.slice(),
+    createdAt:new Date().toISOString(),
+    statusLog:[{status:status,ts:new Date().toISOString(),by:currentUser?currentUser.name:''}]
+  };
+  tmRecords.unshift(record);tmSave();tmRender();tmUpdateKPIs();tmCloseModal();
+  notify('Template saved for '+custName,'green');
+  // Auto-advance matching job in Schedule
+  if(typeof sdJobs!=='undefined'){
+    var match=sdJobs.find(function(j){return j.customer&&j.customer.toLowerCase()===custName.toLowerCase();});
+    if(match&&match.stage==='Measuring'){
+      match.stage='Templated';match.lastUpdated=new Date().toISOString();
+      localStorage.setItem('sd_jobs',JSON.stringify(sdJobs));
+      notify('Job stage auto-advanced to Templated','');
+    }
+  }
+}
+
+function tmAdvanceStatus(id){
+  var r=tmRecords.find(function(x){return x.id===id;});if(!r)return;
+  var flow=['received','reviewed','sent_cnc'];var idx=flow.indexOf(r.status);
+  if(idx<0||idx>=flow.length-1){notify('Already at final status','');return;}
+  r.status=flow[idx+1];r.statusLog=r.statusLog||[];
+  r.statusLog.push({status:r.status,ts:new Date().toISOString(),by:currentUser?currentUser.name:''});
+  tmSave();tmRender();tmUpdateKPIs();notify('Status: '+(TM_STATUS[r.status]||{label:r.status}).label,'green');
+}
+function tmFlagIssue(id,issueType){
+  var r=tmRecords.find(function(x){return x.id===id;});if(!r)return;
+  r.status=issueType==='remeasure'?'remeasure':'issues';r.flags=r.flags||[];
+  if(!r.flags.includes(issueType))r.flags.push(issueType);
+  r.statusLog=r.statusLog||[];r.statusLog.push({status:r.status,ts:new Date().toISOString(),by:currentUser?currentUser.name:''});
+  tmSave();tmRender();tmUpdateKPIs();tmCloseDetailModal();notify('Flagged: '+issueType.replace(/_/g,' '),'');
+}
+function tmDeleteRecord(id){
+  if(!confirm('Delete this template record?'))return;
+  tmRecords=tmRecords.filter(function(r){return r.id!==id;});
+  tmSave();tmRender();tmUpdateKPIs();tmCloseDetailModal();notify('Template record deleted','');
+}
+
+function tmRender(){
+  var fs2=document.getElementById('tm-filter-status').value;
+  var fd=document.getElementById('tm-filter-device').value;
+  var ft=document.getElementById('tm-filter-type').value;
+  var srch=(document.getElementById('tm-search').value||'').toLowerCase();
+  var list=document.getElementById('tm-list');if(!list)return;
+  var filtered=tmRecords.filter(function(r){
+    if(fs2&&r.status!==fs2)return false;
+    if(fd&&r.device!==fd)return false;
+    if(ft&&r.jobType!==ft)return false;
+    if(srch&&!(r.custName.toLowerCase().includes(srch)||(r.jobId&&r.jobId.toLowerCase().includes(srch))))return false;
+    return true;
+  });
+  if(!filtered.length){list.innerHTML='<div style="text-align:center;padding:48px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">&#128208;</div><div style="font-size:15px;font-weight:700">No templates yet</div><div style="font-size:13px;margin-top:6px">Click + Upload Template File to get started</div></div>';return;}
+  list.innerHTML=filtered.map(function(r){
+    var sl=TM_STATUS[r.status]||TM_STATUS.received;
+    var fileCount=(r.files||[]).length;
+    var hasDxf=(r.files||[]).some(function(f){return f.ext==='dxf'||f.ext==='dwg';});
+    var flagHtml=(r.flags&&r.flags.length)?'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'+r.flags.map(function(f){return '<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700">&#9888; '+f.replace(/_/g,' ')+'</span>';}).join('')+'</div>':'';
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
+        '<div style="flex:1;min-width:200px">'+
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'+
+            '<span style="font-size:15px;font-weight:800;color:var(--navy)">'+escHtml(r.custName)+'</span>'+
+            (r.jobId?'<span style="font-size:11px;color:var(--muted);background:var(--surface-2);padding:2px 8px;border-radius:100px">'+escHtml(r.jobId)+'</span>':'')+
+            (hasDxf?'<span style="background:rgba(27,58,107,0.1);color:#1B3A6B;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700">DXF/DWG</span>':'')+
+          '</div>'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)">'+
+            '<span>'+(TM_JOBTYPE[r.jobType]||r.jobType)+'</span><span>&#183;</span>'+
+            '<span>'+(TM_DEVICE[r.device]||r.device)+'</span><span>&#183;</span>'+
+            '<span>'+escHtml(r.date||'')+'</span>'+
+            (r.templater?'<span>&#183;</span><span>'+escHtml(r.templater)+'</span>':'')+
+            (r.sqft?'<span>&#183;</span><span>'+r.sqft+' sqft</span>':'')+
+            '<span>&#183;</span><span>'+fileCount+' file'+(fileCount!==1?'s':'')+'</span>'+
+          '</div>'+
+          (r.notes?'<div style="font-size:12px;color:var(--text);margin-top:6px;padding:8px 10px;background:var(--surface-2);border-radius:6px;border-left:3px solid var(--border)">'+escHtml(r.notes.slice(0,160))+(r.notes.length>160?'&hellip;':'')+'</div>':'')+
+          flagHtml+
+        '</div>'+
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">'+
+          '<span style="background:'+sl.bg+';color:'+sl.color+';padding:4px 12px;border-radius:100px;font-size:11px;font-weight:700">'+sl.label+'</span>'+
+          '<div style="display:flex;gap:6px">'+
+            '<button onclick="tmViewDetail(\''+r.id+'\')" style="padding:5px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;font-size:11px;cursor:pointer;color:var(--navy);font-weight:600">View</button>'+
+            (r.status!=='sent_cnc'?'<button onclick="tmAdvanceStatus(\''+r.id+'\')" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">Advance &#8594;</button>':'')+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function tmViewDetail(id){
+  var r=tmRecords.find(function(x){return x.id===id;});if(!r)return;
+  var sl=TM_STATUS[r.status]||TM_STATUS.received;
+  var filesHtml=(r.files&&r.files.length)?r.files.map(function(f){
+    var isImg=['png','jpg','jpeg'].includes(f.ext);
+    var iconMap={dxf:'DXF',dwg:'DWG',pdf:'PDF',zip:'ZIP'};
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-2);border-radius:8px;margin-bottom:6px;border:1px solid var(--border)">'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        (isImg&&f.b64?'<img src="'+f.b64+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px">'+(iconMap[f.ext]||'FILE')+'</span>')+
+        '<div><div style="font-size:13px;font-weight:700;color:var(--navy)">'+escHtml(f.name)+'</div><div style="font-size:11px;color:var(--muted)">'+(f.size?(f.size/1024/1024).toFixed(2)+' MB':'')+' '+f.ext.toUpperCase()+'</div></div>'+
+      '</div>'+
+      (f.b64?'<a href="'+f.b64+'" download="'+escHtml(f.name)+'" style="padding:5px 12px;background:var(--a);color:#fff;border-radius:7px;font-size:11px;font-weight:600;text-decoration:none">&#11015; Download</a>':'<span style="font-size:11px;color:var(--muted)">No data</span>')+
+    '</div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px;padding:10px">No files attached</div>';
+  var logHtml=(r.statusLog&&r.statusLog.length)?r.statusLog.map(function(l){
+    return '<div style="font-size:12px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border)">'+((TM_STATUS[l.status]||{label:l.status}).label)+(l.by?' &mdash; '+escHtml(l.by):'')+' <span>'+new Date(l.ts).toLocaleDateString()+'</span></div>';
+  }).join(''):'<div style="font-size:12px;color:var(--muted)">No log</div>';
+  var flagsHtml=(r.flags&&r.flags.length)?r.flags.map(function(f){return '<span style="background:#fff3cd;color:#856404;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700">'+f.replace(/_/g,' ')+'</span>';}).join(' '):'<span style="color:var(--muted);font-size:12px">None</span>';
+  document.getElementById('tm-detail-body').innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'+
+      '<h3 style="font-size:18px;font-weight:800;color:var(--navy);margin:0">'+escHtml(r.custName)+'</h3>'+
+      '<button onclick="tmCloseDetailModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">&#10005;</button>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">'+
+      '<div style="background:var(--surface-2);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Status</div><span style="background:'+sl.bg+';color:'+sl.color+';padding:2px 10px;border-radius:100px;font-size:11px;font-weight:700">'+sl.label+'</span></div>'+
+      '<div style="background:var(--surface-2);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Device</div><strong>'+(TM_DEVICE[r.device]||r.device)+'</strong></div>'+
+      '<div style="background:var(--surface-2);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Date</div><strong>'+escHtml(r.date||'')+'</strong></div>'+
+      '<div style="background:var(--surface-2);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Job Type</div><strong>'+(TM_JOBTYPE[r.jobType]||r.jobType)+'</strong></div>'+
+      '<div style="background:var(--surface-2);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Edge Profile</div><strong>'+escHtml(r.edge||'&mdash;')+'</strong></div>'+
+      '<div style="background:var(--surface-2);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Sqft</div><strong>'+(r.sqft||'&mdash;')+'</strong></div>'+
+    '</div>'+
+    (r.notes?'<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Field Notes</div><div style="background:var(--surface-2);border-radius:8px;padding:12px;font-size:13px;border-left:3px solid var(--a)">'+escHtml(r.notes)+'</div></div>':'')+
+    '<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Flags</div>'+flagsHtml+'</div>'+
+    '<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Attached Files</div>'+filesHtml+'</div>'+
+    '<div style="margin-bottom:20px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Status Log</div>'+logHtml+'</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      (r.status!=='sent_cnc'?'<button onclick="tmAdvanceStatus(\''+r.id+'\');tmCloseDetailModal()" class="btn-primary">Advance Status &#8594;</button>':'')+
+      '<button onclick="tmFlagIssue(\''+r.id+'\',\'missing_dims\')" style="padding:8px 14px;background:rgba(220,38,38,0.08);color:#dc2626;border:1px solid rgba(220,38,38,0.2);border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Flag Issue</button>'+
+      '<button onclick="tmFlagIssue(\''+r.id+'\',\'remeasure\')" style="padding:8px 14px;background:rgba(249,115,22,0.08);color:#f97316;border:1px solid rgba(249,115,22,0.2);border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Needs Re-Measure</button>'+
+      '<button onclick="tmDeleteRecord(\''+r.id+'\')" style="padding:8px 14px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'+
+    '</div>';
+  document.getElementById('tm-detail-modal').style.display='flex';
+}
+function tmCloseDetailModal(){document.getElementById('tm-detail-modal').style.display='none';}
+
+function tmUpdateKPIs(){
+  function s(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
+  s('tm-kpi-total',tmRecords.length);
+  s('tm-kpi-pending',tmRecords.filter(function(r){return r.status==='received'||r.status==='reviewed';}).length);
+  s('tm-kpi-issues',tmRecords.filter(function(r){return r.status==='issues'||r.status==='remeasure';}).length);
+  s('tm-kpi-done',tmRecords.filter(function(r){return r.status==='sent_cnc';}).length);
+}
+
+// Hook into showPanel
+var _tmOrigShow=typeof showPanel==='function'?showPanel:null;
+function showPanel(id){
+  if(_tmOrigShow)_tmOrigShow(id);
+  if(id==='template'){setTimeout(tmLoad,50);}
+}
+
+
 // ══════════════════════════════════════════════════════════════════
 // FABRICOR — STONE SHOP INTELLIGENCE PLATFORM
 // Merged: Original pricing engine + AI chat + Drawing tool
