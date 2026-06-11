@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     <div class="nav-gem"><svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" style="width:40px;height:44px;position:absolute;top:0;left:0"><defs><clipPath id="scClip"><text x="4" y="82" font-family="Georgia,serif" font-size="88" font-weight="900" font-style="italic">S</text></clipPath><pattern id="scHex" x="0" y="0" width="18" height="20" patternUnits="userSpaceOnUse"><polygon points="9,1 16,5 16,13 9,17 2,13 2,5" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.6"/></pattern></defs><text x="4" y="82" font-family="Georgia,serif" font-size="88" font-weight="900" font-style="italic" fill="white">S</text><rect x="-10" y="-20" width="120" height="150" fill="url(#scHex)" clip-path="url(#scClip)"><animateTransform attributeName="transform" type="translate" from="0,0" to="0,-20" dur="1.4s" repeatCount="indefinite"/></rect><rect x="4" y="-90" width="72" height="30" fill="rgba(255,255,255,0.18)" clip-path="url(#scClip)"><animateTransform attributeName="transform" type="translate" from="0,0" to="0,180" dur="2.2s" repeatCount="indefinite"/></rect></svg></div>
     <div class="nav-brand">SAIRNcode</div>
   </a>
-  <div class="nav-r"><button onclick="openDashboard()" style="padding:8px 16px;border-radius:8px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:#8B5CF6;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px">📊 Dashboard</button>
+  <div class="nav-r"><button onclick="openDashboard()" style="padding:8px 16px;border-radius:8px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:#8B5CF6;font-size:12px;font-weight:700;cursor:pointer">📊 Dashboard</button>
     <div class="nav-badge">Claude AI · Medical Coding Intelligence · Patents Pending</div>
     <button class="nav-cta" onclick="showPage('app')">Try Free</button>
   </div>
@@ -520,14 +520,7 @@ function setModeById(id){
   if(!m) return;
   if(typeof setMode==='function') setMode(m.label, m.ph);
 }
-async function sendMessage(){
-  // Track productivity stats
-  if(typeof activeMode !== 'undefined'){
-    if(activeMode && activeMode.includes('CDI')) updateProdStats('cdi');
-    else if(activeMode && activeMode.includes('Denial')) updateProdStats('denial');
-    else if(activeMode && activeMode.includes('HCC')) updateProdStats('hcc');
-    else updateProdStats('general');
-  }const inp=document.getElementById("userInput");const text=inp.value.trim();if(!text||isLoading)return;const memCtx=await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return"";});if(activeFlow!==null){addMsg("user",text);inp.value="";inp.style.height="";if(flowStep<activeFlow.steps.length){const nxt=activeFlow.steps[flowStep++];setTimeout(function(){addMsg("ai",nxt);messages.push({role:"assistant",content:nxt});},700);}else if(flowStep===activeFlow.steps.length){flowStep++;setTimeout(function(){addMsg("ai",activeFlow.finish);messages.push({role:"assistant",content:activeFlow.finish});activeFlow=null;},700);}else{activeFlow=null;}return;}inp.value="";inp.style.height="";isLoading=true;document.getElementById("sendBtn").disabled=true;addMsg("user",text);messages.push({role:"user",content:text});showTyping();try{const res=await fetch(SAIRN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:1000,system:SYSTEM+(memCtx||""),messages:messages.slice(-20),app_id:APP_ID,is_demo:true})});const data=await res.json();document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();if(res.status===429){addMsg("ai",(data.message||"Daily limit reached.")+" Sign up at sairn.vercel.app for full access.");}else{const reply=data.content&&data.content[0]&&data.content[0].text||"Please try again.";messages.push({role:"assistant",content:reply});addMsg("ai",reply);checkCodingFlags(reply);}}catch(e){document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();addMsg("ai","Connection issue. Please try again.");}isLoading=false;document.getElementById("sendBtn").disabled=false;document.getElementById("userInput").focus();}
+async function sendMessage(){const inp=document.getElementById("userInput");const text=inp.value.trim();if(!text||isLoading)return;const memCtx=await cloudLoadMemory().then(function(m){return m?"\n\nPrevious context:\n"+m:"";}).catch(function(){return"";});if(activeFlow!==null){addMsg("user",text);inp.value="";inp.style.height="";if(flowStep<activeFlow.steps.length){const nxt=activeFlow.steps[flowStep++];setTimeout(function(){addMsg("ai",nxt);messages.push({role:"assistant",content:nxt});},700);}else if(flowStep===activeFlow.steps.length){flowStep++;setTimeout(function(){addMsg("ai",activeFlow.finish);messages.push({role:"assistant",content:activeFlow.finish});activeFlow=null;},700);}else{activeFlow=null;}return;}inp.value="";inp.style.height="";isLoading=true;document.getElementById("sendBtn").disabled=true;addMsg("user",text);messages.push({role:"user",content:text});showTyping();try{const res=await fetch(SAIRN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_tokens:1000,system:SYSTEM+(memCtx||""),messages:messages.slice(-20),app_id:APP_ID,is_demo:true})});const data=await res.json();document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();if(res.status===429){addMsg("ai",(data.message||"Daily limit reached.")+" Sign up at sairn.vercel.app for full access.");}else{const reply=data.content&&data.content[0]&&data.content[0].text||"Please try again.";messages.push({role:"assistant",content:reply});addMsg("ai",reply);checkCodingFlags(reply);}}catch(e){document.getElementById("typing-indicator")&&document.getElementById("typing-indicator").remove();addMsg("ai","Connection issue. Please try again.");}isLoading=false;document.getElementById("sendBtn").disabled=false;document.getElementById("userInput").focus();}
 async function loadFirstMessage(){try{const now=new Date();const res=await fetch("https://sairn.vercel.app/api/greeting",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({app_id:APP_ID,client_hour:now.getHours(),client_day:now.getDay()})});const data=await res.json();if(!data.greeting)return;const area=document.getElementById("chatArea");const empty=document.getElementById("emptyState");if(empty)empty.remove();const div=document.createElement("div");div.className="msg ai";div.innerHTML="<div class=\"msg-avatar\">"+APP_ICON+"</div><div class=\"msg-bubble\"><p>"+data.greeting+" SAIRNcode is ready — ICD-10, CPT, E&M leveling, fraud detection, DRG validation, compliance, and audit reporting. What do you need?</p></div>";div.style.opacity="0";div.style.transform="translateY(10px)";area.appendChild(div);messages.push({role:"assistant",content:data.greeting});requestAnimationFrame(function(){div.style.transition="opacity 0.5s, transform 0.5s";div.style.opacity="1";div.style.transform="translateY(0)";});}catch(e){}}
 
 // ============================================================
@@ -2719,71 +2712,6 @@ function printDocTemplate(tmpl) {
   win.document.write('<div class="footer"><div>Confidential — For Clinical and Coding Use Only</div><div>SAIRNcode AI — sairn.vercel.app/sairncode</div></div>');
   win.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>');
 
-<!-- ── PRODUCTIVITY DASHBOARD MODAL ── --><!-- ── PRODUCTIVITY DASHBOARD MODAL ── -->
-<div id="prod-dashboard" style="display:none;position:fixed;inset:0;background:rgba(2,11,24,0.97);z-index:99999;overflow-y:auto;padding:24px">
-  <div style="max-width:900px;margin:0 auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-      <div style="font-size:22px;font-weight:800;color:#EEF6FF">📊 Coder Productivity Dashboard</div>
-      <button onclick="document.getElementById('prod-dashboard').style.display='none'" style="background:rgba(255,255,255,0.1);border:none;color:#EEF6FF;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">✕ Close</button>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="prod-kpis">
-      <div style="background:#061628;border:1px solid rgba(14,165,233,0.2);border-radius:12px;padding:16px;text-align:center">
-        <div style="font-size:28px;font-weight:800;color:#0EA5E9" id="kpi-queries">0</div>
-        <div style="font-size:11px;color:#6B8FA0;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Queries Today</div>
-      </div>
-      <div style="background:#061628;border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:16px;text-align:center">
-        <div style="font-size:28px;font-weight:800;color:#10B981" id="kpi-cdi">0</div>
-        <div style="font-size:11px;color:#6B8FA0;margin-top:4px;text-transform:uppercase;letter-spacing:1px">CDI Queries Generated</div>
-      </div>
-      <div style="background:#061628;border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;text-align:center">
-        <div style="font-size:28px;font-weight:800;color:#F59E0B" id="kpi-denials">0</div>
-        <div style="font-size:11px;color:#6B8FA0;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Denials Prevented</div>
-      </div>
-      <div style="background:#061628;border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px;text-align:center">
-        <div style="font-size:28px;font-weight:800;color:#8B5CF6" id="kpi-hcc">0</div>
-        <div style="font-size:11px;color:#6B8FA0;margin-top:4px;text-transform:uppercase;letter-spacing:1px">HCC Codes Captured</div>
-      </div>
-    </div>
-    <div style="background:#061628;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;color:#EEF6FF;margin-bottom:12px">📈 Session History</div>
-      <div id="prod-history" style="font-size:13px;color:#6B8FA0">No activity yet. Start coding to see your productivity stats.</div>
-    </div>
-    <div style="background:#061628;border:1px solid rgba(139,92,246,0.3);border-radius:12px;padding:20px">
-      <div style="font-size:14px;font-weight:700;color:#8B5CF6;margin-bottom:8px">🔮 ICD-11 Readiness Score</div>
-      <div style="font-size:13px;color:#6B8FA0;margin-bottom:12px">Based on your coding patterns, here is your estimated ICD-11 transition readiness:</div>
-      <div style="background:rgba(139,92,246,0.1);border-radius:8px;padding:12px;font-size:13px;color:#EEF6FF">
-        <div>✅ ICD-10 specificity rate: <strong style="color:#10B981">Strong</strong></div>
-        <div style="margin-top:6px">⚠️ Post-coordination cluster logic: <strong style="color:#F59E0B">Needs practice</strong> — use ICD-11 Prep mode</div>
-        <div style="margin-top:6px">📅 Estimated US ICD-11 billing mandate: <strong style="color:#8B5CF6">2027-2029</strong></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-// Productivity tracking
-var prodStats = JSON.parse(localStorage.getItem('sairncode_stats')||'{"queries":0,"cdi":0,"denials":0,"hcc":0,"history":[]}');
-function updateProdStats(type){
-  prodStats.queries++;
-  if(type==='cdi') prodStats.cdi++;
-  if(type==='denial') prodStats.denials++;
-  if(type==='hcc') prodStats.hcc++;
-  prodStats.history.unshift({time:new Date().toLocaleTimeString(),type:type,date:new Date().toLocaleDateString()});
-  if(prodStats.history.length>50) prodStats.history.pop();
-  localStorage.setItem('sairncode_stats',JSON.stringify(prodStats));
-}
-function openDashboard(){
-  document.getElementById('kpi-queries').textContent=prodStats.queries;
-  document.getElementById('kpi-cdi').textContent=prodStats.cdi;
-  document.getElementById('kpi-denials').textContent=prodStats.denials;
-  document.getElementById('kpi-hcc').textContent=prodStats.hcc;
-  const hist=prodStats.history.slice(0,10);
-  document.getElementById('prod-history').innerHTML=hist.length?
-    hist.map(h=>'<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'+h.date+' '+h.time+' — '+h.type+'</div>').join(''):
-    'No activity yet.';
-  document.getElementById('prod-dashboard').style.display='block';
-}
-</script>
 </body></html>');
   win.document.close();
 }
@@ -7358,4 +7286,41 @@ setTimeout(injectCameraButton, 800);
 
 </script>
 </body>
+
+<!-- ── PRODUCTIVITY DASHBOARD ── -->
+<div id="prod-dashboard" style="display:none;position:fixed;inset:0;background:rgba(2,11,24,0.97);z-index:99999;overflow-y:auto;padding:24px">
+  <div style="max-width:900px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div style="font-size:22px;font-weight:800;color:#EEF6FF">📊 Coder Productivity Dashboard</div>
+      <button onclick="document.getElementById('prod-dashboard').style.display='none'" style="background:rgba(255,255,255,0.1);border:none;color:#EEF6FF;padding:8px 16px;border-radius:8px;cursor:pointer">✕ Close</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+      <div style="background:#061628;border:1px solid rgba(14,165,233,0.2);border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:28px;font-weight:800;color:#0EA5E9" id="kpi-queries">0</div>
+        <div style="font-size:11px;color:#6B8FA0;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Queries Today</div>
+      </div>
+      <div style="background:#061628;border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:28px;font-weight:800;color:#10B981" id="kpi-cdi">0</div>
+        <div style="font-size:11px;color:#6B8FA0;margin-top:4px;text-transform:uppercase;letter-spacing:1px">CDI Queries</div>
+      </div>
+      <div style="background:#061628;border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:28px;font-weight:800;color:#F59E0B" id="kpi-denials">0</div>
+        <div style="font-size:11px;color:#6B8FA0;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Denials Prevented</div>
+      </div>
+      <div style="background:#061628;border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:28px;font-weight:800;color:#8B5CF6" id="kpi-hcc">0</div>
+        <div style="font-size:11px;color:#6B8FA0;margin-top:4px;text-transform:uppercase;letter-spacing:1px">HCC Codes</div>
+      </div>
+    </div>
+    <div style="background:#061628;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px">
+      <div style="font-size:14px;font-weight:700;color:#EEF6FF;margin-bottom:12px">Session History</div>
+      <div id="prod-history" style="font-size:13px;color:#6B8FA0">No activity yet.</div>
+    </div>
+  </div>
+</div>
+<script>
+var prodStats=JSON.parse(localStorage.getItem('sc_stats')||'{"queries":0,"cdi":0,"denials":0,"hcc":0,"history":[]}');
+function updateProdStats(t){prodStats.queries++;if(t==='cdi')prodStats.cdi++;if(t==='denial')prodStats.denials++;if(t==='hcc')prodStats.hcc++;prodStats.history.unshift({time:new Date().toLocaleTimeString(),type:t,date:new Date().toLocaleDateString()});if(prodStats.history.length>50)prodStats.history.pop();localStorage.setItem('sc_stats',JSON.stringify(prodStats));}
+function openDashboard(){document.getElementById('kpi-queries').textContent=prodStats.queries;document.getElementById('kpi-cdi').textContent=prodStats.cdi;document.getElementById('kpi-denials').textContent=prodStats.denials;document.getElementById('kpi-hcc').textContent=prodStats.hcc;var hist=prodStats.history.slice(0,10);document.getElementById('prod-history').innerHTML=hist.length?hist.map(function(h){return'<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'+h.date+' '+h.time+' — '+h.type+'</div>';}).join(''):'No activity yet.';document.getElementById('prod-dashboard').style.display='block';}
+</script>
 </html>
