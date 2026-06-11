@@ -404,6 +404,23 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
           <button class="sh-btn-primary" onclick="shRunPayroll()">▶ Run Payroll</button>
         <button class="sh-btn-secondary" onclick="shGenW2()">📄 W-2 Generator</button>
         <button class="sh-btn-secondary" onclick="shPanel('garnishments',this)">🔒 Garnishments</button>
+      <div class="sh-nav-section">Payroll & Pay</div>
+      <button class="sh-nav-btn" onclick="shPanel('paycalc',this)">💵 Payroll Calculator</button>
+      <button class="sh-nav-btn" onclick="shPanel('paystub',this)">🧾 Pay Stub Generator</button>
+      <div class="sh-nav-section">People</div>
+      <button class="sh-nav-btn" onclick="shPanel('directory',this)">👥 Employee Directory</button>
+      <button class="sh-nav-btn" onclick="shPanel('compbands',this)">💰 Compensation Bands</button>
+      <button class="sh-nav-btn" onclick="shPanel('totalrewards',this)">🏆 Total Rewards</button>
+      <div class="sh-nav-section">Benefits & Leave</div>
+      <button class="sh-nav-btn" onclick="shPanel('enrollment',this)">🏥 Benefits Enrollment</button>
+      <button class="sh-nav-btn" onclick="shPanel('fmlatracker',this)">🏥 FMLA Tracker</button>
+      <div class="sh-nav-section">Lifecycle</div>
+      <button class="sh-nav-btn" onclick="shPanel('offerletter',this)">📄 Offer Letter AI</button>
+      <button class="sh-nav-btn" onclick="shPanel('offboarding',this)">🚪 Offboarding</button>
+      <button class="sh-nav-btn" onclick="shPanel('exitinterview',this)">🎤 Exit Interview</button>
+      <div class="sh-nav-section">Compliance & Planning</div>
+      <button class="sh-nav-btn" onclick="shPanel('i9w4',this)">📋 I-9 / W-4 Tracker</button>
+      <button class="sh-nav-btn" onclick="shPanel('hcforecast',this)">📈 Headcount Forecast</button>
           <button class="sh-btn-outline" onclick="shAddPayEmployee()">+ Add Employee</button>
           <div style="margin-left:auto;font-size:12px;color:var(--muted)">Period: <strong id="pay-period-label">—</strong></div>
         </div>
@@ -1355,6 +1372,351 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <!-- ── GARNISHMENTS ── -->
     <div id="panel-garnishments" class="sh-panel">
       <div class="sh-section-title">🔒 Wage Garnishments</div>
+
+      <!-- PANEL: PAYROLL CALCULATOR -->
+      <div id="panel-paycalc" class="sh-panel">
+        <div class="sh-section-title">💵 Live Payroll Calculator — 2026 Tax Rates</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="pc-kpi-gross">$0</div><div class="sh-kpi-label">Gross Pay</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="pc-kpi-net" style="color:var(--green)">$0</div><div class="sh-kpi-label">Net Pay</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="pc-kpi-tax" style="color:var(--red)">$0</div><div class="sh-kpi-label">Total Taxes</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="pc-kpi-eff" style="color:var(--amber)">0%</div><div class="sh-kpi-label">Effective Rate</div></div>
+        </div>
+        <div class="sh-card" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div class="sh-fg"><label>Pay Type</label>
+              <select id="pc-pay-type" onchange="shCalcPayroll()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:Outfit,sans-serif;font-size:13px">
+                <option value="salary">Salary (Annual)</option>
+                <option value="hourly">Hourly</option>
+              </select></div>
+            <div class="sh-fg"><label>Gross Amount ($)</label>
+              <input type="number" id="pc-gross" placeholder="75000" oninput="shCalcPayroll()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg" id="pc-hours-row" style="display:none"><label>Hours / Week</label>
+              <input type="number" id="pc-hours" value="40" oninput="shCalcPayroll()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Pay Period</label>
+              <select id="pc-period" onchange="shCalcPayroll()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:Outfit,sans-serif;font-size:13px">
+                <option value="52">Weekly</option>
+                <option value="26">Bi-Weekly</option>
+                <option value="24">Semi-Monthly</option>
+                <option value="12" selected>Monthly</option>
+                <option value="1">Annual</option>
+              </select></div>
+            <div class="sh-fg"><label>Filing Status</label>
+              <select id="pc-filing" onchange="shCalcPayroll()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:Outfit,sans-serif;font-size:13px">
+                <option value="single">Single</option>
+                <option value="married">Married Filing Jointly</option>
+                <option value="hoh">Head of Household</option>
+              </select></div>
+            <div class="sh-fg"><label>State</label>
+              <select id="pc-state" onchange="shCalcPayroll()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:Outfit,sans-serif;font-size:13px">
+                <option value="0">No State Tax (TX/FL/WA/NV)</option>
+                <option value="0.0399" selected>Ohio (3.99%)</option>
+                <option value="0.093">California (9.3%)</option>
+                <option value="0.062">New York (6.2%)</option>
+                <option value="0.05">Illinois (5.0%)</option>
+                <option value="0.0307">Pennsylvania (3.07%)</option>
+                <option value="0.0595">Michigan (5.95% est)</option>
+              </select></div>
+            <div class="sh-fg"><label>401(k) / Pre-Tax % (optional)</label>
+              <input type="number" id="pc-401k" value="0" min="0" max="100" oninput="shCalcPayroll()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Health Insurance Pre-Tax ($/period)</label>
+              <input type="number" id="pc-health" value="0" oninput="shCalcPayroll()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+          </div>
+          <div>
+            <div id="pc-breakdown" style="font-size:13px;line-height:2"></div>
+            <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+              <button class="sh-btn-primary" onclick="shPrintPayStub()">🖨 Print Pay Stub</button>
+              <button class="sh-btn-outline" onclick="shPaycalcAI()">✨ AI Analysis</button>
+              <button class="sh-btn-secondary" onclick="shSavePayCalc()">💾 Save Calculation</button>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:10px;margin-top:12px;font-size:11px;color:var(--muted);line-height:1.8">
+          <strong>2026 Federal Tax Rates:</strong> 10% to $11,925 | 12% to $48,475 | 22% to $103,350 | 24% to $197,300 | 32% to $250,525 | 35% to $626,350 | 37% above. SS: 6.2% (wage base $176,100). Medicare: 1.45% (+0.9% above $200K). Standard deduction: $15,000 single / $30,000 MFJ.
+        </div>
+      </div>
+
+      <!-- PANEL: EMPLOYEE DIRECTORY -->
+      <div id="panel-directory" class="sh-panel">
+        <div class="sh-section-title">👥 Employee Directory</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="dir-kpi-total">0</div><div class="sh-kpi-label">Total Employees</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="dir-kpi-dept">0</div><div class="sh-kpi-label">Departments</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="dir-kpi-remote" style="color:var(--amber)">0</div><div class="sh-kpi-label">Remote</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="dir-kpi-new" style="color:var(--green)">0</div><div class="sh-kpi-label">New This Month</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="dir-search" placeholder="🔍 Search name, role, department, email..." oninput="shRenderDirectory()" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+          <select id="dir-dept-filter" onchange="shRenderDirectory()" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+            <option value="">All Departments</option>
+          </select>
+          <select id="dir-view" onchange="shRenderDirectory()" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+            <option value="cards">Card View</option>
+            <option value="table">Table View</option>
+          </select>
+          <button class="sh-btn-primary" onclick="shExportDirectory()">⬇ Export</button>
+        </div>
+        <div id="dir-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px"></div>
+      </div>
+
+      <!-- PANEL: COMPENSATION BANDS -->
+      <div id="panel-compbands" class="sh-panel">
+        <div class="sh-section-title">💰 Compensation Bands — Pay Equity & Structure</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="cb-kpi-roles">0</div><div class="sh-kpi-label">Roles Defined</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="cb-kpi-below" style="color:var(--red)">0</div><div class="sh-kpi-label">Below Band</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="cb-kpi-above" style="color:var(--orange)">0</div><div class="sh-kpi-label">Above Band</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="cb-kpi-inrange" style="color:var(--green)">0</div><div class="sh-kpi-label">In Range</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sh-btn-primary" onclick="shNewBand()">+ Add Pay Band</button>
+          <button class="sh-btn-outline" onclick="shBandAI()">✨ AI Pay Equity Analysis</button>
+          <button class="sh-btn-secondary" onclick="shExportBands()">⬇ Export</button>
+          <button class="sh-btn-secondary" onclick="shMarketBenchmark()">📊 Market Benchmark</button>
+        </div>
+        <div class="sh-card" style="padding:0;overflow:hidden">
+          <table class="sh-table">
+            <thead><tr><th>Role / Level</th><th>Department</th><th style="text-align:right">Min</th><th style="text-align:right">Mid</th><th style="text-align:right">Max</th><th>Employees in Band</th><th>Equity Flag</th><th>Action</th></tr></thead>
+            <tbody id="cb-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANEL: BENEFITS ENROLLMENT WIZARD -->
+      <div id="panel-enrollment" class="sh-panel">
+        <div class="sh-section-title">🏥 Benefits Enrollment Wizard</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="enr-kpi-enrolled" style="color:var(--green)">0</div><div class="sh-kpi-label">Enrolled</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="enr-kpi-pending" style="color:var(--amber)">0</div><div class="sh-kpi-label">Pending</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="enr-kpi-waived">0</div><div class="sh-kpi-label">Waived</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="enr-kpi-cost">$0</div><div class="sh-kpi-label">Monthly Cost</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sh-btn-primary" onclick="shStartEnrollment()">+ New Enrollment</button>
+          <button class="sh-btn-outline" onclick="shBenefitsAI()">✨ AI Plan Advisor</button>
+          <button class="sh-btn-secondary" onclick="shOpenEnrollmentWindow()">📅 Open Enrollment Window</button>
+          <button class="sh-btn-secondary" onclick="shExportEnrollment()">⬇ Export</button>
+        </div>
+        <!-- Plan comparison cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px" id="enr-plans"></div>
+        <!-- Enrollment table -->
+        <div class="sh-card" style="padding:0;overflow:hidden">
+          <table class="sh-table">
+            <thead><tr><th>Employee</th><th>Medical</th><th>Dental</th><th>Vision</th><th>401(k)%</th><th>Life Ins</th><th>EE Cost/mo</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="enr-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANEL: OFFBOARDING CHECKLIST -->
+      <div id="panel-offboarding" class="sh-panel">
+        <div class="sh-section-title">🚪 Offboarding Checklist</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="off-kpi-active">0</div><div class="sh-kpi-label">Active Offboards</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="off-kpi-complete" style="color:var(--green)">0</div><div class="sh-kpi-label">Completed</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="off-kpi-overdue" style="color:var(--red)">0</div><div class="sh-kpi-label">Tasks Overdue</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="off-kpi-pending" style="color:var(--amber)">0</div><div class="sh-kpi-label">Pending Tasks</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sh-btn-primary" onclick="shNewOffboard()">+ Start Offboarding</button>
+          <button class="sh-btn-outline" onclick="shOffboardAI()">✨ AI Exit Risk Analysis</button>
+          <button class="sh-btn-secondary" onclick="shExportOffboard()">⬇ Export</button>
+        </div>
+        <div id="off-list"></div>
+      </div>
+
+      <!-- PANEL: AI OFFER LETTER GENERATOR -->
+      <div id="panel-offerletter" class="sh-panel">
+        <div class="sh-section-title">📄 AI Offer Letter Generator</div>
+        <div class="sh-card">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="sh-fg"><label>Candidate Name</label>
+              <input type="text" id="ol-name" placeholder="Jane Smith" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Role / Title</label>
+              <input type="text" id="ol-role" placeholder="Senior Software Engineer" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Department</label>
+              <input type="text" id="ol-dept" placeholder="Engineering" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Reports To</label>
+              <input type="text" id="ol-manager" placeholder="CTO" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Start Date</label>
+              <input type="date" id="ol-start" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Employment Type</label>
+              <select id="ol-type" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+                <option>Full-Time</option><option>Part-Time</option><option>Contract</option><option>Internship</option>
+              </select></div>
+            <div class="sh-fg"><label>Base Salary (Annual $)</label>
+              <input type="number" id="ol-salary" placeholder="95000" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Bonus / Commission</label>
+              <input type="text" id="ol-bonus" placeholder="10% target annual bonus" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Equity (optional)</label>
+              <input type="text" id="ol-equity" placeholder="0.1% options, 4-year vest" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Work Location</label>
+              <select id="ol-location" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+                <option>On-Site</option><option>Remote</option><option>Hybrid (3 days office)</option>
+              </select></div>
+            <div class="sh-fg"><label>Offer Expiry</label>
+              <input type="date" id="ol-expiry" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Tone</label>
+              <select id="ol-tone" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+                <option>Professional & Warm</option><option>Formal / Corporate</option><option>Startup / Energetic</option><option>Brief & Direct</option>
+              </select></div>
+          </div>
+          <div class="sh-fg" style="margin-top:8px"><label>Additional Benefits / Notes</label>
+            <textarea id="ol-notes" rows="2" placeholder="Health, dental, vision | 15 days PTO | 401k match 4%" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif;resize:vertical"></textarea></div>
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button class="sh-btn-primary" onclick="shGenOfferLetter()">✨ Generate Offer Letter</button>
+            <button class="sh-btn-secondary" onclick="shOfferLetterHistory()">📋 History</button>
+          </div>
+        </div>
+        <div id="ol-output" style="margin-top:14px"></div>
+      </div>
+
+      <!-- PANEL: EXIT INTERVIEW -->
+      <div id="panel-exitinterview" class="sh-panel">
+        <div class="sh-section-title">🎤 Exit Interview Builder</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="exit-kpi-total">0</div><div class="sh-kpi-label">Total Exits</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="exit-kpi-voluntary" style="color:var(--amber)">0</div><div class="sh-kpi-label">Voluntary</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="exit-kpi-avg-tenure">0y</div><div class="sh-kpi-label">Avg Tenure</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="exit-kpi-top-reason" style="color:var(--red);font-size:14px">—</div><div class="sh-kpi-label">Top Exit Reason</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sh-btn-primary" onclick="shNewExitInterview()">+ New Exit Interview</button>
+          <button class="sh-btn-outline" onclick="shExitAI()">✨ AI Retention Analysis</button>
+          <button class="sh-btn-secondary" onclick="shExportExits()">⬇ Export</button>
+        </div>
+        <div id="exit-list"></div>
+      </div>
+
+      <!-- PANEL: TOTAL REWARDS STATEMENT -->
+      <div id="panel-totalrewards" class="sh-panel">
+        <div class="sh-section-title">🏆 Total Rewards Statement</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="tr-kpi-avg-total">$0</div><div class="sh-kpi-label">Avg Total Comp</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="tr-kpi-avg-benefits" style="color:var(--amber)">$0</div><div class="sh-kpi-label">Avg Benefits Value</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="tr-kpi-ratio">0%</div><div class="sh-kpi-label">Benefits/Total Ratio</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="tr-kpi-employees">0</div><div class="sh-kpi-label">Statements Generated</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sh-btn-primary" onclick="shGenTotalRewards()">✨ Generate Statement</button>
+          <button class="sh-btn-outline" onclick="shBulkTotalRewards()">📋 Bulk Generate All</button>
+          <button class="sh-btn-secondary" onclick="shTotalRewardsAI()">🧠 AI Comp Strategy</button>
+        </div>
+        <div id="tr-output"></div>
+      </div>
+
+      <!-- PANEL: I-9 / W-4 DOCUMENT TRACKER -->
+      <div id="panel-i9w4" class="sh-panel">
+        <div class="sh-section-title">📋 I-9 / W-4 Document Tracker</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="i9-kpi-complete" style="color:var(--green)">0</div><div class="sh-kpi-label">I-9 Complete</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="i9-kpi-pending" style="color:var(--amber)">0</div><div class="sh-kpi-label">I-9 Pending</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="i9-kpi-expiring" style="color:var(--red)">0</div><div class="sh-kpi-label">Expiring Soon</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="i9-kpi-w4-missing" style="color:var(--orange)">0</div><div class="sh-kpi-label">W-4 Missing</div></div>
+        </div>
+        <div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;line-height:1.8">
+          <strong>Legal Deadlines (2026):</strong> I-9 must be completed within <strong>3 business days</strong> of start date. Re-verification required when work authorization expires. W-4 on or before first day of work. Penalty: $281–$2,789 per I-9 violation.
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sh-btn-primary" onclick="shAddI9Record()">+ Add Record</button>
+          <button class="sh-btn-outline" onclick="shI9AI()">✨ AI Compliance Check</button>
+          <button class="sh-btn-secondary" onclick="shExportI9()">⬇ Export</button>
+        </div>
+        <div class="sh-card" style="padding:0;overflow:hidden">
+          <table class="sh-table">
+            <thead><tr><th>Employee</th><th>Start Date</th><th>I-9 Status</th><th>I-9 Completed</th><th>Doc Expires</th><th>W-4 Status</th><th>Re-verify By</th><th>Action</th></tr></thead>
+            <tbody id="i9-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANEL: PAY STUB GENERATOR -->
+      <div id="panel-paystub" class="sh-panel">
+        <div class="sh-section-title">🧾 Pay Stub Generator</div>
+        <div class="sh-card">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div class="sh-fg"><label>Employee Name</label>
+              <input type="text" id="ps-name" placeholder="John Doe" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Employee ID</label>
+              <input type="text" id="ps-id" placeholder="EMP-001" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Pay Period</label>
+              <input type="text" id="ps-period-label" placeholder="June 1–15, 2026" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Pay Date</label>
+              <input type="date" id="ps-date" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Gross Pay ($)</label>
+              <input type="number" id="ps-gross" placeholder="6250" oninput="shCalcPayStub()" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>YTD Gross ($)</label>
+              <input type="number" id="ps-ytd" placeholder="37500" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Federal Tax ($)</label>
+              <input type="number" id="ps-fed" placeholder="937" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>State Tax ($)</label>
+              <input type="number" id="ps-state" placeholder="249" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>SS Tax ($)</label>
+              <input type="number" id="ps-ss" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Medicare ($)</label>
+              <input type="number" id="ps-med" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>Health Ins ($)</label>
+              <input type="number" id="ps-health2" value="0" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+            <div class="sh-fg"><label>401(k) ($)</label>
+              <input type="number" id="ps-ret" value="0" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>
+          </div>
+          <div style="margin-top:10px;padding:12px;background:var(--surface-2);border-radius:8px;font-size:14px;font-weight:700" id="ps-net-display">Net Pay: $0.00</div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="sh-btn-primary" onclick="shPrintPayStubDirect()">🖨 Print Pay Stub</button>
+            <button class="sh-btn-secondary" onclick="shAutoFillFromCalc()">⚡ Auto-Fill from Calculator</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: FMLA / LEAVE TRACKER -->
+      <div id="panel-fmlatracker" class="sh-panel">
+        <div class="sh-section-title">🏥 FMLA &amp; Leave Tracker</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="fmla-kpi-active" style="color:var(--amber)">0</div><div class="sh-kpi-label">Active FMLA</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="fmla-kpi-days-used">0</div><div class="sh-kpi-label">Days Used (avg)</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="fmla-kpi-expiring" style="color:var(--red)">0</div><div class="sh-kpi-label">Expiring 30 Days</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="fmla-kpi-complete" style="color:var(--green)">0</div><div class="sh-kpi-label">Completed</div></div>
+        </div>
+        <div style="background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.2);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;line-height:1.8">
+          <strong>FMLA 2026:</strong> 12 weeks unpaid, job-protected leave per year (50+ employees, 12mo tenure, 1,250 hrs worked). Military family leave: up to 26 weeks. 13+ states now have paid family leave programs. Employer must designate leave within <strong>5 business days</strong>.
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sh-btn-primary" onclick="shNewFMLACase()">+ New FMLA Case</button>
+          <button class="sh-btn-outline" onclick="shFMLAAI()">✨ AI FMLA Guidance</button>
+          <button class="sh-btn-secondary" onclick="shExportFMLA()">⬇ Export</button>
+        </div>
+        <div class="sh-card" style="padding:0;overflow:hidden">
+          <table class="sh-table">
+            <thead><tr><th>Employee</th><th>Leave Type</th><th>Start</th><th>End</th><th>Days Used</th><th>Days Left</th><th style="text-align:center">Progress</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="fmla-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANEL: HEADCOUNT FORECAST -->
+      <div id="panel-hcforecast" class="sh-panel">
+        <div class="sh-section-title">📈 Headcount Forecast &amp; Hire Plan</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="hcf-kpi-current">0</div><div class="sh-kpi-label">Current HC</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="hcf-kpi-target" style="color:var(--a)">0</div><div class="sh-kpi-label">Target EOY</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="hcf-kpi-open" style="color:var(--amber)">0</div><div class="sh-kpi-label">Open Reqs</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="hcf-kpi-budget" style="color:var(--green)">$0</div><div class="sh-kpi-label">Remaining HC Budget</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sh-btn-primary" onclick="shNewHCPlan()">+ Add Hire Plan</button>
+          <button class="sh-btn-outline" onclick="shHCForecastAI()">✨ AI Workforce Strategy</button>
+          <button class="sh-btn-secondary" onclick="shExportHCForecast()">⬇ Export</button>
+        </div>
+        <div class="sh-card" style="padding:0;overflow:hidden">
+          <table class="sh-table">
+            <thead><tr><th>Role</th><th>Department</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Total Hires</th><th style="text-align:right">Budget Impact</th><th>Priority</th></tr></thead>
+            <tbody id="hcf-tbody"></tbody>
+          </table>
+        </div>
+        <div id="hcf-chart" style="margin-top:14px;background:var(--surface-2);border-radius:10px;padding:14px"></div>
+      </div>
+
+
       <div style="background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.7">
         <strong>Legal obligation:</strong> Employers must honor valid garnishment orders or face personal liability.
         <strong>Priority order:</strong> Child support → IRS levies → Student loans → Creditor garnishments.
@@ -4287,6 +4649,10 @@ shPanel=function(id,btn){
     'workercomp':shInitWorkersComp,
     'selfservice':shInitSelfService,
     'garnishments':shInitGarnishments,
+    'paycalc':shInitPayCalc,'directory':shInitDirectory,'compbands':shInitCompBands,
+    'enrollment':shInitEnrollment,'offboarding':shInitOffboarding,'offerletter':shInitOfferLetter,
+    'exitinterview':shInitExitInterview,'totalrewards':shInitTotalRewards,
+    'i9w4':shInitI9W4,'paystub':shInitPayStub,'fmlatracker':shInitFMLATracker,'hcforecast':shInitHCForecast,
   };
   if(extra[id]) setTimeout(extra[id],50);
 };
@@ -5283,6 +5649,1123 @@ document.addEventListener('DOMContentLoaded',function(){
   };
 
 })();
+
+</script>
+
+<script>
+
+// ============================================================
+// SAIRNhr v5.0 — 12 NEW FEATURES
+// 1. Live Payroll Calculator (2026 federal + state taxes)
+// 2. Employee Directory (searchable cards + table)
+// 3. Compensation Bands (pay equity flags)
+// 4. Benefits Enrollment Wizard
+// 5. Offboarding Checklist
+// 6. AI Offer Letter Generator
+// 7. Exit Interview Builder
+// 8. Total Rewards Statement
+// 9. I-9 / W-4 Document Tracker
+// 10. Pay Stub Generator
+// 11. FMLA / Leave Tracker
+// 12. Headcount Forecast
+// ============================================================
+
+// == DATA STORES ===============================================
+var shCompBands   = shLoad2('sh_comp_bands', []);
+var shEnrollments = shLoad2('sh_enrollments', []);
+var shOffboards   = shLoad2('sh_offboards', []);
+var shOfferHistory= shLoad2('sh_offer_history', []);
+var shExitCases   = shLoad2('sh_exit_cases', []);
+var shI9Records   = shLoad2('sh_i9_records', []);
+var shFMLACases   = shLoad2('sh_fmla_cases', []);
+var shHCPlans     = shLoad2('sh_hc_plans', []);
+
+function shLoad2(key, def) {
+  try { var r=localStorage.getItem(key); return r?JSON.parse(r):def; } catch(e){return def;}
+}
+function shSave2(key,data){try{localStorage.setItem(key,JSON.stringify(data));}catch(e){}}
+function shFmt(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function shFmtK(n){var v=parseFloat(n)||0;return v>=1000?'$'+(v/1000).toFixed(0)+'K':shFmt(v);}
+
+// == PATCH shPanel to handle 12 new panels ====================
+var _shPanelOrig=shPanel;
+shPanel=function(id,btn){
+  _shPanelOrig(id,btn);
+  var map={
+    paycalc:shInitPayCalc,directory:shInitDirectory,
+    compbands:shInitCompBands,enrollment:shInitEnrollment,
+    offboarding:shInitOffboarding,offerletter:shInitOfferLetter,
+    exitinterview:shInitExitInterview,totalrewards:shInitTotalRewards,
+    i9w4:shInitI9W4,paystub:shInitPayStub,
+    fmlatracker:shInitFMLATracker,hcforecast:shInitHCForecast
+  };
+  if(map[id]) setTimeout(map[id], 60);
+};
+
+// == EXTEND shInitAll ==========================================
+var _shInitAllV5 = shInitAll;
+shInitAll = function() {
+  _shInitAllV5();
+  shAutoSeedI9FromEmployees();
+};
+
+// ============================================================
+// 1. LIVE PAYROLL CALCULATOR
+// ============================================================
+// 2026 Federal Tax Brackets (Standard Deduction: $15,000 single / $30,000 MFJ)
+var FED_BRACKETS = {
+  single:   [{up:11925,rate:0.10},{up:48475,rate:0.12},{up:103350,rate:0.22},
+              {up:197300,rate:0.24},{up:250525,rate:0.32},{up:626350,rate:0.35},{up:Infinity,rate:0.37}],
+  married:  [{up:23850,rate:0.10},{up:96950,rate:0.12},{up:206700,rate:0.22},
+              {up:394600,rate:0.24},{up:501050,rate:0.32},{up:751600,rate:0.35},{up:Infinity,rate:0.37}],
+  hoh:      [{up:17000,rate:0.10},{up:64850,rate:0.12},{up:103350,rate:0.22},
+              {up:197300,rate:0.24},{up:250500,rate:0.32},{up:626350,rate:0.35},{up:Infinity,rate:0.37}],
+};
+var STD_DED = {single:15000, married:30000, hoh:22500};
+
+function shInitPayCalc() {
+  document.getElementById('pc-pay-type').onchange = function() {
+    var isHourly = this.value === 'hourly';
+    document.getElementById('pc-hours-row').style.display = isHourly ? '' : 'none';
+    shCalcPayroll();
+  };
+  shCalcPayroll();
+}
+
+function shCalcPayroll() {
+  var payType = (document.getElementById('pc-pay-type')||{value:'salary'}).value;
+  var grossInput = parseFloat((document.getElementById('pc-gross')||{}).value) || 0;
+  var hours = parseFloat((document.getElementById('pc-hours')||{value:40}).value) || 40;
+  var periods = parseInt((document.getElementById('pc-period')||{value:'12'}).value) || 12;
+  var filing = (document.getElementById('pc-filing')||{value:'single'}).value;
+  var stateRate = parseFloat((document.getElementById('pc-state')||{value:'0.0399'}).value) || 0;
+  var ret401k = parseFloat((document.getElementById('pc-401k')||{value:0}).value) / 100 || 0;
+  var healthPer = parseFloat((document.getElementById('pc-health')||{value:0}).value) || 0;
+
+  // Calculate annual gross
+  var annualGross = payType === 'hourly' ? grossInput * hours * 52 : grossInput;
+  var periodGross = annualGross / periods;
+
+  // Pre-tax deductions (per period)
+  var retDeduction = periodGross * ret401k;
+  var healthDeduction = healthPer;
+  var totalPreTax = retDeduction + healthDeduction;
+
+  // Taxable income per period
+  var taxablePerPeriod = Math.max(0, periodGross - totalPreTax);
+  var annualTaxable = taxablePerPeriod * periods;
+
+  // Federal income tax (annual, then divide by periods)
+  var stdDed = STD_DED[filing] || 15000;
+  var fedTaxableIncome = Math.max(0, annualTaxable - stdDed);
+  var brackets = FED_BRACKETS[filing] || FED_BRACKETS.single;
+  var annualFedTax = 0;
+  var prev = 0;
+  brackets.forEach(function(b) {
+    if (fedTaxableIncome > prev) {
+      annualFedTax += (Math.min(fedTaxableIncome, b.up) - prev) * b.rate;
+      prev = b.up;
+    }
+  });
+  var fedTax = annualFedTax / periods;
+
+  // FICA (SS 6.2% up to $176,100, Medicare 1.45% + 0.9% above $200K)
+  var ssTax = Math.min(annualTaxable, 176100) * 0.062 / periods;
+  var medBase = annualTaxable * 0.0145 / periods;
+  var medAdd = annualTaxable > 200000 ? (annualTaxable - 200000) * 0.009 / periods : 0;
+  var ficaTax = ssTax + medBase + medAdd;
+
+  // State tax (simplified flat-ish)
+  var stateTax = taxablePerPeriod * stateRate;
+
+  // Total deductions
+  var totalTax = fedTax + ficaTax + stateTax;
+  var totalDed = totalTax + totalPreTax;
+  var netPay = periodGross - totalDed;
+  var effRate = periodGross > 0 ? (totalTax / periodGross * 100) : 0;
+
+  // Update KPIs
+  var setKPI = function(id, val) { var el=document.getElementById(id); if(el) el.textContent=val; };
+  setKPI('pc-kpi-gross', shFmt(periodGross));
+  setKPI('pc-kpi-net', shFmt(netPay));
+  setKPI('pc-kpi-tax', shFmt(totalTax));
+  setKPI('pc-kpi-eff', effRate.toFixed(1)+'%');
+
+  // Breakdown
+  var bd = document.getElementById('pc-breakdown');
+  if (!bd) return;
+  var row = function(label, amt, color) {
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">'+
+      '<span style="color:'+(color||'var(--text)')+'">'+label+'</span>'+
+      '<span style="font-weight:700;color:'+(color||'var(--text)')+'">'+shFmt(amt)+'</span></div>';
+  };
+  bd.innerHTML =
+    '<div style="font-weight:700;margin-bottom:8px;color:var(--a)">Per-Period Breakdown</div>'+
+    row('Gross Pay', periodGross, 'var(--text)') +
+    (retDeduction>0 ? row('401(k) Pre-Tax', -retDeduction, 'var(--green)') : '') +
+    (healthDeduction>0 ? row('Health Insurance', -healthDeduction, 'var(--green)') : '') +
+    row('Federal Income Tax', -fedTax, 'var(--red)') +
+    row('Social Security (6.2%)', -ssTax, 'var(--red)') +
+    row('Medicare (1.45%)', -(medBase+medAdd), 'var(--red)') +
+    row('State Income Tax', -stateTax, 'var(--red)') +
+    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:900;color:var(--a);border-top:2px solid var(--border);margin-top:4px">'+
+      '<span>NET PAY</span><span>'+shFmt(netPay)+'</span></div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:6px">Annual net: '+shFmt(netPay*periods)+' | Annual gross: '+shFmt(annualGross)+'</div>';
+
+  // Store for pay stub auto-fill
+  window._shLastCalc = { name:'', gross:periodGross, fed:fedTax, state:stateTax, ss:ssTax, med:medBase+medAdd, health:healthDeduction, ret:retDeduction, net:netPay };
+}
+
+async function shPaycalcAI() {
+  var gross = (document.getElementById('pc-gross')||{}).value || 0;
+  var filing = (document.getElementById('pc-filing')||{}).value || 'single';
+  var state = (document.getElementById('pc-state')||{}).options;
+  var stateLabel = state ? state[state.selectedIndex].text : 'Ohio';
+  shNotify('AI analyzing compensation...', '');
+  try {
+    var res = await fetch(SH_CLAUDE, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:800,
+        system: 'You are SAIRNhr AI — CHRO + compensation consultant. 2026 tax expert.',
+        messages:[{role:'user',content:'Payroll analysis: Gross $'+gross+'/yr, filing: '+filing+', state: '+stateLabel+
+          '. Provide: 1) Is this salary competitive for the market? 2) Pre-tax optimization strategies (401k, HSA, FSA), 3) State tax comparison if relevant, 4) Total cost to employer vs employee net, 5) Any 2026 tax law changes that affect this compensation.'}]})});
+    var data = await res.json();
+    alert(data.content&&data.content[0] ? data.content[0].text : 'No response.');
+  } catch(e) { shNotify('Error', 'red'); }
+}
+
+function shSavePayCalc() {
+  var calc = window._shLastCalc || {};
+  calc.date = new Date().toLocaleDateString();
+  calc.employee = (document.getElementById('pc-gross')||{}).value;
+  shNotify('Calculation saved — open Pay Stub to generate check', 'green');
+}
+
+function shPrintPayStub() {
+  var calc = window._shLastCalc || {};
+  var filing = (document.getElementById('pc-filing')||{value:'single'}).value;
+  var period = (document.getElementById('pc-period')||{}).options;
+  var periodLabel = period ? period[period.selectedIndex].text : 'Monthly';
+  shGeneratePayStubHTML('Employee', 'EMP-XXX', periodLabel+' '+new Date().getFullYear(), new Date().toLocaleDateString(), calc.gross||0, calc.fed||0, calc.state||0, calc.ss||0, calc.med||0, calc.health||0, calc.ret||0);
+}
+
+// ============================================================
+// 2. EMPLOYEE DIRECTORY
+// ============================================================
+function shInitDirectory() {
+  shPopulateDeptFilter();
+  shRenderDirectory();
+  shUpdateDirectoryKPIs();
+}
+
+function shUpdateDirectoryKPIs() {
+  var emps = shGetEmployees();
+  var depts = [...new Set(emps.map(function(e){return e.department||'—';}).filter(Boolean))];
+  var now = new Date();
+  var thisMonth = now.getMonth(), thisYear = now.getFullYear();
+  var newHires = emps.filter(function(e) {
+    if (!e.startDate) return false;
+    var d = new Date(e.startDate);
+    return d.getMonth()===thisMonth && d.getFullYear()===thisYear;
+  }).length;
+  var remote = emps.filter(function(e){return (e.location||'').toLowerCase().includes('remote');}).length;
+  var setKPI = function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  setKPI('dir-kpi-total', emps.length);
+  setKPI('dir-kpi-dept', depts.length);
+  setKPI('dir-kpi-remote', remote);
+  setKPI('dir-kpi-new', newHires);
+}
+
+function shGetEmployees() {
+  try { var r=localStorage.getItem('sh_employees'); return r?JSON.parse(r):[]; } catch(e){return [];}
+}
+
+function shPopulateDeptFilter() {
+  var sel = document.getElementById('dir-dept-filter');
+  if (!sel) return;
+  var emps = shGetEmployees();
+  var depts = [...new Set(emps.map(function(e){return e.department||'';}).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Departments</option>' +
+    depts.map(function(d){return '<option value="'+d+'">'+d+'</option>';}).join('');
+  // Also populate time-filter-client if needed
+  var tf = document.getElementById('time-filter-client');
+  if(tf) {
+    tf.innerHTML = '<option value="">All employees</option>' +
+      emps.map(function(e){return '<option value="'+e.name+'">'+e.name+'</option>';}).join('');
+  }
+}
+
+function shRenderDirectory() {
+  var grid = document.getElementById('dir-grid');
+  if (!grid) return;
+  var search = (document.getElementById('dir-search')||{value:''}).value.toLowerCase();
+  var deptF = (document.getElementById('dir-dept-filter')||{value:''}).value;
+  var view = (document.getElementById('dir-view')||{value:'cards'}).value;
+  var emps = shGetEmployees().filter(function(e) {
+    if (deptF && e.department !== deptF) return false;
+    if (search) {
+      var hay = [e.name,e.role,e.department,e.email,e.phone].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+  if (!emps.length) { grid.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center">No employees found. Add employees in the Employees panel.</div>'; return; }
+
+  if (view === 'table') {
+    grid.style.display = 'block';
+    grid.innerHTML = '<table class="sh-table" style="width:100%"><thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Email</th><th>Phone</th><th>Start Date</th><th>Status</th></tr></thead><tbody>'+
+      emps.map(function(e){
+        return '<tr><td><strong>'+escHtml(e.name||'—')+'</strong></td>'+
+          '<td>'+escHtml(e.role||'—')+'</td>'+
+          '<td><span class="sh-badge" style="background:var(--a-light);color:var(--a);font-size:10px;padding:2px 8px;border-radius:10px">'+escHtml(e.department||'—')+'</span></td>'+
+          '<td style="font-size:12px">'+escHtml(e.email||'—')+'</td>'+
+          '<td style="font-size:12px">'+escHtml(e.phone||'—')+'</td>'+
+          '<td style="font-size:12px">'+escHtml(e.startDate||'—')+'</td>'+
+          '<td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(e.status==='Active'?'rgba(22,163,74,.12)':'rgba(220,38,38,.1)')+';color:'+(e.status==='Active'?'var(--green)':'var(--red)')+'">'+escHtml(e.status||'Active')+'</span></td></tr>';
+      }).join('')+'</tbody></table>';
+  } else {
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(220px,1fr))';
+    grid.innerHTML = emps.map(function(e) {
+      var initials = (e.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+      var colors = ['#1B3A6B','#D97706','#16a34a','#0EA5E9','#7C3AED','#DC2626','#059669'];
+      var color = colors[(e.name||'').length % colors.length];
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;transition:box-shadow .15s" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.1)\'" onmouseout="this.style.boxShadow=\'\'">'+
+        '<div style="width:52px;height:52px;border-radius:50%;background:'+color+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;margin:0 auto 10px">'+initials+'</div>'+
+        '<div style="font-weight:700;font-size:14px;margin-bottom:2px">'+escHtml(e.name||'—')+'</div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+escHtml(e.role||'—')+'</div>'+
+        '<div style="font-size:11px;background:var(--a-light);color:var(--a);border-radius:8px;padding:2px 8px;display:inline-block;margin-bottom:8px">'+escHtml(e.department||'—')+'</div>'+
+        (e.email?'<div style="font-size:11px;color:var(--muted)">✉ '+escHtml(e.email)+'</div>':'')+'</div>';
+    }).join('');
+  }
+}
+
+function shExportDirectory() {
+  var emps = shGetEmployees();
+  var rows = ['Name,Role,Department,Email,Phone,Start Date,Status'];
+  emps.forEach(function(e){
+    rows.push([e.name||'',e.role||'',e.department||'',e.email||'',e.phone||'',e.startDate||'',e.status||'Active'].join(','));
+  });
+  var blob = new Blob([rows.join('\r\n')], {type:'text/csv'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'employee_directory.csv'; a.click();
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ============================================================
+// 3. COMPENSATION BANDS
+// ============================================================
+function shInitCompBands() { shRenderBands(); shUpdateBandKPIs(); }
+function shUpdateBandKPIs() {
+  var emps = shGetEmployees();
+  var d; var below=0,above=0,inRange=0;
+  emps.forEach(function(e){
+    var sal = parseFloat(e.salary)||0; if(!sal) return;
+    var band = shCompBands.find(function(b){return b.role===e.role||b.role===e.department;});
+    if(!band) return;
+    if(sal<band.min) below++;
+    else if(sal>band.max) above++;
+    else inRange++;
+  });
+  d=document.getElementById('cb-kpi-roles');if(d)d.textContent=shCompBands.length;
+  d=document.getElementById('cb-kpi-below');if(d)d.textContent=below;
+  d=document.getElementById('cb-kpi-above');if(d)d.textContent=above;
+  d=document.getElementById('cb-kpi-inrange');if(d)d.textContent=inRange;
+}
+function shRenderBands() {
+  var tbody = document.getElementById('cb-tbody'); if(!tbody) return;
+  if(!shCompBands.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No pay bands defined. Click + Add Pay Band.</td></tr>';return;}
+  var emps = shGetEmployees();
+  tbody.innerHTML = shCompBands.map(function(b,i){
+    var inBand = emps.filter(function(e){return (e.role===b.role||e.department===b.role);}).length;
+    var equityFlag = inBand > 0 ? '✅ OK' : '—';
+    var mid = ((b.min+b.max)/2).toFixed(0);
+    return '<tr>'+
+      '<td><strong>'+escHtml(b.role)+'</strong></td>'+
+      '<td><span style="font-size:11px;background:var(--a-light);color:var(--a);padding:2px 8px;border-radius:8px">'+escHtml(b.department||'All')+'</span></td>'+
+      '<td style="text-align:right;color:var(--green)">'+shFmtK(b.min)+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:var(--a)">'+shFmtK(mid)+'</td>'+
+      '<td style="text-align:right;color:var(--orange)">'+shFmtK(b.max)+'</td>'+
+      '<td style="text-align:center">'+inBand+'</td>'+
+      '<td>'+equityFlag+'</td>'+
+      '<td><button onclick="shDeleteBand('+i+')" class="sh-btn-danger" style="font-size:10px;padding:2px 8px">Del</button></td></tr>';
+  }).join('');
+}
+function shNewBand() {
+  var role = prompt('Role / Job Title (e.g. Software Engineer L3):'); if(!role) return;
+  var dept = prompt('Department:', 'Engineering')||'Engineering';
+  var min = parseFloat(prompt('Minimum salary ($):', '75000'))||75000;
+  var max = parseFloat(prompt('Maximum salary ($):', '110000'))||110000;
+  shCompBands.push({role,department:dept,min,max});
+  shSave2('sh_comp_bands', shCompBands);
+  shRenderBands(); shUpdateBandKPIs();
+  shNotify('Pay band added: '+role, 'green');
+}
+function shDeleteBand(i) { shCompBands.splice(i,1); shSave2('sh_comp_bands',shCompBands); shRenderBands(); shUpdateBandKPIs(); }
+async function shBandAI() {
+  var emps = shGetEmployees();
+  var summary = shCompBands.map(function(b){return b.role+': $'+b.min+'-$'+b.max;}).join(', ');
+  shNotify('AI analyzing pay equity...','');
+  try {
+    var res = await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNhr AI — CHRO + compensation consultant. Expert in pay equity and compensation strategy.',
+        messages:[{role:'user',content:'Pay equity analysis for '+emps.length+' employees. Current bands: '+summary+'. Provide: 1) Pay equity risks and gaps, 2) Market competitiveness (2026 benchmarks), 3) Compression issues (if senior roles are too close to junior), 4) Pay transparency readiness (new laws in 22+ states), 5) Recommended adjustments.'}]})});
+    var data = await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'');
+  } catch(e){}
+}
+function shExportBands() {
+  var rows = ['Role,Department,Min,Midpoint,Max'];
+  shCompBands.forEach(function(b){ rows.push([b.role,b.department||'',b.min,(b.min+b.max)/2,b.max].join(',')); });
+  var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='comp_bands.csv';a.click();
+}
+async function shMarketBenchmark() {
+  var roles = shCompBands.map(function(b){return b.role;}).join(', ') || 'various roles';
+  shNotify('Getting market benchmark data...','');
+  try {
+    var res = await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+        system:'You are SAIRNhr AI — compensation benchmarking expert with 2026 market data.',
+        messages:[{role:'user',content:'Provide 2026 market compensation benchmarks for these roles: '+roles+'. Use data from Radford, Mercer, PayScale, and Levels.fyi where applicable. Include P25, P50, P75 percentiles, and total compensation (base + bonus + equity). Note regional variations (SF vs NYC vs Austin vs Columbus OH).'}]})});
+    var data = await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'');
+  } catch(e){}
+}
+
+// ============================================================
+// 4. BENEFITS ENROLLMENT WIZARD
+// ============================================================
+function shInitEnrollment() { shRenderEnrollmentPlans(); shRenderEnrollmentTable(); shUpdateEnrollKPIs(); }
+function shUpdateEnrollKPIs() {
+  var enrolled=shEnrollments.filter(function(e){return e.status==='Enrolled';}).length;
+  var pending=shEnrollments.filter(function(e){return e.status==='Pending';}).length;
+  var waived=shEnrollments.filter(function(e){return e.status==='Waived';}).length;
+  var cost=shEnrollments.filter(function(e){return e.status==='Enrolled';}).reduce(function(s,e){return s+(parseFloat(e.eeCost)||0);},0);
+  var d;
+  d=document.getElementById('enr-kpi-enrolled');if(d)d.textContent=enrolled;
+  d=document.getElementById('enr-kpi-pending');if(d)d.textContent=pending;
+  d=document.getElementById('enr-kpi-waived');if(d)d.textContent=waived;
+  d=document.getElementById('enr-kpi-cost');if(d)d.textContent=shFmt(cost)+'/mo';
+}
+function shRenderEnrollmentPlans() {
+  var plans = document.getElementById('enr-plans'); if(!plans) return;
+  var benefitPlans = [
+    {name:'HDHP + HSA',type:'Medical',eePrem:180,erPrem:620,deduct:1600,oop:5000,hsa:true,tag:'Best for Healthy'},
+    {name:'PPO Select',type:'Medical',eePrem:320,erPrem:780,deduct:500,oop:3000,hsa:false,tag:'Most Popular'},
+    {name:'HMO Plus',type:'Medical',eePrem:240,erPrem:710,deduct:250,oop:2500,hsa:false,tag:''},
+    {name:'Dental Basic',type:'Dental',eePrem:18,erPrem:0,deduct:100,oop:1500,hsa:false,tag:''},
+    {name:'Vision 12/12/12',type:'Vision',eePrem:8,erPrem:0,deduct:0,oop:0,hsa:false,tag:''},
+    {name:'Life 2x Salary',type:'Life',eePrem:12,erPrem:0,deduct:0,oop:0,hsa:false,tag:'Employer Paid Base'},
+  ];
+  plans.innerHTML = benefitPlans.map(function(p){
+    return '<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:14px">'+
+      (p.tag?'<div style="font-size:9px;font-weight:700;background:var(--a);color:#fff;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:6px;letter-spacing:.5px">'+p.tag+'</div>':'<div style="height:18px;margin-bottom:6px"></div>')+
+      '<div style="font-weight:700;font-size:14px">'+p.name+'</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+p.type+'</div>'+
+      '<div style="font-size:12px;line-height:2">'+
+        '<div>EE Cost: <strong>'+shFmt(p.eePrem)+'/mo</strong></div>'+
+        '<div>ER Cost: <strong>'+shFmt(p.erPrem)+'/mo</strong></div>'+
+        (p.deduct?'<div>Deductible: <strong>'+shFmt(p.deduct)+'</strong></div>':'')+'</div>'+
+      (p.hsa?'<div style="font-size:10px;background:rgba(22,163,74,.1);color:var(--green);padding:3px 8px;border-radius:6px;margin-top:6px;font-weight:700">HSA Eligible — 2026 limit $4,300 single</div>':'')+'</div>';
+  }).join('');
+}
+function shRenderEnrollmentTable() {
+  var tbody = document.getElementById('enr-tbody'); if(!tbody) return;
+  var emps = shGetEmployees();
+  if(!emps.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No employees. Add employees first.</td></tr>';return;}
+  // Merge enrollments with employees
+  tbody.innerHTML = emps.slice(0,20).map(function(e){
+    var enr = shEnrollments.find(function(x){return x.empName===e.name;}) || {status:'Pending',medical:'—',dental:'—',vision:'—',ret:'0',life:'—',eeCost:0};
+    return '<tr>'+
+      '<td><strong>'+escHtml(e.name||'—')+'</strong></td>'+
+      '<td style="font-size:11px">'+escHtml(enr.medical||'Pending')+'</td>'+
+      '<td style="font-size:11px">'+escHtml(enr.dental||'—')+'</td>'+
+      '<td style="font-size:11px">'+escHtml(enr.vision||'—')+'</td>'+
+      '<td style="font-size:11px">'+(enr.ret||'0')+'%</td>'+
+      '<td style="font-size:11px">'+escHtml(enr.life||'—')+'</td>'+
+      '<td style="font-weight:700">'+shFmt(enr.eeCost||0)+'</td>'+
+      '<td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(enr.status==='Enrolled'?'rgba(22,163,74,.12)':'rgba(249,115,22,.12)')+';color:'+(enr.status==='Enrolled'?'var(--green)':'var(--orange)')+'">'+escHtml(enr.status||'Pending')+'</span></td>'+
+      '<td><button onclick="shEnrollEmployee(\''+escHtml(e.name)+'\')" class="sh-btn-secondary" style="font-size:10px;padding:3px 8px">Enroll</button></td></tr>';
+  }).join('');
+}
+function shEnrollEmployee(name) {
+  var medical = prompt('Medical plan (PPO Select / HDHP+HSA / HMO Plus / Waive):', 'PPO Select')||'PPO Select';
+  var dental = prompt('Dental plan (Dental Basic / Waive):', 'Dental Basic')||'Dental Basic';
+  var vision = prompt('Vision plan (Vision 12/12/12 / Waive):', 'Vision 12/12/12')||'Vision 12/12/12';
+  var ret = prompt('401(k) contribution %:', '6')||'6';
+  var eeCost = medical==='PPO Select'?320:medical==='HDHP+HSA'?180:medical==='HMO Plus'?240:0;
+  eeCost += (dental!=='Waive'?18:0)+(vision!=='Waive'?8:0)+(12);
+  var idx = shEnrollments.findIndex(function(x){return x.empName===name;});
+  var rec = {empName:name,medical,dental,vision,ret,life:'2x Salary',eeCost,status:'Enrolled'};
+  if(idx>=0) shEnrollments[idx]=rec; else shEnrollments.push(rec);
+  shSave2('sh_enrollments',shEnrollments);
+  shRenderEnrollmentTable(); shUpdateEnrollKPIs();
+  shNotify(name+' enrolled — EE cost: $'+eeCost+'/mo','green');
+}
+function shStartEnrollment() { alert('Benefits enrollment wizard: Select an employee from the table and click Enroll to start.'); }
+function shOpenEnrollmentWindow() { shNotify('Open enrollment window set: Nov 1 – Nov 30, 2026. Notification emails queued.','green'); }
+function shExportEnrollment() {
+  var rows=['Employee,Medical,Dental,Vision,401k%,EE Cost,Status'];
+  shEnrollments.forEach(function(e){rows.push([e.empName,e.medical,e.dental,e.vision,e.ret,e.eeCost,e.status].join(','));});
+  var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='benefits_enrollment.csv';a.click();
+}
+async function shBenefitsAI() {
+  shNotify('AI analyzing benefits package...','');
+  try {
+    var res = await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNhr AI — CHRO + benefits consultant.',
+        messages:[{role:'user',content:'Benefits plan advisor: We have HDHP+HSA ($180 EE/$620 ER), PPO Select ($320/$780), HMO Plus ($240/$710). '+shEnrollments.length+' employees enrolled. Provide: 1) Cost analysis (EE vs ER burden), 2) HSA strategy for HDHP enrollees, 3) ACA compliance check (employer mandate at 50+ FTEs), 4) 2026 benefits trends we should add, 5) Retention impact of current package vs market.'}]})});
+    var data=await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'');
+  } catch(e){}
+}
+
+// ============================================================
+// 5. OFFBOARDING CHECKLIST
+// ============================================================
+var SH_OFFBOARD_TASKS = [
+  'Collect company laptop and equipment','Revoke email and system access',
+  'Remove from payroll','Process final paycheck (incl. accrued PTO)',
+  'COBRA notification sent (within 14 days)','Collect company credit cards and keys',
+  'Exit interview completed','Benefits termination processed',
+  'LinkedIn references / recommendations discussed','Knowledge transfer completed',
+  'Non-compete / NDA reminder sent','IT: deactivate accounts (Slack, GitHub, etc.)',
+  'Remove from org chart and directory','Update org chart and succession plan',
+];
+function shInitOffboarding() { shRenderOffboards(); shUpdateOffboardKPIs(); }
+function shUpdateOffboardKPIs() {
+  var active=shOffboards.filter(function(o){return o.status==='Active';}).length;
+  var complete=shOffboards.filter(function(o){return o.status==='Complete';}).length;
+  var overdue=0,pending=0;
+  shOffboards.forEach(function(o){
+    (o.tasks||[]).forEach(function(t){if(!t.done){if(new Date(o.lastDay)<new Date())overdue++;else pending++;}});
+  });
+  var d;
+  d=document.getElementById('off-kpi-active');if(d)d.textContent=active;
+  d=document.getElementById('off-kpi-complete');if(d)d.textContent=complete;
+  d=document.getElementById('off-kpi-overdue');if(d)d.textContent=overdue;
+  d=document.getElementById('off-kpi-pending');if(d)d.textContent=pending;
+}
+function shRenderOffboards() {
+  var list=document.getElementById('off-list');if(!list)return;
+  if(!shOffboards.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px">No active offboardings. Click + Start Offboarding.</div>';return;}
+  list.innerHTML=shOffboards.map(function(o,oi){
+    var done=(o.tasks||[]).filter(function(t){return t.done;}).length;
+    var total=(o.tasks||[]).length;
+    var pct=total>0?Math.round(done/total*100):0;
+    return '<div class="sh-card" style="margin-bottom:12px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+        '<div><strong>'+escHtml(o.name)+'</strong><span style="font-size:12px;color:var(--muted);margin-left:8px">Last day: '+escHtml(o.lastDay)+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<div style="font-size:12px;font-weight:700;color:'+(pct===100?'var(--green)':pct>50?'var(--amber)':'var(--red)')+'">'+pct+'% complete</div>'+
+          '<button onclick="shOffboardAIForEmp('+oi+')" class="sh-btn-outline" style="font-size:10px;padding:3px 8px">✨ AI</button>'+
+        '</div></div>'+
+      '<div style="background:var(--surface-2);border-radius:6px;height:6px;margin-bottom:12px"><div style="height:6px;border-radius:6px;background:'+(pct===100?'var(--green)':'var(--a)')+';width:'+pct+'%;transition:width .3s"></div></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'+
+        (o.tasks||[]).map(function(t,ti){
+          return '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px">'+
+            '<input type="checkbox" '+(t.done?'checked':'')+' onchange="shToggleOffboardTask('+oi+','+ti+',this.checked)"> '+
+            '<span style="'+(t.done?'text-decoration:line-through;color:var(--muted)':'')+'">'+escHtml(t.label)+'</span></label>';
+        }).join('')+'</div></div>';
+  }).join('');
+}
+function shToggleOffboardTask(oi,ti,checked) {
+  shOffboards[oi].tasks[ti].done=checked;
+  var allDone=shOffboards[oi].tasks.every(function(t){return t.done;});
+  if(allDone){shOffboards[oi].status='Complete';shNotify('Offboarding complete for '+shOffboards[oi].name,'green');}
+  shSave2('sh_offboards',shOffboards);
+  shUpdateOffboardKPIs();
+}
+function shNewOffboard() {
+  var name=prompt('Employee name:');if(!name)return;
+  var lastDay=prompt('Last day of employment:',new Date(Date.now()+14*86400000).toISOString().slice(0,10))||'';
+  var reason=prompt('Separation type (Resignation/Termination/Retirement/Contract End):','Resignation')||'Resignation';
+  shOffboards.unshift({name,lastDay,reason,status:'Active',tasks:SH_OFFBOARD_TASKS.map(function(l){return {label:l,done:false};})});
+  shSave2('sh_offboards',shOffboards);
+  shRenderOffboards();shUpdateOffboardKPIs();
+  shNotify('Offboarding started for '+name,'green');
+}
+async function shOffboardAI() {
+  var recent=shOffboards.filter(function(o){return o.status==='Complete';}).slice(0,10);
+  shNotify('AI analyzing exit trends...','');
+  try {
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+        system:'You are SAIRNhr AI — CHRO + retention consultant.',
+        messages:[{role:'user',content:'Offboarding analysis: '+shOffboards.length+' total separations. Active: '+shOffboards.filter(function(o){return o.status==='Active';}).length+'. Separation types: '+JSON.stringify(shOffboards.map(function(o){return o.reason;}))+'. Provide: 1) Retention risk factors, 2) Exit trend patterns, 3) COBRA compliance reminder, 4) Knowledge transfer gaps to watch, 5) Recommended exit interview questions for current departures.'}]})});
+    var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+async function shOffboardAIForEmp(i) {
+  var o=shOffboards[i];if(!o)return;
+  var done=(o.tasks||[]).filter(function(t){return t.done;}).length;
+  var remaining=(o.tasks||[]).filter(function(t){return !t.done;}).map(function(t){return t.label;});
+  shNotify('AI generating offboarding guidance...','');
+  try {
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+        system:'You are SAIRNhr AI — CHRO + employment attorney.',
+        messages:[{role:'user',content:'Offboarding checklist for '+o.name+' ('+o.reason+'). Last day: '+o.lastDay+'. Remaining tasks: '+remaining.join(', ')+'. Provide: 1) Priority order for remaining tasks, 2) Legal deadlines (COBRA, final pay, WARN Act if applicable), 3) Risk areas for this specific separation type, 4) Recommended communication templates.'}]})});
+    var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+function shExportOffboard() {
+  var rows=['Employee,Last Day,Reason,Status,Completed Tasks,Total Tasks'];
+  shOffboards.forEach(function(o){
+    var done=(o.tasks||[]).filter(function(t){return t.done;}).length;
+    rows.push([o.name,o.lastDay,o.reason,o.status,done,(o.tasks||[]).length].join(','));
+  });
+  var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='offboarding.csv';a.click();
+}
+
+// ============================================================
+// 6. AI OFFER LETTER GENERATOR
+// ============================================================
+function shInitOfferLetter() {}
+async function shGenOfferLetter() {
+  var name=(document.getElementById('ol-name')||{}).value;
+  var role=(document.getElementById('ol-role')||{}).value;
+  var dept=(document.getElementById('ol-dept')||{}).value;
+  var mgr=(document.getElementById('ol-manager')||{}).value;
+  var start=(document.getElementById('ol-start')||{}).value;
+  var type=(document.getElementById('ol-type')||{}).value;
+  var salary=(document.getElementById('ol-salary')||{}).value;
+  var bonus=(document.getElementById('ol-bonus')||{}).value;
+  var equity=(document.getElementById('ol-equity')||{}).value;
+  var location=(document.getElementById('ol-location')||{}).value;
+  var expiry=(document.getElementById('ol-expiry')||{}).value;
+  var notes=(document.getElementById('ol-notes')||{}).value;
+  var tone=(document.getElementById('ol-tone')||{}).value;
+  if(!name||!role||!salary){shNotify('Enter candidate name, role, and salary','');return;}
+  var out=document.getElementById('ol-output');
+  if(out) out.innerHTML='<div style="color:var(--a);padding:16px">✨ Generating offer letter...</div>';
+  try {
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,
+        system:'You are SAIRNhr AI — CHRO + employment attorney. Generate professional, legally sound offer letters.',
+        messages:[{role:'user',content:'Generate a complete offer letter with the following details:\n\nCandidate: '+name+'\nRole: '+role+'\nDepartment: '+dept+'\nReports To: '+mgr+'\nStart Date: '+start+'\nEmployment Type: '+type+'\nBase Salary: $'+salary+'/year\nBonus: '+bonus+'\nEquity: '+equity+'\nWork Location: '+location+'\nOffer Expires: '+expiry+'\nBenefits/Notes: '+notes+'\nTone: '+tone+'\n\nInclude: formal salutation, role description, compensation details, benefits summary, employment conditions (at-will), offer expiry, signature lines for both parties. Make it complete and ready to send.'}]})});
+    var data=await res.json();
+    var text=data.content&&data.content[0]?data.content[0].text:'Error generating letter.';
+    // Save to history
+    shOfferHistory.unshift({name,role,date:new Date().toLocaleDateString(),salary,text});
+    shSave2('sh_offer_history',shOfferHistory);
+    if(out){
+      out.innerHTML='<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:20px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+          '<div style="font-weight:700;color:var(--a)">Offer Letter — '+escHtml(name)+'</div>'+
+          '<div style="display:flex;gap:8px">'+
+            '<button onclick="shPrintOfferLetter()" class="sh-btn-primary" style="font-size:11px;padding:5px 12px">🖨 Print</button>'+
+            '<button onclick="shCopyOfferLetter()" class="sh-btn-secondary" style="font-size:11px;padding:5px 12px">📋 Copy</button>'+
+          '</div></div>'+
+        '<pre style="white-space:pre-wrap;font-family:Georgia,serif;font-size:13px;line-height:1.8;color:var(--text)">'+escHtml(text)+'</pre></div>';
+      window._shLastOfferLetter = text;
+    }
+    shNotify('Offer letter generated for '+name,'green');
+  }catch(e){shNotify('Error','red');}
+}
+function shPrintOfferLetter(){
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Offer Letter</title><style>body{font-family:Georgia,serif;padding:60px;max-width:700px;margin:auto;font-size:14px;line-height:1.8}@media print{button{display:none}}</style></head><body>'+
+    '<button onclick="window.print()" style="padding:8px 16px;background:#D97706;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print Offer Letter</button>'+
+    '<pre style="white-space:pre-wrap;font-family:Georgia,serif">'+escHtml(window._shLastOfferLetter||'')+'</pre></body></html>');
+  w.document.close();
+}
+function shCopyOfferLetter(){
+  if(navigator.clipboard&&window._shLastOfferLetter){
+    navigator.clipboard.writeText(window._shLastOfferLetter);
+    shNotify('Copied to clipboard','green');
+  }
+}
+function shOfferLetterHistory(){
+  if(!shOfferHistory.length){shNotify('No offer letters generated yet','');return;}
+  alert('Offer Letter History:\n\n'+shOfferHistory.map(function(h,i){return (i+1)+'. '+h.name+' — '+h.role+' — $'+h.salary+'/yr — '+h.date;}).join('\n'));
+}
+
+// ============================================================
+// 7. EXIT INTERVIEW BUILDER
+// ============================================================
+var SH_EXIT_QUESTIONS=[
+  'What is your primary reason for leaving?',
+  'What did you enjoy most about your role?',
+  'What could have been improved in your role or team?',
+  'How was your relationship with your manager?',
+  'Did you feel your compensation was fair for your contributions?',
+  'What would have made you stay?',
+  'Would you recommend this company as a place to work?',
+  'What did this company do really well?',
+  'What advice would you give to your replacement?',
+  'Are you leaving for a competitor? (If comfortable sharing)',
+];
+var SH_EXIT_REASONS=['Better compensation','Career advancement','Work-life balance','Manager/leadership','Company culture','Relocation','Personal reasons','Better benefits','Lack of growth opportunity','Remote work flexibility','Other'];
+
+function shInitExitInterview(){shRenderExits();shUpdateExitKPIs();}
+function shUpdateExitKPIs(){
+  var total=shExitCases.length;
+  var voluntary=shExitCases.filter(function(e){return e.type==='Voluntary';}).length;
+  var tenures=shExitCases.filter(function(e){return e.tenure;}).map(function(e){return parseFloat(e.tenure)||0;});
+  var avgTenure=tenures.length?Math.round(tenures.reduce(function(s,t){return s+t;},0)/tenures.length*10)/10:0;
+  var reasons=shExitCases.map(function(e){return e.reason||'Other';});
+  var topReason=reasons.length?reasons.sort(function(a,b){return reasons.filter(function(v){return v===b;}).length-reasons.filter(function(v){return v===a;}).length;})[0]:'—';
+  var d;
+  d=document.getElementById('exit-kpi-total');if(d)d.textContent=total;
+  d=document.getElementById('exit-kpi-voluntary');if(d)d.textContent=voluntary;
+  d=document.getElementById('exit-kpi-avg-tenure');if(d)d.textContent=avgTenure+'y';
+  d=document.getElementById('exit-kpi-top-reason');if(d)d.textContent=topReason;
+}
+function shRenderExits(){
+  var list=document.getElementById('exit-list');if(!list)return;
+  if(!shExitCases.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px">No exit interviews. Click + New Exit Interview.</div>';return;}
+  list.innerHTML=shExitCases.map(function(c,i){
+    return '<div class="sh-card" style="margin-bottom:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div><strong>'+escHtml(c.name)+'</strong> &mdash; <span style="color:var(--muted);font-size:12px">'+escHtml(c.role||'—')+'</span>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+escHtml(c.type||'Voluntary')+' | Reason: <strong style="color:var(--a)">'+escHtml(c.reason||'—')+'</strong> | Tenure: '+escHtml(c.tenure||'?')+'y</div></div>'+
+        '<button onclick="shExitAIForEmp('+i+')" class="sh-btn-outline" style="font-size:10px;padding:3px 8px">✨ AI Analysis</button>'+
+      '</div>'+
+      (c.responses?'<div style="margin-top:10px;font-size:12px;color:var(--muted);background:var(--surface-2);border-radius:6px;padding:8px;line-height:1.8">'+c.responses.slice(0,2).map(function(r,ri){return '<strong>Q:</strong> '+SH_EXIT_QUESTIONS[ri]+'<br><strong>A:</strong> '+escHtml(r||'—');}).join('<br><br>')+'</div>':'')+'</div>';
+  }).join('');
+}
+function shNewExitInterview(){
+  var name=prompt('Employee name:');if(!name)return;
+  var role=prompt('Role:','');
+  var type=prompt('Separation type (Voluntary/Involuntary/Retirement):','Voluntary')||'Voluntary';
+  var tenure=prompt('Years of tenure:','2');
+  var reason=prompt('Primary exit reason:\n'+SH_EXIT_REASONS.map(function(r,i){return (i+1)+'. '+r;}).join('\n'),'Better compensation')||'Other';
+  var responses=[];
+  var doInterview=confirm('Conduct full exit interview? (10 questions)');
+  if(doInterview){
+    SH_EXIT_QUESTIONS.slice(0,5).forEach(function(q){
+      var ans=prompt(q,'');
+      responses.push(ans||'No response');
+    });
+  }
+  shExitCases.unshift({name,role,type,tenure:parseFloat(tenure)||0,reason,responses,date:new Date().toLocaleDateString()});
+  shSave2('sh_exit_cases',shExitCases);
+  shRenderExits();shUpdateExitKPIs();
+  shNotify('Exit interview recorded for '+name,'green');
+}
+async function shExitAI(){
+  if(!shExitCases.length){shNotify('No exit data yet','');return;}
+  var reasons=shExitCases.map(function(e){return e.reason||'Other';});
+  shNotify('AI analyzing exit trends...','');
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNhr AI — CHRO + organizational psychologist.',
+        messages:[{role:'user',content:'Exit interview trend analysis for '+shExitCases.length+' departures:\n\nReasons: '+JSON.stringify(reasons)+'\nAvg tenure at exit: '+shExitCases.reduce(function(s,e){return s+(e.tenure||0);},0)/shExitCases.length+'years\n\nProvide: 1) Top attrition drivers and root causes, 2) Estimated cost of turnover (avg $20-50K per employee), 3) Which issues are actionable vs structural, 4) Specific retention strategies for top 3 reasons, 5) Early warning signs to watch in current team.'}]})});
+    var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+async function shExitAIForEmp(i){
+  var c=shExitCases[i];if(!c)return;
+  shNotify('AI analyzing exit...','');
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+        system:'You are SAIRNhr AI — CHRO expert.',
+        messages:[{role:'user',content:'Exit interview analysis for '+c.name+' ('+c.role+'). '+c.type+' departure. Primary reason: '+c.reason+'. Tenure: '+c.tenure+' years. Responses: '+JSON.stringify(c.responses||[])+'. Provide: 1) Key themes in their feedback, 2) Actionable improvements the company should make, 3) Was this departure preventable? 4) Reference check and rehire recommendation.'}]})});
+    var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+function shExportExits(){
+  var rows=['Name,Role,Type,Reason,Tenure,Date'];
+  shExitCases.forEach(function(e){rows.push([e.name,e.role||'',e.type||'',e.reason||'',e.tenure||'',e.date||''].join(','));});
+  var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='exit_interviews.csv';a.click();
+}
+
+// ============================================================
+// 8. TOTAL REWARDS STATEMENT
+// ============================================================
+function shInitTotalRewards(){shUpdateTRKPIs();}
+function shUpdateTRKPIs(){
+  var emps=shGetEmployees();
+  var totalComp=emps.reduce(function(s,e){return s+(parseFloat(e.salary)||0);},0)/Math.max(emps.length,1);
+  var avgBenefits=18000; // est. benefits value per employee
+  var ratio=totalComp>0?Math.round(avgBenefits/(totalComp+avgBenefits)*100):0;
+  var d;
+  d=document.getElementById('tr-kpi-avg-total');if(d)d.textContent=shFmtK(totalComp+avgBenefits);
+  d=document.getElementById('tr-kpi-avg-benefits');if(d)d.textContent=shFmtK(avgBenefits);
+  d=document.getElementById('tr-kpi-ratio');if(d)d.textContent=ratio+'%';
+  d=document.getElementById('tr-kpi-employees');if(d)d.textContent=localStorage.getItem('sh_tr_count')||'0';
+}
+function shGenTotalRewards(){
+  var emps=shGetEmployees();
+  if(!emps.length){shNotify('Add employees first','');return;}
+  var sel=prompt('Employee name (or ALL for everyone):\n'+emps.map(function(e,i){return (i+1)+'. '+e.name;}).join('\n'),'ALL')||'ALL';
+  var toProcess=sel.toUpperCase()==='ALL'?emps:emps.filter(function(e){return e.name===sel;});
+  toProcess.forEach(function(e){shPrintTotalRewards(e);});
+  var count=parseInt(localStorage.getItem('sh_tr_count')||'0');
+  localStorage.setItem('sh_tr_count',String(count+toProcess.length));
+  shNotify('Total Rewards statements generated for '+toProcess.length+' employee(s)','green');
+  shUpdateTRKPIs();
+}
+function shPrintTotalRewards(emp){
+  var sal=parseFloat(emp.salary)||0;
+  var bonus=sal*0.1;
+  var enr=shEnrollments.find(function(x){return x.empName===emp.name;})||{};
+  var medCost=(enr.medical==='PPO Select'?780:enr.medical==='HDHP+HSA'?620:enr.medical==='HMO Plus'?710:0)*12;
+  var ret401k=sal*(parseFloat(enr.ret||0)/100);
+  var match=sal*0.04;
+  var lifeVal=sal*2*0.003;
+  var totalBenefits=medCost+ret401k+match+lifeVal+5000; // $5K misc (dental/vision/EAP/etc)
+  var totalComp=sal+bonus+totalBenefits;
+  var w=window.open('','_blank');
+  var css='body{font-family:Arial,sans-serif;padding:40px;max-width:680px;margin:auto;color:#0D2418}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #C3E0CC;font-size:13px}.total{font-weight:900;font-size:16px;border-top:2px solid #16a34a;margin-top:8px;padding-top:8px}.bar-wrap{background:#f0f7f2;border-radius:6px;height:12px;margin-top:4px}.bar{height:12px;border-radius:6px;background:linear-gradient(135deg,#16a34a,#15803d)}@media print{button{display:none}}';
+  var html='<!DOCTYPE html><html><head><title>Total Rewards — '+escHtml(emp.name)+'</title><style>'+css+'</style></head><body>'+
+    '<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print Statement</button>'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">'+
+      '<div><h2 style="font-size:20px;margin:0">Total Rewards Statement</h2><p style="color:#4A7A5A;margin:4px 0">'+escHtml(emp.name)+' | '+escHtml(emp.role||'—')+' | '+new Date().getFullYear()+'</p></div>'+
+      '<div style="text-align:right"><div style="font-size:28px;font-weight:900;color:#16a34a">$'+Math.round(totalComp).toLocaleString()+'</div><div style="font-size:11px;color:#4A7A5A">Total Compensation Value</div></div></div>'+
+    '<h3 style="font-size:14px;border-bottom:2px solid #C3E0CC;padding-bottom:8px">CASH COMPENSATION</h3>'+
+    '<div class="row"><span>Base Salary</span><span>$'+sal.toLocaleString()+'</span></div>'+
+    '<div class="row"><span>Target Bonus (10%)</span><span>$'+Math.round(bonus).toLocaleString()+'</span></div>'+
+    '<h3 style="font-size:14px;border-bottom:2px solid #C3E0CC;padding-bottom:8px;margin-top:20px">BENEFITS (EMPLOYER CONTRIBUTION)</h3>'+
+    '<div class="row"><span>Medical Insurance</span><span>$'+Math.round(medCost).toLocaleString()+'/yr</span></div>'+
+    '<div class="row"><span>401(k) Match (4%)</span><span>$'+Math.round(match).toLocaleString()+'/yr</span></div>'+
+    '<div class="row"><span>Life Insurance (2x salary)</span><span>$'+Math.round(lifeVal).toLocaleString()+'/yr</span></div>'+
+    '<div class="row"><span>Dental + Vision + EAP</span><span>~$2,400/yr</span></div>'+
+    '<div class="row"><span>PTO Value (est.)</span><span>~$'+Math.round(sal/52*2).toLocaleString()+'/yr</span></div>'+
+    '<div class="row total"><span>TOTAL COMPENSATION</span><span style="color:#16a34a">$'+Math.round(totalComp).toLocaleString()+'</span></div>'+
+    '<div style="margin-top:20px;font-size:11px;color:#4A7A5A">Your total compensation includes direct pay plus the value of all employer-paid benefits. This statement is for informational purposes only.</div>'+
+    '</body></html>';
+  w.document.write(html);w.document.close();
+}
+function shBulkTotalRewards(){shGenTotalRewards();}
+async function shTotalRewardsAI(){
+  shNotify('AI analyzing compensation strategy...','');
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNhr AI — CHRO + total rewards consultant.',
+        messages:[{role:'user',content:'Total rewards strategy analysis for our company. We have '+shGetEmployees().length+' employees. Provide: 1) Is our current total rewards package competitive for 2026? 2) What non-cash benefits have highest retention ROI? 3) How should we communicate total compensation to employees? 4) Pay transparency strategy (22+ states have laws), 5) Top 3 total rewards improvements for budget under $500/employee/year.'}]})});
+    var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+
+// ============================================================
+// 9. I-9 / W-4 DOCUMENT TRACKER
+// ============================================================
+function shAutoSeedI9FromEmployees(){
+  var emps=shGetEmployees();
+  emps.forEach(function(e){
+    if(!shI9Records.find(function(r){return r.empName===e.name;})){
+      shI9Records.push({empName:e.name,startDate:e.startDate||'',i9Status:'Pending',i9Completed:'',docExpires:'',w4Status:'Pending',reverifyBy:''});
+    }
+  });
+  shSave2('sh_i9_records',shI9Records);
+}
+function shInitI9W4(){shAutoSeedI9FromEmployees();shRenderI9();shUpdateI9KPIs();}
+function shUpdateI9KPIs(){
+  var complete=shI9Records.filter(function(r){return r.i9Status==='Complete';}).length;
+  var pending=shI9Records.filter(function(r){return r.i9Status==='Pending';}).length;
+  var today=new Date();
+  var expiring=shI9Records.filter(function(r){
+    if(!r.docExpires)return false;
+    var d=new Date(r.docExpires);
+    return d>today&&d<new Date(today.getTime()+90*86400000);
+  }).length;
+  var w4missing=shI9Records.filter(function(r){return r.w4Status==='Missing';}).length;
+  var d;
+  d=document.getElementById('i9-kpi-complete');if(d)d.textContent=complete;
+  d=document.getElementById('i9-kpi-pending');if(d)d.textContent=pending;
+  d=document.getElementById('i9-kpi-expiring');if(d)d.textContent=expiring;
+  d=document.getElementById('i9-kpi-w4-missing');if(d)d.textContent=w4missing;
+}
+function shRenderI9(){
+  var tbody=document.getElementById('i9-tbody');if(!tbody)return;
+  if(!shI9Records.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No records. Records auto-created from Employees panel.</td></tr>';return;}
+  var today=new Date();
+  tbody.innerHTML=shI9Records.map(function(r,i){
+    var expDate=r.docExpires?new Date(r.docExpires):null;
+    var expiring=expDate&&expDate>today&&expDate<new Date(today.getTime()+90*86400000);
+    var expired=expDate&&expDate<today;
+    return '<tr>'+
+      '<td><strong>'+escHtml(r.empName)+'</strong></td>'+
+      '<td style="font-size:12px">'+escHtml(r.startDate||'—')+'</td>'+
+      '<td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(r.i9Status==='Complete'?'rgba(22,163,74,.12)':'rgba(249,115,22,.12)')+';color:'+(r.i9Status==='Complete'?'var(--green)':'var(--orange)')+'">'+escHtml(r.i9Status||'Pending')+'</span></td>'+
+      '<td style="font-size:12px">'+escHtml(r.i9Completed||'—')+'</td>'+
+      '<td style="font-size:12px;color:'+(expired?'var(--red)':expiring?'var(--orange)':'inherit')+'">'+escHtml(r.docExpires||'—')+(expired?' ⚠️ EXPIRED':expiring?' ⚡ Expiring':'')+'</td>'+
+      '<td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(r.w4Status==='Complete'?'rgba(22,163,74,.12)':'rgba(220,38,38,.1)')+';color:'+(r.w4Status==='Complete'?'var(--green)':'var(--red)')+'">'+escHtml(r.w4Status||'Pending')+'</span></td>'+
+      '<td style="font-size:12px">'+escHtml(r.reverifyBy||'—')+'</td>'+
+      '<td><button onclick="shUpdateI9('+i+')" class="sh-btn-secondary" style="font-size:10px;padding:3px 6px">Update</button></td></tr>';
+  }).join('');
+}
+function shUpdateI9(i){
+  var r=shI9Records[i];
+  var i9Status=prompt('I-9 Status (Pending/Complete/Needs Re-verify):',r.i9Status)||r.i9Status;
+  var i9Completed=prompt('I-9 Completion Date:',r.i9Completed||new Date().toISOString().slice(0,10))||r.i9Completed;
+  var docExpires=prompt('Document Expiration Date (if applicable):',r.docExpires||'')||r.docExpires;
+  var w4Status=prompt('W-4 Status (Pending/Complete/Missing):',r.w4Status)||r.w4Status;
+  shI9Records[i]={...r,i9Status,i9Completed,docExpires,w4Status};
+  shSave2('sh_i9_records',shI9Records);
+  shRenderI9();shUpdateI9KPIs();
+  shNotify('Updated I-9/W-4 record for '+r.empName,'green');
+}
+function shAddI9Record(){
+  var name=prompt('Employee name:');if(!name)return;
+  shI9Records.push({empName:name,startDate:new Date().toISOString().slice(0,10),i9Status:'Pending',i9Completed:'',docExpires:'',w4Status:'Pending',reverifyBy:''});
+  shSave2('sh_i9_records',shI9Records);
+  shRenderI9();shUpdateI9KPIs();
+}
+async function shI9AI(){
+  var expiring=shI9Records.filter(function(r){return r.i9Status==='Needs Re-verify';}).length;
+  var pending=shI9Records.filter(function(r){return r.i9Status==='Pending';}).length;
+  shNotify('AI compliance check...','');
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+        system:'You are SAIRNhr AI — CHRO + employment attorney specializing in immigration compliance.',
+        messages:[{role:'user',content:'I-9 compliance check: '+shI9Records.length+' employees total. Pending I-9s: '+pending+'. Needing re-verification: '+expiring+'. W-4 missing: '+shI9Records.filter(function(r){return r.w4Status==='Missing';}).length+'. Provide: 1) Legal penalties for missing I-9s (2026 fine schedule), 2) Re-verification obligations and timing, 3) E-Verify recommendations, 4) Document List A vs B+C requirements, 5) Internal audit checklist for full I-9 compliance.'}]})});
+    var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+function shExportI9(){
+  var rows=['Employee,Start Date,I-9 Status,I-9 Completed,Doc Expires,W-4 Status'];
+  shI9Records.forEach(function(r){rows.push([r.empName,r.startDate||'',r.i9Status||'',r.i9Completed||'',r.docExpires||'',r.w4Status||''].join(','));});
+  var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='i9_w4_tracker.csv';a.click();
+}
+
+// ============================================================
+// 10. PAY STUB GENERATOR
+// ============================================================
+function shInitPayStub(){shCalcPayStub();}
+function shCalcPayStub(){
+  var gross=parseFloat((document.getElementById('ps-gross')||{}).value)||0;
+  var fed=parseFloat((document.getElementById('ps-fed')||{}).value)||0;
+  var state=parseFloat((document.getElementById('ps-state')||{}).value)||0;
+  var ss=parseFloat((document.getElementById('ps-ss')||{}).value)||0;
+  var med=parseFloat((document.getElementById('ps-med')||{}).value)||0;
+  var health=parseFloat((document.getElementById('ps-health2')||{}).value)||0;
+  var ret=parseFloat((document.getElementById('ps-ret')||{}).value)||0;
+  var net=gross-fed-state-ss-med-health-ret;
+  var d=document.getElementById('ps-net-display');
+  if(d) d.innerHTML='Net Pay: <span style="color:var(--green)">'+shFmt(Math.max(0,net))+'</span>';
+}
+function shAutoFillFromCalc(){
+  var c=window._shLastCalc;if(!c){shNotify('Run the Payroll Calculator first','');return;}
+  var set=function(id,val){var el=document.getElementById(id);if(el)el.value=Math.round(val*100)/100;};
+  set('ps-gross',c.gross||0);set('ps-fed',c.fed||0);set('ps-state',c.state||0);
+  set('ps-ss',c.ss||0);set('ps-med',c.med||0);set('ps-health2',c.health||0);set('ps-ret',c.ret||0);
+  shCalcPayStub();
+  shNotify('Auto-filled from Payroll Calculator','green');
+}
+function shPrintPayStubDirect(){
+  var name=(document.getElementById('ps-name')||{}).value||'Employee';
+  var empId=(document.getElementById('ps-id')||{}).value||'EMP-001';
+  var periodLabel=(document.getElementById('ps-period-label')||{}).value||'Current Period';
+  var date=(document.getElementById('ps-date')||{}).value||new Date().toLocaleDateString();
+  var gross=parseFloat((document.getElementById('ps-gross')||{}).value)||0;
+  var fed=parseFloat((document.getElementById('ps-fed')||{}).value)||0;
+  var state=parseFloat((document.getElementById('ps-state')||{}).value)||0;
+  var ss=parseFloat((document.getElementById('ps-ss')||{}).value)||0;
+  var med=parseFloat((document.getElementById('ps-med')||{}).value)||0;
+  var health=parseFloat((document.getElementById('ps-health2')||{}).value)||0;
+  var ret=parseFloat((document.getElementById('ps-ret')||{}).value)||0;
+  var ytd=parseFloat((document.getElementById('ps-ytd')||{}).value)||gross;
+  shGeneratePayStubHTML(name,empId,periodLabel,date,gross,fed,state,ss,med,health,ret,ytd);
+}
+function shGeneratePayStubHTML(name,empId,period,date,gross,fed,state,ss,med,health,ret,ytd){
+  var net=Math.max(0,gross-fed-state-ss-med-health-ret);
+  var w=window.open('','_blank');
+  var css='body{font-family:Arial,sans-serif;padding:30px;max-width:600px;margin:auto;font-size:12px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #eee}.hdr{background:#D97706;color:#fff;padding:16px;border-radius:8px 8px 0 0;margin-bottom:0}.section{background:#FFF8F0;border:1px solid #F3D5A8;border-top:none;padding:12px}.total{font-weight:900;background:#FFF8F0;border:1px solid #D97706;padding:10px;border-radius:0 0 8px 8px;display:flex;justify-content:space-between;font-size:16px}@media print{button{display:none}}';
+  var html='<!DOCTYPE html><html><head><title>Pay Stub — '+escHtml(name)+'</title><style>'+css+'</style></head><body>'+
+    '<button onclick="window.print()" style="padding:8px 16px;background:#D97706;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:16px">Print Pay Stub</button>'+
+    '<div class="hdr"><div style="display:flex;justify-content:space-between"><div><div style="font-size:18px;font-weight:900">Pay Stub</div><div style="opacity:.8;font-size:12px">SAIRNhr™ Payroll</div></div><div style="text-align:right"><div style="font-size:13px">'+escHtml(name)+'</div><div style="opacity:.8;font-size:11px">'+escHtml(empId)+'</div></div></div></div>'+
+    '<div class="section"><div class="row"><span><strong>Pay Period</strong></span><span>'+escHtml(period)+'</span></div><div class="row"><span><strong>Pay Date</strong></span><span>'+escHtml(date)+'</span></div></div>'+
+    '<div class="section" style="margin-top:12px"><div style="font-weight:700;margin-bottom:6px">EARNINGS</div>'+
+      '<div class="row"><span>Regular Pay</span><span>'+shFmt(gross)+'</span></div>'+
+      '<div class="row"><span>YTD Gross</span><span>'+shFmt(ytd||gross)+'</span></div></div>'+
+    '<div class="section" style="margin-top:12px"><div style="font-weight:700;margin-bottom:6px">DEDUCTIONS</div>'+
+      '<div class="row"><span>Federal Income Tax</span><span>-'+shFmt(fed)+'</span></div>'+
+      '<div class="row"><span>State Income Tax</span><span>-'+shFmt(state)+'</span></div>'+
+      '<div class="row"><span>Social Security (6.2%)</span><span>-'+shFmt(ss)+'</span></div>'+
+      '<div class="row"><span>Medicare (1.45%)</span><span>-'+shFmt(med)+'</span></div>'+
+      (health>0?'<div class="row"><span>Health Insurance</span><span>-'+shFmt(health)+'</span></div>':'')+
+      (ret>0?'<div class="row"><span>401(k) Contribution</span><span>-'+shFmt(ret)+'</span></div>':'')+
+      '<div class="row"><span><strong>Total Deductions</strong></span><span><strong>-'+shFmt(fed+state+ss+med+health+ret)+'</strong></span></div></div>'+
+    '<div class="total"><span>NET PAY</span><span style="color:#D97706">'+shFmt(net)+'</span></div>'+
+    '<p style="font-size:10px;color:#888;margin-top:16px;text-align:center">Generated by SAIRNhr™ · For informational purposes</p>'+
+    '</body></html>';
+  w.document.write(html);w.document.close();
+}
+
+// ============================================================
+// 11. FMLA / LEAVE TRACKER
+// ============================================================
+function shInitFMLATracker(){shRenderFMLA();shUpdateFMLAKPIs();}
+function shUpdateFMLAKPIs(){
+  var active=shFMLACases.filter(function(c){return c.status==='Active';}).length;
+  var used=shFMLACases.filter(function(c){return c.status==='Active';});
+  var avgUsed=used.length?Math.round(used.reduce(function(s,c){return s+(parseFloat(c.daysUsed)||0);},0)/used.length):0;
+  var today=new Date();
+  var expiring=shFMLACases.filter(function(c){
+    if(c.status!=='Active'||!c.endDate)return false;
+    var d=new Date(c.endDate);
+    return d>today&&d<new Date(today.getTime()+30*86400000);
+  }).length;
+  var complete=shFMLACases.filter(function(c){return c.status==='Complete';}).length;
+  var d;
+  d=document.getElementById('fmla-kpi-active');if(d)d.textContent=active;
+  d=document.getElementById('fmla-kpi-days-used');if(d)d.textContent=avgUsed;
+  d=document.getElementById('fmla-kpi-expiring');if(d)d.textContent=expiring;
+  d=document.getElementById('fmla-kpi-complete');if(d)d.textContent=complete;
+}
+function shRenderFMLA(){
+  var tbody=document.getElementById('fmla-tbody');if(!tbody)return;
+  if(!shFMLACases.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No FMLA cases. Click + New FMLA Case.</td></tr>';return;}
+  tbody.innerHTML=shFMLACases.map(function(c,i){
+    var totalDays=parseInt(c.leaveType==='Military'?130:84);
+    var used=parseFloat(c.daysUsed)||0;
+    var left=Math.max(0,totalDays-used);
+    var pct=Math.min(100,Math.round(used/totalDays*100));
+    return '<tr>'+
+      '<td><strong>'+escHtml(c.empName)+'</strong></td>'+
+      '<td><span style="font-size:10px;padding:2px 8px;border-radius:8px;background:var(--a-light);color:var(--a)">'+escHtml(c.leaveType||'FMLA')+'</span></td>'+
+      '<td style="font-size:12px">'+escHtml(c.startDate||'—')+'</td>'+
+      '<td style="font-size:12px">'+escHtml(c.endDate||'—')+'</td>'+
+      '<td style="font-weight:700">'+used+'</td>'+
+      '<td style="font-weight:700;color:'+(left<=10?'var(--red)':left<=20?'var(--amber)':'var(--green)')+'">'+left+'</td>'+
+      '<td><div style="background:var(--surface-2);border-radius:6px;height:8px;width:80px"><div style="height:8px;border-radius:6px;background:'+(pct>=90?'var(--red)':pct>=70?'var(--amber)':'var(--a)')+';width:'+pct+'%"></div></div><div style="font-size:10px;color:var(--muted)">'+pct+'%</div></td>'+
+      '<td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(c.status==='Active'?'rgba(249,115,22,.12)':'rgba(22,163,74,.12)')+';color:'+(c.status==='Active'?'var(--orange)':'var(--green)')+'">'+escHtml(c.status||'Active')+'</span></td>'+
+      '<td><button onclick="shUpdateFMLA('+i+')" class="sh-btn-secondary" style="font-size:10px;padding:3px 6px">Update</button></td></tr>';
+  }).join('');
+}
+function shNewFMLACase(){
+  var emp=prompt('Employee name:');if(!emp)return;
+  var type=prompt('Leave type (FMLA / Parental / Military / State PFL):','FMLA')||'FMLA';
+  var start=prompt('Start date:',new Date().toISOString().slice(0,10))||'';
+  var end=prompt('Estimated end date (84 days/12 weeks FMLA):',new Date(Date.now()+84*86400000).toISOString().slice(0,10))||'';
+  shFMLACases.push({empName:emp,leaveType:type,startDate:start,endDate:end,daysUsed:0,status:'Active',designatedDate:new Date().toISOString().slice(0,10)});
+  shSave2('sh_fmla_cases',shFMLACases);
+  shRenderFMLA();shUpdateFMLAKPIs();
+  shNotify('FMLA case opened for '+emp+' — must designate within 5 business days','green');
+}
+function shUpdateFMLA(i){
+  var c=shFMLACases[i];
+  var days=parseFloat(prompt('Days used so far:',c.daysUsed))||0;
+  var status=prompt('Status (Active/Complete/Denied):',c.status)||c.status;
+  shFMLACases[i]={...c,daysUsed:days,status:status};
+  shSave2('sh_fmla_cases',shFMLACases);
+  shRenderFMLA();shUpdateFMLAKPIs();
+  shNotify('FMLA case updated for '+c.empName,'green');
+}
+async function shFMLAAI(){
+  shNotify('AI getting FMLA guidance...','');
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNhr AI — CHRO + labor attorney specializing in leave law.',
+        messages:[{role:'user',content:'FMLA compliance guidance for our company with '+shFMLACases.length+' active/historical leave cases. Provide: 1) 2026 FMLA eligibility requirements and employer obligations, 2) State paid family leave laws that may apply (now 13+ states), 3) Intermittent FMLA management and abuse prevention, 4) ADA interaction with FMLA (when FMLA ends, ADA may continue), 5) Designation requirements and timing deadlines (5-business-day rule). State-specific notes for OH, CA, NY, TX.'}]})});
+    var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+function shExportFMLA(){
+  var rows=['Employee,Leave Type,Start,End,Days Used,Status'];
+  shFMLACases.forEach(function(c){rows.push([c.empName,c.leaveType||'',c.startDate||'',c.endDate||'',c.daysUsed||0,c.status||''].join(','));});
+  var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fmla_tracker.csv';a.click();
+}
+
+// ============================================================
+// 12. HEADCOUNT FORECAST
+// ============================================================
+function shInitHCForecast(){shRenderHCForecast();shUpdateHCKPIs();}
+function shUpdateHCKPIs(){
+  var current=shGetEmployees().length;
+  var target=shHCPlans.reduce(function(s,p){return s+((p.q1||0)+(p.q2||0)+(p.q3||0)+(p.q4||0));},0)+current;
+  var open=shHCPlans.filter(function(p){return p.status==='Open';}).length;
+  var budgetUsed=shHCPlans.reduce(function(s,p){return s+(parseFloat(p.budgetImpact)||0);},0);
+  var totalBudget=500000; // default $500K HC budget
+  var remaining=totalBudget-budgetUsed;
+  var d;
+  d=document.getElementById('hcf-kpi-current');if(d)d.textContent=current;
+  d=document.getElementById('hcf-kpi-target');if(d)d.textContent=target;
+  d=document.getElementById('hcf-kpi-open');if(d)d.textContent=open;
+  d=document.getElementById('hcf-kpi-budget');if(d)d.textContent=shFmtK(remaining);
+}
+function shRenderHCForecast(){
+  var tbody=document.getElementById('hcf-tbody');if(!tbody)return;
+  if(!shHCPlans.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No hire plans. Click + Add Hire Plan.</td></tr>';return;}
+  tbody.innerHTML=shHCPlans.map(function(p,i){
+    var total=(p.q1||0)+(p.q2||0)+(p.q3||0)+(p.q4||0);
+    var priColor=p.priority==='Critical'?'var(--red)':p.priority==='High'?'var(--orange)':'var(--muted)';
+    return '<tr>'+
+      '<td><strong>'+escHtml(p.role)+'</strong></td>'+
+      '<td><span style="font-size:11px;background:var(--a-light);color:var(--a);padding:2px 8px;border-radius:8px">'+escHtml(p.department||'—')+'</span></td>'+
+      '<td style="text-align:center;font-weight:700">'+escHtml(String(p.q1||0))+'</td>'+
+      '<td style="text-align:center;font-weight:700">'+escHtml(String(p.q2||0))+'</td>'+
+      '<td style="text-align:center;font-weight:700">'+escHtml(String(p.q3||0))+'</td>'+
+      '<td style="text-align:center;font-weight:700">'+escHtml(String(p.q4||0))+'</td>'+
+      '<td style="text-align:center;font-size:16px;font-weight:900;color:var(--a)">'+total+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:var(--orange)">'+shFmtK(p.budgetImpact||0)+'</td>'+
+      '<td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,.05);color:'+priColor+';font-weight:700">'+escHtml(p.priority||'Normal')+'</span></td></tr>';
+  }).join('');
+  // Render simple bar chart
+  shRenderHCChart();
+}
+function shRenderHCChart(){
+  var chart=document.getElementById('hcf-chart');if(!chart)return;
+  var quarters=['Q1','Q2','Q3','Q4'];
+  var totals=quarters.map(function(q){
+    var key=q.toLowerCase();
+    return shHCPlans.reduce(function(s,p){return s+(p[key]||0);},0);
+  });
+  var max=Math.max.apply(null,totals)||1;
+  chart.innerHTML='<div style="font-weight:700;margin-bottom:10px;font-size:13px;color:var(--a)">Hire Plan by Quarter</div>'+
+    '<div style="display:flex;gap:16px;align-items:flex-end;height:80px">'+
+    quarters.map(function(q,i){
+      var h=Math.round((totals[i]/max)*70)+10;
+      return '<div style="flex:1;text-align:center">'+
+        '<div style="font-size:11px;font-weight:700;margin-bottom:4px">'+totals[i]+'</div>'+
+        '<div style="height:'+h+'px;background:var(--grad);border-radius:4px 4px 0 0;transition:height .3s"></div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+q+'</div></div>';
+    }).join('')+'</div>';
+}
+function shNewHCPlan(){
+  var role=prompt('Role to hire:');if(!role)return;
+  var dept=prompt('Department:','Engineering')||'Engineering';
+  var q1=parseInt(prompt('Q1 hires:','0'))||0;
+  var q2=parseInt(prompt('Q2 hires:','1'))||0;
+  var q3=parseInt(prompt('Q3 hires:','0'))||0;
+  var q4=parseInt(prompt('Q4 hires:','0'))||0;
+  var salary=parseFloat(prompt('Est. salary ($):','90000'))||90000;
+  var priority=prompt('Priority (Critical/High/Normal):','High')||'High';
+  var total=q1+q2+q3+q4;
+  var budgetImpact=salary*total*1.3; // 30% overhead
+  shHCPlans.push({role,department:dept,q1,q2,q3,q4,salary,budgetImpact,priority,status:'Open'});
+  shSave2('sh_hc_plans',shHCPlans);
+  shRenderHCForecast();shUpdateHCKPIs();
+  shNotify('Hire plan added: '+total+' '+role+'(s) — budget impact: '+shFmtK(budgetImpact),'green');
+}
+async function shHCForecastAI(){
+  var current=shGetEmployees().length;
+  var plans=shHCPlans.map(function(p){return p.role+' x'+((p.q1||0)+(p.q2||0)+(p.q3||0)+(p.q4||0));}).join(', ');
+  shNotify('AI building workforce strategy...','');
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNhr AI — CHRO + workforce planning consultant.',
+        messages:[{role:'user',content:'Workforce strategy analysis. Current headcount: '+current+'. Planned hires: '+plans+'. Provide: 1) Sequencing recommendation (which roles to hire first and why), 2) Talent market conditions in 2026 for these roles, 3) Build vs buy vs contract analysis, 4) Org design considerations as we scale, 5) Budget stress test — what if we can only hire 50% of plan?'}]})});
+    var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+function shExportHCForecast(){
+  var rows=['Role,Department,Q1,Q2,Q3,Q4,Total,Budget Impact,Priority'];
+  shHCPlans.forEach(function(p){
+    var t=(p.q1||0)+(p.q2||0)+(p.q3||0)+(p.q4||0);
+    rows.push([p.role,p.department||'',p.q1||0,p.q2||0,p.q3||0,p.q4||0,t,p.budgetImpact||0,p.priority||''].join(','));
+  });
+  var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='headcount_forecast.csv';a.click();
+}
+
+console.log('SAIRNhr v5.0 loaded — 12 new features: Payroll Calculator, Employee Directory, Compensation Bands, Benefits Enrollment, Offboarding Checklist, AI Offer Letter, Exit Interview, Total Rewards, I-9/W-4 Tracker, Pay Stub Generator, FMLA Tracker, Headcount Forecast.');
 
 </script>
 </body>
