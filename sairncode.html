@@ -204,6 +204,7 @@ function scShowApp(){
 document.addEventListener('DOMContentLoaded',async()=>{
   try{
     const res=await fetch(SC_RAILWAY+'/api/auth/me',{credentials:'include'});
+    if(!res.ok) return; // Not logged in yet - silent
     if(res.ok){
       const data=await res.json();
       scCurrentUser=data.user;
