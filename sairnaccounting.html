@@ -121,6 +121,18 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
       <button class="sa-nav-btn" onclick="saPanel('reports',this)"><span class="ni">📋</span><span>Reports</span></button>
       <button class="sa-nav-btn" onclick="saPanel('coa',this)"><span class="ni">🗂️</span><span>Chart of Accounts</span></button>
       <button class="sa-nav-btn" onclick="saPanel('receipts',this)"><span class="ni">🧾</span><span>Receipts</span></button>
+    
+      <div class="sa-nav-section">Billing</div>
+      <button class="sa-nav-btn" onclick="saPanel('estimates',this)"><span class="ni">📋</span><span>Estimates</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('recurring',this)"><span class="ni">🔄</span><span>Recurring</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('time',this)"><span class="ni">⏱️</span><span>Time Tracker</span></button>
+      <div class="sa-nav-section">Business</div>
+      <button class="sa-nav-btn" onclick="saPanel('contacts',this)"><span class="ni">👥</span><span>Contacts</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('projects',this)"><span class="ni">🎯</span><span>Projects</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('inventory',this)"><span class="ni">📦</span><span>Inventory</span></button>
+      <div class="sa-nav-section">Tax &amp; Assets</div>
+      <button class="sa-nav-btn" onclick="saPanel('assets',this)"><span class="ni">🏭</span><span>Fixed Assets</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('mileage',this)"><span class="ni">🚗</span><span>Mileage</span></button>
     </nav>
     <div class="sa-content">
 
@@ -300,6 +312,7 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
         <div style="display:flex;gap:10px;margin-bottom:14px">
           <button class="sa-btn-primary" onclick="saNewBill()">+ Enter Bill</button>
           <button class="sa-btn-outline" onclick="saBillAI()">✨ AI Cash Flow Advice</button>
+          <button class="sa-btn-secondary" onclick="saNewRecurringBill()">🔄 Add Recurring Bill</button>
           <button class="sa-btn-secondary" onclick="saExportAP()">⬇ Export AP Aging</button>
         </div>
         <div class="sa-card" style="padding:0;overflow:hidden">
@@ -551,7 +564,8 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
         </div>
         <div class="sa-card" style="margin-top:14px">
           <div class="sa-card-title">✨ AI Tax Strategy</div>
-          <button class="sa-btn-primary" onclick="saTaxStrategyAI()">Get AI Tax Planning Advice</button>
+          <button class="sa-btn-primary" onclick="saCalcSalesTax()">🧮 Sales Tax Calculator</button>
+          <button class="sa-btn-outline" onclick="saTaxStrategyAI()">✨ AI Tax Planning Advice</button>
           <div id="tax-ai-output" style="margin-top:12px"></div>
         </div>
       </div>
@@ -639,6 +653,238 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
       <!-- RECEIPTS -->
       <div id="panel-receipts" class="sa-panel">
         <div class="sa-section-title">🧾 Receipt Capture — AI-Extracted</div>
+
+      <!-- ESTIMATES / QUOTES -->
+      <div id="panel-estimates" class="sa-panel">
+        <div class="sa-section-title">📋 Estimates &amp; Quotes</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="est-kpi-open">0</div><div class="sa-kpi-label">Open Estimates</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="est-kpi-accepted" style="color:var(--green)">0</div><div class="sa-kpi-label">Accepted</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="est-kpi-value" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Pipeline Value</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="est-kpi-converted" style="color:var(--green)">0</div><div class="sa-kpi-label">Converted to Invoice</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sa-btn-primary" onclick="saNewEstimate()">+ New Estimate</button>
+          <button class="sa-btn-outline" onclick="saEstimateAI()">✨ AI Estimate Builder</button>
+          <button class="sa-btn-secondary" onclick="saExportEstimates()">⬇ Export</button>
+        </div>
+        <div class="sa-tabs">
+          <button class="sa-tab active" onclick="saEstTab('open',this)">Open</button>
+          <button class="sa-tab" onclick="saEstTab('accepted',this)">Accepted</button>
+          <button class="sa-tab" onclick="saEstTab('declined',this)">Declined</button>
+          <button class="sa-tab" onclick="saEstTab('converted',this)">Converted</button>
+          <button class="sa-tab" onclick="saEstTab('all',this)">All</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Estimate #</th><th>Customer</th><th>Date</th><th>Valid Until</th><th style="text-align:right">Amount</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="est-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RECURRING INVOICES -->
+      <div id="panel-recurring" class="sa-panel">
+        <div class="sa-section-title">🔄 Recurring Invoices</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec3-kpi-active" style="color:var(--green)">0</div><div class="sa-kpi-label">Active Schedules</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec3-kpi-monthly">$0</div><div class="sa-kpi-label">Monthly Recurring</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec3-kpi-annual" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Annual Recurring Rev</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="rec3-kpi-due-today" style="color:var(--orange)">0</div><div class="sa-kpi-label">Due Today</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="saNewRecurring()">+ New Recurring Invoice</button>
+          <button class="sa-btn-outline" onclick="saRunDueRecurring()">⚡ Generate All Due Now</button>
+          <button class="sa-btn-secondary" onclick="saRecurringAI()">✨ AI Subscription Analysis</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Schedule</th><th>Customer</th><th>Amount</th><th>Frequency</th><th>Next Date</th><th>Invoices Sent</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="recurring-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TIME TRACKER -->
+      <div id="panel-time" class="sa-panel">
+        <div class="sa-section-title">⏱️ Time Tracker</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="time-kpi-today">0h 0m</div><div class="sa-kpi-label">Today</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="time-kpi-week">0h</div><div class="sa-kpi-label">This Week</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="time-kpi-unbilled" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Unbilled Value</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="time-kpi-billed" style="color:var(--green)">$0</div><div class="sa-kpi-label">Billed This Month</div></div>
+        </div>
+        <!-- Timer widget -->
+        <div class="sa-card" style="background:var(--surface-2);border:2px solid var(--border)">
+          <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+            <div id="time-clock" style="font-size:36px;font-weight:900;color:var(--a);font-variant-numeric:tabular-nums;min-width:120px">00:00:00</div>
+            <div style="flex:1;min-width:200px">
+              <div class="sa-fg" style="margin:0 0 8px"><label>Client</label>
+                <select id="time-client" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+                  <option value="">Select client...</option>
+                </select>
+              </div>
+              <div class="sa-fg" style="margin:0"><label>Description</label>
+                <input type="text" id="time-desc" placeholder="What are you working on?" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-direction:column;min-width:100px">
+              <div class="sa-fg" style="margin:0"><label>Rate ($/hr)</label>
+                <input type="number" id="time-rate" value="150" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="time-start-btn" class="sa-btn-primary" onclick="saTimeToggle()" style="min-width:90px">▶ Start</button>
+              <button class="sa-btn-outline" onclick="saTimeManual()">+ Manual Entry</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin:14px 0">
+          <button class="sa-btn-primary" onclick="saBillSelectedTime()">📄 Invoice Unbilled Time</button>
+          <button class="sa-btn-secondary" onclick="saExportTime()">⬇ Export Timesheet</button>
+          <select id="time-filter-client" onchange="saRenderTimeEntries()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+            <option value="">All clients</option>
+          </select>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th><input type="checkbox" id="time-select-all" onchange="saTimeSelectAll(this)"></th><th>Date</th><th>Client</th><th>Description</th><th>Duration</th><th>Rate</th><th style="text-align:right">Amount</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="time-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONTACTS (Customers + Vendors) -->
+      <div id="panel-contacts" class="sa-panel">
+        <div class="sa-section-title">👥 Contacts — Customers &amp; Vendors</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="con-kpi-customers" style="color:var(--a)">0</div><div class="sa-kpi-label">Customers</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="con-kpi-vendors">0</div><div class="sa-kpi-label">Vendors</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="con-kpi-open-ar" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Total Open AR</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="con-kpi-open-ap" style="color:var(--red)">$0</div><div class="sa-kpi-label">Total Open AP</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <button class="sa-btn-primary" onclick="saNewContact()">+ Add Contact</button>
+          <button class="sa-btn-secondary" onclick="saSendStatements()">📨 Send Statements</button>
+          <button class="sa-btn-outline" onclick="saExportContacts()">⬇ Export</button>
+          <input type="text" id="con-search" placeholder="Search contacts..." oninput="saRenderContacts()" style="flex:1;min-width:180px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+          <select id="con-type-filter" onchange="saRenderContacts()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif">
+            <option value="">All types</option>
+            <option value="Customer">Customers</option>
+            <option value="Vendor">Vendors</option>
+          </select>
+        </div>
+        <div class="sa-tabs">
+          <button class="sa-tab active" onclick="saConTab('all',this)">All</button>
+          <button class="sa-tab" onclick="saConTab('Customer',this)">Customers</button>
+          <button class="sa-tab" onclick="saConTab('Vendor',this)">Vendors</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Phone</th><th style="text-align:right">Open Balance</th><th>Total Transactions</th><th>Action</th></tr></thead>
+            <tbody id="con-tbody"></tbody>
+          </table>
+        </div>
+        <!-- Contact detail view -->
+        <div id="con-detail" style="display:none"></div>
+      </div>
+
+      <!-- FIXED ASSETS -->
+      <div id="panel-assets" class="sa-panel">
+        <div class="sa-section-title">🏭 Fixed Assets &amp; Depreciation</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="ast-kpi-count">0</div><div class="sa-kpi-label">Total Assets</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="ast-kpi-cost">$0</div><div class="sa-kpi-label">Total Cost</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="ast-kpi-nbv" style="color:var(--a)">$0</div><div class="sa-kpi-label">Net Book Value</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="ast-kpi-depr-ytd" style="color:var(--orange)">$0</div><div class="sa-kpi-label">Depreciation YTD</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sa-btn-primary" onclick="saNewAsset()">+ Add Asset</button>
+          <button class="sa-btn-outline" onclick="saRunDepreciation()">📊 Run Depreciation</button>
+          <button class="sa-btn-secondary" onclick="saAssetAI()">✨ AI Depreciation Strategy</button>
+          <button class="sa-btn-secondary" onclick="saExportAssets()">⬇ Export Register</button>
+        </div>
+        <div style="background:var(--a-light);border:1px solid rgba(22,163,74,.25);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.8">
+          <strong>2026 Depreciation Methods:</strong> Straight-Line | Double-Declining Balance | MACRS (IRS) | Section 179 (up to $1,160,000 first-year deduction) | Bonus Depreciation (60% in 2026 for qualified property)
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Asset Name</th><th>Category</th><th>Acquired</th><th style="text-align:right">Cost</th><th>Method</th><th>Life (yrs)</th><th style="text-align:right">Accum. Depr.</th><th style="text-align:right">Net Book Value</th><th>Action</th></tr></thead>
+            <tbody id="ast-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MILEAGE TRACKER -->
+      <div id="panel-mileage" class="sa-panel">
+        <div class="sa-section-title">🚗 Mileage Tracker</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="mil-kpi-ytd">0 mi</div><div class="sa-kpi-label">Business Miles YTD</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="mil-kpi-deduction" style="color:var(--green)">$0</div><div class="sa-kpi-label">Tax Deduction Value</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="mil-kpi-trips">0</div><div class="sa-kpi-label">Trips Logged</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="mil-kpi-rate" style="color:var(--amber)">$0.70</div><div class="sa-kpi-label">2026 IRS Rate/Mile</div></div>
+        </div>
+        <div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.25);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.8">
+          <strong>2026 IRS Standard Mileage Rates:</strong> Business: <strong>$0.70/mile</strong> · Medical/Moving: $0.21/mile · Charitable: $0.14/mile · Keep logs with date, destination, business purpose, and miles driven.
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sa-btn-primary" onclick="saLogTrip()">+ Log Trip</button>
+          <button class="sa-btn-outline" onclick="saMileageReport()">📄 IRS-Compliant Report</button>
+          <button class="sa-btn-secondary" onclick="saExportMileage()">⬇ Export CSV</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Date</th><th>From</th><th>To</th><th>Purpose</th><th>Miles</th><th style="text-align:right">Deduction</th><th>Category</th><th>Action</th></tr></thead>
+            <tbody id="mileage-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PROJECT COSTING -->
+      <div id="panel-projects" class="sa-panel">
+        <div class="sa-section-title">🎯 Project &amp; Job Costing</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="proj-kpi-active">0</div><div class="sa-kpi-label">Active Projects</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="proj-kpi-budget">$0</div><div class="sa-kpi-label">Total Budgeted</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="proj-kpi-actual">$0</div><div class="sa-kpi-label">Actual Costs</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="proj-kpi-profit" style="color:var(--green)">$0</div><div class="sa-kpi-label">Total Profit</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="proj-kpi-margin">0%</div><div class="sa-kpi-label">Avg Margin</div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="sa-btn-primary" onclick="saNewProject()">+ New Project</button>
+          <button class="sa-btn-outline" onclick="saProjectPL()">📊 Project P&amp;L</button>
+          <button class="sa-btn-secondary" onclick="saProjectAI()">✨ AI Profitability Analysis</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>Project</th><th>Client</th><th>Start</th><th>End</th><th style="text-align:right">Budget</th><th style="text-align:right">Revenue</th><th style="text-align:right">Costs</th><th style="text-align:right">Profit</th><th>Margin</th><th>Status</th></tr></thead>
+            <tbody id="proj-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- INVENTORY -->
+      <div id="panel-inventory" class="sa-panel">
+        <div class="sa-section-title">📦 Inventory Management</div>
+        <div class="sa-grid">
+          <div class="sa-kpi"><div class="sa-kpi-val" id="inv2-kpi-count">0</div><div class="sa-kpi-label">SKUs</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="inv2-kpi-value" style="color:var(--a)">$0</div><div class="sa-kpi-label">Inventory Value</div></div>
+          <div class="sa-kpi"><div class="sa-kpi-val" id="inv2-kpi-lowstock" style="color:var(--red)">0</div><div class="sa-kpi-label">Low Stock Alerts</div></div>
+        </div>
+        <div style="background:var(--a-light);border:1px solid rgba(22,163,74,.25);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.8">
+          Auto-posts <strong>Dr 1200 Inventory / Cr 3010 Equity</strong> on opening stock. Sales post <strong>Dr 5010 COGS / Cr 1200 Inventory</strong> automatically when you adjust quantity down.
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="sa-btn-primary" onclick="saAddInventoryItem()">+ Add Item</button>
+          <button class="sa-btn-outline" onclick="saExportInventory()">⬇ Export</button>
+        </div>
+        <div class="sa-card" style="padding:0;overflow:hidden">
+          <table class="sa-table">
+            <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Cost</th><th style="text-align:right">Total Value</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="inv2-tbody"></tbody>
+          </table>
+        </div>
+      </div>
         <div class="sa-grid">
           <div class="sa-kpi"><div class="sa-kpi-val" id="rec2-kpi-total" style="color:var(--green)">0</div><div class="sa-kpi-label">Receipts Captured</div></div>
           <div class="sa-kpi"><div class="sa-kpi-val" id="rec2-kpi-amount">$0</div><div class="sa-kpi-label">Total Amount</div></div>
@@ -1962,6 +2208,1079 @@ function saMatchReceipts(){saNotify('Click Match on each receipt to assign a GL 
   s.textContent='.sa-input-field{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif;outline:none;background:var(--surface-2)}.sa-input-field:focus{border-color:var(--a)}';
   document.head.appendChild(s);
 })();
+
+
+
+
+// ============================================================
+// SAIRNaccounting v2.0 — 20 NEW FEATURES
+// Phase 1: Estimates, Recurring, Reminders, Statements, Online Pay
+// Phase 2: Time Tracker, Projects, Mileage, Fixed Assets, Burn Rate
+// Phase 3: Contacts, Recurring Bills, Sales Tax, Purchase Orders, Inventory
+// ============================================================
+
+// ── NEW DATA STORES ──────────────────────────────────────────
+var estimates=saLoad('sa_estimates',[]);
+var recurringInvoices=saLoad('sa_recurring',[]);
+var timeEntries=saLoad('sa_time',[]);
+var contacts=saLoad('sa_contacts',[]);
+var fixedAssets=saLoad('sa_assets',[]);
+var mileageTrips=saLoad('sa_mileage',[]);
+var projects=saLoad('sa_projects',[]);
+var recurringBills=saLoad('sa_recurring_bills',[]);
+var purchaseOrders=saLoad('sa_purchase_orders',[]);
+var inventory=saLoad('sa_inventory',[]);
+
+// Timer state
+var timerRunning=false;var timerStart=null;var timerInterval=null;
+var timerClient='';var timerDesc='';var timerRate=150;
+var estTabFilter='open';var conTabFilter='all';
+
+// IRS 2026 rate
+var IRS_RATE=0.70;
+
+// ── PATCH saInitAll to boot new panels ──────────────────────
+var _saInitAllOrig=saInitAll;
+saInitAll=function(){
+  _saInitAllOrig();
+  saAutoSeedContacts();
+  saRunDueRecurringBills();
+  saCheckPaymentReminders();
+};
+
+// ── PATCH saPanel to handle new panels ───────────────────────
+var _saPanelOrig=saPanel;
+saPanel=function(id,btn){
+  _saPanelOrig(id,btn);
+  var newLazy={
+    estimates:saInitEstimates,recurring:saInitRecurring,
+    time:saInitTime,contacts:saInitContacts,
+    assets:saInitAssets,mileage:saInitMileage,
+    projects:saInitProjects
+  };
+  if(newLazy[id])setTimeout(newLazy[id],50);
+};
+
+// ============================================================
+// CONTACTS — Customers + Vendors
+// ============================================================
+function saAutoSeedContacts(){
+  // Seed from existing invoices and bills if contacts empty
+  if(contacts.length>0)return;
+  var added={};
+  invoices.forEach(function(inv){
+    if(inv.customer&&!added[inv.customer]){
+      contacts.push({name:inv.customer,type:'Customer',email:'',phone:'',address:'',notes:'',added:new Date().toISOString().slice(0,10)});
+      added[inv.customer]=true;
+    }
+  });
+  bills.forEach(function(b){
+    if(b.vendor&&!added[b.vendor]){
+      contacts.push({name:b.vendor,type:'Vendor',email:'',phone:'',address:'',notes:'',added:new Date().toISOString().slice(0,10)});
+      added[b.vendor]=true;
+    }
+  });
+  if(contacts.length>0)saSave('sa_contacts',contacts);
+}
+
+function saInitContacts(){saAutoSeedContacts();saRenderContacts();saUpdateContactKPIs();}
+function saUpdateContactKPIs(){
+  var customers=contacts.filter(function(c){return c.type==='Customer';}).length;
+  var vendors=contacts.filter(function(c){return c.type==='Vendor';}).length;
+  var openAR=saSum(invoices.filter(function(i){return i.status==='Open';}).map(function(i){return parseFloat(i.amount)||0;}));
+  var openAP=saSum(bills.filter(function(b){return b.status==='Open';}).map(function(b){return parseFloat(b.amount)||0;}));
+  var d;
+  d=document.getElementById('con-kpi-customers');if(d)d.textContent=customers;
+  d=document.getElementById('con-kpi-vendors');if(d)d.textContent=vendors;
+  d=document.getElementById('con-kpi-open-ar');if(d)d.textContent=saFmt(openAR);
+  d=document.getElementById('con-kpi-open-ap');if(d)d.textContent=saFmt(openAP);
+}
+function saConTab(tab,el){
+  conTabFilter=tab;
+  document.querySelectorAll('#panel-contacts .sa-tab').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  saRenderContacts();
+}
+function saRenderContacts(){
+  var tbody=document.getElementById('con-tbody');if(!tbody)return;
+  var search=(document.getElementById('con-search')||{}).value||'';
+  var typeF=conTabFilter==='all'?'':(conTabFilter);
+  var list=contacts.filter(function(c){
+    if(typeF&&c.type!==typeF)return false;
+    if(search&&!c.name.toLowerCase().includes(search.toLowerCase()))return false;
+    return true;
+  });
+  if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No contacts. Click + Add Contact.</td></tr>';return;}
+  tbody.innerHTML=list.map(function(c,i){
+    var bal=0;
+    if(c.type==='Customer'){
+      bal=saSum(invoices.filter(function(inv){return inv.customer===c.name&&inv.status==='Open';}).map(function(inv){return parseFloat(inv.amount)||0;}));
+    } else {
+      bal=saSum(bills.filter(function(b){return b.vendor===c.name&&b.status==='Open';}).map(function(b){return parseFloat(b.amount)||0;}));
+    }
+    var txCount=invoices.filter(function(inv){return inv.customer===c.name;}).length+bills.filter(function(b){return b.vendor===c.name;}).length;
+    return '<tr>'+
+      '<td><strong>'+escHtml(c.name)+'</strong></td>'+
+      '<td><span class="badge badge-'+(c.type==='Customer'?'green':'navy')+'">'+c.type+'</span></td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+escHtml(c.email||'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+escHtml(c.phone||'—')+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:'+(bal>0?'var(--amber)':'var(--muted)')+'">'+saFmt2(bal)+'</td>'+
+      '<td style="text-align:center">'+txCount+'</td>'+
+      '<td style="display:flex;gap:4px">'+
+        '<button onclick="saViewContact('+contacts.indexOf(c)+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 8px">View</button>'+
+        '<button onclick="saStatementContact('+contacts.indexOf(c)+')" class="sa-btn-outline" style="font-size:10px;padding:3px 8px">Statement</button>'+
+      '</td></tr>';
+  }).join('');
+}
+function saNewContact(){
+  var name=prompt('Contact name:');if(!name)return;
+  var type=prompt('Type (Customer or Vendor):','Customer')||'Customer';
+  var email=prompt('Email (optional):')||'';
+  var phone=prompt('Phone (optional):')||'';
+  contacts.push({name:name,type:type,email:email,phone:phone,address:'',notes:'',added:new Date().toISOString().slice(0,10)});
+  saSave('sa_contacts',contacts);
+  saRenderContacts();saUpdateContactKPIs();
+  saNotify('Contact added: '+name,'green');
+}
+function saViewContact(i){
+  var c=contacts[i];if(!c)return;
+  var invList=invoices.filter(function(inv){return inv.customer===c.name;});
+  var billList=bills.filter(function(b){return b.vendor===c.name;});
+  var totalBilled=saSum(invList.map(function(inv){return parseFloat(inv.amount)||0;}));
+  alert(c.name+' ('+c.type+')\n\nEmail: '+(c.email||'—')+'\nPhone: '+(c.phone||'—')+
+    '\n\nInvoices: '+invList.length+' | Total Billed: $'+totalBilled.toFixed(2)+
+    '\nBills: '+billList.length+
+    '\n\nOpen Balance: $'+saSum((c.type==='Customer'?invList.filter(function(x){return x.status==='Open';}):billList.filter(function(x){return x.status==='Open';})).map(function(x){return parseFloat(x.amount)||0;})).toFixed(2));
+}
+function saStatementContact(i){
+  var c=contacts[i];if(!c)return;
+  var invList=invoices.filter(function(inv){return inv.customer===c.name;});
+  if(!invList.length){saNotify('No invoices for '+c.name,'');return;}
+  var w=window.open('','_blank');
+  var css='body{font-family:Arial,sans-serif;padding:40px;max-width:700px;margin:auto}.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}.total{font-weight:900;border-top:2px solid #0D2418;margin-top:8px;padding-top:8px}@media print{button{display:none}}';
+  var html2='<!DOCTYPE html><html><head><title>Statement — '+escHtml(c.name)+'</title><style>'+css+'</style></head><body>';
+  html2+='<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print Statement</button>';
+  html2+='<h2 style="font-size:16px">Customer Statement</h2>';
+  html2+='<p style="font-size:13px;color:#666;margin:4px 0">'+escHtml(c.name)+' | Generated '+new Date().toLocaleDateString()+'</p>';
+  var open=0;
+  invList.forEach(function(inv){
+    var overdue=inv.status==='Open'&&new Date(inv.dueDate)<new Date();
+    var amt=parseFloat(inv.amount)||0;
+    if(inv.status==='Open')open+=amt;
+    html2+='<div class="row"><span>'+escHtml(inv.num)+' — '+escHtml(inv.date)+'</span><span style="color:'+(overdue?'#dc2626':inv.status==='Paid'?'#16a34a':'#d97706')+'">'+escHtml(inv.status)+' — $'+amt.toFixed(2)+'</span></div>';
+  });
+  html2+='<div class="row total"><span>TOTAL OUTSTANDING</span><span>$'+open.toFixed(2)+'</span></div>';
+  html2+='</body></html>';
+  w.document.write(html2);w.document.close();
+}
+function saSendStatements(){
+  var customers=contacts.filter(function(c){return c.type==='Customer';});
+  if(!customers.length){saNotify('No customers in contacts','');return;}
+  saNotify('Statements generated for all customers with open invoices','green');
+  customers.forEach(function(c,i){
+    var hasOpen=invoices.some(function(inv){return inv.customer===c.name&&inv.status==='Open';});
+    if(hasOpen)setTimeout(function(){saStatementContact(contacts.indexOf(c));},i*300);
+  });
+}
+function saExportContacts(){
+  var rows=['Name,Type,Email,Phone,Open Balance'];
+  contacts.forEach(function(c){
+    var bal=saSum((c.type==='Customer'?invoices.filter(function(i){return i.customer===c.name&&i.status==='Open';}):bills.filter(function(b){return b.vendor===c.name&&b.status==='Open';})).map(function(x){return parseFloat(x.amount)||0;}));
+    rows.push([c.name,c.type,c.email||'',c.phone||'',bal.toFixed(2)].join(','));
+  });
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='contacts.csv';a.click();
+}
+
+// ============================================================
+// ESTIMATES / QUOTES
+// ============================================================
+function saInitEstimates(){saRenderEstimates(estTabFilter);saUpdateEstKPIs();}
+function saUpdateEstKPIs(){
+  var open=estimates.filter(function(e){return e.status==='Open';}).length;
+  var accepted=estimates.filter(function(e){return e.status==='Accepted';}).length;
+  var pipeline=saSum(estimates.filter(function(e){return e.status==='Open'||e.status==='Accepted';}).map(function(e){return parseFloat(e.amount)||0;}));
+  var converted=estimates.filter(function(e){return e.status==='Converted';}).length;
+  var d;
+  d=document.getElementById('est-kpi-open');if(d)d.textContent=open;
+  d=document.getElementById('est-kpi-accepted');if(d)d.textContent=accepted;
+  d=document.getElementById('est-kpi-value');if(d)d.textContent=saFmt(pipeline);
+  d=document.getElementById('est-kpi-converted');if(d)d.textContent=converted;
+}
+function saEstTab(tab,el){
+  estTabFilter=tab;
+  document.querySelectorAll('#panel-estimates .sa-tab').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  saRenderEstimates(tab);
+}
+function saRenderEstimates(tab){
+  var tbody=document.getElementById('est-tbody');if(!tbody)return;
+  var list=estimates.filter(function(e){
+    if(tab==='all')return true;
+    if(tab==='open')return e.status==='Open';
+    if(tab==='accepted')return e.status==='Accepted';
+    if(tab==='declined')return e.status==='Declined';
+    if(tab==='converted')return e.status==='Converted';
+    return true;
+  });
+  if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No estimates. Click + New Estimate.</td></tr>';return;}
+  var now=new Date();
+  tbody.innerHTML=list.map(function(e){
+    var expired=e.status==='Open'&&e.validUntil&&new Date(e.validUntil)<now;
+    return '<tr>'+
+      '<td style="font-weight:700">'+escHtml(e.num)+'</td>'+
+      '<td>'+escHtml(e.customer)+'</td>'+
+      '<td>'+escHtml(e.date)+'</td>'+
+      '<td style="color:'+(expired?'var(--red)':'inherit')+'">'+escHtml(e.validUntil||'—')+(expired?' (Expired)':'')+'</td>'+
+      '<td style="text-align:right;font-weight:700">'+saFmt2(e.amount)+'</td>'+
+      '<td><span class="badge badge-'+(e.status==='Open'?'amber':e.status==='Accepted'?'green':e.status==='Converted'?'navy':'red')+'">'+escHtml(e.status)+'</span></td>'+
+      '<td style="display:flex;gap:4px">'+
+        (e.status==='Open'||e.status==='Accepted'?'<button onclick="saConvertEstimate('+estimates.indexOf(e)+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 8px">→ Invoice</button>':'✓')+
+        (e.status==='Open'?'<button onclick="saAcceptEstimate('+estimates.indexOf(e)+')" class="sa-btn-outline" style="font-size:10px;padding:3px 8px">Accept</button>':'')+'</td></tr>';
+  }).join('');
+}
+function saNewEstimate(){
+  var customer=prompt('Customer name:');if(!customer)return;
+  var desc=prompt('Project / service description:');if(!desc)return;
+  var amount=parseFloat(prompt('Estimate amount ($):'));if(!amount||isNaN(amount))return;
+  var validity=parseInt(prompt('Valid for (days):','30'))||30;
+  var date=new Date().toISOString().slice(0,10);
+  var validUntil=new Date(Date.now()+validity*86400000).toISOString().slice(0,10);
+  var num='EST-'+(1000+estimates.length+1);
+  estimates.unshift({num:num,customer:customer,description:desc,amount:amount,date:date,validUntil:validUntil,status:'Open',lineItems:[]});
+  saSave('sa_estimates',estimates);
+  saRenderEstimates(estTabFilter);saUpdateEstKPIs();
+  // Auto-add customer to contacts
+  if(!contacts.find(function(c){return c.name===customer;})){
+    contacts.push({name:customer,type:'Customer',email:'',phone:'',address:'',notes:'',added:date});
+    saSave('sa_contacts',contacts);
+  }
+  saNotify('Estimate '+num+' created for '+customer,'green');
+}
+function saAcceptEstimate(i){
+  estimates[i].status='Accepted';saSave('sa_estimates',estimates);
+  saRenderEstimates(estTabFilter);saUpdateEstKPIs();
+  saNotify('Estimate marked Accepted','green');
+}
+function saConvertEstimate(i){
+  var e=estimates[i];
+  if(!confirm('Convert '+e.num+' to invoice for '+e.customer+'?'))return;
+  // Create invoice from estimate
+  var date=new Date().toISOString().slice(0,10);
+  var terms=parseInt(prompt('Payment terms (days):','30'))||30;
+  var due=new Date(Date.now()+terms*86400000).toISOString().slice(0,10);
+  var num='INV-'+(1000+invoices.length+1);
+  invoices.unshift({num:num,customer:e.customer,amount:e.amount,date:date,dueDate:due,status:'Open',fromEstimate:e.num});
+  saSave('sa_invoices',invoices);
+  // Post AR entry
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'AR-'+entryRef,date:date,memo:'Invoice '+num+' (from '+e.num+') — '+e.customer,
+    lines:[{account:'1100',memo:'Accounts Receivable',debit:e.amount,credit:0},{account:'4010',memo:'Service Revenue',debit:0,credit:e.amount}],
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  estimates[i].status='Converted';estimates[i].convertedTo=num;
+  saSave('sa_estimates',estimates);
+  saRenderEstimates(estTabFilter);saUpdateEstKPIs();saInitDashboard();
+  saNotify('Converted to Invoice '+num+' — Dr 1100 / Cr 4010 posted','green');
+}
+async function saEstimateAI(){
+  var jobType=prompt('Describe the job/project for AI to estimate:');if(!jobType)return;
+  saNotify('AI building estimate...','');
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+        system:'You are SAIRNaccounting AI — expert in professional service pricing and project estimation.',
+        messages:[{role:'user',content:'Create a professional estimate/quote breakdown for: "'+jobType+'"\nProvide: 1) Line item breakdown with quantities and unit prices, 2) Total estimate range (low/mid/high), 3) Payment terms recommendation, 4) What to include in the scope of work, 5) Any assumptions made. Format clearly for a professional quote.'}]})});
+    var data=await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'No estimate generated.');
+  }catch(e){saNotify('Error','red');}
+}
+function saExportEstimates(){
+  var rows=['Estimate #,Customer,Date,Valid Until,Amount,Status'];
+  estimates.forEach(function(e){rows.push([e.num,e.customer,e.date,e.validUntil||'',e.amount,e.status].join(','));});
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='estimates.csv';a.click();
+}
+
+// ============================================================
+// RECURRING INVOICES
+// ============================================================
+function saInitRecurring(){saRenderRecurring();saUpdateRecurringKPIs();}
+function saUpdateRecurringKPIs(){
+  var active=recurringInvoices.filter(function(r){return r.active;}).length;
+  var monthly=saSum(recurringInvoices.filter(function(r){return r.active&&r.frequency==='Monthly';}).map(function(r){return parseFloat(r.amount)||0;}));
+  var annual=saSum(recurringInvoices.map(function(r){
+    if(!r.active)return 0;
+    var amt=parseFloat(r.amount)||0;
+    if(r.frequency==='Weekly')return amt*52;
+    if(r.frequency==='Monthly')return amt*12;
+    if(r.frequency==='Quarterly')return amt*4;
+    if(r.frequency==='Annually')return amt;
+    return amt*12;
+  }));
+  var today=new Date().toISOString().slice(0,10);
+  var due=recurringInvoices.filter(function(r){return r.active&&r.nextDate<=today;}).length;
+  var d;
+  d=document.getElementById('rec3-kpi-active');if(d)d.textContent=active;
+  d=document.getElementById('rec3-kpi-monthly');if(d)d.textContent=saFmt(monthly);
+  d=document.getElementById('rec3-kpi-annual');if(d)d.textContent=saFmt(annual);
+  d=document.getElementById('rec3-kpi-due-today');if(d)d.textContent=due;
+}
+function saRenderRecurring(){
+  var tbody=document.getElementById('recurring-tbody');if(!tbody)return;
+  if(!recurringInvoices.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No recurring invoices. Click + New Recurring Invoice.</td></tr>';return;}
+  var today=new Date().toISOString().slice(0,10);
+  tbody.innerHTML=recurringInvoices.map(function(r,i){
+    var due=r.active&&r.nextDate<=today;
+    return '<tr>'+
+      '<td style="font-weight:700">'+escHtml(r.name||'Schedule '+(i+1))+'</td>'+
+      '<td>'+escHtml(r.customer)+'</td>'+
+      '<td style="font-weight:700">'+saFmt2(r.amount)+'</td>'+
+      '<td><span class="badge badge-navy">'+escHtml(r.frequency)+'</span></td>'+
+      '<td style="color:'+(due?'var(--orange)':'inherit')+';font-weight:'+(due?'700':'400')+'">'+(due?'DUE — ':'')+escHtml(r.nextDate||'—')+'</td>'+
+      '<td>'+escHtml(String(r.sentCount||0))+'</td>'+
+      '<td><span class="badge badge-'+(r.active?'green':'gray')+'">'+(r.active?'Active':'Paused')+'</span></td>'+
+      '<td><button onclick="saToggleRecurring('+i+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 8px">'+(r.active?'Pause':'Resume')+'</button>'+
+        (due?'<button onclick="saGenerateFromRecurring('+i+')" class="sa-btn-primary" style="font-size:10px;padding:3px 8px;margin-left:4px">Generate</button>':'')+'</td></tr>';
+  }).join('');
+}
+function saNewRecurring(){
+  var customer=prompt('Customer name:');if(!customer)return;
+  var name=prompt('Schedule name (e.g. Monthly Retainer):',customer+' Monthly')||customer+' Monthly';
+  var amount=parseFloat(prompt('Amount per period ($):'));if(!amount||isNaN(amount))return;
+  var freq=prompt('Frequency:\n1=Weekly  2=Monthly  3=Quarterly  4=Annually','2')||'2';
+  var freqMap={'1':'Weekly','2':'Monthly','3':'Quarterly','4':'Annually'};
+  var frequency=freqMap[freq]||'Monthly';
+  var startDate=prompt('Start date:',new Date().toISOString().slice(0,10))||new Date().toISOString().slice(0,10);
+  var terms=parseInt(prompt('Payment terms (days net):','30'))||30;
+  recurringInvoices.unshift({name:name,customer:customer,amount:amount,frequency:frequency,startDate:startDate,nextDate:startDate,terms:terms,active:true,sentCount:0});
+  saSave('sa_recurring',recurringInvoices);
+  saRenderRecurring();saUpdateRecurringKPIs();
+  saNotify('Recurring schedule created: '+name,'green');
+}
+function saToggleRecurring(i){
+  recurringInvoices[i].active=!recurringInvoices[i].active;
+  saSave('sa_recurring',recurringInvoices);saRenderRecurring();saUpdateRecurringKPIs();
+}
+function saGenerateFromRecurring(i){
+  var r=recurringInvoices[i];
+  var date=new Date().toISOString().slice(0,10);
+  var due=new Date(Date.now()+r.terms*86400000).toISOString().slice(0,10);
+  var num='INV-'+(1000+invoices.length+1);
+  invoices.unshift({num:num,customer:r.customer,amount:r.amount,date:date,dueDate:due,status:'Open',memo:r.name});
+  saSave('sa_invoices',invoices);
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'AR-'+entryRef,date:date,memo:'Recurring Invoice '+num+' — '+r.customer,
+    lines:[{account:'1100',memo:'AR',debit:r.amount,credit:0},{account:'4010',memo:'Revenue',debit:0,credit:r.amount}],
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  // Advance next date
+  var next=new Date(r.nextDate||date);
+  if(r.frequency==='Weekly')next.setDate(next.getDate()+7);
+  else if(r.frequency==='Monthly')next.setMonth(next.getMonth()+1);
+  else if(r.frequency==='Quarterly')next.setMonth(next.getMonth()+3);
+  else if(r.frequency==='Annually')next.setFullYear(next.getFullYear()+1);
+  recurringInvoices[i].nextDate=next.toISOString().slice(0,10);
+  recurringInvoices[i].sentCount=(recurringInvoices[i].sentCount||0)+1;
+  saSave('sa_recurring',recurringInvoices);
+  saRenderRecurring();saUpdateRecurringKPIs();saInitDashboard();
+  saNotify('Invoice '+num+' generated from '+r.name,'green');
+}
+function saRunDueRecurring(){
+  var today=new Date().toISOString().slice(0,10);
+  var due=recurringInvoices.filter(function(r,i){return r.active&&r.nextDate&&r.nextDate<=today;});
+  if(due.length)saNotify(due.length+' recurring invoice(s) due — open Recurring to generate','orange');
+}
+async function saRecurringAI(){
+  var total=saSum(recurringInvoices.filter(function(r){return r.active;}).map(function(r){return parseFloat(r.amount)||0;}));
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+        system:'You are SAIRNaccounting AI CFO.',
+        messages:[{role:'user',content:'Subscription/recurring revenue analysis: '+recurringInvoices.length+' schedules, $'+total+'/period total. Data: '+JSON.stringify(recurringInvoices.map(function(r){return {customer:r.customer,amount:r.amount,frequency:r.frequency,active:r.active};}))+'\\n\\nProvide: 1) ARR calculation, 2) MRR, 3) Customer retention risk, 4) Growth opportunity, 5) Pricing strategy recommendations.'}]})});
+    var data=await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+
+// ============================================================
+// PAYMENT REMINDERS (auto-check on load)
+// ============================================================
+function saCheckPaymentReminders(){
+  var now=new Date();
+  var overdueInvoices=invoices.filter(function(i){
+    if(i.status!=='Open')return false;
+    var days=Math.round((now-new Date(i.dueDate))/(1000*60*60*24));
+    return days>=7;
+  });
+  if(overdueInvoices.length>0){
+    var total=saSum(overdueInvoices.map(function(i){return parseFloat(i.amount)||0;}));
+    saNotify(overdueInvoices.length+' overdue invoice(s) — $'+total.toFixed(0)+' outstanding — send reminders in Invoices panel','orange');
+  }
+}
+function saSendPaymentReminder(invIdx){
+  var inv=invoices[invIdx];if(!inv)return;
+  var days=Math.round((new Date()-new Date(inv.dueDate))/(1000*60*60*24));
+  var urgency=days>30?'FINAL NOTICE':days>14?'Second Reminder':'Friendly Reminder';
+  var msg='To: '+(inv.customerEmail||inv.customer+'@company.com')+
+    '\nSubject: '+urgency+' — Invoice '+inv.num+' — $'+parseFloat(inv.amount).toFixed(2)+
+    '\n\nDear '+inv.customer+',\n\nThis is a '+urgency.toLowerCase()+' that Invoice '+inv.num+
+    ' for $'+parseFloat(inv.amount).toFixed(2)+' was due on '+inv.dueDate+' ('+days+' days ago).\n\nPlease arrange payment at your earliest convenience to avoid any service interruptions.\n\nThank you for your business.';
+  var mailto='mailto:?subject='+encodeURIComponent(urgency+' — Invoice '+inv.num)+'&body='+encodeURIComponent(msg);
+  window.open(mailto);
+  saNotify('Reminder draft opened for '+inv.customer,'green');
+}
+// Patch saRenderInvoices to add reminder button
+var _saRenderInvOrig=saRenderInvoices;
+saRenderInvoices=function(tab){
+  _saRenderInvOrig(tab);
+  // Add reminder buttons to overdue rows
+  var rows=document.querySelectorAll('#inv-tbody tr');
+  rows.forEach(function(row){
+    var cells=row.querySelectorAll('td');
+    if(cells.length>=6&&cells[5]&&cells[5].textContent.includes('Open')){
+      var due=cells[3]&&cells[3].textContent;
+      if(due&&due.includes('d)')){
+        var actionCell=cells[cells.length-1];
+        if(actionCell&&!actionCell.querySelector('.reminder-btn')){
+          var btn=document.createElement('button');
+          btn.className='reminder-btn sa-btn-outline';
+          btn.style.cssText='font-size:10px;padding:3px 6px;color:var(--orange);border-color:var(--orange);margin-left:4px';
+          btn.textContent='🔔 Remind';
+          var invNum=cells[0]&&cells[0].textContent;
+          btn.onclick=function(){
+            var idx=invoices.findIndex(function(i){return i.num===invNum.trim();});
+            if(idx>=0)saSendPaymentReminder(idx);
+          };
+          actionCell.appendChild(btn);
+        }
+      }
+    }
+  });
+};
+
+// ============================================================
+// TIME TRACKER
+// ============================================================
+function saInitTime(){saPopulateTimeClients();saRenderTimeEntries();saUpdateTimeKPIs();}
+function saPopulateTimeClients(){
+  var sel=document.getElementById('time-client');
+  var sel2=document.getElementById('time-filter-client');
+  if(!sel)return;
+  var customerNames=[...new Set(contacts.filter(function(c){return c.type==='Customer';}).map(function(c){return c.name;}))];
+  invoices.forEach(function(inv){if(!customerNames.includes(inv.customer))customerNames.push(inv.customer);});
+  var opts=customerNames.map(function(n){return '<option value="'+escHtml(n)+'">'+escHtml(n)+'</option>';}).join('');
+  sel.innerHTML='<option value="">Select client...</option>'+opts;
+  if(sel2)sel2.innerHTML='<option value="">All clients</option>'+opts;
+}
+function saUpdateTimeKPIs(){
+  var now=new Date();
+  var todayStr=now.toISOString().slice(0,10);
+  var weekStart=new Date(now.getTime()-now.getDay()*86400000);
+  var todayMins=saSum(timeEntries.filter(function(t){return t.date===todayStr;}).map(function(t){return t.minutes||0;}));
+  var weekMins=saSum(timeEntries.filter(function(t){return new Date(t.date)>=weekStart;}).map(function(t){return t.minutes||0;}));
+  var unbilled=saSum(timeEntries.filter(function(t){return !t.billed;}).map(function(t){return ((t.minutes||0)/60)*(t.rate||0);}));
+  var mo=now.getMonth(),yr=now.getFullYear();
+  var billedAmt=saSum(timeEntries.filter(function(t){return t.billed&&new Date(t.date).getMonth()===mo&&new Date(t.date).getFullYear()===yr;}).map(function(t){return ((t.minutes||0)/60)*(t.rate||0);}));
+  var d;
+  d=document.getElementById('time-kpi-today');if(d)d.textContent=Math.floor(todayMins/60)+'h '+(todayMins%60)+'m';
+  d=document.getElementById('time-kpi-week');if(d)d.textContent=Math.round(weekMins/60*10)/10+'h';
+  d=document.getElementById('time-kpi-unbilled');if(d)d.textContent=saFmt(unbilled);
+  d=document.getElementById('time-kpi-billed');if(d)d.textContent=saFmt(billedAmt);
+}
+function saRenderTimeEntries(){
+  var tbody=document.getElementById('time-tbody');if(!tbody)return;
+  var filterClient=(document.getElementById('time-filter-client')||{}).value||'';
+  var list=timeEntries.filter(function(t){return !filterClient||t.client===filterClient;});
+  list.sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!list.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No time entries. Start the timer or add manually.</td></tr>';return;}
+  tbody.innerHTML=list.map(function(t,i){
+    var hrs=((t.minutes||0)/60);var amt=(hrs*(t.rate||0));
+    return '<tr>'+
+      '<td><input type="checkbox" class="time-check" data-idx="'+timeEntries.indexOf(t)+'" '+(t.billed?'disabled':'')+' '+(t.selected?'checked':'')+'></td>'+
+      '<td>'+escHtml(t.date)+'</td>'+
+      '<td>'+escHtml(t.client)+'</td>'+
+      '<td style="font-size:12px">'+escHtml(t.description||'—')+'</td>'+
+      '<td style="font-weight:700">'+Math.floor(hrs)+'h '+(t.minutes%60)+'m</td>'+
+      '<td style="color:var(--muted)">$'+parseFloat(t.rate||0).toFixed(0)+'/hr</td>'+
+      '<td style="text-align:right;font-weight:700;color:var(--a)">$'+amt.toFixed(2)+'</td>'+
+      '<td><span class="badge badge-'+(t.billed?'green':'amber')+'">'+(t.billed?'Billed':'Unbilled')+'</span></td>'+
+      '<td><button onclick="saDeleteTimeEntry('+timeEntries.indexOf(t)+')" class="sa-btn-danger" style="font-size:10px;padding:2px 6px">'+(t.billed?'—':'Del')+'</button></td></tr>';
+  }).join('');
+  document.querySelectorAll('.time-check').forEach(function(cb){
+    cb.addEventListener('change',function(){
+      var idx=parseInt(this.getAttribute('data-idx'));
+      if(timeEntries[idx])timeEntries[idx].selected=this.checked;
+    });
+  });
+}
+function saTimeSelectAll(cb){
+  timeEntries.forEach(function(t){if(!t.billed)t.selected=cb.checked;});
+  saRenderTimeEntries();
+}
+function saTimeToggle(){
+  if(!timerRunning){
+    timerClient=document.getElementById('time-client')?document.getElementById('time-client').value:'';
+    timerDesc=document.getElementById('time-desc')?document.getElementById('time-desc').value:'';
+    timerRate=parseFloat(document.getElementById('time-rate')?document.getElementById('time-rate').value:150)||150;
+    if(!timerClient){saNotify('Select a client first','');return;}
+    timerStart=Date.now();timerRunning=true;
+    var btn=document.getElementById('time-start-btn');if(btn){btn.textContent='⏹ Stop';btn.style.background='var(--red)';}
+    timerInterval=setInterval(function(){
+      var elapsed=Date.now()-timerStart;
+      var h=Math.floor(elapsed/3600000);var m=Math.floor((elapsed%3600000)/60000);var s=Math.floor((elapsed%60000)/1000);
+      var d=document.getElementById('time-clock');
+      if(d)d.textContent=(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+    },1000);
+  } else {
+    clearInterval(timerInterval);timerRunning=false;
+    var elapsed=Math.round((Date.now()-timerStart)/60000)||1;
+    var btn2=document.getElementById('time-start-btn');if(btn2){btn2.textContent='▶ Start';btn2.style.background='';}
+    var d2=document.getElementById('time-clock');if(d2)d2.textContent='00:00:00';
+    timeEntries.unshift({date:new Date().toISOString().slice(0,10),client:timerClient,description:timerDesc,minutes:elapsed,rate:timerRate,billed:false,selected:false});
+    saSave('sa_time',timeEntries);
+    saRenderTimeEntries();saUpdateTimeKPIs();
+    saNotify('Time logged: '+Math.floor(elapsed/60)+'h '+(elapsed%60)+'m for '+timerClient,'green');
+  }
+}
+function saTimeManual(){
+  var client=document.getElementById('time-client')?document.getElementById('time-client').value:'';
+  if(!client){client=prompt('Client name:');if(!client)return;}
+  var desc=prompt('Description:');if(!desc)return;
+  var hoursStr=prompt('Hours worked (e.g. 1.5 or 1h30m):','1');
+  var minutes=0;
+  if(hoursStr.includes('h')){var p=hoursStr.split('h');minutes=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);}
+  else{minutes=Math.round((parseFloat(hoursStr)||1)*60);}
+  var rate=parseFloat(prompt('Hourly rate ($):','150'))||150;
+  var date=prompt('Date:',new Date().toISOString().slice(0,10))||new Date().toISOString().slice(0,10);
+  timeEntries.unshift({date:date,client:client,description:desc,minutes:minutes,rate:rate,billed:false,selected:false});
+  saSave('sa_time',timeEntries);saRenderTimeEntries();saUpdateTimeKPIs();
+  saNotify('Time entry added: '+Math.floor(minutes/60)+'h '+(minutes%60)+'m','green');
+}
+function saDeleteTimeEntry(i){
+  if(timeEntries[i]&&!timeEntries[i].billed){
+    timeEntries.splice(i,1);saSave('sa_time',timeEntries);saRenderTimeEntries();saUpdateTimeKPIs();
+  }
+}
+function saBillSelectedTime(){
+  var selected=timeEntries.filter(function(t){return t.selected&&!t.billed;});
+  if(!selected.length){saNotify('Select unbilled time entries to invoice','');return;}
+  var clients=[...new Set(selected.map(function(t){return t.client;}))];
+  clients.forEach(function(client){
+    var clientTime=selected.filter(function(t){return t.client===client;});
+    var total=saSum(clientTime.map(function(t){return ((t.minutes||0)/60)*(t.rate||0);}));
+    var desc=clientTime.map(function(t){return Math.floor(t.minutes/60)+'h '+(t.minutes%60)+'m — '+t.description;}).join('; ');
+    var date=new Date().toISOString().slice(0,10);
+    var due=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+    var num='INV-'+(1000+invoices.length+1);
+    invoices.unshift({num:num,customer:client,amount:total,date:date,dueDate:due,status:'Open',memo:'Time: '+desc});
+    saSave('sa_invoices',invoices);
+    entryRef++;saSave('sa_ref_counter',entryRef);
+    glEntries.unshift({ref:'AR-'+entryRef,date:date,memo:'Time Invoice '+num+' — '+client,
+      lines:[{account:'1100',memo:'AR',debit:total,credit:0},{account:'4010',memo:'Revenue',debit:0,credit:total}],
+      user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+    saSave('sa_gl',glEntries);
+    clientTime.forEach(function(t){t.billed=true;t.selected=false;t.invoiceNum=num;});
+  });
+  saSave('sa_time',timeEntries);
+  saRenderTimeEntries();saUpdateTimeKPIs();saInitDashboard();
+  saNotify('Time billed to '+clients.length+' client(s) — invoices created','green');
+}
+function saExportTime(){
+  var rows=['Date,Client,Description,Hours,Rate,Amount,Status'];
+  timeEntries.forEach(function(t){
+    var hrs=((t.minutes||0)/60).toFixed(2);
+    rows.push([t.date,t.client,t.description||'',hrs,t.rate||0,(hrs*(t.rate||0)).toFixed(2),t.billed?'Billed':'Unbilled'].join(','));
+  });
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='timesheet.csv';a.click();
+}
+
+// ============================================================
+// MILEAGE TRACKER
+// ============================================================
+function saInitMileage(){saRenderMileage();saUpdateMileageKPIs();}
+function saUpdateMileageKPIs(){
+  var yr=new Date().getFullYear();
+  var ytd=saSum(mileageTrips.filter(function(t){return new Date(t.date).getFullYear()===yr&&t.category==='Business';}).map(function(t){return parseFloat(t.miles)||0;}));
+  var deduct=ytd*IRS_RATE;
+  var d;
+  d=document.getElementById('mil-kpi-ytd');if(d)d.textContent=Math.round(ytd)+' mi';
+  d=document.getElementById('mil-kpi-deduction');if(d)d.textContent=saFmt(deduct);
+  d=document.getElementById('mil-kpi-trips');if(d)d.textContent=mileageTrips.length;
+  d=document.getElementById('mil-kpi-rate');if(d)d.textContent='$'+IRS_RATE.toFixed(2);
+}
+function saRenderMileage(){
+  var tbody=document.getElementById('mileage-tbody');if(!tbody)return;
+  if(!mileageTrips.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No trips logged. Click + Log Trip.</td></tr>';return;}
+  var sorted=mileageTrips.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  tbody.innerHTML=sorted.map(function(t,i){
+    var deduct=t.category==='Business'?(parseFloat(t.miles)||0)*IRS_RATE:0;
+    return '<tr>'+
+      '<td>'+escHtml(t.date)+'</td>'+
+      '<td>'+escHtml(t.from||'—')+'</td>'+
+      '<td>'+escHtml(t.to||'—')+'</td>'+
+      '<td style="font-size:12px">'+escHtml(t.purpose||'—')+'</td>'+
+      '<td style="font-weight:700">'+parseFloat(t.miles||0).toFixed(1)+'</td>'+
+      '<td style="color:var(--green);font-weight:700">'+saFmt2(deduct)+'</td>'+
+      '<td><span class="badge badge-'+(t.category==='Business'?'green':'gray')+'">'+escHtml(t.category||'Business')+'</span></td>'+
+      '<td><button onclick="saDeleteTrip('+mileageTrips.indexOf(t)+')" class="sa-btn-danger" style="font-size:10px;padding:2px 6px">Del</button></td></tr>';
+  }).join('');
+}
+function saLogTrip(){
+  var from=prompt('From (starting location):');if(!from)return;
+  var to=prompt('To (destination):');if(!to)return;
+  var purpose=prompt('Business purpose:');if(!purpose)return;
+  var miles=parseFloat(prompt('Miles driven:'));if(!miles||isNaN(miles))return;
+  var cat=prompt('Category (Business/Medical/Charity):','Business')||'Business';
+  var date=prompt('Date:',new Date().toISOString().slice(0,10))||new Date().toISOString().slice(0,10);
+  mileageTrips.unshift({date:date,from:from,to:to,purpose:purpose,miles:miles,category:cat});
+  saSave('sa_mileage',mileageTrips);saRenderMileage();saUpdateMileageKPIs();
+  saNotify('Trip logged: '+miles+' miles — $'+(miles*IRS_RATE).toFixed(2)+' deduction','green');
+}
+function saDeleteTrip(i){mileageTrips.splice(i,1);saSave('sa_mileage',mileageTrips);saRenderMileage();saUpdateMileageKPIs();}
+function saMileageReport(){
+  var yr=new Date().getFullYear();
+  var business=mileageTrips.filter(function(t){return t.category==='Business';});
+  var w=window.open('','_blank');
+  var css='body{font-family:Arial,sans-serif;padding:40px;max-width:700px;margin:auto}th{background:#f0f4fb;text-align:left;padding:8px;font-size:11px}td{padding:8px;font-size:12px;border-bottom:1px solid #eee}@media print{button{display:none}}';
+  var html2='<!DOCTYPE html><html><head><title>IRS Mileage Log '+yr+'</title><style>'+css+'</style></head><body>';
+  html2+='<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print IRS Mileage Log</button>';
+  html2+='<h2>Business Mileage Log — '+yr+'</h2>';
+  html2+='<p style="font-size:12px;color:#666;margin-bottom:16px">IRS Standard Rate: $'+IRS_RATE+'/mile | Total: '+business.length+' trips</p>';
+  html2+='<table style="width:100%;border-collapse:collapse"><tr><th>Date</th><th>From</th><th>To</th><th>Business Purpose</th><th>Miles</th><th>Deduction</th></tr>';
+  var totalMiles=0;
+  business.forEach(function(t){
+    totalMiles+=parseFloat(t.miles)||0;
+    html2+='<tr><td>'+escHtml(t.date)+'</td><td>'+escHtml(t.from||'')+'</td><td>'+escHtml(t.to||'')+'</td><td>'+escHtml(t.purpose||'')+'</td><td>'+parseFloat(t.miles||0).toFixed(1)+'</td><td>$'+(parseFloat(t.miles||0)*IRS_RATE).toFixed(2)+'</td></tr>';
+  });
+  html2+='<tr style="font-weight:900;border-top:2px solid #0D2418"><td colspan="4">TOTAL</td><td>'+totalMiles.toFixed(1)+'</td><td>$'+(totalMiles*IRS_RATE).toFixed(2)+'</td></tr>';
+  html2+='</table><p style="margin-top:24px;font-size:11px;color:#666">Per IRS Publication 463 — Keep records for 3 years. Substantiation required: date, destination, business purpose, miles driven.</p>';
+  html2+='</body></html>';
+  w.document.write(html2);w.document.close();
+  saNotify('IRS mileage report generated','green');
+}
+function saExportMileage(){
+  var rows=['Date,From,To,Purpose,Miles,Category,Deduction'];
+  mileageTrips.forEach(function(t){
+    var d=t.category==='Business'?(parseFloat(t.miles)||0)*IRS_RATE:0;
+    rows.push([t.date,t.from||'',t.to||'',t.purpose||'',t.miles||0,t.category||'Business',d.toFixed(2)].join(','));
+  });
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mileage_log.csv';a.click();
+}
+
+// ============================================================
+// FIXED ASSETS + DEPRECIATION
+// ============================================================
+function saInitAssets(){saRenderAssets();saUpdateAssetKPIs();}
+function saUpdateAssetKPIs(){
+  var count=fixedAssets.length;
+  var totalCost=saSum(fixedAssets.map(function(a){return parseFloat(a.cost)||0;}));
+  var totalAccumDepr=saSum(fixedAssets.map(function(a){return parseFloat(a.accumDepr)||0;}));
+  var nbv=totalCost-totalAccumDepr;
+  var yr=new Date().getFullYear();
+  var deprYTD=saSum(fixedAssets.map(function(a){return parseFloat(a.deprYTD||0);}));
+  var d;
+  d=document.getElementById('ast-kpi-count');if(d)d.textContent=count;
+  d=document.getElementById('ast-kpi-cost');if(d)d.textContent=saFmt(totalCost);
+  d=document.getElementById('ast-kpi-nbv');if(d)d.textContent=saFmt(nbv);
+  d=document.getElementById('ast-kpi-depr-ytd');if(d)d.textContent=saFmt(deprYTD);
+}
+function saRenderAssets(){
+  var tbody=document.getElementById('ast-tbody');if(!tbody)return;
+  if(!fixedAssets.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No fixed assets. Click + Add Asset.</td></tr>';return;}
+  tbody.innerHTML=fixedAssets.map(function(a,i){
+    var cost=parseFloat(a.cost)||0;
+    var accum=parseFloat(a.accumDepr)||0;
+    var nbv=cost-accum;
+    return '<tr>'+
+      '<td><strong>'+escHtml(a.name)+'</strong></td>'+
+      '<td><span class="badge badge-gray" style="font-size:9px">'+escHtml(a.category||'Equipment')+'</span></td>'+
+      '<td>'+escHtml(a.acquired||'—')+'</td>'+
+      '<td style="text-align:right;font-weight:700">'+saFmt2(cost)+'</td>'+
+      '<td style="font-size:11px;color:var(--muted)">'+escHtml(a.method||'Straight-Line')+'</td>'+
+      '<td style="text-align:center">'+escHtml(String(a.life||5))+'</td>'+
+      '<td style="text-align:right;color:var(--orange)">'+saFmt2(accum)+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:'+(nbv>0?'var(--a)':'var(--muted)')+'">'+saFmt2(nbv)+'</td>'+
+      '<td><button onclick="saDisposeAsset('+i+')" class="sa-btn-danger" style="font-size:10px;padding:2px 6px">Dispose</button></td></tr>';
+  }).join('');
+}
+function saNewAsset(){
+  var name=prompt('Asset name (e.g. Company Vehicle):');if(!name)return;
+  var category=prompt('Category (Equipment/Vehicle/Furniture/Software/Building):','Equipment')||'Equipment';
+  var cost=parseFloat(prompt('Purchase cost ($):'));if(!cost||isNaN(cost))return;
+  var acquired=prompt('Acquisition date:',new Date().toISOString().slice(0,10))||new Date().toISOString().slice(0,10);
+  var method=prompt('Depreciation method:\n1=Straight-Line  2=Double-Declining  3=MACRS  4=Section 179','1')||'1';
+  var methods={'1':'Straight-Line','2':'Double-Declining','3':'MACRS','4':'Section 179'};
+  var methodName=methods[method]||'Straight-Line';
+  var life=parseInt(prompt('Useful life (years):',methodName==='MACRS'?'5':'5'))||5;
+  var asset={name:name,category:category,cost:cost,acquired:acquired,method:methodName,life:life,accumDepr:0,deprYTD:0,active:true};
+  // If Section 179 — full first year deduction
+  if(methodName==='Section 179'){asset.accumDepr=cost;asset.deprYTD=cost;}
+  fixedAssets.push(asset);
+  saSave('sa_assets',fixedAssets);
+  // Post asset acquisition entry
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  glEntries.unshift({ref:'FA-'+entryRef,date:acquired,memo:'Fixed Asset — '+name+' ('+category+')',
+    lines:[{account:'1500',memo:name,debit:cost,credit:0},{account:'1010',memo:'Cash paid',debit:0,credit:cost}],
+    user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  saRenderAssets();saUpdateAssetKPIs();
+  saNotify('Asset added: '+name+' — Dr 1500 Equipment / Cr 1010 Cash','green');
+}
+function saRunDepreciation(){
+  if(!fixedAssets.length){saNotify('No assets to depreciate','');return;}
+  var period=prompt('Run depreciation for period (YYYY-MM):',new Date().toISOString().slice(0,7))||'';
+  if(!period)return;
+  var totalDepr=0;
+  fixedAssets.forEach(function(a){
+    var cost=parseFloat(a.cost)||0;
+    var life=parseFloat(a.life)||5;
+    var monthlyDepr=0;
+    if(a.method==='Straight-Line')monthlyDepr=cost/life/12;
+    else if(a.method==='Double-Declining')monthlyDepr=(cost-parseFloat(a.accumDepr||0))*(2/life)/12;
+    else if(a.method==='MACRS')monthlyDepr=cost*0.2/12; // simplified 5yr MACRS
+    else if(a.method==='Section 179')monthlyDepr=0; // already fully deducted
+    monthlyDepr=Math.min(monthlyDepr,cost-parseFloat(a.accumDepr||0));
+    if(monthlyDepr>0){
+      a.accumDepr=(parseFloat(a.accumDepr)||0)+monthlyDepr;
+      a.deprYTD=(parseFloat(a.deprYTD)||0)+monthlyDepr;
+      totalDepr+=monthlyDepr;
+    }
+  });
+  saSave('sa_assets',fixedAssets);
+  if(totalDepr>0){
+    entryRef++;saSave('sa_ref_counter',entryRef);
+    glEntries.unshift({ref:'DP-'+entryRef,date:period+'-01',memo:'Depreciation — '+period,
+      lines:[{account:'6600',memo:'Depreciation Expense',debit:totalDepr,credit:0},{account:'1510',memo:'Accumulated Depreciation',debit:0,credit:totalDepr}],
+      user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+    saSave('sa_gl',glEntries);
+  }
+  saRenderAssets();saUpdateAssetKPIs();saInitDashboard();
+  saNotify('Depreciation posted for '+period+' — $'+totalDepr.toFixed(2)+' (Dr 6600 / Cr 1510)','green');
+}
+function saDisposeAsset(i){
+  var a=fixedAssets[i];
+  if(!confirm('Dispose of '+a.name+'? This will post a disposal journal entry.'))return;
+  var salePrice=parseFloat(prompt('Sale / disposal price ($):','0'))||0;
+  var nbv=(parseFloat(a.cost)||0)-(parseFloat(a.accumDepr)||0);
+  var gainLoss=salePrice-nbv;
+  entryRef++;saSave('sa_ref_counter',entryRef);
+  var lines=[{account:'1510',memo:'Remove Accum Depr',debit:parseFloat(a.accumDepr)||0,credit:0}];
+  if(salePrice>0)lines.push({account:'1010',memo:'Cash from sale',debit:salePrice,credit:0});
+  lines.push({account:'1500',memo:'Remove '+a.name,debit:0,credit:parseFloat(a.cost)||0});
+  if(gainLoss>0)lines.push({account:'4030',memo:'Gain on disposal',debit:0,credit:gainLoss});
+  if(gainLoss<0)lines.push({account:'6600',memo:'Loss on disposal',debit:Math.abs(gainLoss),credit:0});
+  glEntries.unshift({ref:'DIS-'+entryRef,date:new Date().toISOString().slice(0,10),memo:'Asset Disposal — '+a.name,
+    lines:lines,user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+  saSave('sa_gl',glEntries);
+  fixedAssets.splice(i,1);saSave('sa_assets',fixedAssets);
+  saRenderAssets();saUpdateAssetKPIs();
+  saNotify('Asset disposed — '+(gainLoss>0?'Gain':'Loss')+' of $'+Math.abs(gainLoss).toFixed(2)+' posted','green');
+}
+async function saAssetAI(){
+  saNotify('AI analyzing depreciation strategy...','');
+  var income=saAccountBalance(1010);
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNaccounting AI — Big 4 CPA specializing in tax depreciation strategy.',
+        messages:[{role:'user',content:'Fixed assets analysis: '+JSON.stringify(fixedAssets.map(function(a){return {name:a.name,cost:a.cost,method:a.method,life:a.life,nbv:parseFloat(a.cost||0)-parseFloat(a.accumDepr||0)};}))+'\\n\\nProvide: 1) Section 179 opportunity for 2026 (limit: $1,160,000), 2) Bonus depreciation strategy (60% in 2026), 3) Method optimization per asset, 4) Year-end depreciation planning, 5) Tax savings estimate. Cash position: $'+income}]})});
+    var data=await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+function saExportAssets(){
+  var rows=['Name,Category,Acquired,Cost,Method,Life(yrs),Accum Depr,Net Book Value'];
+  fixedAssets.forEach(function(a){
+    var nbv=(parseFloat(a.cost)||0)-(parseFloat(a.accumDepr)||0);
+    rows.push([a.name,a.category||'',a.acquired||'',a.cost||0,a.method||'',a.life||5,a.accumDepr||0,nbv.toFixed(2)].join(','));
+  });
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fixed_assets.csv';a.click();
+}
+
+// ============================================================
+// PROJECT / JOB COSTING
+// ============================================================
+function saInitProjects(){saRenderProjects();saUpdateProjectKPIs();}
+function saUpdateProjectKPIs(){
+  var active=projects.filter(function(p){return p.status==='Active';}).length;
+  var budget=saSum(projects.map(function(p){return parseFloat(p.budget)||0;}));
+  var actual=saSum(projects.map(function(p){return parseFloat(p.actualCost)||0;}));
+  var revenue=saSum(projects.map(function(p){return parseFloat(p.revenue)||0;}));
+  var profit=revenue-actual;
+  var margin=revenue>0?Math.round((profit/revenue)*100):0;
+  var d;
+  d=document.getElementById('proj-kpi-active');if(d)d.textContent=active;
+  d=document.getElementById('proj-kpi-budget');if(d)d.textContent=saFmt(budget);
+  d=document.getElementById('proj-kpi-actual');if(d)d.textContent=saFmt(actual);
+  d=document.getElementById('proj-kpi-profit');if(d){d.textContent=saFmt(profit);d.style.color=profit>=0?'var(--green)':'var(--red)';}
+  d=document.getElementById('proj-kpi-margin');if(d){d.textContent=margin+'%';d.style.color=margin>=20?'var(--green)':margin>=10?'var(--amber)':'var(--red)';}
+}
+function saRenderProjects(){
+  var tbody=document.getElementById('proj-tbody');if(!tbody)return;
+  if(!projects.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">No projects. Click + New Project.</td></tr>';return;}
+  tbody.innerHTML=projects.map(function(p,i){
+    var revenue=parseFloat(p.revenue)||0;
+    var actual=parseFloat(p.actualCost)||0;
+    var profit=revenue-actual;
+    var margin=revenue>0?Math.round((profit/revenue)*100):0;
+    return '<tr>'+
+      '<td><strong>'+escHtml(p.name)+'</strong></td>'+
+      '<td>'+escHtml(p.client||'—')+'</td>'+
+      '<td style="font-size:11px">'+escHtml(p.startDate||'—')+'</td>'+
+      '<td style="font-size:11px">'+escHtml(p.endDate||'—')+'</td>'+
+      '<td style="text-align:right">'+saFmt2(p.budget||0)+'</td>'+
+      '<td style="text-align:right;color:var(--green);font-weight:700">'+saFmt2(revenue)+'</td>'+
+      '<td style="text-align:right;color:var(--red)">'+saFmt2(actual)+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+saFmt2(profit)+'</td>'+
+      '<td><div style="display:flex;align-items:center;gap:6px"><div class="sa-progress" style="width:60px"><div class="sa-progress-bar" style="width:'+Math.min(100,Math.max(0,margin))+'%;background:'+(margin>=20?'var(--green)':margin>=10?'var(--amber)':'var(--red)')+'"></div></div><span style="font-size:11px;font-weight:700">'+margin+'%</span></div></td>'+
+      '<td><span class="badge badge-'+(p.status==='Active'?'green':p.status==='Complete'?'navy':'gray')+'">'+escHtml(p.status||'Active')+'</span></td></tr>';
+  }).join('');
+}
+function saNewProject(){
+  var name=prompt('Project name:');if(!name)return;
+  var client=prompt('Client:');if(!client)return;
+  var budget=parseFloat(prompt('Budget / quoted amount ($):'));if(!budget||isNaN(budget))return;
+  var revenue=parseFloat(prompt('Contract revenue ($):',String(budget)))||budget;
+  var startDate=prompt('Start date:',new Date().toISOString().slice(0,10))||'';
+  var endDate=prompt('Estimated end date:','')||'';
+  projects.push({name:name,client:client,budget:budget,revenue:revenue,actualCost:0,startDate:startDate,endDate:endDate,status:'Active',costs:[]});
+  saSave('sa_projects',projects);saRenderProjects();saUpdateProjectKPIs();
+  saNotify('Project created: '+name,'green');
+}
+async function saProjectPL(){
+  if(!projects.length){saNotify('No projects to report','');return;}
+  var w=window.open('','_blank');
+  var css='body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:auto}table{width:100%;border-collapse:collapse}th{background:#EDF7F1;text-align:left;padding:8px;font-size:11px;border-bottom:2px solid #16a34a}td{padding:8px;font-size:12px;border-bottom:1px solid #eee}@media print{button{display:none}}';
+  var html2='<!DOCTYPE html><html><head><title>Project P&L</title><style>'+css+'</style></head><body>';
+  html2+='<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print Report</button>';
+  html2+='<h2 style="font-size:18px;color:#0D2418">Project Profitability Report</h2><p style="font-size:12px;color:#666;margin-bottom:16px">'+new Date().toLocaleDateString()+'</p>';
+  html2+='<table><tr><th>Project</th><th>Client</th><th>Budget</th><th>Revenue</th><th>Actual Cost</th><th>Profit</th><th>Margin</th><th>Status</th></tr>';
+  var totRev=0,totCost=0,totBud=0;
+  projects.forEach(function(p){
+    var rev=parseFloat(p.revenue)||0;var cost=parseFloat(p.actualCost)||0;
+    var profit=rev-cost;var margin=rev>0?Math.round((profit/rev)*100):0;
+    totRev+=rev;totCost+=cost;totBud+=parseFloat(p.budget)||0;
+    html2+='<tr><td><strong>'+escHtml(p.name)+'</strong></td><td>'+escHtml(p.client||'')+'</td>'+
+      '<td>$'+parseFloat(p.budget||0).toFixed(2)+'</td><td>$'+rev.toFixed(2)+'</td>'+
+      '<td>$'+cost.toFixed(2)+'</td>'+
+      '<td style="font-weight:700;color:'+(profit>=0?'#16a34a':'#dc2626')+'">'+(profit>=0?'+':'')+' $'+Math.abs(profit).toFixed(2)+'</td>'+
+      '<td style="font-weight:700">'+margin+'%</td>'+
+      '<td>'+escHtml(p.status||'Active')+'</td></tr>';
+  });
+  var totProfit=totRev-totCost;
+  html2+='<tr style="font-weight:900;border-top:2px solid #0D2418"><td colspan="2">TOTAL</td><td>$'+totBud.toFixed(2)+'</td><td>$'+totRev.toFixed(2)+'</td><td>$'+totCost.toFixed(2)+'</td><td style="color:'+(totProfit>=0?'#16a34a':'#dc2626')+'">$'+totProfit.toFixed(2)+'</td><td>'+Math.round(totRev>0?(totProfit/totRev)*100:0)+'%</td><td></td></tr>';
+  html2+='</table></body></html>';
+  w.document.write(html2);w.document.close();
+}
+async function saProjectAI(){
+  if(!projects.length){saNotify('Add projects first','');return;}
+  saNotify('AI analyzing project profitability...','');
+  try{
+    var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNaccounting AI — Big 4 CFO specializing in project profitability.',
+        messages:[{role:'user',content:'Analyze project profitability: '+JSON.stringify(projects.map(function(p){return {name:p.name,client:p.client,revenue:p.revenue,actualCost:p.actualCost,budget:p.budget,status:p.status};}))+'\\n\\nProvide: 1) Profitability ranking, 2) Which projects are most profitable and why, 3) Under-performing projects and root causes, 4) Pricing strategy recommendations, 5) Resource allocation advice.'}]})});
+    var data=await res.json();
+    alert(data.content&&data.content[0]?data.content[0].text:'');
+  }catch(e){}
+}
+
+// ============================================================
+// BURN RATE / RUNWAY DASHBOARD (add to dashboard)
+// ============================================================
+function saCalcBurnAndRunway(){
+  var cash=saAccountBalance(1010);
+  var now=new Date();var mo=now.getMonth(),yr=now.getFullYear();
+  var monthlyExp=0;
+  glEntries.forEach(function(e){
+    var d=new Date(e.date);
+    if(d.getMonth()===mo&&d.getFullYear()===yr){
+      e.lines.forEach(function(l){if(parseInt(l.account)>=5000)monthlyExp+=parseFloat(l.debit)||0;});
+    }
+  });
+  var runway=monthlyExp>0?cash/monthlyExp:999;
+  return {cash:cash,burn:monthlyExp,runway:runway};
+}
+
+// ============================================================
+// RECURRING BILLS (auto-check)
+// ============================================================
+function saRunDueRecurringBills(){
+  var today=new Date().toISOString().slice(0,10);
+  recurringBills.filter(function(b){return b.active&&b.nextDate&&b.nextDate<=today;}).forEach(function(rb,i){
+    var date=new Date().toISOString().slice(0,10);
+    var due=new Date(Date.now()+rb.terms*86400000).toISOString().slice(0,10);
+    var num='BILL-'+(1000+bills.length+1);
+    bills.unshift({num:num,vendor:rb.vendor,amount:rb.amount,category:rb.category,date:date,dueDate:due,status:'Open',acctCode:rb.acctCode||'6200',memo:rb.name});
+    saSave('sa_bills',bills);
+    entryRef++;saSave('sa_ref_counter',entryRef);
+    glEntries.unshift({ref:'AP-'+entryRef,date:date,memo:'Recurring Bill '+num+' — '+rb.vendor,
+      lines:[{account:rb.acctCode||'6200',memo:rb.category||rb.name,debit:rb.amount,credit:0},{account:'2010',memo:'AP',debit:0,credit:rb.amount}],
+      user:'System (recurring)',posted:new Date().toISOString()});
+    saSave('sa_gl',glEntries);
+    // Advance date
+    var next=new Date(rb.nextDate);
+    if(rb.frequency==='Weekly')next.setDate(next.getDate()+7);
+    else if(rb.frequency==='Monthly')next.setMonth(next.getMonth()+1);
+    else if(rb.frequency==='Quarterly')next.setMonth(next.getMonth()+3);
+    else if(rb.frequency==='Annually')next.setFullYear(next.getFullYear()+1);
+    rb.nextDate=next.toISOString().slice(0,10);
+  });
+  saSave('sa_recurring_bills',recurringBills);
+}
+
+// ── ADD RECURRING BILL BUTTON TO BILLS PANEL ────────────────
+function saNewRecurringBill(){
+  var vendor=prompt('Vendor name:');if(!vendor)return;
+  var name=prompt('Schedule name (e.g. Monthly Rent):',vendor+' Monthly')||vendor+' Monthly';
+  var amount=parseFloat(prompt('Amount ($):'));if(!amount||isNaN(amount))return;
+  var category=prompt('Expense category:','6100 Rent')||'6100 Rent';
+  var acctCode=category.split(' ')[0]||'6200';
+  var freq=prompt('Frequency (Weekly/Monthly/Quarterly/Annually):','Monthly')||'Monthly';
+  var startDate=prompt('Start / first due date:',new Date(Date.now()+30*86400000).toISOString().slice(0,10))||'';
+  var terms=parseInt(prompt('Payment terms (days):','30'))||30;
+  recurringBills.push({name:name,vendor:vendor,amount:amount,category:category,acctCode:acctCode,frequency:freq,nextDate:startDate,terms:terms,active:true});
+  saSave('sa_recurring_bills',recurringBills);
+  saNotify('Recurring bill scheduled: '+name+' — '+freq,'green');
+}
+
+// ============================================================
+// SALES TAX HELPER
+// ============================================================
+var SALES_TAX_RATES={
+  OH:{rate:0.0575,name:'Ohio',nexus:'physical presence or $100K/200 transactions'},
+  CA:{rate:0.0725,name:'California',nexus:'$500K in sales'},
+  TX:{rate:0.0625,name:'Texas',nexus:'$500K in sales'},
+  FL:{rate:0.06,name:'Florida',nexus:'$100K in sales'},
+  NY:{rate:0.04,name:'New York',nexus:'$500K/100 transactions'},
+  IL:{rate:0.0625,name:'Illinois',nexus:'$100K/200 transactions'},
+  WA:{rate:0.065,name:'Washington',nexus:'$100K in sales'},
+  PA:{rate:0.06,name:'Pennsylvania',nexus:'$100K in sales'},
+};
+
+function saCalcSalesTax(){
+  var amount=parseFloat(prompt('Taxable sale amount ($):'));if(!amount||isNaN(amount))return;
+  var stateCode=prompt('State code (OH/CA/TX/FL/NY/IL/WA/PA):','OH').toUpperCase()||'OH';
+  var info=SALES_TAX_RATES[stateCode];
+  if(!info){saNotify('State not found. Enter a valid state code.','');return;}
+  var tax=amount*info.rate;
+  alert('Sales Tax Calculator — 2026\n\nState: '+info.name+'\nSale Amount: $'+amount.toFixed(2)+'\nTax Rate: '+(info.rate*100).toFixed(2)+'%\nTax Amount: $'+tax.toFixed(2)+'\nTotal with Tax: $'+(amount+tax).toFixed(2)+'\n\nEconomic Nexus Threshold: '+info.nexus+'\n\nNote: Local rates not included. Actual rate may be higher with city/county add-ons.');
+}
+
+// ============================================================
+// ONLINE PAYMENT LINK GENERATOR
+// ============================================================
+function saGenPaymentLink(invNum){
+  var inv=invoices.find(function(i){return i.num===invNum;});
+  if(!inv){saNotify('Invoice not found','');return;}
+  // Generate a Stripe-style payment page concept (in production this would be a Stripe Payment Link)
+  var payUrl='https://pay.sairn.com/'+encodeURIComponent(inv.num)+'?amount='+inv.amount+'&customer='+encodeURIComponent(inv.customer);
+  var msg='Payment link for Invoice '+inv.num+':\n\n'+payUrl+'\n\n'+
+    'To enable live Stripe payments:\n1. Connect Stripe in your SAIRNaccounting settings\n2. Payment links will auto-generate and embed in invoice emails\n3. Customer clicks Pay Now → Stripe checkout → auto-marks paid in GL\n\nFor now, copy the link and send to '+inv.customer;
+  alert(msg);
+  saNotify('Payment link generated for '+inv.num,'green');
+}
+
+// ============================================================
+// PATCH DASHBOARD — Add Burn Rate widget
+// ============================================================
+var _saInitDashOrig=saInitDashboard;
+saInitDashboard=function(){
+  _saInitDashOrig();
+  // Add burn rate to dashboard
+  var br=saCalcBurnAndRunway();
+  var runwayEl=document.getElementById('kpi-runway');
+  if(runwayEl){
+    var months=br.burn>0?Math.round(br.runway*10)/10:0;
+    runwayEl.textContent=months>0?months+' mo':'—';
+    runwayEl.style.color=months>6?'var(--green)':months>3?'var(--amber)':'var(--red)';
+  }
+};
+
+// ============================================================
+// UPDATE saInitAll to seed contacts from existing data
+// ============================================================
+var _saInitAllV2=saInitAll;
+saInitAll=function(){
+  _saInitAllV2();
+  saRunDueRecurring();
+};
+
+// ============================================================
+// ADD INVENTORY (basic)
+// ============================================================
+function saInitInventory(){saRenderInventory();saUpdateInventoryKPIs();}
+function saUpdateInventoryKPIs(){
+  var total=inventory.length;
+  var value=saSum(inventory.map(function(i){return (parseFloat(i.qty)||0)*(parseFloat(i.cost)||0);}));
+  var lowStock=inventory.filter(function(i){return (parseFloat(i.qty)||0)<=(parseFloat(i.reorderPoint)||5);}).length;
+  var d;
+  d=document.getElementById('inv2-kpi-count');if(d)d.textContent=total;
+  d=document.getElementById('inv2-kpi-value');if(d)d.textContent=saFmt(value);
+  d=document.getElementById('inv2-kpi-lowstock');if(d)d.textContent=lowStock;
+}
+function saRenderInventory(){
+  var tbody=document.getElementById('inv2-tbody');if(!tbody)return;
+  if(!inventory.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No inventory items. Click + Add Item.</td></tr>';return;}
+  tbody.innerHTML=inventory.map(function(item,i){
+    var qty=parseFloat(item.qty)||0;var cost=parseFloat(item.cost)||0;
+    var totalVal=qty*cost;var low=qty<=(parseFloat(item.reorderPoint)||5);
+    return '<tr>'+
+      '<td style="font-weight:700">'+escHtml(item.sku||('SKU-'+String(i+1).padStart(3,'0')))+'</td>'+
+      '<td>'+escHtml(item.name)+'</td>'+
+      '<td>'+escHtml(item.category||'—')+'</td>'+
+      '<td style="text-align:center;font-weight:700;color:'+(low?'var(--red)':'var(--text)')+'">'+qty+'</td>'+
+      '<td style="text-align:right">'+saFmt2(cost)+'</td>'+
+      '<td style="text-align:right;color:var(--a);font-weight:700">'+saFmt2(totalVal)+'</td>'+
+      '<td><span class="badge badge-'+(low?'red':'green')+'">'+(low?'Low Stock':'In Stock')+'</span></td>'+
+      '<td><button onclick="saAdjustInventory('+i+')" class="sa-btn-secondary" style="font-size:10px;padding:3px 6px">Adjust</button></td></tr>';
+  }).join('');
+}
+function saAddInventoryItem(){
+  var name=prompt('Item name:');if(!name)return;
+  var sku=prompt('SKU (optional):','')||'SKU-'+(inventory.length+1);
+  var qty=parseInt(prompt('Opening quantity:','0'))||0;
+  var cost=parseFloat(prompt('Unit cost ($):','0'))||0;
+  var price=parseFloat(prompt('Selling price ($):','0'))||0;
+  var reorder=parseInt(prompt('Reorder point (qty to alert at):','5'))||5;
+  var category=prompt('Category:','General')||'General';
+  inventory.push({sku:sku,name:name,category:category,qty:qty,cost:cost,price:price,reorderPoint:reorder});
+  saSave('sa_inventory',inventory);
+  // Post inventory asset entry if opening qty
+  if(qty>0&&cost>0){
+    entryRef++;saSave('sa_ref_counter',entryRef);
+    glEntries.unshift({ref:'INV-'+entryRef,date:new Date().toISOString().slice(0,10),memo:'Opening inventory — '+name,
+      lines:[{account:'1200',memo:'Inventory',debit:qty*cost,credit:0},{account:'3010',memo:'Owner Equity',debit:0,credit:qty*cost}],
+      user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+    saSave('sa_gl',glEntries);
+  }
+  saRenderInventory();saUpdateInventoryKPIs();
+  saNotify('Item added: '+name,'green');
+}
+function saAdjustInventory(i){
+  var item=inventory[i];
+  var adj=parseInt(prompt('Adjust qty (+ to add, - to remove):','0'));
+  if(!adj||isNaN(adj))return;
+  var reason=prompt('Reason:','Purchase / sale');
+  item.qty=(parseFloat(item.qty)||0)+adj;
+  saSave('sa_inventory',inventory);
+  // Post COGS if negative (sale)
+  if(adj<0&&item.cost>0){
+    entryRef++;saSave('sa_ref_counter',entryRef);
+    glEntries.unshift({ref:'COGS-'+entryRef,date:new Date().toISOString().slice(0,10),memo:'COGS — '+item.name+' ('+reason+')',
+      lines:[{account:'5010',memo:'COGS',debit:Math.abs(adj)*item.cost,credit:0},{account:'1200',memo:'Inventory',debit:0,credit:Math.abs(adj)*item.cost}],
+      user:(saCurrentUser&&saCurrentUser.name)||'Admin',posted:new Date().toISOString()});
+    saSave('sa_gl',glEntries);
+    saNotify('Inventory adjusted — COGS posted: Dr 5010 / Cr 1200','green');
+  } else {
+    saNotify('Inventory adjusted to '+item.qty+' units','green');
+  }
+  saRenderInventory();saUpdateInventoryKPIs();
+}
 
 </script>
 </body>
