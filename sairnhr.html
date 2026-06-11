@@ -8,13 +8,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#FAF8F5;--surface:#FFFFFF;--surface-2:#F7F3EE;
-  --border:#E8DDD0;--text:#2C1810;--muted:#8B7355;
-  --a:#D97706;--a2:#B45309;--a-light:#FEF3C7;
-  --green:#16a34a;--red:#dc2626;--orange:#f97316;--navy:#1B3A6B;
+  /* SAIRNhr v5.0 — Warm Dark Amber Theme */
+  --bg:#1C1814;--surface:#252018;--surface-2:#2E2820;
+  --surface-3:#38302A;--border:#4A3F36;--border-2:#5C4F45;
+  --text:#F5EFE8;--muted:#A89880;--subtle:#6E5E52;
+  --a:#D97706;--a2:#B45309;--a-light:rgba(217,119,6,0.14);
+  --a-glow:rgba(217,119,6,0.22);--a-border:rgba(217,119,6,0.35);
+  --green:#22c55e;--red:#ef4444;--orange:#f97316;--amber:#F59E0B;
+  --navy:#3B82F6;--purple:#8B5CF6;
   --grad:linear-gradient(135deg,#D97706,#B45309);
-  --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:0 4px 16px rgba(0,0,0,0.1);
+  --grad-dark:linear-gradient(135deg,#1C1814,#252018);
+  --shadow:0 1px 4px rgba(0,0,0,0.4),0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 20px rgba(0,0,0,0.5);
+  --shadow-glow:0 0 20px rgba(217,119,6,0.15);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;height:100vh;display:flex;flex-direction:column;overflow:hidden}
@@ -50,12 +56,13 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .sh-topbar-logout{padding:5px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif}
 
 /* ── NAV ── */
-.sh-nav{background:#fff;border-bottom:1px solid var(--border);padding:0 16px;display:flex;gap:2px;overflow-x:auto;flex-shrink:0}
+.sh-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;display:flex;gap:2px;overflow-x:auto;flex-shrink:0}
 .sh-nav::-webkit-scrollbar{height:3px}
 .sh-nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .sh-nav-btn{padding:10px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:none;border-bottom:3px solid transparent;white-space:nowrap;font-family:'Outfit',sans-serif;transition:all .15s}
 .sh-nav-btn:hover{color:var(--a);background:var(--a-light)}
 .sh-nav-btn.active{color:var(--a);border-bottom-color:var(--a)}
+.sh-nav-section{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--subtle);padding:16px 14px 4px;margin-top:4px;opacity:0.7}
 
 /* ── CONTENT ── */
 .sh-content{flex:1;overflow-y:auto;padding:20px}
@@ -403,7 +410,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
         <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
           <button class="sh-btn-primary" onclick="shRunPayroll()">▶ Run Payroll</button>
         <button class="sh-btn-secondary" onclick="shGenW2()">📄 W-2 Generator</button>
-        <button class="sh-btn-secondary" onclick="shPanel('garnishments',this)">🔒 Garnishments</button>
+        
       <div class="sh-nav-section">Payroll & Pay</div>
       <button class="sh-nav-btn" onclick="shPanel('paycalc',this)">💵 Payroll Calculator</button>
       <button class="sh-nav-btn" onclick="shPanel('paystub',this)">🧾 Pay Stub Generator</button>
@@ -1528,6 +1535,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
       <!-- PANEL: AI OFFER LETTER GENERATOR -->
       <div id="panel-offerletter" class="sh-panel">
         <div class="sh-section-title">📄 AI Offer Letter Generator</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="ol-kpi-generated">0</div><div class="sh-kpi-label">Letters Generated</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="ol-kpi-pending" style="color:var(--amber)">0</div><div class="sh-kpi-label">Pending Acceptance</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="ol-kpi-avg-sal">$0</div><div class="sh-kpi-label">Avg Offer Salary</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="ol-kpi-this-month">0</div><div class="sh-kpi-label">This Month</div></div>
+        </div>
         <div class="sh-card">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
             <div class="sh-fg"><label>Candidate Name</label>
@@ -1633,6 +1646,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
       <!-- PANEL: PAY STUB GENERATOR -->
       <div id="panel-paystub" class="sh-panel">
         <div class="sh-section-title">🧾 Pay Stub Generator</div>
+        <div class="sh-grid">
+          <div class="sh-kpi"><div class="sh-kpi-val" id="ps-kpi-generated">0</div><div class="sh-kpi-label">Stubs Generated</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="ps-kpi-total">$0</div><div class="sh-kpi-label">Total Net Pay</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="ps-kpi-deductions">$0</div><div class="sh-kpi-label">Total Deductions</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-val" id="ps-kpi-ytd-sum">$0</div><div class="sh-kpi-label">YTD Gross Tracked</div></div>
+        </div>
         <div class="sh-card">
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
             <div class="sh-fg"><label>Employee Name</label>
@@ -6253,6 +6272,11 @@ async function shGenOfferLetter() {
     // Save to history
     shOfferHistory.unshift({name,role,date:new Date().toLocaleDateString(),salary,text});
     shSave2('sh_offer_history',shOfferHistory);
+    // Update offer letter KPIs
+    var olKpi=document.getElementById('ol-kpi-generated');if(olKpi)olKpi.textContent=shOfferHistory.length;
+    var olMo=document.getElementById('ol-kpi-this-month');var thisMonth=new Date().toLocaleDateString('en-US',{month:'short'});
+    if(olMo)olMo.textContent=shOfferHistory.filter(function(h){return h.date&&h.date.includes(thisMonth);}).length;
+    var olSal=document.getElementById('ol-kpi-avg-sal');if(olSal){var avgS=shOfferHistory.length?shOfferHistory.reduce(function(s,h){return s+(parseFloat(h.salary)||0);},0)/shOfferHistory.length:0;olSal.textContent='$'+Math.round(avgS/1000)+'K';}
     if(out){
       out.innerHTML='<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:20px">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
@@ -6391,7 +6415,7 @@ function shUpdateTRKPIs(){
   d=document.getElementById('tr-kpi-avg-total');if(d)d.textContent=shFmtK(totalComp+avgBenefits);
   d=document.getElementById('tr-kpi-avg-benefits');if(d)d.textContent=shFmtK(avgBenefits);
   d=document.getElementById('tr-kpi-ratio');if(d)d.textContent=ratio+'%';
-  d=document.getElementById('tr-kpi-employees');if(d)d.textContent=localStorage.getItem('sh_tr_count')||'0';
+  d=document.getElementById('tr-kpi-employees');if(d)d.textContent=String(shOfferHistory?shOfferHistory.length:0);
 }
 function shGenTotalRewards(){
   var emps=shGetEmployees();
@@ -6766,6 +6790,72 @@ function shExportHCForecast(){
 }
 
 console.log('SAIRNhr v5.0 loaded — 12 new features: Payroll Calculator, Employee Directory, Compensation Bands, Benefits Enrollment, Offboarding Checklist, AI Offer Letter, Exit Interview, Total Rewards, I-9/W-4 Tracker, Pay Stub Generator, FMLA Tracker, Headcount Forecast.');
+
+
+
+// ── MISSING FUNCTION STUBS (Triad Council audit fix) ──────────
+function shPIPHistory(){
+  var pips=JSON.parse(localStorage.getItem('sh_pips')||'[]');
+  if(!pips.length){shNotify('No PIP history recorded yet','');return;}
+  var lines=pips.map(function(p,i){
+    return (i+1)+'. '+p.empName+' | '+p.startDate+' | '+(p.status||'Active');
+  });
+  alert('PIP History ('+pips.length+' records):\n\n'+lines.join('\n'));
+}
+
+function shHireImpact(){
+  var plans=JSON.parse(localStorage.getItem('sh_hc_plans')||'[]');
+  var total=plans.reduce(function(s,p){return s+((p.q1||0)+(p.q2||0)+(p.q3||0)+(p.q4||0));},0);
+  var budget=plans.reduce(function(s,p){return s+(parseFloat(p.budgetImpact)||0);},0);
+  var avg=plans.length?plans.reduce(function(s,p){return s+(parseFloat(p.salary)||0);},0)/plans.length:80000;
+  var lines=[
+    'HIRE COST MODEL',
+    '=================================',
+    'Total planned hires: '+total,
+    'Total budget impact: $'+Math.round(budget).toLocaleString(),
+    'Average salary: $'+Math.round(avg).toLocaleString(),
+    '',
+    'Per-hire true cost (avg):',
+    '  Base salary:         $'+Math.round(avg).toLocaleString(),
+    '  Benefits (20%):      $'+Math.round(avg*0.20).toLocaleString(),
+    '  Employer FICA:       $'+Math.round(avg*0.0765).toLocaleString(),
+    '  Recruiting (15%):    $'+Math.round(avg*0.15).toLocaleString(),
+    '  Onboarding/equip:    $'+Math.round(avg*0.05).toLocaleString(),
+    '  Ramp time (3mo):     $'+Math.round(avg*0.25).toLocaleString(),
+    '  ---------------------------------',
+    '  Total first-year:    $'+Math.round(avg*1.75).toLocaleString(),
+    '',
+    'SHRM 2026: A bad hire costs 1.5-3x salary.'
+  ];
+  alert(lines.join('\n'));
+}
+
+function shWCPremiumCalc(){
+  var payroll=parseFloat(prompt('Total annual payroll ($):','500000'))||500000;
+  var choice=prompt('Industry (1=Office 2=Manufacturing 3=Construction 4=Healthcare 5=Retail):','1')||'1';
+  var rates={'1':0.003,'2':0.028,'3':0.085,'4':0.012,'5':0.018};
+  var names={'1':'Office (0.30%)','2':'Manufacturing (2.8%)','3':'Construction (8.5%)','4':'Healthcare (1.2%)','5':'Retail (1.8%)'};
+  var rate=rates[choice]||0.005;
+  var premium=payroll*rate;
+  var mod=parseFloat(prompt('Experience modifier / EMR (default 1.0):','1.0'))||1.0;
+  var final=premium*mod;
+  var lines=[
+    'WORKERS COMP PREMIUM ESTIMATE',
+    '=================================',
+    'Payroll: $'+payroll.toLocaleString(),
+    'Industry: '+(names[choice]||'Unknown'),
+    'Base premium: $'+Math.round(premium).toLocaleString(),
+    'EMR modifier: '+mod+'x',
+    '---------------------------------',
+    'ESTIMATED PREMIUM: $'+Math.round(final).toLocaleString(),
+    '',
+    'EMR < 1.0 = better safety record (discount)',
+    'EMR > 1.0 = higher risk (surcharge)',
+    'Always get 3 quotes from licensed carriers.'
+  ];
+  alert(lines.join('\n'));
+}
+
 
 </script>
 </body>
