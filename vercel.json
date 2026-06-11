@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/sairnaccounting",
+      "destination": "/sairnaccounting.html"
+    },
+    {
       "source": "/sairnhr",
       "destination": "/sairnhr.html"
     },
