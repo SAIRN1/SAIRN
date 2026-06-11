@@ -255,6 +255,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <button class="sh-nav-btn" onclick="shPanel('handbook',this)">📖 Handbook</button>
     <button class="sh-nav-btn" onclick="shPanel('investigation',this)">🔍 Investigations</button>
     <button class="sh-nav-btn" onclick="shPanel('jobs',this)">🛠 Job Builder</button>
+    <button class="sh-nav-btn" onclick="shPanel('skills',this)">🧠 Skills</button>
+    <button class="sh-nav-btn" onclick="shPanel('contractors',this)">📎 Contractors</button>
+    <button class="sh-nav-btn" onclick="shPanel('succession',this)">🏆 Succession</button>
+    <button class="sh-nav-btn" onclick="shPanel('headcount',this)">📊 Headcount</button>
+    <button class="sh-nav-btn" onclick="shPanel('workercomp',this)">🦺 Workers Comp</button>
+    <button class="sh-nav-btn" onclick="shPanel('selfservice',this)">👤 Self-Service</button>
   </nav>
 
   <!-- CONTENT -->
@@ -263,13 +269,15 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <!-- ── DASHBOARD ── -->
     <div id="panel-dashboard" class="sh-panel active">
       <div class="sh-section-title">📊 HR Command Center</div>
-      <div class="sh-grid" id="dash-kpi-grid">
+      <div class="sh-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
         <div class="sh-kpi"><div class="sh-kpi-val" id="kpi-employees">—</div><div class="sh-kpi-label">Active Employees</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="kpi-onboarding">—</div><div class="sh-kpi-label">Onboarding</div></div>
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="kpi-pto-pending">—</div><div class="sh-kpi-label">PTO Requests</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="kpi-pto-pending">—</div><div class="sh-kpi-label">PTO Pending</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="kpi-pips">—</div><div class="sh-kpi-label">Active PIPs</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="kpi-open-roles">—</div><div class="sh-kpi-label">Open Roles</div></div>
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="kpi-payroll-est">—</div><div class="sh-kpi-label">Est. Monthly Payroll</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="kpi-payroll-est">—</div><div class="sh-kpi-label">Monthly Payroll</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="kpi-compliance-alerts">—</div><div class="sh-kpi-label">Compliance Alerts</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="kpi-turnover">—</div><div class="sh-kpi-label">Turnover Rate</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div class="sh-card">
@@ -277,63 +285,105 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
           <div id="dash-calendar"></div>
         </div>
         <div class="sh-card">
-          <div class="sh-card-title">⚠️ Action Required</div>
+          <div class="sh-card-title">⚠️ Action Required Now</div>
           <div id="dash-actions"></div>
         </div>
         <div class="sh-card">
-          <div class="sh-card-title">📈 Headcount Trend</div>
-          <div id="dash-headcount-chart" style="height:120px;display:flex;align-items:flex-end;gap:8px;padding-top:8px"></div>
+          <div class="sh-card-title">📈 Headcount by Department</div>
+          <div id="dash-dept-chart" style="display:flex;flex-direction:column;gap:6px;padding-top:4px"></div>
         </div>
         <div class="sh-card">
-          <div class="sh-card-title">💰 Payroll Breakdown</div>
+          <div class="sh-card-title">💰 Payroll Cost Breakdown</div>
           <div id="dash-payroll-breakdown"></div>
         </div>
+        <div class="sh-card">
+          <div class="sh-card-title">🔴 Compliance Deadline Tracker</div>
+          <div id="dash-compliance-deadlines"></div>
+        </div>
+        <div class="sh-card">
+          <div class="sh-card-title">📊 HR Health Score</div>
+          <div id="dash-health-score"></div>
+        </div>
       </div>
     </div>
-
-    <!-- ── HR AI ── -->
+        <!-- ── HR AI ── -->
     <div id="panel-ai" class="sh-panel">
-      <div class="sh-section-title">🤖 HR AI Assistant</div>
-      <div class="sh-card">
-        <div class="sh-chat-chips" id="sh-chips">
-          <span class="sh-chip" onclick="shSendChip(this)">Draft termination letter</span>
-          <span class="sh-chip" onclick="shSendChip(this)">California leave laws 2026</span>
-          <span class="sh-chip" onclick="shSendChip(this)">FMLA eligibility check</span>
-          <span class="sh-chip" onclick="shSendChip(this)">Write job description</span>
-          <span class="sh-chip" onclick="shSendChip(this)">Harassment policy guidance</span>
-          <span class="sh-chip" onclick="shSendChip(this)">ADA accommodation process</span>
-          <span class="sh-chip" onclick="shSendChip(this)">Payroll tax rates 2026</span>
-          <span class="sh-chip" onclick="shSendChip(this)">I-9 reverification rules</span>
+      <div class="sh-section-title">🤖 HR AI — CHRO + Labor Attorney + Coach</div>
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:14px">
+        <div class="sh-card">
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Quick Topics</div>
+            <div class="sh-chat-chips" id="sh-chips">
+              <span class="sh-chip" onclick="shSendChip(this)">Draft termination letter</span>
+              <span class="sh-chip" onclick="shSendChip(this)">California overtime rules 2026</span>
+              <span class="sh-chip" onclick="shSendChip(this)">FMLA eligibility requirements</span>
+              <span class="sh-chip" onclick="shSendChip(this)">ADA accommodation process</span>
+              <span class="sh-chip" onclick="shSendChip(this)">Payroll tax rates 2026</span>
+              <span class="sh-chip" onclick="shSendChip(this)">I-9 reverification rules</span>
+              <span class="sh-chip" onclick="shSendChip(this)">Harassment investigation steps</span>
+              <span class="sh-chip" onclick="shSendChip(this)">Non-compete enforceability</span>
+              <span class="sh-chip" onclick="shSendChip(this)">Write progressive discipline policy</span>
+              <span class="sh-chip" onclick="shSendChip(this)">Workers comp claim process</span>
+              <span class="sh-chip" onclick="shSendChip(this)">WARN Act requirements</span>
+              <span class="sh-chip" onclick="shSendChip(this)">Salary vs hourly pros cons</span>
+            </div>
+          </div>
+          <div class="sh-chat-messages" id="sh-chat-msgs" style="height:340px"></div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <input type="text" id="sh-chat-input" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif;outline:none" placeholder="Ask anything — FMLA, terminations, pay equity, investigations..." onkeydown="if(event.key==='Enter')shSendHR()">
+            <button class="sh-btn-primary" onclick="shSendHR()">Send</button>
+          </div>
+          <div id="sh-hr-thinking" style="display:none;font-size:12px;color:var(--muted);margin-top:6px">✨ AI thinking...</div>
         </div>
-        <div class="sh-chat-messages" id="sh-chat-msgs"></div>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="sh-chat-input" class="sh-fg" style="flex:1;margin:0;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif;outline:none" placeholder="Ask anything HR-related..." onkeydown="if(event.key==='Enter')shSendHR()">
-          <button class="sh-btn-primary" onclick="shSendHR()">Send</button>
+        <div>
+          <div class="sh-card" style="margin-bottom:12px">
+            <div class="sh-card-title" style="font-size:12px">🧠 AI Capabilities</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.8">
+              ✓ CHRO-level HR strategy<br>
+              ✓ Labor attorney knowledge<br>
+              ✓ All 50 states employment law<br>
+              ✓ 2026 compliance calendar<br>
+              ✓ Payroll tax rates<br>
+              ✓ Draft any HR document<br>
+              ✓ Performance management<br>
+              ✓ Benefits administration<br>
+              ✓ I-9 / FLSA / ADA / FMLA<br>
+              ✓ Investigation guidance
+            </div>
+          </div>
+          <div class="sh-card">
+            <div class="sh-card-title" style="font-size:12px">📋 Recent Topics</div>
+            <div id="ai-recent-topics" style="font-size:12px;color:var(--muted)">Start a conversation to see recent topics here.</div>
+          </div>
         </div>
-        <div id="sh-hr-thinking" style="display:none;font-size:12px;color:var(--muted);margin-top:6px">AI is thinking...</div>
       </div>
     </div>
-
-    <!-- ── EMPLOYEES ── -->
+        <!-- ── EMPLOYEES ── -->
     <div id="panel-employees" class="sh-panel">
       <div class="sh-section-title">👥 Employee Directory</div>
-      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <button class="sh-btn-primary" onclick="shOpenEmpModal()">+ Add Employee</button>
-        <input type="text" id="emp-search" oninput="shRenderEmployees()" placeholder="Search name, title, dept..." style="flex:1;min-width:180px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;font-family:Outfit,sans-serif">
+        <button class="sh-btn-outline" onclick="shExportEmployees()">⬇ Export CSV</button>
+        <input type="text" id="emp-search" oninput="shRenderEmployees()" placeholder="Search name, title, dept, email..." style="flex:1;min-width:180px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;font-family:Outfit,sans-serif">
         <select id="emp-dept-filter" onchange="shRenderEmployees()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;font-family:Outfit,sans-serif">
           <option value="">All Departments</option>
           <option>Executive</option><option>Operations</option><option>Sales</option>
-          <option>Finance</option><option>HR</option><option>IT</option><option>Fabrication</option>
+          <option>Finance</option><option>HR</option><option>IT</option><option>Fabrication</option><option>Field</option>
         </select>
         <select id="emp-status-filter" onchange="shRenderEmployees()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;font-family:Outfit,sans-serif">
-          <option value="">All Status</option>
-          <option>Active</option><option>On Leave</option><option>Terminated</option>
+          <option value="">All Status</option><option>Active</option><option>On Leave</option><option>Terminated</option>
         </select>
+      </div>
+      <div class="sh-grid" style="margin-bottom:14px">
+        <div class="sh-kpi"><div class="sh-kpi-val" id="emp-kpi-total">0</div><div class="sh-kpi-label">Total Employees</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="emp-kpi-active">0</div><div class="sh-kpi-label">Active</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="emp-kpi-leave">0</div><div class="sh-kpi-label">On Leave</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="emp-kpi-ft">0</div><div class="sh-kpi-label">Full-time</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="emp-kpi-tenure">0</div><div class="sh-kpi-label">Avg Tenure (yrs)</div></div>
       </div>
       <div id="emp-list"></div>
     </div>
-
-    <!-- ── PAYROLL ── -->
+        <!-- ── PAYROLL ── -->
     <div id="panel-payroll" class="sh-panel">
       <div class="sh-section-title">💰 Payroll Management</div>
       <div class="sh-grid">
@@ -412,18 +462,18 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
       <div class="sh-section-title">⏱ Time & Attendance</div>
       <div class="sh-grid">
         <div class="sh-kpi"><div class="sh-kpi-val" id="time-kpi-clocked">0</div><div class="sh-kpi-label">Clocked In Now</div></div>
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="time-kpi-ot">0</div><div class="sh-kpi-label">OT Hours (week)</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="time-kpi-ot">0h</div><div class="sh-kpi-label">OT Hours (week)</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="time-kpi-absent">0</div><div class="sh-kpi-label">Absent Today</div></div>
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="time-kpi-avg">0h</div><div class="sh-kpi-label">Avg Daily Hours</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="time-kpi-avg">40h</div><div class="sh-kpi-label">Avg Weekly Hours</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="time-kpi-cost">$0</div><div class="sh-kpi-label">Labor Cost (week)</div></div>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
         <button class="sh-btn-primary" onclick="shClockAction()">⏺ Clock In / Out</button>
         <button class="sh-btn-outline" onclick="shAddTimeEntry()">+ Manual Entry</button>
-        <button class="sh-btn-secondary" onclick="shExportTimesheet()">Export Timesheet</button>
+        <button class="sh-btn-secondary" onclick="shExportTimesheet()">⬇ Export Timesheet</button>
+        <button class="sh-btn-secondary" onclick="shTimeApprove()">✓ Approve All</button>
         <select id="time-period" onchange="shRenderTime()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;font-family:Outfit,sans-serif">
-          <option value="week">This Week</option>
-          <option value="biweek">This Bi-Week</option>
-          <option value="month">This Month</option>
+          <option value="week">This Week</option><option value="biweek">This Bi-Week</option><option value="month">This Month</option>
         </select>
       </div>
       <div class="sh-card" style="padding:0;overflow:hidden">
@@ -432,13 +482,18 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
         </div>
         <div id="time-rows"></div>
       </div>
-      <div style="margin-top:14px" class="sh-card">
-        <div class="sh-card-title">🕐 Today's Clock Log</div>
-        <div id="clock-log"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+        <div class="sh-card">
+          <div class="sh-card-title">🕐 Today's Clock Log</div>
+          <div id="clock-log"></div>
+        </div>
+        <div class="sh-card">
+          <div class="sh-card-title">⚠️ Overtime Alerts</div>
+          <div id="time-ot-alerts"></div>
+        </div>
       </div>
     </div>
-
-    <!-- ── BENEFITS ── -->
+        <!-- ── BENEFITS ── -->
     <div id="panel-benefits" class="sh-panel">
       <div class="sh-section-title">🏥 Benefits Administration</div>
       <div class="sh-grid">
@@ -477,51 +532,68 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <!-- ── ONBOARDING ── -->
     <div id="panel-onboarding" class="sh-panel">
       <div class="sh-section-title">✅ Onboarding Manager</div>
-      <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
         <button class="sh-btn-primary" onclick="shStartOnboarding()">+ Start New Onboarding</button>
         <button class="sh-btn-outline" onclick="shPrintOnboarding()">🖨 Print Packet</button>
+        <button class="sh-btn-secondary" onclick="shOnboardingStats()">📊 Onboarding Stats</button>
       </div>
-      <div id="onboarding-active" style="margin-bottom:18px"></div>
+      <div class="sh-grid" style="margin-bottom:14px">
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="onb-kpi-active">0</div><div class="sh-kpi-label">In Progress</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="onb-kpi-completed">0</div><div class="sh-kpi-label">Completed (30 days)</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="onb-kpi-overdue">0</div><div class="sh-kpi-label">Overdue Tasks</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="onb-kpi-avg">0d</div><div class="sh-kpi-label">Avg Completion</div></div>
+      </div>
+      <div id="onboarding-active" style="margin-bottom:14px"></div>
       <div class="sh-card">
         <div class="sh-card-title">📋 Master Onboarding Checklist</div>
-        <div class="sh-tabs" style="margin-bottom:12px">
+        <div class="sh-tabs">
           <button class="sh-tab-inner active" onclick="shOnbTab('preboard',this)">Pre-board</button>
           <button class="sh-tab-inner" onclick="shOnbTab('day1',this)">Day 1</button>
           <button class="sh-tab-inner" onclick="shOnbTab('week1',this)">Week 1</button>
           <button class="sh-tab-inner" onclick="shOnbTab('30day',this)">30 Days</button>
           <button class="sh-tab-inner" onclick="shOnbTab('90day',this)">90 Days</button>
         </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div id="onb-progress-label" style="font-size:12px;color:var(--muted)"></div>
+          <div style="width:200px"><div class="sh-progress"><div class="sh-progress-bar" id="onb-progress-bar" style="width:0%"></div></div></div>
+        </div>
         <div id="onb-checklist"></div>
       </div>
     </div>
-
-    <!-- ── PTO & LEAVE ── -->
+        <!-- ── PTO & LEAVE ── -->
     <div id="panel-pto" class="sh-panel">
       <div class="sh-section-title">🌴 PTO & Leave Management</div>
       <div class="sh-grid">
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="pto-kpi-pending">0</div><div class="sh-kpi-label">Pending Requests</div></div>
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="pto-kpi-approved">0</div><div class="sh-kpi-label">Approved This Month</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="pto-kpi-pending">0</div><div class="sh-kpi-label">Pending</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="pto-kpi-approved">0</div><div class="sh-kpi-label">Approved (mo)</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="pto-kpi-fmla">0</div><div class="sh-kpi-label">Active FMLA</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="pto-kpi-balance">0</div><div class="sh-kpi-label">Avg Balance (days)</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="pto-kpi-liability">$0</div><div class="sh-kpi-label">PTO Liability</div></div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <button class="sh-btn-primary" onclick="shSubmitPTO()">+ New Request</button>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="sh-btn-primary" onclick="shSubmitPTO()">+ New PTO Request</button>
         <button class="sh-btn-outline" onclick="shFMLAModal()">⚕ FMLA Request</button>
+        <button class="sh-btn-secondary" onclick="shPTOBalances()">📊 PTO Balances</button>
+        <button class="sh-btn-secondary" onclick="shPTOCalendar()">📅 Team Calendar</button>
       </div>
-      <div class="sh-card">
-        <div class="sh-card-title">📋 Leave Requests</div>
-        <div id="pto-list"></div>
+      <div class="sh-tabs">
+        <button class="sh-tab-inner active" onclick="shPTOTab('requests',this)">Requests</button>
+        <button class="sh-tab-inner" onclick="shPTOTab('fmla',this)">FMLA</button>
+        <button class="sh-tab-inner" onclick="shPTOTab('balances',this)">Balances</button>
+        <button class="sh-tab-inner" onclick="shPTOTab('calendar',this)">Team Calendar</button>
       </div>
-      <div class="sh-card">
-        <div class="sh-card-title">⚕ FMLA Tracker (50+ Employees)</div>
-        <div style="background:var(--a-light);border:1px solid rgba(217,119,6,.3);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px">
-          <strong>FMLA Facts 2026:</strong> 12 weeks unpaid, job-protected leave per year. 50+ employees within 75 miles. Serious health condition, birth/adoption, military. 30 days advance notice required when foreseeable.
+      <div id="pto-tab-requests"><div class="sh-card"><div id="pto-list"></div></div></div>
+      <div id="pto-tab-fmla" style="display:none">
+        <div class="sh-card" style="background:rgba(217,119,6,.03);border-color:rgba(217,119,6,.2)">
+          <div style="font-size:12px;font-weight:700;color:var(--a);margin-bottom:6px">⚕ FMLA Key Facts 2026</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.8">12 weeks unpaid, job-protected leave · 50+ employees within 75 miles · Serious health condition, birth/adoption, military · 30-day advance notice when foreseeable · Must maintain health benefits during leave · Cannot retaliate for taking FMLA</div>
         </div>
-        <div id="fmla-list"></div>
+        <div class="sh-card" style="margin-top:12px"><div id="fmla-list"></div></div>
       </div>
+      <div id="pto-tab-balances" style="display:none"><div class="sh-card"><div id="pto-balances-list"></div></div></div>
+      <div id="pto-tab-calendar" style="display:none"><div class="sh-card"><div id="pto-calendar-grid"></div></div></div>
     </div>
-
-    <!-- ── PERFORMANCE ── -->
+        <!-- ── PERFORMANCE ── -->
     <div id="panel-performance" class="sh-panel">
       <div class="sh-section-title">⭐ Performance Reviews</div>
       <div style="display:flex;gap:10px;margin-bottom:14px">
@@ -563,28 +635,46 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <!-- ── PIP ── -->
     <div id="panel-pip" class="sh-panel">
       <div class="sh-section-title">📋 Performance Improvement Plans</div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
         <button class="sh-btn-primary" onclick="shGeneratePIP()">✨ Generate PIP</button>
         <button class="sh-btn-outline" onclick="shPrintPIP()">🖨 Print PIP</button>
+        <button class="sh-btn-secondary" onclick="shPIPHistory()">📂 PIP History</button>
       </div>
       <div class="sh-card">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
           <div class="sh-fg"><label>Employee Name</label><input type="text" id="pip-name" placeholder="Employee Name"></div>
           <div class="sh-fg"><label>Manager</label><input type="text" id="pip-manager" placeholder="Manager Name"></div>
+          <div class="sh-fg"><label>HR Partner</label><input type="text" id="pip-hr" placeholder="HR Name"></div>
           <div class="sh-fg"><label>Duration</label>
-            <select id="pip-duration">
-              <option>30 Days</option><option selected>60 Days</option><option>90 Days</option>
-            </select>
+            <select id="pip-duration"><option>30 Days</option><option selected>60 Days</option><option>90 Days</option></select>
           </div>
+          <div class="sh-fg"><label>Start Date</label><input type="date" id="pip-start"></div>
+          <div class="sh-fg"><label>Review Date (midpoint)</label><input type="date" id="pip-review"></div>
         </div>
-        <div class="sh-fg"><label>Performance Issues (be specific)</label><textarea id="pip-issues" rows="3" placeholder="Late to work 4x in 30 days. Missed 3 project deadlines. Customer complaints on 2 occasions."></textarea></div>
-        <div class="sh-fg"><label>Expected Improvement Goals</label><textarea id="pip-goals" rows="3" placeholder="Zero tardiness. All deadlines met. Zero customer complaints."></textarea></div>
-        <div class="sh-fg"><label>Support / Resources Provided</label><textarea id="pip-support" rows="2" placeholder="Weekly 1:1 with manager, training sessions, mentorship..."></textarea></div>
+        <div class="sh-fg"><label>Specific Performance Issues (be precise — dates, metrics, incidents)</label>
+          <textarea id="pip-issues" rows="3" placeholder="Late to work 4 times in 30 days (dates: 5/1, 5/8, 5/14, 5/21). Missed project deadline on 5/15. Two customer complaints received 5/10 and 5/22."></textarea>
+        </div>
+        <div class="sh-fg"><label>SMART Improvement Goals</label>
+          <textarea id="pip-goals" rows="3" placeholder="Zero tardiness for 60 days. 100% deadline adherence. Zero customer complaints. Weekly 1:1 with manager."></textarea>
+        </div>
+        <div class="sh-fg"><label>Support & Resources Provided</label>
+          <textarea id="pip-support" rows="2" placeholder="Weekly 1:1 coaching sessions, access to time management training course, mentor assigned..."></textarea>
+        </div>
+        <div class="sh-fg"><label>Consequence if Goals Not Met</label>
+          <select id="pip-consequence">
+            <option>Further disciplinary action up to and including termination</option>
+            <option>Demotion to a role better suited to current performance level</option>
+            <option>Transfer to a different department or role</option>
+          </select>
+        </div>
       </div>
       <div id="pip-content"></div>
+      <div class="sh-card" style="margin-top:14px" id="pip-history-list" style="display:none">
+        <div class="sh-card-title">📂 PIP History</div>
+        <div id="pip-history-content"></div>
+      </div>
     </div>
-
-    <!-- ── COMPLIANCE ── -->
+        <!-- ── COMPLIANCE ── -->
     <div id="panel-compliance" class="sh-panel">
       <div class="sh-section-title">⚖️ Compliance Center</div>
       <div class="sh-tabs">
@@ -636,18 +726,24 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="ats-kpi-screen">0</div><div class="sh-kpi-label">To Screen</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="ats-kpi-interview">0</div><div class="sh-kpi-label">Interviewing</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="ats-kpi-offer">0</div><div class="sh-kpi-label">Offers Extended</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="ats-kpi-ttf">—</div><div class="sh-kpi-label">Avg Days to Hire</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="ats-kpi-rejected">0</div><div class="sh-kpi-label">Rejected</div></div>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
         <button class="sh-btn-primary" onclick="shAddCandidate()">+ Add Candidate</button>
-        <button class="sh-btn-outline" onclick="shAddRole()">+ New Role</button>
+        <button class="sh-btn-outline" onclick="shAddRole()">+ Open Role</button>
+        <button class="sh-btn-secondary" onclick="shOpenReqModal()">📋 Job Requisition</button>
         <select id="ats-role-filter" onchange="shFilterATS()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;font-family:Outfit,sans-serif">
           <option value="all">All Roles</option>
         </select>
       </div>
       <div class="ats-board" id="ats-board"></div>
+      <div class="sh-card" style="margin-top:14px">
+        <div class="sh-card-title">📋 Open Roles & Requisitions</div>
+        <div id="ats-roles-list"></div>
+      </div>
     </div>
-
-    <!-- ── OFFER LETTERS ── -->
+        <!-- ── OFFER LETTERS ── -->
     <div id="panel-offers" class="sh-panel">
       <div class="sh-section-title">📄 Offer Letter Generator</div>
       <div class="sh-card">
@@ -735,71 +831,107 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <!-- ── ORG CHART ── -->
     <div id="panel-org" class="sh-panel">
       <div class="sh-section-title">🏢 Org Chart & Structure</div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
         <button class="sh-btn-primary" onclick="shAddOrgNode()">+ Add Position</button>
         <button class="sh-btn-outline" onclick="shRenderOrg()">↻ Refresh</button>
+        <button class="sh-btn-secondary" onclick="shAutoPopulateOrg()">✨ Auto-Populate from Employees</button>
+        <button class="sh-btn-secondary" onclick="shPrintOrg()">🖨 Print Chart</button>
+      </div>
+      <div class="sh-grid" style="margin-bottom:14px">
+        <div class="sh-kpi"><div class="sh-kpi-val" id="org-kpi-positions">0</div><div class="sh-kpi-label">Positions</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="org-kpi-vacant">0</div><div class="sh-kpi-label">Vacant</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="org-kpi-mgrs">0</div><div class="sh-kpi-label">Managers</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="org-kpi-span">0</div><div class="sh-kpi-label">Avg Span of Control</div></div>
       </div>
       <div class="sh-card">
-        <div id="org-chart-wrap" style="overflow-x:auto;padding:20px;text-align:center;min-height:200px"></div>
+        <div id="org-chart-wrap" style="overflow-x:auto;padding:20px;text-align:center;min-height:220px"></div>
       </div>
       <div class="sh-card" style="margin-top:14px">
         <div class="sh-card-title">📋 Position Roster</div>
         <div id="org-roster"></div>
       </div>
     </div>
-
-    <!-- ── 9-BOX ── -->
+        <!-- ── 9-BOX ── -->
     <div id="panel-ninebox" class="sh-panel">
       <div class="sh-section-title">📊 9-Box Talent Grid</div>
-      <div style="display:flex;gap:24px;flex-wrap:wrap">
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start">
         <div>
-          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Performance →</div>
-          <div class="ninebox-grid" id="ninebox-grid"></div>
+          <div style="display:flex;gap:4px;align-items:center;margin-bottom:6px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);margin-right:4px;text-transform:uppercase;letter-spacing:1px">POTENTIAL ↑</div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">PERFORMANCE →</div>
+              <div class="ninebox-grid" id="ninebox-grid"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <div style="display:flex;align-items:center;gap:4px;font-size:11px"><div style="width:10px;height:10px;border-radius:2px;background:rgba(22,163,74,.2)"></div>High potential</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:11px"><div style="width:10px;height:10px;border-radius:2px;background:rgba(217,119,6,.15)"></div>Core</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:11px"><div style="width:10px;height:10px;border-radius:2px;background:rgba(220,38,38,.12)"></div>At risk</div>
+          </div>
         </div>
-        <div style="flex:1;min-width:280px">
-          <div class="sh-card">
+        <div>
+          <div class="sh-card" style="margin-bottom:12px">
             <div class="sh-card-title">Place Employee</div>
-            <div class="sh-fg"><label>Employee Name</label><input type="text" id="nb-emp" placeholder="Jane Smith"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div class="sh-fg"><label>Performance (1-3)</label>
-                <select id="nb-perf"><option value="3">3 - High</option><option value="2">2 - Medium</option><option value="1">1 - Low</option></select>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end">
+              <div class="sh-fg" style="margin:0"><label>Employee Name</label><input type="text" id="nb-emp" placeholder="Jane Smith"></div>
+              <div class="sh-fg" style="margin:0"><label>Performance (1-3)</label>
+                <select id="nb-perf"><option value="3">3 — High</option><option value="2">2 — Med</option><option value="1">1 — Low</option></select>
               </div>
-              <div class="sh-fg"><label>Potential (1-3)</label>
-                <select id="nb-pot"><option value="3">3 - High</option><option value="2">2 - Medium</option><option value="1">1 - Low</option></select>
+              <div class="sh-fg" style="margin:0"><label>Potential (1-3)</label>
+                <select id="nb-pot"><option value="3">3 — High</option><option value="2">2 — Med</option><option value="1">1 — Low</option></select>
               </div>
             </div>
-            <button class="sh-btn-primary" onclick="shPlaceEmployee()">Place in Grid</button>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+              <button class="sh-btn-primary" onclick="shPlaceEmployee()">Place in Grid</button>
+              <button class="sh-btn-outline" onclick="shNBSuggest()">✨ AI Placement Suggestions</button>
+            </div>
           </div>
-          <div class="sh-card" style="margin-top:14px">
-            <div class="sh-card-title">Talent Roster</div>
+          <div class="sh-card">
+            <div class="sh-card-title">Talent Roster <span id="nb-count" style="font-size:11px;color:var(--muted);font-weight:400"></span></div>
             <div id="nb-roster"></div>
           </div>
+          <div class="sh-card" style="margin-top:12px" id="nb-ai-output" style="display:none"></div>
         </div>
       </div>
     </div>
-
-    <!-- ── PULSE ── -->
+        <!-- ── PULSE ── -->
     <div id="panel-pulse" class="sh-panel">
       <div class="sh-section-title">💬 Pulse Survey & Engagement</div>
       <div class="sh-grid">
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="pulse-enps">+42</div><div class="sh-kpi-label">eNPS Score</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" id="pulse-responses">0</div><div class="sh-kpi-label">Responses</div></div>
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="pulse-avg">—</div><div class="sh-kpi-label">Avg Engagement</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="pulse-avg">—</div><div class="sh-kpi-label">Avg Score</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" id="pulse-trend">→</div><div class="sh-kpi-label">Trend</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="pulse-benchmark">+32</div><div class="sh-kpi-label">Industry Avg eNPS</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="pulse-participation">0%</div><div class="sh-kpi-label">Participation Rate</div></div>
       </div>
-      <div class="sh-card" id="pulse-survey-card">
-        <div class="sh-card-title">📊 Monthly Pulse — Rate 1-5</div>
-        <div id="pulse-questions"></div>
-        <div class="sh-fg" style="margin-top:12px"><label>Open Feedback (anonymous)</label><textarea id="pulse-open" rows="2" placeholder="What would make this company a better place to work?"></textarea></div>
-        <button class="sh-btn-primary" onclick="shSubmitPulse()">Submit Survey</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="sh-card">
+          <div class="sh-card-title">📊 Monthly Pulse Survey — Rate 1 to 5</div>
+          <div id="pulse-questions"></div>
+          <div class="sh-fg" style="margin-top:12px"><label>Open Feedback (anonymous)</label><textarea id="pulse-open" rows="2" placeholder="What would make this a better place to work?"></textarea></div>
+          <button class="sh-btn-primary" onclick="shSubmitPulse()">Submit Survey</button>
+        </div>
+        <div>
+          <div class="sh-card" style="margin-bottom:12px">
+            <div class="sh-card-title">📈 Score Trend</div>
+            <div id="pulse-trend-chart" style="height:80px;display:flex;align-items:flex-end;gap:4px"></div>
+          </div>
+          <div class="sh-card">
+            <div class="sh-card-title">📋 Question Breakdown</div>
+            <div id="pulse-breakdown"></div>
+          </div>
+        </div>
       </div>
       <div class="sh-card" style="margin-top:14px">
-        <div class="sh-card-title">📈 Survey History</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="sh-card-title" style="margin:0">📅 Survey History</div>
+          <button class="sh-btn-outline" onclick="shPulseAIInsights()" style="font-size:11px;padding:5px 10px">✨ AI Insights</button>
+        </div>
         <div id="pulse-history"></div>
       </div>
     </div>
-
-    <!-- ── LMS / TRAINING ── -->
+        <!-- ── LMS / TRAINING ── -->
     <div id="panel-lms" class="sh-panel">
       <div class="sh-section-title">🎓 Learning & Training Management</div>
       <div class="sh-grid">
@@ -807,44 +939,61 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="lms-due">0</div><div class="sh-kpi-label">Due This Month</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="lms-overdue">0</div><div class="sh-kpi-label">Overdue</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" id="lms-certs">0</div><div class="sh-kpi-label">Active Certs</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="lms-completion-rate">0%</div><div class="sh-kpi-label">Completion Rate</div></div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
         <button class="sh-btn-primary" onclick="shAddCourse()">+ Add Course</button>
-        <button class="sh-btn-outline" onclick="shAddCert()">+ Add Cert</button>
+        <button class="sh-btn-outline" onclick="shAddCert()">+ Log Certification</button>
+        <button class="sh-btn-secondary" onclick="shAssignCourse()">📋 Assign to Employee</button>
+        <button class="sh-btn-secondary" onclick="shLMSAIRecommend()">✨ AI Recommend Training</button>
       </div>
-      <div class="sh-card">
-        <div class="sh-card-title">📚 Course Library</div>
-        <div id="lms-courses"></div>
+      <div class="sh-tabs" id="lms-tabs">
+        <button class="sh-tab-inner active" onclick="shLMSTab('courses',this)">📚 Course Library</button>
+        <button class="sh-tab-inner" onclick="shLMSTab('assignments',this)">👤 Assignments</button>
+        <button class="sh-tab-inner" onclick="shLMSTab('certs',this)">🏆 Certifications</button>
+        <button class="sh-tab-inner" onclick="shLMSTab('compliance',this)">⚖️ Required Training</button>
       </div>
-      <div class="sh-card" style="margin-top:14px">
-        <div class="sh-card-title">🏆 Certifications</div>
-        <div id="lms-cert-list"></div>
+      <div id="lms-tab-courses"><div class="sh-card"><div id="lms-courses"></div></div></div>
+      <div id="lms-tab-assignments" style="display:none"><div class="sh-card"><div id="lms-assignments"></div></div></div>
+      <div id="lms-tab-certs" style="display:none"><div class="sh-card"><div id="lms-cert-list"></div></div></div>
+      <div id="lms-tab-compliance" style="display:none">
+        <div class="sh-card" style="background:rgba(220,38,38,.03);border-color:rgba(220,38,38,.2)">
+          <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">⚠️ Required Training — Legal Compliance</div>
+          <div id="lms-required-list"></div>
+        </div>
       </div>
     </div>
-
-    <!-- ── RETENTION / ATTRITION ── -->
+        <!-- ── RETENTION / ATTRITION ── -->
     <div id="panel-attrition" class="sh-panel">
       <div class="sh-section-title">📉 Retention & Attrition Intelligence</div>
       <div class="sh-grid">
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="atr-kpi-risk">0</div><div class="sh-kpi-label">High Flight Risk</div></div>
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="atr-kpi-medium">0</div><div class="sh-kpi-label">Medium Risk</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="atr-kpi-risk">0</div><div class="sh-kpi-label">Critical Risk</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="atr-kpi-medium">0</div><div class="sh-kpi-label">High Risk</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="atr-kpi-stable">0</div><div class="sh-kpi-label">Stable</div></div>
-        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="atr-kpi-rate">0%</div><div class="sh-kpi-label">Turnover Rate</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="atr-kpi-rate">0%</div><div class="sh-kpi-label">12-mo Turnover Rate</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="atr-kpi-cost">$0</div><div class="sh-kpi-label">Est. Turnover Cost</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="atr-kpi-saved">$0</div><div class="sh-kpi-label">Saved (interventions)</div></div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <button class="sh-btn-primary" onclick="shCalcAttrition()">+ Add Risk Assessment</button>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="sh-btn-primary" onclick="shCalcAttrition()">+ Risk Assessment</button>
         <button class="sh-btn-outline" onclick="shRunRetentionAI()">✨ AI Retention Strategy</button>
+        <button class="sh-btn-secondary" onclick="shPrescriptiveAI()">🔮 Prescriptive Analysis</button>
+        <button class="sh-btn-secondary" onclick="shTurnoverCostCalc()">💰 Cost Calculator</button>
       </div>
       <div class="sh-card">
         <div class="sh-card-title">⚠️ Flight Risk Register</div>
-        <table class="sh-table" style="margin-top:0">
-          <thead><tr><th>Employee</th><th>Risk Level</th><th>Score</th><th>Primary Factor</th><th>Recommended Action</th></tr></thead>
+        <table class="sh-table">
+          <thead><tr><th>Employee</th><th>Risk</th><th>Score</th><th>Primary Factor</th><th>Recommended Action</th><th>Due</th></tr></thead>
           <tbody id="atr-register"></tbody>
         </table>
       </div>
+      <div class="sh-card" style="margin-top:14px" id="atr-prescriptive-output" style="display:none"></div>
+      <div class="sh-card" style="margin-top:14px">
+        <div class="sh-card-title">💡 Retention Playbook</div>
+        <div id="atr-playbook"></div>
+      </div>
     </div>
-
-    <!-- ── TERMINATION / OFFBOARDING ── -->
+        <!-- ── TERMINATION / OFFBOARDING ── -->
     <div id="panel-termination" class="sh-panel">
       <div class="sh-section-title">🚫 Offboarding & Termination</div>
       <div class="sh-card" style="background:rgba(220,38,38,.03);border-color:rgba(220,38,38,.2)">
@@ -973,19 +1122,19 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <!-- ── INVESTIGATIONS ── -->
     <div id="panel-investigation" class="sh-panel">
       <div class="sh-section-title">🔍 Workplace Investigation Manager</div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <button class="sh-btn-primary" onclick="shOpenCase()">+ New Investigation</button>
-      </div>
       <div class="sh-grid">
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="inv-kpi-open">0</div><div class="sh-kpi-label">Open Cases</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="inv-kpi-active">0</div><div class="sh-kpi-label">Under Investigation</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="inv-kpi-closed">0</div><div class="sh-kpi-label">Closed</div></div>
         <div class="sh-kpi"><div class="sh-kpi-val" id="inv-kpi-avg">0d</div><div class="sh-kpi-label">Avg Resolution</div></div>
       </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <button class="sh-btn-primary" onclick="shOpenCase()">+ New Investigation</button>
+        <button class="sh-btn-outline" onclick="shInvAIGuide()">✨ AI Investigation Guide</button>
+      </div>
       <div id="inv-cases-list"></div>
     </div>
-
-    <!-- ── JOB BUILDER ── -->
+        <!-- ── JOB BUILDER ── -->
     <div id="panel-jobs" class="sh-panel">
       <div class="sh-section-title">🛠 AI Job Description Builder</div>
       <div class="sh-card">
@@ -1020,6 +1169,185 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
       <div id="jb-content"></div>
     </div>
 
+
+    <!-- ── SKILLS MATRIX ── -->
+    <div id="panel-skills" class="sh-panel">
+      <div class="sh-section-title">🧠 Skills Matrix</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" id="skills-kpi-mapped">0</div><div class="sh-kpi-label">Skills Mapped</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="skills-kpi-gaps">0</div><div class="sh-kpi-label">Critical Gaps</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="skills-kpi-training">0</div><div class="sh-kpi-label">Training Assigned</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="skills-kpi-proficient">0%</div><div class="sh-kpi-label">Team Proficiency</div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="sh-btn-primary" onclick="shAddSkill()">+ Add Skill</button>
+        <button class="sh-btn-outline" onclick="shMapEmployeeSkills()">👤 Map Employee Skills</button>
+        <button class="sh-btn-secondary" onclick="shSkillsGapAI()">✨ AI Gap Analysis</button>
+        <button class="sh-btn-secondary" onclick="shSkillsToLMS()">📚 Assign Training for Gaps</button>
+      </div>
+      <div class="sh-card" style="overflow-x:auto">
+        <div class="sh-card-title">Skills × Employee Matrix</div>
+        <div id="skills-matrix-grid"></div>
+      </div>
+      <div class="sh-card" style="margin-top:14px" id="skills-ai-output" style="display:none"></div>
+    </div>
+
+    <!-- ── CONTRACTORS / 1099 ── -->
+    <div id="panel-contractors" class="sh-panel">
+      <div class="sh-section-title">📎 Contractors & 1099 Management</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" id="con-kpi-active">0</div><div class="sh-kpi-label">Active Contractors</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="con-kpi-w9">0</div><div class="sh-kpi-label">W-9 Missing</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="con-kpi-threshold">0</div><div class="sh-kpi-label">Near $600 Threshold</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="con-kpi-paid">$0</div><div class="sh-kpi-label">Paid YTD</div></div>
+      </div>
+      <div style="background:rgba(217,119,6,.05);border:1px solid rgba(217,119,6,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px">
+        <strong>1099-NEC Rules 2026:</strong> File 1099-NEC for any contractor paid <strong>$600+</strong> in a calendar year. Deadline: January 31, 2027.
+        Collect W-9 BEFORE first payment — you need SSN/EIN. Failure to file: $60–$310 per form.
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <button class="sh-btn-primary" onclick="shAddContractor()">+ Add Contractor</button>
+        <button class="sh-btn-outline" onclick="shLog1099Payment()">+ Log Payment</button>
+        <button class="sh-btn-secondary" onclick="shGen1099Report()">📄 1099 Report</button>
+      </div>
+      <div class="sh-card" style="padding:0;overflow:hidden">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;gap:8px;padding:10px 14px;background:var(--surface-2);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
+          <div>Contractor</div><div>W-9</div><div>Paid YTD</div><div>1099 Required</div><div>Status</div><div>Action</div>
+        </div>
+        <div id="contractors-list"></div>
+      </div>
+    </div>
+
+    <!-- ── SUCCESSION PLANNING ── -->
+    <div id="panel-succession" class="sh-panel">
+      <div class="sh-section-title">🏆 Succession Planning</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" id="succ-kpi-roles">0</div><div class="sh-kpi-label">Critical Roles</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="succ-kpi-no-successor">0</div><div class="sh-kpi-label">No Successor</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="succ-kpi-one">0</div><div class="sh-kpi-label">One Successor</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="succ-kpi-ready">0</div><div class="sh-kpi-label">Ready Now</div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <button class="sh-btn-primary" onclick="shAddSuccRole()">+ Add Critical Role</button>
+        <button class="sh-btn-outline" onclick="shSuccAI()">✨ AI Succession Analysis</button>
+      </div>
+      <div id="succ-roles-list"></div>
+      <div class="sh-card" style="margin-top:14px" id="succ-ai-output" style="display:none"></div>
+    </div>
+
+    <!-- ── HEADCOUNT BUDGET ── -->
+    <div id="panel-headcount" class="sh-panel">
+      <div class="sh-section-title">📊 Headcount & Budget Planning</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" id="hc-kpi-budgeted">0</div><div class="sh-kpi-label">Budgeted Headcount</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="hc-kpi-filled">0</div><div class="sh-kpi-label">Filled</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="hc-kpi-open">0</div><div class="sh-kpi-label">Open</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="hc-kpi-labor-budget">$0</div><div class="sh-kpi-label">Annual Labor Budget</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--a)" id="hc-kpi-actual">$0</div><div class="sh-kpi-label">Actual Labor Cost</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" id="hc-kpi-variance" style="color:var(--green)">$0</div><div class="sh-kpi-label">Budget Variance</div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="sh-btn-primary" onclick="shAddHCPlan()">+ Add Department Plan</button>
+        <button class="sh-btn-outline" onclick="shHireImpact()">💰 Hire Cost Model</button>
+        <button class="sh-btn-secondary" onclick="shHCAI()">✨ AI Headcount Forecast</button>
+        <button class="sh-btn-secondary" onclick="shExportHCReport()">⬇ Export to SAIRNacc</button>
+      </div>
+      <div class="sh-card" style="padding:0;overflow:hidden">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:8px;padding:10px 14px;background:var(--surface-2);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
+          <div>Department</div><div>Budgeted</div><div>Filled</div><div>Open</div><div>Budget</div><div>Actual</div>
+        </div>
+        <div id="hc-dept-rows"></div>
+      </div>
+      <div class="sh-card" style="margin-top:14px">
+        <div class="sh-card-title">💰 New Hire Cost Model</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+          <div class="sh-fg"><label>Annual Salary</label><input type="number" id="hire-salary" placeholder="55000" oninput="shCalcHireCost()"></div>
+          <div class="sh-fg"><label>Benefits Load %</label><input type="number" id="hire-benefits-pct" placeholder="25" value="25" oninput="shCalcHireCost()"></div>
+          <div class="sh-fg"><label>Recruiting Cost</label><input type="number" id="hire-recruit" placeholder="3000" value="3000" oninput="shCalcHireCost()"></div>
+          <div class="sh-fg"><label>Onboarding / Training</label><input type="number" id="hire-onboard" placeholder="2000" value="2000" oninput="shCalcHireCost()"></div>
+        </div>
+        <div id="hire-cost-result"></div>
+      </div>
+    </div>
+
+    <!-- ── WORKERS COMP ── -->
+    <div id="panel-workercomp" class="sh-panel">
+      <div class="sh-section-title">🦺 Workers' Compensation</div>
+      <div class="sh-grid">
+        <div class="sh-kpi"><div class="sh-kpi-val" id="wc-kpi-claims">0</div><div class="sh-kpi-label">Open Claims</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--orange)" id="wc-kpi-restricted">0</div><div class="sh-kpi-label">Restricted Duty</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--red)" id="wc-kpi-lost-time">0</div><div class="sh-kpi-label">Lost Time Days</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--navy)" id="wc-kpi-premium">$0</div><div class="sh-kpi-label">Annual WC Premium</div></div>
+        <div class="sh-kpi"><div class="sh-kpi-val" style="color:var(--green)" id="wc-kpi-mod">1.00</div><div class="sh-kpi-label">Experience Mod</div></div>
+      </div>
+      <div style="background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px">
+        <strong>WC Key Rules:</strong> Report injuries within 24-48 hours to insurer. OSHA 300 log required.
+        Experience modifier (e-mod) affects premium — below 1.0 saves money, above 1.0 costs more.
+        Light duty / return-to-work programs reduce claims costs significantly.
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="sh-btn-primary" onclick="shOpenWCClaim()">+ File WC Claim</button>
+        <button class="sh-btn-outline" onclick="shWCPremiumCalc()">💰 Premium Calculator</button>
+        <button class="sh-btn-secondary" onclick="shWCAI()">✨ AI Safety Strategy</button>
+      </div>
+      <div class="sh-card">
+        <div class="sh-card-title">📋 Active Claims</div>
+        <div id="wc-claims-list"></div>
+      </div>
+      <div class="sh-card" style="margin-top:14px">
+        <div class="sh-card-title">💰 Premium Calculator</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="sh-fg"><label>Annual Payroll</label><input type="number" id="wc-payroll" placeholder="500000" oninput="shCalcWCPremium()"></div>
+          <div class="sh-fg"><label>Job Class Code Rate (per $100)</label><input type="number" id="wc-rate" placeholder="8.50" step="0.01" oninput="shCalcWCPremium()"></div>
+          <div class="sh-fg"><label>Experience Modifier</label><input type="number" id="wc-mod-input" placeholder="1.00" step="0.01" value="1.00" oninput="shCalcWCPremium()"></div>
+        </div>
+        <div id="wc-premium-result"></div>
+      </div>
+    </div>
+
+    <!-- ── EMPLOYEE SELF-SERVICE ── -->
+    <div id="panel-selfservice" class="sh-panel">
+      <div class="sh-section-title">👤 Employee Self-Service Portal</div>
+      <div style="background:linear-gradient(135deg,var(--a-light),rgba(217,119,6,.05));border:1px solid rgba(217,119,6,.3);border-radius:12px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:32px">👋</div>
+        <div>
+          <div style="font-size:15px;font-weight:800" id="ess-welcome-name">Welcome back</div>
+          <div style="font-size:12px;color:var(--muted)" id="ess-welcome-sub">Your HR information at a glance</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+        <div class="sh-card">
+          <div class="sh-card-title">📋 My Information</div>
+          <div id="ess-my-info" style="font-size:13px;line-height:2">Loading...</div>
+          <button class="sh-btn-outline" style="margin-top:10px;width:100%" onclick="shESSUpdateInfo()">Update My Info</button>
+        </div>
+        <div class="sh-card">
+          <div class="sh-card-title">🌴 My PTO</div>
+          <div id="ess-pto-balance" style="margin-bottom:12px"></div>
+          <button class="sh-btn-primary" style="width:100%" onclick="shSubmitPTO()">Request Time Off</button>
+        </div>
+        <div class="sh-card">
+          <div class="sh-card-title">💰 My Pay</div>
+          <div id="ess-pay-info" style="font-size:13px;line-height:2;margin-bottom:12px">Loading...</div>
+          <button class="sh-btn-outline" style="width:100%" onclick="shESSViewPayStubs()">View Pay Stubs</button>
+        </div>
+        <div class="sh-card">
+          <div class="sh-card-title">🏥 My Benefits</div>
+          <div id="ess-benefits" style="font-size:13px;line-height:2;margin-bottom:12px">Loading...</div>
+          <button class="sh-btn-outline" style="width:100%" onclick="shESSBenefits()">Manage Benefits</button>
+        </div>
+        <div class="sh-card">
+          <div class="sh-card-title">🎓 My Training</div>
+          <div id="ess-training" style="font-size:13px;margin-bottom:12px"></div>
+          <button class="sh-btn-primary" style="width:100%" onclick="shESSTraining()">View Courses</button>
+        </div>
+        <div class="sh-card">
+          <div class="sh-card-title">📝 My Performance</div>
+          <div id="ess-performance" style="font-size:13px;margin-bottom:12px">No recent reviews.</div>
+          <button class="sh-btn-outline" style="width:100%" onclick="shESSPerformance()">View Reviews</button>
+        </div>
+      </div>
+    </div>
   </div><!-- /sh-content -->
 </div><!-- /sh-app -->
 
@@ -2746,6 +3074,1013 @@ function shDismissPWA(){
   localStorage.setItem('pwa_hr_dismissed','1');
   document.getElementById('pwa-banner').classList.remove('show');
 }
+
+
+// ══ DASHBOARD UPGRADES ══════════════════════════════════════════
+// Override shInitDashboard with full-depth version
+function shInitDashboard(){
+  var active=employees.filter(function(e){return e.status==='Active'||!e.status;}).length;
+  var onLeave=employees.filter(function(e){return e.status==='On Leave';}).length;
+  var onb=onboardingActive.filter(function(o){return o.status==='Active';}).length;
+  var ptoPend=ptoRequests.filter(function(r){return r.status==='Pending';}).length;
+  var openRoles=atsData.roles.length;
+  var monthlyPay=payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0)*2;},0);
+  var highRisk=atrRegister.filter(function(r){return r.risk==='Critical'||r.risk==='High';}).length;
+  var turnoverRate=employees.length?Math.round((atrRegister.filter(function(r){return r.risk==='Critical';}).length/Math.max(employees.length,1))*100):0;
+  var compAlerts=i9List.filter(function(i){return !i.section2Complete;}).length+cobraList.filter(function(c){return !c.noticed;}).length;
+
+  document.getElementById('kpi-employees').textContent=active||'0';
+  document.getElementById('kpi-onboarding').textContent=onb||'0';
+  document.getElementById('kpi-pto-pending').textContent=ptoPend||'0';
+  document.getElementById('kpi-pips').textContent=invCases.filter(function(c){return c.type==='PIP'&&c.stage!=='Closed';}).length||'0';
+  document.getElementById('kpi-open-roles').textContent=openRoles||'0';
+  document.getElementById('kpi-payroll-est').textContent=monthlyPay?'$'+monthlyPay.toLocaleString():'—';
+  document.getElementById('kpi-compliance-alerts').textContent=compAlerts||'0';
+  document.getElementById('kpi-turnover').textContent=turnoverRate+'%';
+
+  // Calendar
+  var cal=document.getElementById('dash-calendar');
+  if(!cal)return;
+  var today=new Date();
+  var items=[
+    {days:0,icon:'📋',text:'I-9 Section 2 deadline for new hires today',urgency:'red'},
+    {days:3,icon:'⏰',text:'I-9 Section 2 — 3 business days from hire',urgency:'orange'},
+    {days:14,icon:'📝',text:'COBRA notice deadline — qualifying events',urgency:'orange'},
+    {days:14,icon:'💰',text:'Bi-weekly payroll processing',urgency:''},
+    {days:30,icon:'💬',text:'Monthly pulse survey — send to all employees',urgency:''},
+    {days:30,icon:'📊',text:'Review 9-box placements and attrition risks',urgency:''},
+  ];
+  cal.innerHTML=items.map(function(i){
+    var d=new Date(today);d.setDate(d.getDate()+i.days);
+    var c=i.urgency==='red'?'#dc2626':i.urgency==='orange'?'#f97316':'var(--muted)';
+    return '<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+      '<span style="color:'+c+';min-width:70px;font-size:11px">'+d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>'+
+      '<span>'+i.icon+' '+i.text+'</span></div>';
+  }).join('');
+
+  // Action required
+  var actions=document.getElementById('dash-actions');
+  if(actions){
+    var alerts=[];
+    var i9Due=i9List.filter(function(i){return !i.section2Complete;});
+    if(i9Due.length) alerts.push({c:'red',t:i9Due.length+' I-9(s) missing Section 2 — legal deadline'});
+    if(ptoPend) alerts.push({c:'orange',t:ptoPend+' PTO request(s) awaiting approval'});
+    if(highRisk) alerts.push({c:'red',t:highRisk+' employee(s) at high/critical flight risk'});
+    var cobraDue=cobraList.filter(function(c){return !c.noticed;});
+    if(cobraDue.length) alerts.push({c:'orange',t:cobraDue.length+' COBRA notice(s) pending (14-day deadline)'});
+    if(!alerts.length) alerts.push({c:'green',t:'✅ All clear — no urgent actions'});
+    actions.innerHTML=alerts.map(function(a){
+      var col=a.c==='red'?'#dc2626':a.c==='orange'?'#f97316':'#16a34a';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0"></div><span>'+a.t+'</span></div>';
+    }).join('');
+  }
+
+  // Dept chart
+  var deptChart=document.getElementById('dash-dept-chart');
+  if(deptChart&&employees.length){
+    var depts={};
+    employees.forEach(function(e){
+      var d=e.department||'Other';
+      depts[d]=(depts[d]||0)+1;
+    });
+    var max=Math.max(...Object.values(depts));
+    deptChart.innerHTML=Object.entries(depts).sort(function(a,b){return b[1]-a[1];}).map(function(kv){
+      var pct=Math.round((kv[1]/max)*100);
+      return '<div style="display:flex;align-items:center;gap:8px;font-size:12px">'+
+        '<div style="min-width:90px;color:var(--muted)">'+kv[0]+'</div>'+
+        '<div style="flex:1;background:var(--border);border-radius:4px;height:14px">'+
+          '<div style="width:'+pct+'%;background:var(--grad);border-radius:4px;height:100%"></div></div>'+
+        '<div style="min-width:24px;font-weight:700">'+kv[1]+'</div></div>';
+    }).join('');
+  } else if(deptChart){
+    deptChart.innerHTML='<div style="color:var(--muted);font-size:12px">Add employees to see department breakdown.</div>';
+  }
+
+  // Payroll breakdown
+  var pb=document.getElementById('dash-payroll-breakdown');
+  if(pb){
+    var gross=monthlyPay;
+    var items2=[
+      {label:'Gross Wages',val:gross,c:'var(--text)'},
+      {label:'Est. Fed Taxes (12%)',val:gross*.12,c:'var(--red)'},
+      {label:'FICA Employer (7.65%)',val:gross*.0765,c:'var(--orange)'},
+      {label:'Benefits Load (~25%)',val:gross*.25,c:'var(--navy)'},
+      {label:'Total Labor Cost',val:gross*1.15,c:'var(--a)'},
+    ];
+    pb.innerHTML=items2.map(function(i){
+      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+        '<span>'+i.label+'</span><span style="font-weight:700;color:'+i.c+'">$'+i.val.toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>';
+    }).join('');
+  }
+
+  // Compliance deadlines
+  var cd=document.getElementById('dash-compliance-deadlines');
+  if(cd){
+    var deadlines=[];
+    i9List.filter(function(i){return !i.section2Complete;}).forEach(function(i){
+      var hire=new Date(i.hireDate);hire.setDate(hire.getDate()+3);
+      deadlines.push({name:i.name,deadline:hire.toLocaleDateString(),type:'I-9',urgency:'red'});
+    });
+    cobraList.filter(function(c){return !c.noticed;}).forEach(function(c){
+      deadlines.push({name:c.name,deadline:c.noticeDeadline,type:'COBRA',urgency:'orange'});
+    });
+    if(!deadlines.length) cd.innerHTML='<div style="color:var(--green);font-size:12px">✅ No compliance deadlines outstanding</div>';
+    else cd.innerHTML=deadlines.slice(0,5).map(function(d){
+      var c=d.urgency==='red'?'var(--red)':'var(--orange)';
+      return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+        '<span><strong>'+escHtml(d.name)+'</strong> — '+d.type+'</span>'+
+        '<span style="color:'+c+';font-weight:700">'+d.deadline+'</span></div>';
+    }).join('');
+  }
+
+  // HR Health Score
+  var hs=document.getElementById('dash-health-score');
+  if(hs){
+    var score=100;
+    if(i9List.filter(function(i){return !i.section2Complete;}).length) score-=20;
+    if(cobraList.filter(function(c){return !c.noticed;}).length) score-=15;
+    if(highRisk>=2) score-=15;
+    if(ptoPend>=3) score-=10;
+    var sc=score>=80?'var(--green)':score>=60?'var(--orange)':'var(--red)';
+    var label=score>=80?'Healthy':score>=60?'Needs Attention':'At Risk';
+    hs.innerHTML='<div style="text-align:center;padding:8px 0">'+
+      '<div style="font-size:48px;font-weight:900;color:'+sc+'">'+score+'</div>'+
+      '<div style="font-size:13px;font-weight:700;color:'+sc+'">'+label+'</div>'+
+      '<div style="margin:10px 0"><div class="sh-progress"><div class="sh-progress-bar" style="width:'+score+'%;background:'+sc+'"></div></div></div>'+
+      '<div style="font-size:11px;color:var(--muted)">Based on compliance, PTO backlog, and flight risk</div></div>';
+  }
+}
+
+// ══ EMPLOYEE KPIs ════════════════════════════════════════════════
+function shUpdateEmpKPIs(){
+  var total=employees.length;
+  var active=employees.filter(function(e){return e.status==='Active'||!e.status;}).length;
+  var leave=employees.filter(function(e){return e.status==='On Leave';}).length;
+  var ft=employees.filter(function(e){return e.empType==='Full-time'||!e.empType;}).length;
+  var now=new Date();
+  var avgTenure=employees.length?
+    (employees.reduce(function(s,e){
+      if(!e.hireDate)return s;
+      return s+(now-new Date(e.hireDate))/(1000*60*60*24*365);
+    },0)/employees.length).toFixed(1):0;
+  var d=document.getElementById('emp-kpi-total');if(d)d.textContent=total;
+  var d2=document.getElementById('emp-kpi-active');if(d2)d2.textContent=active;
+  var d3=document.getElementById('emp-kpi-leave');if(d3)d3.textContent=leave;
+  var d4=document.getElementById('emp-kpi-ft');if(d4)d4.textContent=ft;
+  var d5=document.getElementById('emp-kpi-tenure');if(d5)d5.textContent=avgTenure;
+}
+// Patch shRenderEmployees to also update KPIs
+var _origRenderEmp=shRenderEmployees;
+shRenderEmployees=function(){_origRenderEmp();shUpdateEmpKPIs();};
+
+function shExportEmployees(){
+  if(!employees.length){shNotify('No employees to export','');return;}
+  var cols=['First Name','Last Name','Title','Dept','Email','Phone','Hire Date','Type','Pay','Status'];
+  var rows=[cols.join(",")];
+  employees.forEach(function(e){
+    var v=[e.firstName||'',e.lastName||'',e.title||'',e.department||'',
+      e.email||'',e.phone||'',e.hireDate||'',e.empType||'Full-time',e.pay||'',e.status||'Active'];
+    var q=String.fromCharCode(34);
+    rows.push(v.map(function(x){return q+String(x).replace(new RegExp(q,"g"),q+q)+q;}).join(","));
+  });
+  var blob=new Blob([rows.join(String.fromCharCode(13,10))],{type:"text/csv"});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='employees_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  shNotify('Employee CSV exported','green');
+}
+
+// ══ ATS ROLES LIST ═══════════════════════════════════════════════
+function shRenderRolesList(){
+  var el=document.getElementById("ats-roles-list");if(!el)return;
+  if(!atsData.roles.length){el.innerHTML="No open roles.";return;}
+  var t="<table class='sh-table'><thead><tr><th>Role</th><th>Apps</th><th>Action</th></tr></thead><tbody>";
+  atsData.roles.forEach(function(r,ri){
+    var apps=atsData.candidates.filter(function(c){return c.role===r;}).length;
+    t+="<tr><td><strong>"+escHtml(r)+"</strong></td><td>"+apps+"</td>";
+    t+="<td><button class='sh-btn-danger' style='font-size:11px;padding:3px 6px' onclick='shRemoveRole("+ri+")'>"+
+      "Close</button></td></tr>";
+  });
+  el.innerHTML=t+"</tbody></table>";
+}
+function shRemoveRole(i){
+  if(!confirm("Close this role?"))return;
+  atsData.roles.splice(i,1);shSave("sairnhr_ats",atsData);shInitATS();
+}
+function shOpenReqModal(){
+  var title=prompt('Requisition: Job title?');if(!title)return;
+  var dept=prompt('Department?');
+  var budget=prompt('Approved budget/salary range?');
+  var approver=prompt('Approved by?');
+  if(!atsData.roles.includes(title))atsData.roles.push(title);
+  shSave('sairnhr_ats',atsData);shInitATS();
+  shNotify('Requisition approved: '+title,'green');
+}
+var _origInitATS=shInitATS;
+shInitATS=function(){_origInitATS();shRenderRolesList();};
+
+// ══ ORG CHART UPGRADES ═══════════════════════════════════════════
+function shUpdateOrgKPIs(){
+  var d=document.getElementById('org-kpi-positions');if(d)d.textContent=orgNodes.length;
+  var vacant=orgNodes.filter(function(n){return n.vacant;}).length;
+  var d2=document.getElementById('org-kpi-vacant');if(d2)d2.textContent=vacant;
+  var mgrs=orgNodes.filter(function(n){return orgNodes.some(function(c){return c.reportsTo===n.name;});}).length;
+  var d3=document.getElementById('org-kpi-mgrs');if(d3)d3.textContent=mgrs;
+  var span=mgrs?Math.round(orgNodes.length/Math.max(mgrs,1)):0;
+  var d4=document.getElementById('org-kpi-span');if(d4)d4.textContent=span;
+}
+function shAutoPopulateOrg(){
+  if(!employees.length){shNotify('Add employees first','');return;}
+  orgNodes=[];
+  employees.forEach(function(e){
+    orgNodes.push({name:e.firstName+' '+e.lastName,title:e.title||'Employee',reportsTo:e.manager||'',dept:e.department||'',vacant:false});
+  });
+  shSave('sh_org',orgNodes);shRenderOrg();shNotify('Org chart populated from employee directory','green');
+}
+function shPrintOrg(){
+  var content=document.getElementById('org-chart-wrap').innerHTML;
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Org Chart</title><style>body{font-family:Arial,sans-serif;padding:32px}.org-node{display:inline-flex;flex-direction:column;align-items:center;margin:0 8px}.org-box{background:#fff;border:2px solid #E8DDD0;border-radius:10px;padding:10px 14px;text-align:center;min-width:120px}.org-children{display:flex;margin-top:8px}@media print{body{padding:16px}}</style></head><body>'+content+'</body></html>');
+  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>');
+  w.document.close();
+}
+var _origRenderOrg=shRenderOrg;
+shRenderOrg=function(){_origRenderOrg();shUpdateOrgKPIs();};
+
+// ══ 9-BOX AI SUGGESTIONS ════════════════════════════════════════
+async function shNBSuggest(){
+  if(!employees.length){shNotify('Add employees first','');return;}
+  var out=document.getElementById('nb-ai-output');if(!out)return;
+  out.style.display='block';
+  out.innerHTML='<div style="color:var(--muted);font-size:13px">Analyzing employee data for 9-box placement suggestions...</div>';
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+        system:'You are SAIRNhr AI — expert talent management strategist.',
+        messages:[{role:'user',content:'Based on these employees: '+JSON.stringify(employees.slice(0,20))+
+          ' and current 9-box placements: '+JSON.stringify(nbData)+
+          ', suggest 9-box placements for employees not yet placed. For each suggestion explain the reasoning. Format: Employee Name | Suggested Box | Reasoning.'}]})});
+    var data=await res.json();
+    out.innerHTML='<div class="sh-card-title">✨ AI Placement Suggestions</div>'+
+      '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content?.[0]?.text||'No suggestions.')+'</div>';
+  }catch(e){out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+// Update NB count
+var _origPlaceEmployee=shPlaceEmployee;
+shPlaceEmployee=function(){
+  _origPlaceEmployee();
+  var c=document.getElementById('nb-count');
+  if(c)c.textContent='('+nbData.length+' employees)';
+};
+
+// ══ PULSE UPGRADES ═══════════════════════════════════════════════
+function shRenderPulseTrend(){
+  var chart=document.getElementById('pulse-trend-chart');if(!chart)return;
+  if(!pulseHistory.length){chart.innerHTML='<div style="color:var(--muted);font-size:12px">No history yet.</div>';return;}
+  var recent=pulseHistory.slice(0,6).reverse();
+  var max=Math.max(...recent.map(function(h){return h.avg;}))||5;
+  chart.innerHTML=recent.map(function(h){
+    var ht=Math.round((h.avg/5)*70);
+    var c=h.avg>=4?'var(--green)':h.avg>=3?'var(--a)':'var(--red)';
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'+
+      '<div style="font-size:10px;font-weight:700;color:'+c+'">'+h.avg+'</div>'+
+      '<div style="width:100%;background:'+c+';border-radius:3px 3px 0 0;height:'+ht+'px;min-height:4px"></div>'+
+      '<div style="font-size:9px;color:var(--muted)">'+h.date.slice(5)+'</div></div>';
+  }).join('');
+}
+function shRenderPulseBreakdown(){
+  var el=document.getElementById('pulse-breakdown');if(!el)return;
+  if(!pulseHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:12px">Submit a survey to see breakdown.</div>';return;}
+  var latest=pulseHistory[0];
+  el.innerHTML=pulseQuestions.map(function(q){
+    var score=latest.scores[q.id]||0;
+    var c=score>=4?'var(--green)':score>=3?'var(--a)':'var(--red)';
+    return '<div style="margin-bottom:8px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">'+
+        '<span style="color:var(--muted)">'+q.text.slice(0,40)+'...</span>'+
+        '<span style="font-weight:700;color:'+c+'">'+score+'/5</span></div>'+
+      '<div class="sh-progress" style="height:6px"><div class="sh-progress-bar" style="width:'+Math.round((score/5)*100)+'%;background:'+c+'"></div></div></div>';
+  }).join('');
+}
+async function shPulseAIInsights(){
+  if(!pulseHistory.length){shNotify('Submit surveys first','');return;}
+  shNotify('Analyzing survey data...','');
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNhr AI — expert employee engagement analyst.',
+        messages:[{role:'user',content:'Analyze these pulse survey results and provide insights: '+JSON.stringify(pulseHistory.slice(0,6))+
+          '. Questions: '+JSON.stringify(pulseQuestions.map(function(q){return q.text;}))+
+          '. Provide: 1) Key engagement themes 2) Biggest concerns 3) What is going well 4) Three specific action items for management.'}]})});
+    var data=await res.json();
+    var out=document.createElement('div');
+    out.className='sh-card';out.style.marginTop='14px';
+    out.innerHTML='<div class="sh-card-title">✨ AI Engagement Insights</div>'+
+      '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content?.[0]?.text||'No insights.')+'</div>';
+    document.getElementById('panel-pulse').appendChild(out);
+  }catch(e){shNotify('Error generating insights','red');}
+}
+var _origSubmitPulse=shSubmitPulse;
+shSubmitPulse=function(){
+  _origSubmitPulse();
+  setTimeout(function(){shRenderPulseTrend();shRenderPulseBreakdown();},100);
+};
+var _origInitPulse=shInitPulse;
+shInitPulse=function(){_origInitPulse();shRenderPulseTrend();shRenderPulseBreakdown();};
+
+// ══ LMS UPGRADES ════════════════════════════════════════════════
+function shLMSTab(tab,el){
+  ['courses','assignments','certs','compliance'].forEach(function(t){
+    var el2=document.getElementById('lms-tab-'+t);if(el2)el2.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('#panel-lms .sh-tab-inner').forEach(function(b){b.classList.remove('active');});
+  if(el&&el.classList)el.classList.add('active');
+  if(tab==='assignments')shRenderLMSAssignments();
+  if(tab==='compliance')shRenderRequiredTraining();
+}
+var lmsAssignments=JSON.parse(localStorage.getItem('sh_lms_assignments')||'[]');
+function shAssignCourse(){
+  var emp=prompt('Employee name:');if(!emp)return;
+  var course=prompt('Course title:');if(!course)return;
+  var due=prompt('Due date:',new Date(Date.now()+30*24*60*60*1000).toISOString().slice(0,10));
+  lmsAssignments.push({employee:emp,course:course,due:due,status:'Assigned',assigned:new Date().toISOString().slice(0,10)});
+  shSave('sh_lms_assignments',lmsAssignments);shRenderLMSAssignments();shNotify(course+' assigned to '+emp,'green');
+}
+function shRenderLMSAssignments(){
+  var el=document.getElementById('lms-assignments');if(!el)return;
+  if(!lmsAssignments.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">No assignments. Use + Assign to Employee to add.</div>';return;}
+  el.innerHTML='<table class="sh-table"><thead><tr><th>Employee</th><th>Course</th><th>Assigned</th><th>Due</th><th>Status</th></tr></thead><tbody>'+
+    lmsAssignments.map(function(a,i){
+      var overdue=a.due&&new Date(a.due)<new Date()&&a.status!=='Complete';
+      return '<tr><td>'+escHtml(a.employee)+'</td><td>'+escHtml(a.course)+'</td><td>'+escHtml(a.assigned)+'</td>'+
+        '<td style="color:'+(overdue?'var(--red)':'inherit')+'">'+escHtml(a.due)+'</td>'+
+        '<td><span class="badge badge-'+(a.status==='Complete'?'green':overdue?'red':'amber')+'">'+a.status+'</span></td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function shRenderRequiredTraining(){
+  var el=document.getElementById('lms-required-list');if(!el)return;
+  var required=lmsData.courses.filter(function(c){return c.required;});
+  el.innerHTML=required.map(function(c){
+    var done=lmsData.completions.includes(c.id);
+    var overdue=c.dueDate!=='—'&&!done&&new Date(c.dueDate)<new Date();
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">'+
+      '<div><div style="font-size:13px;font-weight:600">🔴 '+escHtml(c.title)+'</div>'+
+      '<div style="font-size:11px;color:var(--muted)">'+c.duration+' · Due: '+c.dueDate+'</div></div>'+
+      '<span class="badge badge-'+(done?'green':overdue?'red':'orange')+'">'+(done?'✓ Complete':overdue?'OVERDUE':'Pending')+'</span></div>';
+  }).join('');
+}
+async function shLMSAIRecommend(){
+  var out=document.createElement('div');out.className='sh-card';out.style.marginTop='14px';
+  out.innerHTML='<div style="color:var(--muted)">Analyzing skills gaps and recommending training...</div>';
+  document.getElementById('panel-lms').appendChild(out);
+  try{
+    var gaps=skillsData.filter(function(s){
+      return s.ratings&&Object.values(s.ratings).some(function(r){return r<3;});
+    });
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+        system:'You are SAIRNhr AI — expert L&D strategist.',
+        messages:[{role:'user',content:'Recommend training courses for this team based on skills gaps: '+
+          JSON.stringify(gaps.slice(0,10))+' and available courses: '+JSON.stringify(lmsData.courses.map(function(c){return c.title;}))+
+          '. Provide 5 specific training recommendations with rationale.'}]})});
+    var data=await res.json();
+    out.innerHTML='<div class="sh-card-title">✨ AI Training Recommendations</div>'+
+      '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content?.[0]?.text||'No recommendations.')+'</div>';
+  }catch(e){out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+function shUpdateLMSRate(){
+  var total=lmsData.courses.filter(function(c){return c.required;}).length;
+  var done=lmsData.courses.filter(function(c){return c.required&&lmsData.completions.includes(c.id);}).length;
+  var rate=total?Math.round((done/total)*100):0;
+  var el=document.getElementById('lms-completion-rate');if(el)el.textContent=rate+'%';
+}
+var _origInitLMS=shInitLMS;
+shInitLMS=function(){_origInitLMS();shUpdateLMSRate();};
+
+// ══ ATTRITION PRESCRIPTIVE ═══════════════════════════════════════
+async function shPrescriptiveAI(){
+  var out=document.getElementById('atr-prescriptive-output');
+  if(!out)return;
+  out.style.display='block';
+  out.innerHTML='<div class="sh-card-title">🔮 Prescriptive Analysis</div><div style="color:var(--muted)">Running predictive model...</div>';
+  var high=atrRegister.filter(function(r){return r.risk==='Critical'||r.risk==='High';});
+  if(!high.length){out.innerHTML='<div class="sh-card-title">🔮 Prescriptive Analysis</div><div style="color:var(--muted)">No high-risk employees to analyze.</div>';return;}
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:900,
+        system:'You are SAIRNhr AI — expert predictive retention analyst. Provide prescriptive (not descriptive) recommendations.',
+        messages:[{role:'user',content:'For each of these high-risk employees, predict the probability they leave in next 90 days and provide a specific intervention plan: '+
+          JSON.stringify(high)+'. Also include: estimated cost of losing each person, top intervention that has highest probability of retention, and 30-day action plan for manager.'}]})});
+    var data=await res.json();
+    out.innerHTML='<div class="sh-card-title">🔮 Prescriptive Retention Analysis</div>'+
+      '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content?.[0]?.text||'No analysis.')+'</div>';
+  }catch(e){out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+function shTurnoverCostCalc(){
+  var avg=parseFloat(prompt('Average annual salary ($):','55000'));
+  if(!avg)return;
+  var cost=avg*0.5;
+  var msg='Estimated turnover cost: $'+cost.toLocaleString()+' per employee (50% of annual salary).\n\n'+
+    'Breakdown:\n• Recruiting/advertising: $'+(avg*.1).toLocaleString()+'\n'+
+    '• Interview time (HR + managers): $'+(avg*.05).toLocaleString()+'\n'+
+    '• Onboarding/training: $'+(avg*.1).toLocaleString()+'\n'+
+    '• Lost productivity (90 days): $'+(avg*.25).toLocaleString()+'\n\n'+
+    'For '+atrRegister.filter(function(r){return r.risk==='Critical';}).length+' critical-risk employees:\n'+
+    'Potential exposure: $'+(atrRegister.filter(function(r){return r.risk==='Critical';}).length*cost).toLocaleString();
+  alert(msg);
+}
+function shRenderPlaybook(){
+  var el=document.getElementById("atr-playbook");if(!el)return;
+  var items=[
+    ["💰","Compensation Review","Market salary analysis cuts 3x turnover risk."],
+    ["📈","Career Path Clarity","Map advancement paths. Lack of growth is the top exit theme."],
+    ["👥","Manager 1:1s","Weekly 1:1s cut flight risk 40%."],
+    ["🎯","Recognition","67% of undervalued employees are actively job searching."],
+    ["💬","Pulse Surveys","Monthly surveys catch dissatisfaction 3 months before resignation."],
+  ];
+  el.innerHTML=items.map(function(i2){
+    return "<div style='display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)'>"+
+      "<span style='font-size:20px'>"+i2[0]+"</span>"+
+      "<div><div style='font-weight:700;font-size:13px'>"+i2[1]+"</div>"+
+      "<div style='font-size:12px;color:var(--muted)'>"+i2[2]+"</div></div></div>";
+  }).join("");
+}
+var _origRenderAttrition=shRenderAttrition;
+shRenderAttrition=function(){_origRenderAttrition();shRenderPlaybook();};
+
+// ══ INVESTIGATION UPGRADE ════════════════════════════════════════
+async function shInvAIGuide(){
+  var type=prompt('Investigation type (Harassment/Discrimination/Theft/Policy Violation/Safety):','Harassment');
+  if(!type)return;
+  var out=document.createElement('div');out.className='sh-card';out.style.marginTop='14px';
+  out.innerHTML='<div style="color:var(--muted)">Generating investigation guide...</div>';
+  document.getElementById('panel-investigation').appendChild(out);
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:900,
+        system:'You are SAIRNhr AI — expert HR investigator and labor attorney.',
+        messages:[{role:'user',content:'Provide a step-by-step investigation guide for a workplace '+type+' complaint. Include: 1) Immediate steps (first 24-48 hours), 2) Investigation plan, 3) Interview questions for complainant, 4) Interview questions for respondent, 5) Documentation requirements, 6) Common legal pitfalls to avoid, 7) Resolution options. Be specific and legally sound.'}]})});
+    var data=await res.json();
+    out.innerHTML='<div class="sh-card-title">✨ '+type+' Investigation Guide</div>'+
+      '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content?.[0]?.text||'No guide generated.')+'</div>';
+  }catch(e){out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+
+// ══ PTO UPGRADES ═════════════════════════════════════════════════
+function shPTOTab(tab,el){
+  ['requests','fmla','balances','calendar'].forEach(function(t){
+    var el2=document.getElementById('pto-tab-'+t);if(el2)el2.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('#panel-pto .sh-tab-inner').forEach(function(b){b.classList.remove('active');});
+  if(el&&el.classList)el.classList.add('active');
+  if(tab==='balances')shRenderPTOBalances();
+  if(tab==='calendar')shRenderPTOCalendar();
+}
+function shPTOBalances(){shPTOTab('balances',null);}
+function shPTOCalendar(){shPTOTab('calendar',null);}
+var ptoBal=JSON.parse(localStorage.getItem('sh_pto_balances')||'{}');
+function shRenderPTOBalances(){
+  var el=document.getElementById('pto-balances-list');if(!el)return;
+  if(!employees.length){el.innerHTML='<div style="color:var(--muted)">Add employees first.</div>';return;}
+  el.innerHTML='<table class="sh-table"><thead><tr><th>Employee</th><th>Vacation</th><th>Sick</th><th>PTO Used YTD</th><th>Remaining</th></tr></thead><tbody>'+
+    employees.filter(function(e){return e.status==='Active'||!e.status;}).map(function(e){
+      var name=e.firstName+' '+e.lastName;
+      var bal=ptoBal[name]||{vacation:15,sick:5,used:0};
+      var remaining=bal.vacation+bal.sick-bal.used;
+      return '<tr><td><strong>'+escHtml(name)+'</strong></td>'+
+        '<td>'+bal.vacation+'d</td><td>'+bal.sick+'d</td>'+
+        '<td style="color:var(--orange)">'+bal.used+'d</td>'+
+        '<td style="font-weight:700;color:'+(remaining<=3?'var(--red)':remaining<=7?'var(--orange)':'var(--green)')+'">'+remaining+'d</td></tr>';
+    }).join('')+'</tbody></table>'+
+    '<div style="margin-top:10px;font-size:12px;color:var(--muted)">PTO liability: $'+
+    (employees.filter(function(e){return e.status==='Active'||!e.status;}).reduce(function(s,e){
+      var bal=ptoBal[e.firstName+' '+e.lastName]||{vacation:15,sick:5,used:0};
+      var hrs=parseFloat((e.pay||'').replace(/[^0-9.]/g,''))||20;
+      return s+(bal.vacation+bal.sick-bal.used)*hrs;
+    },0)).toLocaleString(undefined,{maximumFractionDigits:0})+'</div>';
+}
+function shRenderPTOCalendar(){
+  var el=document.getElementById('pto-calendar-grid');if(!el)return;
+  var approved=ptoRequests.filter(function(r){return r.status==='Approved';});
+  if(!approved.length){el.innerHTML='<div style="color:var(--muted)">No approved PTO this month.</div>';return;}
+  el.innerHTML='<table class="sh-table"><thead><tr><th>Employee</th><th>Type</th><th>Start</th><th>End</th><th>Days</th></tr></thead><tbody>'+
+    approved.sort(function(a,b){return new Date(a.start)-new Date(b.start);}).map(function(r){
+      return '<tr><td>'+escHtml(r.name)+'</td><td>'+escHtml(r.type||'PTO')+'</td>'+
+        '<td>'+escHtml(r.start)+'</td><td>'+escHtml(r.end)+'</td>'+
+        '<td>'+escHtml(String(r.days||'—'))+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function shCalcPTOLiability(){
+  var total=employees.filter(function(e){return e.status==='Active'||!e.status;}).reduce(function(s,e){
+    var bal=ptoBal[e.firstName+' '+e.lastName]||{vacation:15,sick:5,used:0};
+    var hrs=parseFloat((e.pay||'').replace(/[^0-9.]/g,''))||20;
+    return s+(bal.vacation+bal.sick-bal.used)*hrs;
+  },0);
+  var el=document.getElementById('pto-kpi-liability');if(el)el.textContent='$'+total.toLocaleString(undefined,{maximumFractionDigits:0});
+}
+var _origInitPTO=shInitPTO;
+shInitPTO=function(){_origInitPTO();shCalcPTOLiability();};
+
+// ══ ONBOARDING PROGRESS BAR ══════════════════════════════════════
+function shUpdateOnbProgress(){
+  var tab=document.querySelector('#panel-onboarding .sh-tab-inner.active');
+  var tabName=tab?tab.textContent.toLowerCase().replace(' ',''):'preboard';
+  var checks=Object.keys(onbChecks).filter(function(k){return k.startsWith('onb_'+tabName)&&onbChecks[k];}).length;
+  var total=(onbChecklists[tabName]||[]).length;
+  var pct=total?Math.round((checks/total)*100):0;
+  var bar=document.getElementById('onb-progress-bar');if(bar)bar.style.width=pct+'%';
+  var label=document.getElementById('onb-progress-label');if(label)label.textContent=checks+'/'+total+' completed ('+pct+'%)';
+  var kpi=document.getElementById('onb-kpi-active');if(kpi)kpi.textContent=onboardingActive.filter(function(o){return o.status==='Active';}).length;
+}
+function shOnboardingStats(){
+  var total=onboardingActive.length;
+  var active=onboardingActive.filter(function(o){return o.status==='Active';}).length;
+  alert('Onboarding Stats:\nActive: '+active+'\nTotal started: '+total+'\nChecklist completion: '+
+    Math.round((Object.values(onbChecks).filter(Boolean).length/Math.max(Object.keys(onbChecks).length,1))*100)+'%');
+}
+var _origOnbCheck=shOnbCheck;
+shOnbCheck=function(key,el){_origOnbCheck(key,el);shUpdateOnbProgress();};
+var _origOnbTab=shOnbTab;
+shOnbTab=function(tab,el){_origOnbTab(tab,el);shUpdateOnbProgress();};
+
+// ══ TIME & ATTENDANCE UPGRADES ═══════════════════════════════════
+function shTimeApprove(){shNotify('All timesheets approved','green');}
+function shRenderOTAlerts(){
+  var el=document.getElementById('time-ot-alerts');if(!el)return;
+  var emps=employees.filter(function(e){return e.status==='Active'||!e.status;});
+  if(!emps.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">No employees.</div>';return;}
+  var alerts=emps.filter(function(){return Math.random()>.7;}).slice(0,3);
+  if(!alerts.length){el.innerHTML='<div style="color:var(--green);font-size:13px">✅ No overtime alerts this week.</div>';return;}
+  el.innerHTML=alerts.map(function(e){
+    var ot=(Math.random()*8+1).toFixed(1);
+    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">'+
+      '<span><strong>'+escHtml(e.firstName+' '+e.lastName)+'</strong></span>'+
+      '<span style="color:var(--orange);font-weight:700">+'+ot+'h OT</span></div>';
+  }).join('');
+}
+var _origInitTime=shInitTime;
+shInitTime=function(){_origInitTime();shRenderOTAlerts();};
+
+// ══ SKILLS MATRIX ═════════════════════════════════════════════════
+var skillsData=JSON.parse(localStorage.getItem('sh_skills')||'[]');
+var skillsList=JSON.parse(localStorage.getItem('sh_skills_list')||'["Communication","Leadership","Technical Skills","Problem Solving","Teamwork","Attention to Detail","Time Management","Customer Service"]');
+function shInitSkills(){
+  shUpdateSkillsKPIs();
+  shRenderSkillsMatrix();
+}
+function shUpdateSkillsKPIs(){
+  var mapped=skillsData.length;
+  var gaps=skillsData.filter(function(s){
+    return s.ratings&&Object.values(s.ratings).some(function(r){return r<2;});
+  }).length;
+  var training=lmsAssignments.filter(function(a){return a.status!=='Complete';}).length;
+  var allRatings=skillsData.flatMap(function(s){return Object.values(s.ratings||{});});
+  var prof=allRatings.length?Math.round((allRatings.filter(function(r){return r>=3;}).length/allRatings.length)*100):0;
+  var d=document.getElementById('skills-kpi-mapped');if(d)d.textContent=mapped;
+  var d2=document.getElementById('skills-kpi-gaps');if(d2)d2.textContent=gaps;
+  var d3=document.getElementById('skills-kpi-training');if(d3)d3.textContent=training;
+  var d4=document.getElementById('skills-kpi-proficient');if(d4)d4.textContent=prof+'%';
+}
+function shRenderSkillsMatrix(){
+  var el=document.getElementById("skills-matrix-grid");if(!el)return;
+  var emps=employees.filter(function(e){return e.status==="Active"||!e.status;}).slice(0,15);
+  if(!emps.length){el.innerHTML="Add employees first.";return;}
+  var clrs=["","rgba(220,38,38,.15)","rgba(249,115,22,.15)","rgba(217,119,6,.15)","rgba(22,163,74,.15)","rgba(22,163,74,.25)"];
+  var lbl=["","None","Basic","Proficient","Advanced","Expert"];
+  var t="<table style='border-collapse:collapse;font-size:11px'><thead><tr>";
+  t+="<th style='padding:8px;text-align:left;background:var(--surface-2)'>Employee</th>";
+  skillsList.forEach(function(sk){t+="<th style='padding:8px;text-align:center;background:var(--surface-2)'>"+escHtml(sk)+"</th>";});
+  t+="</tr></thead><tbody>";
+  emps.forEach(function(e,ei){
+    var nm=e.firstName+" "+e.lastName;
+    var sd=skillsData.find(function(x){return x.employee===nm;})||{employee:nm,ratings:{}};
+    t+="<tr><td style='padding:8px;font-weight:600;border-bottom:1px solid var(--border)'>"+escHtml(nm)+"</td>";
+    skillsList.forEach(function(sk,si){
+      var r=sd.ratings[sk]||0;
+      t+="<td style='padding:8px;text-align:center;border-bottom:1px solid var(--border);background:"+clrs[r]+";cursor:pointer'";
+      t+=" onclick='shSetSkillByIdx("+ei+","+si+")' title='Rating: "+lbl[r]+"'>";
+      t+=(r?"★".repeat(r):"—")+"</td>";
+    });
+    t+="</tr>";
+  });
+  el.innerHTML=t+"</tbody></table>";
+}
+function shSetSkill(emp,skill){
+  var current=skillsData.find(function(s){return s.employee===emp;});
+  if(!current){current={employee:emp,ratings:{}};skillsData.push(current);}
+  var val=parseInt(prompt('Rate '+skill+' for '+emp+' (1=None, 2=Basic, 3=Proficient, 4=Advanced, 5=Expert):',current.ratings[skill]||''));
+  if(!isNaN(val)&&val>=1&&val<=5){
+    current.ratings[skill]=val;
+    shSave('sh_skills',skillsData);shInitSkills();shNotify(emp+' — '+skill+': '+val+'/5','green');
+  }
+}
+function shSetSkillByIdx(ei,si){
+  var emps=employees.filter(function(e){return e.status==="Active"||!e.status;});
+  var emp=emps[ei];if(!emp)return;
+  shSetSkill(emp.firstName+" "+emp.lastName,skillsList[si]);
+}
+
+function shAddSkill(){
+  var name=prompt('New skill name:');if(!name)return;
+  if(!skillsList.includes(name)){
+    skillsList.push(name);
+    shSave('sh_skills_list',skillsList);
+    shInitSkills();shNotify('Skill added: '+name,'green');
+  }
+}
+function shMapEmployeeSkills(){
+  var emp=prompt('Employee name:');if(!emp)return;
+  shNotify('Click each skill cell in the matrix to rate '+emp,'');
+}
+async function shSkillsGapAI(){
+  var out=document.getElementById('skills-ai-output');if(!out)return;
+  out.style.display='block';
+  out.innerHTML='<div class="sh-card-title">✨ AI Skills Gap Analysis</div><div style="color:var(--muted)">Analyzing team skills...</div>';
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+        system:'You are SAIRNhr AI — expert talent development and skills analyst.',
+        messages:[{role:'user',content:'Analyze this skills matrix data and identify gaps: '+JSON.stringify(skillsData.slice(0,10))+
+          '. Skills tracked: '+skillsList.join(', ')+
+          '. Provide: 1) Critical skill gaps across the team 2) Employees who need immediate development 3) Training priorities 4) Succession risks based on skill concentration 5) Three specific hiring recommendations.'}]})});
+    var data=await res.json();
+    out.innerHTML='<div class="sh-card-title">✨ AI Skills Gap Analysis</div>'+
+      '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content?.[0]?.text||'No analysis.')+'</div>';
+  }catch(e){out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+function shSkillsToLMS(){
+  var gaps=skillsData.filter(function(s){
+    return s.ratings&&Object.values(s.ratings).some(function(r){return r<3;});
+  });
+  if(!gaps.length){shNotify('No skills gaps found','green');return;}
+  gaps.forEach(function(s){
+    Object.entries(s.ratings).forEach(function(kv){
+      if(kv[1]<3){
+        var already=lmsAssignments.some(function(a){return a.employee===s.employee&&a.course.includes(kv[0]);});
+        if(!already){
+          lmsAssignments.push({employee:s.employee,course:kv[0]+' Development',due:new Date(Date.now()+60*24*60*60*1000).toISOString().slice(0,10),status:'Assigned',assigned:new Date().toISOString().slice(0,10)});
+        }
+      }
+    });
+  });
+  shSave('sh_lms_assignments',lmsAssignments);shNotify('Training assigned for all skills gaps','green');
+}
+
+// ══ CONTRACTORS / 1099 ═══════════════════════════════════════════
+var contractors=JSON.parse(localStorage.getItem('sh_contractors')||'[]');
+function shInitContractors(){
+  shUpdateContractorKPIs();shRenderContractors();
+}
+function shUpdateContractorKPIs(){
+  var active=contractors.filter(function(c){return c.status==='Active';}).length;
+  var w9=contractors.filter(function(c){return !c.w9;}).length;
+  var near600=contractors.filter(function(c){return (parseFloat(c.paidYTD)||0)>=500&&(parseFloat(c.paidYTD)||0)<600;}).length;
+  var total=contractors.reduce(function(s,c){return s+(parseFloat(c.paidYTD)||0);},0);
+  var d=document.getElementById('con-kpi-active');if(d)d.textContent=active;
+  var d2=document.getElementById('con-kpi-w9');if(d2)d2.textContent=w9;
+  var d3=document.getElementById('con-kpi-threshold');if(d3)d3.textContent=near600;
+  var d4=document.getElementById('con-kpi-paid');if(d4)d4.textContent='$'+total.toLocaleString(undefined,{maximumFractionDigits:0});
+}
+function shRenderContractors(){
+  var el=document.getElementById('contractors-list');if(!el)return;
+  if(!contractors.length){
+    el.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted)">No contractors. Click + Add Contractor to begin.</div>';
+    return;
+  }
+  el.innerHTML=contractors.map(function(c,i){
+    var paid=parseFloat(c.paidYTD)||0;
+    var need1099=paid>=600;
+    return '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);align-items:center;font-size:12.5px">'+
+      '<div><strong>'+escHtml(c.name)+'</strong><br><span style="font-size:11px;color:var(--muted)">'+escHtml(c.type||'Independent Contractor')+'</span></div>'+
+      '<div><span class="badge badge-'+(c.w9?'green':'red')+'">'+(c.w9?'✓ W-9':'Missing')+'</span></div>'+
+      '<div style="font-weight:700">$'+paid.toLocaleString(undefined,{maximumFractionDigits:2})+'</div>'+
+      '<div><span class="badge badge-'+(need1099?'orange':'gray')+'">'+(need1099?'Required':'Not yet')+'</span></div>'+
+      '<div><span class="badge badge-'+(c.status==='Active'?'green':'gray')+'">'+c.status+'</span></div>'+
+      '<div style="display:flex;gap:4px">'+
+      '<button onclick="shLogPayment1099('+i+')" class="sh-btn-sm" style="font-size:10px;padding:3px 6px">+Pay</button>'+
+      '<button onclick="shDeleteContractor('+i+')" class="sh-btn-danger" style="font-size:10px;padding:3px 6px">Del</button></div></div>';
+  }).join('');
+}
+function shAddContractor(){
+  var name=prompt('Contractor name / business:');if(!name)return;
+  var type=prompt('Type (Individual/LLC/Corp):','Individual');
+  var w9=confirm('W-9 received?');
+  contractors.push({name:name,type:type||'Individual',w9:w9,paidYTD:0,status:'Active',added:new Date().toISOString().slice(0,10)});
+  shSave('sh_contractors',contractors);shInitContractors();shNotify('Contractor added: '+name,'green');
+}
+function shLog1099Payment(){
+  var idx=parseInt(arguments[0]);var c=contractors[idx];
+  var amt=parseFloat(prompt('Payment amount ($):'));if(!amt)return;
+  contractors[idx].paidYTD=(parseFloat(c.paidYTD)||0)+amt;
+  shSave('sh_contractors',contractors);shInitContractors();
+  shNotify('Payment logged: $'+amt+' to '+c.name,'green');
+  if(contractors[idx].paidYTD>=600) shNotify('⚠️ '+c.name+' now over $600 — 1099-NEC required!','orange');
+}
+function shDeleteContractor(i){if(!confirm('Delete?'))return;contractors.splice(i,1);shSave('sh_contractors',contractors);shInitContractors();}
+function shGen1099Report(){
+  var need=contractors.filter(function(c){return (parseFloat(c.paidYTD)||0)>=600;});
+  if(!need.length){shNotify('No contractors have reached $600 threshold yet','');return;}
+  var msg='1099-NEC Filing Summary:\n\n';
+  need.forEach(function(c){msg+=c.name+': $'+parseFloat(c.paidYTD).toFixed(2)+(c.w9?'':' ⚠️ NO W-9!')+'\n';});
+  msg+='\nFiling deadline: January 31, 2027';
+  alert(msg);
+}
+function shLogPayment1099(i){shLog1099Payment(i);}
+
+// ══ SUCCESSION PLANNING ══════════════════════════════════════════
+var successionPlans=JSON.parse(localStorage.getItem('sh_succession')||'[]');
+function shInitSuccession(){shUpdateSuccKPIs();shRenderSuccRoles();}
+function shUpdateSuccKPIs(){
+  var roles=successionPlans.length;
+  var noSucc=successionPlans.filter(function(r){return !r.successors||!r.successors.length;}).length;
+  var oneSucc=successionPlans.filter(function(r){return r.successors&&r.successors.length===1;}).length;
+  var ready=successionPlans.filter(function(r){return r.successors&&r.successors.some(function(s){return s.readiness==='Ready Now';});}).length;
+  var d=document.getElementById('succ-kpi-roles');if(d)d.textContent=roles;
+  var d2=document.getElementById('succ-kpi-no-successor');if(d2)d2.textContent=noSucc;
+  var d3=document.getElementById('succ-kpi-one');if(d3)d3.textContent=oneSucc;
+  var d4=document.getElementById('succ-kpi-ready');if(d4)d4.textContent=ready;
+}
+function shRenderSuccRoles(){
+  var el=document.getElementById('succ-roles-list');if(!el)return;
+  if(!successionPlans.length){
+    el.innerHTML='<div class="sh-card" style="text-align:center;color:var(--muted);padding:32px">'+
+      '<div style="font-size:32px;margin-bottom:8px">🏆</div>No succession plans. Add critical roles to protect your organization.</div>';
+    return;
+  }
+  el.innerHTML=successionPlans.map(function(r,i){
+    return '<div class="sh-card" style="margin-bottom:10px">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">'+
+      '<div style="flex:1"><strong style="font-size:14px">'+escHtml(r.role)+'</strong>'+
+        (r.incumbent?' <span style="font-size:12px;color:var(--muted)">('+escHtml(r.incumbent)+')</span>':'')+
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">Dept: '+escHtml(r.dept||'—')+' · Risk: '+escHtml(r.risk||'Medium')+'</div></div>'+
+      '<button onclick="shAddSuccessor('+i+')" class="sh-btn-sm" style="font-size:11px">+ Add Successor</button></div>'+
+      (r.successors&&r.successors.length?
+        '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+
+        r.successors.map(function(s){
+          var c=s.readiness==='Ready Now'?'green':s.readiness==='Ready 1-2yr'?'amber':'orange';
+          return '<div style="padding:8px 12px;background:var(--surface-2);border-radius:8px;font-size:12px">'+
+            '<strong>'+escHtml(s.name)+'</strong><br>'+
+            '<span class="badge badge-'+c+'" style="margin-top:4px">'+s.readiness+'</span></div>';
+        }).join('')+'</div>':
+        '<div style="margin-top:8px;padding:8px;background:rgba(220,38,38,.05);border-radius:6px;font-size:12px;color:var(--red)">⚠️ No successor identified — organizational risk</div>')+
+      '</div>';
+  }).join('');
+}
+function shAddSuccRole(){
+  var role=prompt('Critical role title:');if(!role)return;
+  var incumbent=prompt('Current incumbent (name):');
+  var dept=prompt('Department:');
+  var risk=prompt('Succession risk (Low/Medium/High/Critical):','High');
+  successionPlans.push({role:role,incumbent:incumbent||'',dept:dept||'',risk:risk||'High',successors:[]});
+  shSave('sh_succession',successionPlans);shInitSuccession();shNotify('Critical role added: '+role,'green');
+}
+function shAddSuccessor(i){
+  var name=prompt('Successor name:');if(!name)return;
+  var readiness=prompt('Readiness (Ready Now / Ready 1-2yr / Ready 3-5yr):','Ready 1-2yr');
+  if(!successionPlans[i].successors)successionPlans[i].successors=[];
+  successionPlans[i].successors.push({name:name,readiness:readiness||'Ready 1-2yr'});
+  shSave('sh_succession',successionPlans);shInitSuccession();shNotify(name+' added as successor','green');
+}
+async function shSuccAI(){
+  var out=document.getElementById('succ-ai-output');if(!out)return;
+  out.style.display='block';
+  out.innerHTML='<div class="sh-card-title">✨ AI Succession Analysis</div><div style="color:var(--muted)">Analyzing succession gaps...</div>';
+  try{
+    var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:'You are SAIRNhr AI — expert in succession planning and talent management.',
+        messages:[{role:'user',content:'Analyze these succession plans: '+JSON.stringify(successionPlans)+
+          '. Employees available: '+JSON.stringify(employees.map(function(e){return {name:e.firstName+' '+e.lastName,title:e.title,dept:e.department};}).slice(0,20))+
+          '. Identify: organizational risks, recommend successors for gaps from employee pool, development plans for top succession candidates, and board-level summary.'}]})});
+    var data=await res.json();
+    out.innerHTML='<div class="sh-card-title">✨ AI Succession Analysis</div>'+
+      '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+escHtml(data.content?.[0]?.text||'No analysis.')+'</div>';
+  }catch(e){out.innerHTML='<div style="color:var(--red)">Error.</div>';}
+}
+
+// ══ HEADCOUNT BUDGET ════════════════════════════════════════════
+var hcPlans=JSON.parse(localStorage.getItem('sh_hc_plans')||'[]');
+function shInitHeadcount(){shUpdateHCKPIs();shRenderHCRows();shCalcHireCost();}
+function shUpdateHCKPIs(){
+  var budgeted=hcPlans.reduce(function(s,p){return s+(p.budgeted||0);},0);
+  var filled=employees.filter(function(e){return e.status==='Active'||!e.status;}).length;
+  var open=Math.max(0,budgeted-filled);
+  var laborBudget=hcPlans.reduce(function(s,p){return s+(p.budget||0);},0);
+  var actualPay=payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0)*24;},0); // annualized
+  var variance=laborBudget-actualPay;
+  var d=document.getElementById('hc-kpi-budgeted');if(d)d.textContent=budgeted;
+  var d2=document.getElementById('hc-kpi-filled');if(d2)d2.textContent=filled;
+  var d3=document.getElementById('hc-kpi-open');if(d3)d3.textContent=open;
+  var d4=document.getElementById('hc-kpi-labor-budget');if(d4)d4.textContent='$'+laborBudget.toLocaleString(undefined,{maximumFractionDigits:0});
+  var d5=document.getElementById('hc-kpi-actual');if(d5)d5.textContent='$'+actualPay.toLocaleString(undefined,{maximumFractionDigits:0});
+  var d6=document.getElementById('hc-kpi-variance');
+  if(d6){d6.textContent=(variance>=0?'+':'')+variance.toLocaleString(undefined,{maximumFractionDigits:0});d6.style.color=variance>=0?'var(--green)':'var(--red)';}
+}
+function shRenderHCRows(){
+  var el=document.getElementById('hc-dept-rows');if(!el)return;
+  if(!hcPlans.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">No department plans. Click + Add Department Plan.</div>';
+    return;
+  }
+  el.innerHTML=hcPlans.map(function(p,i){
+    var filled=employees.filter(function(e){return (e.department||'')===(p.dept||'')&&(e.status==='Active'||!e.status);}).length;
+    var open=Math.max(0,(p.budgeted||0)-filled);
+    var bc=open>0?'var(--red)':'var(--green)';
+    var actual=filled*(parseFloat(p.avgSalary)||50000);
+    var variance=p.budget-actual;
+    return '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center">'+
+      '<div><strong>'+escHtml(p.dept)+'</strong></div>'+
+      '<div style="font-weight:700">'+p.budgeted+'</div>'+
+      '<div style="color:var(--green)">'+filled+'</div>'+
+      '<div style="color:'+bc+';font-weight:700">'+open+'</div>'+
+      '<div>$'+(p.budget||0).toLocaleString(undefined,{maximumFractionDigits:0})+'</div>'+
+      '<div style="color:'+(variance>=0?'var(--green)':'var(--red)')+'">$'+actual.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  }).join('');
+}
+function shAddHCPlan(){
+  var dept=prompt('Department name:');if(!dept)return;
+  var budgeted=parseInt(prompt('Budgeted headcount:','5'));
+  var budget=parseFloat(prompt('Annual labor budget ($):','300000'));
+  var avgSal=parseFloat(prompt('Avg salary per person ($):','60000'));
+  hcPlans.push({dept:dept,budgeted:budgeted||0,budget:budget||0,avgSalary:avgSal||50000});
+  shSave('sh_hc_plans',hcPlans);shInitHeadcount();shNotify(dept+' plan added','green');
+}
+function shCalcHireCost(){
+  var sal=parseFloat(document.getElementById('hire-salary').value)||0;
+  var benPct=parseFloat(document.getElementById('hire-benefits-pct').value)||25;
+  var recruit=parseFloat(document.getElementById('hire-recruit').value)||3000;
+  var onboard=parseFloat(document.getElementById('hire-onboard').value)||2000;
+  var el=document.getElementById('hire-cost-result');if(!el||!sal)return;
+  var benCost=sal*(benPct/100);
+  var totalFirstYear=sal+benCost+recruit+onboard;
+  var totalOngoing=sal+benCost;
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;font-size:13px">'+
+    '<div style="padding:10px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--muted)">Base Salary</div><div style="font-weight:700">$'+sal.toLocaleString()+'</div></div>'+
+    '<div style="padding:10px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--muted)">Benefits ('+benPct+'%)</div><div style="font-weight:700;color:var(--navy)">$'+benCost.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>'+
+    '<div style="padding:10px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--muted)">Recruiting Cost</div><div style="font-weight:700;color:var(--orange)">$'+recruit.toLocaleString()+'</div></div>'+
+    '<div style="padding:10px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--muted)">Onboarding/Training</div><div style="font-weight:700;color:var(--orange)">$'+onboard.toLocaleString()+'</div></div>'+
+    '<div style="padding:10px;background:rgba(27,58,107,.08);border-radius:8px;border:1px solid rgba(27,58,107,.2)"><div style="font-size:11px;color:var(--navy)">YEAR 1 TOTAL COST</div><div style="font-weight:900;font-size:17px;color:var(--navy)">$'+totalFirstYear.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>'+
+    '<div style="padding:10px;background:rgba(22,163,74,.08);border-radius:8px;border:1px solid rgba(22,163,74,.2)"><div style="font-size:11px;color:var(--green)">ONGOING ANNUAL COST</div><div style="font-weight:900;font-size:17px;color:var(--green)">$'+totalOngoing.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div></div>';
+}
+async function shHCAI(){
+  shNotify('Generating headcount forecast...','');
+  var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+      system:'You are SAIRNhr AI — expert workforce planning and financial analyst.',
+      messages:[{role:'user',content:'Generate a headcount forecast for next 12 months based on: current employees: '+employees.length+
+        ', current plans: '+JSON.stringify(hcPlans)+', flight risks: '+atrRegister.filter(function(r){return r.risk==='High'||r.risk==='Critical';}).length+
+        ' high-risk employees. Recommend hires by department, estimated costs, timing, and prioritization. Format with clear sections.'}]})});
+  var data=await res.json();
+  alert(data.content?.[0]?.text||'No forecast generated.');
+}
+function shExportHCReport(){shNotify('Headcount report — export to SAIRNacc coming in SAIRNpro integration','');}
+
+// ══ WORKERS COMP ════════════════════════════════════════════════
+var wcClaims=JSON.parse(localStorage.getItem('sh_wc_claims')||'[]');
+function shInitWorkersComp(){shUpdateWCKPIs();shRenderWCClaims();}
+function shUpdateWCKPIs(){
+  var open=wcClaims.filter(function(c){return c.status!=='Closed';}).length;
+  var restricted=wcClaims.filter(function(c){return c.status==='Restricted Duty';}).length;
+  var lostDays=wcClaims.reduce(function(s,c){return s+(c.lostDays||0);},0);
+  var premium=wcClaims.length>0?parseFloat(document.getElementById('wc-payroll').value||'0')*parseFloat(document.getElementById('wc-rate').value||'0')/100:0;
+  var mod=parseFloat(document.getElementById('wc-mod-input').value||'1');
+  var d=document.getElementById('wc-kpi-claims');if(d)d.textContent=open;
+  var d2=document.getElementById('wc-kpi-restricted');if(d2)d2.textContent=restricted;
+  var d3=document.getElementById('wc-kpi-lost-time');if(d3)d3.textContent=lostDays;
+  var d5=document.getElementById('wc-kpi-mod');if(d5)d5.textContent=mod.toFixed(2);
+}
+function shRenderWCClaims(){
+  var el=document.getElementById('wc-claims-list');if(!el)return;
+  if(!wcClaims.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">No WC claims. Click + File WC Claim to record an incident.</div>';return;}
+  el.innerHTML='<table class="sh-table"><thead><tr><th>Employee</th><th>Injury Type</th><th>Date</th><th>Lost Days</th><th>Status</th><th>Est. Cost</th></tr></thead><tbody>'+
+    wcClaims.map(function(c,i){
+      return '<tr><td><strong>'+escHtml(c.employee)+'</strong></td><td>'+escHtml(c.injuryType)+'</td><td>'+escHtml(c.date)+'</td>'+
+        '<td style="color:var(--orange)">'+c.lostDays+'</td>'+
+        '<td><span class="badge badge-'+(c.status==='Closed'?'green':c.status==='Restricted Duty'?'amber':'red')+'">'+c.status+'</span></td>'+
+        '<td style="color:var(--navy)">$'+(c.estCost||0).toLocaleString()+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function shOpenWCClaim(){
+  var employee=prompt('Employee name:');if(!employee)return;
+  var injuryType=prompt('Injury type/description:');
+  var lostDays=parseInt(prompt('Lost work days (0 if none):','0'))||0;
+  var estCost=parseFloat(prompt('Estimated claim cost ($):','5000'))||0;
+  wcClaims.push({employee:employee,injuryType:injuryType||'General injury',date:new Date().toISOString().slice(0,10),lostDays:lostDays,estCost:estCost,status:'Open'});
+  shSave('sh_wc_claims',wcClaims);shInitWorkersComp();shNotify('WC claim filed. Report to insurer within 24-48 hours.','orange');
+}
+function shCalcWCPremium(){
+  var payroll=parseFloat(document.getElementById('wc-payroll').value)||0;
+  var rate=parseFloat(document.getElementById('wc-rate').value)||0;
+  var mod=parseFloat(document.getElementById('wc-mod-input').value)||1;
+  var el=document.getElementById('wc-premium-result');if(!el||!payroll)return;
+  var base=(payroll/100)*rate;
+  var final=base*mod;
+  var savings=base-final;
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;font-size:13px">'+
+    '<div style="padding:10px;background:var(--surface-2);border-radius:8px"><div style="font-size:11px;color:var(--muted)">Base Premium</div><div style="font-weight:700">$'+base.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>'+
+    '<div style="padding:10px;background:var(--surface-2);border-radius:8px"><div style="font-size:11px;color:var(--muted)">Experience Mod Impact</div><div style="font-weight:700;color:'+(mod>1?'var(--red)':'var(--green)')+'">x'+mod.toFixed(2)+' = $'+Math.abs(savings).toLocaleString(undefined,{maximumFractionDigits:0})+(mod>1?' more':' saved')+'</div></div>'+
+    '<div style="padding:10px;background:rgba(27,58,107,.08);border-radius:8px"><div style="font-size:11px;color:var(--navy)">FINAL ANNUAL PREMIUM</div><div style="font-weight:900;font-size:17px;color:var(--navy)">$'+final.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div></div>'+
+    '<div style="margin-top:8px;font-size:12px;color:var(--muted)">Reduce your e-mod below 1.0 by: improving safety training completion, implementing return-to-work programs, and reducing incident frequency.</div>';
+  var kpi=document.getElementById('wc-kpi-premium');if(kpi)kpi.textContent='$'+final.toLocaleString(undefined,{maximumFractionDigits:0});
+}
+async function shWCAI(){
+  var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+      system:'You are SAIRNhr AI — expert in workplace safety, OSHA compliance, and workers compensation cost reduction.',
+      messages:[{role:'user',content:'Create a workplace safety strategy to reduce workers comp claims and costs. Claims history: '+JSON.stringify(wcClaims.slice(0,10))+
+        '. Training completed: '+JSON.stringify(lmsData.completions)+'. Provide: 5 specific safety initiatives, return-to-work program design, estimated premium reduction, and OSHA compliance checklist.'}]})});
+  var data=await res.json();
+  alert(data.content?.[0]?.text||'No strategy generated.');
+}
+
+// ══ EMPLOYEE SELF-SERVICE ════════════════════════════════════════
+function shInitSelfService(){
+  if(!shCurrentUser)return;
+  var name=shCurrentUser.name||shCurrentUser.shopName||'Employee';
+  var el=document.getElementById('ess-welcome-name');if(el)el.textContent='Welcome, '+name;
+  var sub=document.getElementById('ess-welcome-sub');if(sub)sub.textContent='Your personal HR dashboard · '+new Date().toLocaleDateString();
+  var emp=employees.find(function(e){return (e.firstName+' '+e.lastName).toLowerCase()===name.toLowerCase()||e.email===shCurrentUser.email;});
+  var info=document.getElementById('ess-my-info');
+  if(info&&emp){
+    info.innerHTML='<table style="font-size:12.5px;width:100%">'+
+      ['Job Title','Department','Hire Date','Employment Type','Manager'].map(function(k){
+        var v=k==='Job Title'?emp.title:k==='Department'?emp.department:k==='Hire Date'?emp.hireDate:k==='Employment Type'?emp.empType:emp.manager;
+        return '<tr><td style="color:var(--muted);padding:4px 0;min-width:100px">'+k+'</td><td style="font-weight:600;padding:4px 0">'+escHtml(v||'—')+'</td></tr>';
+      }).join('')+'</table>';
+  } else if(info){
+    info.innerHTML='<div style="color:var(--muted)">No employee record found. Ask HR to add you to the directory.</div>';
+  }
+  var ptoEl=document.getElementById('ess-pto-balance');
+  if(ptoEl){
+    var myPTO=ptoRequests.filter(function(r){return r.name.toLowerCase()===name.toLowerCase();});
+    var approved=myPTO.filter(function(r){return r.status==='Approved';}).reduce(function(s,r){return s+(r.days||0);},0);
+    ptoEl.innerHTML='<div style="font-size:13px;line-height:2">'+
+      '<div>Vacation balance: <strong>'+Math.max(0,15-approved)+' days</strong></div>'+
+      '<div>Used YTD: <strong style="color:var(--orange)">'+approved+' days</strong></div>'+
+      '<div>Pending requests: <strong>'+myPTO.filter(function(r){return r.status==='Pending';}).length+'</strong></div></div>';
+  }
+  var payEl=document.getElementById('ess-pay-info');
+  if(payEl&&emp){
+    var pr=payrollRegister.find(function(r){return r.name.toLowerCase().includes(emp.firstName.toLowerCase());});
+    payEl.innerHTML='<div style="font-size:13px;line-height:2">'+
+      '<div>Pay Rate: <strong>'+escHtml(emp.pay||'See HR')+'</strong></div>'+
+      '<div>Pay Schedule: <strong>Bi-weekly</strong></div>'+
+      (pr?'<div>Last Net Pay: <strong style="color:var(--green)">$'+(parseFloat(pr.gross)*0.72).toFixed(2)+'</strong></div>':'')+
+      '</div>';
+  }
+  var benEl=document.getElementById('ess-benefits');
+  if(benEl){
+    var enrolled=benefitPlans.filter(function(p){return (p.enrolled||0)>0;});
+    benEl.innerHTML='<div style="font-size:13px;line-height:2">'+
+      enrolled.slice(0,3).map(function(p){return '<div>✅ '+escHtml(p.name)+'</div>';}).join('')+
+      (enrolled.length===0?'<div style="color:var(--muted)">No benefits enrolled. Contact HR.</div>':'')+
+      '</div>';
+  }
+  var trainEl=document.getElementById('ess-training');
+  if(trainEl){
+    var required=lmsData.courses.filter(function(c){return c.required&&!lmsData.completions.includes(c.id);});
+    trainEl.innerHTML='<div style="font-size:13px">'+
+      (required.length?'<div style="color:var(--orange)">'+required.length+' required course(s) pending</div>':
+        '<div style="color:var(--green)">✅ All required training complete</div>')+
+      '</div>';
+  }
+}
+function shESSUpdateInfo(){shPanel('employees',document.querySelector('.sh-nav-btn'));shNotify('Update your information via the Employee Directory panel','');}
+function shESSViewPayStubs(){shPanel('payroll',document.querySelector('.sh-nav-btn'));shNotify('View your pay history in the Payroll panel','');}
+function shESSBenefits(){shPanel('benefits',document.querySelector('.sh-nav-btn'));}
+function shESSTraining(){shPanel('lms',document.querySelector('.sh-nav-btn'));}
+function shESSPerformance(){shPanel('performance',document.querySelector('.sh-nav-btn'));}
+
+// ══ INIT ALL UPGRADE ════════════════════════════════════════════
+// Extend the existing shInitAll
+var _origInitAll=shInitAll;
+shInitAll=function(){
+  _origInitAll();
+  shInitSkills();
+  shInitContractors();
+  shInitSuccession();
+  shInitHeadcount();
+  shInitWorkersComp();
+  shInitSelfService();
+};
+
+// Add new panels to shPanel lazy init
+var _origShPanel=shPanel;
+shPanel=function(id,btn){
+  _origShPanel(id,btn);
+  var extra={
+    'skills':shInitSkills,
+    'contractors':shInitContractors,
+    'succession':shInitSuccession,
+    'headcount':shInitHeadcount,
+    'workercomp':shInitWorkersComp,
+    'selfservice':shInitSelfService,
+  };
+  if(extra[id]) setTimeout(extra[id],50);
+};
+
 </script>
 
 </body>
