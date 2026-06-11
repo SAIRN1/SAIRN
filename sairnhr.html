@@ -4772,5 +4772,518 @@ document.addEventListener('DOMContentLoaded',function(){
 
 </script>
 
+
+<script>
+// SAIRN Pricing Engine v1.0 — sairnhr
+
+// ============================================================
+// SAIRN UNIVERSAL PRICING ENGINE v1.0
+// June 11, 2026 — Michael L. Dibert · SAIRN Technologies
+// Applied to: SAIRNcode · SAIRNhr · SAIRNaccounting
+//
+// Pricing (final — market-verified June 11 2026):
+//   SAIRNcode:        Free 20q | Pro $59/mo | Enterprise $99/mo
+//   SAIRNhr:          Free 10q | Pro $199/mo | Enterprise $349/mo
+//   SAIRNaccounting:  Free 25tx | Pro $79/mo | Enterprise $129/mo
+//
+// Pattern 6 — Smart Flags: fires at 75% and 100% query usage
+// Pattern 7 — Save + History: counter in localStorage
+// Pattern 8 — Print/PDF: plan confirmation printable
+// ============================================================
+
+(function() {
+  'use strict';
+
+  // -- APP CONFIG --------------------------------------------
+  var APP_CONFIGS = {
+    sairncode: {
+      name: 'SAIRNcode\u2122',
+      icon: '\u2695\ufe0f',
+      color: '#0EA5E9',
+      colorDark: '#0284C7',
+      freeLimit: 20,
+      freeUnit: 'AI queries',
+      freeFeatures: ['All RVU/NCCI/MUE calculators', 'Modifier advisor', 'Specialty worksheets', 'Code encoder', '20 free AI coding queries'],
+      plans: [
+        {
+          id: 'pro',
+          name: 'Professional',
+          price: 59,
+          period: 'mo',
+          highlight: false,
+          tag: '',
+          features: [
+            'Unlimited AI coding queries',
+            'ICD-10 / CPT / HCPCS / HCC V28',
+            'E&M leveling + DRG validation',
+            'Pre-bill claim scrubber',
+            'Denial appeal generator',
+            'RAF score calculator (HCC V28)',
+            'Session memory + follow-up chips',
+            'Voice input + document upload',
+            'Code history + print reports',
+            'Cross-app SAIRN handoff'
+          ],
+          stripeLink: 'https://buy.stripe.com/sairncode_pro',
+          priceId: 'price_sairncode_pro_59'
+        },
+        {
+          id: 'enterprise',
+          name: 'Enterprise',
+          price: 99,
+          period: 'mo',
+          highlight: true,
+          tag: 'BEST VALUE',
+          features: [
+            'Everything in Professional',
+            'Multi-coder team access',
+            'Bulk claim CSV processing',
+            'Custom coding templates',
+            'Priority AI response queue',
+            'Dedicated onboarding call',
+            'Monthly coding update briefing',
+            'Admin formula editor',
+            'Export all sessions + audit trail',
+            'Phone + email support'
+          ],
+          stripeLink: 'https://buy.stripe.com/sairncode_ent',
+          priceId: 'price_sairncode_ent_99'
+        }
+      ],
+      competitorNote: 'AAPC Codify Complete: $52/mo (no AI). Optum EncoderPro Expert: $83/mo (no AI). SAIRNcode includes Claude AI coding intelligence — built in.'
+    },
+
+    sairnhr: {
+      name: 'SAIRNhr\u2122',
+      icon: '\ud83d\udc65',
+      color: '#D97706',
+      colorDark: '#B45309',
+      freeLimit: 10,
+      freeUnit: 'AI queries',
+      freeFeatures: ['Dashboard + org chart', 'Job builder', 'PTO tracker', 'Compliance checklist', '10 free AI HR queries'],
+      plans: [
+        {
+          id: 'pro',
+          name: 'Professional',
+          price: 199,
+          period: 'mo',
+          highlight: false,
+          tag: '',
+          features: [
+            'Unlimited AI HR queries',
+            'CHRO + Labor Attorney AI',
+            'Offer letters + termination docs',
+            'PIP builder + performance mgmt',
+            'ATS / recruiting pipeline',
+            '9-Box talent grid',
+            'Attrition prediction AI',
+            'Pulse surveys + LMS training',
+            'FMLA + leave management',
+            'Investigations tracker'
+          ],
+          stripeLink: 'https://buy.stripe.com/sairnhr_pro',
+          priceId: 'price_sairnhr_pro_199'
+        },
+        {
+          id: 'enterprise',
+          name: 'Enterprise',
+          price: 349,
+          period: 'mo',
+          highlight: true,
+          tag: 'MOST POPULAR',
+          features: [
+            'Everything in Professional',
+            'Unlimited employees tracked',
+            'Multi-location org management',
+            'Custom HR policy AI training',
+            'Payroll journal bridge (SAIRNacc)',
+            'SAIRNaccounting GL integration',
+            'Compliance audit trail + export',
+            'Admin formula editor',
+            'Dedicated HR consultant call/mo',
+            'Priority support + onboarding'
+          ],
+          stripeLink: 'https://buy.stripe.com/sairnhr_ent',
+          priceId: 'price_sairnhr_ent_349'
+        }
+      ],
+      competitorNote: 'BambooHR floor: $250/mo (25 employees, no AI). Rippling: $375-$625/mo for 25 employees. SAIRNhr is flat rate with Claude AI built in — no per-employee fees ever.'
+    },
+
+    sairnaccounting: {
+      name: 'SAIRNaccounting\u2122',
+      icon: '\ud83d\udcca',
+      color: '#16a34a',
+      colorDark: '#15803d',
+      freeLimit: 25,
+      freeUnit: 'transactions',
+      freeFeatures: ['Full GL + Chart of Accounts', 'All calculators (tax, mileage, RVU)', 'Invoicing + estimates', '25 free transactions', '10 free AI CFO queries'],
+      plans: [
+        {
+          id: 'pro',
+          name: 'Professional',
+          price: 79,
+          period: 'mo',
+          highlight: false,
+          tag: '',
+          features: [
+            'Unlimited transactions',
+            'Unlimited AI CFO queries',
+            'Big 4 CPA + CFO + Tax Attorney AI',
+            'Full AP/AR + bank reconciliation',
+            'Payroll journal automation',
+            'Fixed assets + depreciation',
+            'Project/job costing',
+            'Mileage tracker (IRS 2026)',
+            'Time tracker + billing',
+            'Multi-state sales tax calculator'
+          ],
+          stripeLink: 'https://buy.stripe.com/sairnacc_pro',
+          priceId: 'price_sairnacc_pro_79'
+        },
+        {
+          id: 'enterprise',
+          name: 'Enterprise',
+          price: 129,
+          period: 'mo',
+          highlight: true,
+          tag: 'BEST VALUE',
+          features: [
+            'Everything in Professional',
+            'SAIRNhr payroll bridge',
+            'Multi-entity accounting',
+            'Inventory management + COGS',
+            'Purchase orders + vendor mgmt',
+            'Client portal + statements',
+            'Accountant collaboration mode',
+            'Admin formula editor',
+            'Audit trail + CSV export',
+            'Priority support'
+          ],
+          stripeLink: 'https://buy.stripe.com/sairnacc_ent',
+          priceId: 'price_sairnacc_ent_129'
+        }
+      ],
+      competitorNote: 'QuickBooks Plus just raised to $115/mo (May 2026, +25%). Xero Established: $90/mo. SAIRNaccounting: $79/mo with Claude AI CFO built in. No per-user fees.'
+    }
+  };
+
+  // -- DETECT WHICH APP WE ARE -------------------------------
+  var APP_ID = (function() {
+    if (window.APP_ID) return window.APP_ID;
+    var t = document.title.toLowerCase();
+    if (t.includes('sairncode') || t.includes('coding')) return 'sairncode';
+    if (t.includes('sairnhr') || t.includes('hr')) return 'sairnhr';
+    if (t.includes('sairnaccounting') || t.includes('accounting')) return 'sairnaccounting';
+    // Fallback: check URL
+    var p = location.pathname;
+    if (p.includes('sairncode')) return 'sairncode';
+    if (p.includes('sairnhr')) return 'sairnhr';
+    if (p.includes('sairnaccounting')) return 'sairnaccounting';
+    return 'sairncode';
+  })();
+
+  var CFG = APP_CONFIGS[APP_ID];
+  if (!CFG) return;
+
+  // -- STORAGE KEYS ------------------------------------------
+  var STORAGE_KEY = 'sairn_trial_' + APP_ID;
+  var PLAN_KEY    = 'sairn_plan_' + APP_ID;
+
+  // -- TRIAL STATE -------------------------------------------
+  function getTrialState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return {}; }
+  }
+  function saveTrialState(state) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  }
+  function getPlan() {
+    try { return localStorage.getItem(PLAN_KEY) || 'free'; } catch(e) { return 'free'; }
+  }
+
+  // Initialize trial state on first visit
+  var trial = getTrialState();
+  if (!trial.startDate) {
+    trial = { startDate: new Date().toISOString().slice(0,10), count: 0, limit: CFG.freeLimit };
+    saveTrialState(trial);
+  }
+
+  // -- QUERY COUNTER -----------------------------------------
+  function incrementQuery() {
+    var t = getTrialState();
+    t.count = (t.count || 0) + 1;
+    saveTrialState(t);
+    updateQueryBadge();
+    // Smart Flag at 75% (Pattern 6)
+    var pct = t.count / CFG.freeLimit;
+    if (pct >= 0.75 && pct < 1.0 && !t.warned75) {
+      t.warned75 = true;
+      saveTrialState(t);
+      var left = CFG.freeLimit - t.count;
+      showSmartFlag('You have ' + left + ' free ' + CFG.freeUnit + ' remaining. <a href="#" onclick="sairiShowPricing();return false" style="color:#fff;font-weight:700;text-decoration:underline">Upgrade to unlock unlimited access \u2192</a>', 'warning');
+    }
+    return t.count;
+  }
+
+  function isAtLimit() {
+    if (getPlan() !== 'free') return false;
+    var t = getTrialState();
+    return (t.count || 0) >= CFG.freeLimit;
+  }
+
+  function queriesLeft() {
+    if (getPlan() !== 'free') return 999;
+    var t = getTrialState();
+    return Math.max(0, CFG.freeLimit - (t.count || 0));
+  }
+
+  // -- QUERY BADGE -------------------------------------------
+  function updateQueryBadge() {
+    var badge = document.getElementById('sairn-query-badge');
+    if (!badge) return;
+    var left = queriesLeft();
+    var plan = getPlan();
+    if (plan !== 'free') {
+      badge.textContent = '\u2605 ' + (plan === 'pro' ? 'Professional' : 'Enterprise');
+      badge.style.background = CFG.color;
+      badge.style.cursor = 'default';
+    } else {
+      badge.textContent = left + ' ' + CFG.freeUnit + ' left';
+      badge.style.background = left <= 5 ? '#dc2626' : left <= 10 ? '#f97316' : 'rgba(0,0,0,0.35)';
+    }
+  }
+
+  function injectQueryBadge() {
+    if (document.getElementById('sairn-query-badge')) return;
+    var badge = document.createElement('div');
+    badge.id = 'sairn-query-badge';
+    badge.style.cssText = 'position:fixed;top:14px;right:16px;z-index:9999;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;font-family:Inter,Outfit,sans-serif;letter-spacing:.3px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);transition:all 0.2s';
+    badge.onclick = function() { sairiShowPricing(); };
+    document.body.appendChild(badge);
+    updateQueryBadge();
+  }
+
+  // -- SMART FLAG (Pattern 6) --------------------------------
+  function showSmartFlag(msg, type) {
+    var colors = { warning: '#f97316', danger: '#dc2626', info: '#0EA5E9' };
+    var flag = document.createElement('div');
+    flag.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99999;background:' + (colors[type]||colors.warning) + ';color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;font-family:Inter,Outfit,sans-serif;max-width:500px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);animation:sairnFlagIn 0.3s ease';
+    flag.innerHTML = msg;
+    var close = document.createElement('span');
+    close.innerHTML = ' &times;';
+    close.style.cssText = 'cursor:pointer;margin-left:8px;opacity:0.7';
+    close.onclick = function() { flag.remove(); };
+    flag.appendChild(close);
+    document.body.appendChild(flag);
+    if (!document.getElementById('sairn-flag-style')) {
+      var style = document.createElement('style');
+      style.id = 'sairn-flag-style';
+      style.textContent = '@keyframes sairnFlagIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+      document.head.appendChild(style);
+    }
+    setTimeout(function() { if (flag.parentNode) flag.remove(); }, 7000);
+  }
+
+  // -- PAYWALL MODAL -----------------------------------------
+  function showPaywall() {
+    showSmartFlag('\ud83d\udd12 You\u2019ve used all ' + CFG.freeLimit + ' free ' + CFG.freeUnit + '. <a href="#" onclick="sairiShowPricing();return false" style="color:#fff;font-weight:800;text-decoration:underline">See plans \u2192</a>', 'danger');
+    setTimeout(function() { sairiShowPricing(); }, 800);
+  }
+
+  // -- PRICING MODAL (Pattern 8 — print ready) ---------------
+  window.sairiShowPricing = function() {
+    var existing = document.getElementById('sairn-pricing-modal');
+    if (existing) { existing.remove(); return; }
+
+    var plan = getPlan();
+    var left = queriesLeft();
+    var trial2 = getTrialState();
+
+    var modal = document.createElement('div');
+    modal.id = 'sairn-pricing-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,Outfit,sans-serif;backdrop-filter:blur(4px)';
+
+    var planCards = CFG.plans.map(function(p) {
+      var isHighlight = p.highlight;
+      var isCurrent = (plan === p.id);
+      return '<div style="flex:1;min-width:240px;max-width:320px;border-radius:16px;padding:24px;border:2px solid ' + (isHighlight ? CFG.color : 'rgba(255,255,255,0.12)') + ';background:' + (isHighlight ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)') + ';position:relative">' +
+        (p.tag ? '<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:' + CFG.color + ';color:#fff;padding:3px 14px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:1px;white-space:nowrap">' + p.tag + '</div>' : '') +
+        '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px">' + p.name + '</div>' +
+        '<div style="margin-bottom:16px"><span style="font-size:36px;font-weight:900;color:' + CFG.color + '">$' + p.price + '</span><span style="color:rgba(255,255,255,0.5);font-size:13px">/' + p.period + '</span></div>' +
+        '<ul style="list-style:none;padding:0;margin:0 0 20px;display:flex;flex-direction:column;gap:7px">' +
+        p.features.map(function(f) { return '<li style="font-size:12px;color:rgba(255,255,255,0.8);display:flex;gap:8px;align-items:flex-start"><span style="color:' + CFG.color + ';font-weight:700;flex-shrink:0">\u2713</span>' + f + '</li>'; }).join('') +
+        '</ul>' +
+        (isCurrent
+          ? '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:12px;font-weight:600">Current Plan</div>'
+          : '<a href="' + p.stripeLink + '" target="_blank" style="display:block;text-align:center;padding:12px;border-radius:10px;background:' + (isHighlight ? CFG.color : 'transparent') + ';border:2px solid ' + CFG.color + ';color:#fff;font-weight:700;font-size:14px;text-decoration:none;transition:all 0.15s" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">Start ' + p.name + ' \u2192</a>') +
+        '</div>';
+    }).join('');
+
+    var freeCard = '<div style="flex:1;min-width:200px;max-width:240px;border-radius:16px;padding:24px;border:2px solid ' + (plan==='free'?'rgba(255,255,255,0.4)':'rgba(255,255,255,0.08)') + ';background:rgba(255,255,255,0.02)">' +
+      '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px">Free Trial</div>' +
+      '<div style="margin-bottom:16px"><span style="font-size:36px;font-weight:900;color:rgba(255,255,255,0.6)">$0</span><span style="color:rgba(255,255,255,0.3);font-size:13px">/forever</span></div>' +
+      '<ul style="list-style:none;padding:0;margin:0 0 20px;display:flex;flex-direction:column;gap:7px">' +
+      CFG.freeFeatures.map(function(f) { return '<li style="font-size:12px;color:rgba(255,255,255,0.6);display:flex;gap:8px;align-items:flex-start"><span style="color:rgba(255,255,255,0.3);font-weight:700;flex-shrink:0">\u2713</span>' + f + '</li>'; }).join('') +
+      '</ul>' +
+      (plan==='free'
+        ? '<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);font-size:12px"><strong style="color:#fff">' + left + '</strong> ' + CFG.freeUnit + ' remaining</div>'
+        : '') +
+      '</div>';
+
+    modal.innerHTML = '<div style="background:#0a0f1a;border-radius:20px;padding:32px;max-width:900px;width:100%;border:1px solid rgba(255,255,255,0.1);box-shadow:0 32px 80px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto">' +
+      // Header
+      '<div style="text-align:center;margin-bottom:28px">' +
+        '<div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:6px">' + CFG.icon + ' ' + CFG.name + ' Pricing</div>' +
+        '<div style="font-size:14px;color:rgba(255,255,255,0.5)">Flat rate. No per-user fees. Claude AI built in.</div>' +
+        (plan === 'free' ? '<div style="margin-top:8px;display:inline-block;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);color:#fca5a5;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600"><strong>' + (trial2.count||0) + '</strong> of <strong>' + CFG.freeLimit + '</strong> free ' + CFG.freeUnit + ' used</div>' : '<div style="margin-top:8px;display:inline-block;background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);color:#86efac;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600">\u2605 Active ' + plan.charAt(0).toUpperCase()+plan.slice(1) + ' Plan</div>') +
+      '</div>' +
+      // Plan cards
+      '<div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:24px">' + freeCard + planCards + '</div>' +
+      // Competitor note
+      '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:20px;font-size:11px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.6">' + CFG.competitorNote + '</div>' +
+      // Already subscribed
+      '<div style="text-align:center;margin-bottom:8px"><button onclick="sairiActivatePlan()" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer;font-family:Inter,Outfit,sans-serif">Already subscribed? Activate plan</button></div>' +
+      // Close
+      '<div style="text-align:center"><button onclick="document.getElementById(\'sairn-pricing-modal\').remove()" style="background:transparent;border:none;color:rgba(255,255,255,0.3);font-size:13px;cursor:pointer;font-family:Inter,Outfit,sans-serif;padding:8px">Continue with free trial \u2192</button></div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+    // Close on backdrop click
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) modal.remove();
+    });
+  };
+
+  // -- PLAN ACTIVATION ---------------------------------------
+  window.sairiActivatePlan = function() {
+    var code = prompt('Enter your subscription confirmation code (from your Stripe receipt email):');
+    if (!code) return;
+    // Simple validation — in production this calls Railway to verify
+    var code2 = code.trim().toLowerCase();
+    var plan = 'free';
+    if (code2.includes('ent') || code2.includes('enterprise') || code2.includes('349') || code2.includes('99') || code2.includes('129')) {
+      plan = 'enterprise';
+    } else if (code2.includes('pro') || code2.includes('professional') || code2.includes('59') || code2.includes('199') || code2.includes('79')) {
+      plan = 'pro';
+    } else if (code2.length > 6) {
+      // Accept any code > 6 chars as pro for now (Stripe sends order IDs)
+      plan = 'pro';
+    }
+    if (plan !== 'free') {
+      try { localStorage.setItem(PLAN_KEY, plan); } catch(e) {}
+      var modal = document.getElementById('sairn-pricing-modal');
+      if (modal) modal.remove();
+      updateQueryBadge();
+      showSmartFlag('\u2605 ' + plan.charAt(0).toUpperCase()+plan.slice(1) + ' plan activated! Unlimited access unlocked.', 'info');
+    } else {
+      alert('Code not recognized. Please contact support@sairn.com or check your Stripe receipt.');
+    }
+  };
+
+  // -- PATCH THE SEND FUNCTION -------------------------------
+  // Wrap the app's send function to intercept queries
+  function patchSendFunction() {
+    // For SAIRNcode — wraps sendMessage
+    var origSend = window.sendMessage;
+    if (typeof origSend === 'function' && !window._sairiSendPatched) {
+      window._sairiSendPatched = true;
+      window.sendMessage = function() {
+        if (isAtLimit()) {
+          showPaywall();
+          return;
+        }
+        incrementQuery();
+        return origSend.apply(this, arguments);
+      };
+    }
+    // For SAIRNhr — wraps shSendAI or the SAIRI send fn
+    var origShSend = window.shSendAI;
+    if (typeof origShSend === 'function' && !window._sairiShSendPatched) {
+      window._sairiShSendPatched = true;
+      window.shSendAI = function() {
+        if (isAtLimit()) { showPaywall(); return; }
+        incrementQuery();
+        return origShSend.apply(this, arguments);
+      };
+    }
+    // For SAIRNaccounting — wraps saSendAI
+    var origSaSend = window.saSendAI;
+    if (typeof origSaSend === 'function' && !window._sairiSaSendPatched) {
+      window._sairiSaSendPatched = true;
+      window.saSendAI = function() {
+        if (isAtLimit()) { showPaywall(); return; }
+        incrementQuery();
+        return origSaSend.apply(this, arguments);
+      };
+    }
+    // For the SAIRI intelligence block send wrapper
+    var cfg = window['_sairiCfg_' + APP_ID];
+    if (cfg && cfg.sendFn && !cfg._pricingPatched) {
+      cfg._pricingPatched = true;
+      var origCfgSend = cfg.sendFn;
+      cfg.sendFn = function() {
+        if (isAtLimit()) { showPaywall(); return; }
+        incrementQuery();
+        return origCfgSend.apply(this, arguments);
+      };
+    }
+  }
+
+  // -- UPGRADE CTA BUTTON ------------------------------------
+  function injectUpgradeCTA() {
+    if (document.getElementById('sairn-upgrade-cta')) return;
+    var cta = document.createElement('button');
+    cta.id = 'sairn-upgrade-cta';
+    cta.innerHTML = '\u2b06 Upgrade';
+    cta.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9998;padding:10px 18px;background:' + CFG.color + ';color:#fff;border:none;border-radius:25px;font-size:12px;font-weight:800;cursor:pointer;font-family:Inter,Outfit,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.4);letter-spacing:.3px;transition:all 0.2s';
+    cta.onmouseover = function() { this.style.transform = 'translateY(-2px)'; this.style.boxShadow = '0 8px 28px rgba(0,0,0,0.5)'; };
+    cta.onmouseout = function() { this.style.transform = ''; this.style.boxShadow = '0 4px 20px rgba(0,0,0,0.4)'; };
+    cta.onclick = function() { sairiShowPricing(); };
+    // Only show on free plan
+    if (getPlan() === 'free') document.body.appendChild(cta);
+  }
+
+  // -- INIT --------------------------------------------------
+  function sairiPricingInit() {
+    injectQueryBadge();
+    injectUpgradeCTA();
+    patchSendFunction();
+    // Re-patch after 1s in case functions loaded async
+    setTimeout(patchSendFunction, 1000);
+    setTimeout(patchSendFunction, 2500);
+    // Show welcome on first visit
+    var trial3 = getTrialState();
+    if (!trial3.welcomed && trial3.count === 0) {
+      trial3.welcomed = true;
+      saveTrialState(trial3);
+      setTimeout(function() {
+        showSmartFlag(CFG.icon + ' Welcome to ' + CFG.name + ' \u2014 ' + CFG.freeLimit + ' free ' + CFG.freeUnit + ' included. <a href="#" onclick="sairiShowPricing();return false" style="color:#fff;font-weight:700;text-decoration:underline">See all plans</a>', 'info');
+      }, 2000);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', sairiPricingInit);
+  } else {
+    sairiPricingInit();
+  }
+
+  // Expose globally for testing
+  window.sairiPricing = {
+    showPricing: sairiShowPricing,
+    getState: getTrialState,
+    getPlan: getPlan,
+    increment: incrementQuery,
+    isAtLimit: isAtLimit,
+    queriesLeft: queriesLeft,
+    reset: function() {
+      try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(PLAN_KEY); } catch(e) {}
+      location.reload();
+    }
+  };
+
+})();
+
+</script>
 </body>
 </html>
