@@ -824,6 +824,56 @@ body.is-exec .exec-only-block{display:block}
 .emp-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:12px;background:var(--surface-2);border:1px solid var(--border);margin:3px}
 .emp-chip-dot{width:7px;height:7px;border-radius:50%;background:#16a34a}
 
+
+/* ══ EXEC AI ASSISTANTS ══════════════════════════════════════ */
+.exec-ai-tab{padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;border-radius:10px 10px 0 0;background:transparent;border:1px solid var(--border);border-bottom:none;color:var(--muted);transition:all .15s;margin-right:3px}
+.exec-ai-tab.active{color:#fff;border-color:transparent}
+.exec-ai-tab.ceo.active{background:linear-gradient(135deg,#7f1d1d,#dc2626)}
+.exec-ai-tab.cfo.active{background:linear-gradient(135deg,#14532d,#16a34a)}
+.exec-ai-tab.cto.active{background:linear-gradient(135deg,#0f1f3d,#1B3A6B)}
+.exec-ai-pane{display:none;border:1px solid var(--border);border-radius:0 12px 12px 12px;background:var(--card);overflow:hidden}
+.exec-ai-pane.active{display:flex;flex-direction:column;height:560px}
+.exec-ai-hdr{padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.exec-ai-hdr.ceo{background:linear-gradient(135deg,#7f1d1d,#dc2626)}
+.exec-ai-hdr.cfo{background:linear-gradient(135deg,#14532d,#16a34a)}
+.exec-ai-hdr.cto{background:linear-gradient(135deg,#0f1f3d,#1B3A6B)}
+.exec-ai-avatar{width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.exec-ai-title{font-size:14px;font-weight:800;color:#fff;line-height:1.2}
+.exec-ai-sub{font-size:11px;color:rgba(255,255,255,0.7);margin-top:1px}
+.exec-ai-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.exec-ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6}
+.exec-ai-msg.user{align-self:flex-end;color:#fff}
+.exec-ai-msg.user.ceo{background:#dc2626}
+.exec-ai-msg.user.cfo{background:#16a34a}
+.exec-ai-msg.user.cto{background:#1B3A6B}
+.exec-ai-msg.ai{align-self:flex-start;background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.exec-ai-msg.thinking{opacity:.6;font-style:italic}
+.exec-ai-footer{padding:12px;border-top:1px solid var(--border);flex-shrink:0}
+.exec-ai-input-row{display:flex;gap:8px;margin-bottom:8px}
+.exec-ai-input{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;font-family:inherit}
+.exec-ai-send{padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;white-space:nowrap}
+.exec-ai-send.ceo{background:#dc2626}
+.exec-ai-send.cfo{background:#16a34a}
+.exec-ai-send.cto{background:#1B3A6B}
+.exec-chip-row{display:flex;gap:6px;flex-wrap:wrap}
+.exec-chip{padding:4px 10px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s}
+.exec-chip:hover{border-color:var(--a);color:var(--a)}
+/* Email triage */
+.email-triage-zone{border:2px dashed var(--border);border-radius:10px;padding:20px;margin-bottom:12px;cursor:pointer;transition:all .2s}
+.email-triage-zone:hover{border-color:var(--a);background:rgba(27,58,107,0.03)}
+.triage-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;border-left:4px solid var(--border)}
+.triage-card.p1{border-left-color:#dc2626}
+.triage-card.p2{border-left-color:#f97316}
+.triage-card.p3{border-left-color:#ca8a04}
+.triage-card.p4{border-left-color:#16a34a}
+.triage-card.p5{border-left-color:#94a3b8}
+.triage-priority{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:100px}
+.triage-priority.p1{background:rgba(220,38,38,0.12);color:#dc2626}
+.triage-priority.p2{background:rgba(249,115,22,0.12);color:#f97316}
+.triage-priority.p3{background:rgba(202,138,4,0.12);color:#ca8a04}
+.triage-priority.p4{background:rgba(22,163,74,0.12);color:#16a34a}
+.triage-priority.p5{background:rgba(148,163,184,0.12);color:#94a3b8}
+
 </style>
 </head>
 <body>
@@ -2306,6 +2356,111 @@ body.is-exec .exec-only-block{display:block}
         <!-- REMAKES SUMMARY -->
         <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Open Remakes & Approvals Needed</div>
         <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:20px" id="exec-remakes-summary"></div>
+
+
+        <!-- EXECUTIVE AI ASSISTANTS -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0 0 12px">🤖 Your Personal AI Executive Assistant</div>
+        <div style="margin-bottom:28px">
+          <!-- Tab bar -->
+          <div style="display:flex;align-items:flex-end;border-bottom:1px solid var(--border);margin-bottom:0" id="exec-ai-tabs">
+            <button class="exec-ai-tab ceo active" onclick="execAiSetTab('ceo',this)">👔 CEO Assistant</button>
+            <button class="exec-ai-tab cfo" onclick="execAiSetTab('cfo',this)">💰 CFO Assistant</button>
+            <button class="exec-ai-tab cto" onclick="execAiSetTab('cto',this)">⚙️ CTO Assistant</button>
+            <button class="exec-ai-tab" style="margin-left:auto;background:rgba(27,58,107,0.08);color:var(--a);border-color:var(--border)" onclick="execAiSetTab('email',this)">📧 Email Triage</button>
+          </div>
+          <!-- CEO Pane -->
+          <div class="exec-ai-pane active" id="eai-ceo">
+            <div class="exec-ai-hdr ceo">
+              <div class="exec-ai-avatar">👔</div>
+              <div><div class="exec-ai-title">SAIRN CEO Intelligence</div><div class="exec-ai-sub">Strategy · Growth · Vision · Sales · Investor Relations · Culture</div></div>
+              <button onclick="execAiClear('ceo')" style="margin-left:auto;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Clear</button>
+            </div>
+            <div class="exec-ai-msgs" id="eai-msgs-ceo"></div>
+            <div class="exec-ai-footer">
+              <div class="exec-chip-row" style="margin-bottom:8px">
+                <button class="exec-chip" onclick="execAiChip('ceo','What should my top 3 strategic priorities be this week?')">Top priorities this week</button>
+                <button class="exec-chip" onclick="execAiChip('ceo','Analyze our sales pipeline and tell me where to focus')">Pipeline analysis</button>
+                <button class="exec-chip" onclick="execAiChip('ceo','What metrics should I review in my morning routine?')">CEO morning routine</button>
+                <button class="exec-chip" onclick="execAiChip('ceo','How do I position StoneDesk against Moraware for an investor conversation?')">Investor pitch</button>
+                <button class="exec-chip" onclick="execAiChip('ceo','Draft a team culture message for this week')">Team culture message</button>
+              </div>
+              <div class="exec-ai-input-row">
+                <input class="exec-ai-input" id="eai-input-ceo" placeholder="Ask your CEO assistant anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();execAiSend('ceo')}">
+                <button class="exec-ai-send ceo" onclick="execAiSend('ceo')">Send</button>
+              </div>
+            </div>
+          </div>
+          <!-- CFO Pane -->
+          <div class="exec-ai-pane" id="eai-cfo">
+            <div class="exec-ai-hdr cfo">
+              <div class="exec-ai-avatar">💰</div>
+              <div><div class="exec-ai-title">SAIRN CFO Intelligence</div><div class="exec-ai-sub">Cash Flow · P&L · Payroll · AR/AP · Budgets · Tax · Banking · Risk</div></div>
+              <button onclick="execAiClear('cfo')" style="margin-left:auto;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Clear</button>
+            </div>
+            <div class="exec-ai-msgs" id="eai-msgs-cfo"></div>
+            <div class="exec-ai-footer">
+              <div class="exec-chip-row" style="margin-bottom:8px">
+                <button class="exec-chip" onclick="execAiChip('cfo','What financial metrics should I check every morning?')">Morning financial check</button>
+                <button class="exec-chip" onclick="execAiChip('cfo','Explain cash burn rate and how to calculate our runway')">Cash runway calc</button>
+                <button class="exec-chip" onclick="execAiChip('cfo','Generate a payroll journal entry for a $50,000 biweekly payroll')">Payroll journal entry</button>
+                <button class="exec-chip" onclick="execAiChip('cfo','What AR aging thresholds should trigger collection action?')">AR aging thresholds</button>
+                <button class="exec-chip" onclick="execAiChip('cfo','What tax strategies should a stone fabrication shop owner consider?')">Tax strategy</button>
+                <button class="exec-chip" onclick="execAiChip('cfo','Build me a monthly financial review checklist')">Monthly review checklist</button>
+              </div>
+              <div class="exec-ai-input-row">
+                <input class="exec-ai-input" id="eai-input-cfo" placeholder="Ask your CFO assistant anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();execAiSend('cfo')}">
+                <button class="exec-ai-send cfo" onclick="execAiSend('cfo')">Send</button>
+              </div>
+            </div>
+          </div>
+          <!-- CTO Pane -->
+          <div class="exec-ai-pane" id="eai-cto">
+            <div class="exec-ai-hdr cto">
+              <div class="exec-ai-avatar">⚙️</div>
+              <div><div class="exec-ai-title">SAIRN CTO Intelligence</div><div class="exec-ai-sub">Tech Strategy · Security · Systems · Integrations · Data · Compliance · Vendors</div></div>
+              <button onclick="execAiClear('cto')" style="margin-left:auto;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Clear</button>
+            </div>
+            <div class="exec-ai-msgs" id="eai-msgs-cto"></div>
+            <div class="exec-ai-footer">
+              <div class="exec-chip-row" style="margin-bottom:8px">
+                <button class="exec-chip" onclick="execAiChip('cto','What security practices should every SaaS company have in place?')">Security checklist</button>
+                <button class="exec-chip" onclick="execAiChip('cto','How should we architect a QuickBooks integration for StoneDesk?')">QuickBooks architecture</button>
+                <button class="exec-chip" onclick="execAiChip('cto','What are the key metrics for monitoring system health and uptime?')">System health metrics</button>
+                <button class="exec-chip" onclick="execAiChip('cto','What tech debt should a fast-growing SaaS prioritize paying down?')">Tech debt priorities</button>
+                <button class="exec-chip" onclick="execAiChip('cto','Evaluate our current stack: React, Railway, Vercel, Supabase, PostgreSQL')">Stack evaluation</button>
+                <button class="exec-chip" onclick="execAiChip('cto','What HIPAA/SOC2 compliance steps are most critical for SAIRNcomm?')">Compliance roadmap</button>
+              </div>
+              <div class="exec-ai-input-row">
+                <input class="exec-ai-input" id="eai-input-cto" placeholder="Ask your CTO assistant anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();execAiSend('cto')}">
+                <button class="exec-ai-send cto" onclick="execAiSend('cto')">Send</button>
+              </div>
+            </div>
+          </div>
+          <!-- Email Triage Pane -->
+          <div class="exec-ai-pane" id="eai-email" style="height:auto;min-height:480px">
+            <div class="exec-ai-hdr" style="background:linear-gradient(135deg,#0f1f3d,#374151)">
+              <div class="exec-ai-avatar">📧</div>
+              <div><div class="exec-ai-title">AI Email Triage</div><div class="exec-ai-sub">Paste one or multiple emails — Claude prioritizes, categorizes, and drafts responses</div></div>
+            </div>
+            <div style="padding:16px;flex:1;overflow-y:auto">
+              <div id="triage-results" style="display:none"></div>
+              <div id="triage-input-zone">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Paste your emails below</div>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Paste one email or multiple emails separated by "---". Claude will read all of them, assign priority 1-5, categorize by type, flag action items, and draft replies for the top priority messages.</p>
+                <textarea id="email-paste-input" placeholder="Paste email content here...&#10;&#10;To separate multiple emails use --- between them" style="width:100%;height:180px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text);font-family:inherit;outline:none;resize:vertical;box-sizing:border-box"></textarea>
+                <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+                  <select id="triage-role" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+                    <option value="ceo">CEO lens — revenue impact, partnerships, investors first</option>
+                    <option value="cfo">CFO lens — payment urgency, financial risk, banking first</option>
+                    <option value="cto">CTO lens — security issues, system failures, tech vendors first</option>
+                  </select>
+                  <button onclick="runEmailTriage()" style="padding:9px 20px;background:#1B3A6B;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">⚡ Triage Emails</button>
+                </div>
+                <div id="triage-loading" style="display:none;padding:16px;text-align:center;color:var(--muted);font-size:13px">🤖 Analyzing emails...</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- EXEC PRIVATE CHANNEL -->
         <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🔒 Executive Private Channel</div>
@@ -9573,6 +9728,267 @@ function toggleThread(id){
     if(id==='comms') renderComms();
   };
 })();
+
+
+// ══════════════════════════════════════════════════════════════════
+// EXEC AI ASSISTANTS — CEO / CFO / CTO + EMAIL TRIAGE
+// ══════════════════════════════════════════════════════════════════
+
+var EAI_HISTORY={ceo:[],cfo:[],cto:[]};
+var EAI_ACTIVE_TAB='ceo';
+
+var EAI_SYSTEMS={
+  ceo:[
+    'You are the personal AI executive assistant for the CEO of SAIRN Technologies™ — a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
+    'Products: StoneDesk™ (stone fabrication SaaS), SAIRNcode™ (medical coding AI), SAIRNhr™ (HR intelligence), SAIRNcomm™ (HIPAA messaging), SAIRNaccounting™ (accounting AI), plus 13 NEXUS consumer apps.',
+    'Revenue: StoneDesk targets 2,600+ stone fabrication shops currently using Moraware at $200-400/mo. StoneDesk Starter $199/mo, Professional $299/mo, Enterprise $599/mo.',
+    'Your CEO expertise covers: strategic vision and annual planning, sales pipeline management and GTM strategy, investor relations and fundraising (Pre-seed $500K-$2M, Seed $1-5M), competitive positioning vs Moraware and generic SaaS, team culture and hiring decisions, partnership development, press and PR, market expansion, product-market fit analysis.',
+    'Stone industry context: 2,600+ shops, avg shop wastes $316/hr in rework, CA SB 20 silica compliance deadline July 1 2026, engineered stone 93% crystalline silica hazard creates urgent compliance need.',
+    'Key metrics you track: MRR/ARR, churn rate, LTV:CAC ratio (target >3:1), CAC payback (target <18 months), NRR (target >110%), magic number (target >0.75), burn rate, runway (keep 18+ months).',
+    'Communication style: direct, decisive, strategic. Lead with the answer. Back with data. End with the one action that moves the needle most. Never give generic advice — always specific to SAIRN context.',
+    'NEVER say "it depends" without giving specifics. NEVER be vague. Think like a founder-CEO who has built and sold companies before.'
+  ].join(' '),
+  cfo:[
+    'You are the personal AI executive assistant for the CFO of SAIRN Technologies™ — a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
+    'You are a world-class CFO advisor: Big 4 CPA + investment banker + tax attorney combined.',
+    'SAIRN Chart of Accounts: Assets 1000s (1010 Cash-Checking, 1100 AR, 1200 Inventory), Liabilities 2000s (2010 AP, 2100 Accrued Wages, 2110 FIT Payable, 2130 FICA), Equity 3000s, Revenue 4000s (4010 Service, 4020 Product), Expenses 5000s+ (5010 COGS, 6010 Wages, 6020 Payroll Taxes, 6030 Benefits, 6100 Rent, 6210 Software).',
+    'Payroll tax rates 2026: SS 6.2%+6.2% (wage base $176,100), Medicare 1.45%+1.45%, FUTA 0.6% (first $7K), SUTA varies by state.',
+    'Key SaaS financial metrics: Gross margin target 70-80%, CAC, LTV, burn rate, runway, DSO target <45 days, current ratio >1.5, quick ratio >1.0.',
+    'StoneDesk pricing: Starter $199/mo, Professional $299/mo, Enterprise $599/mo. Stripe price IDs on file.',
+    'Your CFO expertise: cash flow forecasting and management, P&L analysis, payroll processing and journal entries (exact GAAP account codes), AR aging and collections strategy, budget vs actual variance analysis, tax planning (QSBS, ESOP, R&D credits), banking relationships and debt covenants, EBITDA optimization, financial risk management, QuickBooks integration, monthly close process, investor reporting.',
+    'Always cite specific account codes (Dr 6010, Cr 2100). Give exact journal entries, exact tax rates, exact formulas. Lead with numbers. End every recommendation with the financial risk if ignored.',
+    'Format financial data clearly: use line items, totals, and variances. Make it feel like a CFO dashboard briefing.'
+  ].join(' '),
+  cto:[
+    'You are the personal AI executive assistant for the CTO of SAIRN Technologies™ — a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
+    'Current tech stack: React 18 + TypeScript frontend, Express backend, Drizzle ORM, PostgreSQL on Railway, Vercel hosting, Supabase (SAIRNcomm), Anthropic Claude API via sairn.vercel.app/api/claude proxy, Stripe payments, Resend email, Twilio SMS.',
+    'Architecture: HONEY COMB cellular platform — each app is a standalone HTML file deployed to Vercel, authenticated against Railway backend, firewalled to allowlisted domains only. All 21 apps share one Railway PostgreSQL instance.',
+    'IP: HONEY COMB architecture and 6-Layer AI Keyboard Privacy Firewall both have provisional patents filed May 21 2026. Non-provisional deadline May 21 2027.',
+    'Security: SAIRN Firewall blocks all non-allowlisted fetch calls. Claude proxy prevents direct API key exposure. Cookie auth: sameSite:none + secure:true for cross-origin Railway-Vercel auth.',
+    'Current integrations: QuickBooks Online (UI built, OAuth pending), Google Directions API (route optimization), xlsx library (import/export), Resend (email), node-cron (weekly reports).',
+    'HIPAA compliance stack for SAIRNcomm: Supabase Pro (BAA required), Vercel Pro (BAA required), 15-min session timeout, audit log table, RLS policies, no PHI in logs.',
+    'Your CTO expertise: system architecture decisions, security posture and threat modeling, vendor evaluation and integration roadmap, API design and optimization, database schema and query performance, CI/CD pipeline, monitoring and alerting, tech debt prioritization, HIPAA/SOC2 compliance, patent protection strategy, team technical hiring, infrastructure scaling.',
+    'Always recommend specific tools, not categories. Cite actual version numbers and known issues. Lead with the architectural decision, then the implementation path. Flag security implications on every recommendation.',
+    'Think like a CTO who has shipped production systems at scale, not a consultant who theorizes.'
+  ].join(' ')
+};
+
+function execAiSetTab(tab,btn){
+  EAI_ACTIVE_TAB=tab;
+  document.querySelectorAll('.exec-ai-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.exec-ai-pane').forEach(p=>p.classList.remove('active'));
+  var pane=document.getElementById('eai-'+tab);
+  if(pane) pane.classList.add('active');
+  if(tab==='ceo'||tab==='cfo'||tab==='cto'){
+    if(!EAI_HISTORY[tab].length) execAiWelcome(tab);
+    else renderEaiMsgs(tab);
+    // Pre-select triage role to match active exec
+    var triageRole=document.getElementById('triage-role');
+    if(triageRole) triageRole.value=tab;
+  }
+}
+
+function execAiWelcome(role){
+  var welcomes={
+    ceo:'Good morning, CEO. I have full context on SAIRN Technologies™, your product suite, competitive landscape, and financial targets. What are we working on today — strategy, sales pipeline, investor prep, or something else?',
+    cfo:'Good morning. I have your Chart of Accounts loaded, payroll tax rates current for 2026, and StoneDesk pricing on file. Need a journal entry, cash flow analysis, budget review, or something else?',
+    cto:'Good morning. Stack context loaded — React/Railway/Vercel/Supabase/PostgreSQL. Patents filed. QuickBooks OAuth is the next integration on the roadmap. What technical decision are we working through today?'
+  };
+  EAI_HISTORY[role]=[{role:'assistant',content:welcomes[role]}];
+  renderEaiMsgs(role);
+}
+
+function renderEaiMsgs(role){
+  var el=document.getElementById('eai-msgs-'+role);
+  if(!el) return;
+  el.innerHTML=EAI_HISTORY[role].map(m=>{
+    var isMine=m.role==='user';
+    return '<div class="exec-ai-msg '+(isMine?'user '+role:'ai')+'">'+(m.thinking?'<em>'+escHtml(m.content)+'</em>':renderMarkdown(m.content))+'</div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+function renderMarkdown(txt){
+  if(!txt) return '';
+  var t=escHtml(txt);
+  t=t.replace(/**([^*]+)**/g,'<strong>$1</strong>');
+  t=t.replace(/*([^*]+)*/g,'<em>$1</em>');
+  t=t.replace(/^#{1,3} (.+)$/gm,'<div style="font-weight:700;margin:8px 0 4px">$1</div>');
+  t=t.replace(/^[•-] (.+)$/gm,'<div style="padding-left:12px;margin:2px 0">• $1</div>');
+  t=t.replace(/^(d+). (.+)$/gm,'<div style="padding-left:12px;margin:2px 0">$1. $2</div>');
+  t=t.replace(/
+{2,}/g,'<br><br>');
+  t=t.replace(/
+/g,'<br>');
+  return t;
+}
+
+async function execAiSend(role){
+  var inp=document.getElementById('eai-input-'+role);
+  var text=(inp?inp.value.trim():'');
+  if(!text) return;
+  inp.value='';
+  // Add user msg
+  EAI_HISTORY[role].push({role:'user',content:text});
+  renderEaiMsgs(role);
+  // Show thinking
+  EAI_HISTORY[role].push({role:'assistant',content:'Thinking...', thinking:true});
+  renderEaiMsgs(role);
+  var thinkingIdx=EAI_HISTORY[role].length-1;
+  try{
+    var msgs=EAI_HISTORY[role].filter(m=>!m.thinking).map(m=>({role:m.role,content:m.content}));
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        app_id:'stonedesk_'+role,
+        system:EAI_SYSTEMS[role],
+        messages:msgs
+      })
+    });
+    var data=await res.json();
+    var reply=data.content?.[0]?.text||'Unable to get response. Try again.';
+    EAI_HISTORY[role][thinkingIdx]={role:'assistant',content:reply};
+    // Keep last 20 exchanges
+    if(EAI_HISTORY[role].length>40) EAI_HISTORY[role]=EAI_HISTORY[role].slice(-40);
+  }catch(e){
+    EAI_HISTORY[role][thinkingIdx]={role:'assistant',content:'Connection error — check network and try again.'};
+  }
+  renderEaiMsgs(role);
+}
+
+function execAiChip(role,text){
+  var inp=document.getElementById('eai-input-'+role);
+  if(inp){inp.value=text;inp.focus();}
+  execAiSend(role);
+}
+
+function execAiClear(role){
+  EAI_HISTORY[role]=[];
+  execAiWelcome(role);
+}
+
+// ── EMAIL TRIAGE ───────────────────────────────────────────────
+async function runEmailTriage(){
+  var raw=document.getElementById('email-paste-input').value.trim();
+  if(!raw){alert('Paste at least one email first');return;}
+  var role=document.getElementById('triage-role').value;
+  var loading=document.getElementById('triage-loading');
+  var results=document.getElementById('triage-results');
+  var inputZone=document.getElementById('triage-input-zone');
+  if(loading){loading.style.display='block';}
+
+  var roleContext={
+    ceo:'You are triaging emails for a CEO. Weight: revenue impact > investor/board comms > partnership opportunities > press/PR > team/culture > operational > FYI.',
+    cfo:'You are triaging emails for a CFO. Weight: payment urgency/collections > banking/lending > vendor disputes > tax/legal > financial reporting > operational costs > FYI.',
+    cto:'You are triaging emails for a CTO. Weight: security incidents > system failures > compliance/legal tech > vendor tech issues > integration requests > team tech > FYI.'
+  };
+
+  var TRIAGE_SYSTEM='You are an elite executive email triage AI. '+roleContext[role]+
+    ' For each email, provide a structured JSON response. Respond ONLY with valid JSON, no markdown fences, no preamble. '+
+    'Format: {"emails":[{"subject":"<subject or first 60 chars>","from":"<sender if visible>","priority":1,"priority_label":"Respond Today","category":"<Revenue|Legal|Finance|Operations|HR|Vendor|Partnership|Board|Security|FYI>","action_required":true,"action":"<specific action needed in one line>","summary":"<2 sentence summary>","draft_reply":"<full draft reply if priority 1 or 2, else empty string>","delegate_to":"<name or role if should be delegated, else empty>"}]}'+
+    ' Priority scale: 1=Respond today (urgent, time-sensitive, high impact), 2=Respond this week, 3=Delegate, 4=Read and archive, 5=Unsubscribe/ignore.'+
+    ' Sort results by priority ascending (1 first). Be decisive. Every email gets a priority.';
+
+  var emails=raw.split(/
+---+
+/).map(e=>e.trim()).filter(Boolean);
+  var prompt='Triage these '+emails.length+' email(s):
+
+'+emails.map((e,i)=>'EMAIL '+(i+1)+':
+'+e).join('
+
+---
+
+');
+
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        app_id:'stonedesk_email_triage',
+        system:TRIAGE_SYSTEM,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    var data=await res.json();
+    var raw_reply=data.content?.[0]?.text||'{}';
+    var fence=String.fromCharCode(96,96,96); var clean=raw_reply.replace(new RegExp(fence+"json|"+fence,"g"),"").trim();
+    var parsed=JSON.parse(clean);
+    if(loading) loading.style.display='none';
+    renderTriageResults(parsed.emails||[],role);
+  }catch(e){
+    if(loading) loading.style.display='none';
+    if(results){
+      results.style.display='block';
+      results.innerHTML='<div style="color:#dc2626;padding:12px">Triage failed — check connection and try again. Error: '+escHtml(String(e))+'</div>';
+    }
+  }
+}
+
+function renderTriageResults(emails,role){
+  var results=document.getElementById('triage-results');
+  var inputZone=document.getElementById('triage-input-zone');
+  if(!results) return;
+  if(!emails.length){results.innerHTML='<div style="color:var(--muted);padding:16px">No emails to triage.</div>';results.style.display='block';return;}
+  var pLabel={1:'P1 — Respond Today',2:'P2 — This Week',3:'P3 — Delegate',4:'P4 — Archive',5:'P5 — Ignore'};
+  var summary={1:0,2:0,3:0,4:0,5:0};
+  emails.forEach(e=>{summary[e.priority]=(summary[e.priority]||0)+1;});
+  var summaryHtml='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--surface-2);border-radius:10px">'+
+    '<div style="font-size:13px;font-weight:700;color:var(--text);width:100%;margin-bottom:6px">📊 Triage Summary — '+emails.length+' email(s)</div>'+
+    [1,2,3,4,5].filter(p=>summary[p]).map(p=>
+      '<span class="triage-priority p'+p+'">'+summary[p]+' × '+pLabel[p]+'</span>'
+    ).join('')+
+  '</div>';
+  var cardsHtml=emails.map(e=>{
+    var hasDraft=e.draft_reply&&e.draft_reply.length>10;
+    return '<div class="triage-card p'+e.priority+'" style="margin-bottom:10px">'+
+      '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">'+
+        '<span class="triage-priority p'+e.priority+'">'+pLabel[e.priority]+'</span>'+
+        '<div style="flex:1">'+
+          '<div style="font-size:13px;font-weight:700;color:var(--text)">'+escHtml(e.subject||'(no subject)')+'</div>'+
+          (e.from?'<div style="font-size:11px;color:var(--muted)">From: '+escHtml(e.from)+'</div>':'')+
+        '</div>'+
+        '<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(27,58,107,0.08);color:var(--a);font-weight:600">'+escHtml(e.category||'')+'</span>'+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--text);margin-bottom:6px">'+escHtml(e.summary||'')+'</div>'+
+      (e.action_required&&e.action?'<div style="font-size:12px;font-weight:600;color:var(--a);margin-bottom:6px">→ Action: '+escHtml(e.action)+'</div>':'')+
+      (e.delegate_to?'<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Delegate to: '+escHtml(e.delegate_to)+'</div>':'')+
+      (hasDraft?'<details style="margin-top:8px"><summary style="font-size:12px;font-weight:700;color:var(--a);cursor:pointer;padding:4px 0">📝 Draft Reply (click to expand)</summary>'+
+        '<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:12px;font-size:12px;white-space:pre-wrap;font-family:inherit;line-height:1.6">'+escHtml(e.draft_reply)+'</div>'+
+      '</details>':'')+
+    '</div>';
+  }).join('');
+  var resetBtn='<div style="margin-top:12px"><button onclick="resetEmailTriage()" style="padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted);cursor:pointer">← Triage Another Batch</button></div>';
+  results.innerHTML=summaryHtml+cardsHtml+resetBtn;
+  results.style.display='block';
+  if(inputZone) inputZone.style.display='none';
+}
+
+function resetEmailTriage(){
+  var results=document.getElementById('triage-results');
+  var inputZone=document.getElementById('triage-input-zone');
+  if(results){results.style.display='none';results.innerHTML='';}
+  if(inputZone){inputZone.style.display='block';document.getElementById('email-paste-input').value='';}
+}
+
+// Wire up exec AI when exec suite opens — show CEO assistant by default for CEO role
+var _origExecContent=window.renderExecContent;
+document.addEventListener('DOMContentLoaded',function(){
+  setTimeout(function(){
+    // If exec role is set, show matching AI tab by default
+    var role=localStorage.getItem('sd_exec_role');
+    if(role&&['ceo','cfo','cto'].includes(role)){
+      var btn=document.querySelector('.exec-ai-tab.'+role);
+      if(btn) execAiSetTab(role,btn);
+    }
+  },800);
+});
 
 </script>
 </body></html>
