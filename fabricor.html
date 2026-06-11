@@ -773,6 +773,57 @@ textarea#userInput::placeholder{color:var(--muted)}
 .reorder-dot.yellow{background:#ca8a04}
 .reorder-dot.green{background:#16a34a}
 
+
+/* ══ EXEC SUITE & COMMS ══════════════════════════════════════ */
+.exec-only{display:none}
+body.is-exec .exec-only{display:inline-block}
+body.is-exec .nav-btn.exec-only{display:inline-block}
+.exec-only-block{display:none}
+body.is-exec .exec-only-block{display:block}
+/* Role badge in topbar */
+.role-badge{padding:2px 10px;border-radius:100px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin-right:6px}
+.role-badge.ceo{background:rgba(220,38,38,0.15);color:#dc2626}
+.role-badge.cfo{background:rgba(22,163,74,0.15);color:#16a34a}
+.role-badge.cto{background:rgba(27,58,107,0.15);color:#1B3A6B}
+.role-badge.admin{background:rgba(232,133,10,0.15);color:#ca8a04}
+.role-badge.sales{background:rgba(100,100,100,0.1);color:var(--muted)}
+/* Exec dashboard tiles */
+.exec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.exec-tile{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.exec-tile-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.exec-tile-val{font-size:28px;font-weight:900;line-height:1;color:var(--a)}
+.exec-tile-sub{font-size:11px;color:var(--muted);margin-top:4px}
+/* Exec-to-exec private chat */
+.exec-chat{background:var(--card);border:1px solid var(--a);border-radius:12px;overflow:hidden}
+.exec-chat-hdr{background:linear-gradient(135deg,#0f1f3d,#1B3A6B);padding:12px 16px;display:flex;align-items:center;gap:8px}
+.exec-chat-title{font-size:13px;font-weight:700;color:#fff}
+.exec-chat-lock{font-size:14px}
+.exec-msgs{height:280px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.exec-msg{max-width:80%;padding:9px 14px;border-radius:10px;font-size:13px;line-height:1.5}
+.exec-msg.mine{background:#1B3A6B;color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.exec-msg.theirs{background:var(--surface-2);color:var(--text);align-self:flex-start;border-bottom-left-radius:3px}
+.exec-msg-sender{font-size:10px;font-weight:700;opacity:.65;margin-bottom:3px}
+/* Employee-to-mgmt comms */
+.comms-thread{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.comms-thread-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;gap:10px}
+.comms-thread-hdr:hover{background:var(--surface-2)}
+.comms-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:.5px}
+.comms-tag.urgent{background:rgba(220,38,38,0.12);color:#dc2626}
+.comms-tag.normal{background:rgba(27,58,107,0.1);color:#1B3A6B}
+.comms-tag.approved{background:rgba(22,163,74,0.12);color:#16a34a}
+.comms-tag.denied{background:rgba(220,38,38,0.1);color:#dc2626}
+.comms-body{display:none;padding:12px 14px;border-top:1px solid var(--border)}
+.comms-body.open{display:block}
+/* Remake tracker */
+.remake-row{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;border-left:4px solid var(--border)}
+.remake-row.red{border-left-color:#dc2626}
+.remake-row.yellow{border-left-color:#ca8a04}
+.remake-row.green{border-left-color:#16a34a}
+.remake-row.approved{border-left-color:#16a34a;opacity:.75}
+/* Employee view chip */
+.emp-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:12px;background:var(--surface-2);border:1px solid var(--border);margin:3px}
+.emp-chip-dot{width:7px;height:7px;border-radius:50%;background:#16a34a}
+
 </style>
 </head>
 <body>
@@ -850,11 +901,14 @@ textarea#userInput::placeholder{color:var(--muted)}
       <button class="nav-btn" onclick="showPanel('customers')">👥 Customers</button>
       <button class="nav-btn" onclick="showPanel('photos')">📷 Photos</button>
       <button class="nav-btn" onclick="showPanel('warranty')">🛡️ Warranty</button>
+      <button class="nav-btn exec-only" onclick="showPanel('remakes')">🔄 Remakes</button>
+      <button class="nav-btn exec-only" onclick="showPanel('executive')">👔 Executive</button>
+      <button class="nav-btn" onclick="showPanel('comms')">💬 Comms</button>
       <button class="nav-btn admin-only" onclick="showPanel('integrations')">🔗 Integrations</button>
       <button class="nav-btn admin-only" onclick="showPanel('admin')">Admin</button>
     </div>
     <div class="topbar-right">
-      <span id="user-label">Sales</span>
+      <span id="role-badge-display" class="role-badge sales"></span><span id="user-label">Sales</span>
       <button class="topbar-logout" onclick="doLogout()">Sign out</button>
     </div>
   </div>
@@ -2128,6 +2182,209 @@ textarea#userInput::placeholder{color:var(--muted)}
     🛒 <span id="cart-count">0</span> items — <span id="cart-float-total">$0.00</span>
   </div>
 
+
+  <!-- ══ REMAKES / SHOWER TRACKER ══ -->
+  <div class="panel" id="panel-remakes">
+    <div style="padding:20px;max-width:1100px;margin:0 auto">
+      <div id="remake-alerts-zone"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">🔄 Remakes & Special Orders</h2>
+        <button class="q-btn primary" onclick="remakeAdd()">+ Log Remake / Special</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        <strong>Standard remakes:</strong> 24-hour turnaround — management approval required to exceed. &nbsp;
+        <strong>Shower pieces:</strong> 2–3 day turnaround — management approval required to exceed.
+      </p>
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi"><div class="kpi-val" id="rm-total">0</div><div class="kpi-label">Total Open</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#dc2626" id="rm-overdue">0</div><div class="kpi-label">Overdue</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#ca8a04" id="rm-warn">0</div><div class="kpi-label">At Limit</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="rm-approved">0</div><div class="kpi-label">Mgmt Approved</div></div>
+        <div class="kpi"><div class="kpi-val" id="rm-complete">0</div><div class="kpi-label">Completed Today</div></div>
+      </div>
+      <!-- Add form -->
+      <div id="remake-form" style="display:none;background:var(--card);border:1px solid var(--a);border-radius:12px;padding:18px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">Log Remake / Special Order</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="fg"><label>Customer</label><input id="rm-cust" placeholder="Customer name"></div>
+          <div class="fg"><label>Job #</label><input id="rm-job" placeholder="Job reference"></div>
+          <div class="fg"><label>Type</label>
+            <select id="rm-type">
+              <option value="remake">Standard Remake — 24h limit</option>
+              <option value="shower">Shower Piece — 2-3 day limit</option>
+              <option value="repair">Repair</option>
+              <option value="rework">Rework</option>
+            </select>
+          </div>
+          <div class="fg"><label>Material</label><input id="rm-mat" placeholder="e.g. Calacatta Marble 3cm"></div>
+          <div class="fg"><label>Reason / Root Cause</label>
+            <select id="rm-reason">
+              <option value="measure_error">Measurement Error</option>
+              <option value="cut_error">Cut Error</option>
+              <option value="edge_error">Edge Profile Error</option>
+              <option value="customer_change">Customer Change Order</option>
+              <option value="material_defect">Material Defect</option>
+              <option value="installer_damage">Installer Damage</option>
+              <option value="design_change">Design Change</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="fg"><label>Assigned To</label><input id="rm-assign" placeholder="Fabricator name"></div>
+          <div class="fg"><label>Start Date/Time</label><input id="rm-start" type="datetime-local"></div>
+          <div class="fg"><label>Priority</label>
+            <select id="rm-priority">
+              <option value="normal">Normal</option>
+              <option value="urgent">Urgent</option>
+              <option value="rush">Rush — approval required</option>
+            </select>
+          </div>
+          <div class="fg"><label>Sqft</label><input id="rm-sqft" type="number" placeholder="0" min="0"></div>
+        </div>
+        <div class="fg"><label>Notes / Description</label><textarea id="rm-notes" style="width:100%;height:50px;resize:vertical" placeholder="What happened, what needs to be redone..."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="q-btn primary" onclick="remakeSave()">Log Item</button>
+          <button class="q-btn" onclick="document.getElementById('remake-form').style.display='none'">Cancel</button>
+        </div>
+      </div>
+      <!-- Filters -->
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <select id="rm-filter-type" onchange="renderRemakes()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <option value="">All Types</option>
+          <option value="remake">Remakes</option>
+          <option value="shower">Shower Pieces</option>
+          <option value="repair">Repairs</option>
+          <option value="rework">Reworks</option>
+        </select>
+        <select id="rm-filter-status" onchange="renderRemakes()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <option value="">All Status</option>
+          <option value="open">Open</option>
+          <option value="approved">Mgmt Approved</option>
+          <option value="complete">Completed</option>
+        </select>
+      </div>
+      <div id="remake-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ EXECUTIVE SUITE ══ -->
+  <div class="panel" id="panel-executive">
+    <div style="padding:20px;max-width:1200px;margin:0 auto">
+      <!-- Access gate for non-exec -->
+      <div id="exec-gate" class="exec-only-block" style="display:none"><!-- shows when is-exec --></div>
+      <div id="exec-access-denied" style="text-align:center;padding:60px 20px;color:var(--muted)">
+        <div style="font-size:48px;margin-bottom:16px">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Executive Suite</div>
+        <div style="font-size:13px">This area is restricted to CEO, CFO, and CTO.</div>
+      </div>
+      <div id="exec-content" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div>
+            <h2 style="font-size:22px;font-weight:900;color:var(--text)">👔 Executive Suite</h2>
+            <div style="font-size:12px;color:var(--muted)">Private dashboard · CEO · CFO · CTO</div>
+          </div>
+          <div style="display:flex;gap:6px" id="exec-role-chips"></div>
+        </div>
+
+        <!-- SHOP OVERVIEW — all data at once -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Shop Overview</div>
+        <div class="exec-grid" id="exec-kpis"></div>
+
+        <!-- EMPLOYEE OVERVIEW — all employees at once -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px">All Employees</div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px">
+          <div id="exec-employee-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+          <div id="exec-employee-table"></div>
+        </div>
+
+        <!-- LIVE JOB BOARD — full view -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Live Job Board</div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px">
+          <div id="exec-jobs-table"></div>
+        </div>
+
+        <!-- REMAKES SUMMARY -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Open Remakes & Approvals Needed</div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:20px" id="exec-remakes-summary"></div>
+
+        <!-- EXEC PRIVATE CHANNEL -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🔒 Executive Private Channel</div>
+        <div class="exec-chat">
+          <div class="exec-chat-hdr">
+            <span class="exec-chat-lock">🔒</span>
+            <span class="exec-chat-title">CEO · CFO · CTO Private — Encrypted · Not visible to staff</span>
+            <span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.5)" id="exec-online-count"></span>
+          </div>
+          <div class="exec-msgs" id="exec-msgs"></div>
+          <div style="display:flex;gap:8px;padding:12px;border-top:1px solid var(--border)">
+            <input id="exec-msg-input" placeholder="Private executive message..." style="flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')execSend()">
+            <button onclick="execSend()" style="padding:8px 16px;background:#1B3A6B;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ COMMUNICATIONS ══ -->
+  <div class="panel" id="panel-comms">
+    <div style="padding:20px;max-width:1000px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">💬 Communications</h2>
+        <button class="q-btn primary" onclick="commsNewMessage()">+ New Message</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Professional communication between staff and management. All messages are logged. Management sees all threads.</p>
+
+      <!-- New message form -->
+      <div id="comms-form" style="display:none;background:var(--card);border:1px solid var(--a);border-radius:12px;padding:18px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">New Message to Management</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg"><label>From (Your Name)</label><input id="msg-from" placeholder="Your full name"></div>
+          <div class="fg"><label>Category</label>
+            <select id="msg-cat">
+              <option value="question">Question</option>
+              <option value="request">Request / Approval Needed</option>
+              <option value="issue">Issue / Problem</option>
+              <option value="suggestion">Suggestion</option>
+              <option value="schedule">Schedule / Time Off</option>
+              <option value="safety">Safety Concern</option>
+              <option value="remake_ext">Remake Extension Request</option>
+              <option value="shower_ext">Shower Piece Extension Request</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label>Subject</label><input id="msg-subject" placeholder="Brief subject line"></div>
+        <div class="fg"><label>Message</label><textarea id="msg-body" style="width:100%;height:80px;resize:vertical" placeholder="Write your professional message here. Be specific and factual."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="q-btn primary" onclick="commsSend()">Send Message</button>
+          <button class="q-btn" onclick="document.getElementById('comms-form').style.display='none'">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Employee view: my messages -->
+      <div id="comms-my-threads">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">My Messages</div>
+        <div id="comms-my-list"></div>
+      </div>
+
+      <!-- Management view: ALL threads (exec/admin only) -->
+      <div id="comms-all-threads" class="exec-only-block" style="margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">All Staff Messages</div>
+          <select id="comms-filter-cat" onchange="renderComms()" style="font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);outline:none">
+            <option value="">All Categories</option>
+            <option value="question">Questions</option>
+            <option value="request">Requests</option>
+            <option value="issue">Issues</option>
+            <option value="remake_ext">Remake Extensions</option>
+            <option value="shower_ext">Shower Extensions</option>
+            <option value="safety">Safety</option>
+          </select>
+        </div>
+        <div id="comms-all-list"></div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /app -->
 
 <script>
@@ -2168,6 +2425,7 @@ async function doLogin(){
     currentUser=data.user;
     shopName=(data.user.shop_name||data.user.shopName)||'My Shop';
     loginRole=data.user.role==='admin'?'admin':'sales';
+    applyExecRole(data.user);
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app').classList.add('visible');
     if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
@@ -2191,6 +2449,7 @@ async function doRegister(){
     currentUser=data.user;
     shopName=(data.user.shop_name||data.user.shopName)||sn;
     loginRole='admin';
+    applyExecRole(currentUser||{});
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app').classList.add('visible');
     if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
@@ -2262,6 +2521,8 @@ async function doLogout() {
   document.getElementById('app').classList.remove('visible');
   document.getElementById('app').classList.remove('visible');
   document.body.classList.remove('is-admin');
+  document.body.classList.remove('is-exec');
+  localStorage.removeItem('sd_exec_role');
   document.getElementById('pin-input').value = '';
   currentRole = '';
 }
@@ -2276,7 +2537,7 @@ function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
-  const navMap = { ai:0, quote:1, draw:2, history:3, business:4, schedule:5, inventory:6, vendors:7, customers:8, photos:9, warranty:10, integrations:11, admin:12 };
+  const navMap = { ai:0, quote:1, draw:2, history:3, business:4, schedule:5, inventory:6, vendors:7, customers:8, photos:9, warranty:10, remakes:11, executive:12, comms:13, integrations:14, admin:15 };
   const btns = document.querySelectorAll('.topbar-nav .nav-btn');
   if (navMap[id] !== undefined) btns[navMap[id]].classList.add('active');
   if (id === 'client') buildEstimate();
@@ -8790,6 +9051,527 @@ function vendorPlaceOrder(){
       renderSchedule();renderInventory();renderCart();renderVendor();runSchedAlerts();
     },600);
   });
+})();
+
+
+// ══════════════════════════════════════════════════════════════════
+// STONEDESK TIER 5 — REMAKES, EXECUTIVE SUITE, COMMUNICATIONS
+// ══════════════════════════════════════════════════════════════════
+
+// ── DATA ─────────────────────────────────────────────────────
+var sdRemakes=[]; var sdCommsThreads=[]; var sdExecMsgs=[]; var sdExecRole='';
+var SD_EXEC_ROLES=['ceo','cfo','cto']; // These map to admin user logins
+
+function loadSD5Data(){
+  try{sdRemakes=JSON.parse(localStorage.getItem('sd_remakes')||'[]');}catch(e){}
+  try{sdCommsThreads=JSON.parse(localStorage.getItem('sd_comms')||'[]');}catch(e){}
+  try{sdExecMsgs=JSON.parse(localStorage.getItem('sd_exec_msgs')||'[]');}catch(e){}
+  sdExecRole=localStorage.getItem('sd_exec_role')||'';
+}
+function saveSD5(){
+  localStorage.setItem('sd_remakes',JSON.stringify(sdRemakes));
+  localStorage.setItem('sd_comms',JSON.stringify(sdCommsThreads));
+  localStorage.setItem('sd_exec_msgs',JSON.stringify(sdExecMsgs));
+}
+
+// ── ROLE SYSTEM ───────────────────────────────────────────────
+function applyExecRole(user){
+  // Exec roles are set by email domain or stored preference
+  // Admin user can select their exec title once logged in
+  var stored=localStorage.getItem('sd_exec_role')||'';
+  if(stored&&SD_EXEC_ROLES.includes(stored)){
+    sdExecRole=stored;
+    document.body.classList.add('is-exec');
+    setRoleBadge(stored);
+    renderExecContent();
+  } else if(user&&user.role==='admin'){
+    // Admin gets to pick exec role — show picker if not yet set
+    if(!stored){
+      setTimeout(()=>showExecRolePicker(),800);
+    }
+  }
+}
+
+function showExecRolePicker(){
+  if(document.getElementById('exec-role-picker')) return;
+  var overlay=document.createElement('div');
+  overlay.id='exec-role-picker';
+  overlay.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--a);border-radius:14px;padding:18px 24px;z-index:9000;box-shadow:0 8px 40px rgba(0,0,0,.3);min-width:320px;text-align:center';
+  overlay.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Select your executive role</div>'+
+    '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">'+
+    ['ceo','cfo','cto'].map(r=>'<button onclick="setExecRoleAndClose(''+r+'')" style="padding:8px 18px;border-radius:8px;border:2px solid var(--a);background:transparent;color:var(--a);font-size:13px;font-weight:800;cursor:pointer;text-transform:uppercase">'+r.toUpperCase()+'</button>').join('')+
+    '<button onclick="setExecRoleAndClose('admin')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Admin Only</button>'+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--muted)">This unlocks the Executive Suite & private channel</div>';
+  document.body.appendChild(overlay);
+}
+
+function setExecRoleAndClose(role){
+  setExecRoleAndClose._close=true;
+  sdExecRole=role;
+  localStorage.setItem('sd_exec_role',role);
+  if(SD_EXEC_ROLES.includes(role)){
+    document.body.classList.add('is-exec');
+    setRoleBadge(role);
+    renderExecContent();
+  }
+  var el=document.getElementById('exec-role-picker');
+  if(el) el.remove();
+}
+
+function setRoleBadge(role){
+  var el=document.getElementById('role-badge-display');
+  if(!el) return;
+  el.className='role-badge '+role;
+  el.textContent=role.toUpperCase();
+}
+
+// ── REMAKE TRACKER ────────────────────────────────────────────
+var REMAKE_LIMITS={remake:24, shower_min:48, shower_max:72, repair:48, rework:48};
+
+function remakeHoursLimit(type){
+  if(type==='shower') return 48; // 2 days base
+  return 24; // all others
+}
+function remakeMaxHours(type){
+  if(type==='shower') return 72; // 3 days max
+  return 24;
+}
+
+function remakeHoursElapsed(r){
+  if(!r.startTime) return 0;
+  return (Date.now()-new Date(r.startTime).getTime())/3600000;
+}
+
+function remakeUrgency(r){
+  if(r.status==='complete') return 'done';
+  if(r.approvedExtension) return 'approved';
+  var hrs=remakeHoursElapsed(r);
+  var limit=remakeHoursLimit(r.type);
+  var max=remakeMaxHours(r.type);
+  if(hrs>max) return 'red';
+  if(hrs>limit) return 'yellow';
+  return 'green';
+}
+
+function remakeAdd(){
+  var form=document.getElementById('remake-form');
+  form.style.display='block';
+  var now=new Date();
+  now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+  document.getElementById('rm-start').value=now.toISOString().slice(0,16);
+  form.scrollIntoView({behavior:'smooth'});
+}
+
+function remakeSave(){
+  var cust=document.getElementById('rm-cust').value.trim();
+  if(!cust){alert('Customer name required');return;}
+  var r={
+    id:'RM'+Date.now(),
+    customer:cust,
+    jobNum:document.getElementById('rm-job').value.trim(),
+    type:document.getElementById('rm-type').value,
+    material:document.getElementById('rm-mat').value.trim(),
+    reason:document.getElementById('rm-reason').value,
+    assignedTo:document.getElementById('rm-assign').value.trim(),
+    startTime:document.getElementById('rm-start').value?new Date(document.getElementById('rm-start').value).toISOString():new Date().toISOString(),
+    priority:document.getElementById('rm-priority').value,
+    sqft:parseFloat(document.getElementById('rm-sqft').value)||0,
+    notes:document.getElementById('rm-notes').value.trim(),
+    status:'open',
+    approvedExtension:false,
+    approvedBy:'',
+    approvedAt:'',
+    completedAt:'',
+    createdAt:new Date().toISOString()
+  };
+  sdRemakes.unshift(r);
+  saveSD5();
+  document.getElementById('remake-form').style.display='none';
+  renderRemakes();runRemakeAlerts();
+}
+
+function remakeApprove(id){
+  var r=sdRemakes.find(x=>x.id===id);
+  if(!r) return;
+  r.approvedExtension=true;
+  r.approvedBy=sdExecRole?sdExecRole.toUpperCase():(typeof currentUser!=='undefined'&&currentUser?currentUser.name:'Management');
+  r.approvedAt=new Date().toISOString();
+  saveSD5();renderRemakes();runRemakeAlerts();renderExecContent();
+}
+
+function remakeComplete(id){
+  var r=sdRemakes.find(x=>x.id===id);
+  if(!r) return;
+  r.status='complete';
+  r.completedAt=new Date().toISOString();
+  saveSD5();renderRemakes();runRemakeAlerts();renderExecContent();
+}
+
+function remakeDelete(id){
+  if(!confirm('Delete this record?')) return;
+  sdRemakes=sdRemakes.filter(x=>x.id!==id);
+  saveSD5();renderRemakes();
+}
+
+function renderRemakes(){
+  var typeF=(document.getElementById('rm-filter-type')||{}).value||'';
+  var statF=(document.getElementById('rm-filter-status')||{}).value||'';
+  var list=sdRemakes;
+  if(typeF) list=list.filter(r=>r.type===typeF);
+  if(statF) list=list.filter(r=>r.status===statF);
+  var el=document.getElementById('remake-list');if(!el) return;
+  if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px">No remakes on record.</div>';return;}
+  var typeLabels={remake:'Standard Remake',shower:'Shower Piece',repair:'Repair',rework:'Rework'};
+  var reasonLabels={measure_error:'Measure Error',cut_error:'Cut Error',edge_error:'Edge Error',customer_change:'Customer Change',material_defect:'Material Defect',installer_damage:'Installer Damage',design_change:'Design Change',other:'Other'};
+  el.innerHTML=list.map(r=>{
+    var urg=remakeUrgency(r);
+    var hrs=remakeHoursElapsed(r);
+    var limit=remakeHoursLimit(r.type);
+    var max=remakeMaxHours(r.type);
+    var hrsStr=hrs<1?Math.round(hrs*60)+'m':Math.round(hrs*10)/10+'h';
+    var limitLabel=r.type==='shower'?'2-3 day (48-72h)':'24h';
+    return '<div class="remake-row '+(urg==='done'?'green':urg==='approved'?'approved':urg)+'">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">' +
+        '<div style="flex:1">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">' +
+            '<span style="font-size:14px;font-weight:700;color:var(--text)">'+escHtml(r.customer)+'</span>' +
+            (r.jobNum?'<span style="font-size:11px;color:var(--muted)">'+escHtml(r.jobNum)+'</span>':'') +
+            '<span style="font-size:11px;padding:1px 8px;border-radius:20px;background:rgba(27,58,107,0.1);color:var(--a);font-weight:700">'+typeLabels[r.type]+'</span>' +
+            (urg==='red'?'<span class="item-urgency red">OVERDUE '+hrsStr+'</span>':urg==='yellow'?'<span class="item-urgency yellow">'+hrsStr+' elapsed</span>':urg==='approved'?'<span class="item-urgency green">Approved by '+escHtml(r.approvedBy)+'</span>':urg==='done'?'<span class="item-urgency green">Complete</span>':'<span class="item-urgency green">'+hrsStr+'</span>') +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--muted)">' +
+            (r.material?escHtml(r.material)+' · ':'')+(r.sqft?r.sqft+'sqft · ':'')+
+            'Cause: '+reasonLabels[r.reason]+(r.assignedTo?' · '+escHtml(r.assignedTo):'') +
+          '</div>' +
+          (r.notes?'<div style="font-size:12px;color:var(--muted);margin-top:3px">'+escHtml(r.notes)+'</div>':'') +
+          '<div style="font-size:11px;color:var(--muted);margin-top:4px">Limit: '+limitLabel+' · Started: '+new Date(r.startTime).toLocaleString()+'</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">' +
+          (r.status==='open'&&!r.approvedExtension&&document.body.classList.contains('is-exec')?
+            '<button onclick="remakeApprove(''+r.id+'')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve Ext.</button>':'') +
+          (r.status==='open'?'<button onclick="remakeComplete(''+r.id+'')" style="padding:4px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Mark Done</button>':'') +
+          '<button onclick="remakeDelete(''+r.id+'')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer">×</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // KPIs
+  var open=sdRemakes.filter(r=>r.status==='open');
+  var sv=(id,v)=>{var el=document.getElementById(id);if(el)el.textContent=v;};
+  sv('rm-total',open.length);
+  sv('rm-overdue',open.filter(r=>remakeUrgency(r)==='red').length);
+  sv('rm-warn',open.filter(r=>remakeUrgency(r)==='yellow').length);
+  sv('rm-approved',open.filter(r=>r.approvedExtension).length);
+  var today=new Date().toDateString();
+  sv('rm-complete',sdRemakes.filter(r=>r.status==='complete'&&r.completedAt&&new Date(r.completedAt).toDateString()===today).length);
+}
+
+function runRemakeAlerts(){
+  var zone=document.getElementById('remake-alerts-zone');
+  if(!zone) return;
+  var open=sdRemakes.filter(r=>r.status==='open');
+  var reds=open.filter(r=>remakeUrgency(r)==='red');
+  var yellows=open.filter(r=>remakeUrgency(r)==='yellow');
+  if(reds.length) zone.innerHTML='<div class="urgency-banner red"><span class="urgency-icon">🚨</span><span>'+reds.length+' remake(s) OVERDUE — management approval required</span></div>';
+  else if(yellows.length) zone.innerHTML='<div class="urgency-banner yellow"><span class="urgency-icon">⚠️</span><span>'+yellows.length+' remake(s) approaching time limit</span></div>';
+  else if(open.length) zone.innerHTML='<div class="urgency-banner green"><span class="urgency-icon">✅</span><span>All remakes within time limits</span></div>';
+  else zone.innerHTML='';
+}
+
+// ── EXECUTIVE SUITE ───────────────────────────────────────────
+function renderExecContent(){
+  var isExec=document.body.classList.contains('is-exec');
+  var denied=document.getElementById('exec-access-denied');
+  var content=document.getElementById('exec-content');
+  if(!denied||!content) return;
+  denied.style.display=isExec?'none':'block';
+  content.style.display=isExec?'block':'none';
+  if(!isExec) return;
+  renderExecKPIs();
+  renderExecEmployees();
+  renderExecJobs();
+  renderExecRemakes();
+  renderExecChat();
+}
+
+function renderExecKPIs(){
+  var kpiEl=document.getElementById('exec-kpis');if(!kpiEl) return;
+  var jobs=(typeof sdJobs!=='undefined')?sdJobs:[];
+  var customers=(typeof sdCustomers!=='undefined')?sdCustomers:[];
+  var remakes=sdRemakes;
+  var inventory=(typeof sdInventory!=='undefined')?sdInventory:[];
+  var openJobs=jobs.filter(j=>j.stage!=='installed');
+  var openRemakes=remakes.filter(r=>r.status==='open');
+  var overdueJobs=openJobs.filter(j=>typeof schedUrgency==='function'&&schedUrgency(j)==='red');
+  var overdueRemakes=openRemakes.filter(r=>remakeUrgency(r)==='red');
+  var lowStock=inventory.filter(i=>typeof invLevelColor==='function'&&invLevelColor(i)==='red');
+  var pendingApprovals=customers.filter(c=>c.status==='quoted');
+  var avgDays='—';
+  var installed=jobs.filter(j=>j.stage==='installed'&&j.installedAt&&j.templateDate);
+  if(installed.length) avgDays=Math.round(installed.reduce((s,j)=>s+Math.floor((new Date(j.installedAt)-new Date(j.templateDate))/86400000),0)/installed.length)+'d';
+  var tiles=[
+    {label:'Open Jobs',val:openJobs.length,sub:overdueJobs.length+' overdue',color:overdueJobs.length?'#dc2626':'var(--a)'},
+    {label:'Avg Turnaround',val:avgDays,sub:'template to install',color:'var(--a)'},
+    {label:'Open Remakes',val:openRemakes.length,sub:overdueRemakes.length+' overdue',color:overdueRemakes.length?'#dc2626':'var(--a)'},
+    {label:'Quotes Pending',val:pendingApprovals.length,sub:'awaiting approval',color:pendingApprovals.length?'#ca8a04':'var(--a)'},
+    {label:'Low Stock Items',val:lowStock.length,sub:'need ordering',color:lowStock.length?'#dc2626':'var(--a)'},
+    {label:'Customers',val:customers.length,sub:'total on file',color:'var(--a)'},
+  ];
+  kpiEl.innerHTML=tiles.map(t=>'<div class="exec-tile"><div class="exec-tile-title">'+t.label+'</div><div class="exec-tile-val" style="color:'+t.color+'">'+t.val+'</div><div class="exec-tile-sub">'+t.sub+'</div></div>').join('');
+}
+
+function renderExecEmployees(){
+  var el=document.getElementById('exec-employee-list');
+  var tbl=document.getElementById('exec-employee-table');
+  if(!el) return;
+  // Pull from business HR data if available
+  var bizEmp=[];
+  try{var raw=localStorage.getItem('fab_biz_data');if(raw){var bd=JSON.parse(raw);if(bd._employees)bizEmp=JSON.parse(bd._employees);}}catch(e){}
+  if(!bizEmp.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:13px">No employees configured yet. Add employees in the Business tab → HR section.</div>';
+    if(tbl)tbl.innerHTML='';
+    return;
+  }
+  el.innerHTML=bizEmp.map(e=>'<span class="emp-chip"><span class="emp-chip-dot"></span>'+escHtml(e.name||e)+'</span>').join('');
+  if(tbl){
+    tbl.innerHTML='<table style="width:100%;font-size:12px;border-collapse:collapse">'+
+      '<tr style="background:var(--surface-2)"><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Name</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Title</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Status</th></tr>'+
+      bizEmp.map(e=>'<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px;font-weight:600">'+escHtml(e.name||e)+'</td><td style="padding:8px 12px;color:var(--muted)">'+escHtml(e.title||'—')+'</td><td style="padding:8px 12px"><span class="item-urgency green">Active</span></td></tr>').join('')+
+    '</table>';
+  }
+}
+
+function renderExecJobs(){
+  var el=document.getElementById('exec-jobs-table');if(!el) return;
+  var jobs=(typeof sdJobs!=='undefined')?sdJobs:[];
+  var open=jobs.filter(j=>j.stage!=='installed');
+  if(!open.length){el.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted)">No open jobs.</div>';return;}
+  var stageLabels={templated:'Templated',cutting:'CNC',polishing:'Polishing',qa:'QA',ready:'Ready',installed:'Done'};
+  el.innerHTML='<table style="width:100%;font-size:12px;border-collapse:collapse">'+
+    '<tr style="background:var(--surface-2)"><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Customer</th><th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Stage</th><th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Days</th><th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Status</th><th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Installer</th></tr>'+
+    open.map(j=>{
+      var days=typeof schedDaysFromTemplate==='function'?schedDaysFromTemplate(j):0;
+      var urg=typeof schedUrgency==='function'?schedUrgency(j):'green';
+      return '<tr style="border-bottom:1px solid var(--border)">'+
+        '<td style="padding:8px 12px;font-weight:600">'+escHtml(j.customer)+(j.jobNum?' <span style="color:var(--muted);font-size:10px">'+escHtml(j.jobNum)+'</span>':'')+'</td>'+
+        '<td style="padding:8px 12px">'+stageLabels[j.stage]+'</td>'+
+        '<td style="padding:8px 12px"><span class="item-urgency '+urg+'">'+days+'d</span></td>'+
+        '<td style="padding:8px 12px">'+escHtml(j.material||'—')+'</td>'+
+        '<td style="padding:8px 12px;color:var(--muted)">'+escHtml(j.installer||'—')+'</td>'+
+      '</tr>';
+    }).join('')+'</table>';
+}
+
+function renderExecRemakes(){
+  var el=document.getElementById('exec-remakes-summary');if(!el) return;
+  var open=sdRemakes.filter(r=>r.status==='open');
+  if(!open.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">No open remakes.</div>';return;}
+  var typeLabels={remake:'Remake',shower:'Shower',repair:'Repair',rework:'Rework'};
+  el.innerHTML=open.map(r=>{
+    var urg=remakeUrgency(r);
+    var hrs=remakeHoursElapsed(r);
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+      '<span class="item-urgency '+urg+'" style="flex-shrink:0">'+typeLabels[r.type]+'</span>'+
+      '<span style="font-weight:600;flex:1">'+escHtml(r.customer)+'</span>'+
+      '<span style="color:var(--muted)">'+Math.round(hrs)+'h elapsed</span>'+
+      (urg==='red'&&!r.approvedExtension?'<button onclick="remakeApprove(''+r.id+'')" style="padding:3px 8px;background:#16a34a;color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">Approve</button>':
+       r.approvedExtension?'<span style="font-size:10px;color:#16a34a;font-weight:700">Approved ✓</span>':'') +
+    '</div>';
+  }).join('');
+}
+
+// ── EXEC PRIVATE CHAT ─────────────────────────────────────────
+function renderExecChat(){
+  var el=document.getElementById('exec-msgs');if(!el) return;
+  if(!sdExecMsgs.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Private executive channel. Messages visible only to CEO, CFO, CTO.</div>';
+    return;
+  }
+  var myRole=sdExecRole.toUpperCase();
+  el.innerHTML=sdExecMsgs.map(m=>{
+    var isMine=m.role===sdExecRole;
+    return '<div class="exec-msg '+(isMine?'mine':'theirs')+'">'+
+      '<div class="exec-msg-sender">'+m.role.toUpperCase()+' · '+new Date(m.ts).toLocaleTimeString()+'</div>'+
+      escHtml(m.text)+
+    '</div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+  // Online count
+  var onlineEl=document.getElementById('exec-online-count');
+  if(onlineEl) onlineEl.textContent=sdExecRole?sdExecRole.toUpperCase()+' online':'';
+}
+
+function execSend(){
+  if(!document.body.classList.contains('is-exec')){alert('Executive access required');return;}
+  var inp=document.getElementById('exec-msg-input');
+  var text=(inp?inp.value.trim():'');
+  if(!text) return;
+  inp.value='';
+  var msg={id:'EM'+Date.now(),role:sdExecRole,text:text,ts:new Date().toISOString()};
+  sdExecMsgs.push(msg);
+  if(sdExecMsgs.length>500) sdExecMsgs=sdExecMsgs.slice(-500);
+  saveSD5();
+  renderExecChat();
+}
+
+// ── COMMUNICATIONS ────────────────────────────────────────────
+var _commsCurrentUser='';
+
+function commsNewMessage(){
+  document.getElementById('comms-form').style.display='block';
+  // Pre-fill from name if known
+  if(typeof currentUser!=='undefined'&&currentUser&&currentUser.name){
+    document.getElementById('msg-from').value=currentUser.name;
+  }
+  document.getElementById('comms-form').scrollIntoView({behavior:'smooth'});
+}
+
+function commsSend(){
+  var from=document.getElementById('msg-from').value.trim();
+  var subject=document.getElementById('msg-subject').value.trim();
+  var body=document.getElementById('msg-body').value.trim();
+  if(!from||!subject||!body){alert('Please fill in all fields');return;}
+  var cat=document.getElementById('msg-cat').value;
+  var thread={
+    id:'MSG'+Date.now(),
+    from:from,
+    category:cat,
+    subject:subject,
+    body:body,
+    status:'open',
+    response:'',
+    respondedBy:'',
+    respondedAt:'',
+    ts:new Date().toISOString()
+  };
+  sdCommsThreads.unshift(thread);
+  saveSD5();
+  document.getElementById('comms-form').style.display='none';
+  renderComms();
+  // Alert management if urgent or extension request
+  if(['remake_ext','shower_ext','safety','issue'].includes(cat)){
+    if(typeof sendAlertEmail==='function') sendAlertEmail('New '+cat.replace('_',' ')+' request from '+from+': '+subject,'yellow');
+  }
+}
+
+function commsRespond(id){
+  var t=sdCommsThreads.find(x=>x.id===id);if(!t) return;
+  var respEl=document.getElementById('resp-'+id);
+  if(!respEl) return;
+  var text=respEl.value.trim();
+  if(!text){alert('Enter a response');return;}
+  t.response=text;
+  t.respondedBy=sdExecRole?sdExecRole.toUpperCase():(typeof currentUser!=='undefined'&&currentUser?currentUser.name:'Management');
+  t.respondedAt=new Date().toISOString();
+  t.status='responded';
+  saveSD5();renderComms();
+}
+
+function commsApprove(id){
+  var t=sdCommsThreads.find(x=>x.id===id);if(!t) return;
+  t.status='approved';
+  t.respondedBy=sdExecRole?sdExecRole.toUpperCase():(typeof currentUser!=='undefined'&&currentUser?currentUser.name:'Management');
+  t.respondedAt=new Date().toISOString();
+  t.response=t.response||'Approved by '+t.respondedBy;
+  saveSD5();renderComms();
+  // If it's a remake extension request, auto-approve that remake
+  if(t.category==='remake_ext'||t.category==='shower_ext'){
+    var matchRemake=sdRemakes.find(r=>r.customer&&t.body&&t.body.toLowerCase().includes(r.customer.toLowerCase())&&r.status==='open');
+    if(matchRemake){remakeApprove(matchRemake.id);}
+  }
+}
+
+function commsClose(id){
+  var t=sdCommsThreads.find(x=>x.id===id);if(!t) return;
+  t.status='closed';saveSD5();renderComms();
+}
+
+function renderComms(){
+  var catF=(document.getElementById('comms-filter-cat')||{}).value||'';
+  var isExec=document.body.classList.contains('is-exec');
+  var catLabels={question:'Question',request:'Request',issue:'Issue',suggestion:'Suggestion',schedule:'Schedule',safety:'Safety',remake_ext:'Remake Extension',shower_ext:'Shower Extension'};
+  var statusColor={open:'normal',responded:'approved',approved:'approved',closed:'normal'};
+
+  function renderThread(t,canRespond){
+    var open=t._open;
+    return '<div class="comms-thread">'+
+      '<div class="comms-thread-hdr" onclick="toggleThread(''+t.id+'')">' +
+        '<div style="flex:1">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">'+
+            '<span style="font-size:13px;font-weight:700;color:var(--text)">'+escHtml(t.subject)+'</span>'+
+            '<span class="comms-tag '+(t.status==='approved'||t.status==='responded'?'approved':t.status==='closed'?'normal':'normal')+'">'+t.status.toUpperCase()+'</span>'+
+            '<span class="comms-tag normal">'+escHtml(catLabels[t.category]||t.category)+'</span>'+
+          '</div>'+
+          '<div style="font-size:11px;color:var(--muted)">From: '+escHtml(t.from)+' · '+new Date(t.ts).toLocaleDateString()+'</div>'+
+        '</div>'+
+        '<span style="color:var(--muted);font-size:12px">'+(open?'▲':'▼')+'</span>'+
+      '</div>'+
+      '<div class="comms-body'+(open?' open':'')+'" id="tbody-'+t.id+'">'+
+        '<div style="font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.6">'+escHtml(t.body)+'</div>'+
+        (t.response?'<div style="background:var(--surface-2);border-radius:8px;padding:10px;margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">RESPONSE FROM '+escHtml(t.respondedBy)+' · '+new Date(t.respondedAt).toLocaleDateString()+'</div><div style="font-size:13px">'+escHtml(t.response)+'</div></div>':'')+
+        (canRespond&&t.status==='open'?'<div style="display:flex;gap:8px;margin-top:8px"><textarea id="resp-'+t.id+'" placeholder="Write response..." style="flex:1;height:60px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;color:var(--text);resize:vertical;outline:none"></textarea></div>'+
+          '<div style="display:flex;gap:6px;margin-top:6px">'+
+            '<button onclick="commsRespond(''+t.id+'')" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Respond</button>'+
+            (['remake_ext','shower_ext','request'].includes(t.category)?'<button onclick="commsApprove(''+t.id+'')" style="padding:5px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓ Approve</button>':'')+
+            '<button onclick="commsClose(''+t.id+'')" style="padding:5px 12px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'+
+          '</div>':'') +
+      '</div>'+
+    '</div>';
+  }
+
+  // My messages (all users see their own)
+  var myName='';
+  if(typeof currentUser!=='undefined'&&currentUser) myName=currentUser.name||'';
+  var myList=document.getElementById('comms-my-list');
+  if(myList){
+    var mine=myName?sdCommsThreads.filter(t=>t.from===myName):[];
+    if(!mine.length) myList.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px">No messages sent yet. Click "+ New Message" to contact management.</div>';
+    else myList.innerHTML=mine.map(t=>renderThread(t,false)).join('');
+  }
+
+  // All threads (exec/admin only)
+  var allEl=document.getElementById('comms-all-list');
+  if(allEl&&isExec){
+    var all=sdCommsThreads;
+    if(catF) all=all.filter(t=>t.category===catF);
+    if(!all.length) allEl.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No messages.</div>';
+    else allEl.innerHTML=all.map(t=>renderThread(t,true)).join('');
+  }
+}
+
+function toggleThread(id){
+  var t=sdCommsThreads.find(x=>x.id===id);if(!t) return;
+  t._open=!t._open;
+  var bodyEl=document.getElementById('tbody-'+id);
+  if(bodyEl) bodyEl.className='comms-body'+(t._open?' open':'');
+}
+
+// ── INIT SD5 ─────────────────────────────────────────────────
+(function initSD5(){
+  loadSD5Data();
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(function(){
+      renderRemakes();
+      renderComms();
+      runRemakeAlerts();
+      // Restore exec role if saved
+      var stored=localStorage.getItem('sd_exec_role');
+      if(stored&&SD_EXEC_ROLES.includes(stored)){
+        sdExecRole=stored;
+        document.body.classList.add('is-exec');
+        setRoleBadge(stored);
+      }
+    },700);
+  });
+  // Hook into showPanel for exec rendering
+  var _origShow=window.showPanel;
+  window.showPanel=function(id){
+    _origShow(id);
+    if(id==='executive') renderExecContent();
+    if(id==='remakes'){renderRemakes();runRemakeAlerts();}
+    if(id==='comms') renderComms();
+  };
 })();
 
 </script>
