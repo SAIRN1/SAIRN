@@ -2766,7 +2766,7 @@ function installStreamingHook() {
 
     try {
       // Build body — let the fetch patches (tone/memory/profile) handle system prompt injection
-      var body = {
+      var body = {is_demo:true,
         max_tokens: 1000,
         system: systemPrompt,
         messages: msgArr.slice(-20), // last 20 for context
