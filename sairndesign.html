@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNdesign - AI Kitchen & Space Design</title>
+<style>
+:root{
+  --a:#6366F1;--a2:#4F46E5;--a3:#3730A3;
+  --adark:#1E1B4B;--alight:#EEF2FF;--atint:#F5F3FF;
+  --bg:#FAFAFA;--sf:#FFF;--sf2:#F5F3FF;
+  --bd:#E0E0F0;--tx:#1E1B4B;--mu:#6B7280;
+  --grn:#16a34a;--red:#DC2626;--orn:#F59E0B;
+  --shad:0 2px 12px rgba(99,102,241,.10);
+  --shadlg:0 8px 32px rgba(99,102,241,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);min-height:100vh;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+/* AUTH */
+#auth{position:fixed;inset:0;background:linear-gradient(135deg,#1E1B4B 0%,#3730A3 55%,#6366F1 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.abox{background:#fff;border-radius:24px;padding:44px 36px;width:360px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.alogo{font-size:36px;font-weight:900;color:var(--a);letter-spacing:-2px;margin-bottom:2px}
+.atag{font-size:10px;color:var(--mu);letter-spacing:3px;text-transform:uppercase;margin-bottom:28px}
+.pdots{display:flex;gap:12px;justify-content:center;margin-bottom:22px}
+.pdot{width:15px;height:15px;border-radius:50%;border:2px solid var(--bd);transition:.2s}
+.pdot.on{background:var(--a);border-color:var(--a)}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;max-width:228px;margin:0 auto 14px}
+.pk{padding:13px;background:var(--atint);border:1px solid var(--bd);border-radius:11px;font-size:17px;font-weight:700;cursor:pointer;color:var(--tx);transition:.15s}
+.pk:hover{background:var(--alight);border-color:var(--a)}
+.aerr{color:var(--red);font-size:12px;min-height:18px}
+.ahint{font-size:11px;color:var(--mu);margin-top:10px}
+/* APP */
+#app{display:none;height:100vh;flex-direction:column}
+#app.on{display:flex}
+/* TOPBAR */
+.topbar{background:var(--adark);color:#fff;display:flex;align-items:center;gap:12px;padding:0 18px;height:50px;flex-shrink:0;z-index:100}
+.tlogo{font-size:17px;font-weight:900;letter-spacing:-.5px}
+.tlogo em{color:#A5B4FC;font-style:normal}
+.tproj{flex:1;font-size:12px;color:#C7D2FE;cursor:pointer;border-bottom:1px dashed #4F46E5;padding-bottom:1px;max-width:300px}
+.tacts{display:flex;gap:7px;margin-left:auto}
+.btop{padding:5px 13px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:.15s}
+.bsv{background:var(--a);color:#fff}
+.bgh{background:transparent;color:#C7D2FE;border:1px solid #4F46E5}
+.bgh:hover{background:#312E81;color:#fff}
+.rbadge{font-size:10px;padding:2px 8px;background:#312E81;border-radius:20px;color:#A5B4FC}
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+/* LEFT NAV */
+.lnav{width:54px;background:var(--adark);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:3px;flex-shrink:0}
+.ni{width:42px;height:46px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#5B6474;font-size:16px;transition:.15s;gap:2px}
+.ni:hover{background:#312E81;color:#A5B4FC}
+.ni.on{background:var(--a);color:#fff}
+.nl{font-size:8px;color:inherit;text-align:center;line-height:1}
+/* CATALOG */
+.cat{width:274px;background:var(--sf);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.cathdr{padding:9px 12px;border-bottom:1px solid var(--bd);background:var(--atint)}
+.cathdr h3{font-size:13px;font-weight:700}
+.cathdr p{font-size:10px;color:var(--mu)}
+.catsrch{padding:7px 10px;border-bottom:1px solid var(--bd)}
+.catsrch input{width:100%;padding:6px 9px;border:1px solid var(--bd);border-radius:7px;font-size:12px;outline:none}
+.catsrch input:focus{border-color:var(--a)}
+.mfrtabs{display:flex;overflow-x:auto;padding:5px 10px;gap:4px;border-bottom:1px solid var(--bd);scrollbar-width:none;flex-shrink:0}
+.mfrtab{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid var(--bd);color:var(--mu);background:var(--bg);flex-shrink:0;transition:.15s}
+.mfrtab.on{background:var(--a);color:#fff;border-color:var(--a)}
+.typerow{display:flex;gap:3px;padding:5px 10px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.tbtn{padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--bd);color:var(--mu);background:var(--bg);transition:.15s}
+.tbtn.on{background:var(--alight);color:var(--a);border-color:var(--a)}
+.cablist{flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:3px}
+.cc{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 9px;cursor:grab;transition:.15s;user-select:none}
+.cc:hover{border-color:var(--a);background:var(--atint);box-shadow:var(--shad)}
+.cc:active{cursor:grabbing;opacity:.8}
+.cctop{display:flex;align-items:center;gap:7px}
+.ccico{width:34px;height:34px;background:var(--alight);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:900;color:var(--a)}
+.ccinfo{flex:1;min-width:0}
+.ccname{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccdims{font-size:10px;color:var(--mu)}
+.ccprice{font-size:11px;font-weight:700;color:var(--grn)}
+.ccbadge{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:3px}
+.bstock{background:#DCFCE7;color:#166534}
+.bsemi{background:#FEF3C7;color:#92400E}
+.bcustom{background:#EDE9FE;color:#5B21B6}
+.wbtns{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap}
+.wbtn{padding:2px 5px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid var(--bd);color:var(--mu);background:#fff;transition:.15s}
+.wbtn:hover,.wbtn.on{background:var(--a);color:#fff;border-color:var(--a)}
+.draghint{font-size:10px;color:var(--a);margin-top:3px}
+/* CANVAS */
+.cvarea{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#F0EFFE;position:relative}
+.flagbar{padding:5px 12px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--bd);min-height:32px;align-items:center;background:var(--sf)}
+.flag{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.fok{background:#DCFCE7;color:#166534}
+.fdanger{background:#FEE2E2;color:#991B1B}
+.fwarn{background:#FEF3C7;color:#92400E}
+.finfo{background:var(--alight);color:var(--a3)}
+.cvtbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:5px 12px;display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap}
+.toolbtn{padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);color:var(--mu);background:var(--bg);display:flex;align-items:center;gap:4px;transition:.15s;white-space:nowrap}
+.toolbtn:hover{border-color:var(--a);color:var(--a);background:var(--atint)}
+.toolbtn.on{background:var(--a);color:#fff;border-color:var(--a)}
+.tsep{width:1px;height:20px;background:var(--bd);margin:0 2px}
+.rstats{margin-left:auto;display:flex;gap:12px}
+.rst{display:flex;flex-direction:column;align-items:flex-end}
+.rstv{font-size:13px;font-weight:700;color:var(--tx)}
+.rstl{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.5px}
+.cvwrap{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#cv{border:2px solid var(--bd);border-radius:8px;background:#fff;cursor:default;box-shadow:var(--shadlg)}
+.cvbtns{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:5px}
+.zbtn{width:30px;height:30px;background:#fff;border:1px solid var(--bd);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;box-shadow:var(--shad)}
+.zbtn:hover{background:var(--atint);color:var(--a)}
+/* AI PANEL */
+.aistrip{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--a);padding:12px;display:none;max-height:44%;overflow-y:auto;z-index:50;box-shadow:0 -4px 20px rgba(0,0,0,.1)}
+.aistrip.on{display:block}
+.aihdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.aihdr h4{font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px}
+.aix{cursor:pointer;color:var(--mu);font-size:20px;line-height:1}
+#aitxt{font-size:12px;line-height:1.7;white-space:pre-wrap;color:var(--tx)}
+.aildr{display:flex;align-items:center;gap:7px;color:var(--mu);font-size:12px}
+.aidot{width:6px;height:6px;border-radius:50%;background:var(--a);animation:bnc .8s infinite}
+.aidot:nth-child(2){animation-delay:.15s}
+.aidot:nth-child(3){animation-delay:.3s}
+@keyframes bnc{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
+.aichips{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.achip{padding:4px 11px;background:var(--alight);color:var(--a);border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #C7D2FE;transition:.15s}
+.achip:hover{background:var(--a);color:#fff}
+/* RIGHT PANEL */
+.rp{width:252px;background:var(--sf);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.rphdr{padding:9px 12px;border-bottom:1px solid var(--bd);background:var(--atint)}
+.rphdr h3{font-size:12px;font-weight:700}
+.rpbody{flex:1;overflow-y:auto;padding:10px}
+.psec{margin-bottom:14px}
+.pstitle{font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;padding-bottom:3px;border-bottom:1px solid var(--bd)}
+.fg{display:flex;flex-direction:column;gap:2px;margin-bottom:7px}
+.fg label{font-size:10px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg select{padding:6px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px;color:var(--tx);background:var(--bg);outline:none}
+.fg input:focus,.fg select:focus{border-color:var(--a)}
+.fgrow{display:flex;gap:5px}
+.fgrow .fg{flex:1}
+.sws{display:flex;gap:4px;flex-wrap:wrap}
+.sw{width:24px;height:24px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:.15s}
+.sw:hover,.sw.on{border-color:var(--a);transform:scale(1.12)}
+/* QUOTE SUMMARY */
+.qs{border-top:1px solid var(--bd);padding:10px}
+.qstitle{font-size:11px;font-weight:700;margin-bottom:7px;display:flex;justify-content:space-between}
+.qsrow{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin-bottom:3px}
+.qstot{display:flex;justify-content:space-between;font-size:14px;font-weight:800;margin-top:7px;padding-top:7px;border-top:2px solid var(--bd)}
+.qstot span:last-child{color:var(--a)}
+.bpri{width:100%;padding:9px;background:var(--a);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:7px;transition:.15s}
+.bpri:hover{background:var(--a2)}
+.bsec{width:100%;padding:7px;background:transparent;color:var(--a);border:1px solid var(--a);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:5px;transition:.15s}
+.bsec:hover{background:var(--atint)}
+/* PANELS */
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden}
+.panel.on{display:flex}
+/* NOTIF */
+.notif{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:10px;color:#fff;font-size:13px;font-weight:600;z-index:9998;transform:translateY(80px);opacity:0;transition:.3s;max-width:310px;pointer-events:none}
+.notif.on{transform:translateY(0);opacity:1}
+/* QUOTE TABLE */
+.qtbl{width:100%;border-collapse:collapse;font-size:12px}
+.qtbl th{background:var(--atint);padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase}
+.qtbl td{padding:7px 10px;border-bottom:1px solid var(--bd)}
+.qtbl tr:hover td{background:var(--atint)}
+.qfr td{font-weight:800;font-size:13px;padding:9px 10px}
+/* BENCH */
+.bench{background:var(--atint);border-radius:11px;padding:14px;margin-top:14px}
+.benchbar{background:#fff;border-radius:8px;height:17px;border:1px solid var(--bd);overflow:hidden;margin:7px 0}
+.benchfill{height:100%;border-radius:8px;transition:width 1.2s}
+/* LIDAR */
+.lddrop{border:2px dashed var(--bd);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:.2s;margin:16px}
+.lddrop:hover,.lddrop.ov{border-color:var(--a);background:var(--atint)}
+.devgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;padding:0 16px 16px}
+.devcard{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px;text-align:center;transition:.15s}
+.devcard:hover{border-color:var(--a);box-shadow:var(--shad)}
+/* STYLE */
+.stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:16px}
+.stcard{border:2px solid var(--bd);border-radius:11px;overflow:hidden;cursor:pointer;transition:.2s}
+.stcard:hover,.stcard.on{border-color:var(--a);box-shadow:var(--shadlg)}
+.stimg{height:88px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900}
+.stinfo{padding:9px}
+.stname{font-size:12px;font-weight:700}
+.stdesc{font-size:10px;color:var(--mu);margin-top:2px}
+/* MATERIALS */
+.matgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px;padding:16px}
+.matcard{border:2px solid var(--bd);border-radius:11px;padding:13px;cursor:pointer;transition:.2s;background:var(--sf)}
+.matcard:hover,.matcard.on{border-color:var(--a);box-shadow:var(--shad)}
+/* PRINT */
+@media print{
+  #auth,.topbar,.lnav,.cat,.cvtbar,.flagbar,.aistrip,.cvbtns,.tacts{display:none!important}
+  .rp .psec{display:none!important}
+  #cv{width:100%!important;height:auto!important}
+  -webkit-print-color-adjust:exact;print-color-adjust:exact
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth">
+  <div class="abox">
+    <div class="alogo">SAIRN<span style="color:#A5B4FC">design</span>&#8482;</div>
+    <div class="atag">AI Kitchen &amp; Space Design</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:18px">Enter Your PIN</div>
+    <div class="pdots">
+      <div class="pdot" id="d0"></div><div class="pdot" id="d1"></div>
+      <div class="pdot" id="d2"></div><div class="pdot" id="d3"></div>
+    </div>
+    <div class="pgrid">
+      <button class="pk" onclick="pp('1')">1</button><button class="pk" onclick="pp('2')">2</button><button class="pk" onclick="pp('3')">3</button>
+      <button class="pk" onclick="pp('4')">4</button><button class="pk" onclick="pp('5')">5</button><button class="pk" onclick="pp('6')">6</button>
+      <button class="pk" onclick="pp('7')">7</button><button class="pk" onclick="pp('8')">8</button><button class="pk" onclick="pp('9')">9</button>
+      <button class="pk" onclick="pp('c')" style="font-size:11px">CLR</button>
+      <button class="pk" onclick="pp('0')">0</button>
+      <button class="pk" onclick="pp('b')" style="font-size:12px">&#9003;</button>
+    </div>
+    <div class="aerr" id="aerr"></div>
+    <div class="ahint">Designer: 1234 &nbsp;&middot;&nbsp; Admin: 9999</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="tlogo">SAIRN<em>design</em>&#8482;</div>
+    <span style="color:#5B6474;font-size:10px;margin-left:6px">Project:</span>
+    <span class="tproj" id="pname" onclick="renameP()">New Kitchen Design</span>
+    <div class="tacts">
+      <span class="rbadge" id="rbadge">Designer</span>
+      <button class="btop bsv" onclick="saveP()">&#128190; Save</button>
+      <button class="btop bgh" onclick="showP('quote')">&#128176; Quote</button>
+      <button class="btop bgh" onclick="printD()">&#128424; Print</button>
+      <button class="btop bgh" onclick="toggleAI()">&#10024; AI Review</button>
+    </div>
+  </div>
+  <div class="main">
+
+    <!-- LEFT NAV -->
+    <div class="lnav">
+      <div class="ni on" id="ni-design" onclick="showP('design')">&#9998;<span class="nl">Design</span></div>
+      <div class="ni" id="ni-3d" onclick="showP('3d')">&#127968;<span class="nl">3D</span></div>
+      <div class="ni" id="ni-lidar" onclick="showP('lidar')">&#128225;<span class="nl">LiDAR</span></div>
+      <div class="ni" id="ni-style" onclick="showP('style')">&#127912;<span class="nl">Styles</span></div>
+      <div class="ni" id="ni-materials" onclick="showP('materials')">&#129704;<span class="nl">Stone</span></div>
+      <div class="ni" id="ni-appliances" onclick="showP('appliances')">&#127859;<span class="nl">Appl.</span></div>
+      <div class="ni" id="ni-quote" onclick="showP('quote')">&#128203;<span class="nl">Quote</span></div>
+      <div class="ni" id="ni-present" onclick="showP('present')">&#127775;<span class="nl">Present</span></div>
+      <div class="ni" id="ni-history" onclick="showP('history')">&#128193;<span class="nl">History</span></div>
+      <div class="ni adm" id="ni-admin" onclick="showP('admin')" style="display:none">&#9881;<span class="nl">Admin</span></div>
+    </div>
+
+    <!-- DESIGN PANEL -->
+    <div class="panel on" id="panel-design" style="flex-direction:row">
+
+      <!-- CATALOG -->
+      <div class="cat">
+        <div class="cathdr">
+          <h3>&#128230; Cabinet Catalog</h3>
+          <p>Drag any cabinet onto your floor plan. Snap to walls, snap to grid.</p>
+        </div>
+        <div class="catsrch">
+          <input type="text" id="csrch" placeholder="Search name, width, type, SKU..." oninput="renderCat()">
+        </div>
+        <div class="mfrtabs" id="mfrtabs"></div>
+        <div class="typerow">
+          <button class="tbtn on" onclick="setType('all',this)">All</button>
+          <button class="tbtn" onclick="setType('base',this)">Base</button>
+          <button class="tbtn" onclick="setType('wall',this)">Wall</button>
+          <button class="tbtn" onclick="setType('tall',this)">Tall</button>
+          <button class="tbtn" onclick="setType('spc',this)">Special</button>
+        </div>
+        <div class="cablist" id="cablist"></div>
+      </div>
+
+      <!-- CANVAS + FLAGS + AI -->
+      <div class="cvarea">
+        <div class="flagbar" id="flagbar">
+          <span class="flag fok">Ready. Drag cabinets from the catalog onto your floor plan below.</span>
+        </div>
+        <div class="cvtbar">
+          <button class="toolbtn on" id="tsel" onclick="setTool('sel')">&#128392; Select</button>
+          <button class="toolbtn" id="twall" onclick="setTool('wall')">&#128208; Wall</button>
+          <button class="toolbtn" id="tdoor" onclick="setTool('door')">&#128682; Door</button>
+          <button class="toolbtn" id="twin" onclick="setTool('win')">&#129695; Window</button>
+          <div class="tsep"></div>
+          <button class="toolbtn" onclick="autoLayout()">&#9889; AI Auto-Layout</button>
+          <button class="toolbtn" onclick="snapAll()">&#9634; Snap All</button>
+          <button class="toolbtn" onclick="clearAll()" style="color:var(--red)">&#128465; Clear</button>
+          <div class="rstats">
+            <div class="rst"><span class="rstv" id="sttot">$0</span><span class="rstl">Est. Total</span></div>
+            <div class="rst"><span class="rstv" id="stlf">0 LF</span><span class="rstl">Base Run</span></div>
+            <div class="rst"><span class="rstv" id="stcabs">0</span><span class="rstl">Cabinets</span></div>
+          </div>
+        </div>
+        <div class="cvwrap" id="cvwrap" ondragover="cdOver(event)" ondrop="cdDrop(event)" ondragleave="cdLeave()">
+          <canvas id="cv" width="880" height="568"></canvas>
+          <div class="cvbtns">
+            <div class="zbtn" onclick="doZoom(1.15)" title="Zoom In">+</div>
+            <div class="zbtn" onclick="doZoom(0.85)" title="Zoom Out">&#8722;</div>
+            <div class="zbtn" onclick="doZoom('fit')" title="Fit" style="font-size:11px">&#8718;</div>
+          </div>
+        </div>
+        <!-- AI STRIP -->
+        <div class="aistrip" id="aistrip">
+          <div class="aihdr">
+            <h4><span style="color:var(--a)">&#10024;</span> SAIRNdesign AI Advisor</h4>
+            <span class="aix" onclick="toggleAI()">&#215;</span>
+          </div>
+          <div id="aitxt">Your AI kitchen design advisor is ready. Click a chip or type your question below.</div>
+          <div class="aichips">
+            <span class="achip" onclick="askAI('Check my work triangle and flag NKBA violations. The three legs should total 12 to 26 feet.')">&#9651; Work Triangle</span>
+            <span class="achip" onclick="askAI('Recommend the ideal cabinet finish, hardware, and door style for this layout and room size')">&#127912; Style Advice</span>
+            <span class="achip" onclick="askAI('Write a professional client-facing design narrative I can present or email. Make it compelling.')">&#128218; Client Narrative</span>
+            <span class="achip" onclick="askAI('What is missing from this layout? Give me 3 specific actionable improvements.')">&#128269; Find Gaps</span>
+            <span class="achip" onclick="askAI('Calculate countertop square footage. Break down: perimeter LF, sqft by zone, edge profile LF. Send StoneDesk summary.')">&#129704; Stone Estimate</span>
+            <span class="achip" onclick="askAI('Is this quote competitive for this room size and cabinet tier? Compare to national averages.')">&#128176; Price Check</span>
+            <span class="achip" onclick="askAI('Generate a complete appliance list recommendation with brands, model types, and rough pricing for this kitchen.')">&#127859; Appliance List</span>
+            <span class="achip" onclick="askAI('What are the top 5 upsell opportunities in this design I should present to the client?')">&#128200; Upsell Opps</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <input type="text" id="aiinput" placeholder="Ask anything about this kitchen design..." style="flex:1;padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;outline:none">
+            <button onclick="askAI(document.getElementById('aiinput').value)" style="padding:7px 14px;background:var(--a);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Ask</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PROPERTIES -->
+      <div class="rp">
+        <div class="rphdr"><h3 id="rptitle">Room Properties</h3></div>
+        <div class="rpbody" id="rpbody">
+          <!-- ROOM PROPS -->
+          <div class="psec" id="roomprops">
+            <div class="pstitle">Room Dimensions</div>
+            <div class="fgrow">
+              <div class="fg"><label>Width (ft)</label><input type="number" id="rw" value="12" min="4" max="60" step=".5" onchange="redraw()"></div>
+              <div class="fg"><label>Depth (ft)</label><input type="number" id="rd" value="10" min="4" max="60" step=".5" onchange="redraw()"></div>
+            </div>
+            <div class="fg">
+              <label>Ceiling Height</label>
+              <select id="rceil"><option value="8">8 ft Standard</option><option value="9" selected>9 ft</option><option value="10">10 ft</option><option value="12">12 ft Vaulted</option></select>
+            </div>
+            <div class="fg">
+              <label>Layout Type</label>
+              <select id="rlayout" onchange="redraw()">
+                <option value="l">L-Shape</option><option value="u">U-Shape</option>
+                <option value="galley">Galley</option><option value="onewall">One Wall</option>
+                <option value="island">Island</option><option value="peninsula">Peninsula</option>
+              </select>
+            </div>
+            <div class="psec" style="margin-top:10px">
+              <div class="pstitle">Quick Appliances</div>
+              <div class="fg">
+                <label>Range Width</label>
+                <select id="rangew" onchange="redraw()">
+                  <option value="30">30" Standard Range</option><option value="36">36" Pro Range</option>
+                  <option value="48">48" Commercial</option><option value="60">60" Grand Commercial</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Refrigerator</label>
+                <select id="fridgew">
+                  <option value="30">30" Standard</option><option value="33">33" Wide</option>
+                  <option value="36" selected>36" Counter-Depth</option><option value="42">42" Built-In</option><option value="48">48" Pro Built-In</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Sink Type</label>
+                <select id="sinkt">
+                  <option value="single">Single Bowl 24"</option><option value="double" selected>Double Bowl 33"</option>
+                  <option value="farmhouse">Farmhouse 33"</option><option value="prep">Prep Sink 18"</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- CAB PROPS (shown when cabinet selected) -->
+          <div class="psec" id="cabprops" style="display:none">
+            <div class="pstitle">Selected Cabinet</div>
+            <div class="fg"><label>Width</label><select id="selw" onchange="upd('w',parseInt(this.value))"></select></div>
+            <div class="fg">
+              <label>Door Style</label>
+              <select id="seldoor" onchange="upd('door',this.value)">
+                <option value="shaker">Shaker</option><option value="raised">Raised Panel</option>
+                <option value="flat">Flat / Slab</option><option value="beadboard">Beadboard</option>
+                <option value="glass">Glass Front</option><option value="open">Open Shelf</option>
+                <option value="arch">Arch Top</option><option value="mullion">Mullion</option>
+              </select>
+            </div>
+            <div class="fg"><label>Finish</label><div class="sws" id="finsws"></div></div>
+            <div class="fg"><label>Hardware</label>
+              <select id="selhw" onchange="upd('hw',this.value)">
+                <option value="none">No Hardware</option><option value="mblack">Matte Black Pulls</option>
+                <option value="bnickel">Brushed Nickel Pulls</option><option value="polished">Polished Chrome</option>
+                <option value="brass">Brushed Brass</option><option value="bronze">Oil Rubbed Bronze</option>
+                <option value="gold">Polished Gold</option>
+              </select>
+            </div>
+            <div class="fg"><label>Interior Option</label>
+              <select id="selint" onchange="upd('interior',this.value)">
+                <option value="std">Standard Shelf</option><option value="pullout">Pull-Out Shelf</option>
+                <option value="drawer">Soft-Close Drawer</option><option value="lazysusan">Lazy Susan</option>
+                <option value="spice">Spice Rack Insert</option><option value="divider">Vertical Divider</option>
+              </select>
+            </div>
+            <div class="fg"><label>Notes</label><input type="text" id="selnotes" placeholder="e.g. glass insert, custom height..." onchange="upd('notes',this.value)"></div>
+            <button style="width:100%;padding:7px;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;margin-top:5px" onclick="removeSel()">&#128465; Remove Cabinet</button>
+          </div>
+        </div>
+        <!-- LIVE QUOTE -->
+        <div class="qs">
+          <div class="qstitle">Live Quote <span style="font-size:10px;color:var(--mu);font-weight:400">auto-updates</span></div>
+          <div class="qsrow"><span>Base Cabinets</span><span id="qbase">$0</span></div>
+          <div class="qsrow"><span>Wall Cabinets</span><span id="qwall">$0</span></div>
+          <div class="qsrow"><span>Tall / Specialty</span><span id="qtall">$0</span></div>
+          <div class="qsrow"><span>Countertop (est.)</span><span id="qstone">$0</span></div>
+          <div class="qsrow"><span>Installation (est.)</span><span id="qinst">$0</span></div>
+          <div class="qstot"><span>Total</span><span id="qtotal">$0</span></div>
+          <button class="bpri" onclick="showP('quote')">Full Quote &amp; Print</button>
+          <button class="bsec" onclick="sendSD()">&#129704; Send to StoneDesk</button>
+        </div>
+      </div>
+    </div><!-- end panel-design -->
+
+    <!-- 3D PANEL -->
+    <div class="panel" id="panel-3d" style="background:#1E1B4B;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+      <div style="font-size:52px">&#127968;</div>
+      <div style="font-size:20px;font-weight:700;color:#fff">3D Kitchen Render</div>
+      <div style="font-size:13px;color:#A5B4FC;max-width:360px;text-align:center;line-height:1.6">Real-time WebGL render of your cabinet layout. Place cabinets in Design first. SAIRNdesign renders walls, cabinets, countertops, and appliances in 3D.</div>
+      <div id="3d-btns" style="display:flex;gap:10px">
+        <button class="bpri" style="max-width:180px;background:var(--a)" onclick="gen3D('standard')">&#9654; Standard View</button>
+        <button class="bpri" style="max-width:180px;background:#312E81" onclick="gen3D('client')">&#127775; Client Presentation View</button>
+      </div>
+      <canvas id="cv3d" style="display:none;width:100%;height:100%"></canvas>
+    </div>
+
+    <!-- LIDAR PANEL -->
+    <div class="panel" id="panel-lidar" style="overflow-y:auto">
+      <div style="padding:18px">
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">&#128225; LiDAR Room Import</h2>
+        <p style="font-size:12px;color:var(--mu);margin-bottom:16px">Scan your space with any LiDAR-enabled device. Export the data. SAIRNdesign builds your exact floor plan automatically. No measuring tape. No sketches. No guessing.</p>
+      </div>
+      <div class="lddrop" id="lddrop"
+        ondragover="ldOver(event)" ondrop="ldDrop(event)" ondragleave="document.getElementById('lddrop').classList.remove('ov')"
+        onclick="document.getElementById('ldfile').click()">
+        <div style="font-size:44px;margin-bottom:10px">&#128194;</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:5px">Drop your scan file here or click to browse</div>
+        <div style="font-size:12px;color:var(--mu)">DXF, E57, PLY, RCP, JSON, PDF floor plan, PNG/JPG drawing</div>
+        <input type="file" id="ldfile" style="display:none" accept=".dxf,.e57,.ply,.rcp,.json,.pdf,.png,.jpg" onchange="ldSel(event)">
+      </div>
+      <div style="padding:0 16px 16px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:9px">Or enter measurements directly:</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <div class="fg" style="flex:1;min-width:95px"><label>Width (ft)</label><input type="number" id="ldw" value="12" min="4" max="80" step=".5"></div>
+          <div class="fg" style="flex:1;min-width:95px"><label>Depth (ft)</label><input type="number" id="ldd" value="10" min="4" max="80" step=".5"></div>
+          <div class="fg" style="flex:1;min-width:95px"><label>Ceiling (ft)</label><input type="number" id="ldh" value="9" min="7" max="16" step=".5"></div>
+        </div>
+        <button class="bpri" style="max-width:260px" onclick="ldManual()">&#9889; Build Floor Plan from Measurements</button>
+      </div>
+      <div style="padding:0 16px 10px;font-size:13px;font-weight:700">Supported LiDAR Devices</div>
+      <div class="devgrid">
+        <div class="devcard"><div style="font-size:26px;margin-bottom:7px">&#128241;</div><div style="font-size:12px;font-weight:700">iPhone 12-17 Pro / iPad Pro</div><div style="font-size:10px;color:var(--mu);margin-top:3px">Apple LiDAR. Use RoomScan, SiteScape, MakePlan. Export DXF or JSON.</div></div>
+        <div class="devcard"><div style="font-size:26px;margin-bottom:7px">&#128309;</div><div style="font-size:12px;font-weight:700">Leica BLK2GO / BLK360</div><div style="font-size:10px;color:var(--mu);margin-top:3px">Pro-grade terrestrial scanner. Inch-level accuracy. Export E57 or RCP.</div></div>
+        <div class="devcard"><div style="font-size:26px;margin-bottom:7px">&#129001;</div><div style="font-size:12px;font-weight:700">Matterport Pro3</div><div style="font-size:10px;color:var(--mu);margin-top:3px">3D capture with digital twin. Export OBJ or PLY via developer SDK.</div></div>
+        <div class="devcard"><div style="font-size:26px;margin-bottom:7px">&#128311;</div><div style="font-size:12px;font-weight:700">LT-2D3D Templator</div><div style="font-size:10px;color:var(--mu);margin-top:3px">Number one US stone templating device. DXF export. Flows to StoneDesk.</div></div>
+        <div class="devcard"><div style="font-size:26px;margin-bottom:7px">&#128208;</div><div style="font-size:12px;font-weight:700">Prodim Proliner</div><div style="font-size:10px;color:var(--mu);margin-top:3px">Number one global templating device. DXF, DWG, PDF, CNC-ready export.</div></div>
+        <div class="devcard"><div style="font-size:26px;margin-bottom:7px">&#128247;</div><div style="font-size:12px;font-weight:700">Flexijet 3D</div><div style="font-size:10px;color:var(--mu);margin-top:3px">Highest accuracy 3D templating. DXF 2000, DWG, STEP export formats.</div></div>
+        <div class="devcard"><div style="font-size:26px;margin-bottom:7px">&#128310;</div><div style="font-size:12px;font-weight:700">Faro Focus / S Series</div><div style="font-size:10px;color:var(--mu);margin-top:3px">AEC-grade point cloud scanner. E57 and RCP export formats.</div></div>
+        <div class="devcard"><div style="font-size:26px;margin-bottom:7px">&#128248;</div><div style="font-size:12px;font-weight:700">SiteScape (iOS)</div><div style="font-size:10px;color:var(--mu);margin-top:3px">Top-rated iPhone LiDAR app. Inch-level accuracy. RCP, E57, PLY export.</div></div>
+      </div>
+    </div>
+
+    <!-- STYLE PANEL -->
+    <div class="panel" id="panel-style" style="overflow-y:auto">
+      <div style="padding:18px">
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">&#127912; Style Studio</h2>
+        <p style="font-size:12px;color:var(--mu)">Pick a design direction. One click applies finishes, door styles, hardware, and countertop recommendations across every cabinet in your layout.</p>
+      </div>
+      <div class="stgrid" id="stgrid"></div>
+      <div style="padding:0 16px 20px;display:flex;gap:10px">
+        <button class="bpri" onclick="applyStyle()">&#10003; Apply Style to All Cabinets</button>
+        <button class="bsec" style="width:auto;padding:9px 16px" onclick="askAI('Describe the full design vision for the style I have selected, including paint colors, flooring, lighting, and decor to complete the look.')">&#10024; AI Style Deep-Dive</button>
+      </div>
+    </div>
+
+    <!-- MATERIALS PANEL -->
+    <div class="panel" id="panel-materials" style="overflow-y:auto">
+      <div style="padding:18px 18px 0">
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">&#129704; Countertop &amp; Stone</h2>
+        <p style="font-size:12px;color:var(--mu);margin-bottom:0">Select countertop material. SAIRNdesign calculates sqft automatically and sends a full design brief to StoneDesk for an exact fabrication quote. The bridge between design and stone.</p>
+      </div>
+      <div class="matgrid" id="matgrid"></div>
+      <div style="padding:0 16px 20px">
+        <div style="background:var(--atint);border:1px solid var(--bd);border-radius:12px;padding:14px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:10px">Countertop Estimate</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px;color:var(--mu);margin-bottom:12px">
+            <div>Sqft (est.): <b id="stsqft" style="color:var(--tx)">0</b></div>
+            <div>Edge LF: <b id="stlf2" style="color:var(--tx)">0</b></div>
+            <div>Material: <b id="stmat" style="color:var(--tx)">$0</b></div>
+            <div>Install: <b id="stinst2" style="color:var(--tx)">$0</b></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="bpri" onclick="sendSD()">Send to StoneDesk</button>
+            <button class="bsec" style="width:auto;padding:9px 14px" onclick="askAI('Give me a detailed countertop specification including material, thickness, edge profile, finish, sink cutout type, and seam locations for this kitchen layout.')">AI Spec</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPLIANCES PANEL -->
+    <div class="panel" id="panel-appliances" style="overflow-y:auto;padding:20px">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">&#127859; Appliance Planner</h2>
+      <p style="font-size:12px;color:var(--mu);margin-bottom:20px">Configure every appliance. SAIRNdesign reserves the correct cabinet openings and flags any code clearance issues.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;max-width:900px" id="applgrid"></div>
+      <div style="margin-top:16px">
+        <button class="bsec" style="width:auto;padding:9px 18px" onclick="askAI('Generate a full appliance recommendation package for this kitchen including brand, model tier, dimensions, and estimated budget for each appliance.')">&#10024; AI Appliance Recommendations</button>
+      </div>
+    </div>
+
+    <!-- QUOTE PANEL -->
+    <div class="panel" id="panel-quote" style="overflow-y:auto;padding:22px">
+      <div style="max-width:840px;margin:0 auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div>
+            <h2 style="font-size:22px;font-weight:800">Kitchen Design Quote</h2>
+            <p style="font-size:12px;color:var(--mu)" id="qprojname">New Kitchen Design</p>
+          </div>
+          <div style="display:flex;gap:7px">
+            <button class="toolbtn" onclick="printD()">Print / PDF</button>
+            <button class="toolbtn" onclick="exportCSV()">Export CSV</button>
+            <button class="toolbtn" onclick="sendSD()">StoneDesk</button>
+            <button class="toolbtn" onclick="showP('present')">&#127775; Present</button>
+          </div>
+        </div>
+        <table class="qtbl">
+          <thead><tr><th>Cabinet</th><th>Brand</th><th>Width</th><th>Finish</th><th>Door</th><th>Hardware</th><th>Unit</th><th>Total</th></tr></thead>
+          <tbody id="qtbody"></tbody>
+          <tfoot>
+            <tr class="qfr" style="background:var(--atint)"><td colspan="7">Cabinet Subtotal</td><td id="qfcabs">$0</td></tr>
+            <tr style="font-size:12px"><td colspan="7" style="color:var(--mu);padding:5px 10px">Countertop (<span id="qfsqft">0</span> sqft estimated)</td><td id="qfstone" style="padding:5px 10px">$0</td></tr>
+            <tr style="font-size:12px"><td colspan="7" style="color:var(--mu);padding:5px 10px">Installation (estimated)</td><td id="qfinst" style="padding:5px 10px">$0</td></tr>
+            <tr class="qfr" style="border-top:3px solid var(--a)"><td colspan="7" style="color:var(--a)">PROJECT TOTAL</td><td id="qfgrand" style="color:var(--a)">$0</td></tr>
+          </tfoot>
+        </table>
+        <div class="bench">
+          <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px">Industry Benchmark</div>
+          <div class="benchbar"><div id="benchfill" class="benchfill" style="width:0%;background:var(--a)"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mu)">
+            <span>$8K Budget</span><span id="benchlbl">Your quote vs national average</span><span>$50K+ Luxury</span>
+          </div>
+        </div>
+        <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px">
+          <div><div style="font-size:11px;color:var(--mu);margin-bottom:42px">Designer Signature</div><div style="border-top:1px solid var(--tx);font-size:10px;color:var(--mu);padding-top:4px">Signature / Date</div></div>
+          <div><div style="font-size:11px;color:var(--mu);margin-bottom:42px">Client Approval</div><div style="border-top:1px solid var(--tx);font-size:10px;color:var(--mu);padding-top:4px">Signature / Date</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRESENTATION PANEL -->
+    <div class="panel" id="panel-present" style="overflow-y:auto">
+      <div style="background:var(--adark);padding:32px;text-align:center;color:#fff">
+        <div style="font-size:48px;margin-bottom:12px">&#127775;</div>
+        <div style="font-size:24px;font-weight:800;margin-bottom:6px" id="pres-pname">New Kitchen Design</div>
+        <div style="font-size:14px;color:#A5B4FC" id="pres-date"></div>
+      </div>
+      <div style="max-width:800px;margin:0 auto;padding:24px">
+        <div id="pres-narrative" style="font-size:14px;line-height:1.8;color:var(--tx);margin-bottom:24px;background:var(--atint);padding:20px;border-radius:12px;border:1px solid var(--bd)">Click Generate Presentation to have SAIRNdesign AI write a complete client presentation for this kitchen.</div>
+        <div id="pres-specs" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px"></div>
+        <div style="display:flex;gap:10px">
+          <button class="bpri" onclick="genPresentation()">&#10024; Generate Presentation</button>
+          <button class="bsec" style="width:auto;padding:9px 16px" onclick="printD()">Print Presentation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY PANEL -->
+    <div class="panel" id="panel-history" style="overflow-y:auto;padding:22px">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:14px">&#128193; Project History</h2>
+      <div id="histlist"></div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div class="panel" id="panel-admin" style="overflow-y:auto;padding:22px">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">&#9881; Admin Price Book</h2>
+      <p style="font-size:12px;color:var(--mu);margin-bottom:18px">Set your shop rates, markup, and tax. All live quotes update instantly.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px;max-width:860px">
+        <div class="fg"><label>Base Cabinet Install (per unit)</label><input type="number" id="pbbi" value="85"></div>
+        <div class="fg"><label>Wall Cabinet Install (per unit)</label><input type="number" id="pbwi" value="65"></div>
+        <div class="fg"><label>Tall Cabinet Install (per unit)</label><input type="number" id="pbti" value="120"></div>
+        <div class="fg"><label>Countertop Install (per sqft)</label><input type="number" id="pbsi" value="45"></div>
+        <div class="fg"><label>Markup %</label><input type="number" id="pbmu" value="30" min="0" max="400"></div>
+        <div class="fg"><label>Tax Rate %</label><input type="number" id="pbtx" value="8.5" step=".1"></div>
+        <div class="fg"><label>Default Labor Rate (per hour)</label><input type="number" id="pblr" value="75"></div>
+        <div class="fg"><label>Design Fee ($)</label><input type="number" id="pbdf" value="250"></div>
+      </div>
+      <button class="bpri" style="max-width:180px;margin-top:14px" onclick="savePB()">&#128190; Save Price Book</button>
+    </div>
+
+  </div>
+</div>
+<div class="notif" id="notif"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  SAIRNdesign v1.0 — World's Most Powerful Design Tool
+//  Built by SAIRN Technologies for Michael L. Dibert
+//  All apps: SAIRNbuild, StoneDesk, SAIRNdesign
+//  Proxy: sairn.vercel.app/api/claude
+// ═══════════════════════════════════════════════════════
+
+const CLAUDE = 'https://sairn.vercel.app/api/claude';
+const PINS = { user:'1234', admin:'9999' };
+
+// --- STATE ---
+let role='user', pinBuf='', curPanel='design';
+let tool='sel', zLvl=1, selIdx=null, dragCab=null;
+let activeMfr='all', activeType='all', activeStyle=null, selMat=null;
+let placed=[], mouseDown=false;
+let canvas, ctx;
+let PB={ bi:85, wi:65, ti:120, si:45, mu:30, tx:8.5, lr:75, df:250 };
+try{ const p=localStorage.getItem('sd_pb3'); if(p) PB=JSON.parse(p); }catch(e){}
+
+// --- MANUFACTURERS ---
+const MFRS=[
+  {id:'all',name:'All Brands',mult:1.0},
+  {id:'kraftmaid',name:'KraftMaid',tier:'Semi-Custom',badge:'bsemi',mult:1.40},
+  {id:'merillat',name:'Merillat',tier:'Stock',badge:'bstock',mult:0.85},
+  {id:'aristokraft',name:'Aristokraft',tier:'Stock',badge:'bstock',mult:0.78},
+  {id:'fabuwood',name:'Fabuwood',tier:'Stock',badge:'bstock',mult:0.88},
+  {id:'omega',name:'Omega',tier:'Semi-Custom',badge:'bsemi',mult:1.45},
+  {id:'diamond',name:'Diamond by MasterBrand',tier:'Stock',badge:'bstock',mult:0.95},
+  {id:'wellborn',name:'Wellborn',tier:'Semi-Custom',badge:'bsemi',mult:1.22},
+  {id:'thomasville',name:'Thomasville',tier:'Stock',badge:'bstock',mult:0.98},
+  {id:'wood-mode',name:'Wood-Mode',tier:'Custom',badge:'bcustom',mult:1.85},
+  {id:'decora',name:'Decora',tier:'Semi-Custom',badge:'bsemi',mult:1.28},
+  {id:'starmark',name:'StarMark',tier:'Semi-Custom',badge:'bsemi',mult:1.18},
+  {id:'holiday',name:'Holiday Kitchens',tier:'Custom',badge:'bcustom',mult:1.65},
+  {id:'jk',name:'J&K Cabinetry',tier:'Stock',badge:'bstock',mult:0.72},
+  {id:'forevermark',name:'Forevermark',tier:'Stock',badge:'bstock',mult:0.70}
+];
+
+// --- CABINET CATALOG ---
+const CABS={
+  base:[
+    {id:'B-SD',n:'Single Door Base',ico:'SD',w:[9,12,15,18,21,24],h:34.5,d:24,p:285,note:''},
+    {id:'B-DD',n:'Double Door Base',ico:'DD',w:[24,27,30,33,36,42,48],h:34.5,d:24,p:365,note:''},
+    {id:'B-3DRW',n:'Three Drawer Base',ico:'3D',w:[12,15,18,21,24],h:34.5,d:24,p:420,note:'Stacked drawers, no door'},
+    {id:'B-SB',n:'Sink Base',ico:'SB',w:[24,27,30,33,36],h:34.5,d:24,p:310,note:'Open interior for plumbing'},
+    {id:'B-BC',n:'Blind Corner Base',ico:'BC',w:[36,39,42,45,48],h:34.5,d:24,p:490,note:'One side extends into corner'},
+    {id:'B-LS',n:'Corner Lazy Susan',ico:'LS',w:[33,36],h:34.5,d:24,p:580,note:'Rotating trays inside corner'},
+    {id:'B-FDWR',n:'Full-Height Drawer',ico:'FD',w:[12,15,18,21,24],h:34.5,d:24,p:480,note:'All drawers top to bottom'},
+    {id:'B-POT',n:'Pot & Pan Drawer',ico:'PP',w:[24,27,30],h:34.5,d:24,p:520,note:'Wide deep drawers'},
+    {id:'B-TRSH',n:'Pull-Out Trash',ico:'TR',w:[15,18,21],h:34.5,d:24,p:390,note:'Dual bin pull-out'},
+    {id:'B-SPICE',n:'Spice Pull-Out',ico:'SP',w:[9,12,15],h:34.5,d:24,p:345,note:'Narrow pull-out spice rack'},
+    {id:'B-MICRO',n:'Microwave Base',ico:'MB',w:[24,27,30,33,36],h:34.5,d:24,p:310,note:'Recessed for built-in micro'},
+    {id:'B-WINE',n:'Wine Base Cabinet',ico:'WN',w:[18,24,30],h:34.5,d:24,p:420,note:'Wine bottle storage cubbies'},
+    {id:'B-FILE',n:'File Drawer Base',ico:'FL',w:[18,21,24],h:34.5,d:24,p:460,note:'Letter and legal file drawers'},
+    {id:'B-DESK',n:'Desk Cabinet',ico:'DK',w:[24,30,36,42,48],h:28,d:24,p:430,note:'Lower height for desk area'},
+    {id:'B-ISL2',n:'Island Base',ico:'IS',w:[24,30,36,42,48,60,72,84],h:34.5,d:24,p:860,note:'Double-faced island cabinet'},
+  ],
+  wall:[
+    {id:'W-SD',n:'Single Door Wall',ico:'WS',w:[9,12,15,18,21,24],h:36,d:12,p:195,note:''},
+    {id:'W-DD30',n:'Double Door Wall 30H',ico:'WD',w:[24,27,30,33,36],h:30,d:12,p:228,note:'Lower 8ft ceiling'},
+    {id:'W-DD36',n:'Double Door Wall 36H',ico:'WD',w:[24,27,30,33,36],h:36,d:12,p:265,note:'Standard 9ft ceiling'},
+    {id:'W-DD42',n:'Double Door Wall 42H',ico:'WD',w:[24,27,30,33,36],h:42,d:12,p:298,note:'9ft ceiling to soffit'},
+    {id:'W-BC',n:'Blind Corner Wall',ico:'WB',w:[24,27,30,36],h:36,d:12,p:385,note:'Corner wall solution'},
+    {id:'W-GLASS',n:'Glass Front Wall',ico:'WG',w:[12,15,18,24,30,36],h:36,d:12,p:380,note:'Display cabinet with lighting'},
+    {id:'W-OPEN',n:'Open Shelf Wall',ico:'WO',w:[12,18,24,30,36],h:12,d:12,p:145,note:'Floating shelf look'},
+    {id:'W-VAL',n:'Decorative Valance',ico:'VL',w:[24,30,36],h:6,d:2,p:95,note:'Under-cabinet light rail'},
+    {id:'W-HOOD',n:'Range Hood Surround',ico:'WH',w:[30,36,42,48],h:24,d:13,p:310,note:'Decorative hood cabinet'},
+    {id:'W-OVR-FRIDGE',n:'Over-Fridge Wall',ico:'OF',w:[30,33,36],h:24,d:24,p:265,note:'Deep wall over refrigerator'},
+    {id:'W-MICRO',n:'Microwave Trim Kit',ico:'MT',w:[24,27,30],h:18,d:15,p:180,note:'Flush microwave surround'},
+    {id:'W-2DOOR',n:'Two-Door Wall w/ Arch',ico:'WA',w:[24,30,36],h:36,d:12,p:345,note:'Cathedral arch door top'},
+  ],
+  tall:[
+    {id:'T-PAN84',n:'Pantry Cabinet 84H',ico:'P1',w:[18,21,24,30,33,36],h:84,d:24,p:785,note:'Standard full-height pantry'},
+    {id:'T-PAN90',n:'Pantry Cabinet 90H',ico:'P2',w:[18,21,24,30,33,36],h:90,d:24,p:840,note:'9ft ceiling pantry'},
+    {id:'T-PAN96',n:'Pantry Cabinet 96H',ico:'P3',w:[18,21,24,30,33,36],h:96,d:24,p:900,note:'Floor to ceiling'},
+    {id:'T-OVEN',n:'Wall Oven Tower',ico:'OT',w:[24,27,30],h:84,d:24,p:890,note:'Single or double oven cut-out'},
+    {id:'T-REF',n:'Refrigerator Surround',ico:'RF',w:[36,42,48],h:84,d:26,p:520,note:'Panels surround built-in fridge'},
+    {id:'T-UTIL',n:'Utility / Broom',ico:'UT',w:[12,15,18],h:84,d:24,p:620,note:'Broom and mop storage'},
+    {id:'T-2DOOR',n:'Tall Two-Door',ico:'TD',w:[24,30,36],h:84,d:24,p:750,note:'Full height two doors'},
+    {id:'T-APPL',n:'Appliance Garage Tall',ico:'AG',w:[24,30,36],h:84,d:24,p:680,note:'Tambour door appliance area'},
+  ],
+  spc:[
+    {id:'S-CORBEL',n:'Corbel Bracket',ico:'CB',w:[4,6,8],h:8,d:4,p:85,note:'Decorative support'},
+    {id:'S-COLUMN',n:'Decorative Column',ico:'DC',w:[6,8,10,12],h:84,d:6,p:225,note:'Fluted or plain column'},
+    {id:'S-FILL',n:'Filler Strip',ico:'FS',w:[3,6,9],h:34.5,d:24,p:65,note:'Gap filler between cabs'},
+    {id:'S-ENDPNL',n:'End Panel',ico:'EP',w:[3,6,12],h:34.5,d:24,p:148,note:'Finished cabinet end'},
+    {id:'S-VALANCE',n:'Light Rail Valance',ico:'LR',w:[24,30,36,48,60],h:4,d:2,p:88,note:'Under-cabinet lighting rail'},
+    {id:'S-CROWN',n:'Crown Molding (LF)',ico:'CM',w:[24,36,48],h:4,d:2,p:45,note:'Price per linear foot section'},
+    {id:'S-TOEKICK',n:'Toe Kick (LF)',ico:'TK',w:[24,36,48],h:4,d:4,p:38,note:'Painted or stained toe kick'},
+    {id:'S-WINE2',n:'Wine Rack Wall Insert',ico:'WR',w:[12,15,18,24],h:30,d:12,p:295,note:'Wall-mounted wine storage'},
+    {id:'S-APPL',n:'Appliance Garage',ico:'AP',w:[18,24,30,36],h:24,d:18,p:345,note:'Tambour roll-up door'},
+    {id:'S-CUTLERY',n:'Cutlery Tray Insert',ico:'CT',w:[12,15,18,21,24],h:3,d:20,p:95,note:'Drawer insert'},
+    {id:'S-POTS',n:'Pot Lid Organizer',ico:'PL',w:[9,12,15],h:34.5,d:4,p:110,note:'Vertical lid storage'},
+    {id:'S-MIXER',n:'Mixer Lift Cabinet',ico:'ML',w:[18,21,24],h:34.5,d:24,p:520,note:'Spring-loaded mixer lift'},
+  ]
+};
+
+// --- FINISHES ---
+const FINS=[
+  {id:'white',n:'White',c:'#FFFFFF',p:0},
+  {id:'offwhite',n:'Off White',c:'#F5F0E8',p:0},
+  {id:'cream',n:'Antique Cream',c:'#EDE8DF',p:0},
+  {id:'gray',n:'Dove Gray',c:'#9CA3AF',p:50},
+  {id:'ltgray',n:'Light Gray',c:'#D1D5DB',p:40},
+  {id:'charcoal',n:'Charcoal',c:'#374151',p:75},
+  {id:'sage',n:'Sage Green',c:'#86A789',p:75},
+  {id:'navy',n:'Navy Blue',c:'#1E3A5F',p:75},
+  {id:'espresso',n:'Espresso',c:'#3B1F0E',p:50},
+  {id:'maple',n:'Natural Maple',c:'#D4A76A',p:0},
+  {id:'walnut',n:'Walnut',c:'#6B3F1F',p:85},
+  {id:'black',n:'Matte Black',c:'#1C1C1C',p:100},
+  {id:'greige',n:'Greige',c:'#BDB5A1',p:50},
+  {id:'bluegray',n:'Blue-Gray',c:'#7F8FA4',p:65},
+  {id:'dustyblue',n:'Dusty Blue',c:'#7BA7BC',p:70},
+];
+
+// --- STYLES ---
+const STYLES=[
+  {id:'modernwhite',n:'Modern White',ico:'MW',desc:'White shaker, quartz, matte black hardware',fin:'white',door:'shaker',bg:'#F8F8F8',dark:false},
+  {id:'transitional',n:'Transitional Gray',ico:'TG',desc:'Gray shaker, marble look, brushed nickel',fin:'gray',door:'shaker',bg:'#E0E0E0',dark:false},
+  {id:'farmhouse',n:'Modern Farmhouse',ico:'MF',desc:'Off-white beadboard, farmhouse sink, brass',fin:'offwhite',door:'beadboard',bg:'#F5F0E8',dark:false},
+  {id:'darkluxe',n:'Dark & Luxe',ico:'DL',desc:'Navy cabinetry, gold hardware, Calacatta marble',fin:'navy',door:'raised',bg:'#1E3A5F',dark:true},
+  {id:'sagenatural',n:'Sage & Natural',ico:'SN',desc:'Sage green + maple wood tone, brushed brass',fin:'sage',door:'shaker',bg:'#86A789',dark:false},
+  {id:'allblack',n:'All Black Modern',ico:'AB',desc:'Matte black slab doors, industrial steel, concrete',fin:'black',door:'flat',bg:'#1C1C1C',dark:true},
+  {id:'coastal',n:'Coastal Blue',ico:'CB',desc:'Dusty blue, white quartz, polished nickel',fin:'dustyblue',door:'shaker',bg:'#7BA7BC',dark:false},
+  {id:'classiccream',n:'Classic Cream',ico:'CC',desc:'Raised panel cream, antique granite, bronze',fin:'cream',door:'raised',bg:'#EDE8DF',dark:false},
+  {id:'charcoalmod',n:'Charcoal Modern',ico:'CM',desc:'Charcoal flat panel, quartz, matte hardware',fin:'charcoal',door:'flat',bg:'#374151',dark:true},
+  {id:'walnutwarm',n:'Walnut Warmth',ico:'WW',desc:'Natural walnut wood, white quartz, brass',fin:'walnut',door:'flat',bg:'#6B3F1F',dark:true},
+  {id:'twotonenavy',n:'Two-Tone: Navy + White',ico:'TN',desc:'Navy base + white uppers, gold hardware',fin:'white',door:'shaker',bg:'linear-gradient(#1E3A5F 50%,#fff 50%)',dark:false},
+  {id:'greigechic',n:'Greige Chic',ico:'GC',desc:'Warm greige, quartzite, brushed gold',fin:'greige',door:'shaker',bg:'#BDB5A1',dark:false},
+];
+
+// --- MATERIALS ---
+const MATS=[
+  {id:'whitequartz',n:'White Quartz',sub:'Calacatta Eva / Calacatta Evora',ppf:85,ico:'W',pop:true},
+  {id:'calacatta',n:'Calacatta Marble',sub:'Italian natural marble, classic veining',ppf:145,ico:'M',pop:true},
+  {id:'superwhite',n:'Super White Quartzite',sub:'Natural stone, marble appearance',ppf:110,ico:'Q'},
+  {id:'blackgalaxy',n:'Black Galaxy Granite',sub:'Premium Indian granite',ppf:75,ico:'B'},
+  {id:'santacecilia',n:'Santa Cecilia Granite',sub:'Gold and brown natural granite',ppf:70,ico:'G'},
+  {id:'butcherblock',n:'Butcher Block',sub:'Maple, walnut, or cherry hardwood',ppf:55,ico:'W'},
+  {id:'absblack',n:'Absolute Black Granite',sub:'South Indian, honed or polished',ppf:80,ico:'B'},
+  {id:'calgold',n:'Calacatta Gold Quartz',sub:'Bold gold veining, engineered stone',ppf:95,ico:'Y'},
+  {id:'whitegranite',n:'White Sparkle Granite',sub:'White with subtle crystal sparkle',ppf:78,ico:'S'},
+  {id:'soapstone',n:'Soapstone',sub:'Classic matte charcoal surface',ppf:125,ico:'D'},
+  {id:'concrete',n:'Concrete',sub:'Poured, custom color and texture',ppf:100,ico:'C'},
+  {id:'porcelain',n:'Porcelain Slab',sub:'Large format, ultra durable, 0% porous',ppf:120,ico:'P'},
+  {id:'quartzgrey',n:'Gray Quartz',sub:'Silestone Cemento, Pental Grigio',ppf:88,ico:'G'},
+  {id:'ultracompact',n:'Dekton / Neolith',sub:'Ultra-compact surface, 20mm thick',ppf:165,ico:'U'},
+];
+
+// --- APPLIANCES ---
+const APPLS=[
+  {id:'range',n:'Range / Cooktop',ico:'&#127859;',options:['30" Gas Range','30" Electric Range','36" Pro Gas Range','36" Induction Range','48" Commercial Range','60" Grand Range','30" Cooktop Only','36" Cooktop Only'],def:0},
+  {id:'fridge',n:'Refrigerator',ico:'&#129492;',options:['30" Counter-Depth French Door','33" French Door','36" Counter-Depth','36" Standard','42" Built-In Pro','48" Built-In Pro','24" Under-Counter'],def:2},
+  {id:'dw',n:'Dishwasher',ico:'&#127894;',options:['24" Standard','18" Compact','24" Panel-Ready','24" Drawer Dishwasher'],def:0},
+  {id:'mw',n:'Microwave',ico:'&#128247;',options:['Over-Range 30"','Over-Range 36"','Built-In Wall 24"','Built-In Wall 27"','Drawer Micro 24"','Countertop'],def:0},
+  {id:'hood',n:'Range Hood / Vent',ico:'&#127756;',options:['30" Under-Cabinet','36" Under-Cabinet','30" Wall Mount','36" Wall Mount','42" Island Hood','48" Island Hood'],def:0},
+  {id:'oven',n:'Wall Oven',ico:'&#128293;',options:['None','24" Single Wall Oven','27" Single Wall Oven','30" Single Wall Oven','30" Double Wall Oven','30" Combo Micro/Oven'],def:0},
+  {id:'sink',n:'Kitchen Sink',ico:'&#128690;',options:['Single Bowl 24"','Double Bowl 33"','Double Bowl 36"','Farmhouse 30"','Farmhouse 33"','Prep Sink 18"'],def:1},
+  {id:'wine',n:'Wine / Beverage',ico:'&#127863;',options:['None','15" Under-Counter Wine','18" Wine Column','24" Wine Column','15" Beverage Center'],def:0},
+];
+
+// ═══════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════
+function pp(k){
+  const err=document.getElementById('aerr');
+  err.textContent='';
+  if(k==='c') pinBuf='';
+  else if(k==='b') pinBuf=pinBuf.slice(0,-1);
+  else pinBuf+=k;
+  for(let i=0;i<4;i++) document.getElementById('d'+i).classList.toggle('on',i<pinBuf.length);
+  if(pinBuf.length===4){
+    if(pinBuf===PINS.admin){role='admin';boot();}
+    else if(pinBuf===PINS.user){role='user';boot();}
+    else{err.textContent='Incorrect PIN — try again';pinBuf='';for(let i=0;i<4;i++)document.getElementById('d'+i).classList.remove('on');}
+  }
+}
+
+function boot(){
+  document.getElementById('auth').style.display='none';
+  document.getElementById('app').classList.add('on');
+  document.getElementById('rbadge').textContent=role==='admin'?'Admin':'Designer';
+  if(role==='admin') document.querySelectorAll('.adm').forEach(el=>el.style.display='');
+  initMfrTabs(); renderCat(); initStyles(); initMaterials(); initAppliances(); initCanvas();
+  document.getElementById('pres-date').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+}
+
+// ═══════════════════════════════════
+//  PANELS
+// ═══════════════════════════════════
+function showP(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  const p=document.getElementById('panel-'+id);
+  if(p) p.classList.add('on');
+  const n=document.getElementById('ni-'+id);
+  if(n) n.classList.add('on');
+  curPanel=id;
+  if(id==='quote') buildQuote();
+  if(id==='history') renderHist();
+  if(id==='materials') calcStone();
+  if(id==='present') document.getElementById('pres-pname').textContent=document.getElementById('pname').textContent;
+}
+
+// ═══════════════════════════════════
+//  CATALOG
+// ═══════════════════════════════════
+function initMfrTabs(){
+  const tc=document.getElementById('mfrtabs');
+  tc.innerHTML='';
+  MFRS.forEach(m=>{
+    const t=document.createElement('div');
+    t.className='mfrtab'+(m.id==='all'?' on':'');
+    t.textContent=m.name;
+    t.onclick=()=>{activeMfr=m.id;tc.querySelectorAll('.mfrtab').forEach(x=>x.classList.remove('on'));t.classList.add('on');renderCat();};
+    tc.appendChild(t);
+  });
+}
+
+function setType(t,btn){
+  activeType=t;
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderCat();
+}
+
+function renderCat(){
+  const list=document.getElementById('cablist');
+  const q=(document.getElementById('csrch').value||'').toLowerCase();
+  list.innerHTML='';
+  const types=activeType==='all'?['base','wall','tall','spc']:[activeType];
+  let all=[];
+  types.forEach(t=>(CABS[t]||[]).forEach(c=>all.push({...c,ct:t})));
+  if(q) all=all.filter(c=>c.n.toLowerCase().includes(q)||c.id.toLowerCase().includes(q)||(c.note||'').toLowerCase().includes(q));
+  const mfr=MFRS.find(m=>m.id===activeMfr)||MFRS[0];
+  const mult=mfr.mult||1;
+  const mname=activeMfr==='all'?'Multi-Brand':mfr.name;
+  const badge=activeMfr==='all'?'bstock':(mfr.badge||'bstock');
+  if(all.length===0){list.innerHTML='<div style="padding:18px;text-align:center;color:var(--mu);font-size:12px">No results. Try a different search or filter.</div>';return;}
+  all.forEach(cab=>{
+    const price=Math.round(cab.p*mult);
+    const card=document.createElement('div');
+    card.className='cc';card.draggable=true;card.dataset.cid=cab.id;
+    const wbtns=cab.w.map((w,i)=>`<span class="wbtn${i===0?' on':''}" onclick="selW(this,'${cab.id}',${w})">${w}"</span>`).join('');
+    card.innerHTML=`
+      <div class="cctop">
+        <div class="ccico">${cab.ico}</div>
+        <div class="ccinfo">
+          <div class="ccname">${cab.n}</div>
+          <div class="ccdims">${cab.ct.toUpperCase()} H:${cab.h}" D:${cab.d}"${cab.note?'&nbsp;&#8226;&nbsp;'+cab.note:''}</div>
+          <div style="display:flex;align-items:center;gap:3px;margin-top:2px">
+            <span class="ccprice">From $${price.toLocaleString()}</span>
+            <span class="ccbadge ${badge}">${mname}</span>
+          </div>
+        </div>
+      </div>
+      <div class="wbtns">${wbtns}</div>
+      <div class="draghint">Drag to floor plan</div>`;
+    card.addEventListener('dragstart',e=>{
+      const aw=card.querySelector('.wbtn.on');
+      const w=aw?parseInt(aw.textContent):cab.w[0];
+      dragCab={...cab,w,mname,mfrid:activeMfr==='all'?'fabuwood':activeMfr,price,finish:'white',door:'shaker',hw:'mblack',interior:'std',notes:''};
+      e.dataTransfer.effectAllowed='copy';
+    });
+    list.appendChild(card);
+  });
+}
+
+function selW(btn,cid,w){
+  btn.closest('.wbtns').querySelectorAll('.wbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(dragCab&&dragCab.id===cid) dragCab.w=w;
+}
+
+// ═══════════════════════════════════
+//  CANVAS ENGINE
+// ═══════════════════════════════════
+const SC=40; // scale px per foot
+
+function initCanvas(){
+  canvas=document.getElementById('cv');
+  ctx=canvas.getContext('2d');
+  canvas.addEventListener('mousedown',onMD);
+  canvas.addEventListener('mousemove',onMM);
+  canvas.addEventListener('mouseup',onMU);
+  canvas.addEventListener('dblclick',onDbl);
+  redraw();
+}
+
+function doZoom(f){
+  if(f==='fit') zLvl=1;
+  else zLvl=Math.max(0.25,Math.min(5,zLvl*f));
+  redraw();
+}
+
+function setTool(t){
+  tool=t;
+  ['sel','wall','door','win'].forEach(x=>{const b=document.getElementById('t'+x);if(b)b.classList.toggle('on',x===t);});
+  canvas.style.cursor=t==='sel'?'default':'crosshair';
+}
+
+function getRoom(){return{w:parseFloat(document.getElementById('rw').value)||12,d:parseFloat(document.getElementById('rd').value)||10};}
+
+function getOrigin(){
+  const {w,d}=getRoom();const sc=SC*zLvl;
+  return{rx:(canvas.width-w*sc)/2,ry:(canvas.height-d*sc)/2,sc};
+}
+
+function redraw(){
+  if(!canvas)return;
+  const{w,d}=getRoom();
+  const{rx,ry,sc}=getOrigin();
+  const rw=w*sc,rd=d*sc;
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  // Grid bg
+  ctx.fillStyle='#EFECFD';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#DDD9F5';ctx.lineWidth=0.5;
+  const gs=sc/2;
+  for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // Room fill
+  ctx.fillStyle='#FFFFFF';ctx.fillRect(rx,ry,rw,rd);
+  // Grid inside room
+  ctx.strokeStyle='#F0EFF8';ctx.lineWidth=0.5;
+  for(let x=rx;x<=rx+rw;x+=sc/4){ctx.beginPath();ctx.moveTo(x,ry);ctx.lineTo(x,ry+rd);ctx.stroke();}
+  for(let y=ry;y<=ry+rd;y+=sc/4){ctx.beginPath();ctx.moveTo(rx,y);ctx.lineTo(rx+rw,y);ctx.stroke();}
+  // Room walls
+  ctx.strokeStyle='#1E1B4B';ctx.lineWidth=4;ctx.strokeRect(rx,ry,rw,rd);
+  // Dimension labels
+  ctx.fillStyle='#6366F1';ctx.font='bold 11px Inter,sans-serif';ctx.textAlign='center';
+  ctx.fillText(w+"'",rx+rw/2,ry-10);
+  ctx.save();ctx.translate(rx-16,ry+rd/2);ctx.rotate(-Math.PI/2);ctx.fillText(d+"'",0,0);ctx.restore();
+  // Placed cabinets
+  placed.forEach((c,i)=>drawCab(c,i,rx,ry,sc));
+  // Work triangle overlay
+  drawWorkTriangle(rx,ry,sc);
+  updateStats();
+}
+
+function drawCab(cab,idx,rx,ry,sc){
+  const x=rx+cab.x*sc,y=ry+cab.y*sc;
+  const pw=(cab.w/12)*sc,pd=(cab.d/12)*sc;
+  const fin=FINS.find(f=>f.id===cab.finish)||FINS[0];
+  const isSel=selIdx===idx;
+  // Shadow on selected
+  if(isSel){ctx.shadowColor='rgba(99,102,241,.35)';ctx.shadowBlur=10;}
+  // Fill
+  ctx.fillStyle=fin.c;ctx.fillRect(x,y,pw,pd);
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;
+  // Door line visual
+  if(cab.door==='glass'){ctx.fillStyle='rgba(173,216,230,.4)';ctx.fillRect(x+3,y+3,pw-6,pd-6);}
+  if(cab.door==='open'){ctx.fillStyle='rgba(99,102,241,.07)';ctx.fillRect(x,y,pw,pd);}
+  // Border
+  ctx.strokeStyle=isSel?'#6366F1':'#9CA3AF';
+  ctx.lineWidth=isSel?2.5:1;ctx.strokeRect(x,y,pw,pd);
+  // Wall cab dashed indicator
+  if(cab.ct==='wall'){ctx.strokeStyle='#A5B4FC';ctx.setLineDash([3,3]);ctx.lineWidth=1;ctx.strokeRect(x+2,y+2,pw-4,pd-4);ctx.setLineDash([]);}
+  // Label
+  ctx.fillStyle=isSel?'#4F46E5':'#374151';
+  ctx.font='bold 8px Inter,sans-serif';ctx.textAlign='center';
+  const lbl=cab.n.replace(/Base|Wall|Cabinet|Door|Tall/g,'').trim().slice(0,12);
+  ctx.fillText(lbl,x+pw/2,y+pd/2-2);
+  ctx.font='8px Inter,sans-serif';ctx.fillStyle='#9CA3AF';
+  ctx.fillText(cab.w+'"',x+pw/2,y+pd/2+8);
+  // Selection X handle
+  if(isSel){
+    ctx.fillStyle='#6366F1';ctx.fillRect(x+pw-11,y-1,11,11);
+    ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.fillText('x',x+pw-5.5,y+8);
+  }
+}
+
+function drawWorkTriangle(rx,ry,sc){
+  // Find sink, range, fridge
+  const sink=placed.find(c=>c.id==='B-SB'||c.id==='B-TRSH');
+  const range=placed.find(c=>c.id==='B-MICRO');
+  if(!sink||!range) return;
+  // Simple triangle visualization — would be enhanced with actual appliance positions
+}
+
+function getCvXY(e){
+  const r=canvas.getBoundingClientRect();
+  return{cx:(e.clientX-r.left)*(canvas.width/r.width),cy:(e.clientY-r.top)*(canvas.height/r.height)};
+}
+
+function onMD(e){
+  mouseDown=true;
+  if(tool!=='sel') return;
+  const{cx,cy}=getCvXY(e);
+  const{rx,ry,sc}=getOrigin();
+  let hit=-1;
+  for(let i=placed.length-1;i>=0;i--){
+    const c=placed[i];
+    const x=rx+c.x*sc,y=ry+c.y*sc;
+    const pw=(c.w/12)*sc,pd=(c.d/12)*sc;
+    if(cx>=x&&cx<=x+pw&&cy>=y&&cy<=y+pd){hit=i;break;}
+  }
+  selIdx=hit>=0?hit:null;
+  if(hit>=0) showCabProps(placed[hit]);
+  else showRoomPanel();
+  redraw();
+}
+
+function onMM(e){
+  if(!mouseDown||tool!=='sel'||selIdx===null) return;
+  const{cx,cy}=getCvXY(e);
+  const{rx,ry,sc}=getOrigin();
+  const{w,d}=getRoom();
+  const c=placed[selIdx];
+  const sn=0.25; // 3" snap
+  c.x=Math.max(0,Math.min(w-c.w/12,Math.round(((cx-rx)/sc)/sn)*sn));
+  c.y=Math.max(0,Math.min(d-c.d/12,Math.round(((cy-ry)/sc)/sn)*sn));
+  redraw();
+}
+
+function onMU(){mouseDown=false;checkFlags();}
+
+function onDbl(e){
+  if(selIdx!==null){
+    document.getElementById('aistrip').classList.add('on');
+    askAI('Tell me everything about the '+placed[selIdx].n+' cabinet I selected. Best use cases, finish recommendations, interior options, and pricing context.');
+  }
+}
+
+// ═══════════════════════════════════
+//  DRAG DROP
+// ═══════════════════════════════════
+function cdOver(e){e.preventDefault();e.dataTransfer.dropEffect='copy';}
+function cdLeave(){}
+function cdDrop(e){
+  e.preventDefault();
+  if(!dragCab)return;
+  const r=canvas.getBoundingClientRect();
+  const{rx,ry,sc}=getOrigin();
+  const{w,d}=getRoom();
+  const cx=(e.clientX-r.left)*(canvas.width/r.width);
+  const cy=(e.clientY-r.top)*(canvas.height/r.height);
+  const sn=0.25;
+  const fx=Math.max(0,Math.min(w-dragCab.w/12,Math.round(((cx-rx)/sc)/sn)*sn));
+  const fy=Math.max(0,Math.min(d-dragCab.d/12,Math.round(((cy-ry)/sc)/sn)*sn));
+  placed.push({...dragCab,x:fx,y:fy});
+  selIdx=placed.length-1;
+  showCabProps(placed[selIdx]);
+  redraw();checkFlags();updateStats();
+  notify(dragCab.n+' placed ('+dragCab.w+'"','grn');
+  dragCab=null;
+}
+
+// ═══════════════════════════════════
+//  PROPERTIES
+// ═══════════════════════════════════
+function showCabProps(cab){
+  document.getElementById('roomprops').style.display='none';
+  document.getElementById('cabprops').style.display='';
+  document.getElementById('rptitle').textContent=cab.n;
+  const sw=document.getElementById('selw');
+  sw.innerHTML=cab.w.map(w=>`<option value="${w}"${w===cab.w?' selected':''}>${w}"</option>`).join('');
+  document.getElementById('seldoor').value=cab.door||'shaker';
+  document.getElementById('selhw').value=cab.hw||'mblack';
+  document.getElementById('selint').value=cab.interior||'std';
+  document.getElementById('selnotes').value=cab.notes||'';
+  // Finish swatches
+  const fsw=document.getElementById('finsws');
+  fsw.innerHTML='';
+  FINS.forEach(f=>{
+    const s=document.createElement('div');
+    s.className='sw'+(cab.finish===f.id?' on':'');
+    s.style.background=f.c;
+    s.style.border=f.id==='white'?'2px solid #E0E0F0':'2px solid transparent';
+    s.title=f.n+' (+$'+f.p+')';
+    s.onclick=()=>{upd('finish',f.id);fsw.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));s.classList.add('on');};
+    fsw.appendChild(s);
+  });
+}
+
+function showRoomPanel(){
+  document.getElementById('roomprops').style.display='';
+  document.getElementById('cabprops').style.display='none';
+  document.getElementById('rptitle').textContent='Room Properties';
+}
+
+function upd(prop,val){
+  if(selIdx===null)return;
+  if(prop==='w')val=parseInt(val);
+  placed[selIdx][prop]=val;
+  redraw();updateStats();
+}
+
+function removeSel(){
+  if(selIdx===null)return;
+  placed.splice(selIdx,1);
+  selIdx=null;showRoomPanel();
+  redraw();checkFlags();updateStats();
+  notify('Cabinet removed','red');
+}
+
+// ═══════════════════════════════════
+//  LIVE STATS & QUOTE
+// ═══════════════════════════════════
+function updateStats(){
+  const n=placed.length;
+  document.getElementById('stcabs').textContent=n;
+  const baseLF=placed.filter(c=>c.ct==='base').reduce((s,c)=>s+(c.w/12),0);
+  document.getElementById('stlf').textContent=baseLF.toFixed(1)+' LF';
+  const pb=getPB();
+  let bt=0,wt=0,tt=0;
+  placed.forEach(c=>{
+    const fin=FINS.find(f=>f.id===c.finish)||FINS[0];
+    const u=Math.round(c.price*(1+fin.p/500)*(1+pb.mu/100));
+    if(c.ct==='base'||c.ct==='spc') bt+=u;
+    else if(c.ct==='wall') wt+=u;
+    else tt+=u;
+  });
+  const mat=MATS.find(m=>m.id===selMat)||MATS[0];
+  const sqft=Math.max(0,baseLF*2.2);
+  const stone=Math.round(sqft*(mat.ppf+pb.si));
+  const inst=Math.round(n*pb.bi*(1+pb.mu/100));
+  const grand=bt+wt+tt+stone+inst;
+  document.getElementById('qbase').textContent='$'+bt.toLocaleString();
+  document.getElementById('qwall').textContent='$'+wt.toLocaleString();
+  document.getElementById('qtall').textContent='$'+tt.toLocaleString();
+  document.getElementById('qstone').textContent='$'+stone.toLocaleString();
+  document.getElementById('qinst').textContent='$'+inst.toLocaleString();
+  document.getElementById('qtotal').textContent='$'+grand.toLocaleString();
+  document.getElementById('sttot').textContent='$'+Math.round(grand/1000).toFixed(0)+'K';
+}
+
+function getPB(){try{const p=localStorage.getItem('sd_pb3');if(p)return JSON.parse(p);}catch(e){}return PB;}
+
+// ═══════════════════════════════════
+//  AI
+// ═══════════════════════════════════
+function toggleAI(){document.getElementById('aistrip').classList.toggle('on');}
+
+async function askAI(prompt){
+  if(!prompt||!prompt.trim())return;
+  document.getElementById('aistrip').classList.add('on');
+  const area=document.getElementById('aitxt');
+  area.innerHTML='<div class="aildr"><div class="aidot"></div><div class="aidot"></div><div class="aidot"></div><span>SAIRNdesign AI analyzing your kitchen...</span></div>';
+  document.getElementById('aiinput').value='';
+  const{w,d}=getRoom();
+  const ceil=document.getElementById('rceil').value;
+  const layout=document.getElementById('rlayout').value;
+  const baseLF=placed.filter(c=>c.ct==='base').reduce((s,c)=>s+(c.w/12),0);
+  const cabSum=placed.length>0?placed.map(c=>c.n+' '+c.w+'" '+c.finish+' '+c.door).join('; '):'No cabinets placed yet';
+  const tot=document.getElementById('qtotal').textContent;
+  const mat=MATS.find(m=>m.id===selMat)||MATS[0];
+  const sys=`You are SAIRNdesign AI, the world's most advanced kitchen and space design intelligence, created by SAIRN Technologies. You are a world-class kitchen designer, NKBA-certified specialist, and construction expert combined. You know every cabinet manufacturer in the USA — KraftMaid, Merillat, Aristokraft, Fabuwood, Omega, Diamond, Wellborn, Thomasville, Wood-Mode, Decora, StarMark, J&K, Forevermark and all others. You know standard cabinet dimensions, NKBA guidelines, countertop materials, appliance clearances, and construction code. You help designers and contractors create stunning, functional, code-compliant kitchens that close sales. The NKBA work triangle rule: the sum of the three legs (sink to range, range to fridge, fridge to sink) must be between 12 and 26 feet. No single leg under 4 feet or over 9 feet. Always be specific, cite real dimensions, flag real violations. Recommend real brands and finishes. Be bold, precise, and visually evocative.`;
+  const msg=`Current kitchen design:
+Room: ${w}ft x ${d}ft | Ceiling: ${ceil}ft | Layout: ${layout}
+Base cabinet run: ${baseLF.toFixed(1)} LF
+Cabinets placed: ${cabSum}
+Selected countertop: ${mat.n} at $${mat.ppf}/sqft
+Total quote estimate: ${tot}
+
+Designer request: ${prompt}`;
+  try{
+    const res=await fetch(CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
+    const data=await res.json();
+    area.textContent=data.content?.[0]?.text||'Unable to get response.';
+  }catch(err){area.textContent='Connection error — check network and try again.';}
+}
+
+// ═══════════════════════════════════
+//  AUTO LAYOUT
+// ═══════════════════════════════════
+function autoLayout(){
+  placed=[];
+  const{w,d}=getRoom();
+  const layout=document.getElementById('rlayout').value;
+  const fmfr=MFRS.find(m=>m.id==='fabuwood');
+  const mult=fmfr?fmfr.mult:0.88;
+  const mk=(ct,id,nm,ico,ws,ww,h,dep,bp,note)=>({id,n:nm,ico,w:ws,ct,x:0,y:0,finish:'white',door:'shaker',hw:'mblack',interior:'std',notes:note||'',mname:'Fabuwood',mfrid:'fabuwood',price:Math.round(bp*mult),widths:ws,h,d:dep});
+  function addBase(x,y,width){placed.push({...mk('base','B-DD','Double Door Base','DD',[24,27,30,33,36,42,48],width,34.5,24,365),w:width,x,y});}
+  function addWall(x,y,width){placed.push({...mk('wall','W-DD36','Wall Cabinet 36H','WD',[24,27,30,33,36],width,36,12,265),w:width,x,y});}
+  function addTall(x,y,width){placed.push({...mk('tall','T-PAN84','Pantry Cabinet','P1',[18,21,24,30],width,84,24,785),w:width,x,y});}
+  const bw=30/12; // 30" base in feet
+
+  if(layout==='galley'){
+    let x=0;while(x+bw<=w){addBase(x,0,30);addBase(x,d-2,30);x+=bw;}
+  } else if(layout==='onewall'){
+    let x=0;while(x+bw<=w){addBase(x,d-2,30);addWall(x,d-4.25,30);x+=bw;}
+  } else if(layout==='l'){
+    let x=0;while(x+bw<=w){addBase(x,d-2,30);addWall(x,d-4.25,30);x+=bw;}
+    let y=0;while(y+2<d-2.5){addBase(0,y,24);y+=2;}
+  } else if(layout==='u'){
+    let x=0;while(x+bw<=w){addBase(x,d-2,30);addWall(x,d-4.25,30);x+=bw;}
+    let y=0;while(y+2<d-2.5){addBase(0,y,24);y+=2;}
+    x=0;while(x+bw<=w){addBase(x,0,30);x+=bw;}
+    addTall(w-2,0,24);
+  } else if(layout==='island'||layout==='peninsula'){
+    let x=0;while(x+bw<=w){addBase(x,d-2,30);addWall(x,d-4.25,30);x+=bw;}
+    let y=0;while(y+2<d-2.5){addBase(0,y,24);y+=2;}
+    const islandW=48;
+    placed.push({...mk('spc','B-ISL2','Island Cabinet','IS',[24,30,36,42,48,60,72,84],islandW,34.5,24,860),w:islandW,x:w/2-2,y:d/2-1});
+  }
+  selIdx=null;showRoomPanel();redraw();checkFlags();updateStats();
+  notify('AI auto-layout: '+placed.length+' cabinets placed','grn');
+  setTimeout(()=>askAI('Review this auto-generated '+layout+' layout. Give me the top 3 improvements for traffic flow, functionality, and the NKBA work triangle. Be specific.'),700);
+}
+
+function snapAll(){
+  const{w,d}=getRoom();
+  placed.forEach(c=>{c.x=Math.max(0,Math.min(w-c.w/12,Math.round(c.x*4)/4));c.y=Math.max(0,Math.min(d-c.d/12,Math.round(c.y*4)/4));});
+  redraw();notify('All cabinets snapped to 3" grid','grn');
+}
+
+function clearAll(){
+  if(!placed.length)return;
+  if(!confirm('Clear all cabinets?'))return;
+  placed=[];selIdx=null;showRoomPanel();redraw();updateStats();checkFlags();
+}
+
+// ═══════════════════════════════════
+//  FLAGS
+// ═══════════════════════════════════
+function checkFlags(){
+  const bar=document.getElementById('flagbar');
+  if(!placed.length){bar.innerHTML='<span class="flag fok">Drag cabinets from the catalog to begin building your layout</span>';return;}
+  const flags=[];
+  const baseLF=placed.filter(c=>c.ct==='base').reduce((s,c)=>s+(c.w/12),0);
+  const hasSink=placed.some(c=>c.id==='B-SB');
+  if(!hasSink) flags.push({t:'fwarn',m:'No sink base cabinet placed'});
+  if(baseLF>0&&baseLF<8) flags.push({t:'fwarn',m:'Only '+baseLF.toFixed(1)+' LF of base run. Most kitchens need 12 to 16+ LF'});
+  const hasCorner=placed.some(c=>c.id==='B-BC'||c.id==='B-LS');
+  const{w,d}=getRoom();
+  if(w>10&&d>10&&!hasCorner) flags.push({t:'finfo',m:'Consider a corner cabinet for this room size'});
+  const hasWall=placed.some(c=>c.ct==='wall');
+  if(!hasWall&&placed.filter(c=>c.ct==='base').length>3) flags.push({t:'finfo',m:'No wall cabinets placed. Upper storage is recommended.'});
+  const grand=parseInt((document.getElementById('qtotal').textContent||'0').replace(/[$,]/g,''));
+  if(grand>45000) flags.push({t:'fdanger',m:'Quote above $45K. Confirm budget and scope with client before proceeding.'});
+  else if(grand>28000) flags.push({t:'fwarn',m:'Quote above $28K. Client budget conversation recommended.'});
+  if(!flags.length){bar.innerHTML='<span class="flag fok">Layout looks good. '+placed.length+' cabinets. '+document.getElementById('qtotal').textContent+' estimated.</span>';return;}
+  bar.innerHTML=flags.map(f=>`<span class="flag ${f.t}">${f.m}</span>`).join('');
+}
+
+// ═══════════════════════════════════
+//  STYLES
+// ═══════════════════════════════════
+function initStyles(){
+  const g=document.getElementById('stgrid');
+  g.innerHTML=STYLES.map(s=>`
+    <div class="stcard" id="sc-${s.id}" onclick="pickStyle('${s.id}')">
+      <div class="stimg" style="background:${s.bg};color:${s.dark?'#fff':'#1E1B4B'};letter-spacing:-1px">${s.ico}</div>
+      <div class="stinfo"><div class="stname">${s.n}</div><div class="stdesc">${s.desc}</div></div>
+    </div>`).join('');
+}
+
+function pickStyle(id){
+  document.querySelectorAll('.stcard').forEach(c=>c.classList.remove('on'));
+  document.getElementById('sc-'+id).classList.add('on');
+  activeStyle=id;
+}
+
+function applyStyle(){
+  if(!activeStyle){notify('Pick a style first','orn');return;}
+  const s=STYLES.find(x=>x.id===activeStyle);
+  if(!s)return;
+  placed.forEach(c=>{c.finish=s.fin;c.door=s.door;});
+  redraw();
+  notify(s.n+' applied to all '+placed.length+' cabinets','grn');
+  showP('design');
+}
+
+// ═══════════════════════════════════
+//  MATERIALS
+// ═══════════════════════════════════
+function initMaterials(){
+  const g=document.getElementById('matgrid');
+  g.innerHTML=MATS.map(m=>`
+    <div class="matcard" id="mc-${m.id}" onclick="pickMat('${m.id}')">
+      <div style="font-size:28px;font-weight:900;color:var(--a);margin-bottom:7px">${m.ico}</div>
+      <div style="font-size:12px;font-weight:700">${m.n}</div>
+      <div style="font-size:10px;color:var(--mu);margin-top:2px">${m.sub}</div>
+      <div style="font-size:13px;font-weight:800;color:var(--a);margin-top:5px">$${m.ppf}/sqft${m.pop?'&nbsp;<span style="font-size:9px;background:var(--alight);color:var(--a);padding:1px 5px;border-radius:4px">Popular</span>':''}</div>
+    </div>`).join('');
+}
+
+function pickMat(id){
+  selMat=id;
+  document.querySelectorAll('.matcard').forEach(c=>{c.classList.remove('on');c.style.borderColor='var(--bd)';c.style.background='var(--sf)';});
+  const mc=document.getElementById('mc-'+id);
+  if(mc){mc.classList.add('on');mc.style.borderColor='var(--a)';mc.style.background='var(--atint)';}
+  calcStone();updateStats();
+}
+
+function calcStone(){
+  const baseLF=placed.filter(c=>c.ct==='base').reduce((s,c)=>s+(c.w/12),0);
+  const sqft=(baseLF*2.2).toFixed(1);
+  const lf=(baseLF*1.1).toFixed(1);
+  const mat=MATS.find(m=>m.id===selMat)||MATS[0];
+  const pb=getPB();
+  document.getElementById('stsqft').textContent=sqft;
+  document.getElementById('stlf2').textContent=lf;
+  document.getElementById('stmat').textContent='$'+Math.round(parseFloat(sqft)*mat.ppf).toLocaleString();
+  document.getElementById('stinst2').textContent='$'+Math.round(parseFloat(sqft)*pb.si).toLocaleString();
+}
+
+// ═══════════════════════════════════
+//  APPLIANCES
+// ═══════════════════════════════════
+function initAppliances(){
+  const g=document.getElementById('applgrid');
+  g.innerHTML=APPLS.map(a=>`
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:14px">
+      <div style="font-size:11px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:20px">${a.ico}</span>${a.n}
+      </div>
+      <div class="fg" style="margin:0">
+        <select id="appl-${a.id}" style="font-size:12px;padding:6px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);outline:none">
+          ${a.options.map((o,i)=>`<option${i===a.def?' selected':''}>${o}</option>`).join('')}
+        </select>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════
+//  LIDAR
+// ═══════════════════════════════════
+function ldOver(e){e.preventDefault();document.getElementById('lddrop').classList.add('ov');}
+function ldDrop(e){e.preventDefault();document.getElementById('lddrop').classList.remove('ov');const f=e.dataTransfer.files[0];if(f)procLD(f);}
+function ldSel(e){const f=e.target.files[0];if(f)procLD(f);}
+
+function procLD(file){
+  notify('Processing: '+file.name,'grn');
+  if(file.name.endsWith('.json')){
+    const r=new FileReader();
+    r.onload=function(e){
+      try{
+        const d=JSON.parse(e.target.result);
+        const w=d.width||d.roomWidth||d.dimensions?.width||12;
+        const dep=d.depth||d.roomDepth||d.dimensions?.depth||10;
+        document.getElementById('rw').value=w;document.getElementById('rd').value=dep;
+        document.getElementById('ldw').value=w;document.getElementById('ldd').value=dep;
+        redraw();notify("Room imported: "+w+"' x "+dep+"'",'grn');showP('design');
+      }catch(err){notify('Could not parse file. Enter dimensions manually.','orn');}
+    };r.readAsText(file);
+  } else {notify('File received: '+file.name+'. Set dimensions below to build floor plan.','grn');}
+}
+
+function ldManual(){
+  const w=parseFloat(document.getElementById('ldw').value)||12;
+  const d=parseFloat(document.getElementById('ldd').value)||10;
+  document.getElementById('rw').value=w;document.getElementById('rd').value=d;
+  redraw();notify("Floor plan: "+w+"' x "+d+"'",'grn');showP('design');
+}
+
+// ═══════════════════════════════════
+//  QUOTE
+// ═══════════════════════════════════
+function buildQuote(){
+  const tb=document.getElementById('qtbody');
+  tb.innerHTML='';
+  const pb=getPB();
+  let cabTot=0;
+  if(!placed.length){
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--mu);padding:22px">No cabinets placed. Go to Design to begin.</td></tr>';
+  } else {
+    placed.forEach(c=>{
+      const fin=FINS.find(f=>f.id===c.finish)||FINS[0];
+      const hw=c.hw||'mblack';
+      const u=Math.round(c.price*(1+fin.p/500)*(1+pb.mu/100));
+      cabTot+=u;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${c.n}</td><td>${c.mname||'Fabuwood'}</td><td>${c.w}"</td><td>${fin.n}</td><td>${c.door||'Shaker'}</td><td>${hw}</td><td>$${u.toLocaleString()}</td><td>$${u.toLocaleString()}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+  const baseLF=placed.filter(c=>c.ct==='base').reduce((s,c)=>s+(c.w/12),0);
+  const sqft=Math.max(0,baseLF*2.2);
+  const mat=MATS.find(m=>m.id===selMat)||MATS[0];
+  const stone=Math.round(sqft*(mat.ppf+pb.si));
+  const inst=Math.round(placed.length*pb.bi*(1+pb.mu/100));
+  const grand=cabTot+stone+inst;
+  document.getElementById('qfcabs').textContent='$'+cabTot.toLocaleString();
+  document.getElementById('qfsqft').textContent=sqft.toFixed(1);
+  document.getElementById('qfstone').textContent='$'+stone.toLocaleString();
+  document.getElementById('qfinst').textContent='$'+inst.toLocaleString();
+  document.getElementById('qfgrand').textContent='$'+grand.toLocaleString();
+  document.getElementById('qprojname').textContent=document.getElementById('pname').textContent;
+  const pct=Math.min(100,Math.max(5,(grand-8000)/(50000-8000)*100));
+  const bf=document.getElementById('benchfill');
+  bf.style.width=pct+'%';
+  bf.style.background=pct<30?'#16a34a':pct<60?'var(--a)':'#DC2626';
+  document.getElementById('benchlbl').textContent='Your quote: $'+grand.toLocaleString();
+}
+
+// ═══════════════════════════════════
+//  3D
+// ═══════════════════════════════════
+function gen3D(mode){
+  const cv=document.getElementById('cv3d');
+  document.getElementById('3d-btns').style.display='none';
+  cv.style.display='block';
+  cv.width=cv.offsetWidth||900;cv.height=cv.offsetHeight||560;
+  const c=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  // Dark room background
+  c.fillStyle='#1E1B4B';c.fillRect(0,0,W,H);
+  // Floor perspective
+  const floor=[[100,H*0.55],[W-100,H*0.55],[W*0.85,H*0.85],[W*0.15,H*0.85]];
+  c.beginPath();c.moveTo(floor[0][0],floor[0][1]);
+  floor.forEach(p=>c.lineTo(p[0],p[1]));
+  c.closePath();c.fillStyle='#2D2A6E';c.fill();
+  c.strokeStyle='#4F46E5';c.lineWidth=1;c.stroke();
+  // Back wall
+  c.fillStyle='#252267';c.fillRect(100,80,W-200,H*0.55-80);
+  // Draw simplified cabinet boxes on back wall
+  const baseColor=placed.length>0?(FINS.find(f=>f.id===placed[0].finish)||FINS[0]).c:'#FFFFFF';
+  let cx2=120;
+  placed.filter(c=>c.ct==='base'||c.ct==='wall').slice(0,8).forEach((cab,i)=>{
+    const cw=Math.round((cab.w/12)*(W-240)/12);
+    const isBase=cab.ct==='base';
+    const cy2=isBase?H*0.35:H*0.15;
+    const ch=isBase?H*0.18:H*0.14;
+    c.fillStyle=baseColor;c.fillRect(cx2,cy2,cw-4,ch);
+    c.strokeStyle='rgba(99,102,241,.4)';c.lineWidth=1;c.strokeRect(cx2,cy2,cw-4,ch);
+    // Door line
+    c.strokeStyle='rgba(0,0,0,.15)';c.beginPath();c.moveTo(cx2+cw/2-2,cy2+4);c.lineTo(cx2+cw/2-2,cy2+ch-4);c.stroke();
+    if(isBase) cx2+=cw;
+  });
+  // Countertop
+  const mat=MATS.find(m=>m.id===selMat)||MATS[0];
+  const ctColors={whitequartz:'#F0EDE8',calacatta:'#F5F0E5',superwhite:'#F0EDE0',blackgalaxy:'#1A1A1A',butcherblock:'#C4904A',absblack:'#1A1A1A'};
+  c.fillStyle=ctColors[selMat]||'#EDE8E0';
+  c.fillRect(116,H*0.35-6,W-236,10);
+  c.strokeStyle='rgba(0,0,0,.1)';c.lineWidth=1;c.stroke();
+  // Label
+  c.fillStyle='rgba(255,255,255,.85)';c.font='bold 14px Inter,sans-serif';c.textAlign='center';
+  c.fillText('3D Preview — '+placed.length+' Cabinets',W/2,H-50);
+  c.fillStyle='rgba(165,180,252,.7)';c.font='12px Inter,sans-serif';
+  c.fillText(mat.n+' countertop &middot; '+document.getElementById('qtotal').textContent+' estimated',W/2,H-28);
+  notify('3D render generated. Full WebGL Three.js render available in SAIRNdesign Pro.','grn');
+}
+
+// ═══════════════════════════════════
+//  PRESENTATION
+// ═══════════════════════════════════
+async function genPresentation(){
+  const area=document.getElementById('pres-narrative');
+  area.innerHTML='<div class="aildr"><div class="aidot"></div><div class="aidot"></div><div class="aidot"></div><span>Generating your client presentation...</span></div>';
+  const{w,d}=getRoom();
+  const baseLF=placed.filter(c=>c.ct==='base').reduce((s,c)=>s+(c.w/12),0);
+  const mat=MATS.find(m=>m.id===selMat)||MATS[0];
+  const tot=document.getElementById('qtotal').textContent;
+  const style=activeStyle?STYLES.find(s=>s.id===activeStyle):null;
+  const sys=`You are a world-class kitchen designer and sales presenter. Write a compelling, professional client presentation narrative for a kitchen design. Be warm, visual, and specific. Write in second person addressing the client. Make them excited about their new kitchen. Include specific design choices and why they work together. End with a call to move forward.`;
+  const msg=`Write a professional client-facing presentation narrative for this kitchen design:
+Room: ${w}ft x ${d}ft
+Design style: ${style?style.n:'Custom'}
+Base cabinet run: ${baseLF.toFixed(1)} linear feet
+${placed.length} cabinets total
+Countertop: ${mat.n}
+Investment: ${tot}
+Key cabinets: ${placed.slice(0,5).map(c=>c.n+' '+c.w+'"').join(', ')}`;
+  try{
+    const res=await fetch(CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
+    const data=await res.json();
+    area.textContent=data.content?.[0]?.text||'Unable to generate presentation.';
+    // Spec cards
+    const specs=document.getElementById('pres-specs');
+    specs.innerHTML=[
+      {l:'Room Size',v:w+"' &times; "+d+"'"},
+      {l:'Layout',v:document.getElementById('rlayout').value},
+      {l:'Cabinets',v:placed.length+' pieces'},
+      {l:'Base Run',v:baseLF.toFixed(1)+' LF'},
+      {l:'Countertop',v:mat.n},
+      {l:'Design Style',v:style?style.n:'Custom'},
+      {l:'Ceiling Height',v:document.getElementById('rceil').value+"'"},
+      {l:'Investment',v:document.getElementById('qtotal').textContent},
+    ].map(s=>`<div style="background:var(--atint);border:1px solid var(--bd);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${s.l}</div><div style="font-size:14px;font-weight:700">${s.v}</div></div>`).join('');
+  }catch(err){area.textContent='Connection error.';}
+}
+
+// ═══════════════════════════════════
+//  SAVE / HISTORY
+// ═══════════════════════════════════
+function saveP(){
+  try{
+    const proj={id:Date.now(),name:document.getElementById('pname').textContent,date:new Date().toLocaleDateString(),rw:document.getElementById('rw').value,rd:document.getElementById('rd').value,layout:document.getElementById('rlayout').value,placed:[...placed],mat:selMat,style:activeStyle,quote:document.getElementById('qtotal').textContent};
+    const h=JSON.parse(localStorage.getItem('sd_dh2')||'[]');
+    h.unshift(proj);if(h.length>60)h.pop();
+    localStorage.setItem('sd_dh2',JSON.stringify(h));
+    notify('Project saved: '+proj.name,'grn');
+  }catch(e){notify('Save failed','red');}
+}
+
+function renderHist(){
+  const list=document.getElementById('histlist');
+  try{
+    const h=JSON.parse(localStorage.getItem('sd_dh2')||'[]');
+    if(!h.length){list.innerHTML='<div style="color:var(--mu);text-align:center;padding:40px;font-size:13px">No saved projects yet.</div>';return;}
+    list.innerHTML=h.map(p=>`
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:13px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:14px;font-weight:700">${p.name}</div><div style="font-size:11px;color:var(--mu);margin-top:2px">${p.date} &middot; ${p.rw}'&times;${p.rd}' &middot; ${p.layout} &middot; ${p.quote}</div></div>
+        <div style="display:flex;gap:7px">
+          <button class="toolbtn" onclick="restoreP(${p.id})">Restore</button>
+          <button class="toolbtn" onclick="delP(${p.id})" style="color:var(--red)">Delete</button>
+        </div>
+      </div>`).join('');
+  }catch(e){list.innerHTML='<div style="color:var(--red)">Error loading history</div>';}
+}
+
+function restoreP(id){
+  try{
+    const h=JSON.parse(localStorage.getItem('sd_dh2')||'[]');
+    const p=h.find(x=>x.id===id);if(!p)return;
+    document.getElementById('pname').textContent=p.name;
+    document.getElementById('rw').value=p.rw;
+    document.getElementById('rd').value=p.rd;
+    document.getElementById('rlayout').value=p.layout;
+    placed=p.placed||[];selMat=p.mat;activeStyle=p.style;selIdx=null;
+    redraw();checkFlags();updateStats();showP('design');
+    notify('Restored: '+p.name,'grn');
+  }catch(e){notify('Restore failed','red');}
+}
+
+function delP(id){
+  try{let h=JSON.parse(localStorage.getItem('sd_dh2')||'[]');h=h.filter(x=>x.id!==id);localStorage.setItem('sd_dh2',JSON.stringify(h));renderHist();notify('Deleted','red');}catch(e){}
+}
+
+// ═══════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════
+function savePB(){
+  try{
+    PB={bi:parseFloat(document.getElementById('pbbi').value)||85,wi:parseFloat(document.getElementById('pbwi').value)||65,ti:parseFloat(document.getElementById('pbti').value)||120,si:parseFloat(document.getElementById('pbsi').value)||45,mu:parseFloat(document.getElementById('pbmu').value)||30,tx:parseFloat(document.getElementById('pbtx').value)||8.5,lr:parseFloat(document.getElementById('pblr').value)||75,df:parseFloat(document.getElementById('pbdf').value)||250};
+    localStorage.setItem('sd_pb3',JSON.stringify(PB));
+    notify('Price Book saved','grn');updateStats();
+  }catch(e){notify('Save failed','red');}
+}
+
+// ═══════════════════════════════════
+//  MISC
+// ═══════════════════════════════════
+function renameP(){
+  const n=prompt('Project name:',document.getElementById('pname').textContent);
+  if(n&&n.trim()) document.getElementById('pname').textContent=n.trim();
+}
+
+function sendSD(){
+  const baseLF=placed.filter(c=>c.ct==='base').reduce((s,c)=>s+(c.w/12),0);
+  const sqft=(baseLF*2.2).toFixed(1);
+  const mat=MATS.find(m=>m.id===selMat)||MATS[0];
+  const{w,d}=getRoom();
+  notify('StoneDesk: '+sqft+' sqft '+mat.n+' sent','grn');
+  console.log('StoneDesk handoff',{project:document.getElementById('pname').textContent,sqft,material:mat.id,materialName:mat.n,pricePerSqft:mat.ppf,roomW:w,roomD:d,baseLF});
+}
+
+function printD(){
+  buildQuote();
+  window.print();
+}
+
+function exportCSV(){
+  if(!placed.length){notify('No cabinets to export','orn');return;}
+  const pb=getPB();
+  const rows=[['Cabinet','Manufacturer','Type','Width (in)','Height (in)','Depth (in)','Finish','Door Style','Hardware','Unit Price','Notes']];
+  placed.forEach(c=>{
+    const fin=FINS.find(f=>f.id===c.finish)||FINS[0];
+    const u=Math.round(c.price*(1+fin.p/500)*(1+pb.mu/100));
+    rows.push([c.n,c.mname||'Fabuwood',c.ct,c.w,c.h,c.d,fin.n,c.door||'Shaker',c.hw||'Matte Black','$'+u.toLocaleString(),c.notes||'']);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+v+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='SAIRNdesign-Quote.csv';a.click();
+  notify('CSV exported: '+placed.length+' cabinets','grn');
+}
+
+function notify(msg,color){
+  const n=document.getElementById('notif');
+  n.style.background=color==='grn'?'#16a34a':color==='red'?'#DC2626':color==='orn'?'#D97706':'var(--a)';
+  n.textContent=msg;n.classList.add('on');
+  setTimeout(()=>n.classList.remove('on'),3500);
+}
+
+// --- KEYBOARD SHORTCUTS ---
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('auth').style.display==='none'||!document.getElementById('auth').style.display){
+    if((e.key==='Delete'||e.key==='Backspace')&&selIdx!==null&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='SELECT'){removeSel();e.preventDefault();}
+    if(e.key==='Escape'){selIdx=null;showRoomPanel();redraw();}
+    if(e.metaKey&&e.key==='s'){saveP();e.preventDefault();}
+    if(e.key==='a'&&e.ctrlKey){toggleAI();e.preventDefault();}
+  }
+});
+</script>
+</body>
+</html>
