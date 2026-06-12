@@ -2722,8 +2722,7 @@ function printDocTemplate(tmpl) {
   win.document.write('<div class="sig-line"><div class="sig">Provider Signature &amp; Date</div><div class="sig">Reviewed by Coder / Auditor &amp; Date</div></div>');
   win.document.write('<div class="footer"><div>Confidential — For Clinical and Coding Use Only</div><div>SAIRNcode AI — sairn.vercel.app/sairncode</div></div>');
   win.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>');
-
-</body></html>');
+  win.document.write('</body></html>');
   win.document.close();
 }
 
