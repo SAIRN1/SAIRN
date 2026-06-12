@@ -6317,7 +6317,7 @@ async function sairiAnalyzeDocument(cfg,file){
     if(msgsEl){msgsEl.appendChild(uDiv);msgsEl.scrollTop=msgsEl.scrollHeight;}
     try{
       var res=await fetch(cfg.claudeUrl,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:cfg.systemPrompt||'',messages:msgs})});
+        body:JSON.stringify({is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:1000,system:cfg.systemPrompt||'',messages:msgs})});
       var data=await res.json();
       var text=data.content&&data.content[0]?data.content[0].text:'Error reading document.';
       var aDiv=document.createElement('div');
