@@ -8,18 +8,18 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --sky:#0EA5E9;--sky2:#0284C7;--sky3:#0C4A6E;
-  --sky-t:#F0F9FF;--sky-b:#BAE6FD;
+  --sky:#F59E0B;--sky2:#D97706;--sky3:#78350F;
+  --sky-t:#FFFBEB;--sky-b:#FDE68A;
   --text:#0F172A;--sub:#334155;--muted:#64748B;
   --sand:#E2E8F0;--cream:#F8FAFC;--white:#FFFFFF;
   --red:#DC2626;--amber:#D97706;--green:#059669;--orange:#EA580C;
-  --grad:linear-gradient(135deg,#0EA5E9,#0284C7);
-  --a-light:rgba(14,165,233,.08);
+  --grad:linear-gradient(135deg,#F59E0B,#D97706);
+  --a-light:rgba(245,158,11,.08);
 }
 body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
 
 /* AUTH */
-#sb-auth{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0C4A6E 0%,#0EA5E9 100%);position:relative;overflow:hidden}
+#sb-auth{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#78350F 0%,#F59E0B 100%);position:relative;overflow:hidden}
 #sb-auth::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
 .sb-auth-card{background:#fff;border-radius:20px;padding:40px;width:400px;box-shadow:0 24px 80px rgba(0,0,0,.3);position:relative;z-index:1;text-align:center}
 .sb-auth-logo{font-size:36px;font-weight:900;color:var(--sky3);letter-spacing:-1px;margin-bottom:6px}
@@ -38,7 +38,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 /* APP SHELL */
 #sb-app{display:none;min-height:100vh;flex-direction:column}
 #sb-app.visible{display:flex}
-.sb-topbar{background:var(--grad);color:#fff;height:54px;display:flex;align-items:center;gap:14px;padding:0 20px;flex-shrink:0;box-shadow:0 2px 12px rgba(14,165,233,.35)}
+.sb-topbar{background:var(--grad);color:#fff;height:54px;display:flex;align-items:center;gap:14px;padding:0 20px;flex-shrink:0;box-shadow:0 2px 12px rgba(245,158,11,.35)}
 .sb-topbar-logo{font-size:17px;font-weight:900;letter-spacing:-.5px;white-space:nowrap}
 .sb-topbar-logo span{opacity:.7;font-weight:400}
 .sb-topbar-badge{font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.15);font-weight:700;letter-spacing:.5px}
@@ -96,7 +96,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
 /* BADGES */
 .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.badge-sky{background:rgba(14,165,233,.12);color:var(--sky2)}
+.badge-sky{background:rgba(245,158,11,.12);color:var(--sky2)}
 .badge-green{background:rgba(5,150,105,.1);color:#047857}
 .badge-amber{background:rgba(217,119,6,.1);color:#B45309}
 .badge-red{background:rgba(220,38,38,.1);color:var(--red)}
@@ -118,7 +118,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .sb-flag{padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:8px;border-left:4px solid;line-height:1.5}
 .sb-flag.danger{background:rgba(220,38,38,.06);border-color:var(--red);color:var(--red)}
 .sb-flag.warn{background:rgba(217,119,6,.06);border-color:var(--amber);color:#B45309}
-.sb-flag.info{background:rgba(14,165,233,.06);border-color:var(--sky);color:var(--sky2)}
+.sb-flag.info{background:rgba(245,158,11,.06);border-color:var(--sky);color:var(--sky2)}
 .sb-flag.ok{background:rgba(5,150,105,.06);border-color:var(--green);color:#047857}
 
 /* NOTIF */
@@ -167,7 +167,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .sb-modal-title{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
 
 /* SAIRN SUITE INTEGRATION BAR */
-.sb-suite-bar{background:linear-gradient(135deg,rgba(14,165,233,.06),rgba(2,132,199,.04));border:1.5px solid var(--sky-b);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sb-suite-bar{background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(217,119,6,.04));border:1.5px solid var(--sky-b);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .sb-suite-bar-label{font-size:11px;font-weight:800;color:var(--sky2);text-transform:uppercase;letter-spacing:.5px}
 
 /* Check print styles */
@@ -475,7 +475,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
     <div class="sb-card">
       <div class="sb-card-title">🎙️ AI Daily Report Writer</div>
-      <div style="background:rgba(14,165,233,.06);border:1px solid var(--sky-b);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.7">
+      <div style="background:rgba(245,158,11,.06);border:1px solid var(--sky-b);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.7">
         <strong>How it works:</strong> Type or speak your raw notes — weather, crew, work done, delays, issues. Claude transforms them into a professional field report in seconds.
       </div>
       <div class="sb-fg">
@@ -718,7 +718,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
     <div class="sb-card">
       <div class="sb-card-title">✨ AI Change Order Writer</div>
-      <div style="background:rgba(14,165,233,.06);border:1px solid var(--sky-b);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.7">
+      <div style="background:rgba(245,158,11,.06);border:1px solid var(--sky-b);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.7">
         Describe the scope change in plain English. AI writes a formal CO with justification, schedule impact, and cost breakdown.
       </div>
       <div class="sb-fg"><label>Project</label><select id="co-project"><option>Select project...</option></select></div>
@@ -939,7 +939,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 <div id="panel-certpayroll" class="sb-panel">
   <div class="sb-section-title">📋 Certified Payroll — Davis-Bacon WH-347</div>
   <div class="sb-section-sub">Federal prevailing wage compliance — automated WH-347 generation</div>
-  <div style="background:rgba(14,165,233,.06);border:1.5px solid var(--sky-b);border-radius:10px;padding:14px;margin-bottom:16px;font-size:12px;line-height:1.8">
+  <div style="background:rgba(245,158,11,.06);border:1.5px solid var(--sky-b);border-radius:10px;padding:14px;margin-bottom:16px;font-size:12px;line-height:1.8">
     <strong>Who needs this:</strong> Any contractor on a federally funded project over $2,000. Davis-Bacon requires you to pay prevailing wages for the county where work is performed. The WH-347 form must be submitted weekly. <strong>Penalties:</strong> Up to $500/day per violation + debarment. This module generates compliant forms — $300+/mo value elsewhere.
   </div>
   <div class="sb-kpi-grid">
@@ -1230,7 +1230,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 <div id="panel-pricebook" class="sb-panel">
   <div class="sb-section-title">📒 Price Book</div>
   <div class="sb-section-sub">Admin formula editor — set rates, labor costs, and material prices</div>
-  <div style="background:rgba(14,165,233,.06);border:1.5px solid var(--sky-b);border-radius:10px;padding:14px;margin-bottom:14px;font-size:12px;line-height:1.8">
+  <div style="background:rgba(245,158,11,.06);border:1.5px solid var(--sky-b);border-radius:10px;padding:14px;margin-bottom:14px;font-size:12px;line-height:1.8">
     🔒 <strong>Admin only.</strong> These rates feed directly into the Estimating live calculation engine. Changes take effect immediately on all new estimates.
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
@@ -1423,7 +1423,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 <script>
 // ============================================================
 // SAIRNbuild v2.0 - SAIRN Technologies
-// Construction Management SaaS - Sky Blue #0EA5E9
+// Construction Management SaaS - Sky Blue #F59E0B
 // Auth: PIN 1234 (PM) / 9999 (Admin)
 // Proxy: https://sairn.vercel.app/api/claude
 // app_id: sairnbuild, is_demo: true
@@ -1492,7 +1492,7 @@ function sbDateFmt(d) { if (!d) return '-'; return new Date(d + 'T12:00:00').toL
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function sbNotify(msg, color) {
-  var colors = { sky: '#0EA5E9', green: '#059669', red: '#DC2626', amber: '#D97706' };
+  var colors = { sky: '#F59E0B', green: '#059669', red: '#DC2626', amber: '#D97706' };
   var n = document.getElementById('sb-notif');
   n.style.background = colors[color] || '#0F172A';
   n.textContent = msg;
@@ -2242,7 +2242,7 @@ function sbPrintPunchList() {
     return '<tr><td>' + (i+1) + '</td><td>' + esc(p.item) + '</td><td>' + esc(p.trade||'-') + '</td><td>' + esc(p.assigned||'-') + '</td><td>' + sbDateFmt(p.due) + '</td><td style="width:100px">_______________</td></tr>';
   }).join('');
   var html = '<!DOCTYPE html><html><head><title>Punch List</title><style>body{font-family:Arial,sans-serif;padding:30px;font-size:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:7px 10px;text-align:left}th{background:#f0f0f0;font-weight:700}@media print{button{display:none}}</style></head><body>' +
-    '<button onclick="window.print()" style="padding:8px 16px;background:#0EA5E9;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print</button>' +
+    '<button onclick="window.print()" style="padding:8px 16px;background:#F59E0B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print</button>' +
     '<h2>Punch List — ' + sbSettings.company + '</h2><p>Date: ' + new Date().toLocaleDateString() + '</p>' +
     '<table><thead><tr><th>#</th><th>Description</th><th>Trade</th><th>Assigned To</th><th>Due Date</th><th>Sign Off</th></tr></thead><tbody>' + rows + '</tbody></table>' +
     '<div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Owner / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">GC / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Architect / Date</div></div>' +
@@ -2409,8 +2409,8 @@ function sbPrintEstimate() {
   var summary = (document.getElementById('est-live-summary')||{}).innerHTML || '';
   var company = sbSettings.company || 'Your Construction Company';
   sbPrintContent('Proposal — ' + name, '');
-  var html = '<!DOCTYPE html><html><head><title>Proposal</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:12px;max-width:750px;margin:0 auto}@media print{button{display:none}}.header{border-bottom:3px solid #0EA5E9;padding-bottom:16px;margin-bottom:24px}.total{font-size:28px;font-weight:900;color:#0EA5E9;margin-top:16px}</style></head><body>' +
-    '<button onclick="window.print()" style="padding:8px 16px;background:#0EA5E9;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print / Save PDF</button>' +
+  var html = '<!DOCTYPE html><html><head><title>Proposal</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:12px;max-width:750px;margin:0 auto}@media print{button{display:none}}.header{border-bottom:3px solid #F59E0B;padding-bottom:16px;margin-bottom:24px}.total{font-size:28px;font-weight:900;color:#F59E0B;margin-top:16px}</style></head><body>' +
+    '<button onclick="window.print()" style="padding:8px 16px;background:#F59E0B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print / Save PDF</button>' +
     '<div class="header"><h1 style="margin:0;font-size:22px">' + esc(company) + '</h1>' +
     '<div>' + esc(sbSettings.address || '') + '</div><div>' + esc(sbSettings.phone || '') + ' · ' + esc(sbSettings.email || '') + '</div>' +
     '<div style="margin-top:12px"><strong>To:</strong> ' + esc(client) + '</div>' +
@@ -2765,9 +2765,9 @@ function sbPrintInvoice(id) {
   var inv = sbInvoices.find(function(i){ return i.id === id; });
   if (!inv) return;
   var company = sbSettings.company || 'Your Construction Company';
-  var html = '<!DOCTYPE html><html><head><title>Invoice ' + esc(inv.invoiceNum) + '</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:12px;max-width:700px;margin:0 auto}@media print{button{display:none}}.header{border-bottom:3px solid #0EA5E9;padding-bottom:16px;margin-bottom:24px}</style></head><body>' +
-    '<button onclick="window.print()" style="padding:8px 16px;background:#0EA5E9;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print</button>' +
-    '<div class="header"><h2 style="margin:0">INVOICE</h2><h3 style="color:#0EA5E9;margin:4px 0">' + esc(inv.invoiceNum) + '</h3>' +
+  var html = '<!DOCTYPE html><html><head><title>Invoice ' + esc(inv.invoiceNum) + '</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:12px;max-width:700px;margin:0 auto}@media print{button{display:none}}.header{border-bottom:3px solid #F59E0B;padding-bottom:16px;margin-bottom:24px}</style></head><body>' +
+    '<button onclick="window.print()" style="padding:8px 16px;background:#F59E0B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print</button>' +
+    '<div class="header"><h2 style="margin:0">INVOICE</h2><h3 style="color:#F59E0B;margin:4px 0">' + esc(inv.invoiceNum) + '</h3>' +
     '<div><strong>' + esc(company) + '</strong></div><div>' + esc(sbSettings.address||'') + '</div></div>' +
     '<p><strong>Project:</strong> ' + esc(sbProjectName(inv.projectId)) + '</p>' +
     '<p><strong>Invoice Date:</strong> ' + sbDateFmt(inv.date) + ' &nbsp;·&nbsp; <strong>Due:</strong> ' + sbDateFmt(inv.due) + '</p>' +
@@ -3714,7 +3714,7 @@ function sbGenProfitReport() {
     return '<tr><td>' + esc(p.name) + '</td><td>' + sbFmt(rev) + '</td><td>' + sbFmt(costs) + '</td><td style="font-weight:700;color:' + (profit>=0?'var(--green)':'var(--red)') + '">' + sbFmt(profit) + '</td><td>' + sbPct(margin) + '</td></tr>';
   }).join('');
   var html = '<!DOCTYPE html><html><head><title>Job Profitability Report</title><style>body{font-family:Arial,sans-serif;padding:30px;font-size:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e5e7eb;padding:8px 12px;text-align:left}th{background:#f0f9ff;font-weight:700}@media print{button{display:none}}</style></head><body>' +
-    '<button onclick="window.print()" style="padding:8px 16px;background:#0EA5E9;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print / Save PDF</button>' +
+    '<button onclick="window.print()" style="padding:8px 16px;background:#F59E0B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print / Save PDF</button>' +
     '<h2>Job Profitability Report — ' + (sbSettings.company || 'SAIRNbuild') + '</h2><p>' + new Date().toLocaleDateString() + '</p>' +
     '<table><thead><tr><th>Project</th><th>Contract</th><th>Costs</th><th>Gross Profit</th><th>Margin</th></tr></thead><tbody>' + rows + '</tbody></table>' +
     '<div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Prepared By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Reviewed By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Owner / Date</div></div>' +
@@ -3977,7 +3977,7 @@ function chkPrintCheck() {
     '.sig-line{border-top:1px solid #333;width:200px;padding-top:2px;font-size:9px;color:#888;text-align:center;margin-top:4px}' +
     '.void-box{font-size:11px;color:#888;border:1px dashed #ccc;padding:2px 8px;display:inline-block;margin-bottom:6px}' +
     '</style></head><body>' +
-    '<button onclick="window.print()" style="padding:10px 20px;background:#0EA5E9;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:12px;font-size:14px">🖨 Print on Blank Check Stock</button>' +
+    '<button onclick="window.print()" style="padding:10px 20px;background:#F59E0B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:12px;font-size:14px">🖨 Print on Blank Check Stock</button>' +
     '<div style="font-size:12px;color:#888;margin:0 12px 8px;line-height:1.6">Load 3-per-page blank check stock. Check prints at 3.33" height (standard). Print 3 per sheet — void any blanks.</div>' +
     '<div class="check-wrap">' +
     '<div class="check-header"><div><strong style="font-size:13px">' + esc(company) + '</strong><br>' + esc(addr) + '</div>' +
@@ -4036,7 +4036,7 @@ function chkRenderRegister() {
       '<td style="padding:9px 12px;font-size:11px;color:#6b7280">' + esc(c.memo||'-') + '</td>' +
       '<td style="padding:9px 12px;font-size:11px;color:#9ca3af">' + esc(c.category||'-') + '</td>' +
       '<td style="padding:9px 12px;font-weight:700;color:#374151">$' + (parseFloat(c.amount)||0).toFixed(2) + '</td>' +
-      '<td style="padding:9px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(14,165,233,.1);color:#0EA5E9;font-weight:700">' + esc(c.status||'issued') + '</span></td></tr>';
+      '<td style="padding:9px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,.1);color:#F59E0B;font-weight:700">' + esc(c.status||'issued') + '</span></td></tr>';
   }).join('');
 }
 
@@ -4136,11 +4136,11 @@ function sbPrintContent(title, content) {
   var company = sbSettings.company || 'SAIRNbuild';
   var html = '<!DOCTYPE html><html><head><title>' + esc(title) + '</title><style>' +
     'body{font-family:Arial,sans-serif;padding:36px;font-size:12px;max-width:800px;margin:0 auto;color:#000}' +
-    'h2{color:#0EA5E9;border-bottom:2px solid #0EA5E9;padding-bottom:8px;margin-bottom:20px}' +
+    'h2{color:#F59E0B;border-bottom:2px solid #F59E0B;padding-bottom:8px;margin-bottom:20px}' +
     'pre{white-space:pre-wrap;font-family:inherit;line-height:1.7}' +
     '@media print{button{display:none}.sig{page-break-inside:avoid}}' +
     '</style></head><body>' +
-    '<button onclick="window.print()" style="padding:8px 16px;background:#0EA5E9;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px;font-family:inherit">🖨 Print / Save PDF</button>' +
+    '<button onclick="window.print()" style="padding:8px 16px;background:#F59E0B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px;font-family:inherit">🖨 Print / Save PDF</button>' +
     '<h2>' + esc(title) + '</h2>' +
     '<p style="font-size:11px;color:#888;margin-bottom:16px">' + esc(company) + ' · ' + new Date().toLocaleDateString() + '</p>' +
     '<pre>' + esc(content) + '</pre>' +
@@ -4159,7 +4159,7 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-console.log('SAIRNbuild v2.0 loaded — SAIRN Technologies — Sky Blue #0EA5E9 — 25+ panels — AI at the core');
+console.log('SAIRNbuild v2.0 loaded — SAIRN Technologies — Sky Blue #F59E0B — 25+ panels — AI at the core');
 </script>
 
 </body>
