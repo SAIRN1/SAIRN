@@ -187,6 +187,10 @@
     {
       "source": "/memory",
       "destination": "/memory_settings.html"
+    },
+    {
+      "source": "/sairndesign",
+      "destination": "/sairndesign.html"
     }
   ],
   "cleanUrls": true,
