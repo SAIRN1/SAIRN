@@ -613,23 +613,84 @@ let canvas, ctx;
 let PB={ bi:85, wi:65, ti:120, si:45, mu:30, tx:8.5, lr:75, df:250 };
 try{ const p=localStorage.getItem('sd_pb3'); if(p) PB=JSON.parse(p); }catch(e){}
 
-// --- MANUFACTURERS ---
+// --- MANUFACTURERS (54 brands across 5 tiers) ---
+const MFR_TIERS = [
+  {id:'all-tiers', label:'All Brands (54)'},
+  {id:'budget', label:'Budget / RTA'},
+  {id:'stock', label:'Stock / Mid'},
+  {id:'semi', label:'Semi-Custom'},
+  {id:'high-semi', label:'High Semi-Custom'},
+  {id:'custom', label:'Full Custom / Luxury'},
+];
+
 const MFRS=[
-  {id:'all',name:'All Brands',mult:1.0},
-  {id:'kraftmaid',name:'KraftMaid',tier:'Semi-Custom',badge:'bsemi',mult:1.40},
-  {id:'merillat',name:'Merillat',tier:'Stock',badge:'bstock',mult:0.85},
-  {id:'aristokraft',name:'Aristokraft',tier:'Stock',badge:'bstock',mult:0.78},
-  {id:'fabuwood',name:'Fabuwood',tier:'Stock',badge:'bstock',mult:0.88},
-  {id:'omega',name:'Omega',tier:'Semi-Custom',badge:'bsemi',mult:1.45},
-  {id:'diamond',name:'Diamond by MasterBrand',tier:'Stock',badge:'bstock',mult:0.95},
-  {id:'wellborn',name:'Wellborn',tier:'Semi-Custom',badge:'bsemi',mult:1.22},
-  {id:'thomasville',name:'Thomasville',tier:'Stock',badge:'bstock',mult:0.98},
-  {id:'wood-mode',name:'Wood-Mode',tier:'Custom',badge:'bcustom',mult:1.85},
-  {id:'decora',name:'Decora',tier:'Semi-Custom',badge:'bsemi',mult:1.28},
-  {id:'starmark',name:'StarMark',tier:'Semi-Custom',badge:'bsemi',mult:1.18},
-  {id:'holiday',name:'Holiday Kitchens',tier:'Custom',badge:'bcustom',mult:1.65},
-  {id:'jk',name:'J&K Cabinetry',tier:'Stock',badge:'bstock',mult:0.72},
-  {id:'forevermark',name:'Forevermark',tier:'Stock',badge:'bstock',mult:0.70}
+  {id:'all',name:'All Brands',tier:'all-tiers',badge:'bstock',mult:1.0,order:'',web:'',specialty:'Show all 54 manufacturers',madein:'Various',founded:''},
+
+  // === BUDGET / RTA ($45-$180 per cabinet) ===
+  {id:'hampton-bay',name:'Hampton Bay',tier:'budget',badge:'bstock',mult:0.65,order:'homedepot.com',web:'homedepot.com',specialty:'Home Depot exclusive. RTA and assembled. Nationwide same-day pickup. 1-year warranty.',madein:'China/Vietnam',founded:1994},
+  {id:'ikea',name:'IKEA SEKTION',tier:'budget',badge:'bstock',mult:0.55,order:'ikea.com',web:'ikea.com',specialty:'Flat-pack modular. Frameless European system. 25-year frame warranty. Massive customization via accessories.',madein:'Europe/Asia',founded:1943},
+  {id:'jk',name:'J&K Cabinetry',tier:'budget',badge:'bstock',mult:0.70,order:'jkcabinetry.com',web:'jkcabinetry.com',specialty:'Plywood box standard. Soft-close standard. 7-10 day ship from NJ warehouse. Contractor favorite.',madein:'China (NJ warehouse)',founded:2009},
+  {id:'forevermark',name:'Forevermark',tier:'budget',badge:'bstock',mult:0.68,order:'forevermarkcabinetry.com',web:'forevermarkcabinetry.com',specialty:'CARB2 and FSC certified eco-friendly. Value pricing. Cabinetworks Group brand.',madein:'China',founded:2008},
+  {id:'cabinetstogo',name:'Cabinets To Go',tier:'budget',badge:'bstock',mult:0.62,order:'cabinetstogo.com',web:'cabinetstogo.com',specialty:'130+ showrooms nationwide. RTA and assembled. Free design service. Fast ship.',madein:'China/US',founded:2008},
+  {id:'rtastore',name:'The RTA Store',tier:'budget',badge:'bstock',mult:0.58,order:'thertastore.com',web:'thertastore.com',specialty:'Online-only. Ships nationwide. Plywood box upgrade available. Best price-per-box in market.',madein:'China',founded:2007},
+  {id:'allwood',name:'All Wood Cabinets',tier:'budget',badge:'bstock',mult:0.65,order:'allwoodcabinets.com',web:'allwoodcabinets.com',specialty:'300k sqft NJ warehouse. 7-10 day ship. 16 door styles. Plywood box. Dovetail drawers.',madein:'US/China',founded:2005},
+  {id:'cubitac',name:'Cubitac Cabinetry',tier:'budget',badge:'bstock',mult:0.60,order:'cubitac.com',web:'cubitac.com',specialty:'Wholesale to contractors. All-plywood available. Quick ship. Competitive contractor pricing.',madein:'China',founded:2005},
+  {id:'lilyann',name:'Lily Ann Cabinets',tier:'budget',badge:'bstock',mult:0.62,order:'lilyanncabinets.com',web:'lilyanncabinets.com',specialty:'Free samples. Online ordering. Solid wood dovetail drawers. Good DIY and contractor option.',madein:'China',founded:2007},
+  {id:'cnc',name:'CNC Cabinetry',tier:'budget',badge:'bstock',mult:0.72,order:'cnccabinetry.com',web:'cnccabinetry.com',specialty:'Fast ship to eastern US. Plywood available. Good contractor pricing. Quick lead times.',madein:'Asia/US warehouse',founded:2010},
+  {id:'cliqstudios',name:'CliqStudios',tier:'budget',badge:'bsemi',mult:0.82,order:'cliqstudios.com',web:'cliqstudios.com',specialty:'Factory-direct semi-custom. Free personalized design service. 7-10 day ship. Plywood standard. Minnesota made.',madein:'USA (Minnesota)',founded:2010},
+  {id:'curie',name:'Cabinets.com',tier:'budget',badge:'bsemi',mult:1.05,order:'cabinets.com',web:'cabinets.com',specialty:'Online direct semi-custom. Free design service. Lifetime limited warranty. 30-day ship. Good value.',madein:'USA',founded:2004},
+
+  // === STOCK / MID-RANGE ($130-$280 per cabinet) ===
+  {id:'aristokraft',name:'Aristokraft',tier:'stock',badge:'bstock',mult:0.80,order:'aristokraft.com or dealer',web:'aristokraft.com',specialty:'Value line from MasterBrand. Wide finish range. Quick lead times. Best-selling budget semi.',madein:'USA (Indiana)',founded:1954},
+  {id:'merillat',name:'Merillat',tier:'stock',badge:'bstock',mult:0.85,order:'merillat.com or dealer',web:'merillat.com',specialty:'KCMA certified. Stock and semi-custom. Michigan made. Pioneer in affordable American cabinetry.',madein:'USA (Michigan)',founded:1946},
+  {id:'diamond',name:'Diamond by MasterBrand',tier:'stock',badge:'bstock',mult:0.95,order:'diamondcabinets.com',web:'diamondcabinets.com',specialty:'Available at Lowes nationwide. Good mid-range construction. Multiple wood species.',madein:'USA (Indiana)',founded:1954},
+  {id:'americanwoodmark',name:'American Woodmark',tier:'stock',badge:'bstock',mult:0.90,order:'americanwoodmark.com',web:'americanwoodmark.com',specialty:'3rd largest US cabinet maker (NYSE: AMWD). Stock and semi-custom. Available at Home Depot and Lowes.',madein:'USA (Virginia)',founded:1980},
+  {id:'homecrest',name:'Homecrest Cabinetry',tier:'stock',badge:'bstock',mult:0.95,order:'homecrestcabinets.com or dealer',web:'homecrestcabinets.com',specialty:'Budget-friendly semi-custom from MasterBrand. Good finish selection. Minnesota made.',madein:'USA (Minnesota)',founded:1953},
+  {id:'shenandoah',name:'Shenandoah Cabinetry',tier:'stock',badge:'bstock',mult:0.88,order:'shenandoahcabinetry.com',web:'shenandoahcabinetry.com',specialty:'Lowes exclusive. Same factory as Timberlake and American Woodmark. Quick availability.',madein:'USA',founded:1990},
+  {id:'timberlake',name:'Timberlake Cabinetry',tier:'stock',badge:'bstock',mult:0.90,order:'timberlakecabinetry.com or dealer',web:'timberlakecabinetry.com',specialty:'Builder-grade stock cabinets. Good value. Fast ship. American Woodmark brand.',madein:'USA',founded:1988},
+  {id:'fabuwood',name:'Fabuwood',tier:'stock',badge:'bstock',mult:0.88,order:'fabuwood.com or dealer',web:'fabuwood.com',specialty:'NJ-based. Quick ship 5-7 days. Soft-close standard. Nexus and Allure lines popular.',madein:'China (NJ warehouse)',founded:2009},
+  {id:'thomasville',name:'Thomasville Cabinetry',tier:'stock',badge:'bsemi',mult:0.98,order:'homedepot.com',web:'thomasvillecabinetry.com',specialty:'Home Depot semi-custom. Full-overlay. Soft-close standard. Over 100 years of brand history.',madein:'USA/Asia',founded:1904},
+  {id:'schuler',name:'Schuler Cabinetry',tier:'stock',badge:'bsemi',mult:1.05,order:'lowes.com',web:'schulercabinetry.com',specialty:'Lowes semi-custom. Same line as Medallion and Yorktowne. Multiple stain options.',madein:'USA (Indiana)',founded:1990},
+  {id:'waypoint',name:'Waypoint Living Spaces',tier:'stock',badge:'bsemi',mult:1.00,order:'waypointlivingspaces.com or dealer',web:'waypointlivingspaces.com',specialty:'Semi-custom. Inset and overlay options. 15-day lead time. American Woodmark brand.',madein:'USA',founded:2005},
+  {id:'yorktowne',name:'Yorktowne Cabinetry',tier:'stock',badge:'bsemi',mult:1.10,order:'yorktownecabinetry.com or dealer',web:'yorktownecabinetry.com',specialty:'Over 100 year history. Pennsylvania heritage. Stock and semi-custom from MasterBrand.',madein:'USA',founded:1908},
+  {id:'medallion',name:'Medallion Cabinetry',tier:'stock',badge:'bsemi',mult:1.08,order:'medallionbycraftsmanship.com or dealer',web:'medallionbycraftsmanship.com',specialty:'Higher-end semi-custom from MasterBrand. Excellent finish quality. Same factory as Schuler.',madein:'USA (Minnesota)',founded:1956},
+
+  // === SEMI-CUSTOM ($220-$450 per cabinet) ===
+  {id:'kraftmaid',name:'KraftMaid',tier:'semi',badge:'bsemi',mult:1.40,order:'kraftmaid.com or dealer',web:'kraftmaid.com',specialty:'70+ door styles. 100+ finishes. DuraKraft finish system. Vantage Collection flagship. Ohio made.',madein:'USA (Ohio)',founded:1969},
+  {id:'decora',name:'Decora Cabinetry',tier:'semi',badge:'bsemi',mult:1.25,order:'decoracabinetry.com or dealer',web:'decoracabinetry.com',specialty:'Dovetail drawers standard. Multiple wood species. Good value semi-custom from MasterBrand.',madein:'USA (Indiana)',founded:1954},
+  {id:'schrock',name:'Schrock Cabinetry',tier:'semi',badge:'bsemi',mult:1.28,order:'schrock.com or dealer',web:'schrock.com',specialty:'All-plywood upgrade available. 15-day lead time. Quality mid-high semi-custom. MasterBrand.',madein:'USA (Indiana)',founded:1961},
+  {id:'kemper',name:'Kemper Cabinetry',tier:'semi',badge:'bsemi',mult:1.20,order:'kempercabinets.com or dealer',web:'kempercabinets.com',specialty:'Semi-custom. Good price point. Founded 1926. Bremtown sister line. Indiana made.',madein:'USA (Indiana)',founded:1926},
+  {id:'showplace',name:'Showplace Cabinetry',tier:'semi',badge:'bsemi',mult:1.22,order:'showplacecabinetry.com or dealer',web:'showplacecabinetry.com',specialty:'Employee-owned. Frameless and framed. South Dakota made. Excellent stain selection.',madein:'USA (South Dakota)',founded:1973},
+  {id:'wellborn',name:'Wellborn Cabinet',tier:'semi',badge:'bsemi',mult:1.20,order:'wellborn.com or dealer',web:'wellborn.com',specialty:'Family-owned Alabama company. Hardwood solid. Estate and Forest lines. 60+ years.',madein:'USA (Alabama)',founded:1961},
+  {id:'starmark',name:'StarMark Cabinetry',tier:'semi',badge:'bsemi',mult:1.18,order:'starmarkcabinetry.com or dealer',web:'starmarkcabinetry.com',specialty:'South Dakota made. Inset available. Dovetail standard. Outstanding quality per dollar.',madein:'USA (South Dakota)',founded:1978},
+  {id:'kitchencraft',name:'Kitchen Craft',tier:'semi',badge:'bsemi',mult:1.30,order:'kitchencraftcabinetry.com or dealer',web:'kitchencraftcabinetry.com',specialty:'Canadian heritage brand. Frameless and full-access. Design-forward finishes. MasterBrand.',madein:'Canada/USA',founded:1973},
+  {id:'dynasty',name:'Dynasty by Omega',tier:'semi',badge:'bsemi',mult:1.25,order:'dynastybycraftsmanship.com or dealer',web:'dynastybycraftsmanship.com',specialty:'Frameless and contemporary focus. Good modern finishes. Value entry to Omega family.',madein:'USA (Iowa)',founded:1960},
+  {id:'bertch',name:'Bertch Cabinet',tier:'semi',badge:'bsemi',mult:1.35,order:'bertch.com or dealer',web:'bertch.com',specialty:'Iowa family-owned. Full-access frameless specialty. 15-20 day lead. High quality construction.',madein:'USA (Iowa)',founded:1977},
+  {id:'cabico',name:'Cabico Cabinetry',tier:'semi',badge:'bsemi',mult:1.30,order:'cabico.com or dealer',web:'cabico.com',specialty:'Canadian made. LEED certified. Frameless specialty. FSC certified wood options. Quebec made.',madein:'Canada (Quebec)',founded:1992},
+  {id:'ultracraft',name:'UltraCraft Cabinetry',tier:'semi',badge:'bsemi',mult:1.18,order:'ultracraftcabinets.com or dealer',web:'ultracraftcabinets.com',specialty:'Frameless focus. Full-access. Good value semi-custom from MasterBrand.',madein:'USA (Indiana)',founded:1990},
+  {id:'canyoncreek',name:'Canyon Creek Cabinet',tier:'semi',badge:'bsemi',mult:1.25,order:'canyoncreek.com or dealer',web:'canyoncreek.com',specialty:'Washington state made. Frameless and face-frame. Eco-conscious. Pacific Northwest heritage.',madein:'USA (Washington)',founded:1987},
+  {id:'woodmark-custom',name:'Woodmark Custom',tier:'semi',badge:'bsemi',mult:1.15,order:'americanwoodmark.com or dealer',web:'americanwoodmark.com',specialty:'American Woodmark custom tier. Upgraded finishes and construction over stock lines.',madein:'USA (Virginia)',founded:1980},
+  {id:'mouser',name:'Mouser Cabinetry',tier:'semi',badge:'bsemi',mult:1.32,order:'mousercabinetry.com or dealer',web:'mousercabinetry.com',specialty:'Iowa made. Semi-custom. Inset and overlay. Good quality at competitive price.',madein:'USA (Iowa)',founded:1982},
+
+  // === HIGH SEMI-CUSTOM / LOW CUSTOM ($380-$700 per cabinet) ===
+  {id:'omega',name:'Omega Cabinetry',tier:'high-semi',badge:'bsemi',mult:1.45,order:'omegacab.com or dealer',web:'omegacab.com',specialty:'Dovetail standard. Multiple species. Iowa made. Dynasty is lower tier. Omega is MasterBrand flagship.',madein:'USA (Iowa)',founded:1977},
+  {id:'durasupreme',name:'Dura Supreme',tier:'high-semi',badge:'bsemi',mult:1.55,order:'durasupreme.com or dealer',web:'durasupreme.com',specialty:'Minnesota made since 1954. Solid wood dovetail. 40+ door styles. Heirloom quality. Employee-owned.',madein:'USA (Minnesota)',founded:1954},
+  {id:'holiday',name:'Holiday Kitchens',tier:'high-semi',badge:'bsemi',mult:1.65,order:'holidaykitchens.com or dealer',web:'holidaykitchens.com',specialty:'Wisconsin made. Custom-level at semi price. Inset specialty. 60-day lead time. Family-owned.',madein:'USA (Wisconsin)',founded:1977},
+  {id:'plainfancy',name:'Plain & Fancy Custom',tier:'high-semi',badge:'bsemi',mult:1.70,order:'plainfancycabinetry.com or dealer',web:'plainfancycabinetry.com',specialty:'Pennsylvania Amish-influenced. Handcrafted details. Framed inset specialty. Heritage craftsmanship.',madein:'USA (Pennsylvania)',founded:1968},
+  {id:'shiloh',name:'Shiloh Cabinetry',tier:'high-semi',badge:'bsemi',mult:1.55,order:'shilohcabinetry.com or dealer',web:'shilohcabinetry.com',specialty:'Pennsylvania made. Superior finish quality. Full inset available. Custom-adjacent quality.',madein:'USA (Pennsylvania)',founded:1986},
+  {id:'fieldstone',name:'Fieldstone Cabinetry',tier:'high-semi',badge:'bsemi',mult:1.45,order:'fieldstonecabinetry.com or dealer',web:'fieldstonecabinetry.com',specialty:'Frameless specialty. Good price-quality in semi-custom tier. MasterBrand brand.',madein:'USA',founded:1985},
+  {id:'dewils',name:'DeWils Fine Cabinetry',tier:'high-semi',badge:'bsemi',mult:1.60,order:'dewils.com or dealer',web:'dewils.com',specialty:'Canadian family-owned. Euro frameless specialty. Recycled materials. Handcrafted in BC.',madein:'Canada (BC)',founded:1976},
+  {id:'candlelight',name:'Candlelight Cabinetry',tier:'high-semi',badge:'bsemi',mult:1.50,order:'candlelightcabinetry.com or dealer',web:'candlelightcabinetry.com',specialty:'Quality semi-custom. Good finish selection. Mid-Atlantic distribution strong.',madein:'USA',founded:1968},
+  {id:'woodharbor',name:'Wood-Harbor Cabinetry',tier:'high-semi',badge:'bsemi',mult:1.45,order:'woodharbor.com or dealer',web:'woodharbor.com',specialty:'Iowa made. Framed and frameless. Quality construction. Regional distribution.',madein:'USA (Iowa)',founded:1964},
+
+  // === FULL CUSTOM / LUXURY ($600-$3000+ per cabinet) ===
+  {id:'wood-mode',name:'Wood-Mode',tier:'custom',badge:'bcustom',mult:1.85,order:'wood-mode.com or dealer',web:'wood-mode.com',specialty:'Bucks County PA since 1942. Heirloom quality. 1000+ door styles. 250+ finishes. 12-16 week lead.',madein:'USA (Pennsylvania)',founded:1942},
+  {id:'rutt',name:'Rutt HandCrafted',tier:'custom',badge:'bcustom',mult:2.00,order:'rutt.net or dealer',web:'rutt.net',specialty:'Sister brand to Wood-Mode. Traditional detailed handcrafted. Premium positioning. Pennsylvania made.',madein:'USA (Pennsylvania)',founded:1963},
+  {id:'brookhaven',name:'Brookhaven by Wood-Mode',tier:'custom',badge:'bcustom',mult:1.75,order:'wood-mode.com or dealer',web:'wood-mode.com',specialty:'Value custom line from Wood-Mode. Same factory. More accessible price than flagship line.',madein:'USA (Pennsylvania)',founded:1980},
+  {id:'scavolini',name:'Scavolini',tier:'custom',badge:'bcustom',mult:2.50,order:'scavolini.com or US showroom',web:'scavolini.com',specialty:'Italian design leader since 1961. Frameless and lacquer specialty. European hardware standard.',madein:'Italy',founded:1961},
+  {id:'boffi',name:'Boffi',tier:'custom',badge:'bcustom',mult:3.00,order:'boffi.com or showroom',web:'boffi.com',specialty:'Ultra-luxury Italian. Lacquer, wood, stainless. Handleless systems. Architect and designer favorite.',madein:'Italy',founded:1934},
+  {id:'siematic',name:'SieMatic',tier:'custom',badge:'bcustom',mult:2.80,order:'siematic.com or showroom',web:'siematic.com',specialty:'German precision since 1929. Ergonomic focus. Minimalist luxury. Handleless specialty. Iconic.',madein:'Germany',founded:1929},
+  {id:'poggenpohl',name:'Poggenpohl',tier:'custom',badge:'bcustom',mult:2.90,order:'poggenpohl.com or showroom',web:'poggenpohl.com',specialty:'Oldest kitchen brand. Founded 1892. Pure luxury German engineering. Global design icon.',madein:'Germany',founded:1892},
 ];
 
 // --- CABINET CATALOG ---
@@ -805,13 +866,59 @@ function showP(id){
 function initMfrTabs(){
   const tc=document.getElementById('mfrtabs');
   tc.innerHTML='';
-  MFRS.forEach(m=>{
+  // Add tier group headers + individual brands
+  const tierOrder=['all','budget','stock','semi','high-semi','custom'];
+  const tierLabels={'all':'All 54 Brands','budget':'Budget/RTA','stock':'Stock/Mid','semi':'Semi-Custom','high-semi':'High Semi','custom':'Custom/Luxury'};
+  tierOrder.forEach(tier=>{
     const t=document.createElement('div');
-    t.className='mfrtab'+(m.id==='all'?' on':'');
-    t.textContent=m.name;
-    t.onclick=()=>{activeMfr=m.id;tc.querySelectorAll('.mfrtab').forEach(x=>x.classList.remove('on'));t.classList.add('on');renderCat();};
+    t.className='mfrtab'+(tier==='all'?' on':'');
+    t.style.cssText=tier!=='all'?'background:var(--atint);font-size:9px;':'';
+    const count=tier==='all'?MFRS.length-1:MFRS.filter(m=>m.tier===tier).length;
+    t.textContent=tierLabels[tier]+(tier!=='all'?' ('+count+')':'');
+    t.onclick=()=>{
+      activeMfr=tier;
+      tc.querySelectorAll('.mfrtab').forEach(x=>x.classList.remove('on'));
+      t.classList.add('on');
+      renderCat();
+    };
     tc.appendChild(t);
   });
+  // Then individual brands (scrollable)
+  MFRS.filter(m=>m.id!=='all').forEach(m=>{
+    const t=document.createElement('div');
+    t.className='mfrtab';
+    t.title=m.specialty||'';
+    t.textContent=m.name;
+    t.onclick=()=>{
+      activeMfr=m.id;
+      tc.querySelectorAll('.mfrtab').forEach(x=>x.classList.remove('on'));
+      t.classList.add('on');
+      renderCat();
+      showVendorInfo(m);
+    };
+    tc.appendChild(t);
+  });
+}
+
+function showVendorInfo(mfr){
+  var existing=document.getElementById('vinfo-strip');
+  if(existing) existing.remove();
+  var strip=document.createElement('div');
+  strip.id='vinfo-strip';
+  strip.style.cssText='position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--a);padding:10px 14px;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -4px 16px rgba(0,0,0,.08)';
+  var priceEx=Math.round(365*mfr.mult);
+  var info='<div style="display:flex;gap:14px;align-items:center;flex:1;flex-wrap:wrap">';
+  info+='<div><div style="font-size:13px;font-weight:800;color:var(--a)">'+mfr.name+'</div>';
+  info+='<div style="font-size:10px;color:var(--mu)">'+mfr.tier+' &middot; Est. '+mfr.founded+' &middot; Made in: '+mfr.madein+'</div></div>';
+  info+='<div style="font-size:11px;color:var(--tx);max-width:380px">'+mfr.specialty+'</div>';
+  info+='<div style="font-size:11px"><b style="color:var(--grn)">~$'+priceEx+'</b> per base cab (est.)</div></div>';
+  info+='<div style="display:flex;gap:7px;flex-shrink:0">';
+  info+='<a href="https://'+mfr.web+'" target="_blank" style="padding:6px 12px;background:var(--a);color:#fff;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none">Order / Visit</a>';
+  info+='<button onclick="var s=document.getElementById('+String.fromCharCode(39)+'vinfo-strip'+String.fromCharCode(39)+');if(s)s.remove()" style="padding:6px 10px;background:transparent;border:1px solid var(--bd);border-radius:7px;font-size:11px;cursor:pointer">&#215;</button></div>';
+  strip.innerHTML=info;
+  var cvArea=document.querySelector('.cvarea');
+  if(cvArea) cvArea.appendChild(strip);
+  setTimeout(function(){var s=document.getElementById('vinfo-strip');if(s)s.remove();},9000);
 }
 
 function setType(t,btn){
@@ -829,10 +936,21 @@ function renderCat(){
   let all=[];
   types.forEach(t=>(CABS[t]||[]).forEach(c=>all.push({...c,ct:t})));
   if(q) all=all.filter(c=>c.n.toLowerCase().includes(q)||c.id.toLowerCase().includes(q)||(c.note||'').toLowerCase().includes(q));
-  const mfr=MFRS.find(m=>m.id===activeMfr)||MFRS[0];
-  const mult=mfr.mult||1;
-  const mname=activeMfr==='all'?'Multi-Brand':mfr.name;
-  const badge=activeMfr==='all'?'bstock':(mfr.badge||'bstock');
+  // Handle tier filtering vs individual brand
+  const tierIds=['all','budget','stock','semi','high-semi','custom'];
+  let mfrsInScope=[];
+  if(activeMfr==='all'){
+    mfrsInScope=MFRS.filter(m=>m.id!=='all');
+  } else if(tierIds.includes(activeMfr)){
+    mfrsInScope=MFRS.filter(m=>m.tier===activeMfr);
+  } else {
+    mfrsInScope=MFRS.filter(m=>m.id===activeMfr);
+  }
+  const isMulti=mfrsInScope.length>1;
+  const mfr=mfrsInScope[0]||MFRS[1];
+  const mult=isMulti?1.0:mfr.mult;
+  const mname=isMulti?'Multi-Brand':mfr.name;
+  const badge=isMulti?'bstock':(mfr.badge||'bstock');
   if(all.length===0){list.innerHTML='<div style="padding:18px;text-align:center;color:var(--mu);font-size:12px">No results. Try a different search or filter.</div>';return;}
   all.forEach(cab=>{
     const price=Math.round(cab.p*mult);
@@ -856,7 +974,8 @@ function renderCat(){
     card.addEventListener('dragstart',e=>{
       const aw=card.querySelector('.wbtn.on');
       const w=aw?parseInt(aw.textContent):cab.w[0];
-      dragCab={...cab,w,mname,mfrid:activeMfr==='all'?'fabuwood':activeMfr,price,finish:'white',door:'shaker',hw:'mblack',interior:'std',notes:''};
+      const pickMfr=isMulti?mfrsInScope[Math.floor(Math.random()*Math.min(3,mfrsInScope.length))]:mfr;
+      dragCab={...cab,w,mname:pickMfr.name,mfrid:pickMfr.id,price:Math.round(cab.p*(pickMfr.mult||1)),finish:'white',door:'shaker',hw:'mblack',interior:'std',notes:''};
       e.dataTransfer.effectAllowed='copy';
     });
     list.appendChild(card);
