@@ -77,6 +77,14 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
 .sa-notif{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(10px);transition:all .3s;max-width:320px}
 .sa-notif.show{opacity:1;transform:translateY(0)}
 @media(max-width:768px){.sa-nav{width:56px}.sa-nav-btn span:not(.ni){display:none}.sa-nav-section{display:none}.sa-content{padding:12px}}
+
+    .sa-range-wrap{margin-top:8px}
+    .sa-range-bar-bg{height:6px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden;margin:4px 0}
+    .sa-range-bar-fill{height:100%;border-radius:3px;background:#16a34a;transition:width .6s}
+    .sa-range-label{font-size:10px;color:#6b7280;display:flex;justify-content:space-between}
+    .sa-bench-good{background:rgba(22,163,74,.12);color:#16a34a;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
+    .sa-bench-warn{background:rgba(234,179,8,.12);color:#b45309;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
+    .sa-bench-bad{background:rgba(220,38,38,.12);color:#dc2626;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
 </style>
 </head>
 <body>
@@ -133,6 +141,16 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
       <div class="sa-nav-section">Tax &amp; Assets</div>
       <button class="sa-nav-btn" onclick="saPanel('assets',this)"><span class="ni">🏭</span><span>Fixed Assets</span></button>
       <button class="sa-nav-btn" onclick="saPanel('mileage',this)"><span class="ni">🚗</span><span>Mileage</span></button>
+    
+      <div class="sa-nav-section">AI Tools 2026</div>
+      <button class="sa-nav-btn" onclick="saPanel('cashforecast',this)"><span class="ni">🔮</span><span>90-Day Forecast</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('quarterlytax',this)"><span class="ni">📅</span><span>Quarterly Tax</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('breakeven',this)"><span class="ni">⚖️</span><span>Break-Even</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('burnrate',this)"><span class="ni">🔥</span><span>Burn + Runway</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('sec179',this)"><span class="ni">🏭</span><span>Section 179</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('salestax',this)"><span class="ni">🗺️</span><span>Sales Tax</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('purchaseorders',this)"><span class="ni">📋</span><span>Purchase Orders</span></button>
+      <button class="sa-nav-btn" onclick="saPanel('marginoptimizer',this)"><span class="ni">📈</span><span>Margin Optimizer</span></button>
     </nav>
     <div class="sa-content">
 
@@ -992,7 +1010,14 @@ function saPanel(id,btn){
     bankrec:saInitBankRec,payrolljrnl:saInitPayrollJrnl,
     contractors:saInitAccContractors,cashflow:saInitCashFlow,
     anomaly:saInitAnomaly,budget:saInitBudget,tax:saInitTax,
-    reports:saInitReports,coa:saInitCOA,receipts:saInitReceipts
+    reports:saInitReports,coa:saInitCOA,receipts:saInitReceipts,
+    estimates:saInitEstimates,recurring:saInitRecurring,time:saInitTime,
+    contacts:saInitContacts,assets:saInitAssets,mileage:saInitMileage,
+    projects:saInitProjects,inventory:saInitInventory,
+    cashforecast:saInitCashForecast,breakeven:saInitBreakeven,
+    burnrate:saInitBurnRate,sec179:saInitSec179,
+    salestax:saInitSalesTax,purchaseorders:saInitPurchaseOrders,
+    marginoptimizer:saInitMarginOptimizer,quarterlytax:saInitQuarterlyTax
   };
   if(lazy[id])setTimeout(lazy[id],50);
 }
@@ -1142,7 +1167,7 @@ async function saDashAI(){
   var cash=saAccountBalance(1010);var ar=Math.abs(saAccountBalance(1100));
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:500,
         system:'You are SAIRNaccounting AI. Big 4 CPA + CFO. Be direct and concise.',
         messages:[{role:'user',content:'3 key CFO insights for: Cash $'+cash+', AR $'+ar+', Open invoices: '+invoices.filter(function(i){return i.status==='Open';}).length+', GL entries: '+glEntries.length+'. Focus on cash position, collections priority, one strategic action. Bullet format.'}]})});
     var data=await res.json();
@@ -1164,7 +1189,7 @@ async function saSendAI(){
   if(thinking)thinking.style.display='block';
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:1000,
         system:'You are SAIRNaccounting AI — Big 4 CPA + CFO + Tax Attorney. SAIRN Technologies. Always cite account codes (Dr XXXX, Cr XXXX) for journal entries. Provide exact 2026 rates. End every recommendation with the risk if ignored.',
         messages:[{role:'user',content:msg}]})});
     var data=await res.json();
@@ -1277,7 +1302,7 @@ async function saGenJournalAI(){
   try{
     var acctList=coaAccounts.slice(0,50).map(function(a){return a.code+' '+a.name;}).join(', ');
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:400,
         system:'You are SAIRNaccounting AI. Respond ONLY with valid JSON array, no other text.',
         messages:[{role:'user',content:'Journal entry for: "'+memo+'". Accounts available: '+acctList+'. Return JSON array: [{account:"code",memo:"desc",debit:0,credit:0}]. One side debit, other credit. Use 0 for unused side.'}]})});
     var data=await res.json();
@@ -1386,7 +1411,7 @@ async function saInvoiceAI(){
   if(!overdue.length){saNotify('No overdue invoices','');return;}
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:600,
         system:'You are SAIRNaccounting AI CFO and collections expert.',
         messages:[{role:'user',content:'Collections strategy for overdue invoices: '+JSON.stringify(overdue.map(function(i){return {customer:i.customer,amount:i.amount,daysPastDue:daysDiff(i.dueDate,new Date())};}))+'\\nProvide: 1) Priority order, 2) Email script for top overdue, 3) When to escalate, 4) Bad debt reserve recommendation.'}]})});
     var data=await res.json();
@@ -1470,7 +1495,7 @@ async function saBillAI(){
   var cash=saAccountBalance(1010);
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:500,
         system:'You are SAIRNaccounting AI CFO.',
         messages:[{role:'user',content:'Cash: $'+cash+'. Open bills: '+JSON.stringify(open.map(function(b){return {vendor:b.vendor,amount:b.amount,dueDate:b.dueDate};}))+'\\nAdvise: 1) Payment priority, 2) Which to defer, 3) Cash flow impact.'}]})});
     var data=await res.json();
@@ -1537,7 +1562,7 @@ function saRenderRecHistory(){
 async function saRecAI(){
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:500,
         system:'You are SAIRNaccounting AI -- bank reconciliation expert.',
         messages:[{role:'user',content:'Bank reconciliation shows a difference. Common causes and step-by-step troubleshooting checklist to find the discrepancy.'}]})});
     var data=await res.json();
@@ -1775,7 +1800,7 @@ async function saCFAI(){
   if(out)out.innerHTML='<div class="sa-card-title">AI Cash Flow Analysis</div><div style="color:var(--muted)">Analyzing...</div>';
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:700,
         system:'You are SAIRNaccounting AI CFO specializing in cash flow management.',
         messages:[{role:'user',content:'Cash position: $'+cash+', AR: $'+ar+', AP: $'+ap+', Expected inflows: '+JSON.stringify(cashFlowItems.inflows)+', Outflows: '+JSON.stringify(cashFlowItems.outflows)+'\\nProvide: 1) Cash runway, 2) Collection priorities, 3) Payment deferral options, 4) 90-day strategic recommendation, 5) Warning signs.'}]})});
     var data=await res.json();
@@ -1831,7 +1856,7 @@ async function saRunAnomalyScan(){
     if(out)out.innerHTML='<div class="sa-card-title">AI Forensic Analysis</div><div style="color:var(--muted)">Analyzing flags...</div>';
     try{
       var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+        body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:600,
           system:'You are SAIRNaccounting AI -- fraud detection and forensic accounting expert.',
           messages:[{role:'user',content:'Review flagged transactions: '+JSON.stringify(newFlags.slice(0,10))+'\\nProvide: 1) Risk level for each, 2) Legitimate vs concerning, 3) Investigation steps for highest risk items, 4) Overall assessment.'}]})});
       var data=await res.json();
@@ -1901,7 +1926,7 @@ async function saBudgetAI(){
   var rAct=0;glEntries.forEach(function(e){e.lines.forEach(function(l){if(parseInt(l.account)>=4000&&parseInt(l.account)<5000)rAct+=parseFloat(l.credit)||0;});});
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:600,
         system:'You are SAIRNaccounting AI CFO and budget analyst.',
         messages:[{role:'user',content:'Budget vs actual: Revenue budget $'+rBud+', actual $'+rAct+'. Budget lines: '+JSON.stringify(budgetLines)+'\\nProvide: 1) Overall budget health, 2) Largest variances and causes, 3) Corrective actions, 4) Year-end revised forecast.'}]})});
     var data=await res.json();
@@ -1961,7 +1986,7 @@ async function saTaxStrategyAI(){
   if(out)out.innerHTML='<div style="color:var(--muted)">Generating 2026 tax strategy...</div>';
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:800,
         system:'You are SAIRNaccounting AI -- Big 4 tax attorney and CPA. Provide specific, actionable 2026 tax strategy.',
         messages:[{role:'user',content:'Tax strategy for: Business type: '+bizType+', Net income: $'+income+', State: '+state+'.\\nProvide: 1) Top 3 deductions to maximize, 2) Retirement account strategy (SEP-IRA / Solo 401k), 3) Section 179 opportunity, 4) Entity structure recommendation, 5) Year-end moves before Dec 31.\\nInclude estimated tax savings for each recommendation.'}]})});
     var data=await res.json();
@@ -1984,6 +2009,7 @@ function rptPrint(title,content){
   w.document.write('<h1>'+escHtml(company)+'<br><small style="font-size:13px;font-weight:400">'+escHtml(title)+' | '+escHtml(period)+' | '+escHtml(basis)+'<br>Generated '+new Date().toLocaleDateString()+'</small></h1>');
   w.document.write(content);
   w.document.write('<div style="margin-top:40px;font-size:10px;color:#666">Generated by SAIRNaccounting -- SAIRN Technologies</div>');
+  w.document.write('<div style="margin-top:36px;padding-top:16px;border-top:2px solid #eee"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">Prepared By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">Reviewed By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">CFO / Date</div></div></div>');
   w.document.write('</body></html>');
   w.document.close();
 }
@@ -2170,7 +2196,7 @@ async function saProcessReceipt(input){
     var b64=ev.target.result.split(',')[1];
     try{
       var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,
+        body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:300,
           system:'You are SAIRNaccounting AI. Extract receipt data. Respond ONLY with valid JSON.',
           messages:[{role:'user',content:[
             {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
@@ -2219,7 +2245,7 @@ function saMatchReceipts(){saNotify('Click Match on each receipt to assign a GL 
 // Phase 3: Contacts, Recurring Bills, Sales Tax, Purchase Orders, Inventory
 // ============================================================
 
-// ── NEW DATA STORES ──────────────────────────────────────────
+//  NEW DATA STORES 
 var estimates=saLoad('sa_estimates',[]);
 var recurringInvoices=saLoad('sa_recurring',[]);
 var timeEntries=saLoad('sa_time',[]);
@@ -2239,7 +2265,7 @@ var estTabFilter='open';var conTabFilter='all';
 // IRS 2026 rate
 var IRS_RATE=0.70;
 
-// ── PATCH saInitAll to boot new panels ──────────────────────
+//  PATCH saInitAll to boot new panels 
 var _saInitAllOrig=saInitAll;
 saInitAll=function(){
   _saInitAllOrig();
@@ -2248,7 +2274,7 @@ saInitAll=function(){
   saCheckPaymentReminders();
 };
 
-// ── PATCH saPanel to handle new panels ───────────────────────
+//  PATCH saPanel to handle new panels 
 var _saPanelOrig=saPanel;
 saPanel=function(id,btn){
   _saPanelOrig(id,btn);
@@ -2488,7 +2514,7 @@ async function saEstimateAI(){
   saNotify('AI building estimate...','');
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:600,
         system:'You are SAIRNaccounting AI — expert in professional service pricing and project estimation.',
         messages:[{role:'user',content:'Create a professional estimate/quote breakdown for: "'+jobType+'"\nProvide: 1) Line item breakdown with quantities and unit prices, 2) Total estimate range (low/mid/high), 3) Payment terms recommendation, 4) What to include in the scope of work, 5) Any assumptions made. Format clearly for a professional quote.'}]})});
     var data=await res.json();
@@ -2595,7 +2621,7 @@ async function saRecurringAI(){
   var total=saSum(recurringInvoices.filter(function(r){return r.active;}).map(function(r){return parseFloat(r.amount)||0;}));
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:500,
         system:'You are SAIRNaccounting AI CFO.',
         messages:[{role:'user',content:'Subscription/recurring revenue analysis: '+recurringInvoices.length+' schedules, $'+total+'/period total. Data: '+JSON.stringify(recurringInvoices.map(function(r){return {customer:r.customer,amount:r.amount,frequency:r.frequency,active:r.active};}))+'\\n\\nProvide: 1) ARR calculation, 2) MRR, 3) Customer retention risk, 4) Growth opportunity, 5) Pricing strategy recommendations.'}]})});
     var data=await res.json();
@@ -2984,7 +3010,7 @@ async function saAssetAI(){
   var income=saAccountBalance(1010);
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:700,
         system:'You are SAIRNaccounting AI — Big 4 CPA specializing in tax depreciation strategy.',
         messages:[{role:'user',content:'Fixed assets analysis: '+JSON.stringify(fixedAssets.map(function(a){return {name:a.name,cost:a.cost,method:a.method,life:a.life,nbv:parseFloat(a.cost||0)-parseFloat(a.accumDepr||0)};}))+'\\n\\nProvide: 1) Section 179 opportunity for 2026 (limit: $1,160,000), 2) Bonus depreciation strategy (60% in 2026), 3) Method optimization per asset, 4) Year-end depreciation planning, 5) Tax savings estimate. Cash position: $'+income}]})});
     var data=await res.json();
@@ -3081,7 +3107,7 @@ async function saProjectAI(){
   saNotify('AI analyzing project profitability...','');
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:700,
         system:'You are SAIRNaccounting AI — Big 4 CFO specializing in project profitability.',
         messages:[{role:'user',content:'Analyze project profitability: '+JSON.stringify(projects.map(function(p){return {name:p.name,client:p.client,revenue:p.revenue,actualCost:p.actualCost,budget:p.budget,status:p.status};}))+'\\n\\nProvide: 1) Profitability ranking, 2) Which projects are most profitable and why, 3) Under-performing projects and root causes, 4) Pricing strategy recommendations, 5) Resource allocation advice.'}]})});
     var data=await res.json();
@@ -3133,7 +3159,7 @@ function saRunDueRecurringBills(){
   saSave('sa_recurring_bills',recurringBills);
 }
 
-// ── ADD RECURRING BILL BUTTON TO BILLS PANEL ────────────────
+//  ADD RECURRING BILL BUTTON TO BILLS PANEL 
 function saNewRecurringBill(){
   var vendor=prompt('Vendor name:');if(!vendor)return;
   var name=prompt('Schedule name (e.g. Monthly Rent):',vendor+' Monthly')||vendor+' Monthly';
@@ -3283,14 +3309,14 @@ function saAdjustInventory(i){
 }
 
 
-// ── SAIRNaccounting INTELLIGENCE UPGRADE ────────────────────
+//  SAIRNaccounting INTELLIGENCE UPGRADE 
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  SAIRN UNIVERSAL AI INTELLIGENCE BLOCK v1.0                 ║
-// ║  Matches StoneDesk capabilities for HR and Accounting        ║
-// ║  Features: Streaming · Voice · Memory · Tone · Actions       ║
-// ║  Handoff · Comparison · Follow-up Chips · Retry · PII        ║
-// ╚══════════════════════════════════════════════════════════════╝
+// 
+//   SAIRN UNIVERSAL AI INTELLIGENCE BLOCK v1.0                 
+//   Matches StoneDesk capabilities for HR and Accounting        
+//   Features: Streaming · Voice · Memory · Tone · Actions       
+//   Handoff · Comparison · Follow-up Chips · Retry · PII        
+// 
 
 // Call sairiInstall(config) once, passing app-specific config:
 // config = {
@@ -3304,7 +3330,7 @@ function saAdjustInventory(i){
 //   cellMapEntries: [...],
 // }
 
-// ── CELL MAP (cross-app navigation) ────────────────────────────
+//  CELL MAP (cross-app navigation) 
 var SAIRI_CELL_MAP=[
   {name:'StoneDesk',   file:'/fabricor',      icon:'🪨', keywords:['stone','fabricat','countertop','quartz','granite','slab','template','cnc']},
   {name:'SAIRNhr',     file:'/sairnhr',       icon:'👥', keywords:['employee','payroll','hr','hire','onboard','pto','performance','termination','compliance']},
@@ -3315,7 +3341,7 @@ var SAIRI_CELL_MAP=[
   {name:'SAIRNhealth', file:'/health',        icon:'❤️', keywords:['symptom','medication','health','doctor','wellness','fitness','nutrition']},
 ];
 
-// ── UNIVERSAL AI INTELLIGENCE ENGINE ───────────────────────────
+//  UNIVERSAL AI INTELLIGENCE ENGINE 
 function sairiInstall(cfg){
   if(window['_sairi_'+cfg.appId])return;
   window['_sairi_'+cfg.appId]=true;
@@ -3338,7 +3364,7 @@ function sairiInstall(cfg){
   sairiPatchSend(cfg);
 }
 
-// ── TONE BAR ────────────────────────────────────────────────────
+//  TONE BAR 
 function sairiInjectToneBar(cfg){
   var inputEl=document.getElementById(cfg.inputId);
   if(!inputEl||document.getElementById('sairi-tone-'+cfg.appId))return;
@@ -3363,7 +3389,7 @@ function sairiSetTone(tone,appId){
   });
 }
 
-// ── VOICE INPUT ─────────────────────────────────────────────────
+//  VOICE INPUT 
 function sairiInjectVoiceButton(cfg){
   var inputEl=document.getElementById(cfg.inputId);
   if(!inputEl||document.getElementById('sairi-voice-'+cfg.appId))return;
@@ -3419,7 +3445,7 @@ function sairiStopVoice(cfg){
   if(btn){btn.innerHTML='🎤';btn.style.background='var(--a-light)';}
 }
 
-// ── RESPONSE ACTION BUTTONS (Simplify / Deeper / Bullets / Example) ──
+//  RESPONSE ACTION BUTTONS (Simplify / Deeper / Bullets / Example) 
 function sairiInjectResponseActions(cfg){
   var msgsEl=document.getElementById(cfg.msgsId);
   if(!msgsEl)return;
@@ -3464,7 +3490,7 @@ function sairiAddActionButtons(msgEl,cfg){
   msgEl.appendChild(bar);
 }
 
-// ── SESSION MEMORY (summarize every 3rd exchange) ────────────────
+//  SESSION MEMORY (summarize every 3rd exchange) 
 function sairiUpdateMemory(cfg,userMsg,aiReply){
   cfg.messageCount=(cfg.messageCount||0)+1;
   cfg.memory=cfg.memory||[];
@@ -3493,7 +3519,7 @@ function sairiInjectMemoryIndicator(cfg){
   msgsEl.parentNode.insertBefore(ind,msgsEl);
 }
 
-// ── FOLLOW-UP CHIPS (3 after each AI response) ────────────────────
+//  FOLLOW-UP CHIPS (3 after each AI response) 
 function sairiInjectFollowUpChips(cfg,aiReply,msgsEl){
   // Remove old chips
   var old=document.getElementById('sairi-chips-'+cfg.appId);
@@ -3545,7 +3571,7 @@ function sairiGenerateChips(cfg,reply){
   return chips.slice(0,3);
 }
 
-// ── CROSS-APP HANDOFF ────────────────────────────────────────────
+//  CROSS-APP HANDOFF 
 function sairiCheckHandoff(cfg){
   try{
     var h=sessionStorage.getItem('sairn_handoff');
@@ -3599,7 +3625,7 @@ function sairiInjectHandoffButtons(cfg,reply,msgEl){
   });
 }
 
-// ── SMART RETRY (3x with backoff) ────────────────────────────────
+//  SMART RETRY (3x with backoff) 
 async function sairiCallClaude(cfg,messages,extraSystemNote){
   var toneNote='Respond in a '+cfg.currentTone+' tone. ';
   var memNote='';
@@ -3611,7 +3637,7 @@ async function sairiCallClaude(cfg,messages,extraSystemNote){
   for(var attempt=0;attempt<cfg.maxRetries;attempt++){
     try{
       var res=await fetch(cfg.claudeUrl,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+        body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:1000,
           system:systemPrompt,messages:messages})});
       if(!res.ok){lastErr='HTTP '+res.status;await new Promise(function(r){setTimeout(r,Math.pow(2,attempt)*500);});continue;}
       var data=await res.json();
@@ -3621,7 +3647,7 @@ async function sairiCallClaude(cfg,messages,extraSystemNote){
   return 'Error after '+cfg.maxRetries+' attempts: '+lastErr;
 }
 
-// ── CONFIDENCE BADGE ─────────────────────────────────────────────
+//  CONFIDENCE BADGE 
 function sairiConfidenceBadge(reply){
   var r=reply.toLowerCase();
   var color,label;
@@ -3635,7 +3661,7 @@ function sairiConfidenceBadge(reply){
   return '<span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;background:'+color+'22;color:'+color+';margin-top:6px;display:inline-block">'+label+'</span>';
 }
 
-// ── PII REDACTION (for HR — never send real SSNs/DOBs) ───────────
+//  PII REDACTION (for HR — never send real SSNs/DOBs) 
 function sairiRedactPII(text){
   return text
     .replace(/\b\d{3}-\d{2}-\d{4}\b/g,'[SSN REDACTED]')
@@ -3644,7 +3670,7 @@ function sairiRedactPII(text){
     .replace(/\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/g,'[PHONE REDACTED]');
 }
 
-// ── UNIVERSAL SEND PATCHER ────────────────────────────────────────
+//  UNIVERSAL SEND PATCHER 
 function sairiPatchSend(cfg){
   // Inject memory indicator
   sairiInjectMemoryIndicator(cfg);
@@ -3652,14 +3678,14 @@ function sairiPatchSend(cfg){
   window['_sairiCfg_'+cfg.appId]=cfg;
 }
 
-// ── NOTIFICATION HELPER ──────────────────────────────────────────
+//  NOTIFICATION HELPER 
 function sairiNotify(cfg,msg,color){
   // Use app-specific notify if available
   if(typeof saNotify==='function')saNotify(msg,color);
   else if(typeof shNotify==='function')shNotify(msg,color);
 }
 
-// ── DOCUMENT UPLOAD FOR ACCOUNTING AI ───────────────────────────
+//  DOCUMENT UPLOAD FOR ACCOUNTING AI 
 function sairiInitDocUpload(cfg){
   // Add file upload button to AI chat
   var inputParent=document.getElementById(cfg.inputId)&&document.getElementById(cfg.inputId).parentElement;
@@ -3702,7 +3728,7 @@ async function sairiAnalyzeDocument(cfg,file){
     if(msgsEl){msgsEl.appendChild(uDiv);msgsEl.scrollTop=msgsEl.scrollHeight;}
     try{
       var res=await fetch(cfg.claudeUrl,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:cfg.systemPrompt||'',messages:msgs})});
+        body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:1000,system:cfg.systemPrompt||'',messages:msgs})});
       var data=await res.json();
       var text=data.content&&data.content[0]?data.content[0].text:'Error reading document.';
       var aDiv=document.createElement('div');
@@ -4271,6 +4297,844 @@ document.addEventListener('DOMContentLoaded',function(){
   };
 
 })();
+
+</script>
+
+
+<!-- PANEL: 90-DAY CASH FLOW FORECAST -->
+<div id="panel-cashforecast" class="sa-panel">
+  <div class="sa-section-title">🔮 90-Day Cash Flow Forecast — AI Powered</div>
+  <div class="sa-grid">
+    <div class="sa-kpi"><div class="sa-kpi-val" id="cf90-kpi-now" style="color:var(--green)">$0</div><div class="sa-kpi-label">Cash Today</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="cf90-kpi-30">$0</div><div class="sa-kpi-label">Day 30 Projected</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="cf90-kpi-60">$0</div><div class="sa-kpi-label">Day 60 Projected</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="cf90-kpi-90">$0</div><div class="sa-kpi-label">Day 90 Projected</div></div>
+  </div>
+  <div class="sa-card" style="margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Monthly Revenue (avg)</label>
+        <input id="cf90-rev" type="number" placeholder="$0" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Monthly Expenses (avg)</label>
+        <input id="cf90-exp" type="number" placeholder="$0" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Expected AR Collections</label>
+        <input id="cf90-ar" type="number" placeholder="$0" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="sa-btn-primary" onclick="saCF90Calc()">🔮 Run Forecast</button>
+      <button class="sa-btn-secondary" onclick="saCF90AI()">✨ AI Scenario Analysis</button>
+    </div>
+  </div>
+  <div id="cf90-chart" class="sa-card" style="min-height:80px"></div>
+  <div id="cf90-ai-result" class="sa-card" style="min-height:60px;display:none"></div>
+</div>
+
+<!-- PANEL: QUARTERLY TAX ESTIMATOR -->
+<div id="panel-quarterlytax" class="sa-panel">
+  <div class="sa-section-title">📅 Quarterly Tax Estimator — 2026 IRS Deadlines</div>
+  <div class="sa-grid">
+    <div class="sa-kpi"><div class="sa-kpi-val" id="qt-kpi-annual" style="color:var(--red)">$0</div><div class="sa-kpi-label">Est. Annual Tax</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="qt-kpi-quarterly" style="color:var(--orange)">$0</div><div class="sa-kpi-label">Per Quarter</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="qt-kpi-self-emp">$0</div><div class="sa-kpi-label">Self-Emp Tax (15.3%)</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="qt-kpi-next-due" style="color:var(--amber)">—</div><div class="sa-kpi-label">Next Due Date</div></div>
+  </div>
+  <div class="sa-card" style="margin-bottom:12px">
+    <div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.8">
+      <strong>2026 Quarterly Due Dates:</strong> Q1 → April 15, 2026 · Q2 → June 16, 2026 · Q3 → September 15, 2026 · Q4 → January 15, 2027<br>
+      <strong>Safe Harbor:</strong> Pay 100% of prior year tax (110% if prior year AGI > $150K) to avoid underpayment penalties.<br>
+      <strong>2026 Self-Employment Tax:</strong> 15.3% on first $176,100 of net self-employment income, 2.9% above that.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Annual Gross Revenue</label>
+        <input id="qt-gross" type="number" placeholder="$0" oninput="saQTCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Business Deductions</label>
+        <input id="qt-deduct" type="number" placeholder="$0" oninput="saQTCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Filing Status</label>
+        <select id="qt-status" onchange="saQTCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="single">Single</option>
+          <option value="mfj">Married Filing Jointly</option>
+          <option value="mfs">Married Filing Separately</option>
+          <option value="hoh">Head of Household</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="sa-btn-primary" onclick="saQTCalc()">📅 Calculate Quarterly Tax</button>
+      <button class="sa-btn-secondary" onclick="saQTAI()">✨ AI Tax Strategy</button>
+      <button class="sa-btn-outline" onclick="saQTPrint()">🖨 Print Payment Schedule</button>
+    </div>
+  </div>
+  <div id="qt-result" class="sa-card" style="min-height:80px"></div>
+</div>
+
+<!-- PANEL: BREAK-EVEN CALCULATOR -->
+<div id="panel-breakeven" class="sa-panel">
+  <div class="sa-section-title">⚖️ Break-Even Calculator</div>
+  <div class="sa-grid">
+    <div class="sa-kpi"><div class="sa-kpi-val" id="be-kpi-units" style="color:var(--amber)">0</div><div class="sa-kpi-label">Units to Break Even</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="be-kpi-revenue" style="color:var(--green)">$0</div><div class="sa-kpi-label">Revenue to Break Even</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="be-kpi-margin">0%</div><div class="sa-kpi-label">Contribution Margin</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="be-kpi-safety">$0</div><div class="sa-kpi-label">Margin of Safety</div></div>
+  </div>
+  <div class="sa-card" style="margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Fixed Costs / Month</label>
+        <input id="be-fixed" type="number" placeholder="Rent, salaries, insurance..." oninput="saBECalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Price Per Unit / Sale</label>
+        <input id="be-price" type="number" placeholder="$0.00" oninput="saBECalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Variable Cost Per Unit</label>
+        <input id="be-variable" type="number" placeholder="Materials, commissions..." oninput="saBECalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Current Monthly Revenue</label>
+        <input id="be-current-rev" type="number" placeholder="$0 (for margin of safety)" oninput="saBECalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Target Profit / Month</label>
+        <input id="be-target" type="number" placeholder="$0 (optional)" oninput="saBECalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="sa-btn-primary" onclick="saBECalc()">⚖️ Calculate Break-Even</button>
+      <button class="sa-btn-secondary" onclick="saBEAI()">✨ AI Profitability Strategy</button>
+    </div>
+  </div>
+  <div id="be-result" class="sa-card" style="min-height:80px"></div>
+</div>
+
+<!-- PANEL: BURN RATE + RUNWAY -->
+<div id="panel-burnrate" class="sa-panel">
+  <div class="sa-section-title">🔥 Burn Rate + Cash Runway</div>
+  <div class="sa-grid">
+    <div class="sa-kpi"><div class="sa-kpi-val" id="br-kpi-gross" style="color:var(--red)">$0</div><div class="sa-kpi-label">Gross Burn / Month</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="br-kpi-net" style="color:var(--orange)">$0</div><div class="sa-kpi-label">Net Burn / Month</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="br-kpi-runway" style="color:var(--amber)">0 mo</div><div class="sa-kpi-label">Cash Runway</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="br-kpi-zero-date">—</div><div class="sa-kpi-label">Zero Cash Date</div></div>
+  </div>
+  <div class="sa-card" style="margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Current Cash Balance</label>
+        <input id="br-cash" type="number" placeholder="$0" oninput="saBRCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Monthly Revenue</label>
+        <input id="br-revenue" type="number" placeholder="$0" oninput="saBRCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Monthly Expenses</label>
+        <input id="br-expenses" type="number" placeholder="$0" oninput="saBRCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="sa-btn-primary" onclick="saBRCalc()">🔥 Calculate Runway</button>
+      <button class="sa-btn-secondary" onclick="saBRAI()">✨ AI Survival Strategy</button>
+    </div>
+  </div>
+  <div id="br-result" class="sa-card" style="min-height:80px"></div>
+</div>
+
+<!-- PANEL: SECTION 179 / DEPRECIATION -->
+<div id="panel-sec179" class="sa-panel">
+  <div class="sa-section-title">🏭 Section 179 & Depreciation Calculator — 2026</div>
+  <div class="sa-grid">
+    <div class="sa-kpi"><div class="sa-kpi-val" id="s179-kpi-deduction" style="color:var(--green)">$0</div><div class="sa-kpi-label">Year 1 Deduction</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="s179-kpi-bonus">$0</div><div class="sa-kpi-label">Bonus Depreciation</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="s179-kpi-tax-saved" style="color:var(--green)">$0</div><div class="sa-kpi-label">Est. Tax Savings</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="s179-kpi-schedule">—</div><div class="sa-kpi-label">MACRS Schedule</div></div>
+  </div>
+  <div class="sa-card" style="margin-bottom:12px">
+    <div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.8">
+      <strong>2026 Section 179 Limits:</strong> Maximum deduction $1,220,000 (indexed) · Phase-out begins at $3,050,000 of assets placed in service · Bonus depreciation: 40% in 2026 (down from 60% in 2025, 80% in 2024) · Must be new or used property placed in service in 2026 tax year.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Asset Cost</label>
+        <input id="s179-cost" type="number" placeholder="$0" oninput="saS179Calc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Asset Type</label>
+        <select id="s179-type" onchange="saS179Calc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="5">5-Year (Cars, computers, equipment)</option>
+          <option value="7">7-Year (Office furniture, machinery)</option>
+          <option value="15">15-Year (Land improvements)</option>
+          <option value="27.5">27.5-Year (Residential rental)</option>
+          <option value="39">39-Year (Commercial real estate)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Your Tax Rate</label>
+        <input id="s179-rate" type="number" placeholder="25" value="25" oninput="saS179Calc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="sa-btn-primary" onclick="saS179Calc()">🏭 Calculate Depreciation</button>
+      <button class="sa-btn-secondary" onclick="saS179AI()">✨ AI Asset Strategy</button>
+    </div>
+  </div>
+  <div id="s179-result" class="sa-card" style="min-height:80px"></div>
+</div>
+
+<!-- PANEL: SALES TAX CALCULATOR -->
+<div id="panel-salestax" class="sa-panel">
+  <div class="sa-section-title">🗺️ Sales Tax Calculator — All 50 States 2026</div>
+  <div class="sa-grid">
+    <div class="sa-kpi"><div class="sa-kpi-val" id="st-kpi-rate" style="color:var(--amber)">0%</div><div class="sa-kpi-label">Combined Rate</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="st-kpi-state">0%</div><div class="sa-kpi-label">State Rate</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="st-kpi-tax" style="color:var(--red)">$0</div><div class="sa-kpi-label">Tax Amount</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="st-kpi-total" style="color:var(--green)">$0</div><div class="sa-kpi-label">Total with Tax</div></div>
+  </div>
+  <div class="sa-card" style="margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Sale Amount</label>
+        <input id="st-amount" type="number" placeholder="$0" oninput="saSTCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">State</label>
+        <select id="st-state" onchange="saSTCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:12px;font-family:inherit;background:#fff">
+          <option value="AL,4">Alabama 4%</option><option value="AK,0">Alaska 0% (no state tax)</option><option value="AZ,5.6">Arizona 5.6%</option><option value="AR,6.5">Arkansas 6.5%</option><option value="CA,7.25">California 7.25%</option><option value="CO,2.9">Colorado 2.9%</option><option value="CT,6.35">Connecticut 6.35%</option><option value="DE,0">Delaware 0%</option><option value="FL,6">Florida 6%</option><option value="GA,4">Georgia 4%</option><option value="HI,4.4">Hawaii 4.4%</option><option value="ID,6">Idaho 6%</option><option value="IL,6.25">Illinois 6.25%</option><option value="IN,7">Indiana 7%</option><option value="IA,6">Iowa 6%</option><option value="KS,6.5">Kansas 6.5%</option><option value="KY,6">Kentucky 6%</option><option value="LA,4.45">Louisiana 4.45%</option><option value="ME,5.5">Maine 5.5%</option><option value="MD,6">Maryland 6%</option><option value="MA,6.25">Massachusetts 6.25%</option><option value="MI,6">Michigan 6%</option><option value="MN,6.875">Minnesota 6.875%</option><option value="MS,7">Mississippi 7%</option><option value="MO,4.225">Missouri 4.225%</option><option value="MT,0">Montana 0%</option><option value="NE,5.5">Nebraska 5.5%</option><option value="NV,6.85">Nevada 6.85%</option><option value="NH,0">New Hampshire 0%</option><option value="NJ,6.625">New Jersey 6.625%</option><option value="NM,5">New Mexico 5%</option><option value="NY,4">New York 4%</option><option value="NC,4.75">North Carolina 4.75%</option><option value="ND,5">North Dakota 5%</option><option value="OH,5.75">Ohio 5.75%</option><option value="OK,4.5">Oklahoma 4.5%</option><option value="OR,0">Oregon 0%</option><option value="PA,6">Pennsylvania 6%</option><option value="RI,7">Rhode Island 7%</option><option value="SC,6">South Carolina 6%</option><option value="SD,4.2">South Dakota 4.2%</option><option value="TN,7">Tennessee 7%</option><option value="TX,6.25">Texas 6.25%</option><option value="UT,6.1">Utah 6.1%</option><option value="VT,6">Vermont 6%</option><option value="VA,5.3">Virginia 5.3%</option><option value="WA,6.5">Washington 6.5%</option><option value="WV,6">West Virginia 6%</option><option value="WI,5">Wisconsin 5%</option><option value="WY,4">Wyoming 4%</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Local Rate Add-On (%)</label>
+        <input id="st-local" type="number" placeholder="0.00" value="0" oninput="saSTCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="sa-btn-primary" onclick="saSTCalc()">🗺️ Calculate Tax</button>
+      <button class="sa-btn-secondary" onclick="saSTAI()">✨ AI Nexus & Compliance Guide</button>
+    </div>
+  </div>
+  <div id="st-result" class="sa-card" style="min-height:60px"></div>
+</div>
+
+<!-- PANEL: PURCHASE ORDERS -->
+<div id="panel-purchaseorders" class="sa-panel">
+  <div class="sa-section-title">📋 Purchase Orders</div>
+  <div class="sa-grid">
+    <div class="sa-kpi"><div class="sa-kpi-val" id="po-kpi-open">0</div><div class="sa-kpi-label">Open POs</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="po-kpi-total" style="color:var(--amber)">$0</div><div class="sa-kpi-label">Committed Spend</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="po-kpi-received" style="color:var(--green)">$0</div><div class="sa-kpi-label">Received</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="po-kpi-pending" style="color:var(--orange)">$0</div><div class="sa-kpi-label">Pending Delivery</div></div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="sa-btn-primary" onclick="saNewPO()">+ New Purchase Order</button>
+    <button class="sa-btn-secondary" onclick="saPOAI()">✨ AI Vendor Analysis</button>
+    <button class="sa-btn-outline" onclick="saExportPOs()">⬇ Export POs</button>
+  </div>
+  <div class="sa-card" style="padding:0;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:rgba(0,0,0,.04)">
+        <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">PO #</th>
+        <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Vendor</th>
+        <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Date</th>
+        <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Items</th>
+        <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Amount</th>
+        <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Status</th>
+        <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Action</th>
+      </tr></thead>
+      <tbody id="po-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No purchase orders. Click + New Purchase Order.</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PANEL: MARGIN OPTIMIZER -->
+<div id="panel-marginoptimizer" class="sa-panel">
+  <div class="sa-section-title">📈 Pricing & Margin Optimizer</div>
+  <div class="sa-grid">
+    <div class="sa-kpi"><div class="sa-kpi-val" id="mo-kpi-margin">0%</div><div class="sa-kpi-label">Current Margin</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="mo-kpi-new-margin" style="color:var(--green)">0%</div><div class="sa-kpi-label">New Margin</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="mo-kpi-revenue-impact">$0</div><div class="sa-kpi-label">Annual Rev Impact</div></div>
+    <div class="sa-kpi"><div class="sa-kpi-val" id="mo-kpi-profit-impact" style="color:var(--green)">$0</div><div class="sa-kpi-label">Annual Profit Impact</div></div>
+  </div>
+  <div class="sa-card" style="margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Current Price</label>
+        <input id="mo-price" type="number" placeholder="$0" oninput="saMOCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Cost of Goods / Service</label>
+        <input id="mo-cogs" type="number" placeholder="$0" oninput="saMOCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Annual Units / Sales</label>
+        <input id="mo-units" type="number" placeholder="0" oninput="saMOCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Price Change Scenario (%)</label>
+        <input id="mo-change" type="number" placeholder="+10 or -5" oninput="saMOCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Expected Volume Change (%)</label>
+        <input id="mo-vol-change" type="number" placeholder="-5 if raising price" oninput="saMOCalc()" style="width:100%;padding:8px;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="sa-btn-primary" onclick="saMOCalc()">📈 Model Scenarios</button>
+      <button class="sa-btn-secondary" onclick="saMOAI()">✨ AI Pricing Strategy</button>
+    </div>
+  </div>
+  <div id="mo-result" class="sa-card" style="min-height:80px"></div>
+</div>
+
+<script>
+// ============================================================
+// SAIRNaccounting — 8 New Feature JS
+// 90-Day Forecast, Quarterly Tax, Break-Even, Burn Rate,
+// Section 179, Sales Tax, Purchase Orders, Margin Optimizer
+// ============================================================
+var SA_CLAUDE_URL='https://sairn.vercel.app/api/claude';
+var saPoList=saLoad('sa_po_list',[]);
+
+function saFmtN(n){return '$'+Math.abs(parseFloat(n)||0).toLocaleString(undefined,{maximumFractionDigits:0});}
+function saFmtP(n){return (parseFloat(n)||0).toFixed(1)+'%';}
+function saBenchBar(pct,label,low,high){
+  var color=pct>=high?'#16a34a':pct>=low?'#b45309':'#dc2626';
+  var cls=pct>=high?'sa-bench-good':pct>=low?'sa-bench-warn':'sa-bench-bad';
+  var tag=pct>=high?'Strong':'Average';
+  if(pct<low)tag='Below Average';
+  return '<div class="sa-range-wrap">'+
+    '<div class="sa-range-label"><span>'+label+'</span><span>'+pct.toFixed(1)+'%</span></div>'+
+    '<div class="sa-range-bar-bg"><div class="sa-range-bar-fill" style="width:'+Math.min(100,Math.max(0,pct))+'%;background:'+color+'"></div></div>'+
+    '<span class="sa-benchmark-badge '+cls+'">'+tag+'</span></div>';
+}
+
+async function saCallClaude(prompt,maxTokens){
+  try{
+    var r=await fetch(SA_CLAUDE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',
+        max_tokens:maxTokens||600,
+        system:'You are SAIRNaccounting AI — Big 4 CPA + CFO advisor. Be specific, data-driven, and direct.',
+        messages:[{role:'user',content:prompt}]})});
+    var d=await r.json();
+    return d.content&&d.content[0]?d.content[0].text:'';
+  }catch(e){return 'Analysis unavailable.';}
+}
+
+// ============================================================
+// 1. 90-DAY CASH FLOW FORECAST
+// ============================================================
+function saInitCashForecast(){
+  var cash=typeof saAccountBalance==='function'?saAccountBalance(1010):0;
+  var ar=typeof saAccountBalance==='function'?Math.abs(saAccountBalance(1100)):0;
+  var d=document.getElementById('cf90-rev');if(d&&!d.value)d.value=Math.round(ar*1.2)||'';
+  saCF90Calc();
+}
+function saCF90Calc(){
+  var rev=parseFloat(document.getElementById('cf90-rev')&&document.getElementById('cf90-rev').value)||0;
+  var exp=parseFloat(document.getElementById('cf90-exp')&&document.getElementById('cf90-exp').value)||0;
+  var ar=parseFloat(document.getElementById('cf90-ar')&&document.getElementById('cf90-ar').value)||0;
+  var cash=typeof saAccountBalance==='function'?saAccountBalance(1010):0;
+  var netPerMonth=rev-exp;
+  var d30=cash+ar+(netPerMonth*1);
+  var d60=cash+ar+(netPerMonth*2);
+  var d90=cash+ar+(netPerMonth*3);
+  var el;
+  el=document.getElementById('cf90-kpi-now');if(el)el.textContent=saFmtN(cash);
+  el=document.getElementById('cf90-kpi-30');if(el){el.textContent=saFmtN(d30);el.style.color=d30>0?'var(--green)':'var(--red)';}
+  el=document.getElementById('cf90-kpi-60');if(el){el.textContent=saFmtN(d60);el.style.color=d60>0?'var(--green)':'var(--red)';}
+  el=document.getElementById('cf90-kpi-90');if(el){el.textContent=saFmtN(d90);el.style.color=d90>0?'var(--green)':'var(--red)';}
+  var chart=document.getElementById('cf90-chart');
+  if(chart){
+    var bars=[['Today',cash],['30 Days',d30],['60 Days',d60],['90 Days',d90]];
+    var max=Math.max(...bars.map(function(b){return Math.abs(b[1]);}),1);
+    chart.innerHTML='<div style="font-weight:700;margin-bottom:12px;font-size:13px">90-Day Cash Projection</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end;height:120px">'+
+      bars.map(function(b){
+        var pct=Math.round((Math.abs(b[1])/max)*100);
+        var col=b[1]>=0?'#16a34a':'#dc2626';
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px">'+
+          '<div style="font-size:11px;font-weight:700;color:'+col+'">'+saFmtN(b[1])+'</div>'+
+          '<div style="width:100%;height:'+pct+'px;min-height:4px;background:'+col+';border-radius:4px 4px 0 0;transition:height .5s"></div>'+
+          '<div style="font-size:10px;color:var(--muted)">'+b[0]+'</div></div>';
+      }).join('')+'</div>'+
+      (d90<0?'<div style="margin-top:12px;padding:8px;background:rgba(220,38,38,.08);border-radius:6px;font-size:12px;color:#dc2626;font-weight:700">Warning: Projected negative cash at 90 days. Click AI Scenario Analysis for corrective actions.</div>':'');
+  }
+}
+async function saCF90AI(){
+  var rev=parseFloat(document.getElementById('cf90-rev')&&document.getElementById('cf90-rev').value)||0;
+  var exp=parseFloat(document.getElementById('cf90-exp')&&document.getElementById('cf90-exp').value)||0;
+  var cash=typeof saAccountBalance==='function'?saAccountBalance(1010):0;
+  var result=document.getElementById('cf90-ai-result');
+  if(result){result.style.display='block';result.innerHTML='<div style="color:var(--muted)">AI analyzing cash position...</div>';}
+  var text=await saCallClaude('90-day cash flow scenario analysis. Cash: '+saFmtN(cash)+', Monthly revenue: '+saFmtN(rev)+', Monthly expenses: '+saFmtN(exp)+', Net burn: '+saFmtN(rev-exp)+'. Provide: 1) Best/base/worst case projections, 2) Key risks to cash flow, 3) Specific actions to extend runway, 4) Industry benchmark: healthy businesses maintain 3-6 months operating expenses in cash.',800);
+  if(result)result.innerHTML='<div style="font-weight:700;margin-bottom:8px">AI Cash Flow Analysis</div><pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7">'+escHtml(text)+'</pre>';
+}
+
+// ============================================================
+// 2. QUARTERLY TAX ESTIMATOR
+// ============================================================
+var SA_TAX_BRACKETS_2026={
+  single:[[11925,0.10],[48475,0.12],[103350,0.22],[197300,0.24],[250525,0.32],[626350,0.35],[Infinity,0.37]],
+  mfj:[[23850,0.10],[96950,0.12],[206700,0.22],[394600,0.24],[501050,0.32],[751600,0.35],[Infinity,0.37]],
+  mfs:[[11925,0.10],[48475,0.12],[103350,0.22],[197300,0.24],[250525,0.32],[375800,0.35],[Infinity,0.37]],
+  hoh:[[17000,0.10],[64850,0.12],[103350,0.22],[197300,0.24],[250500,0.32],[626350,0.35],[Infinity,0.37]]
+};
+var SA_STD_DEDUCT_2026={single:15000,mfj:30000,mfs:15000,hoh:22500};
+var SA_QUE_DUE_2026=['Apr 15, 2026','Jun 16, 2026','Sep 15, 2026','Jan 15, 2027'];
+function saInitQuarterlyTax(){}
+function saQTCalc(){
+  var gross=parseFloat(document.getElementById('qt-gross')&&document.getElementById('qt-gross').value)||0;
+  var deduct=parseFloat(document.getElementById('qt-deduct')&&document.getElementById('qt-deduct').value)||0;
+  var status=(document.getElementById('qt-status')&&document.getElementById('qt-status').value)||'single';
+  var stdDeduct=SA_STD_DEDUCT_2026[status]||15000;
+  var selfEmpNet=gross-deduct;
+  var selfEmpDeduct=selfEmpNet*0.9235*0.153/2;
+  var qbiDeduct=Math.min(selfEmpNet*0.20,selfEmpNet*0.20);
+  var agi=selfEmpNet-selfEmpDeduct-qbiDeduct;
+  var taxable=Math.max(0,agi-stdDeduct);
+  // Calculate tax from brackets
+  var brackets=SA_TAX_BRACKETS_2026[status]||SA_TAX_BRACKETS_2026.single;
+  var incomeTax=0;var prev=0;
+  for(var i=0;i<brackets.length;i++){
+    var limit=brackets[i][0];var rate=brackets[i][1];
+    if(taxable<=prev)break;
+    var taxableInBracket=Math.min(taxable,limit)-prev;
+    incomeTax+=taxableInBracket*rate;
+    prev=limit;
+  }
+  var selfEmpTax=Math.min(selfEmpNet*0.9235,176100)*0.153+(selfEmpNet>176100?(selfEmpNet-176100)*0.029:0);
+  var totalTax=incomeTax+selfEmpTax;
+  var quarterly=totalTax/4;
+  // Next due date
+  var now=new Date();
+  var nextDue=SA_QUE_DUE_2026[0];
+  var dueMs=[new Date('2026-04-15'),new Date('2026-06-16'),new Date('2026-09-15'),new Date('2027-01-15')];
+  for(var j=0;j<dueMs.length;j++){if(now<dueMs[j]){nextDue=SA_QUE_DUE_2026[j];break;}}
+  var el;
+  el=document.getElementById('qt-kpi-annual');if(el)el.textContent=saFmtN(totalTax);
+  el=document.getElementById('qt-kpi-quarterly');if(el)el.textContent=saFmtN(quarterly);
+  el=document.getElementById('qt-kpi-self-emp');if(el)el.textContent=saFmtN(selfEmpTax);
+  el=document.getElementById('qt-kpi-next-due');if(el)el.textContent=nextDue;
+  var result=document.getElementById('qt-result');
+  if(result)result.innerHTML='<div style="font-weight:700;margin-bottom:12px">2026 Tax Summary — '+status.toUpperCase()+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
+    '<div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">Gross Revenue</div><div style="font-weight:700">'+saFmtN(gross)+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:8px;margin-bottom:4px">- Business Deductions</div><div style="font-weight:700">'+saFmtN(deduct)+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:8px;margin-bottom:4px">- SE Tax Deduction (50%)</div><div style="font-weight:700">'+saFmtN(selfEmpDeduct)+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:8px;margin-bottom:4px">- QBI Deduction (20%)</div><div style="font-weight:700">'+saFmtN(qbiDeduct)+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:8px;margin-bottom:4px">- Standard Deduction</div><div style="font-weight:700">'+saFmtN(stdDeduct)+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:8px;margin-bottom:4px">= Taxable Income</div><div style="font-weight:800;font-size:16px">'+saFmtN(taxable)+'</div>'+
+    '</div>'+
+    '<div>'+
+    '<div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:14px">'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">Income Tax</div><div style="font-weight:700;font-size:16px">'+saFmtN(incomeTax)+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:4px">Self-Employment Tax (15.3%)</div><div style="font-weight:700;font-size:16px">'+saFmtN(selfEmpTax)+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:4px;font-weight:900">TOTAL ANNUAL TAX</div><div style="font-weight:900;font-size:24px;color:#dc2626">'+saFmtN(totalTax)+'</div>'+
+    '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.1)">'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">Pay Each Quarter</div>'+
+    '<div style="font-weight:900;font-size:20px;color:var(--orange)">'+saFmtN(quarterly)+'</div>'+
+    '</div></div>'+
+    '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Next payment: <strong>'+nextDue+'</strong></div>'+
+    '</div></div>';
+}
+async function saQTAI(){
+  var gross=(document.getElementById('qt-gross')&&document.getElementById('qt-gross').value)||'0';
+  var result=document.getElementById('qt-result');
+  var text=await saCallClaude('Tax minimization strategy for self-employed business owner with gross revenue $'+gross+'. Provide: 1) Top 5 legal deductions being missed, 2) Retirement account options (SEP-IRA up to $70K, Solo 401k), 3) QBI deduction optimization, 4) S-Corp election analysis if revenue over $80K, 5) Safe harbor strategies to avoid underpayment penalties.',900);
+  if(result)result.innerHTML='<div style="font-weight:700;margin-bottom:8px">AI Tax Strategy</div><pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7">'+escHtml(text)+'</pre>';
+}
+function saQTPrint(){
+  saQTCalc();
+  var company=typeof saCompanyName!=='undefined'?saCompanyName:'My Business';
+  var w=window.open('','_blank');
+  var r=document.getElementById('qt-result');
+  var css='body{font-family:Arial,sans-serif;padding:30px;font-size:12px;color:#000}@media print{button{display:none}}';
+  w.document.write('<!DOCTYPE html><html><head><title>Quarterly Tax Schedule 2026</title><style>'+css+'</style></head><body>');
+  w.document.write('<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print</button>');
+  w.document.write('<h2>'+escHtml(company)+' — 2026 Quarterly Tax Payment Schedule</h2>');
+  if(r)w.document.write(r.innerHTML);
+  w.document.write('<div style="margin-top:24px"><h3>Payment Dates</h3><table border="1" cellpadding="8" style="border-collapse:collapse;width:100%"><tr><th>Quarter</th><th>Period</th><th>Due Date</th><th>Amount Due</th></tr>');
+  var quarterly=parseFloat((document.getElementById('qt-kpi-quarterly')&&document.getElementById('qt-kpi-quarterly').textContent)||'0');
+  var quarters=[['Q1','Jan 1 – Mar 31'],['Q2','Apr 1 – May 31'],['Q3','Jun 1 – Aug 31'],['Q4','Sep 1 – Dec 31']];
+  quarters.forEach(function(q,i){
+    w.document.write('<tr><td>'+q[0]+'</td><td>'+q[1]+'</td><td>'+SA_QUE_DUE_2026[i]+'</td><td style="font-weight:bold">'+saFmtN(quarterly)+'</td></tr>');
+  });
+  w.document.write('</table></div>');
+  w.document.write('<div style="margin-top:36px;padding-top:16px;border-top:2px solid #eee"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">Prepared By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">Reviewed By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">CFO / Date</div></div></div>');
+  w.document.write('</body></html>');w.document.close();
+}
+
+// ============================================================
+// 3. BREAK-EVEN CALCULATOR
+// ============================================================
+function saInitBreakeven(){}
+function saBECalc(){
+  var fixed=parseFloat(document.getElementById('be-fixed')&&document.getElementById('be-fixed').value)||0;
+  var price=parseFloat(document.getElementById('be-price')&&document.getElementById('be-price').value)||0;
+  var variable=parseFloat(document.getElementById('be-variable')&&document.getElementById('be-variable').value)||0;
+  var currentRev=parseFloat(document.getElementById('be-current-rev')&&document.getElementById('be-current-rev').value)||0;
+  var target=parseFloat(document.getElementById('be-target')&&document.getElementById('be-target').value)||0;
+  if(!fixed||!price||price<=variable){
+    var result=document.getElementById('be-result');
+    if(result)result.innerHTML='<div style="color:var(--muted);padding:8px">Enter fixed costs, price, and variable cost. Price must be greater than variable cost.</div>';
+    return;
+  }
+  var contribution=price-variable;
+  var contributionMargin=(contribution/price)*100;
+  var beUnits=Math.ceil(fixed/contribution);
+  var beRevenue=beUnits*price;
+  var safetyMargin=currentRev>0?Math.max(0,currentRev-beRevenue):0;
+  var targetUnits=target>0?Math.ceil((fixed+target)/contribution):0;
+  var el;
+  el=document.getElementById('be-kpi-units');if(el)el.textContent=beUnits.toLocaleString();
+  el=document.getElementById('be-kpi-revenue');if(el)el.textContent=saFmtN(beRevenue);
+  el=document.getElementById('be-kpi-margin');if(el)el.textContent=contributionMargin.toFixed(1)+'%';
+  el=document.getElementById('be-kpi-safety');if(el)el.textContent=saFmtN(safetyMargin);
+  var result=document.getElementById('be-result');
+  if(result)result.innerHTML='<div style="font-weight:700;margin-bottom:12px">Break-Even Analysis</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">'+
+    '<div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:14px">'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:2px">Contribution per Unit</div><div style="font-weight:800;font-size:20px">'+saFmtN(contribution)+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:2px">Contribution Margin</div><div style="font-weight:800;font-size:20px;color:var(--green)">'+contributionMargin.toFixed(1)+'%</div>'+
+    saBenchBar(contributionMargin,'Contribution Margin',30,50)+
+    '</div>'+
+    '<div style="background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.2);border-radius:8px;padding:14px">'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:2px">Break-Even Units</div><div style="font-weight:800;font-size:20px">'+beUnits.toLocaleString()+' units</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:2px">Break-Even Revenue</div><div style="font-weight:800;font-size:20px;color:var(--amber)">'+saFmtN(beRevenue)+'</div>'+
+    (safetyMargin>0?'<div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:2px">Margin of Safety</div><div style="font-weight:700;color:var(--green)">'+saFmtN(safetyMargin)+'</div>':'')+
+    '</div></div>'+
+    (targetUnits>0?'<div style="background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.2);border-radius:8px;padding:12px;font-size:13px"><strong>To reach $'+saFmtN(target)+'/mo profit:</strong> Sell '+targetUnits.toLocaleString()+' units = '+saFmtN(targetUnits*price)+' revenue</div>':'');
+}
+async function saBEAI(){
+  var fixed=(document.getElementById('be-fixed')&&document.getElementById('be-fixed').value)||'0';
+  var cm=(document.getElementById('be-kpi-margin')&&document.getElementById('be-kpi-margin').textContent)||'0%';
+  var text=await saCallClaude('Break-even analysis. Fixed costs $'+fixed+'/mo, contribution margin '+cm+'. Provide: 1) Industry benchmark for this margin, 2) 3 specific ways to increase contribution margin, 3) Fixed cost reduction opportunities, 4) Pricing power analysis, 5) Volume scaling strategy.',700);
+  var result=document.getElementById('be-result');
+  if(result)result.innerHTML+='<div style="margin-top:12px;font-weight:700;margin-bottom:8px">AI Profitability Strategy</div><pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7">'+escHtml(text)+'</pre>';
+}
+
+// ============================================================
+// 4. BURN RATE + RUNWAY
+// ============================================================
+function saInitBurnRate(){
+  var cash=typeof saAccountBalance==='function'?saAccountBalance(1010):0;
+  var el=document.getElementById('br-cash');if(el&&!el.value&&cash>0)el.value=Math.round(cash);
+  saBRCalc();
+}
+function saBRCalc(){
+  var cash=parseFloat(document.getElementById('br-cash')&&document.getElementById('br-cash').value)||0;
+  var rev=parseFloat(document.getElementById('br-revenue')&&document.getElementById('br-revenue').value)||0;
+  var exp=parseFloat(document.getElementById('br-expenses')&&document.getElementById('br-expenses').value)||0;
+  var grossBurn=exp;
+  var netBurn=exp-rev;
+  var runway=netBurn>0?cash/netBurn:Infinity;
+  var zeroDate='N/A';
+  if(netBurn>0&&runway<Infinity){
+    var zd=new Date();zd.setMonth(zd.getMonth()+Math.floor(runway));
+    zeroDate=zd.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+  }
+  var el;
+  el=document.getElementById('br-kpi-gross');if(el)el.textContent=saFmtN(grossBurn)+'/mo';
+  el=document.getElementById('br-kpi-net');if(el){el.textContent=saFmtN(netBurn)+'/mo';el.style.color=netBurn>0?'var(--red)':'var(--green)';}
+  el=document.getElementById('br-kpi-runway');if(el){el.textContent=runway===Infinity?'Profitable':Math.floor(runway)+' mo';el.style.color=runway<3?'var(--red)':runway<6?'var(--orange)':'var(--green)';}
+  el=document.getElementById('br-kpi-zero-date');if(el)el.textContent=netBurn>0?zeroDate:'Profitable';
+  var result=document.getElementById('br-result');
+  if(!result)return;
+  if(netBurn<=0){
+    result.innerHTML='<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);border-radius:8px;padding:16px"><div style="font-weight:800;font-size:16px;color:var(--green)">Cash Flow Positive</div><div style="font-size:13px;margin-top:6px">Revenue exceeds expenses by '+saFmtN(rev-exp)+'/month. Runway is indefinite while this continues.</div></div>';
+    return;
+  }
+  var runwayColor=runway<3?'#dc2626':runway<6?'#f97316':'#16a34a';
+  result.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
+    '<div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:14px">'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">Cash Runway</div>'+
+    '<div style="font-size:36px;font-weight:900;color:'+runwayColor+'">'+Math.floor(runway)+'</div>'+
+    '<div style="font-size:13px;color:var(--muted)">months remaining</div>'+
+    '<div style="margin-top:8px;font-size:12px">Cash zeroes: <strong>'+zeroDate+'</strong></div>'+
+    '</div>'+
+    '<div style="background:var(--surface);border-radius:8px;padding:14px">'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Monthly P&amp;L</div>'+
+    '<div style="font-size:12px;margin-bottom:3px">Revenue: <strong>'+saFmtN(rev)+'</strong></div>'+
+    '<div style="font-size:12px;margin-bottom:3px">Expenses: <strong>'+saFmtN(exp)+'</strong></div>'+
+    '<div style="font-size:12px;font-weight:800;color:#dc2626">Net Burn: '+saFmtN(netBurn)+'/mo</div>'+
+    '<div style="margin-top:10px;font-size:11px;padding:8px;border-radius:6px;background:'+(runway<3?'rgba(220,38,38,.1)':runway<6?'rgba(249,115,22,.1)':'rgba(22,163,74,.08)')+'">'+
+    (runway<3?'Critical: Raise capital or cut costs immediately.':runway<6?'Warning: Start fundraising or revenue push now.':'Healthy runway. Consider growth investment.')+
+    '</div></div></div>';
+}
+async function saBRAI(){
+  var cash=(document.getElementById('br-cash')&&document.getElementById('br-cash').value)||'0';
+  var runway=(document.getElementById('br-kpi-runway')&&document.getElementById('br-kpi-runway').textContent)||'?';
+  var text=await saCallClaude('Business survival strategy. Cash: $'+cash+', Runway: '+runway+'. Provide: 1) Immediate cost cuts with dollar targets, 2) Revenue acceleration options, 3) Bridge financing options (revenue-based, line of credit, SBDC), 4) Expense prioritization framework, 5) 30/60/90 day action plan.',900);
+  var result=document.getElementById('br-result');
+  if(result)result.innerHTML+='<div style="margin-top:12px"><div style="font-weight:700;margin-bottom:8px">AI Survival Strategy</div><pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7">'+escHtml(text)+'</pre></div>';
+}
+
+// ============================================================
+// 5. SECTION 179 / DEPRECIATION
+// ============================================================
+function saInitSec179(){}
+function saS179Calc(){
+  var cost=parseFloat(document.getElementById('s179-cost')&&document.getElementById('s179-cost').value)||0;
+  var life=parseFloat((document.getElementById('s179-type')&&document.getElementById('s179-type').value)||'7');
+  var taxRate=parseFloat(document.getElementById('s179-rate')&&document.getElementById('s179-rate').value)||25;
+  if(!cost){return;}
+  var maxS179=1220000;
+  var s179=Math.min(cost,maxS179);
+  var remaining=cost-s179;
+  var bonusPct=0.40;// 2026: 40% bonus depreciation
+  var bonusDepr=remaining*bonusPct;
+  var macrsYear1=(remaining-bonusDepr)*(2/life);// DDB
+  var totalYear1=s179+bonusDepr+macrsYear1;
+  var taxSaved=totalYear1*(taxRate/100);
+  // Schedule for remaining years (straight-line for simplicity)
+  var macrsBase=remaining-bonusDepr;
+  var annualMacrs=macrsBase/life;
+  var el;
+  el=document.getElementById('s179-kpi-deduction');if(el)el.textContent=saFmtN(s179);
+  el=document.getElementById('s179-kpi-bonus');if(el)el.textContent=saFmtN(bonusDepr);
+  el=document.getElementById('s179-kpi-tax-saved');if(el)el.textContent=saFmtN(taxSaved);
+  el=document.getElementById('s179-kpi-schedule');if(el)el.textContent=life+'-yr MACRS';
+  var result=document.getElementById('s179-result');
+  if(result)result.innerHTML='<div style="font-weight:700;margin-bottom:12px">Depreciation Schedule — '+saFmtN(cost)+' Asset</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">'+
+    '<div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:12px">'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">Section 179 Deduction</div>'+
+    '<div style="font-weight:800;font-size:18px;color:var(--green)">'+saFmtN(s179)+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px">Immediate full expensing</div></div>'+
+    '<div style="background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.2);border-radius:8px;padding:12px">'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">40% Bonus Depreciation</div>'+
+    '<div style="font-weight:800;font-size:18px;color:var(--a)">'+saFmtN(bonusDepr)+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px">2026 rate (down from 60% in 2025)</div></div>'+
+    '<div style="background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.2);border-radius:8px;padding:12px">'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">Est. Tax Savings Year 1</div>'+
+    '<div style="font-weight:800;font-size:18px;color:var(--amber)">'+saFmtN(taxSaved)+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px">At '+taxRate+'% effective rate</div></div></div>'+
+    '<div style="font-size:12px;background:rgba(0,0,0,.03);border-radius:8px;padding:12px">'+
+    '<strong>Year 1 Total Deduction: '+saFmtN(totalYear1)+'</strong> (Sec 179: '+saFmtN(s179)+' + Bonus: '+saFmtN(bonusDepr)+' + MACRS: '+saFmtN(macrsYear1)+')<br>'+
+    'Remaining MACRS base: '+saFmtN(macrsBase)+' amortized over '+life+' years (~'+saFmtN(annualMacrs)+'/yr)</div>';
+}
+async function saS179AI(){
+  var cost=(document.getElementById('s179-cost')&&document.getElementById('s179-cost').value)||'0';
+  var type=(document.getElementById('s179-type')&&document.getElementById('s179-type').options&&document.getElementById('s179-type').options[document.getElementById('s179-type').selectedIndex]&&document.getElementById('s179-type').options[document.getElementById('s179-type').selectedIndex].text)||'Equipment';
+  var text=await saCallClaude('Section 179 strategy for $'+cost+' '+type+' purchase in 2026. Provide: 1) Whether to take full Section 179, partial, or use bonus depreciation instead, 2) Impact on QBI deduction (S179 reduces it), 3) Listed property rules if applicable, 4) Whether to buy vs lease analysis, 5) Timing: buy before Dec 31, 2026 to deduct this year.',700);
+  var result=document.getElementById('s179-result');
+  if(result)result.innerHTML+='<div style="margin-top:12px"><div style="font-weight:700;margin-bottom:8px">AI Asset Strategy</div><pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7">'+escHtml(text)+'</pre></div>';
+}
+
+// ============================================================
+// 6. SALES TAX CALCULATOR
+// ============================================================
+function saInitSalesTax(){}
+function saSTCalc(){
+  var amount=parseFloat(document.getElementById('st-amount')&&document.getElementById('st-amount').value)||0;
+  var stateEl=document.getElementById('st-state');
+  var stateVal=(stateEl&&stateEl.value)||'OH,5.75';
+  var parts=stateVal.split(',');
+  var stateRate=parseFloat(parts[1])||0;
+  var local=parseFloat(document.getElementById('st-local')&&document.getElementById('st-local').value)||0;
+  var combined=stateRate+local;
+  var tax=amount*(combined/100);
+  var total=amount+tax;
+  var el;
+  el=document.getElementById('st-kpi-rate');if(el)el.textContent=combined.toFixed(2)+'%';
+  el=document.getElementById('st-kpi-state');if(el)el.textContent=stateRate.toFixed(2)+'%';
+  el=document.getElementById('st-kpi-tax');if(el)el.textContent=saFmtN(tax);
+  el=document.getElementById('st-kpi-total');if(el)el.textContent=saFmtN(total);
+  var result=document.getElementById('st-result');
+  if(result&&amount>0)result.innerHTML='<div style="display:flex;gap:24px;align-items:center;font-size:13px">'+
+    '<div><span style="color:var(--muted)">Sale: </span><strong>'+saFmtN(amount)+'</strong></div>'+
+    '<div style="font-size:18px;color:var(--muted)">+</div>'+
+    '<div><span style="color:var(--muted)">Tax ('+combined.toFixed(2)+'%): </span><strong style="color:#dc2626">'+saFmtN(tax)+'</strong></div>'+
+    '<div style="font-size:18px;color:var(--muted)">=</div>'+
+    '<div><span style="color:var(--muted)">Total: </span><strong style="font-size:18px;color:var(--green)">'+saFmtN(total)+'</strong></div>'+
+    (stateRate===0?'<div style="margin-left:auto;background:rgba(22,163,74,.1);color:var(--green);font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700">No State Tax</div>':'')+
+    '</div>';
+}
+async function saSTAI(){
+  var stateEl=document.getElementById('st-state');
+  var stateVal=(stateEl&&stateEl.value)||'OH,5.75';
+  var stateName=stateEl&&stateEl.options&&stateEl.options[stateEl.selectedIndex]?stateEl.options[stateEl.selectedIndex].text:'—';
+  var text=await saCallClaude('Sales tax nexus and compliance guide for '+stateName+'. Provide: 1) Economic nexus threshold (most states: $100K revenue or 200 transactions), 2) Which products/services are exempt, 3) How to register and remit, 4) Filing frequency based on volume, 5) Penalty for non-compliance, 6) Marketplace facilitator rules if selling on Amazon/Etsy/eBay.',700);
+  var result=document.getElementById('st-result');
+  if(result)result.innerHTML+='<div style="margin-top:12px"><div style="font-weight:700;margin-bottom:8px">AI Nexus & Compliance Guide</div><pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7">'+escHtml(text)+'</pre></div>';
+}
+
+// ============================================================
+// 7. PURCHASE ORDERS
+// ============================================================
+function saInitPurchaseOrders(){saRenderPOs();saUpdatePOKPIs();}
+function saUpdatePOKPIs(){
+  var open=saPoList.filter(function(p){return p.status==='Open';});
+  var received=saPoList.filter(function(p){return p.status==='Received';});
+  var el;
+  el=document.getElementById('po-kpi-open');if(el)el.textContent=open.length;
+  el=document.getElementById('po-kpi-total');if(el)el.textContent=saFmtN(saPoList.reduce(function(s,p){return s+(p.amount||0);},0));
+  el=document.getElementById('po-kpi-received');if(el)el.textContent=saFmtN(received.reduce(function(s,p){return s+(p.amount||0);},0));
+  el=document.getElementById('po-kpi-pending');if(el)el.textContent=saFmtN(open.reduce(function(s,p){return s+(p.amount||0);},0));
+}
+function saRenderPOs(){
+  var tbody=document.getElementById('po-tbody');if(!tbody)return;
+  if(!saPoList.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No purchase orders. Click + New Purchase Order.</td></tr>';return;}
+  tbody.innerHTML=saPoList.map(function(po,i){
+    var statusColor=po.status==='Received'?'var(--green)':po.status==='Cancelled'?'var(--red)':'var(--amber)';
+    return '<tr style="border-bottom:1px solid rgba(0,0,0,.06)">'+
+      '<td style="padding:10px 12px;font-family:monospace;font-size:11px;font-weight:700">'+escHtml(po.poNum||'—')+'</td>'+
+      '<td style="padding:10px 12px;font-weight:600">'+escHtml(po.vendor||'—')+'</td>'+
+      '<td style="padding:10px 12px;font-size:11px">'+escHtml(po.date||'—')+'</td>'+
+      '<td style="padding:10px 12px;font-size:11px">'+escHtml(po.items||'—')+'</td>'+
+      '<td style="padding:10px 12px;font-weight:700">'+saFmtN(po.amount||0)+'</td>'+
+      '<td style="padding:10px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,.05);color:'+statusColor+';font-weight:700">'+escHtml(po.status||'Open')+'</span></td>'+
+      '<td style="padding:10px 12px"><button onclick="saUpdatePO('+i+')" style="padding:3px 10px;background:none;border:1px solid rgba(0,0,0,.15);border-radius:6px;font-size:11px;cursor:pointer;margin-right:4px">Update</button>'+
+      '<button onclick="saPrintPO('+i+')" style="padding:3px 10px;background:none;border:1px solid rgba(0,0,0,.15);border-radius:6px;font-size:11px;cursor:pointer">Print</button></td></tr>';
+  }).join('');
+}
+function saNewPO(){
+  var vendor=prompt('Vendor name:');if(!vendor)return;
+  var items=prompt('Items/description:','')||'';
+  var amount=parseFloat(prompt('Total amount:','0'))||0;
+  var poNum='PO-'+Date.now().toString().slice(-6);
+  saPoList.unshift({poNum,vendor,items,amount,date:new Date().toLocaleDateString(),status:'Open'});
+  saSave('sa_po_list',saPoList);saRenderPOs();saUpdatePOKPIs();
+  saNotify('PO '+poNum+' created','green');
+}
+function saUpdatePO(i){
+  var po=saPoList[i];
+  var status=prompt('Status (Open/Received/Partial/Cancelled):',po.status)||po.status;
+  saPoList[i]={...po,status};
+  saSave('sa_po_list',saPoList);saRenderPOs();saUpdatePOKPIs();
+}
+function saPrintPO(i){
+  var po=saPoList[i];
+  var w=window.open('','_blank');
+  var css='body{font-family:Arial,sans-serif;padding:30px;font-size:12px}@media print{button{display:none}}';
+  w.document.write('<!DOCTYPE html><html><head><title>Purchase Order '+po.poNum+'</title><style>'+css+'</style></head><body>');
+  w.document.write('<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print</button>');
+  w.document.write('<h1>PURCHASE ORDER</h1><h2 style="color:#16a34a">'+escHtml(po.poNum)+'</h2>');
+  w.document.write('<p><strong>Vendor:</strong> '+escHtml(po.vendor)+'<br><strong>Date:</strong> '+escHtml(po.date)+'<br><strong>Status:</strong> '+escHtml(po.status)+'</p>');
+  w.document.write('<hr><p><strong>Items:</strong> '+escHtml(po.items)+'</p><p><strong>Total Amount: '+saFmtN(po.amount)+'</strong></p>');
+  w.document.write('<div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Ordered By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Approved By / Date</div></div>');
+  w.document.write('</body></html>');w.document.close();
+}
+async function saPOAI(){
+  var totalCommitted=saFmtN(saPoList.reduce(function(s,p){return s+(p.status==='Open'?p.amount||0:0);},0));
+  var text=await saCallClaude('Purchase order and vendor management analysis. Open POs totaling '+totalCommitted+'. Vendors: '+[...new Set(saPoList.map(function(p){return p.vendor;}))].slice(0,5).join(', ')+'. Provide: 1) Vendor concentration risk, 2) Payment terms negotiation strategy, 3) When to require POs (threshold), 4) 3-way matching best practices, 5) Early payment discount opportunities.',700);
+  saNotify('AI analysis complete','green');
+  alert(text);
+}
+function saExportPOs(){
+  var rows=['PO Number,Vendor,Date,Items,Amount,Status'];
+  saPoList.forEach(function(po){rows.push([po.poNum,po.vendor,po.date,po.items,po.amount,po.status].join(','));});
+  var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='purchase_orders.csv';a.click();
+}
+
+// ============================================================
+// 8. MARGIN OPTIMIZER
+// ============================================================
+function saInitMarginOptimizer(){}
+function saMOCalc(){
+  var price=parseFloat(document.getElementById('mo-price')&&document.getElementById('mo-price').value)||0;
+  var cogs=parseFloat(document.getElementById('mo-cogs')&&document.getElementById('mo-cogs').value)||0;
+  var units=parseFloat(document.getElementById('mo-units')&&document.getElementById('mo-units').value)||0;
+  var change=parseFloat(document.getElementById('mo-change')&&document.getElementById('mo-change').value)||0;
+  var volChange=parseFloat(document.getElementById('mo-vol-change')&&document.getElementById('mo-vol-change').value)||0;
+  if(!price||price<cogs){return;}
+  var margin=((price-cogs)/price)*100;
+  var newPrice=price*(1+(change/100));
+  var newUnits=units*(1+(volChange/100));
+  var newMargin=((newPrice-cogs)/newPrice)*100;
+  var currentRevenue=price*units;
+  var newRevenue=newPrice*newUnits;
+  var currentProfit=(price-cogs)*units;
+  var newProfit=(newPrice-cogs)*newUnits;
+  var revImpact=newRevenue-currentRevenue;
+  var profitImpact=newProfit-currentProfit;
+  var el;
+  el=document.getElementById('mo-kpi-margin');if(el)el.textContent=margin.toFixed(1)+'%';
+  el=document.getElementById('mo-kpi-new-margin');if(el){el.textContent=newMargin.toFixed(1)+'%';el.style.color=newMargin>margin?'var(--green)':'var(--red)';}
+  el=document.getElementById('mo-kpi-revenue-impact');if(el){el.textContent=(revImpact>=0?'+':'')+saFmtN(revImpact);el.style.color=revImpact>=0?'var(--green)':'var(--red)';}
+  el=document.getElementById('mo-kpi-profit-impact');if(el){el.textContent=(profitImpact>=0?'+':'')+saFmtN(profitImpact);el.style.color=profitImpact>=0?'var(--green)':'var(--red)';}
+  var result=document.getElementById('mo-result');
+  if(result&&change!==0)result.innerHTML='<div style="font-weight:700;margin-bottom:12px">Scenario: '+(change>0?'+':'')+change+'% Price Change</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
+    '<div style="background:var(--surface);border-radius:8px;padding:14px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">CURRENT</div>'+
+    '<div style="font-size:12px;margin-bottom:3px">Price: <strong>'+saFmtN(price)+'</strong></div>'+
+    '<div style="font-size:12px;margin-bottom:3px">Units: <strong>'+units.toLocaleString()+'</strong></div>'+
+    '<div style="font-size:12px;margin-bottom:3px">Revenue: <strong>'+saFmtN(currentRevenue)+'</strong></div>'+
+    '<div style="font-size:12px;margin-bottom:3px">Gross Profit: <strong>'+saFmtN(currentProfit)+'</strong></div>'+
+    '<div style="font-size:14px;font-weight:800;margin-top:6px">Margin: '+margin.toFixed(1)+'%</div>'+
+    saBenchBar(margin,'Gross Margin',40,60)+'</div>'+
+    '<div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:14px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">PROJECTED</div>'+
+    '<div style="font-size:12px;margin-bottom:3px">New Price: <strong>'+saFmtN(newPrice)+'</strong></div>'+
+    '<div style="font-size:12px;margin-bottom:3px">New Units: <strong>'+Math.round(newUnits).toLocaleString()+'</strong></div>'+
+    '<div style="font-size:12px;margin-bottom:3px">New Revenue: <strong>'+saFmtN(newRevenue)+'</strong></div>'+
+    '<div style="font-size:12px;margin-bottom:3px">New Profit: <strong>'+saFmtN(newProfit)+'</strong></div>'+
+    '<div style="font-size:14px;font-weight:800;margin-top:6px;color:'+(newMargin>margin?'var(--green)':'var(--red)')+'">New Margin: '+newMargin.toFixed(1)+'%</div>'+
+    '<div style="margin-top:8px;font-size:12px;font-weight:700;color:'+(profitImpact>0?'var(--green)':'var(--red)')+'">'+
+    (profitImpact>0?'GAIN':'LOSS')+': '+(profitImpact>0?'+':'')+saFmtN(profitImpact)+'/yr</div></div></div>';
+}
+async function saMOAI(){
+  var price=(document.getElementById('mo-price')&&document.getElementById('mo-price').value)||'0';
+  var margin=(document.getElementById('mo-kpi-margin')&&document.getElementById('mo-kpi-margin').textContent)||'?';
+  var text=await saCallClaude('Pricing strategy for business with current price $'+price+' and gross margin '+margin+'. Provide: 1) Industry benchmark margins for context, 2) Price elasticity analysis, 3) Value-based vs cost-plus pricing recommendations, 4) Bundling or tiered pricing opportunities, 5) Psychological pricing tactics, 6) Competitor pricing research strategy.',800);
+  var result=document.getElementById('mo-result');
+  if(result)result.innerHTML+='<div style="margin-top:12px"><div style="font-weight:700;margin-bottom:8px">AI Pricing Strategy</div><pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7">'+escHtml(text)+'</pre></div>';
+}
+
+// ============================================================
+// ALSO ADD RANGE BARS TO DASHBOARD
+// ============================================================
+var _origInitDash=typeof saInitDashboard==='function'?saInitDashboard:null;
+function saInitDashboard(){
+  if(_origInitDash)_origInitDash();
+  setTimeout(saAddDashBenchmarks,300);
+}
+function saAddDashBenchmarks(){
+  var netMarginEl=document.getElementById('dash-kpi-margin')||document.getElementById('d-net-margin');
+  if(!netMarginEl)return;
+  var margin=parseFloat(netMarginEl.textContent)||0;
+  var existing=document.getElementById('sa-bench-wrap');
+  if(!existing){
+    var wrap=document.createElement('div');wrap.id='sa-bench-wrap';
+    wrap.style.cssText='margin-top:16px;padding:12px;background:rgba(0,0,0,.02);border-radius:8px;';
+    wrap.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Industry Benchmarks</div>'+
+      saBenchBar(margin,'Net Profit Margin',8,15)+
+      '<div style="font-size:11px;color:var(--muted);margin-top:8px">Source: 2026 SBA Small Business Financial Benchmarks</div>';
+    var dashPanel=document.getElementById('panel-dashboard');
+    if(dashPanel)dashPanel.appendChild(wrap);
+  }
+}
+
+// Register new panels in lazy map addition
+var saLazyAddition={
+  cashforecast:saInitCashForecast,quarterlytax:saInitQuarterlyTax,
+  breakeven:saInitBreakeven,burnrate:saInitBurnRate,
+  sec179:saInitSec179,salestax:saInitSalesTax,
+  purchaseorders:saInitPurchaseOrders,marginoptimizer:saInitMarginOptimizer
+};
+// Hook into saPanel to handle new panel IDs
+var _origSaPanel=typeof saPanel==='function'?saPanel:null;
+function saPanel(id,btn){
+  if(_origSaPanel)_origSaPanel(id,btn);
+  if(saLazyAddition[id]&&typeof saLazyAddition[id]==='function'){
+    setTimeout(saLazyAddition[id],50);
+  }
+}
+
+console.log('SAIRNaccounting v2.0 — 8 new features loaded. Market ready.');
 
 </script>
 </body>
