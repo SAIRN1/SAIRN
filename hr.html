@@ -298,7 +298,9 @@ dismissGate = function() {
   <div class="mode-bar">
     <button class="mode-btn" onclick="setMode('Hire Someone','Help me find, interview, and hire the right person')"><span class="mode-icon">🔍</span><span class="mode-label">Hire Someone</span></button><button class="mode-btn" onclick="setMode('HR Documents','Write an offer letter, policy, or HR document')"><span class="mode-icon">📋</span><span class="mode-label">HR Documents</span></button><button class="mode-btn" onclick="setMode('Compliance','Am I doing this legally? What are the rules?')"><span class="mode-icon">⚖️</span><span class="mode-label">Compliance</span></button><button class="mode-btn" onclick="setMode('Employee Issue','I have a performance or conduct situation')"><span class="mode-icon">😤</span><span class="mode-label">Employee Issue</span></button><button class="mode-btn" onclick="setMode('Compensation','What should I pay? How should I structure benefits?')"><span class="mode-icon">💰</span><span class="mode-label">Compensation</span></button>
     <div class="mode-divider">
-    <button class="mode-btn" onclick="showEmployeeIntake()"><span class="mode-icon">👥</span><span class="mode-label">Intake Form</span></button>
+    <button onclick="shLoadStoneDesk()" class="mode-btn" style="border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08)"><span class="mode-icon">🏪</span><span class="mode-label">StoneDesk</span></button>
+    <span id="sh-bridge-badge" style="display:none;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(22,163,74,.12);color:#16a34a;font-weight:700;margin:0 4px"></span>
+    <button onclick="showEmployeeIntake()"><span class="mode-icon">👥</span><span class="mode-label">Intake Form</span></button>
     <button class="mode-btn" onclick="showDocGenerator()"><span class="mode-icon">📄</span><span class="mode-label">Generate Doc</span></button>
     <button class="mode-btn" onclick="showHRHistory()"><span class="mode-icon">🕐</span><span class="mode-label">History</span></button>
   </div>
@@ -523,7 +525,7 @@ const SAIRN_USER_ID = getSAIRNUserId();
 // Outcome tracking
 let sessionOutcomes = {queries: 0, saved: 0, startTime: Date.now()};
 
-// ── CLOUD MEMORY ────────────────────────────────────────────
+//  CLOUD MEMORY 
 async function cloudSaveMemory(content) {
   if(!content || content.length < 20) return;
   // Save locally first (instant, no latency)
@@ -570,7 +572,7 @@ async function cloudLoadMemory() {
   return '';
 }
 
-// ── VOICE MODE ──────────────────────────────────────────────
+//  VOICE MODE 
 let isListening = false;
 let voiceRecognition = null;
 
@@ -639,7 +641,7 @@ function addVoiceButton() {
   document.head.appendChild(style);
 }
 
-// ── OUTCOME TRACKING ─────────────────────────────────────────
+//  OUTCOME TRACKING 
 function trackOutcome() {
   sessionOutcomes.queries++;
   updateOutcomeDisplay();
@@ -669,7 +671,7 @@ function addOutcomeBar() {
   header.after(bar);
 }
 
-// ── ENHANCED SAVE BAR ────────────────────────────────────────
+//  ENHANCED SAVE BAR 
 function showSaveBar() {
   // Auto-save to cloud silently
   cloudSaveMemory(lastResponse);
@@ -692,7 +694,7 @@ function showSaveBar() {
   setTimeout(function() { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 6000);
 }
 
-// ── INIT ──────────────────────────────────────────────────────
+//  INIT 
 document.addEventListener('DOMContentLoaded', function() {
   // Add voice button and outcome bar after app page loads
   const observer = new MutationObserver(function() {
@@ -727,16 +729,16 @@ document.getElementById('userInput').addEventListener('input',function(){this.st
 document.getElementById('userInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
 
 
-// ══════════════════════════════════════════════════════════════
+// 
 // SAIRN HR — ENTERPRISE UPGRADE PATTERNS
 // 1. Save + Session History (HR audit trail)
 // 2. Print (HR documents, compliance summaries)
 // 3. Smart HR Compliance Flags (legal warnings)
 // 4. Employee Intake Form (structured hire/issue intake)
 // 5. HR Document Generator (job descriptions, PIPs, offer letters)
-// ══════════════════════════════════════════════════════════════
+// 
 
-// ── 1. SAVE + HISTORY ─────────────────────────────────────────
+//  1. SAVE + HISTORY 
 let hrHistory = JSON.parse(localStorage.getItem('sairn_hr_history') || '[]');
 
 function saveHRSession() {
@@ -804,7 +806,7 @@ function deleteHRSession(idx, e) {
   showHRHistory();
 }
 
-// ── 2. PRINT ──────────────────────────────────────────────────
+//  2. PRINT 
 function printHRSummary() {
   const msgs = window.messages || [];
   const lastAI = msgs.filter(m => m.role === 'assistant').pop();
@@ -826,7 +828,7 @@ function printHRSummary() {
   win.document.close();
 }
 
-// ── 3. SMART HR COMPLIANCE FLAGS ──────────────────────────────
+//  3. SMART HR COMPLIANCE FLAGS 
 function showHRFlag(msg, type) {
   const existing = document.getElementById('hr-flag');
   if (existing) existing.remove();
@@ -865,7 +867,7 @@ function checkHRFlags(text) {
     showHRFlag('🚨 OSHA violations carry penalties up to $15,625 per violation. Willful violations up to $156,259. Document corrective action immediately.', 'danger');
 }
 
-// ── 4. EMPLOYEE INTAKE FORM ───────────────────────────────────
+//  4. EMPLOYEE INTAKE FORM 
 function showEmployeeIntake() {
   const ex = document.getElementById('emp-intake-modal');
   if (ex) { ex.remove(); return; }
@@ -942,7 +944,7 @@ function submitEmployeeIntake() {
   sendMessage();
 }
 
-// ── 5. HR DOCUMENT GENERATOR ──────────────────────────────────
+//  5. HR DOCUMENT GENERATOR 
 function showDocGenerator() {
   const ex = document.getElementById('hr-doc-modal');
   if (ex) { ex.remove(); return; }
@@ -1004,7 +1006,7 @@ function selectHRDoc(title, promptTemplate) {
 (function() {
 'use strict';
 
-// ── LAYER 2 — DOMAIN WHITELIST ───────────────────────────────
+//  LAYER 2 — DOMAIN WHITELIST 
 // Only sairn.vercel.app/api is ever called. Block everything else.
 const ALLOWED_DOMAINS = [
   'sairn.vercel.app',
@@ -1027,7 +1029,7 @@ window.fetch = function(url, options) {
   return _origFetch.apply(this, arguments);
 };
 
-// ── LAYER 3 — PAYLOAD ENCRYPTION (token + timestamp signing) ─
+//  LAYER 3 — PAYLOAD ENCRYPTION (token + timestamp signing) 
 // AES-256-GCM is unavailable in pure sync JS without SubtleCrypto.
 // We implement: session token + HMAC-style timestamp signing so
 // every request to the SAIRN proxy carries a verifiable session ID.
@@ -1061,7 +1063,7 @@ window.fetch = function(url, options) {
   return _origFetch2.apply(this, [url, options]);
 };
 
-// ── LAYER 4 — RATE LIMITING ───────────────────────────────────
+//  LAYER 4 — RATE LIMITING 
 // Hard limit: 1 request per 2 seconds per session. No spamming the API.
 // Soft limit: 200 requests per hour (displayed as a quota indicator).
 const _fw_rateLimiter = {
@@ -1113,7 +1115,7 @@ if (typeof window.sendMessage === 'function') {
   };
 }
 
-// ── LAYER 5 — SECURE FIELD DETECTION ─────────────────────────
+//  LAYER 5 — SECURE FIELD DETECTION 
 // Detect when a user types in a password field, PIN field, or any
 // input marked type=password and prevent that value from being sent
 // to Claude. Warn the user visibly.
@@ -1136,7 +1138,7 @@ document.addEventListener('input', function(e) {
   }
 }, true);
 
-// ── LAYER 1 — ENHANCED PII REDACTION ─────────────────────────
+//  LAYER 1 — ENHANCED PII REDACTION 
 // Existing apps already have basic PII patterns.
 // We upgrade here with a pre-send hook that strips PII from
 // the message payload before it ever leaves the browser.
@@ -1179,11 +1181,11 @@ function applyPIIRedaction(text) {
   return clean;
 }
 
-// ── LAYER 7 — PAYLOAD SIZE LIMIT ─────────────────────────────
+//  LAYER 7 — PAYLOAD SIZE LIMIT 
 // Max 8,000 characters per message. No accidental data dumps.
 const MAX_MESSAGE_CHARS = 8000;
 
-// ── LAYER 6 — XSS / INJECTION PREVENTION ─────────────────────
+//  LAYER 6 — XSS / INJECTION PREVENTION 
 // Strip script injection attempts from any user input before display.
 function escapeForDisplay(text) {
   return text
@@ -1194,7 +1196,7 @@ function escapeForDisplay(text) {
     .replace(/'/g, '&#039;');
 }
 
-// ── LAYER 8 — SESSION INTEGRITY ───────────────────────────────
+//  LAYER 8 — SESSION INTEGRITY 
 // Detect if the page has been tampered with (CSP bypass attempt,
 // script injection). Check the session token is intact.
 (function checkSessionIntegrity() {
@@ -1206,7 +1208,7 @@ function escapeForDisplay(text) {
   }
 })();
 
-// ── PRE-SEND HOOK — runs before every message ─────────────────
+//  PRE-SEND HOOK — runs before every message 
 // Intercepts userInput value, applies L1 redaction, L7 size limit.
 const _origInput = document.getElementById ? document.getElementById.bind(document) : null;
 document.addEventListener('DOMContentLoaded', function() {
@@ -1249,7 +1251,7 @@ function applyFirewallToInput(inp) {
   inp.value = val;
 }
 
-// ── FW WARNING DISPLAY ─────────────────────────────────────────
+//  FW WARNING DISPLAY 
 function showFWWarning(msg) {
   const ex = document.getElementById('fw-warning');
   if (ex) ex.remove();
@@ -1261,7 +1263,7 @@ function showFWWarning(msg) {
   setTimeout(() => w.remove(), 4000);
 }
 
-// ── STATUS BADGE ──────────────────────────────────────────────
+//  STATUS BADGE 
 // Show a tiny firewall indicator so users know they are protected.
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
@@ -1294,7 +1296,7 @@ console.log('[SAIRN Firewall v2.0] All 9 layers active. Session:', _fwSessionId.
 
 if (document.getElementById('sairn-doc-upload-style')) return;
 
-// ── APP DETECTION ─────────────────────────────────────────────
+//  APP DETECTION 
 var APP = (function() {
   var p = window.location.pathname;
   if (p.includes('legal'))  return 'law';
@@ -1307,7 +1309,7 @@ var APP = (function() {
   return 'general';
 })();
 
-// ── APP-SPECIFIC CONFIG ───────────────────────────────────────
+//  APP-SPECIFIC CONFIG 
 var DOC_CONFIG = {
   law: {
     color: '#7C3AED',
@@ -1393,7 +1395,7 @@ DOC_CONFIG.study = DOC_CONFIG.general;
 
 var cfg = DOC_CONFIG[APP] || DOC_CONFIG.general;
 
-// ── INJECT CSS ────────────────────────────────────────────────
+//  INJECT CSS 
 var styleEl = document.createElement('style');
 styleEl.id = 'sairn-doc-upload-style';
 styleEl.textContent =
@@ -1433,7 +1435,7 @@ function hexToRgb(hex) {
   return r + ',' + g + ',' + b;
 }
 
-// ── BUILD MODAL ───────────────────────────────────────────────
+//  BUILD MODAL 
 var modal = document.createElement('div');
 modal.id = 'sairn-doc-modal';
 modal.innerHTML =
@@ -1482,13 +1484,13 @@ modal.innerHTML =
 
 document.body.appendChild(modal);
 
-// ── STATE ─────────────────────────────────────────────────────
+//  STATE 
 var _docFile      = null;
 var _docBase64    = null;
 var _docMime      = null;
 var _selectedPrompt = null;
 
-// ── OPEN / CLOSE ──────────────────────────────────────────────
+//  OPEN / CLOSE 
 window.openDocModal = function() {
   var m = document.getElementById('sairn-doc-modal');
   if (m) m.classList.add('open');
@@ -1498,7 +1500,7 @@ window.closeDocModal = function() {
   if (m) m.classList.remove('open');
 };
 
-// ── FILE SELECTION ────────────────────────────────────────────
+//  FILE SELECTION 
 var fileInput = document.getElementById('sdm-file-input');
 if (fileInput) {
   fileInput.addEventListener('change', function() {
@@ -1609,7 +1611,7 @@ function updateAnalyzeBtn() {
   }
 }
 
-// ── ANALYZE ───────────────────────────────────────────────────
+//  ANALYZE 
 window.analyzeDocument = async function() {
   if (!_docBase64 || !_docMime) return;
 
@@ -1686,7 +1688,7 @@ window.analyzeDocument = async function() {
   }
 };
 
-// ── INJECT TRIGGER BUTTON ─────────────────────────────────────
+//  INJECT TRIGGER BUTTON 
 function injectDocButton() {
   if (document.getElementById('sairn-doc-trigger')) return;
 
@@ -1948,7 +1950,7 @@ var _aiResponseCount = 0;
 var _sessionSummary  = '';
 var _summaryInjected = false;
 
-// ── MEMORY INDICATOR ─────────────────────────────────────────
+//  MEMORY INDICATOR 
 var style = document.createElement('style');
 style.textContent =
   '#sairn-memory-indicator{position:fixed;top:68px;right:16px;z-index:799;display:none;align-items:center;gap:6px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:100px;padding:5px 12px;font-size:10px;font-weight:600;color:rgba(99,102,241,0.9);cursor:pointer;transition:all .2s}' +
@@ -1964,7 +1966,7 @@ memIndicator.innerHTML = '<span class="smi-dot"></span><span>Memory active</span
 memIndicator.onclick = showMemoryPanel;
 document.body.appendChild(memIndicator);
 
-// ── MEMORY PANEL ─────────────────────────────────────────────
+//  MEMORY PANEL 
 var memPanel = document.createElement('div');
 memPanel.id = 'sairn-memory-panel';
 memPanel.style.cssText = 'position:fixed;top:100px;right:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:300px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)';
@@ -1996,7 +1998,7 @@ window.clearSessionMemory = function() {
   if (content) content.textContent = 'Memory cleared.';
 };
 
-// ── RESTORE MEMORY FROM PRIOR SESSION ────────────────────────
+//  RESTORE MEMORY FROM PRIOR SESSION 
 var savedMemory = localStorage.getItem(APP_KEY);
 if (savedMemory) {
   _sessionSummary = savedMemory;
@@ -2010,7 +2012,7 @@ function updateMemoryIndicator() {
   }
 }
 
-// ── INJECT MEMORY INTO SYSTEM PROMPT ─────────────────────────
+//  INJECT MEMORY INTO SYSTEM PROMPT 
 // We do this by patching the fetch call to the SAIRN API
 var _origFetch = window.fetch;
 window.fetch = async function(url, opts) {
@@ -2026,7 +2028,7 @@ window.fetch = async function(url, opts) {
   return _origFetch.apply(this, arguments);
 };
 
-// ── COUNT AI RESPONSES AND BUILD MEMORY ──────────────────────
+//  COUNT AI RESPONSES AND BUILD MEMORY 
 function installMemoryHook() {
   if (window._saircMemHooked) return;
   if (typeof window.addMsg !== 'function') return;
@@ -2768,7 +2770,7 @@ window._saircHandoffInstalled = true;
 
 var HANDOFF_KEY = 'sairn_handoff_context';
 
-// ── RECEIVER: check if we arrived with context ─────────────────
+//  RECEIVER: check if we arrived with context 
 function checkIncomingHandoff() {
   var ctx = null;
   try { ctx = JSON.parse(sessionStorage.getItem(HANDOFF_KEY)); } catch(e) {}
@@ -2805,7 +2807,7 @@ function checkIncomingHandoff() {
   }
 }
 
-// ── SENDER: "Continue in [App]" buttons after AI responses ──────
+//  SENDER: "Continue in [App]" buttons after AI responses 
 var CELL_MAP = [
   { name:'SAIRNtype',    file:'/index.html',   icon:'⌨️', keywords:['write','draft','email','letter','post','document','essay','cover'] },
   { name:'SAIRNhealth',  file:'/health.html',  icon:'❤️', keywords:['symptom','medication','health','doctor','pain','medical','diagnosis'] },
@@ -4523,7 +4525,7 @@ var LEARN_KEY    = 'sairn_learned_' + APP_ID;
 var GLOBAL_KEY   = 'sairn_learned_global';
 var SESSION_KEY  = 'sairn_session_data_' + APP_ID;
 
-// ── LEARNING DATA STRUCTURE ──────────────────────────────────
+//  LEARNING DATA STRUCTURE 
 function loadLearned() {
   try { return JSON.parse(localStorage.getItem(LEARN_KEY) || '{}'); } catch(e) { return {}; }
 }
@@ -4565,7 +4567,7 @@ if (!global_l.appsUsed.includes(APP_ID)) global_l.appsUsed.push(APP_ID);
 saveLearned(learned);
 saveGlobal(global_l);
 
-// ── ANALYZE USER MESSAGE FOR SIGNALS ────────────────────────
+//  ANALYZE USER MESSAGE FOR SIGNALS 
 function analyzeUserMessage(text) {
   var lower = text.toLowerCase();
   var words = text.split(/\s+/).length;
@@ -4601,7 +4603,7 @@ function analyzeUserMessage(text) {
   saveLearned(learned);
 }
 
-// ── BUILD PERSONALIZATION CONTEXT FOR SYSTEM PROMPT ─────────
+//  BUILD PERSONALIZATION CONTEXT FOR SYSTEM PROMPT 
 function buildPersonalizationContext() {
   var lines = ['LEARNED USER PREFERENCES (from ' + learned.sessions + ' sessions, ' + learned.totalQuestions + ' questions):'];
 
@@ -4651,7 +4653,7 @@ function buildPersonalizationContext() {
   return lines.join('\n');
 }
 
-// ── INJECT PERSONALIZATION INTO FETCH ────────────────────────
+//  INJECT PERSONALIZATION INTO FETCH 
 if (!window._saircPersExFetchPatched) {
   window._saircPersExFetchPatched = true;
   var _orig = window.fetch;
@@ -4672,7 +4674,7 @@ if (!window._saircPersExFetchPatched) {
   };
 }
 
-// ── TRACK EVENTS ─────────────────────────────────────────────
+//  TRACK EVENTS 
 // Watch for user messages
 function installLearningHook() {
   if (window._saircPersHooked) return;
@@ -4708,7 +4710,7 @@ document.addEventListener('click', function(e) {
   }
 }, true);
 
-// ── PERSONALIZATION PANEL ──────────────────────────────────
+//  PERSONALIZATION PANEL 
 var st = document.createElement('style');
 st.textContent =
   '#sairn-pers-panel{position:fixed;top:100px;left:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:280px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}' +
@@ -5063,6 +5065,42 @@ function injectCameraButton() {
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(injectCameraButton, 600); });
 setTimeout(injectCameraButton, 800);
 })();
+
+
+// ============================================================
+// SAIRN DATA BRIDGE — SAIRNhr Integration
+// Loads StoneDesk shop context for AI-aware HR advice
+// ============================================================
+var SAIRN_BRIDGE_HR = 'https://sairn.vercel.app/api/bridge';
+var shBridgeContext = '';
+
+async function shLoadStoneDesk() {
+  var shopId = localStorage.getItem('sh_stonedesk_shop_id') || '';
+  if (!shopId) {
+    shopId = prompt('Enter your StoneDesk Shop ID to connect (found in StoneDesk under your profile):');
+    if (!shopId) return;
+    localStorage.setItem('sh_stonedesk_shop_id', shopId);
+  }
+  try {
+    var r = await fetch(SAIRN_BRIDGE_HR + '/context?shop=' + shopId);
+    var data = await r.json();
+    if (data.ok && data.context) {
+      shBridgeContext = data.context;
+      var badge = document.getElementById('sh-bridge-badge');
+      if (badge) {
+        badge.textContent = 'StoneDesk: ' + (data.counts ? data.counts.employees + ' employees, ' + data.counts.jobs + ' jobs' : 'connected');
+        badge.style.display = 'inline-block';
+      }
+    }
+  } catch(e) {}
+}
+
+(function() {
+  var shopId = localStorage.getItem('sh_stonedesk_shop_id');
+  if (shopId) setTimeout(shLoadStoneDesk, 2000);
+})();
+
+</script>
 
 </script>
 </body>
