@@ -436,7 +436,35 @@ document.addEventListener('DOMContentLoaded',async()=>{
     <button class="mode-btn" onclick="showClaimAudit()"><span class="mode-icon">📂</span><span class="mode-label">Claim Audit</span></button>
     <button class="mode-btn" onclick="showCodeHistory()"><span class="mode-icon">🕐</span><span class="mode-label">History</span></button>
   </div>
-    <button class="mode-btn" onclick="setMode('ICD-10 Coding','Look up ICD-10-CM codes, sequencing rules, or 2026 guideline changes')"><span>🏥</span><span class="mode-label">ICD-10</span></button>
+
+    <div class="mode-divider"></div>
+    <span style="font-size:9px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--a);padding:0 8px;white-space:nowrap;opacity:.9">v3.0 Tools</span>
+    <button class="mode-btn" onclick="scShowTool('codelookup')"><span>🔍</span><span class="mode-label">Code Lookup</span></button>
+    <button class="mode-btn" onclick="scShowTool('drggrouper')"><span>🏥</span><span class="mode-label">DRG Grouper</span></button>
+    <button class="mode-btn" onclick="scShowTool('emadvisor')"><span>📋</span><span class="mode-label">E/M Advisor</span></button>
+    <button class="mode-btn" onclick="scShowTool('telehealth')"><span>📱</span><span class="mode-label">Telehealth</span></button>
+    <button class="mode-btn" onclick="scShowTool('chargecapture')"><span>💊</span><span class="mode-label">Superbill</span></button>
+    <button class="mode-btn" onclick="scShowTool('eligibility')"><span>✅</span><span class="mode-label">Eligibility</span></button>
+    <button class="mode-btn" onclick="scShowTool('priorauth')"><span>🔐</span><span class="mode-label">Prior Auth</span></button>
+    <button class="mode-btn" onclick="scShowTool('rpmengine')"><span>📡</span><span class="mode-label">RPM/CCM</span></button>
+    <button class="mode-btn" onclick="scShowTool('hccgap')"><span>🎯</span><span class="mode-label">HCC Gaps</span></button>
+    <button class="mode-btn" onclick="scShowTool('oigcheck')"><span>🛡️</span><span class="mode-label">OIG Screen</span></button>
+    <button class="mode-btn" onclick="scShowTool('lcdlookup')"><span>📖</span><span class="mode-label">LCD/NCD</span></button>
+    <button class="mode-btn" onclick="scShowTool('feeschedule')"><span>💲</span><span class="mode-label">Fee Schedule</span></button>
+    <button class="mode-btn" onclick="scShowTool('patientestimate')"><span>🧾</span><span class="mode-label">Pt Estimate</span></button>
+    <button class="mode-btn" onclick="scShowTool('auditrisk')"><span>⚠️</span><span class="mode-label">Audit Risk</span></button>
+    <button class="mode-btn" onclick="scShowTool('cdiassistant')"><span>📝</span><span class="mode-label">CDI</span></button>
+    <button class="mode-btn" onclick="scShowTool('codertrack')"><span>📊</span><span class="mode-label">Productivity</span></button>
+    <button class="mode-btn" onclick="scShowTool('ceutracker')"><span>🎓</span><span class="mode-label">CEU Track</span></button>
+    <button class="mode-btn" onclick="scShowTool('qaworkflow')"><span>✔️</span><span class="mode-label">QA</span></button>
+    <button class="mode-btn" onclick="scShowTool('denialanalyzer')"><span>❌</span><span class="mode-label">Denials</span></button>
+    <button class="mode-btn" onclick="scShowTool('medabbrev')"><span>💊</span><span class="mode-label">Med Lookup</span></button>
+    <button class="mode-btn" onclick="scShowTool('compliancebuilder')"><span>🏛️</span><span class="mode-label">Compliance</span></button>
+    <button class="mode-btn" onclick="scShowTool('mipstracker')"><span>🌟</span><span class="mode-label">MIPS</span></button>
+    <button class="mode-btn" onclick="scShowTool('claimstatus')"><span>📬</span><span class="mode-label">Claims AR</span></button>
+    <button class="mode-btn" onclick="scShowTool('icd11')"><span>🔄</span><span class="mode-label">ICD-11</span></button>
+    <button class="mode-btn" onclick="scShowTool('payercontract')"><span>🤝</span><span class="mode-label">Contracts</span></button>
+        <button class="mode-btn" onclick="setMode('ICD-10 Coding','Look up ICD-10-CM codes, sequencing rules, or 2026 guideline changes')"><span>🏥</span><span class="mode-label">ICD-10</span></button>
     <button class="mode-btn" onclick="setMode('CPT Coding','Find CPT codes, modifier guidance, or bundling rules')"><span>⚕️</span><span class="mode-label">CPT</span></button>
     <button class="mode-btn" onclick="setMode('E&M Leveling','Determine the correct E&M level from documentation or analyze over-coding risk')"><span>📊</span><span class="mode-label">E&M Level</span></button>
     <button class="mode-btn" onclick="setMode('DRG Validation','Validate DRG assignment, identify CC and MCC opportunities, or analyze POA indicators')"><span>🏨</span><span class="mode-label">DRG</span></button>
@@ -7320,22 +7348,22 @@ setTimeout(injectCameraButton, 800);
 <script>
 
 // ============================================================
-//  SAIRNcode v2.0 — 15 NEW FEATURES                                    ║
-//  1. RVU Calculator (2026 CMS data)                                   ║
-//  2. NCCI Edit Checker                                                ║
-//  3. MUE Validator                                                    ║
-//  4. Modifier Advisor (25 modifiers explained)                        ║
-//  5. Code Crosswalk (ICD-10 → ICD-11, CPT ↔ HCPCS)                  ║
-//  6. Pre-Bill Claim Scrubber                                          ║
-//  7. Denial Appeal Letter Generator                                   ║
-//  8. Encoder / Code Lookup (CPT / ICD-10 / HCPCS search)             ║
-//  9. Specialty Billing Worksheets (12 specialties)                    ║
-//  10. RAF Score Calculator (HCC → Risk Adjustment Factor)             ║
-//  11. Global Surgery Period Calculator                                ║
-//  12. Place of Service (POS) Guide                                    ║
-//  13. Diagnosis Pointer Validator (Box 24E)                           ║
-//  14. Productivity Dashboard upgrade                                  ║
-//  15. SAIRI Intelligence upgrade (session memory, chips, handoff)     ║
+//  SAIRNcode v2.0 — 15 NEW FEATURES                                    
+//  1. RVU Calculator (2026 CMS data)                                   
+//  2. NCCI Edit Checker                                                
+//  3. MUE Validator                                                    
+//  4. Modifier Advisor (25 modifiers explained)                        
+//  5. Code Crosswalk (ICD-10 → ICD-11, CPT ↔ HCPCS)                  
+//  6. Pre-Bill Claim Scrubber                                          
+//  7. Denial Appeal Letter Generator                                   
+//  8. Encoder / Code Lookup (CPT / ICD-10 / HCPCS search)             
+//  9. Specialty Billing Worksheets (12 specialties)                    
+//  10. RAF Score Calculator (HCC → Risk Adjustment Factor)             
+//  11. Global Surgery Period Calculator                                
+//  12. Place of Service (POS) Guide                                    
+//  13. Diagnosis Pointer Validator (Box 24E)                           
+//  14. Productivity Dashboard upgrade                                  
+//  15. SAIRI Intelligence upgrade (session memory, chips, handoff)     
 // ============================================================
 
 //  SAIRI INTELLIGENCE INSTALL for SAIRNcode 
@@ -7433,6 +7461,56 @@ function scShowTool(toolId) {
   }
 }
 
+// v3 panel override — show panel in place, scroll into view
+var _origShowTool = scShowTool;
+scShowTool = function(toolId) {
+  var v3Panels = ['codelookup','drggrouper','emadvisor','telehealth','chargecapture',
+    'eligibility','priorauth','rpmengine','hccgap','oigcheck','lcdlookup','feeschedule',
+    'patientestimate','auditrisk','cdiassistant','codertrack','ceutracker','qaworkflow',
+    'denialanalyzer','medabbrev','compliancebuilder','mipstracker','claimstatus','icd11','payercontract'];
+  if (v3Panels.indexOf(toolId) < 0) { _origShowTool(toolId); return; }
+  // Hide all v3 panels first
+  v3Panels.forEach(function(id) {
+    var el = document.getElementById('panel-' + id);
+    if (el) el.style.display = 'none';
+  });
+  // Show target panel
+  var panel = document.getElementById('panel-' + toolId);
+  if (panel) {
+    panel.style.display = 'block';
+    // Move into chatArea if not already there
+    var chatArea = document.getElementById('chatArea') || document.getElementById('chat-area');
+    if (chatArea && panel.parentNode !== chatArea) {
+      var existing = document.getElementById('sc-tool-panel');
+      if (existing) existing.remove();
+      var wrapper = document.createElement('div');
+      wrapper.id = 'sc-tool-panel';
+      wrapper.style.cssText = 'background:transparent;padding:0;margin-bottom:12px;';
+      wrapper.appendChild(panel);
+      chatArea.prepend(wrapper);
+    }
+    panel.scrollIntoView({behavior:'smooth',block:'start'});
+    // Run init functions for panels that need them
+    var inits = {
+      emadvisor: scCalcEM, rpmengine: scRPMPreview,
+      chargecapture: function(){scRenderChargeLines();scUpdateChargeKPIs();},
+      priorauth: function(){scRenderPAList();scUpdatePAKPIs();},
+      oigcheck: function(){scRenderOIGProviders();scUpdateOIGKPIs();},
+      feeschedule: function(){scRenderFeeEntries();scUpdateFeeKPIs();},
+      codertrack: function(){scRenderCoderRecords();scUpdateCoderKPIs();},
+      ceutracker: function(){scRenderCEURecords();scUpdateCEUKPIs();},
+      qaworkflow: function(){scRenderQARecords();scUpdateQAKPIs();},
+      denialanalyzer: function(){scRenderDenials();scUpdateDenialKPIs();},
+      compliancebuilder: scRenderComplianceChecklist,
+      claimstatus: function(){scRenderClaims();scUpdateClaimKPIs();},
+      payercontract: function(){scRenderContracts();scUpdateContractKPIs();}
+    };
+    if (inits[toolId] && typeof inits[toolId] === 'function') {
+      try { inits[toolId](); } catch(e) {}
+    }
+  }
+};
+
 //  TOOL UI GENERATORS 
 function scGetToolHTML(toolId) {
   var tools = {
@@ -7447,7 +7525,23 @@ function scGetToolHTML(toolId) {
     global: scGlobalPanel(),
     specialist: scSpecialistPanel(),
   };
-  return tools[toolId] || null;
+  if (tools[toolId]) return tools[toolId];
+  // v3.0 panel tools — move panel div into chat area
+  var v3Panels = ['codelookup','drggrouper','emadvisor','telehealth','chargecapture',
+    'eligibility','priorauth','rpmengine','hccgap','oigcheck','lcdlookup','feeschedule',
+    'patientestimate','auditrisk','cdiassistant','codertrack','ceutracker','qaworkflow',
+    'denialanalyzer','medabbrev','compliancebuilder','mipstracker','claimstatus','icd11','payercontract'];
+  if (v3Panels.indexOf(toolId) >= 0) {
+    var panelEl = document.getElementById('panel-' + toolId);
+    if (panelEl) {
+      panelEl.style.display = 'block';
+      panelEl.style.background = 'transparent';
+      panelEl.style.padding = '0';
+      return panelEl.outerHTML;
+    }
+    return '<div style="padding:16px;color:var(--a)">Loading ' + toolId + ' panel...</div>';
+  }
+  return null;
 }
 
 // ============================================================
@@ -9316,61 +9410,8 @@ console.log('SAIRNcode v2.0 — 15 new features loaded: RVU Calculator, NCCI Che
 </div>
 
 
-<!-- SAIRNcode v3.0 Tools Navigation -->
-<div id="sc-v3-nav" style="display:none;position:fixed;top:0;right:0;width:240px;height:100vh;background:#fff;border-left:1.5px solid #D0E8F5;overflow-y:auto;z-index:1000;box-shadow:-4px 0 20px rgba(14,165,233,.1);font-family:Outfit,sans-serif">
-  <div style="padding:14px 16px;border-bottom:2px solid #0EA5E9;background:#F0F9FF;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;font-weight:900;color:#0EA5E9">SAIRNcode v3.0</div>
-    <button onclick="document.getElementById('sc-v3-nav').style.display='none'" style="background:none;border:none;cursor:pointer;color:#5A7A8A;font-size:18px">×</button>
-  </div>
-  <div style="padding:8px 0">
-    <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#0EA5E9;padding:10px 16px 4px">Code Lookup</div>
-    <button class="sc-v3-btn" onclick="scCodeLookup();document.getElementById('sc-v3-nav').style.display='none'">🔍 ICD-10 / CPT / HCPCS Lookup</button>
-    <button class="sc-v3-btn" onclick="scDRGGrouper();document.getElementById('sc-v3-nav').style.display='none'">🏥 DRG Grouper + Optimizer</button>
-    <button class="sc-v3-btn" onclick="scEMAdvisor();document.getElementById('sc-v3-nav').style.display='none'">📋 E/M Level Advisor</button>
-    <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#0EA5E9;padding:10px 16px 4px">Billing Tools</div>
-    <button class="sc-v3-btn" onclick="scTelehealthWizard();document.getElementById('sc-v3-nav').style.display='none'">📱 Telehealth Coding Wizard</button>
-    <button class="sc-v3-btn" onclick="scChargeCapture();document.getElementById('sc-v3-nav').style.display='none'">💊 Charge Capture + Superbill</button>
-    <button class="sc-v3-btn" onclick="scEligibility();document.getElementById('sc-v3-nav').style.display='none'">✅ Eligibility Verifier</button>
-    <button class="sc-v3-btn" onclick="scPriorAuth();document.getElementById('sc-v3-nav').style.display='none'">🔐 Prior Auth Tracker</button>
-    <button class="sc-v3-btn" onclick="scRPMEngine();document.getElementById('sc-v3-nav').style.display='none'">📡 RPM / CCM / AWV Billing</button>
-    <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#0EA5E9;padding:10px 16px 4px">Risk & Compliance</div>
-    <button class="sc-v3-btn" onclick="scHCCGapCloser();document.getElementById('sc-v3-nav').style.display='none'">🎯 HCC Gap Closer</button>
-    <button class="sc-v3-btn" onclick="scOIGChecker();document.getElementById('sc-v3-nav').style.display='none'">🛡️ OIG Exclusion Checker</button>
-    <button class="sc-v3-btn" onclick="scLCDLookup();document.getElementById('sc-v3-nav').style.display='none'">📖 LCD / NCD Coverage</button>
-    <button class="sc-v3-btn" onclick="scFeeSchedule();document.getElementById('sc-v3-nav').style.display='none'">💲 Fee Schedule Benchmarker</button>
-    <button class="sc-v3-btn" onclick="scPatientEstimator();document.getElementById('sc-v3-nav').style.display='none'">🧾 Patient Responsibility Est.</button>
-    <button class="sc-v3-btn" onclick="scAuditRisk();document.getElementById('sc-v3-nav').style.display='none'">⚠️ Audit Risk Scorer</button>
-    <button class="sc-v3-btn" onclick="scCDIAssistant();document.getElementById('sc-v3-nav').style.display='none'">📝 CDI Documentation</button>
-    <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#0EA5E9;padding:10px 16px 4px">Operations</div>
-    <button class="sc-v3-btn" onclick="scCoderTracker();document.getElementById('sc-v3-nav').style.display='none'">📊 Coder Productivity</button>
-    <button class="sc-v3-btn" onclick="scCEUTracker();document.getElementById('sc-v3-nav').style.display='none'">🎓 CEU + Certification</button>
-    <button class="sc-v3-btn" onclick="scQAWorkflow();document.getElementById('sc-v3-nav').style.display='none'">✔️ QA Workflow</button>
-    <button class="sc-v3-btn" onclick="scDenialAnalyzer();document.getElementById('sc-v3-nav').style.display='none'">❌ Denial Analyzer</button>
-    <button class="sc-v3-btn" onclick="scMedAbbrev();document.getElementById('sc-v3-nav').style.display='none'">💊 Med Abbreviation Lookup</button>
-    <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#0EA5E9;padding:10px 16px 4px">Compliance</div>
-    <button class="sc-v3-btn" onclick="scComplianceBuilder();document.getElementById('sc-v3-nav').style.display='none'">🏛️ OIG Compliance Builder</button>
-    <button class="sc-v3-btn" onclick="scMIPSTracker();document.getElementById('sc-v3-nav').style.display='none'">🌟 MIPS Quality Tracker</button>
-    <button class="sc-v3-btn" onclick="scClaimStatus();document.getElementById('sc-v3-nav').style.display='none'">📬 Claim Status Tracker</button>
-    <button class="sc-v3-btn" onclick="scICD11Readiness();document.getElementById('sc-v3-nav').style.display='none'">🔄 ICD-11 Readiness</button>
-    <button class="sc-v3-btn" onclick="scPayerContract();document.getElementById('sc-v3-nav').style.display='none'">🤝 Payer Contract Analyzer</button>
-  </div>
-</div>
-<!-- FAB trigger for v3 nav -->
-<button id="sc-v3-fab" onclick="document.getElementById('sc-v3-nav').style.display='block'" style="display:none;position:fixed;bottom:24px;right:24px;width:56px;height:56px;background:linear-gradient(135deg,#0EA5E9,#0284C7);color:#fff;border:none;border-radius:50%;font-size:24px;cursor:pointer;z-index:999;box-shadow:0 4px 20px rgba(14,165,233,.4);align-items:center;justify-content:center">🔧</button>
 
-<script>
-// Show v3 FAB after login
-(function(){
-  var orig=window.scLogin||function(){};
-  document.addEventListener('DOMContentLoaded',function(){
-    var origLogin=window.scLogin;
-    if(origLogin){window.scLogin=function(){origLogin.apply(this,arguments);setTimeout(function(){var fab=document.getElementById('sc-v3-fab');if(fab)fab.style.display='flex';},500);};}
-    // Also watch for auth screen hiding
-    var authScreen=document.getElementById('sc-auth-screen');
-    if(authScreen){var obs=new MutationObserver(function(){if(authScreen.style.display==='none'){var fab=document.getElementById('sc-v3-fab');if(fab)fab.style.display='flex';}});obs.observe(authScreen,{attributes:true,attributeFilter:['style']});}
-  });
-})();
-</script>
+
 <script>
 // SAIRNcode v3.0 JS — Part 1 (Features 1-12)
 var SC_PROXY = (typeof SC_RAILWAY !== 'undefined' ? SC_RAILWAY : '') + '/api/claude';
