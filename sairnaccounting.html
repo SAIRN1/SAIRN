@@ -102,7 +102,7 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <div id="sa-app">
   <div class="sa-topbar">
-    <div class="sa-topbar-logo">SAIRN<span>acc</span>™</div>
+    <div class="sa-topbar-logo">SAIRN<span>acc</span><span id="bridge-status" style="font-size:10px;margin-left:10px;color:#5A7A8A;font-weight:400"></span>™</div>
     <div style="font-size:11px;opacity:.7;background:rgba(255,255,255,.1);padding:3px 10px;border-radius:20px">AI CFO · Big 4 CPA · Tax Attorney</div>
     <div class="sa-topbar-user" id="sa-user-label">—</div>
     <button class="sa-topbar-logout" onclick="saLogout()">Sign Out</button>
@@ -250,6 +250,7 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
         </div>
         <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
           <button class="sa-btn-primary" onclick="saOpenJE()">+ Journal Entry</button>
+          <button class="sa-btn-secondary" onclick="saImportFromStoneDesk()" style="background:rgba(245,158,11,.12);color:#d97706;border-color:rgba(245,158,11,.3)">🏪 Import from StoneDesk</button>
           <button class="sa-btn-outline" onclick="saGenJournalAI()">✨ AI Journal Entry</button>
           <button class="sa-btn-secondary" onclick="saExportGL()">⬇ Export GL CSV</button>
           <select id="gl-account-filter" onchange="saRenderGL()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;font-family:Outfit,sans-serif">
@@ -5135,6 +5136,123 @@ function saPanel(id,btn){
 }
 
 console.log('SAIRNacc v2.0 — 8 new features loaded. Market ready.');
+
+
+// ============================================================
+// SAIRN DATA BRIDGE — SAIRNacc Integration
+// Imports job revenue data from StoneDesk via SAIRN bridge
+// ============================================================
+var SA_BRIDGE = 'https://sairn.vercel.app/api/bridge';
+
+async function saImportFromStoneDesk() {
+  var shopId = localStorage.getItem('sa_stonedesk_shop_id') || '';
+  if (!shopId) {
+    shopId = prompt('Enter your StoneDesk Shop ID (found in StoneDesk → Settings → Account ID):');
+    if (!shopId) return;
+    localStorage.setItem('sa_stonedesk_shop_id', shopId);
+  }
+  saNotify('Connecting to StoneDesk...', 'green');
+  try {
+    var r = await fetch(SA_BRIDGE + '/pull?shop=' + shopId + '&type=jobs');
+    var data = await r.json();
+    if (!data.ok || !data.jobs) { saNotify('No StoneDesk data found. Sync from StoneDesk first.', 'orange'); return; }
+    
+    var jobs = data.jobs.filter(function(j) { return j.stage === 'complete' && j.actualRevenue; });
+    if (!jobs.length) { saNotify('No completed jobs found. Complete jobs in StoneDesk first.', 'orange'); return; }
+    
+    var imported = 0;
+    var today = new Date().toISOString().slice(0, 10);
+    
+    jobs.forEach(function(job) {
+      var date = (job.completionDate || job.installDate || today).slice(0, 10);
+      var ref = job.jobNumber || 'SD-' + job.id.slice(0, 6);
+      var desc = job.jobName || 'StoneDesk Job';
+      var rev = parseFloat(job.actualRevenue) || 0;
+      var mat = parseFloat(job.materialCost) || 0;
+      
+      // Check if already imported
+      var alreadyImported = glEntries.some(function(e) {
+        return e.lines && e.lines.some(function(l) { return l.memo && l.memo.includes(ref); });
+      });
+      if (alreadyImported) return;
+      
+      // Revenue entry: DR AR 1100, CR Revenue 4100
+      if (rev > 0) {
+        glEntries.push({
+          id: 'sd-' + Date.now() + '-' + imported,
+          date: date,
+          description: 'StoneDesk: ' + desc,
+          reference: ref,
+          lines: [
+            { account: '1100', memo: desc + ' (' + ref + ')', debit: rev, credit: 0 },
+            { account: '4100', memo: 'Revenue: ' + desc + ' (' + ref + ')', debit: 0, credit: rev }
+          ],
+          source: 'stonedesk'
+        });
+        imported++;
+      }
+      // Material cost entry: DR COGS 5100, CR AP 2000
+      if (mat > 0) {
+        glEntries.push({
+          id: 'sd-mat-' + Date.now() + '-' + imported,
+          date: date,
+          description: 'StoneDesk Materials: ' + desc,
+          reference: ref,
+          lines: [
+            { account: '5100', memo: 'Materials: ' + desc + ' (' + ref + ')', debit: mat, credit: 0 },
+            { account: '2000', memo: 'AP Materials: ' + desc + ' (' + ref + ')', debit: 0, credit: mat }
+          ],
+          source: 'stonedesk'
+        });
+        imported++;
+      }
+    });
+    
+    if (imported > 0) {
+      saSave('sa_gl', glEntries);
+      saUpdateGLKPIs();
+      saRenderGL();
+      saNotify('Imported ' + imported + ' journal entries from StoneDesk (' + jobs.length + ' jobs)', 'green');
+    } else {
+      saNotify('All StoneDesk jobs already imported.', 'green');
+    }
+  } catch(e) {
+    saNotify('Bridge connection failed: ' + e.message, 'red');
+  }
+}
+
+async function saImportPayrollFromStoneDesk() {
+  var shopId = localStorage.getItem('sa_stonedesk_shop_id') || '';
+  if (!shopId) { saImportFromStoneDesk(); return; }
+  try {
+    var r = await fetch(SA_BRIDGE + '/pull?shop=' + shopId + '&type=payroll');
+    var data = await r.json();
+    if (!data.ok || !data.payroll || !data.payroll.length) {
+      saNotify('No payroll data from StoneDesk yet.', 'orange'); return;
+    }
+    saNotify('Payroll data available: ' + data.payroll.length + ' periods', 'green');
+  } catch(e) {
+    saNotify('Bridge unavailable', 'red');
+  }
+}
+
+// Auto-sync on load if shopId is saved
+(function() {
+  var shopId = localStorage.getItem('sa_stonedesk_shop_id');
+  if (shopId) {
+    // Background pull — don't block startup
+    setTimeout(async function() {
+      try {
+        var r = await fetch(SA_BRIDGE + '/pull?shop=' + shopId + '&type=jobs');
+        var data = await r.json();
+        if (data.ok && data.jobs && data.jobs.length) {
+          var d = document.getElementById('bridge-status');
+          if (d) { d.textContent = 'StoneDesk: ' + data.jobs.length + ' jobs synced'; d.style.color = '#16a34a'; }
+        }
+      } catch(e) {}
+    }, 2000);
+  }
+})();
 
 </script>
 </body>
