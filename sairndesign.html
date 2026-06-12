@@ -241,6 +241,7 @@ body{background:var(--bg);color:var(--tx);min-height:100vh;font-family:'Inter',s
       <div class="ni" id="ni-quote" onclick="showP('quote')">&#128203;<span class="nl">Quote</span></div>
       <div class="ni" id="ni-present" onclick="showP('present')">&#127775;<span class="nl">Present</span></div>
       <div class="ni" id="ni-history" onclick="showP('history')">&#128193;<span class="nl">History</span></div>
+      <div class="ni" id="ni-suppliers" onclick="showP('suppliers')">&#128205;<span class="nl">Supply</span></div>
       <div class="ni adm" id="ni-admin" onclick="showP('admin')" style="display:none">&#9881;<span class="nl">Admin</span></div>
     </div>
 
@@ -1702,6 +1703,626 @@ document.addEventListener('keydown',e=>{
     if(e.key==='a'&&e.ctrlKey){toggleAI();e.preventDefault();}
   }
 });
+
+
+// ═══════════════════════════════════════════════════════
+//  REGIONAL SUPPLIER FINDER ENGINE
+//  ZIP => Region => State => Supplier catalog
+// ═══════════════════════════════════════════════════════
+
+// Zip prefix to region + state mapping (first 3 digits)
+function getRegionFromZip(zip) {
+  if(!zip||zip.length<3) return {region:'national',state:'US',city:'Your Area'};
+  var pre=parseInt(zip.substring(0,3));
+  // Northeast: CT,MA,ME,NH,NJ,NY,PA,RI,VT
+  if(pre>=10&&pre<=19) return {region:'northeast',state:'NY',city:'New York'};
+  if(pre>=20&&pre<=26) return {region:'mid-atlantic',state:'VA/DC/MD',city:'DC Metro'};
+  if(pre>=27&&pre<=28) return {region:'southeast',state:'NC',city:'Carolinas'};
+  if(pre>=29&&pre<=29) return {region:'southeast',state:'SC',city:'South Carolina'};
+  if(pre>=30&&pre<=31) return {region:'southeast',state:'GA',city:'Georgia'};
+  if(pre>=32&&pre<=34) return {region:'southeast',state:'FL',city:'Florida'};
+  if(pre>=35&&pre<=36) return {region:'southeast',state:'AL',city:'Alabama'};
+  if(pre>=37&&pre<=38) return {region:'southeast',state:'TN/MS',city:'Tennessee'};
+  if(pre>=39&&pre<=39) return {region:'southeast',state:'MS',city:'Mississippi'};
+  if(pre>=40&&pre<=42) return {region:'southeast',state:'KY',city:'Kentucky'};
+  if(pre>=43&&pre<=45) return {region:'midwest',state:'OH',city:'Ohio'};
+  if(pre>=46&&pre<=47) return {region:'midwest',state:'IN',city:'Indiana'};
+  if(pre>=48&&pre<=49) return {region:'midwest',state:'MI',city:'Michigan'};
+  if(pre>=50&&pre<=52) return {region:'midwest',state:'IA',city:'Iowa'};
+  if(pre>=53&&pre<=54) return {region:'midwest',state:'WI',city:'Wisconsin'};
+  if(pre>=55&&pre<=56) return {region:'midwest',state:'MN',city:'Minnesota'};
+  if(pre>=57&&pre<=57) return {region:'midwest',state:'SD',city:'South Dakota'};
+  if(pre>=58&&pre<=58) return {region:'midwest',state:'ND',city:'North Dakota'};
+  if(pre>=59&&pre<=59) return {region:'mountain',state:'MT',city:'Montana'};
+  if(pre>=60&&pre<=62) return {region:'midwest',state:'IL',city:'Illinois'};
+  if(pre>=63&&pre<=65) return {region:'midwest',state:'MO',city:'Missouri'};
+  if(pre>=66&&pre<=67) return {region:'midwest',state:'KS',city:'Kansas'};
+  if(pre>=68&&pre<=69) return {region:'midwest',state:'NE',city:'Nebraska'};
+  if(pre>=70&&pre<=71) return {region:'south',state:'LA',city:'Louisiana'};
+  if(pre>=72&&pre<=72) return {region:'south',state:'AR',city:'Arkansas'};
+  if(pre>=73&&pre<=74) return {region:'southwest',state:'OK',city:'Oklahoma'};
+  if(pre>=75&&pre<=79) return {region:'southwest',state:'TX',city:'Texas'};
+  if(pre>=80&&pre<=81) return {region:'mountain',state:'CO',city:'Colorado'};
+  if(pre>=82&&pre<=83) return {region:'mountain',state:'WY/ID',city:'Wyoming'};
+  if(pre>=84&&pre<=84) return {region:'mountain',state:'UT',city:'Utah'};
+  if(pre>=85&&pre<=86) return {region:'southwest',state:'AZ',city:'Arizona'};
+  if(pre>=87&&pre<=88) return {region:'southwest',state:'NM',city:'New Mexico'};
+  if(pre>=89&&pre<=89) return {region:'west',state:'NV',city:'Nevada'};
+  if(pre>=90&&pre<=96) return {region:'west',state:'CA',city:'California'};
+  if(pre>=97&&pre<=97) return {region:'west',state:'OR',city:'Oregon'};
+  if(pre>=98&&pre<=99) return {region:'west',state:'WA/AK',city:'Washington'};
+  if(pre>=6&&pre<=6) return {region:'northeast',state:'CT',city:'Connecticut'};
+  if(pre>=1&&pre<=2) return {region:'northeast',state:'MA',city:'Massachusetts'};
+  if(pre>=3&&pre<=3) return {region:'northeast',state:'NH/ME',city:'New England'};
+  if(pre>=5&&pre<=5) return {region:'northeast',state:'VT',city:'Vermont'};
+  if(pre>=7&&pre<=8) return {region:'northeast',state:'NJ',city:'New Jersey'};
+  if(pre>=9&&pre<=9) return {region:'northeast',state:'PR',city:'Puerto Rico'};
+  return {region:'national',state:'US',city:'Your Area'};
+}
+
+// ── MASTER SUPPLIER DATABASE ──────────────────────────
+var SUPPLIERS = {
+
+  plumbing: {
+    label: 'Plumbing & PVF',
+    icon: '&#128694;',
+    color: '#0D9488',
+    national: [
+      {
+        name: 'Ferguson', tier: 'National #1',
+        desc: 'Largest US plumbing distributor. 1,300+ locations. Residential, commercial, industrial PVF. Kohler, Moen, Delta, Toto, American Standard, Rheem, Bradford White, Viega, Uponor.',
+        locations: '1,300+ locations nationwide',
+        web: 'ferguson.com', order: 'ferguson.com/stores',
+        phone: '800-984-9573',
+        brands: 'Kohler · Moen · Delta · Toto · American Standard · Rheem · Bradford White · Viega · Uponor · Watts · Grohe · Hansgrohe',
+        account: 'Open contractor account online or in-branch. Net 30 available. Pro pricing with account.',
+        tip: 'Ask for a dedicated sales rep — Ferguson reps can pull job-specific pricing and stock reservations.'
+      },
+      {
+        name: 'Winsupply', tier: 'National',
+        desc: '700+ locally owned locations. Each branch independently operated — better relationships and flex pricing. Hughes Supply, LCR, and regional brands. Full plumbing + HVAC.',
+        locations: '700+ branches in all 50 states',
+        web: 'winsupply.com', order: 'winsupply.com/locations',
+        phone: '937-294-5331',
+        brands: 'Rheem · Kohler · Bradford White · American Standard · Sloan · Chicago Faucets',
+        account: 'Account setup through local branch. Each branch sets own pricing — negotiate directly.',
+        tip: 'Because each branch is locally owned, you can often negotiate better pricing here than at corporate chains.'
+      },
+      {
+        name: 'Hajoca Corporation', tier: 'National/Regional',
+        desc: 'Employee-owned since 1858. 400+ locations. Known for deep contractor relationships, showrooms, and personalized service. Strongest in Northeast, Southeast, Midwest.',
+        locations: '400+ locations, 40+ states',
+        web: 'hajoca.com', order: 'hajoca.com/locations',
+        phone: '610-265-3000',
+        brands: 'Kohler · Moen · Delta · Viega · Uponor · Rinnai · Weil-McLain · Taco · Peerless',
+        account: 'In-branch account setup. Excellent Net 30 terms for established contractors.',
+        tip: 'Hajoca showrooms are top-tier for spec work — bring clients for fixture selection appointments.'
+      },
+      {
+        name: 'Home Depot Pro / Build.com', tier: 'National Retail',
+        desc: 'Nationwide retail + online. Next-day delivery on most plumbing. Good for fill-ins and small orders. Pro Xtra program for contractor discounts up to 20%.',
+        locations: '2,300+ retail stores + online',
+        web: 'homedepot.com', order: 'homedepot.com/b/Plumbing',
+        phone: '800-466-3337',
+        brands: 'Kohler · Moen · American Standard · Delta · Pfister · Rheem · A.O. Smith',
+        account: 'Home Depot Pro account online. Volume pricing tiers. Dedicated Pro desk at most locations.',
+        tip: 'Pro Xtra members get up to 20% off. Apply online — instant approval for businesses.'
+      },
+      {
+        name: 'Menards Pro', tier: 'National (Midwest-heavy)',
+        desc: 'Strong in Midwest. Competitive pricing on commodity plumbing. 330+ locations primarily in 14 Midwest states.',
+        locations: '330+ stores in 14 Midwest states',
+        web: 'menards.com', order: 'menards.com/main/plumbing',
+        phone: '715-876-5911',
+        brands: 'Moen · American Standard · Gerber · SharkBite · Watts · NIBCO',
+        account: 'Business Credit Account available in-store.',
+        tip: 'Menards 11% rebate promotions can be significant on large orders — stack with contractor account.'
+      }
+    ],
+    regional: {
+      northeast: [
+        {name:'Gustave A. Larson', desc:'New England wholesale plumbing and HVAC. 40+ branches in CT, MA, NH, VT, RI, ME, NY. Strong hydronics.',web:'galarson.com',phone:'(800) 366-8616',states:'CT, MA, NH, VT, RI, ME, NY'},
+        {name:'Binsky & Snyder (NJ)', desc:'Commercial plumbing supply and mechanical, NJ and NY metro.',web:'binksyandsnyder.com',phone:'(908) 730-4170',states:'NJ, NY'},
+        {name:'Morrison Supply (Northeast)', desc:'Full plumbing and HVAC supply. Multiple NE locations.',web:'morrisonsupply.com',phone:'(888) 883-0601',states:'NY, NJ, PA'},
+        {name:'Refrigeration Sales Corp', desc:'HVAC and plumbing supply. Ohio and Northeast.',web:'rscohio.com',phone:'(216) 898-4000',states:'OH, PA, NY'},
+      ],
+      'mid-atlantic': [
+        {name:'Thermal Supply', desc:'HVAC and plumbing distributor. VA, MD, DC.',web:'thermalsupply.com',phone:'(703) 435-6000',states:'VA, MD, DC'},
+        {name:'Noland Company', desc:'Full-line plumbing and PVF. Strong in VA, NC.',web:'nolandco.com',phone:'(757) 873-8000',states:'VA, NC, WV'},
+        {name:'F.W. Webb', desc:'New England and Mid-Atlantic plumbing wholesale powerhouse. 90+ locations.',web:'fwwebb.com',phone:'(800) 225-4228',states:'MA, NH, ME, VT, CT, RI, NY, PA'},
+      ],
+      southeast: [
+        {name:'Hughes Supply (Winsupply SE)', desc:'Major SE plumbing and industrial. FL, GA, AL, SC, NC, TN.',web:'winsupply.com',phone:'(407) 841-4755',states:'FL, GA, AL, SC, NC, TN'},
+        {name:'Gateway Supply', desc:'SC-based independent. Wide plumbing and HVAC selection.',web:'gatewaysupply.com',phone:'(803) 779-7011',states:'SC, NC, GA'},
+        {name:'Familian Northwest (SE)', desc:'Pipe, valves, fittings specialist. Southeast focus.',web:'familian.com',phone:'(503) 286-5471',states:'SE states'},
+        {name:'Pye-Barker Supply', desc:'GA and Southeast plumbing and HVAC. 50+ locations.',web:'pyebarker.com',phone:'(404) 876-2896',states:'GA, AL, TN, FL'},
+      ],
+      midwest: [
+        {name:'Refrigeration Sales Corp (RSC)', desc:'HVAC and plumbing wholesale. Ohio and Midwest. 20+ locations.',web:'rscohio.com',phone:'(216) 898-4000',states:'OH, IN, MI, PA'},
+        {name:'Barnhart Supply', desc:'Ohio plumbing and HVAC supply. Quality regional distributor.',web:'barnhartsupply.com',phone:'(330) 745-4455',states:'OH, PA'},
+        {name:'National Waterworks (Core & Main)', desc:'Waterworks and civil infrastructure. Midwest strong.',web:'coreandmain.com',phone:'(314) 205-1000',states:'All Midwest states'},
+        {name:'Anderson Plumbing Supply', desc:'Midwest independent plumbing. Good contractor pricing.',web:'andersonplumbing.com',phone:'(612) 333-0700',states:'MN, WI, ND, SD'},
+        {name:'Brasscraft', desc:'Michigan-based. Plumbing parts specialist. Midwest distribution.',web:'brasscraft.com',phone:'(248) 305-6000',states:'MI, OH, IN, IL'},
+      ],
+      south: [
+        {name:'Louisiana Cat / Blanchard Machinery', desc:'Commercial plumbing and industrial supply. LA and Gulf Coast.',web:'lacaterpillar.com',phone:'(504) 733-7990',states:'LA, MS, AL'},
+        {name:'Noland Company (South)', desc:'Full plumbing supply. Strong in Gulf States.',web:'nolandco.com',phone:'(800) 562-5264',states:'LA, MS, TN, AR'},
+      ],
+      southwest: [
+        {name:'Morrison Supply', desc:'Texas and Southwest plumbing powerhouse. 80+ locations in TX, OK, NM.',web:'morrisonsupply.com',phone:'(888) 883-0601',states:'TX, OK, NM, AR'},
+        {name:'National Waterworks', desc:'Waterworks and infrastructure. All Texas metros.',web:'coreandmain.com',phone:'(214) 357-7151',states:'TX, OK, NM'},
+        {name:'Texas Pipe and Supply', desc:'Houston-based pipe, valves, fittings specialist.',web:'texaspipe.com',phone:'(713) 799-5000',states:'TX'},
+      ],
+      mountain: [
+        {name:'Western Integrated', desc:'CO, UT, NV plumbing and HVAC wholesale.',web:'westernintegrated.com',phone:'(303) 761-3800',states:'CO, UT, WY'},
+        {name:'ARS Supply Solutions', desc:'Mountain West plumbing supply. Multiple branches.',web:'arssupply.com',phone:'(602) 252-3641',states:'AZ, CO, NV, UT'},
+      ],
+      west: [
+        {name:'Familian Northwest', desc:'Pacific Northwest plumbing and PVF. OR, WA, ID.',web:'familian.com',phone:'(503) 286-5471',states:'OR, WA, ID, MT'},
+        {name:'Pacific Coast Supply', desc:'Northern California plumbing wholesale. 25+ locations.',web:'pacificcoastsupply.com',phone:'(916) 487-5600',states:'CA (Northern)'},
+        {name:'Consolidated Pipe & Supply', desc:'Full-line plumbing West Coast.',web:'consolidatedpipe.com',phone:'(800) 325-9115',states:'CA, NV, AZ'},
+        {name:'Keller Supply', desc:'Pacific Northwest family-owned. OR, WA, ID, MT. 1,000+ manufacturers.',web:'kellersupply.com',phone:'(800) 833-1312',states:'OR, WA, ID, MT, ND, AK'},
+      ]
+    }
+  },
+
+  electrical: {
+    label: 'Electrical Supply',
+    icon: '&#9889;',
+    color: '#D97706',
+    national: [
+      {
+        name: 'Graybar Electric', tier: 'National #1 Independent',
+        desc: 'Employee-owned since 1929. $11.6B revenue. 300+ branches nationwide. Full electrical, communications, data networking. Excellent contractor service and technical support.',
+        locations: '300+ US branches',
+        web: 'graybar.com', order: 'graybar.com/store/find-a-branch',
+        phone: '800-825-5517',
+        brands: 'Square D · Eaton · ABB · Leviton · Lutron · Hubbell · Southwire · Belden · Legrand · Cooper',
+        account: 'Account setup at branch. Net 30 standard. Volume pricing tiers. Graybar eCommerce for 24/7 ordering.',
+        tip: 'Graybar employee ownership means reps stay longer. Relationship investment pays off.'
+      },
+      {
+        name: 'WESCO International', tier: 'National #1 by Revenue',
+        desc: '$21.8B revenue. 800+ branches. Industrial, commercial, utility, data center focus. Strong for large commercial projects. Anixter wire/cable integration.',
+        locations: '800+ US branches',
+        web: 'wesco.com', order: 'wesco.com/en-us/locations',
+        phone: '800-509-3726',
+        brands: 'Eaton · GE · Hubbell · Belden · Panduit · Legrand · Schneider Electric · Honeywell · Molex',
+        account: 'Online account or in-branch. Credit terms for established accounts. Digital procurement portal.',
+        tip: 'WESCO is strongest for commercial/industrial. For residential, CED or Graybar often have better service.'
+      },
+      {
+        name: 'Consolidated Electrical Distributors (CED)', tier: 'National',
+        desc: 'Private, employee-focused. 800+ locations. Strong residential and light commercial. Excellent service culture. Often better pricing than public competitors.',
+        locations: '800+ locations all 50 states',
+        web: 'cedgroupusa.com', order: 'cedgroupusa.com/locations',
+        phone: '972-647-0555',
+        brands: 'Square D · Eaton · ABB · Legrand · Lutron · Leviton · Cooper · Hubbell · GE',
+        account: 'Branch account setup. Each CED branch semi-autonomous — pricing flexibility.',
+        tip: 'CED branches operate independently — if one branch price seems high, ask another nearby branch.'
+      },
+      {
+        name: 'Rexel USA', tier: 'National',
+        desc: 'Global #2 electrical distributor. 400+ US locations. Strong in industrial, solar/EV, data/comm. Part of $19B Rexel SA (Paris). Good digital ordering platform.',
+        locations: '400+ US locations',
+        web: 'rexelusa.com', order: 'rexelusa.com/locations',
+        phone: '800-739-3521',
+        brands: 'ABB · Schneider Electric · Eaton · Hubbell · Legrand · Southwire · Panduit',
+        account: 'Online account or branch. Rexel.com digital portal for 24/7 ordering and tracking.',
+        tip: 'Rexels digital platform is one of the best in the industry — good for project managers tracking orders.'
+      },
+      {
+        name: 'Home Depot Pro Electrical', tier: 'National Retail',
+        desc: 'Nationwide retail and online. Next-day on most items. Good for small orders and fill-ins. Leviton, Lutron, Square D, Eaton all stocked. Pro Xtra up to 20% off.',
+        locations: '2,300+ stores',
+        web: 'homedepot.com', order: 'homedepot.com/b/Electrical',
+        phone: '800-466-3337',
+        brands: 'Leviton · Lutron · Square D · Eaton · Hubbell · Southwire · Klein Tools',
+        account: 'Pro Xtra online. Instant approval. Volume tiers.',
+        tip: 'Good for quick fill-ins but pricing is typically 15-25% higher than electrical distributors for large orders.'
+      }
+    ],
+    regional: {
+      northeast: [
+        {name:'City Electric Supply (NE)', desc:'Fast-growing national. Strong in Northeast. Good residential and commercial.',web:'cityelectricsupply.com',phone:'(214) 630-2440',states:'All NE states'},
+        {name:'McNaughton-McKay (NE)', desc:'Midwest/East Coast electrical. Strong industrial and automation.',web:'mc-mc.com',phone:'(248) 588-2000',states:'MI, OH, PA, NJ, GA'},
+        {name:'Wholesale Electric Supply', desc:'NY and NJ metro focus. Strong commercial contractor relationships.',web:'wholesaleelectricsupply.com',phone:'(212) 594-0900',states:'NY, NJ, CT'},
+        {name:'Cape Electrical Supply', desc:'New England independent. MA, RI, CT. Good residential service.',web:'capeelectrical.com',phone:'(508) 775-5260',states:'MA, RI, CT'},
+      ],
+      'mid-atlantic': [
+        {name:'Capitol Light (Sonepar)', desc:'DC/MD/VA metro. Full electrical. Sonepar subsidiary.',web:'capitollight.com',phone:'(860) 953-0363',states:'CT, MA, DC, MD, VA'},
+        {name:'Cooper Electric (Sonepar)', desc:'NJ-based. Full-line electrical. 30+ NJ/PA locations.',web:'cooperelectric.com',phone:'(908) 226-1234',states:'NJ, PA, NY'},
+        {name:'Mayer Electric (Mid-Atlantic)', desc:'SE and Mid-Atlantic expansion. Commercial focus.',web:'mayerelectric.com',phone:'(800) 622-9371',states:'VA, NC, MD'},
+      ],
+      southeast: [
+        {name:'Mayer Electric Supply', desc:'Birmingham-based. SE powerhouse. 50+ locations FL, GA, AL, TN, SC, NC, MS.',web:'mayerelectric.com',phone:'(800) 622-9371',states:'FL, GA, AL, TN, SC, NC, MS'},
+        {name:'World Electric Supply (Sonepar)', desc:'FL and GA. 20+ branches. New Atlanta RDC opened 2026.',web:'worldelectric.com',phone:'(800) 351-5240',states:'FL, GA'},
+        {name:'Blount Supply', desc:'Central FL electrical distributor. Strong residential.',web:'blountsupply.com',phone:'(407) 295-2226',states:'FL'},
+      ],
+      midwest: [
+        {name:'Viking Electric Supply (Sonepar)', desc:'MN, WI, IA, ND, SD, NE. 30+ locations. Strong commercial.',web:'vikingelectric.com',phone:'(651) 631-0000',states:'MN, WI, IA, ND, SD, NE'},
+        {name:'Sunrise Electric (Sonepar)', desc:'Chicago metro and IL. Commercial and industrial.',web:'sunriseelectric.com',phone:'(630) 543-0880',states:'IL, WI, IN'},
+        {name:'McNaughton-McKay', desc:'Detroit-based. Michigan, Ohio, Georgia. Industrial automation specialty.',web:'mc-mc.com',phone:'(248) 588-2000',states:'MI, OH, IN'},
+        {name:'Leff Electric', desc:'NE Ohio independent. Cleveland metro focus.',web:'leffelectric.com',phone:'(440) 248-1980',states:'OH'},
+        {name:'Tri-City Electric', desc:'Iowa and Midwest commercial electrical.',web:'tricityelectricsupply.com',phone:'(563) 324-4411',states:'IA, IL, WI'},
+      ],
+      south: [
+        {name:'Elliott Electric Supply', desc:'Texas-founded. Expanding South. 170+ locations.',web:'elliottelectric.com',phone:'(936) 569-3111',states:'TX, LA, AR, MS'},
+        {name:'State Electric Supply', desc:'WV, VA, KY. Regional independent with strong service.',web:'stateelectric.com',phone:'(304) 525-3600',states:'WV, VA, KY, OH'},
+      ],
+      southwest: [
+        {name:'Elliott Electric Supply', desc:'TX powerhouse. 170+ Texas locations. Best in state.',web:'elliottelectric.com',phone:'(936) 569-3111',states:'TX, OK, NM, AR, LA'},
+        {name:'WESCO (SW)', desc:'Strong in SW industrial and commercial. Phoenix, Dallas, Houston hubs.',web:'wesco.com',phone:'(800) 509-3726',states:'TX, AZ, NM, OK'},
+        {name:'National Electric Supply', desc:'AZ and SW focus. Good residential and commercial.',web:'nationalelectricsupply.com',phone:'(602) 272-5551',states:'AZ, NM'},
+      ],
+      mountain: [
+        {name:'Border States Electric', desc:'Fargo-based. Mountain West and Great Plains. 100+ locations.',web:'borderstates.com',phone:'(701) 241-1500',states:'ND, SD, MT, WY, CO, ID, MN'},
+        {name:'Blazer Electric Supply (Graybar)', desc:'CO Springs and Denver metro. Now Graybar-owned.',web:'graybar.com',phone:'(719) 634-3516',states:'CO'},
+        {name:'Rexel (Mountain)', desc:'Salt Lake City, Denver, Boise hubs.',web:'rexelusa.com',phone:'(800) 739-3521',states:'UT, CO, ID, WY'},
+      ],
+      west: [
+        {name:'Buckles-Smith (Rexel)', desc:'Silicon Valley and CA. Data/comm specialist. Now Rexel.',web:'rexelusa.com',phone:'(408) 727-4355',states:'CA'},
+        {name:'Talley Inc. (Rexel)', desc:'LA and CA VDV/comm specialty. Now Rexel.',web:'rexelusa.com',phone:'(323) 724-0600',states:'CA (Southern)'},
+        {name:'Shepherd Electric (Graybar)', desc:'Pacific NW. OR, WA. Now Graybar-owned.',web:'graybar.com',phone:'(503) 287-2301',states:'OR, WA'},
+        {name:'Pacific Coast Electric Supply', desc:'NorCal independent. Good contractor service.',web:'pacificcoastelectricsupply.com',phone:'(925) 827-5900',states:'CA (Northern)'},
+      ]
+    }
+  },
+
+  paint: {
+    label: 'Paint & Coatings',
+    icon: '&#127912;',
+    color: '#7C3AED',
+    national: [
+      {
+        name: 'Sherwin-Williams', tier: 'National #1',
+        desc: '#1 US paint company. 4,853 stores. Cleveland-based. Pro accounts with dedicated reps, volume discounts, job site delivery. PaintPerks loyalty program. Brands: SW, Valspar, Dutch Boy, Krylon, Minwax, Purdy.',
+        locations: '4,853 US stores',
+        web: 'sherwin-williams.com', order: 'paint.sherwin-williams.com/find-sherwin-williams-nearest-location',
+        phone: '800-474-3794',
+        brands: 'Sherwin-Williams · Valspar · Dutch Boy · Krylon · Minwax · Purdy · Thompsons WaterSeal · Pratt & Lambert',
+        account: 'Contractor accounts available. Typical 20-40% contractor discount. Dedicated sales rep assigned.',
+        tip: 'SW contractor accounts typically start at 20% off. After $5K annual spend, ask for a pricing review — you can often get to 35-40% off.'
+      },
+      {
+        name: 'Benjamin Moore', tier: 'National Premium',
+        desc: 'Premium independent dealer network. 5,000+ independently owned stores. Superior quality reputation — Regal Select, Aura. Color accuracy and consistency unmatched. No big-box.',
+        locations: '5,000+ independent dealers',
+        web: 'benjaminmoore.com', order: 'benjaminmoore.com/en-us/store-locator',
+        phone: '855-724-6802',
+        brands: 'Benjamin Moore · Aura · Regal Select · ben · ADVANCE · Natura · Ultra Spec',
+        account: 'Contractor accounts through local dealers. Each dealer sets pricing — shop multiple dealers.',
+        tip: 'BM dealers are independent — prices vary. Call 3 local dealers, get quotes, and use the lowest as leverage.'
+      },
+      {
+        name: 'PPG Paints', tier: 'National',
+        desc: 'Global coatings leader. 700+ US company-owned stores + 1,000s of independent dealers. Pittsburgh Paints, Olympic, Glidden brands. Strong industrial and commercial coatings.',
+        locations: '700+ company stores + independent dealers',
+        web: 'ppgpaints.com', order: 'ppgpaints.com/store-locator',
+        phone: '888-774-1010',
+        brands: 'PPG · Pittsburgh Paints · Olympic · Glidden · Timeless · ProMaster · Break-Through',
+        account: 'Pro account at PPG stores. Contractor program with volume discounts.',
+        tip: 'PPGs ProMaster line is highly regarded for interior — often 15% less than SW/BM for comparable quality.'
+      },
+      {
+        name: 'Behr / Home Depot', tier: 'National Retail',
+        desc: 'Home Depot exclusive. #1 consumer brand by volume. Marquee, Premium Plus. Consumer-grade quality at competitive pricing. No contractor accounts.',
+        locations: '2,300+ Home Depot stores',
+        web: 'behr.com', order: 'homedepot.com/b/Paint/Behr',
+        phone: '800-854-0133',
+        brands: 'Behr Marquee · Behr Premium Plus · Behr Process',
+        account: 'No contractor account. Home Depot Pro program for volume.',
+        tip: 'Behr Marquee is solid quality for rental properties and flips. For premium client work, SW or BM is preferred.'
+      },
+      {
+        name: 'Kelly-Moore Paints', tier: 'Regional/National',
+        desc: 'West Coast favorite. 150+ stores. High quality for the price. Strong with professional painters. Good architectural coatings program.',
+        locations: '150+ stores (CA, TX, CO, NV, OR)',
+        web: 'kellymoore.com', order: 'kellymoore.com/store-locator',
+        phone: '888-835-5299',
+        brands: 'Kelly-Moore · Envy · Acri-Shield · Enviro Kote',
+        account: 'Pro account with volume discounts. Strong loyalty to local pros.',
+        tip: 'Kelly-Moore gives some of the best contractor pricing in the West — often better than Sherwin on volume.'
+      }
+    ],
+    regional: {
+      northeast: [
+        {name:'Fine Paints of Europe', desc:'VT-based ultra-premium. Dutch paints. Used by restoration contractors and high-end residential.',web:'finepaintsofeurope.com',phone:'(800) 332-1556',states:'VT, NH, ME, MA'},
+        {name:'Creative Paint (Boston)', desc:'Boston area professional paint supplier.',web:'creativepaintinc.com',phone:'(617) 628-1717',states:'MA, NH, RI'},
+        {name:'MURALO Paint', desc:'NJ-based independent. Professional grade. Preferred by NJ/NY painters.',web:'muralo.com',phone:'(732) 636-2112',states:'NJ, NY, PA'},
+        {name:'Quality Paint (PA)', desc:'PA professional paint distributor. BM and PPG dealer.',web:'qualitypaint.com',phone:'(215) 925-7882',states:'PA, NJ, DE'},
+      ],
+      'mid-atlantic': [
+        {name:'Rodda Paint (Mid-Atlantic)', desc:'Pacific NW and expanding. Quality professional line.',web:'roddapaint.com',phone:'(503) 521-4300',states:'OR, WA, ID, MT'},
+        {name:'Best Look Paints', desc:'Mid-Atlantic discount professional paint chain.',web:'bestlookpaint.com',phone:'(800) 237-3826',states:'VA, MD, NC, SC'},
+      ],
+      southeast: [
+        {name:'Conco Paints', desc:'East Coast pro paint. NC, SC, VA, GA. Good contractor pricing.',web:'concopaints.com',phone:'(252) 442-7071',states:'NC, SC, VA, GA'},
+        {name:'Proco Paints', desc:'FL professional paint supplier. Tampa and Central FL.',web:'procopaints.com',phone:'(813) 876-2624',states:'FL'},
+        {name:'Hirshfields Paint', desc:'MN and Midwest. Pro painter favorite. Excellent color system.',web:'hirshfields.com',phone:'(800) 544-2920',states:'MN, WI, IA, ND, SD'},
+      ],
+      midwest: [
+        {name:'Hirshfields Paint', desc:'Minneapolis-based. 100+ years. Pro painter favorite in Midwest. Great color.',web:'hirshfields.com',phone:'(800) 544-2920',states:'MN, WI, IA, ND, SD, NE'},
+        {name:'Dunn-Edwards (Midwest expanding)', desc:'SW and West Coast brand expanding. Professional quality.',web:'dunnedwards.com',phone:'(888) 788-5770',states:'AZ, CA, CO, TX'},
+        {name:'True Value / Ace Pro (Midwest)', desc:'Midwest hardware co-ops with paint programs. Local availability.',web:'truevalue.com',phone:'(773) 695-5000',states:'All Midwest states'},
+      ],
+      south: [
+        {name:'Gulf Paints (LA/Gulf)', desc:'New Orleans area professional paint distributor.',web:'gulfpaints.com',phone:'(504) 733-0900',states:'LA, MS, AL'},
+        {name:'Conco Paints (SE)', desc:'Carolinas and SE professional paint.',web:'concopaints.com',phone:'(252) 442-7071',states:'NC, SC, VA, TN, GA'},
+      ],
+      southwest: [
+        {name:'Dunn-Edwards Paints', desc:'Southwest pro favorite. 130+ stores in AZ, CA, CO, NV, NM, TX. Excellent professional quality.',web:'dunnedwards.com',phone:'(888) 788-5770',states:'AZ, CA, CO, NV, NM, TX'},
+        {name:'Miller Paint', desc:'Oregon-based. Pacific NW and Southwest. Contractor favorite.',web:'millerpaint.com',phone:'(503) 255-0190',states:'OR, WA, ID, AK'},
+        {name:'Colorwheel Paint (TX)', desc:'Texas professional paint chain. Good pricing.',web:'colorwheelpaint.com',phone:'(214) 350-7654',states:'TX'},
+      ],
+      mountain: [
+        {name:'Rodda Paint', desc:'Pacific NW and Mountain. Professional quality. OR, WA, ID, MT, CO.',web:'roddapaint.com',phone:'(503) 521-4300',states:'OR, WA, ID, MT, CO'},
+        {name:'Miller Paint', desc:'Pacific NW independent. Premium professional.',web:'millerpaint.com',phone:'(503) 255-0190',states:'OR, WA, ID, MT, AK'},
+        {name:'Dunn-Edwards (Mountain)', desc:'CO, UT, NV. SW quality brand with good contractor program.',web:'dunnedwards.com',phone:'(888) 788-5770',states:'CO, UT, NV, AZ'},
+      ],
+      west: [
+        {name:'Dunn-Edwards Paints', desc:'Southern CA and West pro favorite. 130+ stores. Excellent quality.',web:'dunnedwards.com',phone:'(888) 788-5770',states:'CA, AZ, CO, NV, NM'},
+        {name:'Kelly-Moore Paints', desc:'NorCal and West Coast. Professional quality at good pricing.',web:'kellymoore.com',phone:'(888) 835-5299',states:'CA, OR, NV, CO, TX'},
+        {name:'Miller Paint', desc:'Pacific NW professional. OR, WA, ID, AK.',web:'millerpaint.com',phone:'(503) 255-0190',states:'OR, WA, ID, AK'},
+        {name:'Rodda Paint', desc:'Pacific NW premium. OR, WA, ID, MT.',web:'roddapaint.com',phone:'(503) 521-4300',states:'OR, WA, ID, MT'},
+      ]
+    }
+  },
+
+  hvac: {
+    label: 'HVAC Supply',
+    icon: '&#10052;',
+    color: '#0EA5E9',
+    national: [
+      {name:'Winsupply HVAC',tier:'National',desc:'700+ locally owned branches. Full HVAC supply. Carrier, Trane, Lennox, Rheem distributed.',web:'winsupply.com',order:'winsupply.com/locations',phone:'937-294-5331',brands:'Carrier · Trane · Lennox · Rheem · Daikin · York · Goodman',account:'In-branch account. Local pricing.',tip:'Each branch is locally owned — pricing is negotiable.'},
+      {name:'Ferguson HVAC',tier:'National',desc:'1,300+ locations. Full HVAC equipment and supplies. Same network as plumbing.',web:'ferguson.com',order:'ferguson.com/stores',phone:'800-984-9573',brands:'Carrier · Trane · Mitsubishi · Daikin · Rheem · A.O. Smith',account:'Contractor account at any branch.',tip:'Ferguson HVAC and plumbing share accounts — one relationship covers both.'},
+      {name:'Johnstone Supply',tier:'National',desc:'450+ locations. HVAC and refrigeration specialist. Contractor-only supply house. Excellent technical support.',web:'johnstonesupply.com',order:'johnstonesupply.com/branch-locator',phone:'800-556-4678',brands:'Copeland · Emerson · Honeywell · White-Rodgers · ICM · A.O. Smith',account:'Contractor-only. HVAC license typically required.',tip:'Johnstone is contractor only with excellent technical support staff — great for complex installs.'},
+      {name:'Lennox Stores (LII)',tier:'National',desc:'Lennox International owned. Equipment and parts. Residential and light commercial.',web:'lennox.com',order:'lennox.com/dealer',phone:'800-953-6669',brands:'Lennox · Ducane · Allied Air',account:'Dealer account required. Apply at lennox.com.',tip:'Lennox dealer programs include co-op advertising and financing — worth the dealer application.'},
+      {name:'Home Depot / Lowes HVAC',tier:'National Retail',desc:'Window units, mini-splits, water heaters, baseboard. Limited selection but immediate availability.',web:'homedepot.com',order:'homedepot.com/b/Heating-Venting-Cooling',phone:'800-466-3337',brands:'LG · Midea · Friedrich · Rheem · A.O. Smith',account:'Pro Xtra program.',tip:'Good for emergency window units and water heater replacements. Not for full system installs.'}
+    ],
+    regional: {
+      northeast:[{name:'N.H. Bragg & Sons',desc:'ME-based HVAC and plumbing.',web:'nhbragg.com',phone:'(207) 947-8611',states:'ME, NH, VT'}],
+      midwest:[{name:'Refrigeration Sales Corp',desc:'OH and Midwest HVAC/refrigeration specialty.',web:'rscohio.com',phone:'(216) 898-4000',states:'OH, IN, MI, PA'}],
+      southeast:[{name:'Pye-Barker Supply',desc:'SE HVAC and plumbing. GA, AL, TN, FL.',web:'pyebarker.com',phone:'(404) 876-2896',states:'GA, AL, TN, FL'}],
+      southwest:[{name:'ARS Supply Solutions',desc:'AZ and Southwest HVAC wholesale.',web:'arssupply.com',phone:'(602) 252-3641',states:'AZ, NM, NV, CO'}],
+      west:[{name:'Pacific Refrigeration',desc:'West Coast HVAC/refrigeration supply.',web:'pacificrefrigeration.com',phone:'(800) 426-4822',states:'CA, OR, WA, ID'}],
+      'mid-atlantic':[{name:'Thermal Supply',desc:'DC metro HVAC supply.',web:'thermalsupply.com',phone:'(703) 435-6000',states:'VA, MD, DC'}],
+      south:[{name:'Noland Company',desc:'HVAC and plumbing. Gulf states.',web:'nolandco.com',phone:'(800) 562-5264',states:'LA, MS, AL, TN'}],
+      mountain:[{name:'Western Integrated',desc:'CO and mountain HVAC.',web:'westernintegrated.com',phone:'(303) 761-3800',states:'CO, UT, WY'}]
+    }
+  },
+
+  roofing: {
+    label: 'Roofing Supply',
+    icon: '&#127968;',
+    color: '#DC2626',
+    national: [
+      {name:'ABC Supply',tier:'National #1',desc:'Largest US roofing distributor. 900+ locations. Shingles, metal, flat, underlayment, gutters. Next-day delivery standard. Beacon competitor.',web:'abcsupply.com',order:'abcsupply.com/locations',phone:'800-786-7601',brands:'GAF · Owens Corning · CertainTeed · IKO · Tamko · Atlas · James Hardie',account:'Contractor account required. Roofing license typically needed.',tip:'ABC Supplys delivery tracking is industry-leading — foremen get texts when truck leaves the branch.'},
+      {name:'Beacon Building Products',tier:'National',desc:'2nd largest US roofing distributor. 500+ locations. Beacon Pro+ digital platform. Strong in exterior products.',web:'beaconbuildingproducts.com',order:'beaconbuildingproducts.com/locations',phone:'844-698-2788',brands:'GAF · Owens Corning · CertainTeed · Metal Sales · Boral · ATAS International',account:'Beacon Pro+ contractor account. Digital ordering with delivery tracking.',tip:'Beacon Pro+ app is excellent for tracking orders and managing invoices on the go.'},
+      {name:'SRS Distribution (Home Depot)',tier:'National',desc:'Acquired by Home Depot 2024. 700+ locations. Roof Hub app for order/delivery visibility. Fast next-day delivery.',web:'srs-distribution.com',order:'srs-distribution.com/locations',phone:'877-777-4447',brands:'GAF · Owens Corning · Atlas · IKO · CertainTeed · Tamko',account:'SRS contractor account. Roof Hub app for account management.',tip:'SRS + Home Depot combination means deep inventory and aggressive pricing for high-volume contractors.'}
+    ],
+    regional: {
+      northeast:[{name:'Northeast Building Products',desc:'NE roofing and siding specialty.',web:'nbpinc.com',phone:'(215) 632-2000',states:'PA, NJ, NY, DE, MD'}],
+      southeast:[{name:'Gulf Eagle Supply',desc:'SE roofing supply. FL, AL, GA, MS.',web:'gulfeagle.com',phone:'(800) 477-4659',states:'FL, AL, GA, MS, TN'}],
+      midwest:[{name:'Rogers Wholesale',desc:'Midwest roofing supply.',web:'rogerswholesale.com',phone:'(515) 266-2000',states:'IA, MN, WI, NE, MO'}],
+      southwest:[{name:'American Roofing Supply',desc:'TX and SW roofing.',web:'americanroofingsupply.com',phone:'(713) 781-7500',states:'TX, OK, NM'}],
+      mountain:[{name:'Silver State Roofing Supply',desc:'NV, CO, UT roofing supply.',web:'silverstateroof.com',phone:'(702) 638-7663',states:'NV, CO, UT, AZ'}],
+      west:[{name:'Pacific Coast Supply',desc:'West Coast roofing and siding.',web:'pacificcoastsupply.com',phone:'(916) 487-5600',states:'CA, OR, WA'}],
+      'mid-atlantic':[{name:'Huttig Building Products',desc:'Mid-Atlantic roofing and millwork.',web:'huttig.com',phone:'(800) 888-8449',states:'MD, VA, PA, DC'}],
+      south:[{name:'Gulf Eagle Supply',desc:'Gulf Coast roofing. LA, MS, AL.',web:'gulfeagle.com',phone:'(800) 477-4659',states:'LA, MS, AL, FL'}]
+    }
+  },
+
+  lumber: {
+    label: 'Lumber & Building Materials',
+    icon: '&#129683;',
+    color: '#92400E',
+    national: [
+      {name:'Builders FirstSource',tier:'National #1',desc:'Largest US structural supplier. 550+ locations. Lumber, trusses, wall panels, EWP, windows, doors. Millwork.',web:'buildersfirstsource.com',order:'buildersfirstsource.com/locations',phone:'214-880-3500',brands:'LP · Weyerhaeuser · Louisiana-Pacific · JELD-WEN · Andersen · PlyGem',account:'Contractor account in-branch. Volume pricing for builders.',tip:'BFS component manufacturing (trusses, wall panels) often cheaper than stick-framing — get the quote.'},
+      {name:'84 Lumber',tier:'National',desc:'300+ locations. Full LBM, millwork, doors/windows. Components and design services. Strong in residential.',web:'84lumber.com',order:'84lumber.com/stores',phone:'724-228-8820',brands:'LP · Weyerhaeuser · Huber · James Hardie · JELD-WEN · Pella',account:'Account at local store. Builder programs available.',tip:'84 Lumbers designer services are free with purchase — useful for window and door specs.'},
+      {name:'Home Depot / Lowes Pro Lumber',tier:'National Retail',desc:'Nationwide retail. Good for small orders and specialty items. Delivery available. Pro discount programs.',web:'homedepot.com',order:'homedepot.com/b/Lumber-Composites',phone:'800-466-3337',brands:'WeatherShield · YellaWood · LP SmartSide · LVL · TimberTech',account:'Pro Xtra / Lowes Pro account.',tip:'Home Depot and Lowes are convenient but typically 10-20% more than specialty lumber yards for large orders.'}
+    ],
+    regional: {
+      northeast:[{name:'Sievert Larsen & Associates',desc:'NE lumber and millwork.',web:'sievertlarsen.com',phone:'(800) 421-7741',states:'MA, NH, ME, VT'}],
+      midwest:[{name:'Carter Lumber',desc:'OH and Midwest. 175+ locations.',web:'carterlumber.com',phone:'(330) 722-7900',states:'OH, IN, MI, KY, PA, WV'}],
+      southeast:[{name:'Tindells Inc.',desc:'TN and SE lumber.',web:'tindells.com',phone:'(865) 977-2010',states:'TN, NC, GA, AL'}],
+      southwest:[{name:'Home Lumber Co',desc:'TX regional lumber.',web:'homelumberco.com',phone:'(214) 358-8571',states:'TX'}],
+      mountain:[{name:'Boise Cascade',desc:'Pacific NW and Mountain. EWP and panels.',web:'bc.com',phone:'(208) 384-6161',states:'ID, OR, WA, MT, CO'}],
+      west:[{name:'Pacific Coast Supply',desc:'West Coast full-line LBM.',web:'pacificcoastsupply.com',phone:'(916) 487-5600',states:'CA, OR, WA'}],
+      'mid-atlantic':[{name:'Huttig Building Products',desc:'Full LBM and millwork. Mid-Atlantic.',web:'huttig.com',phone:'(800) 888-8449',states:'MD, VA, PA, NC'}],
+      south:[{name:'Gibsons Building Supply',desc:'Gulf South lumber and LBM.',web:'gibsonsbuildingsupply.com',phone:'(504) 733-9500',states:'LA, MS, AL'}]
+    }
+  },
+
+  tile: {
+    label: 'Tile, Stone & Flooring',
+    icon: '&#129704;',
+    color: '#16a34a',
+    national: [
+      {name:'MSI Surfaces',tier:'National #1',desc:'#1 US tile importer and distributor. 50+ distribution centers. Tile, quartz, marble, granite, LVT. Available at Home Depot nationwide.',web:'msisurfaces.com',order:'msisurfaces.com/locations',phone:'800-323-8e30',brands:'MSI Quartz · Carrara · Bianco Perla · Everlife LVT',account:'Contractor account at MSI. Trade pricing available.',tip:'MSI trade accounts get 10-20% below retail. Apply at msisurfaces.com/trade.'},
+      {name:'Daltile',tier:'National #1 Domestic',desc:'#1 US tile manufacturer. 80% made in USA. 250+ showrooms. Ceramic, porcelain, natural stone, glass. Available at Ferguson and Home Depot.',web:'daltile.com',order:'daltile.com/store-locator',phone:'800-933-8453',brands:'Daltile · American Olean · Ragno',account:'Contractor account at showrooms. Volume discounts.',tip:'Daltile American Olean line is same factory at lower price — great for spec commercial work.'},
+      {name:'Floor & Decor',tier:'National Retail',desc:'Warehouse-style tile, stone, flooring. 200+ stores. Designer Studio. Good pricing on large quantities. Pro account with discounts.',web:'flooranddecor.com',order:'flooranddecor.com/store-finder',phone:'877-675-0002',brands:'Mix of imports and domestic brands',account:'Pro account with 5-8% discount plus free design services.',tip:'Floor & Decor Pro account is free. 5% instant discount + free same-day delivery over $2,500 orders.'},
+      {name:'BuildDirect',tier:'National Online',desc:'Online wholesale. Ships direct to jobsite. Flooring, tile, decking, siding. Best for large quantity orders.',web:'builddirect.com',order:'builddirect.com',phone:'877-631-2845',brands:'Various direct import brands',account:'Trade program for contractors. Volume pricing.',tip:'BuildDirect is best for large residential flooring orders — not for small fill orders.'}
+    ],
+    regional: {
+      northeast:[{name:'Tile America',desc:'New England tile and stone. CT, MA, RI, NH.',web:'tileamerica.com',phone:'(860) 233-3800',states:'CT, MA, RI, NH'}],
+      'mid-atlantic':[{name:'Artistic Tile',desc:'NJ/NY luxury tile and stone. Premium showrooms.',web:'artistictile.com',phone:'(973) 379-4277',states:'NJ, NY, PA'}],
+      southeast:[{name:'Builders Tile & Stone',desc:'FL and SE tile distributor.',web:'builderstile.com',phone:'(407) 831-7775',states:'FL, GA, SC, NC'}],
+      midwest:[{name:'National Tile & Flooring',desc:'Midwest tile supply.',web:'nationaltilefl.com',phone:'(312) 733-5050',states:'IL, IN, OH, MI'}],
+      southwest:[{name:'Arizona Tile',desc:'AZ and SW stone and tile. Premium selection.',web:'arizonatile.com',phone:'(480) 893-9393',states:'AZ, CA, NV, CO, TX'}],
+      mountain:[{name:'Arizona Tile (Mountain)',desc:'CO and Mountain West. Stone and tile.',web:'arizonatile.com',phone:'(303) 296-0202',states:'CO, UT, NV, AZ'}],
+      west:[{name:'Bedrosians Tile & Stone',desc:'West Coast tile powerhouse. CA, OR, WA.',web:'bedrosians.com',phone:'(800) 723-8453',states:'CA, OR, WA, NV, AZ'}],
+      south:[{name:'Greenville Supply',desc:'SE tile and stone.',web:'greenvillesupply.com',phone:'(864) 234-6800',states:'SC, NC, GA, TN'}]
+    }
+  }
+
+};
+
+// Active trade filter
+var activeTrade = 'all';
+var currentRegion = null;
+
+function filterTrade(trade, btn) {
+  activeTrade = trade;
+  document.querySelectorAll('[id^="strade-"]').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  if(currentRegion) renderSuppliers(currentRegion);
+}
+
+function findSuppliers() {
+  var zip = document.getElementById('sup-zip').value.trim();
+  if(zip.length < 5) { notify('Enter a 5-digit ZIP code','orn'); return; }
+  var info = getRegionFromZip(zip);
+  currentRegion = info;
+  // Show region badge
+  var badge = document.getElementById('sup-region-badge');
+  badge.style.display = 'block';
+  badge.textContent = info.city + ' (' + info.state + ') — ' + info.region.charAt(0).toUpperCase()+info.region.slice(1).replace('-',' ');
+  renderSuppliers(info);
+  // Trigger AI procurement tip
+  document.getElementById('sup-ai-strip').style.display = 'block';
+  supAsk('I am a contractor in ZIP code '+zip+' ('+info.city+', '+info.state+'). Give me the top 3 procurement tips for this market — best deals, local relationships to build, and seasonal pricing strategies for plumbing, electrical, and paint suppliers in this region.');
+}
+
+function renderSuppliers(info) {
+  var results = document.getElementById('sup-results');
+  var trades = activeTrade === 'all'
+    ? ['plumbing','electrical','paint','hvac','roofing','lumber','tile']
+    : [activeTrade];
+
+  var html2 = '';
+
+  trades.forEach(function(tradeKey) {
+    var tradeData = SUPPLIERS[tradeKey];
+    if(!tradeData) return;
+
+    // Get regional suppliers for this trade
+    var regional = (tradeData.regional && tradeData.regional[info.region]) || [];
+
+    html2 += '<div style="margin-bottom:24px">';
+    html2 += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid '+tradeData.color+'">';
+    html2 += '<span style="font-size:18px">'+tradeData.icon+'</span>';
+    html2 += '<span style="font-size:15px;font-weight:800;color:var(--tx)">'+tradeData.label+'</span>';
+    html2 += '<span style="font-size:11px;background:var(--atint);color:var(--a);padding:2px 8px;border-radius:20px;font-weight:700">'+info.city+' Area</span>';
+    html2 += '</div>';
+
+    // National suppliers
+    html2 += '<div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">National Distributors — Available in '+info.city+'</div>';
+    html2 += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:14px">';
+
+    tradeData.national.forEach(function(sup) {
+      var findUrl = sup.order || sup.web;
+      html2 += '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px;transition:.15s">';
+      html2 += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
+      html2 += '<div><div style="font-size:13px;font-weight:800;color:var(--tx)">'+sup.name+'</div>';
+      html2 += '<div style="font-size:10px;font-weight:700;color:'+tradeData.color+';margin-top:1px">'+sup.tier+'</div></div>';
+      html2 += '<a href="https://'+findUrl+'" target="_blank" style="padding:4px 10px;background:'+tradeData.color+';color:#fff;border-radius:6px;font-size:10px;font-weight:700;text-decoration:none;flex-shrink:0;margin-left:8px">Find Branch</a>';
+      html2 += '</div>';
+      html2 += '<div style="font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:7px">'+sup.desc+'</div>';
+      html2 += '<div style="font-size:10px;color:var(--tx);margin-bottom:5px"><b>Brands:</b> '+sup.brands+'</div>';
+      html2 += '<div style="background:var(--atint);border-radius:6px;padding:6px 8px;font-size:10px;color:var(--a3)"><b>Pro Tip:</b> '+sup.tip+'</div>';
+      html2 += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">';
+      html2 += '<span style="font-size:10px;color:var(--mu)">'+sup.locations+'</span>';
+      html2 += '<a href="tel:'+sup.phone+'" style="font-size:10px;color:var(--a);text-decoration:none;font-weight:600">'+sup.phone+'</a>';
+      html2 += '</div></div>';
+    });
+    html2 += '</div>';
+
+    // Regional suppliers
+    if(regional.length > 0) {
+      html2 += '<div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Regional Suppliers — '+info.region.charAt(0).toUpperCase()+info.region.slice(1).replace('-',' ')+'</div>';
+      html2 += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-bottom:8px">';
+      regional.forEach(function(reg) {
+        html2 += '<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:10px">';
+        html2 += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+        html2 += '<div style="font-size:12px;font-weight:700;color:var(--tx)">'+reg.name+'</div>';
+        html2 += '<a href="https://'+reg.web+'" target="_blank" style="font-size:10px;color:var(--a);text-decoration:none;font-weight:600">Visit &#8599;</a>';
+        html2 += '</div>';
+        html2 += '<div style="font-size:11px;color:var(--mu);line-height:1.4;margin-bottom:5px">'+reg.desc+'</div>';
+        html2 += '<div style="display:flex;justify-content:space-between">';
+        html2 += '<span style="font-size:10px;color:var(--mu)">'+reg.states+'</span>';
+        html2 += '<a href="tel:'+reg.phone+'" style="font-size:10px;color:var(--a);text-decoration:none">'+reg.phone+'</a>';
+        html2 += '</div></div>';
+      });
+      html2 += '</div>';
+    }
+
+    // Google Maps local search link
+    html2 += '<a href="https://www.google.com/maps/search/'+encodeURIComponent(tradeData.label+' supply near me')+'/@40.7,-74,11z" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--a);text-decoration:none;font-weight:600;padding:5px 10px;background:var(--alight);border-radius:7px;margin-top:4px">&#128205; Find Local Independent '+tradeData.label+' Suppliers on Google Maps</a>';
+
+    html2 += '</div>'; // end trade section
+  });
+
+  results.innerHTML = html2;
+}
+
+async function supAsk(prompt) {
+  var txt = document.getElementById('sup-ai-txt');
+  txt.innerHTML = '<div class="aildr"><div class="aidot"></div><div class="aidot"></div><div class="aidot"></div><span>Getting AI procurement advice...</span></div>';
+  var zip = document.getElementById('sup-zip').value||'unknown';
+  var region = currentRegion ? currentRegion.city+', '+currentRegion.state : 'your area';
+  var sys = 'You are SAIRNdesign AI Procurement Advisor. You are a seasoned construction industry procurement expert with 25 years of experience negotiating with plumbing, electrical, paint, HVAC, roofing, and lumber distributors across the USA. You know every major distributor, their pricing structure, contractor account terms, and how to negotiate the best deals. You give direct, specific, actionable advice that saves contractors real money. Lead with the most important insight first. Use specific numbers and percentages when possible.';
+  var msg = 'Contractor ZIP code: '+zip+' ('+region+'). Current design project: Kitchen and Bath remodel from SAIRNdesign. Question: '+prompt;
+  try {
+    var res = await fetch(CLAUDE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
+    var data = await res.json();
+    txt.textContent = data.content&&data.content[0] ? data.content[0].text : 'Unable to get response.';
+  } catch(e) { txt.textContent = 'Connection error. Try again.'; }
+}
+
 </script>
 </body>
-</html>
+</html
+    <!-- SUPPLIERS PANEL -->
+    <div class="panel" id="panel-suppliers" style="overflow-y:auto;background:var(--bg)">
+      <div style="background:var(--adark);padding:20px 20px 16px;color:#fff">
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">&#128205; Regional Supplier Finder</h2>
+        <p style="font-size:12px;color:#A5B4FC;margin-bottom:14px">Enter your zip code to find every plumbing, electrical, and paint supplier near you — national distributors, regional chains, and local independents.</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:0;background:#fff;border-radius:10px;overflow:hidden;flex:1;max-width:320px">
+            <input type="text" id="sup-zip" placeholder="Enter ZIP code (e.g. 44145)" maxlength="5"
+              style="flex:1;padding:10px 14px;border:none;font-size:14px;font-weight:600;outline:none;color:var(--tx)"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            <button onclick="findSuppliers()" style="padding:10px 18px;background:var(--a);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Find Suppliers</button>
+          </div>
+          <div id="sup-region-badge" style="display:none;padding:5px 12px;background:rgba(255,255,255,.15);border-radius:20px;font-size:12px;color:#fff;font-weight:600"></div>
+        </div>
+      </div>
+
+      <!-- Trade filter tabs -->
+      <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:11px;font-weight:700;color:var(--mu);margin-right:4px">Trade:</span>
+        <button class="tbtn on" id="strade-all" onclick="filterTrade('all',this)">All Trades</button>
+        <button class="tbtn" id="strade-plumbing" onclick="filterTrade('plumbing',this)">&#128694; Plumbing</button>
+        <button class="tbtn" id="strade-electrical" onclick="filterTrade('electrical',this)">&#9889; Electrical</button>
+        <button class="tbtn" id="strade-paint" onclick="filterTrade('paint',this)">&#127912; Paint</button>
+        <button class="tbtn" id="strade-hvac" onclick="filterTrade('hvac',this)">&#10052; HVAC</button>
+        <button class="tbtn" id="strade-roofing" onclick="filterTrade('roofing',this)">&#127968; Roofing</button>
+        <button class="tbtn" id="strade-lumber" onclick="filterTrade('lumber',this)">&#129683; Lumber</button>
+        <button class="tbtn" id="strade-tile" onclick="filterTrade('tile',this)">&#129704; Tile/Stone</button>
+      </div>
+
+      <!-- Results area -->
+      <div id="sup-results" style="padding:16px">
+        <div style="text-align:center;padding:48px;color:var(--mu)">
+          <div style="font-size:48px;margin-bottom:14px">&#128205;</div>
+          <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Enter your ZIP code above</div>
+          <div style="font-size:12px">We'll find every supplier within driving distance — national distributors, regional chains, and local independents — organized by trade.</div>
+        </div>
+      </div>
+
+      <!-- AI Procurement Advisor -->
+      <div id="sup-ai-strip" style="display:none;margin:0 16px 16px;background:var(--atint);border:1px solid var(--bd);border-radius:12px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">&#10024; AI Procurement Advisor</div>
+        <div id="sup-ai-txt" style="font-size:12px;line-height:1.7;color:var(--tx)"></div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <span class="achip" onclick="supAsk('Which supplier in my area gives the best contractor pricing for plumbing?')">Best Contractor Pricing</span>
+          <span class="achip" onclick="supAsk('What should I ask when opening a contractor account at a supply house?')">Open Account Tips</span>
+          <span class="achip" onclick="supAsk('Compare Ferguson vs Hajoca vs Winsupply for a residential remodeler')">Compare Top 3</span>
+          <span class="achip" onclick="supAsk('What is the typical contractor discount I should negotiate at electrical distributors?')">Negotiate Discounts</span>
+        </div>
+      </div>
+    </div>
+
+>
