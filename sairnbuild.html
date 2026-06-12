@@ -2909,7 +2909,7 @@ async function sbAICall(prompt, maxTokens, system, messages) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         app_id: 'sairnbuild', is_demo: true,
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: maxTokens,
         system: system.slice(0, 4000),
         messages: messages.slice(-10)
