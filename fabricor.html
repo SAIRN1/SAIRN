@@ -6910,7 +6910,7 @@ function installStreamingHook() {
 
     try {
       // Build body — let the fetch patches (tone/memory/profile) handle system prompt injection
-      var body = {
+      var body = {is_demo:true,
         max_tokens: 1000,
         system: systemPrompt,
         messages: msgArr.slice(-20), // last 20 for context
@@ -10513,7 +10513,7 @@ async function execAiSend(role){
     var res=await fetch('https://sairn.vercel.app/api/claude',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
+      body:JSON.stringify({is_demo:true,
         model:'claude-sonnet-4-20250514',
         max_tokens:1500,
         app_id:'stonedesk_'+role,
@@ -10571,7 +10571,7 @@ async function runEmailTriage(){
   try{
     var res=await fetch('https://sairn.vercel.app/api/claude',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
+      body:JSON.stringify({is_demo:true,
         model:'claude-sonnet-4-20250514',
         max_tokens:2000,
         app_id:'stonedesk_email_triage',
