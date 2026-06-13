@@ -105,6 +105,10 @@
       "destination": "/sairnflow.html"
     },
     {
+      "source": "/sairnvetglobal",
+      "destination": "/sairnvetglobal.html"
+    },
+    {
       "source": "/sairnvet",
       "destination": "/sairnvet.html"
     },
