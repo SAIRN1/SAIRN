@@ -1,3 +1,4 @@
+// Deploy: 2026-06-13T14:01:09.773Z
 // ================================================================
 //  SAIRN Technologies — StoneDesk Railway Server
 //  Express backend for fabricor-production.up.railway.app
