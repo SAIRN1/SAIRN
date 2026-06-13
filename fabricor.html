@@ -10685,4 +10685,8 @@ function dlCSV(rows, filename) {
 }
 
 </script>
+<script>
+function checkStoneDesk_SmartFlags(){var f=[];try{var _v=(window.sd_jobs&&sd_jobs.filter(function(j){return j.dueDate&&j.dueDate<new Date().toISOString().split('T')[0];}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"overdue job(s)"});}catch(e){}try{var _v=(window.sd_quotes&&sd_quotes.filter(function(q){return (Date.now()-new Date(q.date||Date.now()).getTime())>30*24*60*60*1000&&q.status==='Open';}).length);if(_v&&_v>0)f.push({t:"a",m:_v+" "+"quote(s) over 30 days old"});}catch(e){}try{var _v=(window.sd_invoices&&sd_invoices.filter(function(i){return i.status==='Unpaid';}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"unpaid invoice(s)"});}catch(e){}var fc=document.getElementById("sairn-flags");if(!fc){fc=document.createElement("div");fc.id="sairn-flags";fc.style.cssText="position:fixed;top:64px;right:12px;z-index:800;max-width:340px;display:flex;flex-direction:column;gap:6px;pointer-events:none";document.body.appendChild(fc);}fc.innerHTML="";f.slice(0,5).forEach(function(fl){var el=document.createElement("div");var bg=fl.t==="r"?"#FEE2E2":fl.t==="a"?"#FEF3C7":"#F0FDF4";var bd=fl.t==="r"?"#FCA5A5":fl.t==="a"?"#FCD34D":"#BBF7D0";var tx=fl.t==="r"?"#991B1B":fl.t==="a"?"#92400E":"#14532D";el.style.cssText="background:"+bg+";border:1px solid "+bd+";color:"+tx+";padding:10px 14px;border-radius:8px;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:all;cursor:pointer";el.textContent=fl.m;el.onclick=function(){el.remove();};fc.appendChild(el);setTimeout(function(){if(el.parentElement)el.remove();},9000);});}
+setTimeout(function(){if(typeof checkStoneDesk_SmartFlags==="function")checkStoneDesk_SmartFlags();},2000);
+</script>
 </body></html>
