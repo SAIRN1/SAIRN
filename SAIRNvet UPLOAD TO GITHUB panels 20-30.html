@@ -1,0 +1,1266 @@
+<!-- SAIRNvet SESSION 19 NEW PANELS — panels 20-30 -->
+<!-- Each panel is a self-contained section injected into the existing SAIRNvet tab system -->
+<!-- SAIRN API: https://sairn.vercel.app/api/claude | app_id: sairnvet | is_demo: true -->
+<!-- Color: Vet Green #16A34A | NO direct Anthropic calls | NO Unicode box-drawing in JS -->
+
+<!-- ============================================================
+     PANEL 20: AI SOAP NOTES
+============================================================ -->
+<div id="panel-soapnotes" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">AI SOAP Notes</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">AI-drafted clinical documentation from visit notes</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+
+    <!-- Patient selector -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Patient Name</label>
+        <input id="soap-patient" type="text" placeholder="e.g. Max" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.9rem;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Species / Breed</label>
+        <input id="soap-species" type="text" placeholder="e.g. Canine - Lab Mix" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.9rem;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">DVM / Technician</label>
+        <input id="soap-dvm" type="text" placeholder="e.g. Dr. Williams" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.9rem;box-sizing:border-box">
+      </div>
+    </div>
+
+    <!-- Visit notes input -->
+    <div style="margin-bottom:16px">
+      <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Visit Notes / Transcription <span style="color:#16A34A">(paste or type — AI generates full SOAP from this)</span></label>
+      <textarea id="soap-notes-input" rows="5" placeholder="e.g. 5yr old Lab, owner reports lethargy x3 days, decreased appetite. T 102.4, HR 80, RR 18. Abdomen slightly tense on palpation. Owner denies vomiting. Last vaccines current. Running CBC and chem panel..." style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.9rem;resize:vertical;box-sizing:border-box"></textarea>
+    </div>
+
+    <!-- Vitals quick entry -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
+      <div><label style="font-size:.75rem;color:#6b7280;display:block;margin-bottom:3px">Temp (°F)</label><input id="soap-temp" type="text" placeholder="102.5" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;box-sizing:border-box"></div>
+      <div><label style="font-size:.75rem;color:#6b7280;display:block;margin-bottom:3px">HR (bpm)</label><input id="soap-hr" type="text" placeholder="80" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;box-sizing:border-box"></div>
+      <div><label style="font-size:.75rem;color:#6b7280;display:block;margin-bottom:3px">RR (rpm)</label><input id="soap-rr" type="text" placeholder="18" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;box-sizing:border-box"></div>
+      <div><label style="font-size:.75rem;color:#6b7280;display:block;margin-bottom:3px">Weight (lbs)</label><input id="soap-wt" type="text" placeholder="62" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;box-sizing:border-box"></div>
+      <div><label style="font-size:.75rem;color:#6b7280;display:block;margin-bottom:3px">BCS (1-9)</label><input id="soap-bcs" type="text" placeholder="5" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;box-sizing:border-box"></div>
+    </div>
+
+    <button onclick="generateSOAP()" style="background:#16A34A;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;margin-bottom:20px">Generate AI SOAP Note</button>
+
+    <!-- SOAP output -->
+    <div id="soap-output" style="display:none">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:20px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font-weight:700;color:#16A34A;font-size:.85rem;margin-bottom:6px;letter-spacing:.05em">S — SUBJECTIVE</div>
+            <div id="soap-s" style="font-size:.9rem;color:#1f2937;line-height:1.6;white-space:pre-wrap"></div>
+          </div>
+          <div>
+            <div style="font-weight:700;color:#16A34A;font-size:.85rem;margin-bottom:6px;letter-spacing:.05em">O — OBJECTIVE</div>
+            <div id="soap-o" style="font-size:.9rem;color:#1f2937;line-height:1.6;white-space:pre-wrap"></div>
+          </div>
+          <div>
+            <div style="font-weight:700;color:#16A34A;font-size:.85rem;margin-bottom:6px;letter-spacing:.05em">A — ASSESSMENT</div>
+            <div id="soap-a" style="font-size:.9rem;color:#1f2937;line-height:1.6;white-space:pre-wrap"></div>
+          </div>
+          <div>
+            <div style="font-weight:700;color:#16A34A;font-size:.85rem;margin-bottom:6px;letter-spacing:.05em">P — PLAN</div>
+            <div id="soap-p" style="font-size:.9rem;color:#1f2937;line-height:1.6;white-space:pre-wrap"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="approveSOAP()" style="background:#16A34A;color:#fff;border:none;padding:9px 20px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Approve & Save to Record</button>
+        <button onclick="printSOAP()" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;padding:9px 20px;border-radius:7px;font-size:.85rem;cursor:pointer">Print</button>
+        <span id="soap-saved-msg" style="display:none;color:#16A34A;font-weight:600;align-self:center;font-size:.85rem">Saved to patient record.</span>
+      </div>
+    </div>
+    <div id="soap-loading" style="display:none;color:#16A34A;font-style:italic;margin-top:8px">Generating SOAP note...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 21: APPOINTMENT SCHEDULER
+============================================================ -->
+<div id="panel-scheduling" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Appointment Scheduler</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Color-coded calendar • No-show tracking • Online booking</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+
+    <!-- Week nav -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <button onclick="changeSchedWeek(-1)" style="background:#f3f4f6;border:1px solid #d1d5db;padding:7px 14px;border-radius:7px;cursor:pointer">&#8592; Prev</button>
+      <span id="sched-week-label" style="font-weight:700;font-size:1rem;color:#111827"></span>
+      <button onclick="changeSchedWeek(1)" style="background:#f3f4f6;border:1px solid #d1d5db;padding:7px 14px;border-radius:7px;cursor:pointer">Next &#8594;</button>
+      <button onclick="openNewAppt()" style="margin-left:auto;background:#16A34A;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-weight:600;cursor:pointer;font-size:.85rem">+ New Appointment</button>
+    </div>
+
+    <!-- Calendar grid -->
+    <div id="sched-grid" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:700px">
+        <thead>
+          <tr id="sched-header"></tr>
+        </thead>
+        <tbody id="sched-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;gap:16px;margin-top:14px;flex-wrap:wrap">
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:6px"><span style="background:#dcfce7;border:1px solid #86efac;width:14px;height:14px;border-radius:3px;display:inline-block"></span>Wellness</span>
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:6px"><span style="background:#fef3c7;border:1px solid #fcd34d;width:14px;height:14px;border-radius:3px;display:inline-block"></span>Sick Visit</span>
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:6px"><span style="background:#fee2e2;border:1px solid #fca5a5;width:14px;height:14px;border-radius:3px;display:inline-block"></span>Surgery</span>
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:6px"><span style="background:#e0e7ff;border:1px solid #a5b4fc;width:14px;height:14px;border-radius:3px;display:inline-block"></span>Recheck</span>
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:6px"><span style="background:#f3f4f6;border:1px solid #d1d5db;width:14px;height:14px;border-radius:3px;display:inline-block"></span>No-Show</span>
+    </div>
+
+    <!-- New appointment modal -->
+    <div id="appt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:12px;padding:28px;width:460px;max-width:95vw;box-shadow:0 20px 40px rgba(0,0,0,.2)">
+        <h3 style="margin:0 0 18px;color:#111827">New Appointment</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Patient</label><input id="appt-patient" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Owner</label><input id="appt-owner" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Date</label><input id="appt-date" type="date" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Time</label><input id="appt-time" type="time" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Type</label>
+            <select id="appt-type" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+              <option>Wellness</option><option>Sick Visit</option><option>Surgery</option><option>Recheck</option><option>Dental</option><option>Boarding</option>
+            </select>
+          </div>
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">DVM</label><input id="appt-dvm2" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        </div>
+        <div style="margin-bottom:16px"><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Reason / Notes</label><textarea id="appt-reason" rows="2" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;resize:none"></textarea></div>
+        <div style="display:flex;gap:10px">
+          <button onclick="saveAppt()" style="background:#16A34A;color:#fff;border:none;padding:9px 20px;border-radius:7px;font-weight:600;cursor:pointer;flex:1">Save Appointment</button>
+          <button onclick="document.getElementById('appt-modal').style.display='none'" style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 16px;border-radius:7px;cursor:pointer">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 22: HOSPITAL WHITEBOARD
+============================================================ -->
+<div id="panel-whiteboard" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Hospital Whiteboard</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Real-time patient status board for hospitalized animals</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:.85rem;color:#6b7280">Last updated: <span id="wb-timestamp" style="font-weight:600;color:#111827"></span></div>
+      <button onclick="addWBPatient()" style="background:#16A34A;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-weight:600;cursor:pointer;font-size:.85rem">+ Admit Patient</button>
+    </div>
+
+    <!-- Whiteboard table -->
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:800px">
+        <thead>
+          <tr style="background:#f0fdf4;border-bottom:2px solid #bbf7d0">
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Patient</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Species/Breed</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Reason</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">DVM</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Status</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Next Task</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Diet/Meds</th>
+            <th style="padding:10px 12px;text-align:center;font-size:.8rem;color:#15803d;font-weight:700">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="wb-body">
+          <!-- Sample rows pre-populated -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Status legend -->
+    <div style="display:flex;gap:14px;margin-top:16px;flex-wrap:wrap">
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#fef3c7;padding:2px 8px;border-radius:10px;border:1px solid #fcd34d;color:#92400e;font-weight:600">Monitoring</span></span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#fee2e2;padding:2px 8px;border-radius:10px;border:1px solid #fca5a5;color:#991b1b;font-weight:600">Critical</span></span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#e0e7ff;padding:2px 8px;border-radius:10px;border:1px solid #a5b4fc;color:#3730a3;font-weight:600">Pre-Op</span></span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#fce7f3;padding:2px 8px;border-radius:10px;border:1px solid #f9a8d4;color:#9d174d;font-weight:600">Post-Op</span></span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#dcfce7;padding:2px 8px;border-radius:10px;border:1px solid #86efac;color:#166534;font-weight:600">Stable</span></span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#f3f4f6;padding:2px 8px;border-radius:10px;border:1px solid #d1d5db;color:#374151;font-weight:600">Ready to Discharge</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 23: PHARMACY & RX MANAGER
+============================================================ -->
+<div id="panel-pharmacy" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Pharmacy & Rx Manager</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Drug inventory • Dosage calculator • Controlled substance log • Refill requests</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:4px;margin-bottom:20px;background:#f3f4f6;padding:4px;border-radius:8px;width:fit-content">
+      <button onclick="showRxTab('dosage')" id="rx-tab-dosage" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600;background:#16A34A;color:#fff">Dosage Calc</button>
+      <button onclick="showRxTab('inventory')" id="rx-tab-inventory" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;color:#374151;background:transparent">Inventory</button>
+      <button onclick="showRxTab('controlled')" id="rx-tab-controlled" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;color:#374151;background:transparent">Controlled Substances</button>
+      <button onclick="showRxTab('refills')" id="rx-tab-refills" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;color:#374151;background:transparent">Refill Requests</button>
+    </div>
+
+    <!-- Dosage Calculator -->
+    <div id="rx-dosage" class="rx-tab">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Drug Name</label>
+          <input id="rx-drug" type="text" placeholder="e.g. Amoxicillin" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Patient Weight (kg)</label>
+          <input id="rx-weight" type="number" placeholder="e.g. 25" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Species</label>
+          <select id="rx-species" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box">
+            <option>Canine</option><option>Feline</option><option>Equine</option><option>Avian</option><option>Exotic</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="calcDosage()" style="background:#16A34A;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:600;cursor:pointer;margin-bottom:16px">Calculate Dosage</button>
+      <div id="rx-dosage-result" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px">
+        <div id="rx-dosage-output" style="font-size:.9rem;color:#1f2937;line-height:1.8;white-space:pre-wrap"></div>
+        <div style="margin-top:12px;display:flex;gap:10px">
+          <button onclick="printRx()" style="background:#16A34A;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:.82rem;cursor:pointer">Print Rx Label</button>
+          <button onclick="saveRxRecord()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:8px 16px;border-radius:6px;font-size:.82rem;cursor:pointer">Save to Record</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory tab -->
+    <div id="rx-inventory" class="rx-tab" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <input type="text" placeholder="Search inventory..." id="rx-inv-search" oninput="filterRxInventory()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px;width:280px">
+        <button onclick="addRxItem()" style="background:#16A34A;color:#fff;border:none;padding:9px 16px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Add Item</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f0fdf4;border-bottom:2px solid #bbf7d0">
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Drug</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Form</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Strength</th>
+            <th style="padding:10px 12px;text-align:right;font-size:.8rem;color:#15803d;font-weight:700">Stock</th>
+            <th style="padding:10px 12px;text-align:right;font-size:.8rem;color:#15803d;font-weight:700">Reorder At</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#15803d;font-weight:700">Expiry</th>
+            <th style="padding:10px 12px;text-align:center;font-size:.8rem;color:#15803d;font-weight:700">Status</th>
+          </tr></thead>
+          <tbody id="rx-inv-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Controlled substances tab -->
+    <div id="rx-controlled" class="rx-tab" style="display:none">
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:.85rem;color:#92400e">
+        <strong>DEA Compliance Log</strong> — All controlled substance dispensing must be logged per DEA Schedule II-V requirements. This log is exportable for state board inspections.
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;gap:8px">
+          <select id="cs-schedule-filter" onchange="filterCS()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px;font-size:.85rem">
+            <option value="">All Schedules</option>
+            <option>Schedule II</option><option>Schedule III</option><option>Schedule IV</option><option>Schedule V</option>
+          </select>
+          <input type="date" id="cs-date-filter" onchange="filterCS()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="addCSEntry()" style="background:#16A34A;color:#fff;border:none;padding:9px 16px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Log Dispensing</button>
+          <button onclick="exportCSLog()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 14px;border-radius:7px;font-size:.85rem;cursor:pointer">Export CSV</button>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#fef3c7;border-bottom:2px solid #fcd34d">
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#92400e;font-weight:700">Date/Time</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#92400e;font-weight:700">Drug</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#92400e;font-weight:700">Schedule</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#92400e;font-weight:700">Patient</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.8rem;color:#92400e;font-weight:700">Qty</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#92400e;font-weight:700">DVM</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#92400e;font-weight:700">Dispensed By</th>
+        </tr></thead>
+        <tbody id="cs-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Refill requests tab -->
+    <div id="rx-refills" class="rx-tab" style="display:none">
+      <div style="font-size:.85rem;color:#6b7280;margin-bottom:14px">Client-submitted refill requests awaiting DVM approval</div>
+      <div id="refill-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 24: LAB RESULTS & DIAGNOSTICS
+============================================================ -->
+<div id="panel-labresults" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Lab Results & Diagnostics</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">In-house labs • Reference lab results • AI interpretation • Trend graphs</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <input type="text" placeholder="Search patient..." style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px;width:240px;font-size:.9rem">
+      <div style="display:flex;gap:8px">
+        <button onclick="addLabResult()" style="background:#16A34A;color:#fff;border:none;padding:9px 16px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Enter Results</button>
+        <button onclick="interpretLabs()" style="background:#f0fdf4;border:1px solid #86efac;color:#16A34A;padding:9px 16px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">AI Interpret</button>
+      </div>
+    </div>
+
+    <!-- CBC Panel example -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:18px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <div style="font-weight:700;font-size:1rem;color:#111827">CBC + Chemistry Panel</div>
+          <div style="font-size:.8rem;color:#6b7280;margin-top:2px">Patient: Max | Run: 06/13/2026 09:42am | DVM: Dr. Williams</div>
+        </div>
+        <span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:10px;font-size:.78rem;font-weight:700">2 Flags</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid #e5e7eb">
+            <th style="padding:8px 10px;text-align:left;font-size:.78rem;color:#6b7280;font-weight:600">Analyte</th>
+            <th style="padding:8px 10px;text-align:right;font-size:.78rem;color:#6b7280;font-weight:600">Result</th>
+            <th style="padding:8px 10px;text-align:right;font-size:.78rem;color:#6b7280;font-weight:600">Reference</th>
+            <th style="padding:8px 10px;text-align:center;font-size:.78rem;color:#6b7280;font-weight:600">Status</th>
+          </tr></thead>
+          <tbody id="lab-cbc-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AI interpretation output -->
+    <div id="lab-ai-output" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:18px;margin-bottom:16px">
+      <div style="font-weight:700;color:#16A34A;margin-bottom:8px;font-size:.9rem">AI Clinical Interpretation</div>
+      <div id="lab-ai-text" style="font-size:.9rem;color:#1f2937;line-height:1.7;white-space:pre-wrap"></div>
+    </div>
+    <div id="lab-ai-loading" style="display:none;color:#16A34A;font-style:italic">Analyzing results...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 25: TELEMEDICINE
+============================================================ -->
+<div id="panel-telemedicine" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Telemedicine</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Video consults • Photo review • Teletriage • Telehealth invoicing</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <!-- Stats row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.6rem;font-weight:700;color:#16A34A">3</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Pending Requests</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.6rem;font-weight:700;color:#d97706">1</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Today's Consults</div>
+      </div>
+      <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.6rem;font-weight:700;color:#374151">18</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">This Month</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.6rem;font-weight:700;color:#16A34A">$2,160</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Telehealth Revenue</div>
+      </div>
+    </div>
+
+    <!-- Triage intake -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:18px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">New Teletriage Request</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Patient</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Owner Phone</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+      </div>
+      <div style="margin-bottom:12px"><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Concern / Symptoms</label><textarea rows="3" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;resize:none"></textarea></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="triageWithAI()" style="background:#16A34A;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">AI Triage Assessment</button>
+        <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 16px;border-radius:7px;font-size:.85rem;cursor:pointer">Schedule Video Call</button>
+        <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 16px;border-radius:7px;font-size:.85rem;cursor:pointer">Send Photo Request</button>
+      </div>
+    </div>
+
+    <div id="triage-output" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;font-size:.9rem;color:#1f2937;line-height:1.7;white-space:pre-wrap"></div>
+    <div id="triage-loading" style="display:none;color:#16A34A;font-style:italic">AI triage in progress...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 26: CLIENT COMMUNICATIONS
+============================================================ -->
+<div id="panel-clientcomms" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Client Communications</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Two-way SMS/email • Automated reminders • Wellness alerts • Recall campaigns</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+
+    <!-- Quick message -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Send Message</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Client / Patient</label><input type="text" placeholder="Search..." style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Send Via</label>
+          <select style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option>SMS</option><option>Email</option><option>Both</option>
+          </select>
+        </div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Template</label>
+          <select id="comms-template" onchange="loadCommTemplate()" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option value="">-- Select Template --</option>
+            <option value="appt-reminder">Appointment Reminder</option>
+            <option value="lab-ready">Lab Results Ready</option>
+            <option value="vaccine-due">Vaccine Due</option>
+            <option value="heartworm-due">Heartworm Test Due</option>
+            <option value="pickup-ready">Patient Ready for Pickup</option>
+            <option value="custom">Custom Message</option>
+          </select>
+        </div>
+      </div>
+      <textarea id="comms-message" rows="3" placeholder="Message text..." style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;resize:none;margin-bottom:10px"></textarea>
+      <div style="display:flex;gap:10px">
+        <button onclick="sendCommMessage()" style="background:#16A34A;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Send Now</button>
+        <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 14px;border-radius:7px;font-size:.85rem;cursor:pointer">Schedule</button>
+      </div>
+    </div>
+
+    <!-- Wellness alerts -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.95rem">Upcoming Wellness Alerts <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;margin-left:6px">14 due this week</span></div>
+    <div id="wellness-alert-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 27: PET INSURANCE MANAGER
+============================================================ -->
+<div id="panel-petinsurance" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Pet Insurance Manager</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Coverage verification • Claim tracking • Exam day offers • Payment reconciliation</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16A34A">24</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Active Insured Patients</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#d97706">5</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Claims Pending</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16A34A">$4,820</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Paid This Month</div>
+      </div>
+    </div>
+
+    <!-- Coverage check -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Coverage Verification</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Patient</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Insurance Provider</label>
+          <select style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option>Trupanion</option><option>Nationwide</option><option>Embrace</option><option>Healthy Paws</option><option>Figo</option><option>Other</option>
+          </select>
+        </div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Policy Number</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+      </div>
+      <button style="background:#16A34A;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Verify Coverage</button>
+    </div>
+
+    <!-- Claim list -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.95rem">Active Claims</div>
+    <div id="insurance-claim-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 28: BOARDING & GROOMING
+============================================================ -->
+<div id="panel-boardinggrooming" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Boarding & Grooming</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Run/kennel assignment • Feeding/medication schedules • Grooming appointments • Checkout</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16A34A">6</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Boarding Today</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#d97706">4</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Grooming Today</div>
+      </div>
+      <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#374151">12/20</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Runs Occupied</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16A34A">$840</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Boarding Revenue</div>
+      </div>
+    </div>
+
+    <!-- Run grid -->
+    <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Kennel Map</div>
+    <div id="kennel-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px"></div>
+
+    <!-- Feeding/med schedule -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.95rem">Today's Feeding & Medication Schedule</div>
+    <div id="boarding-schedule-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 29: DENTAL CHARTING
+============================================================ -->
+<div id="panel-dentalchart" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Dental Charting</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Species-specific dental chart • Procedure coding • AI treatment plan</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap">
+      <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Patient</label><input type="text" placeholder="Patient name" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px;width:180px"></div>
+      <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Species</label>
+        <select id="dental-species" onchange="renderDentalChart()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option value="canine">Canine (42 teeth)</option>
+          <option value="feline">Feline (30 teeth)</option>
+        </select>
+      </div>
+      <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Grade</label>
+        <select id="dental-grade" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option>Grade 1 - Mild</option><option>Grade 2 - Moderate</option><option>Grade 3 - Severe</option><option>Grade 4 - Extreme</option>
+        </select>
+      </div>
+      <button onclick="generateDentalPlan()" style="background:#16A34A;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer;margin-top:16px">AI Treatment Plan</button>
+    </div>
+
+    <!-- Visual dental chart -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:18px;margin-bottom:16px">
+      <div style="font-weight:600;color:#374151;margin-bottom:12px;font-size:.9rem;text-align:center">Click any tooth to mark finding</div>
+      <div id="dental-chart-upper" style="display:flex;justify-content:center;gap:6px;margin-bottom:6px"></div>
+      <div style="text-align:center;font-size:.75rem;color:#9ca3af;margin:4px 0">Upper / Lower</div>
+      <div id="dental-chart-lower" style="display:flex;justify-content:center;gap:6px"></div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#dcfce7;border:2px solid #16A34A;width:16px;height:16px;border-radius:3px;display:inline-block"></span>Normal</span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#fef3c7;border:2px solid #d97706;width:16px;height:16px;border-radius:3px;display:inline-block"></span>Calculus</span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#fee2e2;border:2px solid #dc2626;width:16px;height:16px;border-radius:3px;display:inline-block"></span>Extraction</span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#e0e7ff;border:2px solid #4f46e5;width:16px;height:16px;border-radius:3px;display:inline-block"></span>Root Canal</span>
+      <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="background:#fce7f3;border:2px solid #db2777;width:16px;height:16px;border-radius:3px;display:inline-block"></span>Missing</span>
+    </div>
+
+    <div id="dental-plan-output" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;font-size:.9rem;color:#1f2937;line-height:1.7;white-space:pre-wrap"></div>
+    <div id="dental-plan-loading" style="display:none;color:#16A34A;font-style:italic">Generating treatment plan...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 30: COMPLIANCE & WELLNESS ALERTS
+============================================================ -->
+<div id="panel-compliance" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16A34A;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Compliance & Wellness Alerts</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Preventive care gaps • Vaccine tracking • Recall campaigns • Compliance scoring</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <!-- Summary stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#dc2626">47</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Overdue Vaccines</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#d97706">23</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Due in 30 Days</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16A34A">82%</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Overall Compliance</div>
+      </div>
+      <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#374151">$12,400</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Est. Revenue at Risk</div>
+      </div>
+    </div>
+
+    <!-- Campaign builder -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Recall Campaign Builder</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Campaign Type</label>
+          <select style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option>Rabies Vaccine Due</option><option>DHPP Due</option><option>Heartworm Test</option><option>Flea/Tick Prevention</option><option>Annual Wellness</option><option>Dental Month</option>
+          </select>
+        </div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Send Via</label>
+          <select style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option>SMS + Email</option><option>SMS Only</option><option>Email Only</option>
+          </select>
+        </div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Send Date</label><input type="date" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="generateCampaignMsg()" style="background:#16A34A;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">AI Draft Message</button>
+        <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 14px;border-radius:7px;font-size:.85rem;cursor:pointer">Preview Recipients</button>
+        <button style="background:#16A34A;color:#fff;border:none;padding:9px 14px;border-radius:7px;font-size:.85rem;cursor:pointer;opacity:.7">Launch Campaign</button>
+      </div>
+    </div>
+
+    <!-- Overdue list -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.95rem">Overdue Patients — Action Required</div>
+    <div id="overdue-patient-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- SAIRNvet SESSION 19 — JavaScript for panels 20-30 -->
+<!-- ALL new JS functions for the 11 new panels -->
+<!-- SAIRN PROXY ONLY: https://sairn.vercel.app/api/claude -->
+<!-- NO Unicode box chars in JS. Regex newlines escaped as \\n -->
+
+<script>
+// ========================================================
+// SAIRN API CONFIG
+// ========================================================
+const SAIRN_VET_API = 'https://sairn.vercel.app/api/claude';
+const VET_APP_ID = 'sairnvet';
+
+async function callVetAI(prompt) {
+  try {
+    const res = await fetch(SAIRN_VET_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id: VET_APP_ID,
+        is_demo: true,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    if (data && data.content && data.content[0]) return data.content[0].text;
+    return 'AI response unavailable.';
+  } catch (e) {
+    return 'Connection error: ' + e.message;
+  }
+}
+
+// ========================================================
+// PANEL 20: SOAP NOTES
+// ========================================================
+async function generateSOAP() {
+  const patient = document.getElementById('soap-patient').value.trim();
+  const species = document.getElementById('soap-species').value.trim();
+  const dvm = document.getElementById('soap-dvm').value.trim();
+  const notes = document.getElementById('soap-notes-input').value.trim();
+  const temp = document.getElementById('soap-temp').value;
+  const hr = document.getElementById('soap-hr').value;
+  const rr = document.getElementById('soap-rr').value;
+  const wt = document.getElementById('soap-wt').value;
+  const bcs = document.getElementById('soap-bcs').value;
+
+  if (!notes) { alert('Please enter visit notes.'); return; }
+
+  document.getElementById('soap-loading').style.display = 'block';
+  document.getElementById('soap-output').style.display = 'none';
+
+  const prompt = `You are an expert veterinary clinician. Generate a professional SOAP note.
+
+Patient: ${patient || 'Unknown'} | Species: ${species || 'Canine'} | DVM: ${dvm || 'Staff DVM'}
+Vitals: T${temp || 'NR'} HR${hr || 'NR'} RR${rr || 'NR'} Wt${wt || 'NR'}lbs BCS${bcs || 'NR'}/9
+
+Visit Notes / Transcription:
+${notes}
+
+Respond ONLY in this JSON format with no other text:
+{"S":"subjective findings text","O":"objective findings text with vitals","A":"assessment/diagnoses","P":"treatment plan with specifics"}`;
+
+  const result = await callVetAI(prompt);
+  document.getElementById('soap-loading').style.display = 'none';
+
+  try {
+    const clean = result.replace(/```json|```/g, '').trim();
+    const soap = JSON.parse(clean);
+    document.getElementById('soap-s').textContent = soap.S || '';
+    document.getElementById('soap-o').textContent = soap.O || '';
+    document.getElementById('soap-a').textContent = soap.A || '';
+    document.getElementById('soap-p').textContent = soap.P || '';
+  } catch(e) {
+    // Fallback: show raw text split by S/O/A/P
+    document.getElementById('soap-s').textContent = result;
+    document.getElementById('soap-o').textContent = '';
+    document.getElementById('soap-a').textContent = '';
+    document.getElementById('soap-p').textContent = '';
+  }
+  document.getElementById('soap-output').style.display = 'block';
+}
+
+function approveSOAP() {
+  const msg = document.getElementById('soap-saved-msg');
+  msg.style.display = 'inline';
+  setTimeout(() => { msg.style.display = 'none'; }, 3000);
+  // In full integration, this posts to patient record via SAIRN Bridge
+}
+
+function printSOAP() {
+  window.print();
+}
+
+// ========================================================
+// PANEL 21: APPOINTMENT SCHEDULER
+// ========================================================
+let schedWeekOffset = 0;
+const appts = JSON.parse(localStorage.getItem('sairn_vet_appts') || '[]');
+
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const APPT_COLORS = {
+  'Wellness': { bg:'#dcfce7', border:'#86efac', text:'#166534' },
+  'Sick Visit': { bg:'#fef3c7', border:'#fcd34d', text:'#92400e' },
+  'Surgery': { bg:'#fee2e2', border:'#fca5a5', text:'#991b1b' },
+  'Recheck': { bg:'#e0e7ff', border:'#a5b4fc', text:'#3730a3' },
+  'Dental': { bg:'#fce7f3', border:'#f9a8d4', text:'#9d174d' },
+  'Boarding': { bg:'#f3f4f6', border:'#d1d5db', text:'#374151' }
+};
+
+function renderSchedGrid() {
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay() + (schedWeekOffset * 7));
+
+  const label = document.getElementById('sched-week-label');
+  if (label) label.textContent = weekStart.toLocaleDateString('en-US', { month:'long', day:'numeric' }) + ' — ' + new Date(weekStart.getTime() + 6*86400000).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+
+  const header = document.getElementById('sched-header');
+  const body = document.getElementById('sched-body');
+  if (!header || !body) return;
+
+  header.innerHTML = '<th style="padding:8px;font-size:.78rem;color:#6b7280;font-weight:600;width:60px">Time</th>';
+  for (let d = 0; d < 7; d++) {
+    const day = new Date(weekStart.getTime() + d*86400000);
+    const isToday = day.toDateString() === today.toDateString();
+    header.innerHTML += '<th style="padding:8px;font-size:.78rem;font-weight:600;color:' + (isToday ? '#16A34A' : '#374151') + ';background:' + (isToday ? '#f0fdf4' : 'transparent') + '">' + DAYS[day.getDay()] + '<br><span style="font-weight:400;font-size:.75rem">' + day.toLocaleDateString('en-US', { month:'numeric', day:'numeric' }) + '</span></th>';
+  }
+
+  const hours = ['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM'];
+  body.innerHTML = '';
+  hours.forEach(function(hour) {
+    let row = '<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:6px 8px;font-size:.75rem;color:#9ca3af;white-space:nowrap">' + hour + '</td>';
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(weekStart.getTime() + d*86400000);
+      const dayStr = day.toISOString().split('T')[0];
+      const match = appts.filter(function(a) { return a.date === dayStr && a.time && a.time.indexOf(hour.replace(' AM','').replace(' PM','')) > -1; });
+      if (match.length > 0) {
+        const a = match[0];
+        const col = APPT_COLORS[a.type] || APPT_COLORS['Wellness'];
+        row += '<td style="padding:4px 6px;vertical-align:top"><div style="background:' + col.bg + ';border:1px solid ' + col.border + ';border-radius:4px;padding:3px 6px;font-size:.72rem;color:' + col.text + ';font-weight:600">' + a.patient + '<br><span style="font-weight:400">' + a.type + '</span></div></td>';
+      } else {
+        row += '<td style="padding:4px 6px"></td>';
+      }
+    }
+    row += '</tr>';
+    body.innerHTML += row;
+  });
+}
+
+function changeSchedWeek(dir) {
+  schedWeekOffset += dir;
+  renderSchedGrid();
+}
+
+function openNewAppt() {
+  document.getElementById('appt-modal').style.display = 'flex';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('appt-date').value = today;
+}
+
+function saveAppt() {
+  const appt = {
+    patient: document.getElementById('appt-patient').value,
+    owner: document.getElementById('appt-owner').value,
+    date: document.getElementById('appt-date').value,
+    time: document.getElementById('appt-time').value,
+    type: document.getElementById('appt-type').value,
+    dvm: document.getElementById('appt-dvm2').value,
+    reason: document.getElementById('appt-reason').value
+  };
+  appts.push(appt);
+  localStorage.setItem('sairn_vet_appts', JSON.stringify(appts));
+  document.getElementById('appt-modal').style.display = 'none';
+  renderSchedGrid();
+}
+
+// ========================================================
+// PANEL 22: HOSPITAL WHITEBOARD
+// ========================================================
+const wbPatients = [
+  { patient:'Bella', species:'Canine / Golden Retriever', reason:'Post-op spay', dvm:'Dr. Williams', status:'Post-Op', task:'Pain check 2pm', diet:'NPO until 6pm', meds:'Carprofen, Tramadol' },
+  { patient:'Whiskers', species:'Feline / DSH', reason:'Diabetic crisis', dvm:'Dr. Patel', status:'Critical', task:'BG check q4h', diet:'KD canned', meds:'Insulin 2u SQ BID' },
+  { patient:'Rex', species:'Canine / German Shepherd', reason:'Bloat - post GDV', dvm:'Dr. Williams', status:'Monitoring', task:'Abdominal check 4pm', diet:'NPO', meds:'IV fluids, Metronidazole' },
+  { patient:'Cleo', species:'Feline / Siamese', reason:'Urinary blockage', dvm:'Dr. Patel', status:'Stable', task:'Recheck urine output', diet:'WD canned + water', meds:'Prazosin, Buprenorphine' }
+];
+
+const STATUS_COLORS = {
+  'Critical': { bg:'#fee2e2', text:'#991b1b', border:'#fca5a5' },
+  'Post-Op': { bg:'#fce7f3', text:'#9d174d', border:'#f9a8d4' },
+  'Pre-Op': { bg:'#e0e7ff', text:'#3730a3', border:'#a5b4fc' },
+  'Monitoring': { bg:'#fef3c7', text:'#92400e', border:'#fcd34d' },
+  'Stable': { bg:'#dcfce7', text:'#166534', border:'#86efac' },
+  'Ready to Discharge': { bg:'#f3f4f6', text:'#374151', border:'#d1d5db' }
+};
+
+function renderWhiteboard() {
+  const ts = document.getElementById('wb-timestamp');
+  if (ts) ts.textContent = new Date().toLocaleTimeString();
+
+  const body = document.getElementById('wb-body');
+  if (!body) return;
+  body.innerHTML = '';
+  wbPatients.forEach(function(p, idx) {
+    const sc = STATUS_COLORS[p.status] || STATUS_COLORS['Stable'];
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:12px;font-weight:700;color:#111827;font-size:.9rem">' + p.patient + '</td>' +
+      '<td style="padding:12px;font-size:.85rem;color:#374151">' + p.species + '</td>' +
+      '<td style="padding:12px;font-size:.85rem;color:#374151">' + p.reason + '</td>' +
+      '<td style="padding:12px;font-size:.85rem;color:#374151">' + p.dvm + '</td>' +
+      '<td style="padding:12px"><span style="background:' + sc.bg + ';color:' + sc.text + ';border:1px solid ' + sc.border + ';padding:3px 10px;border-radius:10px;font-size:.78rem;font-weight:700">' + p.status + '</span></td>' +
+      '<td style="padding:12px;font-size:.83rem;color:#374151">' + p.task + '</td>' +
+      '<td style="padding:12px;font-size:.83rem;color:#374151">' + p.meds + '</td>' +
+      '<td style="padding:12px;text-align:center"><button onclick="dischargePatient(' + idx + ')" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:4px 10px;border-radius:5px;font-size:.78rem;cursor:pointer">Discharge</button></td>' +
+    '</tr>';
+  });
+}
+
+function addWBPatient() {
+  const name = prompt('Patient name:');
+  if (!name) return;
+  const reason = prompt('Reason for admission:');
+  wbPatients.push({ patient:name, species:'Canine', reason:reason||'', dvm:'Dr. Staff', status:'Monitoring', task:'Initial assessment', diet:'Normal', meds:'TBD' });
+  renderWhiteboard();
+}
+
+function dischargePatient(idx) {
+  if (confirm('Discharge ' + wbPatients[idx].patient + '?')) {
+    wbPatients.splice(idx, 1);
+    renderWhiteboard();
+  }
+}
+
+// ========================================================
+// PANEL 23: PHARMACY TABS
+// ========================================================
+const rxInventoryData = [
+  { drug:'Amoxicillin', form:'Capsule', strength:'500mg', stock:240, reorder:50, expiry:'2027-03', status:'OK' },
+  { drug:'Carprofen', form:'Tablet', strength:'25mg', stock:18, reorder:30, expiry:'2026-09', status:'Low' },
+  { drug:'Doxycycline', form:'Tablet', strength:'100mg', stock:160, reorder:40, expiry:'2026-12', status:'OK' },
+  { drug:'Metronidazole', form:'Tablet', strength:'250mg', stock:80, reorder:30, expiry:'2027-01', status:'OK' },
+  { drug:'Tramadol', form:'Tablet', strength:'50mg', stock:45, reorder:50, expiry:'2026-11', status:'Low' }
+];
+
+const csLog = [
+  { datetime:'06/13/2026 09:15am', drug:'Tramadol', schedule:'Schedule IV', patient:'Max', qty:'30 tabs', dvm:'Dr. Williams', dispensed:'Tech Jones' },
+  { datetime:'06/12/2026 02:30pm', drug:'Butorphanol', schedule:'Schedule IV', patient:'Bella', qty:'5ml', dvm:'Dr. Patel', dispensed:'Tech Smith' }
+];
+
+function showRxTab(tab) {
+  ['dosage','inventory','controlled','refills'].forEach(function(t) {
+    const el = document.getElementById('rx-' + t);
+    const btn = document.getElementById('rx-tab-' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    if (btn) { btn.style.background = (t === tab) ? '#16A34A' : 'transparent'; btn.style.color = (t === tab) ? '#fff' : '#374151'; }
+  });
+  if (tab === 'inventory') renderRxInventory();
+  if (tab === 'controlled') renderCSLog();
+  if (tab === 'refills') renderRefills();
+}
+
+function renderRxInventory() {
+  const body = document.getElementById('rx-inv-body');
+  if (!body) return;
+  body.innerHTML = '';
+  rxInventoryData.forEach(function(item) {
+    const lowStock = item.stock <= item.reorder;
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:10px 12px;font-weight:600;font-size:.88rem;color:#111827">' + item.drug + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#374151">' + item.form + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#374151">' + item.strength + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-weight:700;color:' + (lowStock ? '#dc2626' : '#16A34A') + ';font-size:.88rem">' + item.stock + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-size:.85rem;color:#6b7280">' + item.reorder + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#374151">' + item.expiry + '</td>' +
+      '<td style="padding:10px 12px;text-align:center"><span style="background:' + (lowStock ? '#fee2e2' : '#dcfce7') + ';color:' + (lowStock ? '#991b1b' : '#166534') + ';padding:2px 8px;border-radius:8px;font-size:.75rem;font-weight:700">' + (lowStock ? 'REORDER' : 'OK') + '</span></td>' +
+    '</tr>';
+  });
+}
+
+function filterRxInventory() {
+  const q = document.getElementById('rx-inv-search').value.toLowerCase();
+  const rows = document.querySelectorAll('#rx-inv-body tr');
+  rows.forEach(function(r) { r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+}
+
+function renderCSLog() {
+  const body = document.getElementById('cs-body');
+  if (!body) return;
+  body.innerHTML = '';
+  csLog.forEach(function(entry) {
+    body.innerHTML += '<tr style="border-bottom:1px solid #fef3c7">' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + entry.datetime + '</td>' +
+      '<td style="padding:10px 12px;font-weight:600;font-size:.85rem;color:#111827">' + entry.drug + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#92400e">' + entry.schedule + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + entry.patient + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-size:.83rem;color:#374151">' + entry.qty + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + entry.dvm + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + entry.dispensed + '</td>' +
+    '</tr>';
+  });
+}
+
+function addCSEntry() {
+  const drug = prompt('Drug name:');
+  if (!drug) return;
+  const qty = prompt('Quantity dispensed:');
+  const patient = prompt('Patient name:');
+  const schedule = prompt('DEA Schedule (e.g. Schedule IV):');
+  csLog.unshift({ datetime: new Date().toLocaleString(), drug, schedule: schedule||'Schedule IV', patient: patient||'Unknown', qty: qty||'N/A', dvm:'Dr. Staff', dispensed:'Logged by user' });
+  renderCSLog();
+}
+
+function exportCSLog() {
+  let csv = 'Date/Time,Drug,Schedule,Patient,Qty,DVM,Dispensed By\n';
+  csLog.forEach(function(e) { csv += [e.datetime,e.drug,e.schedule,e.patient,e.qty,e.dvm,e.dispensed].join(',') + '\n'; });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'controlled_substance_log.csv';
+  a.click();
+}
+
+function renderRefills() {
+  const list = document.getElementById('refill-list');
+  if (!list) return;
+  const refills = [
+    { patient:'Max', owner:'John Smith', drug:'Carprofen 25mg', requested:'06/12/2026', status:'Pending' },
+    { patient:'Luna', owner:'Maria Garcia', drug:'Gabapentin 100mg', requested:'06/11/2026', status:'Pending' }
+  ];
+  list.innerHTML = '';
+  refills.forEach(function(r) {
+    list.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="font-weight:700;font-size:.9rem;color:#111827">' + r.patient + ' — ' + r.drug + '</div><div style="font-size:.8rem;color:#6b7280;margin-top:3px">Owner: ' + r.owner + ' | Requested: ' + r.requested + '</div></div>' +
+      '<div style="display:flex;gap:8px"><button style="background:#16A34A;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:.82rem;cursor:pointer">Approve</button><button style="background:#fee2e2;color:#991b1b;border:none;padding:7px 14px;border-radius:6px;font-size:.82rem;cursor:pointer">Decline</button></div>' +
+    '</div>';
+  });
+}
+
+async function calcDosage() {
+  const drug = document.getElementById('rx-drug').value.trim();
+  const weight = parseFloat(document.getElementById('rx-weight').value);
+  const species = document.getElementById('rx-species').value;
+
+  if (!drug || isNaN(weight)) { alert('Enter drug name and patient weight.'); return; }
+
+  const prompt = `You are a veterinary pharmacist. Calculate dosage for:
+Drug: ${drug} | Weight: ${weight}kg | Species: ${species}
+
+Provide: recommended dose (mg/kg), total dose for this patient, frequency, duration, notes, and any species-specific warnings. Be specific and clinically accurate.`;
+
+  document.getElementById('rx-dosage-result').style.display = 'none';
+  const result = await callVetAI(prompt);
+  document.getElementById('rx-dosage-output').textContent = result;
+  document.getElementById('rx-dosage-result').style.display = 'block';
+}
+
+function printRx() { window.print(); }
+function saveRxRecord() { alert('Saved to patient record.'); }
+function addRxItem() { alert('Add item form — integrate with pharmacy inventory module.'); }
+
+// ========================================================
+// PANEL 24: LAB RESULTS
+// ========================================================
+const cbcData = [
+  { analyte:'WBC', result:'18.2', ref:'5.0-16.9', unit:'x10^9/L', flag:'H' },
+  { analyte:'RBC', result:'7.1', ref:'5.5-8.5', unit:'x10^12/L', flag:'' },
+  { analyte:'HGB', result:'15.2', ref:'12.0-18.0', unit:'g/dL', flag:'' },
+  { analyte:'HCT', result:'44.5', ref:'37.0-55.0', unit:'%', flag:'' },
+  { analyte:'Platelets', result:'185', ref:'175-500', unit:'x10^9/L', flag:'' },
+  { analyte:'ALT', result:'142', ref:'10-100', unit:'U/L', flag:'H' },
+  { analyte:'ALP', result:'88', ref:'23-212', unit:'U/L', flag:'' },
+  { analyte:'BUN', result:'22', ref:'7-27', unit:'mg/dL', flag:'' },
+  { analyte:'Creatinine', result:'1.1', ref:'0.5-1.5', unit:'mg/dL', flag:'' },
+  { analyte:'Glucose', result:'98', ref:'70-138', unit:'mg/dL', flag:'' }
+];
+
+function renderLabCBC() {
+  const body = document.getElementById('lab-cbc-body');
+  if (!body) return;
+  body.innerHTML = '';
+  cbcData.forEach(function(row) {
+    const isHigh = row.flag === 'H';
+    const isLow = row.flag === 'L';
+    const flagColor = isHigh ? '#dc2626' : (isLow ? '#2563eb' : '#16A34A');
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:9px 10px;font-weight:600;font-size:.87rem;color:#111827">' + row.analyte + '</td>' +
+      '<td style="padding:9px 10px;text-align:right;font-weight:700;font-size:.87rem;color:' + (row.flag ? flagColor : '#111827') + '">' + row.result + ' ' + row.unit + '</td>' +
+      '<td style="padding:9px 10px;text-align:right;font-size:.83rem;color:#6b7280">' + row.ref + ' ' + row.unit + '</td>' +
+      '<td style="padding:9px 10px;text-align:center">' + (row.flag ? '<span style="background:' + (isHigh ? '#fee2e2' : '#eff6ff') + ';color:' + flagColor + ';padding:2px 8px;border-radius:8px;font-size:.75rem;font-weight:700">' + (isHigh ? 'HIGH' : 'LOW') + '</span>' : '<span style="color:#16A34A;font-size:.8rem">Normal</span>') + '</td>' +
+    '</tr>';
+  });
+}
+
+async function interpretLabs() {
+  document.getElementById('lab-ai-loading').style.display = 'block';
+  document.getElementById('lab-ai-output').style.display = 'none';
+
+  const flagged = cbcData.filter(function(r) { return r.flag !== ''; }).map(function(r) { return r.analyte + ': ' + r.result + ' ' + r.unit + ' (ref: ' + r.ref + ') ' + (r.flag === 'H' ? 'HIGH' : 'LOW'); }).join('\n');
+
+  const prompt = `You are a veterinary clinical pathologist. Interpret these lab abnormalities for a 5yr old canine:
+
+${flagged}
+
+Provide clinical interpretation, likely differentials, and recommended follow-up diagnostics. Be concise and clinically precise.`;
+
+  const result = await callVetAI(prompt);
+  document.getElementById('lab-ai-loading').style.display = 'none';
+  document.getElementById('lab-ai-text').textContent = result;
+  document.getElementById('lab-ai-output').style.display = 'block';
+}
+
+function addLabResult() { alert('Integrate with in-house lab analyzer or reference lab import.'); }
+
+// ========================================================
+// PANEL 25: TELEMEDICINE
+// ========================================================
+async function triageWithAI() {
+  const concern = document.querySelector('#panel-telemedicine textarea') ? document.querySelector('#panel-telemedicine textarea').value : '';
+  if (!concern) { alert('Enter symptoms or concern.'); return; }
+
+  document.getElementById('triage-loading').style.display = 'block';
+  document.getElementById('triage-output').style.display = 'none';
+
+  const prompt = `You are a veterinary triage nurse. A pet owner reports:
+"${concern}"
+
+Provide:
+1. URGENCY LEVEL: Emergency (see immediately) / Urgent (within 24h) / Routine (within 7 days) / Advice only
+2. REASON for urgency level
+3. HOME CARE advice if appropriate
+4. RED FLAGS to watch for
+5. RECOMMENDED VISIT TYPE if applicable
+
+Be direct and clinically sound.`;
+
+  const result = await callVetAI(prompt);
+  document.getElementById('triage-loading').style.display = 'none';
+  document.getElementById('triage-output').textContent = result;
+  document.getElementById('triage-output').style.display = 'block';
+}
+
+// ========================================================
+// PANEL 26: CLIENT COMMUNICATIONS
+// ========================================================
+const COMM_TEMPLATES = {
+  'appt-reminder': 'Hi [Owner Name]! This is a reminder that [Patient Name] has an appointment tomorrow at [Time]. Please arrive 5 minutes early. Reply CONFIRM to confirm or call us to reschedule.',
+  'lab-ready': 'Hi [Owner Name], great news — [Patient Name]\'s lab results are ready. Dr. [DVM] will review them with you. Please call us at your earliest convenience.',
+  'vaccine-due': 'Hi [Owner Name]! [Patient Name]\'s vaccines are due this month. Call us to schedule a wellness visit — keeping vaccines current protects their health and yours!',
+  'heartworm-due': 'Hi [Owner Name]! [Patient Name] is due for their annual heartworm test. Early detection saves lives — call us to schedule today.',
+  'pickup-ready': 'Hi [Owner Name], [Patient Name] is ready for pickup! Please come in at your earliest convenience. We look forward to seeing you!',
+  'custom': ''
+};
+
+function loadCommTemplate() {
+  const key = document.getElementById('comms-template').value;
+  if (key && COMM_TEMPLATES[key] !== undefined) {
+    document.getElementById('comms-message').value = COMM_TEMPLATES[key];
+  }
+}
+
+function sendCommMessage() {
+  const msg = document.getElementById('comms-message').value;
+  if (!msg.trim()) { alert('Enter a message.'); return; }
+  alert('Message sent via SMS/Email (demo mode).');
+}
+
+function renderWellnessAlerts() {
+  const list = document.getElementById('wellness-alert-list');
+  if (!list) return;
+  const alerts = [
+    { patient:'Buddy', owner:'Tom Wilson', alert:'Rabies vaccine overdue 30 days', priority:'high' },
+    { patient:'Luna', owner:'Sarah Lee', alert:'DHPP due this week', priority:'med' },
+    { patient:'Max', owner:'John Smith', alert:'Heartworm test due', priority:'med' },
+    { patient:'Bella', owner:'Chris Davis', alert:'Flea/tick prevention due', priority:'low' }
+  ];
+  const colors = { high:'#fee2e2', med:'#fef3c7', low:'#f0fdf4' };
+  const textColors = { high:'#991b1b', med:'#92400e', low:'#166534' };
+  list.innerHTML = '';
+  alerts.forEach(function(a) {
+    list.innerHTML += '<div style="background:' + colors[a.priority] + ';border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><span style="font-weight:700;color:' + textColors[a.priority] + ';font-size:.88rem">' + a.patient + '</span> <span style="color:#6b7280;font-size:.83rem">(' + a.owner + ')</span><div style="font-size:.82rem;color:#374151;margin-top:2px">' + a.alert + '</div></div>' +
+      '<button style="background:#16A34A;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:.78rem;cursor:pointer">Send Reminder</button>' +
+    '</div>';
+  });
+}
+
+// ========================================================
+// PANEL 27: PET INSURANCE
+// ========================================================
+function renderInsuranceClaims() {
+  const list = document.getElementById('insurance-claim-list');
+  if (!list) return;
+  const claims = [
+    { patient:'Max', provider:'Trupanion', claimId:'TRU-2026-4821', amount:'$1,240', status:'Pending', submitted:'06/10/2026' },
+    { patient:'Bella', provider:'Nationwide', claimId:'NW-98432', amount:'$880', status:'Approved', submitted:'06/08/2026' },
+    { patient:'Rex', provider:'Embrace', claimId:'EMB-77341', amount:'$2,100', status:'Under Review', submitted:'06/05/2026' }
+  ];
+  const statusColors = { 'Pending':'#fef3c7', 'Approved':'#dcfce7', 'Under Review':'#e0e7ff', 'Denied':'#fee2e2' };
+  const statusText = { 'Pending':'#92400e', 'Approved':'#166534', 'Under Review':'#3730a3', 'Denied':'#991b1b' };
+  list.innerHTML = '';
+  claims.forEach(function(c) {
+    list.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="font-weight:700;font-size:.9rem;color:#111827">' + c.patient + ' — ' + c.provider + '</div><div style="font-size:.8rem;color:#6b7280;margin-top:3px">Claim ' + c.claimId + ' | Submitted ' + c.submitted + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:14px"><span style="font-weight:700;color:#111827;font-size:.9rem">' + c.amount + '</span><span style="background:' + (statusColors[c.status]||'#f3f4f6') + ';color:' + (statusText[c.status]||'#374151') + ';padding:3px 10px;border-radius:10px;font-size:.78rem;font-weight:700">' + c.status + '</span></div>' +
+    '</div>';
+  });
+}
+
+// ========================================================
+// PANEL 28: BOARDING & GROOMING
+// ========================================================
+function renderKennelMap() {
+  const grid = document.getElementById('kennel-grid');
+  if (!grid) return;
+  const occupied = { 1:'Bella', 3:'Max', 5:'Rex', 8:'Cleo', 11:'Buddy', 14:'Luna', 17:'Zeus', 18:'Nala', 19:'Rocco', 20:'Mia' };
+  grid.innerHTML = '';
+  for (let i = 1; i <= 20; i++) {
+    const pet = occupied[i];
+    grid.innerHTML += '<div style="background:' + (pet ? '#dcfce7' : '#f9fafb') + ';border:2px solid ' + (pet ? '#86efac' : '#e5e7eb') + ';border-radius:8px;padding:10px;text-align:center;cursor:pointer" title="Run ' + i + (pet ? ': ' + pet : ': Available') + '">' +
+      '<div style="font-size:.7rem;color:#9ca3af;margin-bottom:3px">Run ' + i + '</div>' +
+      '<div style="font-size:.82rem;font-weight:700;color:' + (pet ? '#166534' : '#9ca3af') + '">' + (pet || 'Open') + '</div>' +
+    '</div>';
+  }
+}
+
+function renderBoardingSchedule() {
+  const list = document.getElementById('boarding-schedule-list');
+  if (!list) return;
+  const schedule = [
+    { pet:'Bella', time:'7:00 AM', task:'Breakfast - Hill\'s KD 1 cup', type:'food' },
+    { pet:'Max', time:'7:30 AM', task:'Morning walk - 15 min', type:'walk' },
+    { pet:'Rex', time:'8:00 AM', task:'Metronidazole 250mg with food', type:'med' },
+    { pet:'Cleo', time:'12:00 PM', task:'Lunch - WD canned 1/2 can', type:'food' },
+    { pet:'Bella', time:'5:00 PM', task:'Dinner - Hill\'s KD 1 cup', type:'food' }
+  ];
+  const typeColors = { food:'#dcfce7', walk:'#e0e7ff', med:'#fef3c7' };
+  list.innerHTML = '';
+  schedule.forEach(function(s) {
+    list.innerHTML += '<div style="background:' + (typeColors[s.type]||'#f9fafb') + ';border:1px solid #e5e7eb;border-radius:8px;padding:11px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><span style="font-weight:700;color:#111827;font-size:.88rem">' + s.time + '</span> <span style="color:#374151;font-size:.85rem">' + s.pet + '</span><div style="font-size:.82rem;color:#6b7280;margin-top:2px">' + s.task + '</div></div>' +
+      '<button style="background:#16A34A;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:.78rem;cursor:pointer">Done</button>' +
+    '</div>';
+  });
+}
+
+// ========================================================
+// PANEL 29: DENTAL CHARTING
+// ========================================================
+const dentalState = {};
+
+function renderDentalChart() {
+  const species = document.getElementById('dental-species') ? document.getElementById('dental-species').value : 'canine';
+  const upperTeeth = species === 'canine' ? [101,102,103,104,105,106,107,108,109,201,202,203,204,205,206,207,208,209] : [101,102,103,104,105,106,107,201,202,203,204,205,206,207];
+  const lowerTeeth = species === 'canine' ? [301,302,303,304,305,306,307,308,309,401,402,403,404,405,406,407,408,409] : [301,302,303,304,305,306,307,401,402,403,404,405,406,407];
+
+  const TOOTH_COLORS = { normal:'#dcfce7', calculus:'#fef3c7', extraction:'#fee2e2', rootcanal:'#e0e7ff', missing:'#fce7f3', default:'#f3f4f6' };
+  const TOOTH_BORDERS = { normal:'#16A34A', calculus:'#d97706', extraction:'#dc2626', rootcanal:'#4f46e5', missing:'#db2777', default:'#d1d5db' };
+
+  function toothHTML(t) {
+    const state = dentalState[t] || 'default';
+    return '<div onclick="cycleTooth(' + t + ')" style="background:' + (TOOTH_COLORS[state]||TOOTH_COLORS.default) + ';border:2px solid ' + (TOOTH_BORDERS[state]||TOOTH_BORDERS.default) + ';border-radius:4px;width:28px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.6rem;font-weight:600;color:#374151;title:Tooth ' + t + '">' + t + '</div>';
+  }
+
+  const uc = document.getElementById('dental-chart-upper');
+  const lc = document.getElementById('dental-chart-lower');
+  if (uc) uc.innerHTML = upperTeeth.map(toothHTML).join('');
+  if (lc) lc.innerHTML = lowerTeeth.map(toothHTML).join('');
+}
+
+function cycleTooth(toothNum) {
+  const states = ['default','normal','calculus','extraction','rootcanal','missing'];
+  const cur = dentalState[toothNum] || 'default';
+  const idx = states.indexOf(cur);
+  dentalState[toothNum] = states[(idx + 1) % states.length];
+  renderDentalChart();
+}
+
+async function generateDentalPlan() {
+  const species = document.getElementById('dental-species') ? document.getElementById('dental-species').value : 'canine';
+  const grade = document.getElementById('dental-grade') ? document.getElementById('dental-grade').value : 'Grade 2';
+
+  const findings = Object.entries(dentalState).filter(function(e) { return e[1] !== 'default' && e[1] !== 'normal'; }).map(function(e) { return 'Tooth ' + e[0] + ': ' + e[1]; }).join(', ');
+
+  document.getElementById('dental-plan-loading').style.display = 'block';
+  document.getElementById('dental-plan-output').style.display = 'none';
+
+  const prompt = `You are a veterinary dentist. Generate a dental treatment plan:
+Species: ${species} | Dental Grade: ${grade}
+Findings: ${findings || 'Grade ' + grade + ' periodontal disease, general calculus buildup'}
+
+Provide: anesthesia protocol recommendation, procedures to perform, extraction candidates if any, estimated procedure time, home care instructions, and recheck schedule.`;
+
+  const result = await callVetAI(prompt);
+  document.getElementById('dental-plan-loading').style.display = 'none';
+  document.getElementById('dental-plan-output').textContent = result;
+  document.getElementById('dental-plan-output').style.display = 'block';
+}
+
+// ========================================================
+// PANEL 30: COMPLIANCE & WELLNESS ALERTS
+// ========================================================
+async function generateCampaignMsg() {
+  const type = document.querySelector('#panel-compliance select') ? document.querySelector('#panel-compliance select').value : 'Vaccine Due';
+  const prompt = `Write a friendly, professional veterinary reminder SMS (under 160 chars) for: ${type}. Include a call to action. Use [Patient] and [Clinic] as placeholders.`;
+  const result = await callVetAI(prompt);
+  const ta = document.querySelector('#panel-compliance textarea');
+  if (ta) ta.value = result;
+  else alert(result);
+}
+
+function renderOverduePatients() {
+  const list = document.getElementById('overdue-patient-list');
+  if (!list) return;
+  const overdues = [
+    { patient:'Buddy', owner:'Tom Wilson', phone:'216-555-0101', overdue:'Rabies (42 days overdue)' },
+    { patient:'Pepper', owner:'Amy Chen', phone:'216-555-0182', overdue:'DHPP (28 days overdue)' },
+    { patient:'Coco', owner:'Mike Davis', phone:'216-555-0143', overdue:'Bordetella (15 days overdue)' }
+  ];
+  list.innerHTML = '';
+  overdues.forEach(function(p) {
+    list.innerHTML += '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="font-weight:700;font-size:.9rem;color:#111827">' + p.patient + ' <span style="font-weight:400;color:#6b7280;font-size:.82rem">(' + p.owner + ' - ' + p.phone + ')</span></div><div style="font-size:.82rem;color:#dc2626;margin-top:2px">' + p.overdue + '</div></div>' +
+      '<div style="display:flex;gap:8px"><button style="background:#16A34A;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:.78rem;cursor:pointer">Send SMS</button><button style="background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:6px 10px;border-radius:6px;font-size:.78rem;cursor:pointer">Call</button></div>' +
+    '</div>';
+  });
+}
+
+// ========================================================
+// INIT — runs when SAIRNvet panels are displayed
+// ========================================================
+function initVetPanels() {
+  // Set whiteboard timestamp
+  const ts = document.getElementById('wb-timestamp');
+  if (ts) ts.textContent = new Date().toLocaleTimeString();
+
+  // Render all panel data
+  if (document.getElementById('sched-grid')) renderSchedGrid();
+  if (document.getElementById('wb-body')) renderWhiteboard();
+  if (document.getElementById('lab-cbc-body')) renderLabCBC();
+  if (document.getElementById('kennel-grid')) renderKennelMap();
+  if (document.getElementById('boarding-schedule-list')) renderBoardingSchedule();
+  if (document.getElementById('wellness-alert-list')) renderWellnessAlerts();
+  if (document.getElementById('insurance-claim-list')) renderInsuranceClaims();
+  if (document.getElementById('overdue-patient-list')) renderOverduePatients();
+  if (document.getElementById('dental-chart-upper')) renderDentalChart();
+}
+
+// Auto-init on load
+document.addEventListener('DOMContentLoaded', initVetPanels);
+</script>
