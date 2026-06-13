@@ -3121,27 +3121,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(res.ok){const data=await res.json();shCurrentUser=data.user;shShowApp();}
   }catch(e){}
 
-  // Add demo login button to auth screen if not already there
-  var authCard = document.querySelector('.auth-card');
-  if(authCard && !document.getElementById('sh-demo-login-btn')){
-    var demoBtn = document.createElement('div');
-    demoBtn.style.cssText = 'margin-top:16px;text-align:center;padding-top:16px;border-top:1px solid #f0f0f0;';
-    demoBtn.innerHTML = '<button id="sh-demo-login-btn" onclick="shDemoLogin()" style="width:100%;padding:11px;background:#f5f3ff;border:2px solid #7C3AED;color:#7C3AED;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">&#9654; Demo Login — No Password Required</button><div style="font-size:11px;color:#9ca3af;margin-top:8px;">Explores all features with sample data</div>';
-    authCard.appendChild(demoBtn);
-  }
 });
-
-function shDemoLogin(){
-  shCurrentUser = {
-    id: 'demo_user',
-    name: 'Michael Dibert',
-    email: 'michael@sairn.com',
-    shopName: 'Pinnacle Industries LLC',
-    role: 'admin',
-    isDemo: true
-  };
-  shShowApp();
-}
 
 // ── NAVIGATION ───────────────────────────────────────────────────
 function shPanel(id,btn){
