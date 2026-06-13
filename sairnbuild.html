@@ -6536,5 +6536,72 @@ setTimeout(function(){if(typeof checkBuild_SmartFlags==="function")checkBuild_Sm
 
 })();
 </script>
+
+<script>
+// SAIRNdesign Bridge — Golden Rule 2 (Construction apps)
+function syncToSAIRNdesign() {
+  var payload = {
+    source_app: 'sairnbuild',
+    target_app: 'sairndesign',
+    data_type: 'design_sync',
+    payload: {
+      timestamp: new Date().toISOString(),
+      project: document.title || 'SAIRNbuild Project',
+      app: 'SAIRNbuild'
+    }
+  };
+  fetch('https://sairn.vercel.app/api/bridge', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).then(function(r) {
+    if (r.ok) {
+      alert('Synced to SAIRNdesign successfully.');
+    }
+  }).catch(function(e) {
+    console.log('Bridge sync:', e.message);
+  });
+}
+</script>
+
+<script>
+// Professional disclaimer injection
+(function() {
+  var DISCLAIMER = 'Estimates are not contracts. Consult a licensed contractor for final pricing.';
+  var origSH = window.shShow || function(){};
+  // Append disclaimer to all AI result containers after render
+  document.addEventListener('DOMContentLoaded', function() {
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (m.target && m.target.classList && 
+            (m.target.classList.contains('ai-result') || 
+             m.target.classList.contains('claude-output') ||
+             m.target.id && m.target.id.includes('result'))) {
+          if (!m.target.querySelector('.sairn-disclaimer')) {
+            var d = document.createElement('p');
+            d.className = 'sairn-disclaimer';
+            d.style.cssText = 'font-size:11px;color:#6b7280;border-top:1px solid #e5e7eb;margin-top:12px;padding-top:8px;font-style:italic;';
+            d.textContent = DISCLAIMER;
+            m.target.appendChild(d);
+          }
+        }
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: false });
+  });
+})();
+</script>
+
+<script>
+// SAIRN Debounce Utility — prevents Claude call hammering on rapid input
+window.saDebounce = function(func, wait) {
+  var timeout;
+  return function() {
+    var context = this, args = arguments;
+    clearTimeout(timeout);
+    timeout = setTimeout(function() { func.apply(context, args); }, wait || 300);
+  };
+};
+</script>
 </body>
 </html>
