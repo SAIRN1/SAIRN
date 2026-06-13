@@ -1,0 +1,1424 @@
+<!-- SAIRNdesign SESSION 19 NEW PANELS — panels 12-26 -->
+<!-- 15 new panels expanding SAIRNdesign from 11 to 26 panels -->
+<!-- Color: Indigo #6366F1 | Proxy: sairn.vercel.app/api/claude | app_id: sairndesign -->
+<!-- NO Unicode box-drawing chars in JS. All dark sections use print-color-adjust. -->
+
+<!-- ============================================================
+     PANEL 12: FF&E SPECIFICATION MANAGER
+============================================================ -->
+<div id="panel-ffe" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">FF&amp;E Specification Manager</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Furniture, Fixtures &amp; Equipment • Item tracking • Budget vs actual • Status by room</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;text-align:center">
+        <div id="ffe-count" style="font-size:1.5rem;font-weight:700;color:#6366F1">0</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Total Items</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div id="ffe-pending" style="font-size:1.5rem;font-weight:700;color:#d97706">0</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Pending Approval</div>
+      </div>
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center">
+        <div id="ffe-budget" style="font-size:1.5rem;font-weight:700;color:#16A34A">$0</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Budget Total</div>
+      </div>
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;text-align:center">
+        <div id="ffe-actual" style="font-size:1.5rem;font-weight:700;color:#6366F1">$0</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Actual Cost</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="display:flex;gap:8px">
+        <input type="text" id="ffe-search" oninput="filterFFE()" placeholder="Search items..." style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px;width:200px">
+        <select id="ffe-room-filter" onchange="filterFFE()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option value="">All Rooms</option>
+          <option>Living Room</option><option>Kitchen</option><option>Primary Bedroom</option><option>Dining Room</option><option>Home Office</option><option>Bathroom</option>
+        </select>
+        <select id="ffe-status-filter" onchange="filterFFE()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option value="">All Status</option>
+          <option>Concept</option><option>Specified</option><option>Pending Approval</option><option>Approved</option><option>Ordered</option><option>Delivered</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="addFFEItem()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Add Item</button>
+        <button onclick="exportFFESchedule()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 14px;border-radius:7px;font-size:.85rem;cursor:pointer">Export Schedule</button>
+        <button onclick="generateFFESpecSheet()" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:9px 14px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">AI Spec Sheet</button>
+      </div>
+    </div>
+
+    <!-- FF&E Table -->
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:900px">
+        <thead><tr style="background:#eef2ff;border-bottom:2px solid #c7d2fe">
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">Item</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">Room</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">Vendor</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">SKU / Model</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Client Price</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Trade Cost</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Markup</th>
+          <th style="padding:10px 12px;text-align:center;font-size:.78rem;color:#4338ca;font-weight:700">Qty</th>
+          <th style="padding:10px 12px;text-align:center;font-size:.78rem;color:#4338ca;font-weight:700">Status</th>
+          <th style="padding:10px 12px;text-align:center;font-size:.78rem;color:#4338ca;font-weight:700">Actions</th>
+        </tr></thead>
+        <tbody id="ffe-body"></tbody>
+      </table>
+    </div>
+
+    <!-- AI spec output -->
+    <div id="ffe-spec-output" style="display:none;margin-top:16px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:18px">
+      <div style="font-weight:700;color:#6366F1;margin-bottom:8px">AI-Generated Specification Notes</div>
+      <div id="ffe-spec-text" style="font-size:.9rem;color:#1f2937;line-height:1.7;white-space:pre-wrap"></div>
+    </div>
+    <div id="ffe-spec-loading" style="display:none;color:#6366F1;font-style:italic;margin-top:8px">Generating specification notes...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 13: MOOD BOARD BUILDER
+============================================================ -->
+<div id="panel-moodboard" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Mood Board Builder</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Visual concept boards • Image layers • Color palettes • Client-shareable</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;gap:20px">
+      <!-- Left: board controls -->
+      <div style="width:240px;flex-shrink:0">
+        <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.9rem">Board</div>
+        <div style="margin-bottom:10px"><input type="text" id="mb-title" placeholder="Board title..." value="Living Room Concept" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;font-size:.85rem"></div>
+
+        <div style="font-weight:600;color:#374151;margin-bottom:8px;font-size:.85rem;margin-top:14px">Color Palette</div>
+        <div id="mb-palette" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+        <input type="color" id="mb-color-picker" style="width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;margin-bottom:6px">
+        <button onclick="addMBColor()" style="width:100%;background:#6366F1;color:#fff;border:none;padding:7px;border-radius:6px;font-size:.82rem;cursor:pointer;margin-bottom:14px">Add Color</button>
+
+        <div style="font-weight:600;color:#374151;margin-bottom:8px;font-size:.85rem">Style Tags</div>
+        <div id="mb-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          <span onclick="toggleMBTag(this)" style="background:#eef2ff;color:#6366F1;padding:4px 10px;border-radius:10px;font-size:.78rem;cursor:pointer;border:1px solid #c7d2fe">Modern</span>
+          <span onclick="toggleMBTag(this)" style="background:#f3f4f6;color:#374151;padding:4px 10px;border-radius:10px;font-size:.78rem;cursor:pointer;border:1px solid #e5e7eb">Minimal</span>
+          <span onclick="toggleMBTag(this)" style="background:#f3f4f6;color:#374151;padding:4px 10px;border-radius:10px;font-size:.78rem;cursor:pointer;border:1px solid #e5e7eb">Warm</span>
+          <span onclick="toggleMBTag(this)" style="background:#f3f4f6;color:#374151;padding:4px 10px;border-radius:10px;font-size:.78rem;cursor:pointer;border:1px solid #e5e7eb">Luxury</span>
+          <span onclick="toggleMBTag(this)" style="background:#f3f4f6;color:#374151;padding:4px 10px;border-radius:10px;font-size:.78rem;cursor:pointer;border:1px solid #e5e7eb">Organic</span>
+          <span onclick="toggleMBTag(this)" style="background:#f3f4f6;color:#374151;padding:4px 10px;border-radius:10px;font-size:.78rem;cursor:pointer;border:1px solid #e5e7eb">Industrial</span>
+        </div>
+
+        <button onclick="generateMoodboardConcept()" style="width:100%;background:#6366F1;color:#fff;border:none;padding:10px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer;margin-bottom:8px">AI Concept Description</button>
+        <button onclick="shareMoodboard()" style="width:100%;background:#f3f4f6;border:1px solid #d1d5db;padding:10px;border-radius:7px;font-size:.85rem;cursor:pointer;margin-bottom:8px">Share with Client</button>
+        <button onclick="printMoodboard()" style="width:100%;background:#f3f4f6;border:1px solid #d1d5db;padding:10px;border-radius:7px;font-size:.85rem;cursor:pointer">Print / Save PDF</button>
+      </div>
+
+      <!-- Right: canvas board -->
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-weight:700;color:#111827;font-size:.9rem">Board Canvas</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="addMBSwatch()" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:6px 12px;border-radius:6px;font-size:.78rem;cursor:pointer">+ Swatch</button>
+            <button onclick="addMBText()" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:6px 12px;border-radius:6px;font-size:.78rem;cursor:pointer">+ Text Block</button>
+            <button onclick="addMBImage()" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:6px 12px;border-radius:6px;font-size:.78rem;cursor:pointer">+ Image</button>
+          </div>
+        </div>
+        <div id="mb-canvas" style="background:#fafaf9;border:2px dashed #d1d5db;border-radius:12px;min-height:380px;padding:16px;position:relative;overflow:hidden">
+          <!-- Dynamic board items rendered here -->
+        </div>
+        <div id="mb-ai-concept" style="display:none;margin-top:14px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;font-size:.88rem;color:#1f2937;line-height:1.6;white-space:pre-wrap"></div>
+        <div id="mb-ai-loading" style="display:none;margin-top:10px;color:#6366F1;font-style:italic">AI writing concept description...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 14: CLIENT PORTAL & APPROVALS
+============================================================ -->
+<div id="panel-clientportal-design" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Client Portal &amp; Approvals</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Branded client portal • Design approvals • Contracts • Payment</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#6366F1">5</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Active Portals</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#d97706">3</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Awaiting Approval</div>
+      </div>
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16A34A">$24,800</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Pending Retainers</div>
+      </div>
+    </div>
+
+    <!-- Generate portal -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px">Generate Client Portal</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Client Name</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Project</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Access Level</label>
+          <select style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option>View + Approve</option><option>View Only</option><option>View + Comment</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="generateDesignPortalLink()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Generate Portal Link</button>
+      <span id="design-portal-link" style="display:block;margin-top:8px;font-size:.82rem;color:#6366F1;font-family:monospace"></span>
+    </div>
+
+    <!-- Pending approvals -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px">Pending Client Approvals</div>
+    <div id="design-approval-list" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 15: PROCUREMENT & PURCHASE ORDERS
+============================================================ -->
+<div id="panel-design-procurement" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Procurement &amp; Purchase Orders</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Vendor POs • Trade pricing • Order tracking • Freight • Delivery confirmation</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#6366F1">12</div><div style="font-size:.78rem;color:#6b7280">Open POs</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#d97706">4</div><div style="font-size:.78rem;color:#6b7280">In Transit</div>
+      </div>
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#16A34A">$68,400</div><div style="font-size:.78rem;color:#6b7280">Total Open POs</div>
+      </div>
+      <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#dc2626">2</div><div style="font-size:.78rem;color:#6b7280">Delayed Items</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <select style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px" onchange="filterDesignPOs(this.value)">
+        <option value="">All Status</option>
+        <option>Draft</option><option>Sent to Vendor</option><option>Confirmed</option><option>In Transit</option><option>Delivered</option>
+      </select>
+      <button onclick="createDesignPO()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Create PO</button>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#eef2ff;border-bottom:2px solid #c7d2fe">
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">PO #</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">Project</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">Vendor</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">Items</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">Expected</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Trade Cost</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Client Price</th>
+          <th style="padding:10px 12px;text-align:center;font-size:.78rem;color:#4338ca;font-weight:700">Status</th>
+        </tr></thead>
+        <tbody id="design-po-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 16: FLOOR PLAN TOOL
+============================================================ -->
+<div id="panel-floorplan" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Floor Plan Tool</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">2D room layout • Furniture placement • Dimensions • Export PDF</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;gap:16px">
+      <!-- Tools panel -->
+      <div style="width:180px;flex-shrink:0">
+        <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.9rem">Room Setup</div>
+        <div style="margin-bottom:8px"><label style="font-size:.78rem;color:#6b7280;display:block;margin-bottom:2px">Width (ft)</label><input id="fp-w" type="number" value="20" oninput="renderFloorPlan()" style="width:100%;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;font-size:.85rem"></div>
+        <div style="margin-bottom:14px"><label style="font-size:.78rem;color:#6b7280;display:block;margin-bottom:2px">Depth (ft)</label><input id="fp-d" type="number" value="15" oninput="renderFloorPlan()" style="width:100%;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;font-size:.85rem"></div>
+
+        <div style="font-weight:700;color:#111827;margin-bottom:10px;font-size:.85rem">Add Furniture</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button onclick="addFPItem('sofa','Sofa',72,36)" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:7px 10px;border-radius:6px;font-size:.78rem;cursor:pointer;text-align:left">Sofa (72x36)</button>
+          <button onclick="addFPItem('chair','Arm Chair',30,30)" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:7px 10px;border-radius:6px;font-size:.78rem;cursor:pointer;text-align:left">Arm Chair (30x30)</button>
+          <button onclick="addFPItem('table','Coffee Table',48,24)" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:7px 10px;border-radius:6px;font-size:.78rem;cursor:pointer;text-align:left">Coffee Table (48x24)</button>
+          <button onclick="addFPItem('dining','Dining Table',72,42)" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:7px 10px;border-radius:6px;font-size:.78rem;cursor:pointer;text-align:left">Dining Table (72x42)</button>
+          <button onclick="addFPItem('bed','King Bed',76,80)" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:7px 10px;border-radius:6px;font-size:.78rem;cursor:pointer;text-align:left">King Bed (76x80)</button>
+          <button onclick="addFPItem('desk','Desk',60,30)" style="background:#eef2ff;border:1px solid #c7d2fe;color:#6366F1;padding:7px 10px;border-radius:6px;font-size:.78rem;cursor:pointer;text-align:left">Desk (60x30)</button>
+        </div>
+        <button onclick="clearFloorPlan()" style="margin-top:12px;width:100%;background:#f3f4f6;border:1px solid #d1d5db;padding:7px;border-radius:6px;font-size:.78rem;cursor:pointer">Clear Room</button>
+        <button onclick="exportFloorPlanPDF()" style="margin-top:6px;width:100%;background:#6366F1;color:#fff;border:none;padding:7px;border-radius:6px;font-size:.78rem;cursor:pointer">Export PDF</button>
+      </div>
+
+      <!-- Canvas -->
+      <div style="flex:1">
+        <canvas id="fp-canvas" width="600" height="450" style="border:2px solid #c7d2fe;border-radius:10px;width:100%;background:#fafaf9;cursor:crosshair"></canvas>
+        <div style="font-size:.78rem;color:#9ca3af;margin-top:6px;text-align:center">Click items to select • Drag to move (full drag in deployed app)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 17: SPECIFICATION SHEETS
+============================================================ -->
+<div id="panel-specsheet" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Specification Sheets</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Auto-generated from FF&amp;E data • Print-ready • Client + vendor versions</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="display:flex;gap:8px">
+        <select id="spec-project" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option>Henderson Residence — Living Room</option>
+          <option>Chen Residence — Primary Suite</option>
+          <option>Martinez Home — Kitchen</option>
+        </select>
+        <select id="spec-version" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option>Client Version (with markup)</option>
+          <option>Vendor Version (trade cost)</option>
+          <option>Internal Version (all data)</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="generateSpecSheet()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Generate Spec Sheet</button>
+        <button onclick="printSpecSheet()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 14px;border-radius:7px;font-size:.85rem;cursor:pointer">Print</button>
+      </div>
+    </div>
+
+    <!-- Spec sheet preview -->
+    <div id="spec-sheet-preview" style="border:2px solid #e5e7eb;border-radius:10px;padding:28px;font-family:Georgia,serif;-webkit-print-color-adjust:exact;print-color-adjust:exact">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #6366F1">
+        <div><div style="font-size:1.4rem;font-weight:700;color:#6366F1;letter-spacing:-.02em">SAIRNdesign</div><div style="font-size:.85rem;color:#6b7280;margin-top:2px">Interior Design Specification</div></div>
+        <div style="text-align:right;font-size:.82rem;color:#6b7280"><div>Henderson Residence</div><div>Living Room &amp; Dining</div><div style="margin-top:4px">Rev. 3 — June 13, 2026</div></div>
+      </div>
+      <div id="spec-sheet-body" style="font-family:Georgia,serif"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 18: PROJECT TIMELINE & PHASES
+============================================================ -->
+<div id="panel-projecttimeline" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Project Timeline &amp; Phases</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Phase management • Milestone tracking • Install date • Client visibility</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <select id="timeline-project" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:7px;font-size:.9rem;font-weight:600;color:#374151">
+        <option>Henderson Residence</option><option>Chen Residence</option><option>Martinez Home</option>
+      </select>
+      <button onclick="addTimelinePhase()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Add Phase</button>
+    </div>
+
+    <!-- Timeline phases -->
+    <div id="timeline-phases" style="display:flex;flex-direction:column;gap:12px"></div>
+
+    <!-- Gantt bar visual -->
+    <div style="margin-top:22px">
+      <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.9rem">Project Gantt View</div>
+      <canvas id="gantt-canvas" width="700" height="200" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;background:#fafaf9"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 19: VENDOR & PRODUCT LIBRARY
+============================================================ -->
+<div id="panel-vendorlibrary" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Vendor &amp; Product Library</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Trade vendor contacts • Product catalog • Browser clipper saves • Sourcing</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;gap:8px;margin-bottom:18px">
+      <input type="text" id="vl-search" oninput="filterVendorLib()" placeholder="Search vendors or products..." style="flex:1;padding:9px 12px;border:1px solid #d1d5db;border-radius:7px">
+      <select id="vl-cat" onchange="filterVendorLib()" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:7px">
+        <option value="">All Categories</option>
+        <option>Furniture</option><option>Lighting</option><option>Fabric</option><option>Flooring</option><option>Plumbing</option><option>Hardware</option><option>Art</option>
+      </select>
+      <button onclick="addVendorItem()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Add Vendor</button>
+    </div>
+
+    <div id="vendor-library-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 20: BUDGET TRACKER
+============================================================ -->
+<div id="panel-budgettracker" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Budget Tracker</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Room-by-room budget vs actual • Contingency • Change order impact • AI alerts</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <!-- Project selector + summary -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <select id="budget-project" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:7px;font-weight:600">
+        <option>Henderson Residence — $180,000 budget</option>
+        <option>Chen Residence — $95,000 budget</option>
+      </select>
+      <button onclick="analyzeBudget()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">AI Budget Analysis</button>
+    </div>
+
+    <!-- Budget summary bar -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:18px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px">
+        <div style="text-align:center"><div style="font-size:1.3rem;font-weight:700;color:#111827">$180,000</div><div style="font-size:.78rem;color:#6b7280">Total Budget</div></div>
+        <div style="text-align:center"><div style="font-size:1.3rem;font-weight:700;color:#6366F1">$142,800</div><div style="font-size:.78rem;color:#6b7280">Committed</div></div>
+        <div style="text-align:center"><div style="font-size:1.3rem;font-weight:700;color:#d97706">$28,600</div><div style="font-size:.78rem;color:#6b7280">Remaining</div></div>
+        <div style="text-align:center"><div style="font-size:1.3rem;font-weight:700;color:#16A34A">$8,600</div><div style="font-size:.78rem;color:#6b7280">Contingency</div></div>
+      </div>
+      <div style="background:#e5e7eb;border-radius:4px;height:12px;overflow:hidden">
+        <div style="background:#6366F1;height:100%;width:79.3%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:.75rem;color:#6b7280"><span>0%</span><span style="color:#6366F1;font-weight:600">79.3% committed</span><span>100%</span></div>
+    </div>
+
+    <!-- Room breakdown table -->
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#eef2ff;border-bottom:2px solid #c7d2fe">
+          <th style="padding:10px 12px;text-align:left;font-size:.78rem;color:#4338ca;font-weight:700">Room</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Budget</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Committed</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Actual</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.78rem;color:#4338ca;font-weight:700">Variance</th>
+          <th style="padding:10px 12px;text-align:center;font-size:.78rem;color:#4338ca;font-weight:700">Status</th>
+        </tr></thead>
+        <tbody id="budget-body"></tbody>
+      </table>
+    </div>
+
+    <div id="budget-ai-output" style="display:none;margin-top:16px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:16px;font-size:.9rem;color:#1f2937;line-height:1.7;white-space:pre-wrap"></div>
+    <div id="budget-ai-loading" style="display:none;color:#6366F1;font-style:italic;margin-top:8px">Analyzing budget...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 21: CHANGE ORDER MANAGER
+============================================================ -->
+<div id="panel-changeorders" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Change Order Manager</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Formal COs • Client approval workflow • Cost &amp; schedule impact tracking</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#6366F1">7</div><div style="font-size:.78rem;color:#6b7280">Total COs</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#d97706">2</div><div style="font-size:.78rem;color:#6b7280">Pending Approval</div>
+      </div>
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#16A34A">$14,200</div><div style="font-size:.78rem;color:#6b7280">Approved CO Value</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#d97706">+12 days</div><div style="font-size:.78rem;color:#6b7280">Schedule Impact</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <select style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+        <option>All Projects</option><option>Henderson Residence</option><option>Chen Residence</option>
+      </select>
+      <button onclick="createCO()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Create Change Order</button>
+    </div>
+
+    <div id="co-list" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 22: CLIENT INVOICING & RETAINERS
+============================================================ -->
+<div id="panel-clientinvoicing" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Client Invoicing &amp; Retainers</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Retainer billing • Progress invoices • Expense reimbursement • Payment tracking</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#16A34A">$48,600</div><div style="font-size:.78rem;color:#6b7280">Revenue YTD</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#d97706">$12,800</div><div style="font-size:.78rem;color:#6b7280">Outstanding</div>
+      </div>
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#6366F1">$24,000</div><div style="font-size:.78rem;color:#6b7280">Retainers Held</div>
+      </div>
+      <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#dc2626">$3,200</div><div style="font-size:.78rem;color:#6b7280">Overdue 30+ Days</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;gap:8px">
+        <button onclick="showInvTab('invoices')" id="inv-tab-invoices" style="background:#6366F1;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:.83rem;cursor:pointer">Invoices</button>
+        <button onclick="showInvTab('retainers')" id="inv-tab-retainers" style="background:#f3f4f6;border:1px solid #d1d5db;padding:8px 16px;border-radius:7px;font-size:.83rem;cursor:pointer">Retainers</button>
+      </div>
+      <button onclick="createDesignInvoice()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ New Invoice</button>
+    </div>
+
+    <div id="inv-invoices" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="inv-retainers" style="display:none;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 23: PHOTO DOCUMENTATION
+============================================================ -->
+<div id="panel-photodoc" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Photo Documentation</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Before / During / After • Organized by room &amp; phase • Client gallery</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="display:flex;gap:8px">
+        <select style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option>All Rooms</option><option>Living Room</option><option>Kitchen</option><option>Primary Bedroom</option>
+        </select>
+        <select id="photo-phase-filter" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option>All Phases</option><option>Before</option><option>During</option><option>After</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="uploadPhoto()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Upload Photos</button>
+        <button onclick="sharePhotoGallery()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 14px;border-radius:7px;font-size:.85rem;cursor:pointer">Share Gallery</button>
+      </div>
+    </div>
+
+    <!-- Phase tabs -->
+    <div style="display:flex;gap:10px;margin-bottom:18px">
+      <button onclick="filterPhotoPhase('all',this)" style="background:#6366F1;color:#fff;border:none;padding:7px 18px;border-radius:7px;font-size:.83rem;cursor:pointer">All</button>
+      <button onclick="filterPhotoPhase('before',this)" style="background:#f3f4f6;border:1px solid #d1d5db;padding:7px 18px;border-radius:7px;font-size:.83rem;cursor:pointer">Before</button>
+      <button onclick="filterPhotoPhase('during',this)" style="background:#f3f4f6;border:1px solid #d1d5db;padding:7px 18px;border-radius:7px;font-size:.83rem;cursor:pointer">During</button>
+      <button onclick="filterPhotoPhase('after',this)" style="background:#f3f4f6;border:1px solid #d1d5db;padding:7px 18px;border-radius:7px;font-size:.83rem;cursor:pointer">After</button>
+    </div>
+
+    <!-- Photo grid -->
+    <div id="photo-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 24: CONTRACTOR COORDINATION
+============================================================ -->
+<div id="panel-contractor" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Contractor Coordination</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Trade contractors • Scope assignments • Site visits • Punch list</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:18px">
+      <input type="text" placeholder="Search contractors..." style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px;width:240px">
+      <button onclick="addContractor()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Add Contractor</button>
+    </div>
+
+    <!-- Active contractors -->
+    <div id="contractor-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:22px"></div>
+
+    <!-- Punch list -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.95rem">Punch List</div>
+    <div id="punch-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button onclick="addPunchItem()" style="margin-top:10px;background:#f3f4f6;border:1px solid #d1d5db;padding:8px 16px;border-radius:7px;font-size:.83rem;cursor:pointer">+ Add Punch Item</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 25: PERMITS & COMPLIANCE
+============================================================ -->
+<div id="panel-permits" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Permits &amp; Compliance</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Permit tracking • Inspection scheduling • Code compliance notes</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#6366F1">4</div><div style="font-size:.78rem;color:#6b7280">Active Permits</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#d97706">2</div><div style="font-size:.78rem;color:#6b7280">Pending Inspection</div>
+      </div>
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#16A34A">6</div><div style="font-size:.78rem;color:#6b7280">Passed Inspections</div>
+      </div>
+      <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:700;color:#dc2626">0</div><div style="font-size:.78rem;color:#6b7280">Failed</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <select style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+        <option>All Permits</option><option>Building</option><option>Electrical</option><option>Plumbing</option><option>Structural</option>
+      </select>
+      <button onclick="addPermit()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Log Permit</button>
+    </div>
+
+    <div id="permit-list" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 26: PROJECT CLOSEOUT
+============================================================ -->
+<div id="panel-closeout" class="panel" style="display:none">
+  <div class="panel-header" style="background:#6366F1;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Project Closeout</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Walkthrough checklist • As-built docs • Warranties • Client satisfaction</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <select style="padding:9px 12px;border:1px solid #d1d5db;border-radius:7px;font-weight:600">
+        <option>Henderson Residence — Ready for Closeout</option>
+        <option>Chen Residence — In Progress</option>
+      </select>
+      <button onclick="generateCloseoutReport()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">AI Closeout Report</button>
+    </div>
+
+    <!-- Closeout checklist -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Final Walkthrough Checklist</div>
+      <div id="closeout-checklist" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <!-- Warranties -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.95rem">Warranty Register</div>
+    <div id="warranty-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
+
+    <!-- Satisfaction survey -->
+    <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:20px">
+      <div style="font-weight:700;color:#6366F1;margin-bottom:14px;font-size:.95rem">Client Satisfaction Survey</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Overall Satisfaction</label>
+          <select style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option>5 - Exceptional</option><option>4 - Very Satisfied</option><option>3 - Satisfied</option><option>2 - Dissatisfied</option><option>1 - Very Dissatisfied</option>
+          </select>
+        </div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Likely to Refer?</label>
+          <select style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option>Definitely Yes</option><option>Probably Yes</option><option>Unsure</option><option>Probably No</option>
+          </select>
+        </div>
+      </div>
+      <textarea placeholder="Client comments..." rows="3" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;resize:none;font-size:.85rem;margin-bottom:10px"></textarea>
+      <button onclick="saveCloseoutSurvey()" style="background:#6366F1;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Save &amp; Close Project</button>
+    </div>
+
+    <div id="closeout-report-output" style="display:none;margin-top:16px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:16px;font-size:.9rem;color:#1f2937;line-height:1.7;white-space:pre-wrap"></div>
+    <div id="closeout-report-loading" style="display:none;color:#6366F1;font-style:italic;margin-top:8px">Generating closeout report...</div>
+  </div>
+</div>
+
+<!-- SAIRNdesign SESSION 19 — JavaScript for panels 12-26 -->
+<!-- Proxy: https://sairn.vercel.app/api/claude | app_id: sairndesign -->
+<!-- Color: Indigo #6366F1 | NO box-drawing chars | regex newlines use \\n -->
+
+<script>
+const SAIRN_DS_API = 'https://sairn.vercel.app/api/claude';
+const DS_APP_ID = 'sairndesign';
+
+async function callDSAI(prompt) {
+  try {
+    const res = await fetch(SAIRN_DS_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_id: DS_APP_ID, is_demo: true, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    if (data && data.content && data.content[0]) return data.content[0].text;
+    return 'AI response unavailable.';
+  } catch(e) { return 'Error: ' + e.message; }
+}
+
+// ========================================================
+// PANEL 12: FF&E SPECIFICATION MANAGER
+// ========================================================
+const ffeItems = [
+  { id:1, item:'Meridian Sofa', room:'Living Room', vendor:'RH', sku:'MER-84-SL', clientPrice:4800, tradeCost:3200, qty:1, status:'Approved' },
+  { id:2, item:'Alabaster Pendant x3', room:'Dining Room', vendor:'Visual Comfort', sku:'VC-P4001', clientPrice:2400, tradeCost:1440, qty:3, status:'Ordered' },
+  { id:3, item:'Hand-Knotted Wool Rug 9x12', room:'Living Room', vendor:'Stark Carpet', sku:'SC-HK-912', clientPrice:8200, tradeCost:5740, qty:1, status:'Pending Approval' },
+  { id:4, item:'Tulip Dining Table', room:'Dining Room', vendor:'Knoll', sku:'KN-T169', clientPrice:3600, tradeCost:2520, qty:1, status:'Specified' },
+  { id:5, item:'Boucle Accent Chair', room:'Living Room', vendor:'Arhaus', sku:'ARH-BC-42', clientPrice:1800, tradeCost:1080, qty:2, status:'Concept' }
+];
+
+function renderFFE() {
+  const body = document.getElementById('ffe-body');
+  if (!body) return;
+
+  const STATUS_COLORS = {
+    Concept: { bg:'#f3f4f6', text:'#374151' },
+    Specified: { bg:'#eef2ff', text:'#6366F1' },
+    'Pending Approval': { bg:'#fef3c7', text:'#92400e' },
+    Approved: { bg:'#dcfce7', text:'#166534' },
+    Ordered: { bg:'#dbeafe', text:'#1e40af' },
+    Delivered: { bg:'#f0fdf4', text:'#15803d' }
+  };
+
+  body.innerHTML = '';
+  let totalBudget = 0, totalActual = 0, pendingCount = 0;
+  ffeItems.forEach(function(item, idx) {
+    const sc = STATUS_COLORS[item.status] || { bg:'#f3f4f6', text:'#374151' };
+    const markup = item.tradeCost > 0 ? Math.round(((item.clientPrice - item.tradeCost) / item.tradeCost) * 100) : 0;
+    totalBudget += item.clientPrice * item.qty;
+    totalActual += item.tradeCost * item.qty;
+    if (item.status === 'Pending Approval') pendingCount++;
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:10px 12px;font-weight:600;color:#111827;font-size:.87rem">' + item.item + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + item.room + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + item.vendor + '</td>' +
+      '<td style="padding:10px 12px;font-size:.8rem;color:#6b7280;font-family:monospace">' + item.sku + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-weight:600;color:#111827;font-size:.87rem">$' + item.clientPrice.toLocaleString() + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-size:.85rem;color:#374151">$' + item.tradeCost.toLocaleString() + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-size:.83rem;color:' + (markup >= 30 ? '#16A34A' : '#d97706') + ';font-weight:600">' + markup + '%</td>' +
+      '<td style="padding:10px 12px;text-align:center;font-size:.85rem;color:#374151">' + item.qty + '</td>' +
+      '<td style="padding:10px 12px;text-align:center"><span style="background:' + sc.bg + ';color:' + sc.text + ';padding:3px 10px;border-radius:10px;font-size:.75rem;font-weight:700">' + item.status + '</span></td>' +
+      '<td style="padding:10px 12px;text-align:center"><button onclick="cycleFFEStatus(' + idx + ')" style="background:#eef2ff;border:none;color:#6366F1;padding:4px 10px;border-radius:5px;font-size:.75rem;cursor:pointer">Advance</button></td>' +
+    '</tr>';
+  });
+
+  const countEl = document.getElementById('ffe-count');
+  const pendingEl = document.getElementById('ffe-pending');
+  const budgetEl = document.getElementById('ffe-budget');
+  const actualEl = document.getElementById('ffe-actual');
+  if (countEl) countEl.textContent = ffeItems.length;
+  if (pendingEl) pendingEl.textContent = pendingCount;
+  if (budgetEl) budgetEl.textContent = '$' + totalBudget.toLocaleString();
+  if (actualEl) actualEl.textContent = '$' + totalActual.toLocaleString();
+}
+
+const FFE_STATUSES = ['Concept','Specified','Pending Approval','Approved','Ordered','Delivered'];
+function cycleFFEStatus(idx) {
+  const cur = ffeItems[idx].status;
+  const next = FFE_STATUSES[(FFE_STATUSES.indexOf(cur) + 1) % FFE_STATUSES.length];
+  ffeItems[idx].status = next;
+  renderFFE();
+}
+
+function filterFFE() {
+  const q = (document.getElementById('ffe-search') ? document.getElementById('ffe-search').value : '').toLowerCase();
+  const room = document.getElementById('ffe-room-filter') ? document.getElementById('ffe-room-filter').value : '';
+  const status = document.getElementById('ffe-status-filter') ? document.getElementById('ffe-status-filter').value : '';
+  const rows = document.querySelectorAll('#ffe-body tr');
+  rows.forEach(function(r) {
+    const t = r.textContent.toLowerCase();
+    r.style.display = (t.includes(q) && (!room || r.textContent.includes(room)) && (!status || r.textContent.includes(status))) ? '' : 'none';
+  });
+}
+
+function addFFEItem() {
+  const name = prompt('Item name:');
+  if (!name) return;
+  ffeItems.push({ id: Date.now(), item:name, room:'Living Room', vendor:'', sku:'', clientPrice:0, tradeCost:0, qty:1, status:'Concept' });
+  renderFFE();
+}
+
+function exportFFESchedule() {
+  let csv = 'Item,Room,Vendor,SKU,Client Price,Trade Cost,Markup%,Qty,Status\n';
+  ffeItems.forEach(function(i) {
+    const markup = i.tradeCost > 0 ? Math.round(((i.clientPrice-i.tradeCost)/i.tradeCost)*100) : 0;
+    csv += [i.item,i.room,i.vendor,i.sku,'$'+i.clientPrice,'$'+i.tradeCost,markup+'%',i.qty,i.status].join(',') + '\n';
+  });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'FFE_schedule.csv';
+  a.click();
+}
+
+async function generateFFESpecSheet() {
+  const items = ffeItems.map(function(i) { return i.item + ' (' + i.room + ') — ' + i.vendor; }).join(', ');
+  document.getElementById('ffe-spec-loading').style.display = 'block';
+  document.getElementById('ffe-spec-output').style.display = 'none';
+  const prompt = 'You are a senior interior design specifier. Write concise professional specification notes for these FF&E items: ' + items + '. For each item, note key spec requirements (COM, lead time, finish options, coordination notes). Format clearly.';
+  const result = await callDSAI(prompt);
+  document.getElementById('ffe-spec-loading').style.display = 'none';
+  document.getElementById('ffe-spec-text').textContent = result;
+  document.getElementById('ffe-spec-output').style.display = 'block';
+}
+
+// ========================================================
+// PANEL 13: MOOD BOARD BUILDER
+// ========================================================
+const mbColors = ['#e8e4dc','#c8a882','#6b6b5a','#f0ece4','#2d2d2d'];
+const mbItems = [];
+
+function renderMBPalette() {
+  const container = document.getElementById('mb-palette');
+  if (!container) return;
+  container.innerHTML = '';
+  mbColors.forEach(function(c) {
+    container.innerHTML += '<div style="width:28px;height:28px;background:' + c + ';border-radius:50%;border:2px solid #e5e7eb;cursor:pointer" title="' + c + '"></div>';
+  });
+}
+
+function addMBColor() {
+  const picker = document.getElementById('mb-color-picker');
+  if (picker && !mbColors.includes(picker.value)) { mbColors.push(picker.value); renderMBPalette(); }
+}
+
+function toggleMBTag(el) {
+  const active = el.style.background === 'rgb(99, 102, 241)' || el.style.background === '#6366F1';
+  el.style.background = active ? '#f3f4f6' : '#6366F1';
+  el.style.color = active ? '#374151' : '#fff';
+  el.style.borderColor = active ? '#e5e7eb' : '#6366F1';
+}
+
+function addMBSwatch() {
+  const canvas = document.getElementById('mb-canvas');
+  if (!canvas) return;
+  const color = mbColors[mbItems.length % mbColors.length] || '#e8e4dc';
+  canvas.innerHTML += '<div style="display:inline-block;margin:8px;width:80px;height:80px;background:' + color + ';border-radius:8px;border:2px solid #e5e7eb;vertical-align:top;cursor:move" title="Swatch — ' + color + '"></div>';
+}
+
+function addMBText() {
+  const canvas = document.getElementById('mb-canvas');
+  if (!canvas) return;
+  const text = prompt('Enter text block:') || 'Design Note';
+  canvas.innerHTML += '<div style="display:inline-block;margin:8px;padding:10px 14px;background:#fff;border:2px solid #c7d2fe;border-radius:8px;font-family:Georgia,serif;color:#374151;font-size:.85rem;max-width:160px;vertical-align:top">' + text + '</div>';
+}
+
+function addMBImage() {
+  const canvas = document.getElementById('mb-canvas');
+  if (!canvas) return;
+  const label = prompt('Label for image placeholder:') || 'Product Image';
+  canvas.innerHTML += '<div style="display:inline-block;margin:8px;width:120px;height:120px;background:#f3f4f6;border:2px dashed #c7d2fe;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;color:#6b7280;text-align:center;vertical-align:top;padding:8px;box-sizing:border-box">' + label + '</div>';
+}
+
+async function generateMoodboardConcept() {
+  const title = document.getElementById('mb-title') ? document.getElementById('mb-title').value : 'Design Concept';
+  const tags = Array.from(document.querySelectorAll('#mb-tags span')).filter(function(t) { return t.style.background === '#6366F1' || t.style.color === '#fff'; }).map(function(t) { return t.textContent; });
+
+  document.getElementById('mb-ai-loading').style.display = 'block';
+  document.getElementById('mb-ai-concept').style.display = 'none';
+
+  const prompt = 'Write a professional interior design concept statement (2-3 paragraphs) for: "' + title + '". Style direction: ' + (tags.join(', ') || 'Contemporary') + '. Color palette: ' + mbColors.slice(0,3).join(', ') + '. Make it evocative, client-ready, and specific to the style.';
+  const result = await callDSAI(prompt);
+
+  document.getElementById('mb-ai-loading').style.display = 'none';
+  document.getElementById('mb-ai-concept').textContent = result;
+  document.getElementById('mb-ai-concept').style.display = 'block';
+}
+
+function shareMoodboard() {
+  const link = 'sairndesign.io/board/' + Math.random().toString(36).substring(2,10);
+  alert('Shareable client link generated:\n' + link);
+}
+
+function printMoodboard() { window.print(); }
+
+// ========================================================
+// PANEL 14: CLIENT PORTAL & APPROVALS
+// ========================================================
+const designApprovals = [
+  { project:'Henderson Residence', item:'FF&E Package — Living Room', sent:'06/10/2026', status:'Opened — Not Yet Approved', type:'FF&E' },
+  { project:'Chen Residence', item:'Revised Flooring Selection', sent:'06/11/2026', status:'Not Yet Opened', type:'Material' },
+  { project:'Martinez Home', item:'Kitchen Design Scheme', sent:'06/12/2026', status:'Approved', type:'Design' }
+];
+
+function renderDesignApprovals() {
+  const list = document.getElementById('design-approval-list');
+  if (!list) return;
+  list.innerHTML = '';
+  designApprovals.forEach(function(a) {
+    const approved = a.status === 'Approved';
+    list.innerHTML += '<div style="background:' + (approved ? '#f0fdf4' : '#fef3c7') + ';border:1px solid ' + (approved ? '#86efac' : '#fcd34d') + ';border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="font-weight:700;font-size:.9rem;color:#111827">' + a.project + '</div><div style="font-size:.82rem;color:#6b7280;margin-top:3px">' + a.item + ' | Sent ' + a.sent + '</div><div style="font-size:.8rem;color:' + (approved ? '#16A34A' : '#d97706') + ';margin-top:2px;font-weight:600">' + a.status + '</div></div>' +
+      '<div style="display:flex;gap:8px">' + (approved ? '<span style="color:#16A34A;font-weight:700;font-size:.85rem">Approved</span>' : '<button style="background:#6366F1;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:.8rem;cursor:pointer">Send Reminder</button>') + '</div>' +
+    '</div>';
+  });
+}
+
+function generateDesignPortalLink() {
+  const link = 'sairndesign.io/client/' + Math.random().toString(36).substring(2,10);
+  const linkEl = document.getElementById('design-portal-link');
+  if (linkEl) linkEl.textContent = link;
+}
+
+// ========================================================
+// PANEL 15: PROCUREMENT
+// ========================================================
+const designPOs = [
+  { po:'DPO-2026-031', project:'Henderson Residence', vendor:'RH Trade', items:'Meridian Sofa, 2x Accent Chairs', expected:'07/01/2026', trade:'$5,600', client:'$8,400', status:'Confirmed' },
+  { po:'DPO-2026-032', project:'Henderson Residence', vendor:'Visual Comfort', items:'Pendant Lights x3', expected:'06/20/2026', trade:'$1,440', client:'$2,400', status:'In Transit' },
+  { po:'DPO-2026-033', project:'Chen Residence', vendor:'Stark Carpet', items:'Hand-Knotted Rug 9x12', expected:'07/15/2026', trade:'$5,740', client:'$8,200', status:'Sent to Vendor' }
+];
+
+function renderDesignPOs() {
+  const body = document.getElementById('design-po-body');
+  if (!body) return;
+  const SC = { 'Draft':'#f3f4f6', 'Sent to Vendor':'#fef3c7', 'Confirmed':'#dbeafe', 'In Transit':'#e0e7ff', 'Delivered':'#dcfce7' };
+  const ST = { 'Draft':'#374151', 'Sent to Vendor':'#92400e', 'Confirmed':'#1e40af', 'In Transit':'#4338ca', 'Delivered':'#166534' };
+  body.innerHTML = '';
+  designPOs.forEach(function(p) {
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:10px 12px;font-weight:700;color:#6366F1;font-size:.85rem">' + p.po + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#111827">' + p.project + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + p.vendor + '</td>' +
+      '<td style="padding:10px 12px;font-size:.82rem;color:#374151">' + p.items + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + p.expected + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-size:.85rem;color:#374151">' + p.trade + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-weight:700;color:#111827;font-size:.88rem">' + p.client + '</td>' +
+      '<td style="padding:10px 12px;text-align:center"><span style="background:' + (SC[p.status]||'#f3f4f6') + ';color:' + (ST[p.status]||'#374151') + ';padding:3px 10px;border-radius:10px;font-size:.75rem;font-weight:700">' + p.status + '</span></td>' +
+    '</tr>';
+  });
+}
+
+function filterDesignPOs(status) { renderDesignPOs(); }
+function createDesignPO() { alert('PO creation form — integrates with FF&E data and vendor library.'); }
+
+// ========================================================
+// PANEL 16: FLOOR PLAN
+// ========================================================
+const fpItems = [
+  { label:'Sofa', x:40, y:60, w:72, d:36, color:'#c7d2fe' },
+  { label:'Coffee Table', x:140, y:100, w:48, d:24, color:'#ddd6fe' },
+  { label:'Arm Chair', x:220, y:60, w:30, d:30, color:'#e9d5ff' }
+];
+
+function renderFloorPlan() {
+  const canvas = document.getElementById('fp-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const roomW = parseFloat(document.getElementById('fp-w') ? document.getElementById('fp-w').value : 20) || 20;
+  const roomD = parseFloat(document.getElementById('fp-d') ? document.getElementById('fp-d').value : 15) || 15;
+  const scale = Math.min((canvas.width - 60) / roomW, (canvas.height - 60) / roomD);
+  const offX = 40;
+  const offY = 30;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Room outline
+  ctx.fillStyle = '#fafaf9';
+  ctx.fillRect(offX, offY, roomW * scale, roomD * scale);
+  ctx.strokeStyle = '#6366F1';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(offX, offY, roomW * scale, roomD * scale);
+
+  // Grid lines
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.lineWidth = .5;
+  for (let x = 0; x <= roomW; x += 2) { ctx.beginPath(); ctx.moveTo(offX + x*scale, offY); ctx.lineTo(offX + x*scale, offY + roomD*scale); ctx.stroke(); }
+  for (let y = 0; y <= roomD; y += 2) { ctx.beginPath(); ctx.moveTo(offX, offY + y*scale); ctx.lineTo(offX + roomW*scale, offY + y*scale); ctx.stroke(); }
+
+  // Dimensions
+  ctx.fillStyle = '#6366F1';
+  ctx.font = '11px sans-serif';
+  ctx.fillText(roomW + "'", offX + roomW*scale/2 - 10, offY - 8);
+  ctx.fillText(roomD + "'", offX - 28, offY + roomD*scale/2 + 4);
+
+  // Furniture items
+  fpItems.forEach(function(item) {
+    const iw = (item.w / 12) * scale;
+    const id = (item.d / 12) * scale;
+    ctx.fillStyle = item.color || '#c7d2fe';
+    ctx.fillRect(offX + item.x, offY + item.y, iw, id);
+    ctx.strokeStyle = '#6366F1';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(offX + item.x, offY + item.y, iw, id);
+    ctx.fillStyle = '#374151';
+    ctx.font = '9px sans-serif';
+    ctx.fillText(item.label, offX + item.x + 3, offY + item.y + 12);
+  });
+}
+
+function addFPItem(type, label, w, d) {
+  const colors = { sofa:'#c7d2fe', chair:'#ddd6fe', table:'#e9d5ff', dining:'#fce7f3', bed:'#fef3c7', desk:'#dcfce7' };
+  fpItems.push({ label, x:10 + fpItems.length*20, y:10 + fpItems.length*10, w, d, color:colors[type]||'#e0e7ff' });
+  renderFloorPlan();
+}
+
+function clearFloorPlan() { fpItems.length = 0; renderFloorPlan(); }
+function exportFloorPlanPDF() { window.print(); }
+
+// ========================================================
+// PANEL 17: SPECIFICATION SHEETS
+// ========================================================
+async function generateSpecSheet() {
+  const project = document.getElementById('spec-project') ? document.getElementById('spec-project').value : '';
+  const version = document.getElementById('spec-version') ? document.getElementById('spec-version').value : 'Client Version';
+
+  const body = document.getElementById('spec-sheet-body');
+  if (!body) return;
+
+  const showTrade = version.includes('Internal') || version.includes('Vendor');
+
+  body.innerHTML = '<div style="font-size:.82rem;color:#6b7280;font-style:italic;margin-bottom:16px">Generating specification sheet...</div>';
+
+  const prompt = 'Generate a professional interior design specification sheet for: ' + project + '. Include 4-5 items with: item name, manufacturer, model number, finish/fabric, lead time, and installation notes. Format as a clean spec document.';
+  const result = await callDSAI(prompt);
+
+  body.innerHTML = '<div style="white-space:pre-wrap;font-size:.87rem;line-height:1.8;color:#1f2937;font-family:Georgia,serif">' + result + '</div>';
+  if (!showTrade) {
+    body.innerHTML += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:.78rem;color:#9ca3af">Trade pricing information omitted from client version.</div>';
+  }
+}
+
+function printSpecSheet() { window.print(); }
+
+// ========================================================
+// PANEL 18: PROJECT TIMELINE
+// ========================================================
+const timelinePhases = [
+  { name:'Schematic Design', start:'2026-04-01', end:'2026-04-30', status:'Complete', pct:100 },
+  { name:'Design Development', start:'2026-05-01', end:'2026-05-31', status:'Complete', pct:100 },
+  { name:'Procurement', start:'2026-05-15', end:'2026-07-31', status:'In Progress', pct:45 },
+  { name:'Installation', start:'2026-07-01', end:'2026-08-15', status:'Upcoming', pct:0 },
+  { name:'Styling & Closeout', start:'2026-08-15', end:'2026-08-30', status:'Upcoming', pct:0 }
+];
+
+function renderTimelinePhases() {
+  const container = document.getElementById('timeline-phases');
+  if (!container) return;
+  container.innerHTML = '';
+  const SC = { Complete:'#dcfce7', 'In Progress':'#dbeafe', Upcoming:'#f3f4f6' };
+  const ST = { Complete:'#166534', 'In Progress':'#1e40af', Upcoming:'#374151' };
+  const BC = { Complete:'#16A34A', 'In Progress':'#6366F1', Upcoming:'#d1d5db' };
+
+  timelinePhases.forEach(function(p, idx) {
+    container.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<div style="font-weight:600;color:#111827;font-size:.9rem">' + p.name + '</div>' +
+        '<span style="background:' + (SC[p.status]||'#f3f4f6') + ';color:' + (ST[p.status]||'#374151') + ';padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:700">' + p.status + '</span>' +
+      '</div>' +
+      '<div style="font-size:.8rem;color:#6b7280;margin-bottom:8px">' + p.start + ' to ' + p.end + '</div>' +
+      '<div style="background:#e5e7eb;border-radius:4px;height:6px;overflow:hidden">' +
+        '<div style="background:' + (BC[p.status]||'#d1d5db') + ';height:100%;width:' + p.pct + '%"></div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  drawGantt();
+}
+
+function drawGantt() {
+  const canvas = document.getElementById('gantt-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const startDate = new Date('2026-04-01');
+  const endDate = new Date('2026-09-01');
+  const totalDays = (endDate - startDate) / 86400000;
+  const rowH = 32;
+  const labelW = 160;
+  const barX = labelW + 10;
+  const barW = canvas.width - barX - 10;
+  const colors = { Complete:'#16A34A', 'In Progress':'#6366F1', Upcoming:'#d1d5db' };
+
+  ctx.fillStyle = '#f0f4ff';
+  ctx.fillRect(0, 0, canvas.width, timelinePhases.length * rowH + 10);
+
+  timelinePhases.forEach(function(p, i) {
+    const y = i * rowH + 14;
+    ctx.fillStyle = '#374151';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(p.name, 8, y + 10);
+
+    const pStart = (new Date(p.start) - startDate) / 86400000;
+    const pEnd = (new Date(p.end) - startDate) / 86400000;
+    const bx = barX + (pStart / totalDays) * barW;
+    const bw = Math.max(4, ((pEnd - pStart) / totalDays) * barW);
+
+    ctx.fillStyle = colors[p.status] || '#d1d5db';
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(bx, y, bw, 18);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = colors[p.status] || '#9ca3af';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, y, bw, 18);
+
+    if (p.pct > 0 && p.pct < 100) {
+      ctx.fillStyle = 'rgba(255,255,255,.4)';
+      ctx.fillRect(bx, y, bw * (p.pct/100), 18);
+    }
+  });
+}
+
+function addTimelinePhase() {
+  const name = prompt('Phase name:');
+  if (!name) return;
+  const start = prompt('Start date (YYYY-MM-DD):') || '2026-09-01';
+  const end = prompt('End date (YYYY-MM-DD):') || '2026-09-30';
+  timelinePhases.push({ name, start, end, status:'Upcoming', pct:0 });
+  renderTimelinePhases();
+}
+
+// ========================================================
+// PANEL 19: VENDOR LIBRARY
+// ========================================================
+const vendorLibrary = [
+  { name:'RH (Restoration Hardware)', cat:'Furniture', contact:'trade@rh.com', discount:'40% trade', rating:5, note:'Lead times 6-14 weeks' },
+  { name:'Visual Comfort', cat:'Lighting', contact:'orders@visualcomfort.com', discount:'35% trade', rating:5, note:'Quick ship on many items' },
+  { name:'Stark Carpet', cat:'Flooring', contact:'chicago@starkcarpet.com', discount:'40% trade', rating:4, note:'Custom dye lots available' },
+  { name:'Knoll', cat:'Furniture', contact:'knoll.com/trade', discount:'30% trade', rating:5, note:'48-week lead on custom' },
+  { name:'Arteriors', cat:'Lighting', contact:'arteriorshome.com', discount:'40% trade', rating:4, note:'Good quick-ship stock' },
+  { name:'Schumacher', cat:'Fabric', contact:'fschumacher.com/trade', discount:'50% trade', rating:5, note:'Requires sample approval' }
+];
+
+function renderVendorLibrary() {
+  const grid = document.getElementById('vendor-library-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  vendorLibrary.forEach(function(v) {
+    const stars = Array(v.rating).fill('&#9733;').join('') + Array(5-v.rating).fill('&#9734;').join('');
+    grid.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px">' +
+      '<div style="font-weight:700;color:#111827;font-size:.9rem;margin-bottom:4px">' + v.name + '</div>' +
+      '<div style="font-size:.75rem;background:#eef2ff;color:#6366F1;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:8px">' + v.cat + '</div>' +
+      '<div style="font-size:.8rem;color:#374151;margin-bottom:4px">' + v.contact + '</div>' +
+      '<div style="font-size:.8rem;font-weight:600;color:#16A34A;margin-bottom:4px">' + v.discount + '</div>' +
+      '<div style="font-size:.8rem;color:#6b7280;margin-bottom:8px">' + v.note + '</div>' +
+      '<div style="color:#d97706;font-size:.82rem">' + stars + '</div>' +
+    '</div>';
+  });
+}
+
+function filterVendorLib() {
+  const q = (document.getElementById('vl-search') ? document.getElementById('vl-search').value : '').toLowerCase();
+  const cat = document.getElementById('vl-cat') ? document.getElementById('vl-cat').value : '';
+  const cards = document.querySelectorAll('#vendor-library-grid div');
+  cards.forEach(function(c) {
+    const text = c.textContent.toLowerCase();
+    c.style.display = (text.includes(q) && (!cat || text.includes(cat.toLowerCase()))) ? '' : 'none';
+  });
+}
+
+function addVendorItem() {
+  const name = prompt('Vendor name:');
+  if (!name) return;
+  const cat = prompt('Category (Furniture, Lighting, Fabric, etc.):') || 'Furniture';
+  const discount = prompt('Trade discount:') || '30% trade';
+  vendorLibrary.push({ name, cat, contact:'Contact TBD', discount, rating:4, note:'New vendor' });
+  renderVendorLibrary();
+}
+
+// ========================================================
+// PANEL 20: BUDGET TRACKER
+// ========================================================
+const budgetRooms = [
+  { room:'Living Room', budget:60000, committed:54200, actual:47800 },
+  { room:'Dining Room', budget:30000, committed:28600, actual:24000 },
+  { room:'Primary Bedroom', budget:45000, committed:38200, actual:28000 },
+  { room:'Primary Bath', budget:20000, committed:14800, actual:10200 },
+  { room:'Home Office', budget:15000, committed:7000, actual:4200 },
+  { room:'Contingency', budget:10000, committed:0, actual:0 }
+];
+
+function renderBudgetTable() {
+  const body = document.getElementById('budget-body');
+  if (!body) return;
+  body.innerHTML = '';
+  budgetRooms.forEach(function(r) {
+    const variance = r.budget - r.committed;
+    const over = variance < 0;
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:10px 12px;font-weight:600;color:#111827;font-size:.88rem">' + r.room + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-size:.88rem;color:#374151">$' + r.budget.toLocaleString() + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-size:.88rem;color:#6366F1;font-weight:600">$' + r.committed.toLocaleString() + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-size:.88rem;color:#374151">$' + r.actual.toLocaleString() + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-weight:700;font-size:.88rem;color:' + (over ? '#dc2626' : '#16A34A') + '">' + (over ? '-' : '+') + '$' + Math.abs(variance).toLocaleString() + '</td>' +
+      '<td style="padding:10px 12px;text-align:center"><span style="background:' + (over ? '#fee2e2' : r.committed > 0 ? '#dbeafe' : '#f3f4f6') + ';color:' + (over ? '#991b1b' : r.committed > 0 ? '#1e40af' : '#374151') + ';padding:2px 8px;border-radius:8px;font-size:.74rem;font-weight:700">' + (over ? 'Over Budget' : r.committed > 0 ? 'Active' : 'Not Started') + '</span></td>' +
+    '</tr>';
+  });
+}
+
+async function analyzeBudget() {
+  document.getElementById('budget-ai-loading').style.display = 'block';
+  document.getElementById('budget-ai-output').style.display = 'none';
+  const summary = budgetRooms.map(function(r) { return r.room + ': budget $' + r.budget + ', committed $' + r.committed; }).join('; ');
+  const prompt = 'You are a senior interior design studio financial advisor. Analyze this project budget: ' + summary + '. Total budget $180,000. Identify risks, rooms that could go over, and recommendations for staying on budget. Be specific and actionable.';
+  const result = await callDSAI(prompt);
+  document.getElementById('budget-ai-loading').style.display = 'none';
+  document.getElementById('budget-ai-output').textContent = result;
+  document.getElementById('budget-ai-output').style.display = 'block';
+}
+
+// ========================================================
+// PANEL 21: CHANGE ORDERS
+// ========================================================
+const changeOrders = [
+  { id:'CO-007', project:'Henderson Residence', description:'Upgrade dining chairs from fabric to leather COM', cost:'+$2,800', schedule:'+5 days', status:'Approved', date:'06/08/2026' },
+  { id:'CO-008', project:'Henderson Residence', description:'Add media wall built-in unit in family room', cost:'+$8,400', schedule:'+14 days', status:'Pending Approval', date:'06/12/2026' },
+  { id:'CO-009', project:'Chen Residence', description:'Change flooring from oak to herringbone walnut', cost:'+$3,000', schedule:'+7 days', status:'Pending Approval', date:'06/13/2026' }
+];
+
+function renderCOs() {
+  const list = document.getElementById('co-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const SC = { Approved:'#dcfce7', 'Pending Approval':'#fef3c7', Declined:'#fee2e2' };
+  const ST = { Approved:'#166534', 'Pending Approval':'#92400e', Declined:'#991b1b' };
+  changeOrders.forEach(function(co) {
+    list.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div>' +
+          '<div style="font-weight:700;font-size:.9rem;color:#6366F1">' + co.id + ' — ' + co.project + '</div>' +
+          '<div style="font-size:.87rem;color:#374151;margin-top:4px">' + co.description + '</div>' +
+          '<div style="display:flex;gap:16px;margin-top:8px;font-size:.82rem;color:#6b7280">' +
+            '<span>Cost Impact: <strong style="color:' + (co.cost.startsWith('+') ? '#dc2626' : '#16A34A') + '">' + co.cost + '</strong></span>' +
+            '<span>Schedule Impact: <strong style="color:#d97706">' + co.schedule + '</strong></span>' +
+            '<span>' + co.date + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
+          '<span style="background:' + (SC[co.status]||'#f3f4f6') + ';color:' + (ST[co.status]||'#374151') + ';padding:3px 10px;border-radius:10px;font-size:.75rem;font-weight:700">' + co.status + '</span>' +
+          (co.status === 'Pending Approval' ? '<button style="background:#6366F1;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:.75rem;cursor:pointer">Send for Approval</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  });
+}
+
+function createCO() { alert('Change order form — create CO, calculate impact, send to client for digital approval.'); }
+
+// ========================================================
+// PANEL 22: CLIENT INVOICING
+// ========================================================
+const designInvoices = [
+  { inv:'INV-2026-041', client:'Henderson Residence', desc:'Design Fee — Phase 2 Progress Billing', amount:'$8,400', due:'06/20/2026', status:'Outstanding' },
+  { inv:'INV-2026-039', client:'Chen Residence', desc:'Retainer — Phase 3 Procurement Management', amount:'$6,000', due:'06/15/2026', status:'Outstanding' },
+  { inv:'INV-2026-037', client:'Martinez Home', desc:'Design Fee — Schematic Phase', amount:'$4,200', due:'06/01/2026', status:'Paid' }
+];
+
+function showInvTab(tab) {
+  const invEl = document.getElementById('inv-invoices');
+  const retEl = document.getElementById('inv-retainers');
+  const invBtn = document.getElementById('inv-tab-invoices');
+  const retBtn = document.getElementById('inv-tab-retainers');
+  if (invEl) invEl.style.display = tab === 'invoices' ? 'flex' : 'none';
+  if (retEl) retEl.style.display = tab === 'retainers' ? 'flex' : 'none';
+  if (invBtn) { invBtn.style.background = tab === 'invoices' ? '#6366F1' : '#f3f4f6'; invBtn.style.color = tab === 'invoices' ? '#fff' : '#374151'; invBtn.style.border = tab === 'invoices' ? 'none' : '1px solid #d1d5db'; }
+  if (retBtn) { retBtn.style.background = tab === 'retainers' ? '#6366F1' : '#f3f4f6'; retBtn.style.color = tab === 'retainers' ? '#fff' : '#374151'; retBtn.style.border = tab === 'retainers' ? 'none' : '1px solid #d1d5db'; }
+}
+
+function renderDesignInvoices() {
+  const list = document.getElementById('inv-invoices');
+  if (!list) return;
+  const SC = { Outstanding:'#fef3c7', Paid:'#dcfce7', Overdue:'#fee2e2' };
+  const ST = { Outstanding:'#92400e', Paid:'#166534', Overdue:'#991b1b' };
+  list.innerHTML = '';
+  designInvoices.forEach(function(inv) {
+    list.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;width:100%">' +
+      '<div><div style="font-weight:700;font-size:.88rem;color:#6366F1">' + inv.inv + '</div><div style="font-size:.85rem;color:#374151;margin-top:2px">' + inv.client + ' — ' + inv.desc + '</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">Due: ' + inv.due + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:12px"><span style="font-weight:700;color:#111827;font-size:.95rem">' + inv.amount + '</span><span style="background:' + (SC[inv.status]||'#f3f4f6') + ';color:' + (ST[inv.status]||'#374151') + ';padding:3px 10px;border-radius:10px;font-size:.75rem;font-weight:700">' + inv.status + '</span></div>' +
+    '</div>';
+  });
+}
+
+function createDesignInvoice() { alert('Invoice builder — select client, billing type, phase, and send via email.'); }
+
+// ========================================================
+// PANEL 23: PHOTO DOCUMENTATION
+// ========================================================
+const photoGallery = [
+  { room:'Living Room', phase:'before', label:'Living Room — Before', color:'#fee2e2' },
+  { room:'Living Room', phase:'during', label:'During — Flooring Demo', color:'#fef3c7' },
+  { room:'Living Room', phase:'after', label:'Living Room — After', color:'#dcfce7' },
+  { room:'Kitchen', phase:'before', label:'Kitchen — Before', color:'#fee2e2' },
+  { room:'Kitchen', phase:'during', label:'Cabinet Installation', color:'#fef3c7' },
+  { room:'Primary Bedroom', phase:'after', label:'Bedroom — Final', color:'#dcfce7' }
+];
+
+function renderPhotoGrid(filterPhase) {
+  const grid = document.getElementById('photo-grid');
+  if (!grid) return;
+  const filtered = filterPhase && filterPhase !== 'all' ? photoGallery.filter(function(p) { return p.phase === filterPhase; }) : photoGallery;
+  grid.innerHTML = '';
+  filtered.forEach(function(p) {
+    grid.innerHTML += '<div style="background:' + p.color + ';border-radius:8px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;text-align:center;cursor:pointer;border:2px solid transparent;transition:border .2s" onclick="viewPhoto(this)">' +
+      '<div style="font-size:1.5rem;margin-bottom:6px">' + (p.phase === 'before' ? '🔴' : p.phase === 'during' ? '🟡' : '🟢') + '</div>' +
+      '<div style="font-size:.78rem;font-weight:600;color:#374151">' + p.label + '</div>' +
+      '<div style="font-size:.72rem;color:#6b7280;margin-top:3px">' + p.room + '</div>' +
+    '</div>';
+  });
+}
+
+function filterPhotoPhase(phase, btn) {
+  document.querySelectorAll('#panel-photodoc button').forEach(function(b) {
+    b.style.background = '#f3f4f6'; b.style.color = '#374151'; b.style.border = '1px solid #d1d5db';
+  });
+  if (btn) { btn.style.background = '#6366F1'; btn.style.color = '#fff'; btn.style.border = 'none'; }
+  renderPhotoGrid(phase);
+}
+
+function viewPhoto(el) { alert('Photo viewer — enlarge, annotate, and share with client.'); }
+function uploadPhoto() { alert('Photo upload — opens device camera/file picker.'); }
+function sharePhotoGallery() { alert('Client gallery link generated and sent.'); }
+
+// ========================================================
+// PANEL 24: CONTRACTOR COORDINATION
+// ========================================================
+const contractors = [
+  { name:'Premier Electric', trade:'Electrical', contact:'Joe Walsh - 216-555-0140', scope:'All electrical rough-in and trim', nextVisit:'06/17/2026', status:'Active' },
+  { name:'Aqua Plumbing', trade:'Plumbing', contact:'Dan Torres - 216-555-0162', scope:'Master bath plumbing rough-in', nextVisit:'06/20/2026', status:'Active' },
+  { name:'Artistic Tile', trade:'Tile', contact:'Maria R. - 216-555-0188', scope:'Primary bath floor + shower walls', nextVisit:'06/24/2026', status:'Scheduled' }
+];
+
+const punchList = [
+  { item:'Touch up paint in living room corner', trade:'Painter', status:'open' },
+  { item:'Adjust dining pendant height — 3" lower', trade:'Electrician', status:'open' },
+  { item:'Fix squeaky hardwood board — near entry', trade:'Flooring', status:'complete' }
+];
+
+function renderContractors() {
+  const list = document.getElementById('contractor-list');
+  if (!list) return;
+  list.innerHTML = '';
+  contractors.forEach(function(c) {
+    list.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="font-weight:700;font-size:.9rem;color:#111827">' + c.name + ' <span style="font-size:.75rem;background:#eef2ff;color:#6366F1;padding:2px 8px;border-radius:8px">' + c.trade + '</span></div>' +
+        '<div style="font-size:.82rem;color:#374151;margin-top:4px">' + c.contact + '</div>' +
+        '<div style="font-size:.8rem;color:#6b7280;margin-top:2px">Scope: ' + c.scope + '</div>' +
+        '<div style="font-size:.8rem;color:#374151;margin-top:2px;font-weight:600">Next site visit: ' + c.nextVisit + '</div>' +
+      '</div>' +
+      '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:10px;font-size:.75rem;font-weight:700">' + c.status + '</span>' +
+    '</div>';
+  });
+}
+
+function renderPunchList() {
+  const list = document.getElementById('punch-list');
+  if (!list) return;
+  list.innerHTML = '';
+  punchList.forEach(function(item, idx) {
+    list.innerHTML += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">' +
+      '<input type="checkbox" ' + (item.status === 'complete' ? 'checked' : '') + ' onchange="punchList[' + idx + '].status=this.checked?\'complete\':\'open\';renderPunchList()" style="width:16px;height:16px;accent-color:#6366F1">' +
+      '<span style="font-size:.87rem;color:' + (item.status === 'complete' ? '#9ca3af' : '#374151') + ';text-decoration:' + (item.status === 'complete' ? 'line-through' : 'none') + ';flex:1">' + item.item + '</span>' +
+      '<span style="font-size:.75rem;color:#6b7280">' + item.trade + '</span>' +
+    '</div>';
+  });
+}
+
+function addContractor() { alert('Contractor form — name, trade, contact, scope, insurance verification.'); }
+function addPunchItem() {
+  const item = prompt('Punch list item:');
+  if (!item) return;
+  const trade = prompt('Responsible trade:') || 'General';
+  punchList.push({ item, trade, status:'open' });
+  renderPunchList();
+}
+
+// ========================================================
+// PANEL 25: PERMITS & COMPLIANCE
+// ========================================================
+const permits = [
+  { type:'Building', desc:'Residential renovation — Henderson Residence', jurisdiction:'Westlake, OH', applied:'05/15/2026', issued:'05/28/2026', expiry:'05/28/2027', status:'Active' },
+  { type:'Electrical', desc:'Panel upgrade + EV charger', jurisdiction:'Westlake, OH', applied:'05/20/2026', issued:'06/01/2026', expiry:'12/01/2026', status:'Pending Inspection' },
+  { type:'Plumbing', desc:'Master bath rough-in', jurisdiction:'Westlake, OH', applied:'05/20/2026', issued:'06/03/2026', expiry:'12/03/2026', status:'Active' }
+];
+
+function renderPermits() {
+  const list = document.getElementById('permit-list');
+  if (!list) return;
+  const SC = { Active:'#dcfce7', 'Pending Inspection':'#fef3c7', Expired:'#fee2e2', Issued:'#dbeafe' };
+  const ST = { Active:'#166534', 'Pending Inspection':'#92400e', Expired:'#991b1b', Issued:'#1e40af' };
+  list.innerHTML = '';
+  permits.forEach(function(p) {
+    list.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div><div style="font-weight:700;font-size:.9rem;color:#111827">' + p.type + ' Permit — ' + p.desc + '</div>' +
+          '<div style="font-size:.8rem;color:#6b7280;margin-top:4px">' + p.jurisdiction + ' | Applied: ' + p.applied + ' | Issued: ' + p.issued + ' | Expires: ' + p.expiry + '</div></div>' +
+        '<span style="background:' + (SC[p.status]||'#f3f4f6') + ';color:' + (ST[p.status]||'#374151') + ';padding:3px 10px;border-radius:10px;font-size:.75rem;font-weight:700;white-space:nowrap">' + p.status + '</span>' +
+      '</div>' +
+    '</div>';
+  });
+}
+
+function addPermit() { alert('Permit log form — type, jurisdiction, applied date, inspection scheduling.'); }
+
+// ========================================================
+// PANEL 26: PROJECT CLOSEOUT
+// ========================================================
+const closeoutChecklist = [
+  { item:'Final walkthrough completed with client', done:true },
+  { item:'All punch list items resolved', done:false },
+  { item:'As-built drawings delivered', done:true },
+  { item:'Warranty documents compiled and delivered', done:false },
+  { item:'Care & maintenance guide provided', done:true },
+  { item:'Final invoice issued and paid', done:false },
+  { item:'Client satisfaction survey completed', done:false },
+  { item:'Project photos taken for portfolio', done:false }
+];
+
+const warranties = [
+  { item:'RH Meridian Sofa', vendor:'Restoration Hardware', term:'5 year frame', expires:'2031-06-01' },
+  { item:'Pergo Flooring', vendor:'Pergo', term:'30 year residential', expires:'2056-05-01' },
+  { item:'Visual Comfort Pendants', vendor:'Visual Comfort', term:'1 year electrical', expires:'2027-06-01' }
+];
+
+function renderCloseoutChecklist() {
+  const list = document.getElementById('closeout-checklist');
+  if (!list) return;
+  list.innerHTML = '';
+  closeoutChecklist.forEach(function(item, idx) {
+    list.innerHTML += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0">' +
+      '<input type="checkbox" ' + (item.done ? 'checked' : '') + ' onchange="closeoutChecklist[' + idx + '].done=this.checked;renderCloseoutChecklist()" style="width:16px;height:16px;accent-color:#6366F1">' +
+      '<span style="font-size:.88rem;color:' + (item.done ? '#9ca3af' : '#374151') + ';text-decoration:' + (item.done ? 'line-through' : 'none') + '">' + item.item + '</span>' +
+    '</div>';
+  });
+}
+
+function renderWarranties() {
+  const list = document.getElementById('warranty-list');
+  if (!list) return;
+  list.innerHTML = '';
+  warranties.forEach(function(w) {
+    list.innerHTML += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="font-weight:600;font-size:.88rem;color:#111827">' + w.item + '</div><div style="font-size:.78rem;color:#6b7280;margin-top:2px">' + w.vendor + ' — ' + w.term + '</div></div>' +
+      '<div style="font-size:.82rem;color:#374151">Expires: ' + w.expires + '</div>' +
+    '</div>';
+  });
+}
+
+async function generateCloseoutReport() {
+  document.getElementById('closeout-report-loading').style.display = 'block';
+  document.getElementById('closeout-report-output').style.display = 'none';
+  const done = closeoutChecklist.filter(function(i) { return i.done; }).length;
+  const prompt = 'Write a professional interior design project closeout summary for Henderson Residence. ' + done + ' of ' + closeoutChecklist.length + ' closeout items complete. Project included living room, dining room, and primary bedroom. Write a formal 2-paragraph summary suitable for the client file, noting completion status and next steps.';
+  const result = await callDSAI(prompt);
+  document.getElementById('closeout-report-loading').style.display = 'none';
+  document.getElementById('closeout-report-output').textContent = result;
+  document.getElementById('closeout-report-output').style.display = 'block';
+}
+
+function saveCloseoutSurvey() { alert('Survey saved. Project status updated to Closed.'); }
+
+// ========================================================
+// SAIRNDESIGN INIT
+// ========================================================
+function initDSPanels() {
+  renderFFE();
+  renderMBPalette();
+  renderDesignApprovals();
+  renderDesignPOs();
+  renderFloorPlan();
+  renderTimelinePhases();
+  renderVendorLibrary();
+  renderBudgetTable();
+  renderCOs();
+  renderDesignInvoices();
+  renderPhotoGrid('all');
+  renderContractors();
+  renderPunchList();
+  renderPermits();
+  renderCloseoutChecklist();
+  renderWarranties();
+}
+
+document.addEventListener('DOMContentLoaded', initDSPanels);
+</script>
