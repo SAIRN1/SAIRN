@@ -386,28 +386,87 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);font-si
 </div>
 <!-- INVOICES -->
 <div id="panel-invoices" class="sv-panel">
-  <div class="sv-title">💰 Invoices</div>
-  <div class="sv-sub">Revenue tracking, AR, and monthly reporting.</div>
+  <div class="sv-title">&#128176; Invoices &amp; Live Calculator</div>
+  <div class="sv-sub">Build invoices with live line-item calculation. Total updates instantly. Client estimate view hides your internal cost structure.</div>
   <div class="sv-g4" style="margin-bottom:16px">
     <div class="sv-kpi"><div class="sv-kpi-val" id="inv-total">$0</div><div class="sv-kpi-label">Total Billed</div></div>
     <div class="sv-kpi"><div class="sv-kpi-val" id="inv-paid">$0</div><div class="sv-kpi-label">Collected</div></div>
     <div class="sv-kpi"><div class="sv-kpi-val" id="inv-ar">$0</div><div class="sv-kpi-label">Outstanding AR</div></div>
     <div class="sv-kpi"><div class="sv-kpi-val" id="inv-avg">$0</div><div class="sv-kpi-label">Avg Invoice</div></div>
   </div>
-  <div class="sv-btn-row"><button class="sv-btn" onclick="showForm('iv-form')">+ New Invoice</button><button class="sv-btn-sec" onclick="exportCSV(sv_invoices,'sv-invoices','SAIRNvet-Invoices')">📊 Export</button></div>
+  <div class="sv-btn-row">
+    <button class="sv-btn" onclick="showForm('iv-form')">+ Build Invoice</button>
+    <button class="sv-btn-sec" onclick="exportCSV(sv_invoices,'sv-invoices','SAIRNvet-Invoices')">&#128202; Export</button>
+  </div>
   <div id="iv-form" style="display:none" class="sv-card">
-    <div class="sv-g3">
+    <div class="sv-g3" style="margin-bottom:8px">
       <div class="sv-fg"><label>Client</label><input id="ivf-client" placeholder="Owner name"></div>
       <div class="sv-fg"><label>Patient</label><input id="ivf-patient" placeholder="Pet name"></div>
       <div class="sv-fg"><label>Date</label><input type="date" id="ivf-date"></div>
-      <div class="sv-fg"><label>Services</label><input id="ivf-services" placeholder="Exam, vaccines, meds..."></div>
-      <div class="sv-fg"><label>Amount ($)</label><input type="number" id="ivf-amount" step="0.01" placeholder="0.00"></div>
-      <div class="sv-fg"><label>Status</label><select id="ivf-status"><option>Unpaid</option><option>Partial payment</option><option>Paid -- cash</option><option>Paid -- card</option><option>Paid -- check</option><option>CareCredit</option><option>Written off</option></select></div>
+      <div class="sv-fg"><label>DVM</label><input id="ivf-dvm" placeholder="Doctor name"></div>
+      <div class="sv-fg"><label>Payment Status</label><select id="ivf-status"><option>Unpaid</option><option>Partial payment</option><option>Paid -- cash</option><option>Paid -- card</option><option>Paid -- check</option><option>CareCredit</option><option>Written off</option></select></div>
     </div>
-    <button class="sv-btn" onclick="saveInvoice()">Save Invoice</button>
+    <div style="font-size:10px;font-weight:800;color:var(--mu);text-transform:uppercase;margin-bottom:8px">Line Items -- Total Updates Live As You Type</div>
+    <div id="iv-lineitems">
+      <div class="iv-line" style="display:grid;grid-template-columns:2fr 80px 100px 24px;gap:8px;margin-bottom:6px;align-items:center">
+        <input class="iv-desc" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none" placeholder="Exam / office visit" oninput="calcInvTotal()">
+        <input class="iv-qty" type="number" value="1" min="1" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none;text-align:center" oninput="calcInvTotal()">
+        <input class="iv-price" type="number" placeholder="0.00" step="0.01" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none" oninput="calcInvTotal()">
+        <span style="color:var(--mu);font-size:16px;cursor:pointer;text-align:center" onclick="this.parentElement.remove();calcInvTotal()">&#10005;</span>
+      </div>
+    </div>
+    <button class="sv-btn-sec" style="margin-bottom:12px;font-size:11px;padding:6px 12px" onclick="addLineItem()">+ Add Line Item</button>
+    <div style="background:var(--sf2);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:12px;font-weight:700;color:var(--mu)">Invoice Total</span>
+        <span style="font-size:28px;font-weight:900;color:var(--a)" id="iv-live-total">$0.00</span>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:6px">This Visit vs Regional Average</div>
+      <div style="background:var(--bd);border-radius:6px;height:12px;position:relative;margin-bottom:4px;overflow:hidden">
+        <div id="iv-range-bar" style="height:12px;border-radius:6px;background:var(--a);width:0%;transition:width .4s"></div>
+        <div style="position:absolute;top:0;left:30%;width:2px;height:12px;background:#94a3b8;opacity:.7"></div>
+        <div style="position:absolute;top:0;left:60%;width:2px;height:12px;background:#94a3b8;opacity:.7"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mu);margin-bottom:6px"><span>$0</span><span>Low $150</span><span>Avg $285</span><span>High $600+</span></div>
+      <div id="iv-range-label" style="font-size:11px;font-weight:700;margin-top:2px"></div>
+    </div>
+    <div class="sv-btn-row">
+      <button class="sv-btn" onclick="saveInvoice()">Save Invoice</button>
+      <button class="sv-btn-sec" onclick="showClientEstimate()">&#128196; Client Estimate View</button>
+      <button class="sv-btn-sec" onclick="hideForm('iv-form')">Cancel</button>
+    </div>
+  </div>
+  <div id="client-estimate-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:500px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,.3)">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:18px;font-weight:900;color:var(--adark)" id="ce-practice-name">Veterinary Practice</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:2px" id="ce-date"></div>
+      </div>
+      <div style="font-size:13px;margin-bottom:4px"><strong>Client:</strong> <span id="ce-client"></span></div>
+      <div style="font-size:13px;margin-bottom:16px"><strong>Patient:</strong> <span id="ce-patient"></span></div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
+        <thead><tr style="border-bottom:2px solid var(--bd)">
+          <th style="text-align:left;padding:6px 0;color:var(--mu);font-size:10px;text-transform:uppercase">Service</th>
+          <th style="text-align:center;padding:6px 4px;color:var(--mu);font-size:10px;text-transform:uppercase">Qty</th>
+          <th style="text-align:right;padding:6px 0;color:var(--mu);font-size:10px;text-transform:uppercase">Amount</th>
+        </tr></thead>
+        <tbody id="ce-lines"></tbody>
+        <tfoot><tr style="border-top:2px solid var(--tx)">
+          <td colspan="2" style="padding:12px 0;font-weight:800;font-size:14px">Total Due</td>
+          <td style="text-align:right;font-weight:900;font-size:22px;color:var(--a)" id="ce-total"></td>
+        </tr></tfoot>
+      </table>
+      <div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:20px">Thank you for trusting us with the care of your pet.</div>
+      <div style="border-top:1px solid var(--bd);padding-top:16px">
+        <div style="font-size:11px;color:var(--mu);margin-bottom:24px">Client Signature: _______________________________&nbsp;&nbsp; Date: ___________</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button style="padding:10px 20px;background:var(--a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer" onclick="window.print()">&#128424; Print / Save PDF</button>
+        <button style="padding:10px 20px;background:transparent;border:1px solid var(--bd);border-radius:8px;font-size:13px;cursor:pointer" onclick="document.getElementById('client-estimate-modal').style.display='none'">Close</button>
+      </div>
+    </div>
   </div>
   <div id="invoice-list"></div>
-</div>
 <!-- REMINDERS -->
 <div id="panel-reminders" class="sv-panel">
   <div class="sv-title">🔔 Client Reminders</div>
@@ -536,8 +595,30 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);font-si
     </div>
     <button class="sv-btn" onclick="saveSettings()">Save Settings</button>
   </div>
-  <div style="margin-top:16px;padding:14px;background:var(--sf2);border-radius:10px;font-size:12px;color:var(--mu)">
-    SAIRNvet&#8482; by SAIRN Technologies | Powered by Claude AI<br>Version 1.0 | $149/mo (1-2 DVMs) | $249/mo (3-6 DVMs) | $349/mo (7+ DVMs)
+  <div style="margin-top:16px" class="sv-card">
+    <div style="font-size:13px;font-weight:800;color:var(--adark);margin-bottom:12px">&#9881; Admin Fee Editor</div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:12px">Edit your standard service rates. These populate invoice line items and feed the range bar benchmark. Admin role only.</div>
+    <div class="sv-g3">
+      <div class="sv-fg"><label>Office Exam Fee ($)</label><input type="number" id="fee-exam" placeholder="65" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>Wellness Exam ($)</label><input type="number" id="fee-wellness" placeholder="85" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>Emergency Exam ($)</label><input type="number" id="fee-emergency" placeholder="150" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>Rabies Vaccine ($)</label><input type="number" id="fee-rabies" placeholder="28" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>DHPP / FVRCP ($)</label><input type="number" id="fee-core-vax" placeholder="35" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>Bordetella ($)</label><input type="number" id="fee-bordetella" placeholder="32" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>Dental Cleaning ($)</label><input type="number" id="fee-dental" placeholder="450" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>Spay (cat) ($)</label><input type="number" id="fee-spay" placeholder="250" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>Neuter (dog) ($)</label><input type="number" id="fee-neuter" placeholder="300" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>CBC / Chemistry ($)</label><input type="number" id="fee-labs" placeholder="120" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>HW Test ($)</label><input type="number" id="fee-hw" placeholder="45" oninput="saveFees()"></div>
+      <div class="sv-fg"><label>Drug Markup (%)</label><input type="number" id="fee-drug-markup" placeholder="200" oninput="saveFees()"></div>
+    </div>
+    <div class="sv-btn-row" style="margin-top:4px">
+      <button class="sv-btn-sec" onclick="loadFeesToInvoice()">&#128203; Load Into New Invoice</button>
+      <button class="sv-btn-sec" onclick="resetFees()">Reset to Defaults</button>
+    </div>
+  </div>
+  <div style="margin-top:12px;padding:14px;background:var(--sf2);border-radius:10px;font-size:12px;color:var(--mu)">
+    SAIRNvet&#8482; by SAIRN Technologies | Powered by Claude AI<br>Version 2.0 | $149/mo (1-2 DVMs) | $249/mo (3-6 DVMs) | $349/mo (7+ DVMs)
   </div>
 </div>
 
@@ -604,7 +685,7 @@ async function callClaude(sys,msg,tokens){
 var sv_appts=[],sv_patients=[],sv_clients=[],sv_soap=[],sv_rx=[],sv_cs=[],sv_labs=[],sv_vaccines=[],sv_inventory=[],sv_invoices=[],sv_reminders=[],sv_settings={};
 function ld(k,d){try{return JSON.parse(localStorage.getItem(k)||d);}catch(e){return JSON.parse(d);}}
 function sv(k,v){localStorage.setItem(k,JSON.stringify(v));}
-function svInit(){
+function svInit(){loadFeeInputs();
   sv_appts=ld('sv_appts','[]');sv_patients=ld('sv_patients','[]');sv_clients=ld('sv_clients','[]');
   sv_soap=ld('sv_soap','[]');sv_rx=ld('sv_rx','[]');sv_cs=ld('sv_cs','[]');
   sv_labs=ld('sv_labs','[]');sv_vaccines=ld('sv_vaccines','[]');sv_inventory=ld('sv_inventory','[]');
@@ -612,7 +693,7 @@ function svInit(){
   // pre-fill settings
   if(sv_settings.name)document.getElementById('set-name').value=sv_settings.name;
   if(sv_settings.dvm)document.getElementById('set-dvm').value=sv_settings.dvm;
-  updateDashboard();renderAll();renderDEAChecklist();
+  updateDashboard();renderAll();renderDEAChecklist();checkSmartFlags();
 }
 function renderAll(){renderAppts();renderPatients();renderClients();renderSOAPHistory();renderRxList();renderCSList();renderLabList();renderVaxList();renderInvList();renderInvoiceList();renderReminderList();updateVCPR();}
 
@@ -681,7 +762,7 @@ async function aiInterpretLab(){var pt=document.getElementById('lf-pt').value.tr
 function renderLabList(){var el=document.getElementById('lab-list');if(!sv_labs.length){el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No lab results yet.</div>';return;}el.innerHTML='<table class="sv-tbl"><thead><tr><th>Date</th><th>Patient</th><th>Test</th><th>Lab</th><th>Status</th></tr></thead><tbody>'+sv_labs.slice(0,40).map(function(l){return '<tr><td style="color:var(--mu)">'+(l.date||'--')+'</td><td style="font-weight:700">'+safeHTML(l.patient)+'</td><td>'+safeHTML(l.type)+'</td><td style="color:var(--mu)">'+safeHTML(l.source)+'</td><td><span class="badge '+(l.status==='Client notified'?'bg':l.status==='Pending'?'ba':'bb')+'">'+safeHTML(l.status)+'</span></td></tr>';}).join('')+'</tbody></table>';}
 
 // VACCINES
-function saveVax(){var v={id:Date.now(),patient:document.getElementById('vf-pt').value.trim(),owner:document.getElementById('vf-owner').value.trim(),type:document.getElementById('vf-type').value,date:document.getElementById('vf-date').value,due:document.getElementById('vf-due').value,lot:document.getElementById('vf-lot').value.trim(),mfr:document.getElementById('vf-mfr').value.trim(),dvm:document.getElementById('vf-dvm').value.trim(),route:document.getElementById('vf-route').value};if(!v.patient){svToast('Enter patient name','err');return;}sv_vaccines.unshift(v);sv('sv_vaccines',sv_vaccines);if(v.due){sv_reminders.unshift({id:Date.now(),client:v.owner,patient:v.patient,type:v.type+' due',due:v.due,method:'Text message',status:'Pending -- not sent'});sv('sv_reminders',sv_reminders);}hideForm('vax-form');renderVaxList();svToast('Vaccine logged'+(v.due?' -- reminder auto-created':''),'ok');}
+function saveVax(){var v={id:Date.now(),patient:document.getElementById('vf-pt').value.trim(),owner:document.getElementById('vf-owner').value.trim(),type:document.getElementById('vf-type').value,date:document.getElementById('vf-date').value,due:document.getElementById('vf-due').value,lot:document.getElementById('vf-lot').value.trim(),mfr:document.getElementById('vf-mfr').value.trim(),dvm:document.getElementById('vf-dvm').value.trim(),route:document.getElementById('vf-route').value};if(!v.patient){svToast('Enter patient name','err');return;}sv_vaccines.unshift(v);sv('sv_vaccines',sv_vaccines);if(v.due){sv_reminders.unshift({id:Date.now(),client:v.owner,patient:v.patient,type:v.type+' due',due:v.due,method:'Text message',status:'Pending -- not sent'});sv('sv_reminders',sv_reminders);}hideForm('vax-form');renderVaxList();checkSmartFlags();svToast('Vaccine logged'+(v.due?' -- reminder auto-created':''),'ok');}
 function renderVaxList(){var el=document.getElementById('vax-list'),t=today();if(!sv_vaccines.length){el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No vaccines logged yet.</div>';return;}el.innerHTML='<table class="sv-tbl"><thead><tr><th>Patient</th><th>Owner</th><th>Vaccine</th><th>Date Given</th><th>Due Date</th><th>Lot #</th><th>DVM</th></tr></thead><tbody>'+sv_vaccines.slice(0,50).map(function(v){var od=v.due&&v.due<t;return '<tr><td style="font-weight:700">'+safeHTML(v.patient)+'</td><td>'+safeHTML(v.owner||'--')+'</td><td>'+safeHTML(v.type)+'</td><td style="color:var(--mu)">'+(v.date||'--')+'</td><td style="color:'+(od?'#dc2626':'var(--mu)')+'">'+(v.due||'--')+(od?' OVERDUE':'')+'</td><td style="color:var(--mu)">'+safeHTML(v.lot||'--')+'</td><td>'+safeHTML(v.dvm||'--')+'</td></tr>';}).join('')+'</tbody></table>';}
 
 // INVENTORY
@@ -690,7 +771,48 @@ async function aiInvAnalysis(){var el=document.getElementById('inv-ai');el.style
 function renderInvList(){var el=document.getElementById('inv-list'),t=today();var low=sv_inventory.filter(function(i){return i.qty<=i.reorder&&i.reorder>0;});var exp=sv_inventory.filter(function(i){return i.exp&&i.exp<t;});document.getElementById('inv-alerts').innerHTML=(low.length?'<div class="al-a">'+low.length+' item(s) at or below reorder point</div>':'')+(exp.length?'<div class="al-r">'+exp.length+' item(s) expired -- remove immediately</div>':'');if(!sv_inventory.length){el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No inventory yet.</div>';return;}el.innerHTML='<table class="sv-tbl"><thead><tr><th>Item</th><th>Category</th><th>In Stock</th><th>Reorder At</th><th>Expiration</th><th>Status</th></tr></thead><tbody>'+sv_inventory.slice(0,50).map(function(i){var isLow=i.qty<=i.reorder&&i.reorder>0;var isExp=i.exp&&i.exp<t;return '<tr><td style="font-weight:700">'+safeHTML(i.name)+'</td><td><span class="badge bb">'+safeHTML(i.cat)+'</span></td><td style="color:'+(isLow?'#dc2626':'inherit')+'">'+i.qty+' '+safeHTML(i.unit||'')+'</td><td style="color:var(--mu)">'+i.reorder+'</td><td style="color:'+(isExp?'#dc2626':'var(--mu)')+'">'+(i.exp||'--')+(isExp?' EXPIRED':'')+'</td><td><span class="badge '+(isExp?'br':isLow?'ba':'bg')+'">'+(isExp?'EXPIRED':isLow?'REORDER':'OK')+'</span></td></tr>';}).join('')+'</tbody></table>';}
 
 // INVOICES
-function saveInvoice(){var i={id:Date.now(),client:document.getElementById('ivf-client').value.trim(),patient:document.getElementById('ivf-patient').value.trim(),date:document.getElementById('ivf-date').value,services:document.getElementById('ivf-services').value.trim(),amount:parseFloat(document.getElementById('ivf-amount').value)||0,status:document.getElementById('ivf-status').value};if(!i.client||!i.amount){svToast('Enter client name and amount','err');return;}sv_invoices.unshift(i);sv('sv_invoices',sv_invoices);hideForm('iv-form');renderInvoiceList();updateDashboard();svToast('Invoice saved for '+i.client,'ok');}
+function addLineItem(){var c=document.createElement('div');c.className='iv-line';c.style.cssText='display:grid;grid-template-columns:2fr 80px 100px 24px;gap:8px;margin-bottom:6px;align-items:center';c.innerHTML='<input class="iv-desc" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none" placeholder="Service / item" oninput="calcInvTotal()"><input class="iv-qty" type="number" value="1" min="1" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none;text-align:center" oninput="calcInvTotal()"><input class="iv-price" type="number" placeholder="0.00" step="0.01" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none" oninput="calcInvTotal()"><span style="color:var(--mu);font-size:16px;cursor:pointer;text-align:center" onclick="this.parentElement.remove();calcInvTotal()">&#10005;</span>';document.getElementById('iv-lineitems').appendChild(c);}
+function calcInvTotal(){var lines=document.querySelectorAll('.iv-line');var total=0;lines.forEach(function(l){var qty=parseFloat(l.querySelector('.iv-qty').value)||1;var price=parseFloat(l.querySelector('.iv-price').value)||0;total+=qty*price;});document.getElementById('iv-live-total').textContent='$'+total.toFixed(2);var pct=Math.min(total/600*100,100);document.getElementById('iv-range-bar').style.width=pct+'%';var bar=document.getElementById('iv-range-bar');var lbl=document.getElementById('iv-range-label');if(total===0){bar.style.background='var(--bd)';lbl.textContent='';}else if(total<150){bar.style.background='#16a34a';lbl.textContent='Below average -- check completeness of line items';}else if(total<200){bar.style.background='#16a34a';lbl.textContent='Low-average range for a typical visit';}else if(total<350){bar.style.background='#16a34a';lbl.textContent='In the healthy average range ($200-350 typical visit)';}else if(total<500){bar.style.background='#f59e0b';lbl.textContent='Above average -- appropriate for complex or surgical visits';}else{bar.style.background='#dc2626';lbl.textContent='High-value invoice -- verify all services documented';}}
+function showClientEstimate(){var lines=document.querySelectorAll('.iv-line');var total=0;var tbody=document.getElementById('ce-lines');tbody.innerHTML='';lines.forEach(function(l){var desc=l.querySelector('.iv-desc').value||'Service';var qty=parseFloat(l.querySelector('.iv-qty').value)||1;var price=parseFloat(l.querySelector('.iv-price').value)||0;var amt=qty*price;if(amt>0){total+=amt;var tr=document.createElement('tr');tr.innerHTML='<td style="padding:8px 0;border-bottom:1px solid var(--bd)">'+safeH(desc)+'</td><td style="padding:8px 4px;border-bottom:1px solid var(--bd);text-align:center">'+qty+'</td><td style="padding:8px 0;border-bottom:1px solid var(--bd);text-align:right">$'+amt.toFixed(2)+'</td>';tbody.appendChild(tr);}});document.getElementById('ce-total').textContent='$'+total.toFixed(2);document.getElementById('ce-client').textContent=document.getElementById('ivf-client').value||'--';document.getElementById('ce-patient').textContent=document.getElementById('ivf-patient').value||'--';document.getElementById('ce-practice-name').textContent=sv_settings.name||'Veterinary Practice';document.getElementById('ce-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});document.getElementById('client-estimate-modal').style.display='flex';}
+function saveInvoice(){var lines=document.querySelectorAll('.iv-line');var total=0;var services=[];lines.forEach(function(l){var desc=l.querySelector('.iv-desc').value.trim();var qty=parseFloat(l.querySelector('.iv-qty').value)||1;var price=parseFloat(l.querySelector('.iv-price').value)||0;if(desc&&price>0){total+=qty*price;services.push(desc+(qty>1?' x'+qty:''));}});if(!document.getElementById('ivf-client').value.trim()||total===0){svToast('Enter client name and at least one line item','err');return;}var i={id:Date.now(),client:document.getElementById('ivf-client').value.trim(),patient:document.getElementById('ivf-patient').value.trim(),date:document.getElementById('ivf-date').value||today(),dvm:document.getElementById('ivf-dvm').value.trim(),services:services.join(', '),amount:total,status:document.getElementById('ivf-status').value};sv_invoices.unshift(i);sv('sv_invoices',sv_invoices);hideForm('iv-form');renderInvoiceList();updateDashboard();checkSmartFlags();svToast('Invoice saved: $'+total.toFixed(2)+' for '+i.client,'ok');}
+function renderInvoiceList(){var total=sv_invoices.reduce(function(s,i){return s+parseFloat(i.amount||0);},0);var paid=sv_invoices.filter(function(i){return i.status&&i.status.includes('Paid');}).reduce(function(s,i){return s+parseFloat(i.amount||0);},0);document.getElementById('inv-total').textContent='$'+(total||0).toLocaleString();document.getElementById('inv-paid').textContent='$'+(paid||0).toLocaleString();document.getElementById('inv-ar').textContent='$'+((total-paid)||0).toLocaleString();document.getElementById('inv-avg').textContent='$'+Math.round(sv_invoices.length?total/sv_invoices.length:0).toLocaleString();var el=document.getElementById('invoice-list');if(!sv_invoices.length){el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No invoices yet. Use the live builder above.</div>';return;}el.innerHTML='<table class="sv-tbl"><thead><tr><th>Date</th><th>Client</th><th>Patient</th><th>Services</th><th>Amount</th><th>Status</th></tr></thead><tbody>'+sv_invoices.slice(0,40).map(function(i){var pd=i.status&&i.status.includes('Paid');return '<tr><td style="color:var(--mu)">'+(i.date||'--')+'</td><td style="font-weight:700">'+safeH(i.client)+'</td><td>'+safeH(i.patient||'--')+'</td><td style="color:var(--mu);font-size:11px">'+safeH((i.services||'').slice(0,50))+'</td><td style="font-weight:700;color:'+(pd?'#16a34a':'#dc2626')+'">\$'+parseFloat(i.amount||0).toFixed(2)+'</td><td><span class="badge '+(pd?'bg':i.status==='Unpaid'?'br':'ba')+'">'+safeH(i.status)+'</span></td></tr>';}).join('')+'</tbody></table>';}
+
+function saveFees(){var fees={exam:document.getElementById('fee-exam').value,wellness:document.getElementById('fee-wellness').value,emergency:document.getElementById('fee-emergency').value,rabies:document.getElementById('fee-rabies').value,coreVax:document.getElementById('fee-core-vax').value,bordetella:document.getElementById('fee-bordetella').value,dental:document.getElementById('fee-dental').value,spay:document.getElementById('fee-spay').value,neuter:document.getElementById('fee-neuter').value,labs:document.getElementById('fee-labs').value,hw:document.getElementById('fee-hw').value,markup:document.getElementById('fee-drug-markup').value};sv('sv_fees',fees);}
+function loadFeeInputs(){var fees=ld('sv_fees','{}');if(fees.exam)document.getElementById('fee-exam').value=fees.exam;if(fees.wellness)document.getElementById('fee-wellness').value=fees.wellness;if(fees.emergency)document.getElementById('fee-emergency').value=fees.emergency;if(fees.rabies)document.getElementById('fee-rabies').value=fees.rabies;if(fees.coreVax)document.getElementById('fee-core-vax').value=fees.coreVax;if(fees.bordetella)document.getElementById('fee-bordetella').value=fees.bordetella;if(fees.dental)document.getElementById('fee-dental').value=fees.dental;if(fees.spay)document.getElementById('fee-spay').value=fees.spay;if(fees.neuter)document.getElementById('fee-neuter').value=fees.neuter;if(fees.labs)document.getElementById('fee-labs').value=fees.labs;if(fees.hw)document.getElementById('fee-hw').value=fees.hw;if(fees.markup)document.getElementById('fee-drug-markup').value=fees.markup;}
+function loadFeesToInvoice(){var fees=ld('sv_fees','{}');showForm('iv-form');document.getElementById('ivf-date').value=today();var items=[['Office Exam',1,fees.exam||65],['Rabies Vaccine (1-yr)',1,fees.rabies||28]];var container=document.getElementById('iv-lineitems');container.innerHTML='';items.forEach(function(item){var c=document.createElement('div');c.className='iv-line';c.style.cssText='display:grid;grid-template-columns:2fr 80px 100px 24px;gap:8px;margin-bottom:6px;align-items:center';c.innerHTML='<input class="iv-desc" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none" value="'+safeH(item[0])+'" oninput="calcInvTotal()"><input class="iv-qty" type="number" value="'+item[1]+'" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none;text-align:center" oninput="calcInvTotal()"><input class="iv-price" type="number" value="'+item[2]+'" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;outline:none" oninput="calcInvTotal()"><span style="color:var(--mu);font-size:16px;cursor:pointer;text-align:center" onclick="this.parentElement.remove();calcInvTotal()">&#10005;</span>';container.appendChild(c);});calcInvTotal();svToast('Standard fees loaded','ok');}
+function resetFees(){['fee-exam','fee-wellness','fee-emergency','fee-rabies','fee-core-vax','fee-bordetella','fee-dental','fee-spay','fee-neuter','fee-labs','fee-hw','fee-drug-markup'].forEach(function(id){document.getElementById(id).value='';});sv('sv_fees',{});svToast('Fees reset to defaults','ok');}
+
+function checkSmartFlags(){
+  var today_str=today();
+  var ya=new Date(Date.now()-365*24*60*60*1000).toISOString().split('T')[0];
+  var flags=[];
+  // Overdue vaccines
+  var overdueVax=sv_vaccines.filter(function(v){return v.due&&v.due<today_str;});
+  if(overdueVax.length>0)flags.push({type:'r',msg:overdueVax.length+' vaccine(s) OVERDUE: '+overdueVax.map(function(v){return v.patient+' ('+v.type+')';}).slice(0,3).join(', ')});
+  // Expired VCPR
+  var expVCPR=sv_patients.filter(function(p){return !p.lastExam||p.lastExam<ya;});
+  if(expVCPR.length>0)flags.push({type:'a',msg:expVCPR.length+' patient(s) with expired VCPR -- cannot prescribe: '+expVCPR.map(function(p){return p.name;}).slice(0,3).join(', ')});
+  // Low CS balance warnings
+  var csIssues=sv_cs.filter(function(c){return c.balance&&(c.balance.toLowerCase().includes('low')||parseFloat(c.balance)<5);});
+  if(csIssues.length>0)flags.push({type:'a',msg:'Controlled substance low balance on: '+csIssues.map(function(c){return c.drug;}).slice(0,3).join(', ')});
+  // High unpaid AR
+  var unpaid=sv_invoices.filter(function(i){return i.status==='Unpaid';}).reduce(function(s,i){return s+parseFloat(i.amount||0);},0);
+  if(unpaid>500)flags.push({type:'a',msg:'Outstanding AR: $'+unpaid.toFixed(0)+' unpaid across '+sv_invoices.filter(function(i){return i.status==='Unpaid';}).length+' invoices'});
+  // Expired DEA
+  var deaInfo=ld('sv_dea_info','{}');
+  if(deaInfo.deaExp&&deaInfo.deaExp<today_str)flags.push({type:'r',msg:'DEA registration EXPIRED -- controlled substances cannot be prescribed'});
+  // Reminders overdue
+  var overdueRem=sv_reminders.filter(function(r){return r.due&&r.due<today_str&&r.status==='Pending -- not sent';});
+  if(overdueRem.length>0)flags.push({type:'g',msg:overdueRem.length+' client reminders past due -- ready to send'});
+  // Expired inventory
+  var expInv=sv_inventory.filter(function(i){return i.exp&&i.exp<today_str;});
+  if(expInv.length>0)flags.push({type:'r',msg:expInv.length+' inventory item(s) expired: '+expInv.map(function(i){return i.name;}).slice(0,3).join(', ')});
+  // Show flags
+  var fc=document.getElementById('smart-flags-container');
+  if(!fc){fc=document.createElement('div');fc.id='smart-flags-container';fc.style.cssText='position:fixed;top:64px;right:12px;z-index:800;max-width:320px;display:flex;flex-direction:column;gap:6px';document.body.appendChild(fc);}
+  fc.innerHTML='';
+  flags.slice(0,4).forEach(function(f){var el=document.createElement('div');var colors={r:'background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B',a:'background:#FEF3C7;border:1px solid #FCD34D;color:#92400E',g:'background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D'};el.style.cssText=colors[f.type]+';padding:10px 14px;border-radius:8px;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.1);cursor:pointer';el.textContent=f.msg;el.onclick=function(){el.remove();};fc.appendChild(el);setTimeout(function(){if(el.parentElement)el.remove();},8000);});
+}
 function renderInvoiceList(){var total=sv_invoices.reduce(function(s,i){return s+parseFloat(i.amount||0);},0);var paid=sv_invoices.filter(function(i){return i.status&&i.status.includes('Paid');}).reduce(function(s,i){return s+parseFloat(i.amount||0);},0);document.getElementById('inv-total').textContent='$'+(total||0).toLocaleString();document.getElementById('inv-paid').textContent='$'+(paid||0).toLocaleString();document.getElementById('inv-ar').textContent='$'+((total-paid)||0).toLocaleString();document.getElementById('inv-avg').textContent='$'+Math.round(sv_invoices.length?total/sv_invoices.length:0).toLocaleString();var el=document.getElementById('invoice-list');if(!sv_invoices.length){el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No invoices yet.</div>';return;}el.innerHTML='<table class="sv-tbl"><thead><tr><th>Date</th><th>Client</th><th>Patient</th><th>Services</th><th>Amount</th><th>Status</th></tr></thead><tbody>'+sv_invoices.slice(0,40).map(function(i){var pd=i.status&&i.status.includes('Paid');return '<tr><td style="color:var(--mu)">'+(i.date||'--')+'</td><td style="font-weight:700">'+safeHTML(i.client)+'</td><td>'+safeHTML(i.patient||'--')+'</td><td style="color:var(--mu)">'+safeHTML(i.services||'--')+'</td><td style="font-weight:700;color:'+(pd?'#16a34a':'#dc2626')+'">\$'+(i.amount||0).toLocaleString()+'</td><td><span class="badge '+(pd?'bg':i.status==='Unpaid'?'br':'ba')+'">'+safeHTML(i.status)+'</span></td></tr>';}).join('')+'</tbody></table>';}
 
 // REMINDERS
