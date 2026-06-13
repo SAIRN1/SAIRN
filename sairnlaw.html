@@ -4196,5 +4196,47 @@ setTimeout(function(){if(typeof checkLaw_SmartFlags==="function")checkLaw_SmartF
 <script>
 function showBillingRangebar(rate,area){var b={"General":{low:175,avg:325,high:550},"PI":{low:200,avg:350,high:600},"Employment":{low:250,avg:400,high:650},"Criminal":{low:150,avg:300,high:500},"Estate":{low:200,avg:350,high:500}};var bench=b[area]||b["General"];var pct=Math.min(rate/bench.high*100,100);var color=rate<=bench.avg?"#16a34a":rate<=bench.high?"#f59e0b":"#dc2626";var lbl=rate<bench.low?"Below market":rate<=bench.avg?"Market rate":rate<=bench.high?"Above average":"Top tier";var el=document.getElementById("law-rate-bar");if(!el)return;el.innerHTML="";var div=document.createElement("div");div.style.cssText="background:#F3F4F6;border-radius:10px;padding:12px";var lbl2=document.createElement("div");lbl2.textContent="Rate vs Market";lbl2.style.cssText="font-size:10px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:6px";var bw=document.createElement("div");bw.style.cssText="background:#E5E7EB;border-radius:6px;height:10px;position:relative;margin-bottom:6px;overflow:hidden";var bf=document.createElement("div");bf.style.cssText="background:"+color+";height:10px;border-radius:6px;width:"+pct+"%;transition:width .4s";bw.appendChild(bf);var lg=document.createElement("div");lg.style.cssText="display:flex;justify-content:space-between;font-size:9px;color:#6B7280;margin-bottom:4px";lg.innerHTML="<span>$"+bench.low+"</span><span>Avg $"+bench.avg+"</span><span>Top $"+bench.high+"</span>";var rs=document.createElement("div");rs.textContent="$"+rate+"/hr -- "+lbl;rs.style.cssText="font-size:11px;font-weight:700;color:"+color;div.appendChild(lbl2);div.appendChild(bw);div.appendChild(lg);div.appendChild(rs);el.appendChild(div);}function saveLawFees(){var h=parseFloat((document.getElementById("lf-hourly")||{}).value||0);var a=(document.getElementById("lf-area")||{}).value||"General";if(h>0)showBillingRangebar(h,a);}
 </script>
+
+<script>
+function showClientMatterSummary(){
+var modal=document.getElementById("sl-client-modal");
+if(!modal){
+modal=document.createElement("div");modal.id="sl-client-modal";
+modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";
+var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:94%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.3)";
+var hdr=document.createElement("div");hdr.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #15803D";
+var title=document.createElement("div");title.style.cssText="font-size:20px;font-weight:900;color:#14532D";title.textContent="Matter Status Summary";
+var closeBtn=document.createElement("button");closeBtn.textContent="Close";closeBtn.style.cssText="padding:8px 16px;background:transparent;border:1px solid #E5E7EB;border-radius:8px;cursor:pointer;font-size:12px";closeBtn.onclick=function(){modal.style.display="none";};
+hdr.appendChild(title);hdr.appendChild(closeBtn);
+var hero=document.createElement("div");hero.style.cssText="background:#F0FDF4;border-radius:10px;padding:16px;margin-bottom:16px";
+var mName=document.createElement("div");mName.id="cm-matter-name";mName.style.cssText="font-size:18px;font-weight:800;color:#14532D";
+var mType=document.createElement("div");mType.id="cm-matter-type";mType.style.cssText="font-size:13px;color:#6B7280;margin-top:4px";
+var mDt=document.createElement("div");mDt.id="cm-report-date";mDt.style.cssText="font-size:11px;color:#9CA3AF;margin-top:2px";
+hero.appendChild(mName);hero.appendChild(mType);hero.appendChild(mDt);
+var statsGrid=document.createElement("div");statsGrid.style.cssText="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px";
+[["Status","cm-status","#16a34a"],["Open Tasks","cm-tasks","#d97706"],["Next Action","cm-next","#3B82F6"]].forEach(function(d){var c=document.createElement("div");c.style.cssText="border:1px solid #E5E7EB;border-radius:8px;padding:12px;text-align:center";var v=document.createElement("div");v.id=d[1];v.textContent="--";v.style.cssText="font-size:15px;font-weight:900;color:"+d[2];var l=document.createElement("div");l.textContent=d[0];l.style.cssText="font-size:10px;color:#6B7280;text-transform:uppercase;margin-top:4px";c.appendChild(v);c.appendChild(l);statsGrid.appendChild(c);});
+var billingSec=document.createElement("div");billingSec.style.cssText="background:#F0FDF4;border-radius:10px;padding:14px;margin-bottom:16px";
+var billingLabel=document.createElement("div");billingLabel.textContent="Billing Summary";billingLabel.style.cssText="font-size:11px;font-weight:800;color:#14532D;text-transform:uppercase;margin-bottom:8px";
+var billingGrid=document.createElement("div");billingGrid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px";
+[["Billed to Date","cm-billed"],["Balance Due","cm-balance"]].forEach(function(d){var c=document.createElement("div");var lbl=document.createElement("div");lbl.textContent=d[0];lbl.style.cssText="font-size:10px;color:#6B7280";var val=document.createElement("div");val.id=d[1];val.textContent="$0";val.style.cssText="font-size:18px;font-weight:900;color:#14532D";c.appendChild(lbl);c.appendChild(val);billingGrid.appendChild(c);});
+billingSec.appendChild(billingLabel);billingSec.appendChild(billingGrid);
+var note=document.createElement("div");note.textContent="Internal case notes, strategy, and attorney work product are not included in this summary.";note.style.cssText="font-size:10px;color:#9CA3AF;line-height:1.5;margin-bottom:16px";
+var printBtn=document.createElement("button");printBtn.textContent="Print Matter Summary";printBtn.style.cssText="width:100%;padding:12px;background:#15803D;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer";printBtn.onclick=function(){window.print();};
+inner.appendChild(hdr);inner.appendChild(hero);inner.appendChild(statsGrid);inner.appendChild(billingSec);inner.appendChild(note);inner.appendChild(printBtn);
+modal.appendChild(inner);document.body.appendChild(modal);}
+var matters=window.sl_matters||[];var m=matters[0]||{};
+document.getElementById("cm-matter-name").textContent=m.clientName||m.client||"Client Name";
+document.getElementById("cm-matter-type").textContent=(m.name||m.title||"Matter")+" — "+(m.type||m.practiceArea||"General");
+document.getElementById("cm-report-date").textContent="Report Date: "+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+document.getElementById("cm-status").textContent=m.status||"Active";
+var tasks=window.sl_tasks||[];
+document.getElementById("cm-tasks").textContent=tasks.filter(function(t){return t.status!=="Complete"&&t.matter===(m.id||m.name);}).length||tasks.filter(function(t){return t.status!=="Complete";}).length;
+var next=tasks.filter(function(t){return t.status!=="Complete";})[0];
+document.getElementById("cm-next").textContent=next?next.due||"Scheduled":"None";
+var bills=window.sl_billing||[];var billed=bills.reduce(function(s,b){return s+parseFloat(b.amount||0);},0);var paid=bills.filter(function(b){return b.status==="Paid";}).reduce(function(s,b){return s+parseFloat(b.amount||0);},0);
+document.getElementById("cm-billed").textContent="$"+billed.toLocaleString();
+document.getElementById("cm-balance").textContent="$"+(billed-paid).toLocaleString();
+modal.style.display="flex";}
+</script>
 </body>
 </html>
