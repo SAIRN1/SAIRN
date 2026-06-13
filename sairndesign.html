@@ -194,6 +194,9 @@ body{background:var(--bg);color:var(--tx);min-height:100vh;font-family:'Inter',s
 <script>
 
 // ╔══════════════════════════════════════════════════════════╗
+
+function checkDesign_SmartFlags(){var f=[];try{var _v=(window.sdes_projects&&sdes_projects.filter(function(p){return p.deadline&&p.deadline<new Date().toISOString().split('T')[0]&&p.status!=='Complete';}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"project(s) past deadline"});}catch(e){}try{var _v=(window.sdes_projects&&sdes_projects.filter(function(p){return p.status==='Awaiting client approval';}).length);if(_v&&_v>0)f.push({t:"a",m:_v+" "+"project(s) awaiting approval"});}catch(e){}var fc=document.getElementById("sairn-flags");if(!fc){fc=document.createElement("div");fc.id="sairn-flags";fc.style.cssText="position:fixed;top:64px;right:12px;z-index:800;max-width:340px;display:flex;flex-direction:column;gap:6px;pointer-events:none";document.body.appendChild(fc);}fc.innerHTML="";f.slice(0,5).forEach(function(fl){var el=document.createElement("div");var bg=fl.t==="r"?"#FEE2E2":fl.t==="a"?"#FEF3C7":"#F0FDF4";var bd=fl.t==="r"?"#FCA5A5":fl.t==="a"?"#FCD34D":"#BBF7D0";var tx=fl.t==="r"?"#991B1B":fl.t==="a"?"#92400E":"#14532D";el.style.cssText="background:"+bg+";border:1px solid "+bd+";color:"+tx+";padding:10px 14px;border-radius:8px;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:all;cursor:pointer";el.textContent=fl.m;el.onclick=function(){el.remove();};fc.appendChild(el);setTimeout(function(){if(el.parentElement)el.remove();},9000);});}
+
 // ║   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  ║
 // ║   30-Layer Protection Framework                          ║
 // ║   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance ║
@@ -2903,6 +2906,7 @@ async function syncToSAIRNBridge() {
 }
 
 </script>
+<script>setTimeout(function(){if(typeof checkDesign_SmartFlags==="function")checkDesign_SmartFlags();},2000);</script>
 </body>
 </html
     <!-- SUPPLIERS PANEL -->
