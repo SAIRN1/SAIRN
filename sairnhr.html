@@ -8291,7 +8291,7 @@ function shRenderQ12Results(){var div=document.getElementById('sh-q12-results');
 function shRenderEngagement(){var tbody=document.getElementById('sh-eng-tbody');if(!tbody)return;var emps=shGetEmployees();var byDept={};emps.forEach(function(e){var d=e.department||'General';if(!byDept[d])byDept[d]=[];byDept[d].push(e);});if(!Object.keys(byDept).length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Add employees to see engagement by department.</td></tr>';return;}tbody.innerHTML=Object.entries(byDept).map(function(kv){return '<tr><td><strong>'+escHtml(kv[0])+'</strong></td><td>—</td><td>—</td><td>—</td><td>—</td><td style="font-size:10px;color:var(--muted)">No survey data</td><td><button onclick="shDeptEngAI(\''+escHtml(kv[0])+'\')" class="sh-btn-outline" style="font-size:10px;padding:3px 6px">AI</button></td></tr>';}).join('');}
 function shSendEngagementSurvey(){if(!shEngagementData.length){var s=Array(12).fill(0).map(function(){return Math.round(3+Math.random()*2);});shEngagementData.push({date:new Date().toLocaleDateString(),q12:s,dept:'All'});shSave2('sh_engagement_data',shEngagementData);shRenderQ12Results();}shNotify('Q12 survey sent. Sample data loaded for demo.','green');}
 async function shEngagementAI(){shNotify('AI building engagement plan...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,system:'You are SAIRNhr AI -- Gallup engagement expert.',messages:[{role:'user',content:'Engagement strategy for '+shGetEmployees().length+' employees. Provide: 1) Gallup Q12 implementation, 2) 4 stages of engagement, 3) Highest-impact engagement drivers by cost, 4) Manager behaviors that affect engagement most, 5) Monthly rituals, 6) Converting disengaged employees.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
-async function shDeptEngAI(dept){shNotify('AI for '+dept+'...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:'You are SAIRNhr AI -- engagement expert.',messages:[{role:'user',content:'30-60-90 day engagement improvement plan for '+dept+' department.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
+async function shDeptEngAI(dept){shNotify('AI for '+dept+'...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:'You are SAIRNhr AI -- engagement expert.',messages:[{role:'user',content:'30-60-90 day engagement improvement plan for '+dept+' department.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
 async function shEngagementReport(){shEngagementAI();}
 
 // 8. ADA ACCOMMODATIONS
@@ -8361,7 +8361,7 @@ function shInitEWA(){shRenderEWA();shUpdateEWAKPIs();}
 function shUpdateEWAKPIs(){var d;d=document.getElementById('ewa-kpi-requests');if(d)d.textContent=shEWARequests.length;d=document.getElementById('ewa-kpi-total-amt');if(d)d.textContent=shFmtC(shEWARequests.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0));d=document.getElementById('ewa-kpi-avg-pct');if(d)d.textContent=shEWARequests.length?Math.round(shEWARequests.reduce(function(s,r){return s+(parseFloat(r.pctOfEarned)||0);},0)/shEWARequests.length)+'%':'0%';}
 function shRenderEWA(){var tbody=document.getElementById('sh-ewa-tbody');if(!tbody)return;if(!shEWARequests.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No EWA requests. Click + Log EWA Request.</td></tr>';return;}var counts={};shEWARequests.forEach(function(r){counts[r.employee]=(counts[r.employee]||0)+1;});tbody.innerHTML=shEWARequests.map(function(r,i){var freq=counts[r.employee]||1;return '<tr><td><strong>'+escHtml(r.employee||'—')+'</strong></td><td style="font-size:11px">'+escHtml(r.requestDate||'—')+'</td><td style="font-weight:700;color:var(--a)">'+shFmtC(r.amount||0)+'</td><td style="font-size:11px">'+escHtml(String(r.pctOfEarned||0))+'%</td><td style="font-size:11px">'+escHtml(r.payrollDate||'—')+'</td><td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(freq>=3?'rgba(220,38,38,.12)':'rgba(22,163,74,.12)')+';color:'+(freq>=3?'var(--red)':'var(--green)')+'">'+freq+'x</span></td><td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(22,163,74,.12);color:var(--green)">Processed</span></td><td><button onclick="shEWAWellness(\''+escHtml(r.employee)+'\')" class="sh-btn-outline" style="font-size:10px;padding:3px 6px">Wellness</button></td></tr>';}).join('');}
 function shNewEWARequest(){var emp=prompt('Employee name:');if(!emp)return;var emps=shGetEmployees();var empData=emps.find(function(e){return e.name===emp;})||{salary:50000};var biweekly=(parseFloat(empData.salary)||50000)/26;var max=biweekly*0.5;var amount=parseFloat(prompt('Amount (max $'+Math.round(max)+'):',Math.round(max*0.3)))||0;if(amount>max){shNotify('Cannot exceed 50% of earned wages','');return;}var pct=biweekly>0?Math.round(amount/biweekly*100):0;var payDate=prompt('Next payroll date:',new Date(Date.now()+14*86400000).toISOString().slice(0,10))||'';shEWARequests.unshift({employee:emp,requestDate:new Date().toISOString().slice(0,10),amount,pctOfEarned:pct,payrollDate:payDate,status:'Processed'});shSave2('sh_ewa',shEWARequests);shRenderEWA();shUpdateEWAKPIs();shNotify('EWA of $'+amount+' processed for '+emp,'green');}
-async function shEWAWellness(emp){shNotify('AI financial wellness for '+emp+'...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:'You are SAIRNhr AI -- financial wellness advisor.',messages:[{role:'user',content:emp+' has made '+shEWARequests.filter(function(r){return r.employee===emp;}).length+' EWA requests. Provide: 1) Financial stress indicators, 2) Manager conversation guide, 3) EAP resources to offer, 4) Whether to flag for financial counseling.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
+async function shEWAWellness(emp){shNotify('AI financial wellness for '+emp+'...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:'You are SAIRNhr AI -- financial wellness advisor.',messages:[{role:'user',content:emp+' has made '+shEWARequests.filter(function(r){return r.employee===emp;}).length+' EWA requests. Provide: 1) Financial stress indicators, 2) Manager conversation guide, 3) EAP resources to offer, 4) Whether to flag for financial counseling.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
 async function shEWAAI(){shNotify('AI EWA analysis...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:'You are SAIRNhr AI -- financial wellness expert.',messages:[{role:'user',content:'EWA analysis: '+shEWARequests.length+' requests totaling $'+shEWARequests.reduce(function(s,r){return s+(r.amount||0);},0)+'. Provide: 1) What high EWA usage signals, 2) EWA vs payday loans difference, 3) Best practices, 4) Financial wellness program, 5) Retention impact.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
 function shExportEWA(){var rows=['Employee,Date,Amount,% Earned,Payroll Date'];shEWARequests.forEach(function(r){rows.push([r.employee,r.requestDate,r.amount,r.pctOfEarned+'%',r.payrollDate].join(','));});var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ewa.csv';a.click();}
 
@@ -8694,7 +8694,7 @@ async function shExitSentimentScore(i){
   shNotify('AI scoring sentiment...','');
   try{
     var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,
         system:'You are a sentiment analysis expert. Score employee feedback.',
         messages:[{role:'user',content:'Score the sentiment of these exit interview responses (Positive/Neutral/Negative for each, then overall): '+c.responses.join(' | ')+'. Format: Response 1: [sentiment]. Response 2: [sentiment]. Overall: [positive/neutral/negative] ([0-100 score]). Key theme: [1 sentence].'}]})});
     var data=await res.json();
@@ -8859,6 +8859,36 @@ console.log('SAIRNhr v6.0 -- 35 new features complete. The only HR app on earth.
 console.log('Kills: Deputy, Homebase, Bonusly, Compport, Trusaic, Diversio, Cornerstone,');
 console.log('AbsenceSoft, CaseIQ, Cority, Textio, Achievers, Lattice, Culture Amp,');
 console.log('Eightfold, iCIMS, Leapsome, HR Acuity, Gallup tools.');
+
+
+
+// ── SAIRN BRIDGE SYNC ─────────────────────────────────────────────────────
+async function syncToSAIRNBridge() {
+  try {
+    await fetch('https://sairn.vercel.app/api/bridge', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({app: APP_ID || 'sairnapp', is_demo: true,
+        data: {timestamp: new Date().toISOString(), synced: true}})
+    });
+    console.log('Synced to SAIRN Bridge');
+  } catch(e) { console.log('Bridge sync queued'); }
+}
+
+
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────
+function dlCSV(rows, filename) {
+  var csv = rows.map(function(r) {
+    return r.map(function(v) {
+      return '"' + String(v || '').replace(/"/g, '""') + '"';
+    }).join(',');
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
 
 </script>
 </body>
