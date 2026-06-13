@@ -12,6 +12,11 @@ const stripe   = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 const PRICE_MAP = {
+  // StoneDesk B2B
+  'price_1TgEAbA6PfEDlvnaQBSzvNW5': 'stonedesk_starter',
+  'price_1TgEBVA6PfEDlvnaN4ZbVE8r': 'stonedesk_pro',
+  'price_1TgECGA6PfEDlvnaDzp5cyhG': 'stonedesk_enterprise',
+  // SAIRN NEXUS Consumer
   'price_1TXX2xPAZMGVs7fEFeEZXUMu': 'sairntype',
   'price_1TYkzNPAZMGVs7fEBwtr2DNO': 'lingual',
   'price_1TYlEuPAZMGVs7fE08F60j7B': 'health',
