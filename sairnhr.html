@@ -330,7 +330,7 @@ function saLockScreen() {
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
     '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
     '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
-    '<button onclick="saUnlock()" style="width:100%;padding:11px;background:#6366F1;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Unlock</button>' +
+    '<button onclick="saUnlock()" style="width:100%;padding:11px;background:#7C3AED;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Unlock</button>' +
     '<div id="salock-err" style="color:#DC2626;font-size:12px;margin-top:8px;min-height:16px"></div></div>';
   document.body.appendChild(overlay);
   setTimeout(function() { var inp = document.getElementById('sairn-repin'); if(inp) inp.focus(); }, 100);
@@ -735,10 +735,10 @@ window.saWipeAllData = function() {
   var notice = document.createElement('div');
   notice.id = 'sairn-privacy-notice';
   notice.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1E1B4B;color:#fff;padding:14px 20px;z-index:99990;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:Inter,sans-serif;font-size:12px;box-shadow:0 -4px 20px rgba(0,0,0,.3)';
-  notice.innerHTML = '<div style="flex:1;min-width:280px">&#127468;&#127463; <b>Privacy Notice:</b> SAIRN uses localStorage to save your project data locally on this device only. We do not sell or share your data. Covered under CCPA and GDPR. <a href="#" onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'block\';return false;" style="color:#A5B4FC">Learn more</a></div>' +
+  notice.innerHTML = '<div style="flex:1;min-width:280px">&#127468;&#127463; <b>Privacy Notice:</b> SAIRN uses localStorage to save your project data locally on this device only. We do not sell or share your data. Covered under CCPA and GDPR. <a href="#" onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'block\';return false;" style="color:#7C3AED">Learn more</a></div>' +
     '<div style="display:flex;gap:8px;flex-shrink:0">' +
-    '<button onclick="saAcceptPrivacy()" style="padding:7px 18px;background:#6366F1;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Accept</button>' +
-    '<button onclick="saDeclinePrivacy()" style="padding:7px 14px;background:transparent;color:#A5B4FC;border:1px solid #4F46E5;border-radius:7px;font-size:12px;cursor:pointer">Decline</button>' +
+    '<button onclick="saAcceptPrivacy()" style="padding:7px 18px;background:#7C3AED;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Accept</button>' +
+    '<button onclick="saDeclinePrivacy()" style="padding:7px 14px;background:transparent;color:#7C3AED;border:1px solid #4C1D95;border-radius:7px;font-size:12px;cursor:pointer">Decline</button>' +
     '<button onclick="document.getElementById(\'sairn-privacy-notice\').remove()" style="background:none;border:none;color:#6B7280;font-size:18px;cursor:pointer;padding:0 4px">&#215;</button></div>';
   document.body.appendChild(notice);
   // Detail panel
@@ -749,7 +749,7 @@ window.saWipeAllData = function() {
     '<p style="margin-bottom:8px;line-height:1.6">SAIRN stores project data in your browser\'s localStorage. This data never leaves your device unless you explicitly use a cloud sync feature.</p>' +
     '<p style="margin-bottom:8px;line-height:1.6">You have the right to delete all stored data at any time using the data wipe function in Settings.</p>' +
     '<p style="line-height:1.6">Contact: michael@sairn.com | CCPA / GDPR compliant</p>' +
-    '<button onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'none\'" style="margin-top:12px;padding:6px 14px;background:#6366F1;color:#fff;border:none;border-radius:7px;font-size:11px;cursor:pointer">Close</button>';
+    '<button onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'none\'" style="margin-top:12px;padding:6px 14px;background:#7C3AED;color:#fff;border:none;border-radius:7px;font-size:11px;cursor:pointer">Close</button>';
   document.body.appendChild(detail);
 })();
 
@@ -805,7 +805,7 @@ window.saShowSecurityStatus = function() {
 
 // ── INITIALIZATION MESSAGE ─────────────────────────────────
 saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
-console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
+console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#7C3AED;font-weight:bold;padding:4px 8px;border-radius:4px');
 
 })(); // End SAIRN Security IIFE
 
@@ -9233,12 +9233,76 @@ function dlCSV(rows, filename) {
   localStorage.setItem('sairn_privacy_accepted', 'true');
   localStorage.setItem('_s_', 'demo');
 
-  console.log('%c SAIRN Demo Data Loaded Successfully ', 'background:#6366F1;color:#fff;font-size:14px;padding:6px 12px;border-radius:4px;font-weight:700;');
+  console.log('%c SAIRN Demo Data Loaded Successfully ', 'background:#7C3AED;color:#fff;font-size:14px;padding:6px 12px;border-radius:4px;font-weight:700;');
   console.log('Apps seeded: SAIRNhr, SAIRNacc, SAIRNbuild, SAIRNlaw, SAIRNcare, SAIRNvet, StoneDesk, SAIRNcode');
 
 })();
 
 })();
+</script>
+
+<script>
+// SAIRN Suite Launcher
+function showSAIRNSuite() {
+  var existing = document.getElementById('sairn-suite-modal');
+  if (existing) { existing.style.display='flex'; return; }
+  var modal = document.createElement('div');
+  modal.id = 'sairn-suite-modal';
+  modal.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;';
+  modal.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);">'
+    + '<h2 style="margin:0 0 20px;font-size:20px;color:#0f1f3d;">SAIRN Suite</h2>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+    + '<a href="https://sairn.vercel.app/sairnhr" target="_blank" style="display:block;padding:14px;background:#F5F3FF;border:1px solid #7C3AED;border-radius:10px;text-decoration:none;color:#4C1D95;font-weight:600;text-align:center;">SAIRNhr<br><span style=\'font-size:11px;font-weight:400;\'>HR &amp; People</span></a>'
+    + '<a href="https://sairn.vercel.app/sairnaccounting" target="_blank" style="display:block;padding:14px;background:#F0FDFA;border:1px solid #0D9488;border-radius:10px;text-decoration:none;color:#0F766E;font-weight:600;text-align:center;">SAIRNacc<br><span style=\'font-size:11px;font-weight:400;\'>Accounting</span></a>'
+    + '<a href="https://sairn.vercel.app/sairndesign" target="_blank" style="display:block;padding:14px;background:#EEF2FF;border:1px solid #6366F1;border-radius:10px;text-decoration:none;color:#3730A3;font-weight:600;text-align:center;">SAIRNdesign<br><span style=\'font-size:11px;font-weight:400;\'>Design</span></a>'
+    + '<a href="https://sairn.vercel.app/fabricor" target="_blank" style="display:block;padding:14px;background:#F0FEF6;border:1px solid #16C762;border-radius:10px;text-decoration:none;color:#0A3D1F;font-weight:600;text-align:center;">StoneDesk<br><span style=\'font-size:11px;font-weight:400;\'>Stone Fabrication</span></a>'
+    + '</div>'
+    + '<button onclick="document.getElementById(\'sairn-suite-modal\').style.display=\'none\'" style="margin-top:20px;width:100%;padding:10px;background:#f3f4f6;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Close</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e) { if (e.target===modal) modal.style.display='none'; });
+}
+</script>
+
+<script>
+// SAIRN Debounce Utility — prevents Claude call hammering on rapid input
+window.saDebounce = function(func, wait) {
+  var timeout;
+  return function() {
+    var context = this, args = arguments;
+    clearTimeout(timeout);
+    timeout = setTimeout(function() { func.apply(context, args); }, wait || 300);
+  };
+};
+</script>
+
+<script>
+// SAIRN Client Clean View — P9 Universal Pattern
+function showClientView() {
+  var content = document.querySelector('.ai-result, #result-output, .claude-output, [id*="result"]');
+  var clientText = content ? content.innerText : 'No report generated yet. Please complete the intake form first.';
+  var w = window.open('', '_blank', 'width=800,height=600');
+  w.document.write('<' + 'html><head><title>SAIRNhr — Client Report</title>'
+    + '<style>body{font-family:system-ui,sans-serif;padding:40px;max-width:700px;margin:0 auto;color:#1f2937;}'
+    + 'h1{color:#7C3AED;border-bottom:2px solid #7C3AED;padding-bottom:12px;}'
+    + '.meta{font-size:13px;color:#6b7280;margin-bottom:24px;}'
+    + '.content{line-height:1.7;white-space:pre-wrap;}'
+    + '.sig{margin-top:48px;border-top:1px solid #e5e7eb;padding-top:20px;}'
+    + '.sig-line{border-bottom:1px solid #374151;margin:24px 0 4px;}'
+    + '.disclaimer{font-size:11px;color:#9ca3af;margin-top:24px;font-style:italic;}'
+    + '@media print{button{display:none}}'
+    + '<\/style><\/head><body>'
+    + '<h1>SAIRNhr</h1>'
+    + '<div class="meta">Prepared: ' + new Date().toLocaleDateString() + ' &nbsp;|&nbsp; SAIRN Technologies</div>'
+    + '<div class="content">' + clientText.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '<\/div>'
+    + '<div class="sig">'
+    + '<div class="sig-line"><\/div><div style="font-size:12px;color:#6b7280;">Authorized Signature &nbsp;&nbsp;&nbsp; Date<\/div>'
+    + '<\/div>'
+    + '<div class="disclaimer">This report is generated with AI assistance. Verify all information with a licensed professional.<\/div>'
+    + '<button onclick="window.print()" style="margin-top:20px;padding:10px 24px;background:#7C3AED;color:#fff;border:none;border-radius:8px;cursor:pointer;">Print / PDF<\/button>'
+    + '<\/body><\/html>');
+  w.document.close();
+}
 </script>
 </body>
 </html>
