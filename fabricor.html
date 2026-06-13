@@ -10689,4 +10689,55 @@ function dlCSV(rows, filename) {
 function checkStoneDesk_SmartFlags(){var f=[];try{var _v=(window.sd_jobs&&sd_jobs.filter(function(j){return j.dueDate&&j.dueDate<new Date().toISOString().split('T')[0];}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"overdue job(s)"});}catch(e){}try{var _v=(window.sd_quotes&&sd_quotes.filter(function(q){return (Date.now()-new Date(q.date||Date.now()).getTime())>30*24*60*60*1000&&q.status==='Open';}).length);if(_v&&_v>0)f.push({t:"a",m:_v+" "+"quote(s) over 30 days old"});}catch(e){}try{var _v=(window.sd_invoices&&sd_invoices.filter(function(i){return i.status==='Unpaid';}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"unpaid invoice(s)"});}catch(e){}var fc=document.getElementById("sairn-flags");if(!fc){fc=document.createElement("div");fc.id="sairn-flags";fc.style.cssText="position:fixed;top:64px;right:12px;z-index:800;max-width:340px;display:flex;flex-direction:column;gap:6px;pointer-events:none";document.body.appendChild(fc);}fc.innerHTML="";f.slice(0,5).forEach(function(fl){var el=document.createElement("div");var bg=fl.t==="r"?"#FEE2E2":fl.t==="a"?"#FEF3C7":"#F0FDF4";var bd=fl.t==="r"?"#FCA5A5":fl.t==="a"?"#FCD34D":"#BBF7D0";var tx=fl.t==="r"?"#991B1B":fl.t==="a"?"#92400E":"#14532D";el.style.cssText="background:"+bg+";border:1px solid "+bd+";color:"+tx+";padding:10px 14px;border-radius:8px;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:all;cursor:pointer";el.textContent=fl.m;el.onclick=function(){el.remove();};fc.appendChild(el);setTimeout(function(){if(el.parentElement)el.remove();},9000);});}
 setTimeout(function(){if(typeof checkStoneDesk_SmartFlags==="function")checkStoneDesk_SmartFlags();},2000);
 </script>
+
+<script>
+function showClientEstimate(){
+var modal=document.getElementById("sd-client-modal");
+if(!modal){
+modal=document.createElement("div");modal.id="sd-client-modal";
+modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";
+var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:580px;width:94%;max-height:92vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.3)";
+var hdr=document.createElement("div");hdr.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #16C762";
+var co=document.createElement("div");
+var coName=document.createElement("div");coName.id="ce-shop-name";coName.style.cssText="font-size:20px;font-weight:900;color:#0A3D1F";
+var coSub=document.createElement("div");coSub.textContent="Custom Stone Fabrication";coSub.style.cssText="font-size:12px;color:#6B7280;margin-top:2px";
+var coDt=document.createElement("div");coDt.id="ce-date";coDt.style.cssText="font-size:11px;color:#6B7280;margin-top:2px";
+co.appendChild(coName);co.appendChild(coSub);co.appendChild(coDt);
+var closeBtn=document.createElement("button");closeBtn.textContent="Close";closeBtn.style.cssText="padding:8px 16px;background:transparent;border:1px solid #E5E7EB;border-radius:8px;cursor:pointer;font-size:12px";closeBtn.onclick=function(){modal.style.display="none";};
+hdr.appendChild(co);hdr.appendChild(closeBtn);
+var clientSec=document.createElement("div");clientSec.style.cssText="background:#F0FEF6;border-radius:10px;padding:14px;margin-bottom:16px";
+var clientLabel=document.createElement("div");clientLabel.textContent="Prepared For";clientLabel.style.cssText="font-size:10px;font-weight:800;color:#16C762;text-transform:uppercase;margin-bottom:4px";
+var clientName=document.createElement("div");clientName.id="ce-client-name";clientName.style.cssText="font-size:16px;font-weight:700;color:#0A3D1F";
+var clientAddr=document.createElement("div");clientAddr.id="ce-client-addr";clientAddr.style.cssText="font-size:12px;color:#6B7280;margin-top:2px";
+clientSec.appendChild(clientLabel);clientSec.appendChild(clientName);clientSec.appendChild(clientAddr);
+var lineItems=document.createElement("div");lineItems.id="ce-line-items";lineItems.style.cssText="margin-bottom:16px";
+var totalDiv=document.createElement("div");totalDiv.style.cssText="background:#0A3D1F;border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px";
+var totalLabel=document.createElement("div");totalLabel.textContent="TOTAL ESTIMATE";totalLabel.style.cssText="font-size:12px;font-weight:800;color:#5CFF9D;letter-spacing:.05em";
+var totalAmt=document.createElement("div");totalAmt.id="ce-total";totalAmt.textContent="$0";totalAmt.style.cssText="font-size:28px;font-weight:900;color:#fff";
+totalDiv.appendChild(totalLabel);totalDiv.appendChild(totalAmt);
+var sigSec=document.createElement("div");sigSec.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px";
+["Customer Signature","Date Accepted"].forEach(function(lbl){var s=document.createElement("div");s.style.cssText="border-top:1px solid #374151;padding-top:8px";var l=document.createElement("div");l.textContent=lbl;l.style.cssText="font-size:10px;color:#6B7280;margin-top:4px";s.appendChild(l);sigSec.appendChild(s);});
+var disc=document.createElement("div");disc.textContent="This estimate is valid for 30 days. Final measurement may adjust pricing. Installation scheduling follows deposit.";disc.style.cssText="font-size:10px;color:#9CA3AF;line-height:1.5;margin-bottom:16px";
+var printBtn=document.createElement("button");printBtn.textContent="Print / Save PDF";printBtn.style.cssText="width:100%;padding:12px;background:#16C762;color:#0A3D1F;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.02em";printBtn.onclick=function(){window.print();};
+inner.appendChild(hdr);inner.appendChild(clientSec);inner.appendChild(lineItems);inner.appendChild(totalDiv);inner.appendChild(sigSec);inner.appendChild(disc);inner.appendChild(printBtn);
+modal.appendChild(inner);document.body.appendChild(modal);}
+var shopName=(window.shopSettings&&shopSettings.name)||"Stone Fabrication";
+document.getElementById("ce-shop-name").textContent=shopName;
+document.getElementById("ce-date").textContent="Estimate Date: "+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+var jobs=window.sd_jobs||window.jobs_sd||[];
+var q=window.sd_activeQuote||window.currentQuote||(jobs.length?jobs[0]:{});
+document.getElementById("ce-client-name").textContent=q.customer||q.clientName||"Valued Customer";
+document.getElementById("ce-client-addr").textContent=q.address||q.projectAddress||"Project Address";
+var lineItems=document.getElementById("ce-line-items");
+var items=q.lineItems||q.items||[{desc:"Stone Countertop Fabrication & Installation",qty:1,price:q.total||q.amount||0}];
+var runTotal=0;
+lineItems.innerHTML="<div style='font-size:10px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:8px;display:grid;grid-template-columns:1fr auto auto;gap:8px'><span>Item</span><span style=text-align:right>Qty</span><span style=text-align:right>Price</span></div>";
+items.forEach(function(item){var row=document.createElement("div");row.style.cssText="display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:8px 0;border-bottom:1px solid #F3F4F6;font-size:13px;align-items:center";var d=document.createElement("div");d.textContent=item.desc||item.description||item.name||"Service";var q2=document.createElement("div");q2.style.cssText="text-align:right;color:#6B7280";q2.textContent=item.qty||1;var p=document.createElement("div");p.style.cssText="text-align:right;font-weight:700";var price=parseFloat(item.price||item.amount||0);runTotal+=price*(item.qty||1);p.textContent="$"+price.toLocaleString();row.appendChild(d);row.appendChild(q2);row.appendChild(p);lineItems.appendChild(row);});
+document.getElementById("ce-total").textContent="$"+runTotal.toLocaleString();
+if(runTotal===0&&q.total){document.getElementById("ce-total").textContent="$"+parseFloat(q.total).toLocaleString();}
+modal.style.display="flex";}
+</script>
+<script>
+setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
+</script>
 </body></html>
