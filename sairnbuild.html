@@ -3383,7 +3383,58 @@ function sbPrintPunchList() {
     '<h2>Punch List — ' + sbSettings.company + '</h2><p>Date: ' + new Date().toLocaleDateString() + '</p>' +
     '<table><thead><tr><th>#</th><th>Description</th><th>Trade</th><th>Assigned To</th><th>Due Date</th><th>Sign Off</th></tr></thead><tbody>' + rows + '</tbody></table>' +
     '<div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Owner / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">GC / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Architect / Date</div></div>' +
-    '</body></html>';
+    '
+<script>
+// SAIRN PATCH — missing function fixes
+
+window.sbPortalAI = async function() {
+  var portalNameEl = document.getElementById('portal-name') || document.getElementById('sb-portal-name');
+  var projectEl = document.getElementById('portal-project') || document.getElementById('sb-portal-project');
+  var name = portalNameEl ? portalNameEl.value : 'Client';
+  var project = projectEl ? projectEl.value : 'your project';
+  var btn = document.querySelector('[onclick*="sbPortalAI"]');
+  if (btn) { btn.textContent = 'Generating...'; btn.disabled = true; }
+  try {
+    var res = await fetch('https://sairn.vercel.app/api/claude', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ app_id:'sairnbuild', is_demo:true, messages:[{
+        role:'user', content:'Write a professional client portal welcome message for a construction project. Client: ' + name + '. Project: ' + project + '. Include: welcome, project overview, how to use the portal, contact info placeholder. Keep it warm and professional.'
+      }]})
+    });
+    var data = await res.json();
+    var text = data.content && data.content[0] ? data.content[0].text : 'AI content unavailable.';
+    var output = document.getElementById('portal-ai-content') || document.getElementById('sb-portal-content');
+    if (output) { output.value = text; output.style.display = ''; }
+    else { alert(text); }
+  } catch(e) { alert('AI error: ' + e.message); }
+  finally { if (btn) { btn.textContent = '\u2728 AI Portal Content'; btn.disabled = false; } }
+};
+
+window.sbViewPhoto = function(photoId) {
+  var photos = [];
+  try { photos = JSON.parse(localStorage.getItem('sb_photos') || '[]'); } catch(e) {}
+  var photo = photos.find(function(p) { return p.id == photoId; });
+  if (!photo) { alert('Photo not found.'); return; }
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  modal.onclick = function() { modal.remove(); };
+  if (photo.data) {
+    var img = document.createElement('img');
+    img.src = photo.data;
+    img.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:8px;';
+    modal.appendChild(img);
+  } else {
+    modal.innerHTML = '<div style="color:#fff;text-align:center;padding:40px"><div style="font-size:60px">\ud83d\udcf7</div><div style="margin-top:12px">' + (photo.date||'Photo') + '</div></div>';
+  }
+  document.body.appendChild(modal);
+};
+
+window.viewMarkup = function(photoId) {
+  window.sbViewPhoto(photoId);
+};
+
+</script>
+</body></html>';
   var w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
