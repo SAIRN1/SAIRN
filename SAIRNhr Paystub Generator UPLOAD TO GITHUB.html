@@ -1,0 +1,264 @@
+<!-- 
+  SAIRNhr — PAYSTUB GENERATOR — COMPLETE PANEL REPLACEMENT
+  Paste this ENTIRE block to replace the existing paystub section inside Panel 4 (Payroll)
+  OR inject before </body> — the panel will auto-show when nav is clicked
+-->
+
+<!-- PAYSTUB PANEL (inject inside panel-payroll tab, or as standalone panel) -->
+<div id="ps-form-wrap" style="background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.1);margin-bottom:16px;">
+  <div style="font-size:14px;font-weight:700;color:#334155;margin-bottom:16px;display:flex;align-items:center;gap:8px;">&#129534;&#65039; Paystub Generator</div>
+
+  <!-- ROW 1: Company Info -->
+  <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;margin-top:4px;">Company Information</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Company Name</label><input id="ps-comp-name" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="SAIRN Technologies" value="SAIRN Technologies"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Company Address</label><input id="ps-comp-addr" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="123 Main St, City, ST 00000"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">EIN</label><input id="ps-ein" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="XX-XXXXXXX"></div>
+  </div>
+
+  <!-- ROW 2: Employee Info -->
+  <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Employee Information</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Full Name</label><input id="ps-emp-name" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="First Last"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Employee ID</label><input id="ps-emp-id" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="EMP-001"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Job Title</label><input id="ps-emp-title" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="Sales Manager"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Employee Address</label><input id="ps-emp-addr" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="123 Oak St, Westlake, OH 44145"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">SSN (last 4 or masked)</label><input id="ps-ssn" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="***-**-1234" value="***-**-****"></div>
+  </div>
+
+  <!-- ROW 3: Pay Details -->
+  <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Pay Details</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Pay Type</label>
+      <select id="ps-pay-type" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;background:#fff;" onchange="document.getElementById('ps-hours-row').style.display=this.value==='hourly'?'grid':'none'">
+        <option value="salary">Salary</option>
+        <option value="hourly">Hourly</option>
+      </select>
+    </div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Annual Salary / Hourly Rate</label><input id="ps-pay-rate" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="65000"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Pay Period</label>
+      <select id="ps-pay-period" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;background:#fff;">
+        <option value="weekly">Weekly (52x)</option>
+        <option value="biweekly" selected>Bi-Weekly (26x)</option>
+        <option value="semimonthly">Semi-Monthly (24x)</option>
+        <option value="monthly">Monthly (12x)</option>
+      </select>
+    </div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Pay Date</label><input id="ps-pay-date" type="date" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;"></div>
+  </div>
+
+  <!-- Hourly hours row (hidden by default) -->
+  <div id="ps-hours-row" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Regular Hours</label><input id="ps-hours" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" value="80"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Overtime Hours</label><input id="ps-ot-hours" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" value="0"></div>
+  </div>
+
+  <!-- Pay period dates -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Period Start</label><input id="ps-period-start" type="date" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Period End</label><input id="ps-period-end" type="date" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;"></div>
+  </div>
+
+  <!-- ROW 4: Tax Info -->
+  <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Tax Information</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Federal Filing Status</label>
+      <select id="ps-filing" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;background:#fff;">
+        <option value="single">Single</option>
+        <option value="mfj">Married Filing Jointly</option>
+        <option value="hoh">Head of Household</option>
+      </select>
+    </div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">State</label>
+      <select id="ps-state" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;background:#fff;">
+        <option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option>
+        <option>CO</option><option>CT</option><option>DE</option><option>FL</option><option>GA</option>
+        <option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option>
+        <option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+        <option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option>
+        <option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option>
+        <option>NM</option><option>NY</option><option>NC</option><option>ND</option><option selected>OH</option>
+        <option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+        <option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option>
+        <option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option>
+      </select>
+    </div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Fed Allowances</label><input id="ps-fed-ex" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" value="0"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">State Allowances</label><input id="ps-state-ex" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" value="0"></div>
+  </div>
+
+  <!-- ROW 5: Deductions -->
+  <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Pre-Tax Deductions (per pay period)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px;">
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">401(k)</label><input id="ps-401k" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="0" value="0"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Medical</label><input id="ps-health" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="0" value="0"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Dental</label><input id="ps-dental" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="0" value="0"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Vision</label><input id="ps-vision" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="0" value="0"></div>
+    <div><label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:5px;text-transform:uppercase;">Other (post-tax)</label><input id="ps-other-ded" type="number" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;" placeholder="0" value="0"></div>
+  </div>
+
+  <!-- GENERATE BUTTON -->
+  <button id="ps-generate-btn" onclick="shGeneratePaystub()" style="padding:12px 28px;background:#7C3AED;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7C3AED'">
+    &#129534;&#65039; Generate Paystub
+  </button>
+</div>
+
+<!-- RESULT OUTPUT -->
+<div id="ps-result" style="margin-top:16px;"></div>
+
+<script>
+// ============================================================
+// SAIRN HR — PAYSTUB GENERATOR ENGINE (2026 Tax Tables)
+// ============================================================
+const _FED_S = [{max:11925,rate:.10},{max:48475,rate:.12},{max:103350,rate:.22},{max:197300,rate:.24},{max:250525,rate:.32},{max:626350,rate:.35},{max:Infinity,rate:.37}];
+const _FED_M = [{max:23850,rate:.10},{max:96950,rate:.12},{max:206700,rate:.22},{max:394600,rate:.24},{max:501050,rate:.32},{max:751600,rate:.35},{max:Infinity,rate:.37}];
+const _ST = {AL:.05,AK:0,AZ:.025,AR:.044,CA:.093,CO:.044,CT:.05,DE:.066,FL:0,GA:.055,HI:.08,ID:.058,IL:.0495,IN:.0305,IA:.057,KS:.057,KY:.045,LA:.0425,ME:.075,MD:.0575,MA:.05,MI:.0425,MN:.0985,MS:.047,MO:.048,MT:.059,NE:.0684,NV:0,NH:0,NJ:.0637,NM:.059,NY:.0685,NC:.0525,ND:.025,OH:.035,OK:.05,OR:.099,PA:.0307,RI:.0599,SC:.07,SD:0,TN:0,TX:0,UT:.0465,VT:.0875,VA:.0575,WA:0,WV:.065,WI:.0765,WY:0};
+
+function _fedTax(annual, filing) {
+  const brackets = filing === 'mfj' ? _FED_M : _FED_S;
+  const stdDed = filing === 'mfj' ? 30000 : 15000;
+  let taxable = Math.max(0, annual - stdDed), tax = 0, prev = 0;
+  for (const b of brackets) {
+    if (taxable <= prev) break;
+    tax += (Math.min(taxable, b.max) - prev) * b.rate;
+    prev = b.max;
+  }
+  return tax;
+}
+
+function shGeneratePaystub() {
+  const g = id => (document.getElementById(id) || {}).value || '';
+  const gn = id => parseFloat(g(id)) || 0;
+  const gi = id => parseInt(g(id)) || 0;
+
+  const compName = g('ps-comp-name') || 'Your Company';
+  const compAddr = g('ps-comp-addr');
+  const ein      = g('ps-ein');
+  const empName  = g('ps-emp-name') || 'Employee Name';
+  const empId    = g('ps-emp-id')   || '---';
+  const empTitle = g('ps-emp-title')|| '---';
+  const empAddr  = g('ps-emp-addr');
+  const ssn      = g('ps-ssn')      || '***-**-****';
+  const payType  = g('ps-pay-type') || 'salary';
+  const payRate  = gn('ps-pay-rate');
+  const hours    = gn('ps-hours')   || 80;
+  const otHours  = gn('ps-ot-hours');
+  const payPer   = g('ps-pay-period')|| 'biweekly';
+  const payDate  = g('ps-pay-date');
+  const pStart   = g('ps-period-start');
+  const pEnd     = g('ps-period-end');
+  const filing   = g('ps-filing')   || 'single';
+  const state    = (g('ps-state')   || 'OH').toUpperCase();
+  const fedEx    = gi('ps-fed-ex');
+  const stEx     = gi('ps-state-ex');
+  const k401     = gn('ps-401k');
+  const health   = gn('ps-health');
+  const dental   = gn('ps-dental');
+  const vision   = gn('ps-vision');
+  const other    = gn('ps-other-ded');
+
+  if (!payRate) { alert('Enter a pay rate or salary to generate a paystub.'); return; }
+
+  const perYear = {weekly:52,biweekly:26,semimonthly:24,monthly:12}[payPer] || 26;
+
+  // Gross
+  let reg = 0, ot = 0;
+  if (payType === 'salary') { reg = payRate / perYear; }
+  else { reg = payRate * hours; ot = payRate * 1.5 * otHours; }
+  const gross = reg + ot;
+  const annGross = gross * perYear;
+
+  // Pre-tax
+  const preTax = k401 + health + dental + vision;
+  const taxable = Math.max(0, gross - preTax);
+  const annTaxable = taxable * perYear;
+
+  // Fed tax
+  let fed = Math.max(0, _fedTax(annTaxable, filing) / perYear - (fedEx * 4300 / perYear));
+
+  // State
+  const sr = _ST[state] !== undefined ? _ST[state] : 0.05;
+  let stTax = sr === 0 ? 0 : Math.max(0, taxable * sr - (stEx * 87 / perYear));
+
+  // FICA
+  const ss  = Math.min(taxable, Math.max(0, 176100 / perYear)) * 0.062;
+  let medi  = taxable * 0.0145;
+  if (annGross > 200000) medi += Math.max(0, taxable - 200000 / perYear) * 0.009;
+
+  const totalDed = fed + stTax + ss + medi + preTax + other;
+  const net = gross - totalDed;
+
+  const fmt = v => '$' + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2});
+  const fd  = d => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '---';
+  const pl  = {weekly:'Weekly',biweekly:'Bi-Weekly',semimonthly:'Semi-Monthly',monthly:'Monthly'}[payPer];
+  const fl  = {single:'Single',mfj:'Married Filing Jointly',hoh:'Head of Household'}[filing];
+
+  const deductionRows = [
+    k401   > 0 ? `<tr><td style="padding:5px 0;color:#334155;">401(k) Contribution</td><td style="text-align:right;color:#334155;">${fmt(k401)}</td></tr>` : '',
+    health > 0 ? `<tr><td style="padding:5px 0;color:#334155;">Medical Insurance</td><td style="text-align:right;color:#334155;">${fmt(health)}</td></tr>` : '',
+    dental > 0 ? `<tr><td style="padding:5px 0;color:#334155;">Dental Insurance</td><td style="text-align:right;color:#334155;">${fmt(dental)}</td></tr>` : '',
+    vision > 0 ? `<tr><td style="padding:5px 0;color:#334155;">Vision Insurance</td><td style="text-align:right;color:#334155;">${fmt(vision)}</td></tr>` : '',
+    preTax === 0 ? `<tr><td colspan="2" style="padding:5px 0;color:#94a3b8;font-style:italic;">None this period</td></tr>` : ''
+  ].join('');
+
+  const earningsRows = payType === 'salary'
+    ? `<tr><td style="padding:9px 10px;border-bottom:1px solid #f1f5f9;color:#334155;">Regular Salary</td><td style="padding:9px 10px;text-align:right;color:#334155;">${fmt(payRate)}/yr</td><td style="padding:9px 10px;text-align:right;color:#94a3b8;">—</td><td style="padding:9px 10px;text-align:right;font-weight:600;color:#334155;">${fmt(reg)}</td></tr>`
+    : `<tr><td style="padding:9px 10px;border-bottom:1px solid #f1f5f9;color:#334155;">Regular Pay</td><td style="padding:9px 10px;text-align:right;color:#334155;">${fmt(payRate)}/hr</td><td style="padding:9px 10px;text-align:right;color:#334155;">${hours.toFixed(2)}</td><td style="padding:9px 10px;text-align:right;font-weight:600;color:#334155;">${fmt(reg)}</td></tr>`
+    + (otHours > 0 ? `<tr><td style="padding:9px 10px;border-bottom:1px solid #f1f5f9;color:#334155;">Overtime (1.5x)</td><td style="padding:9px 10px;text-align:right;color:#334155;">${fmt(payRate*1.5)}/hr</td><td style="padding:9px 10px;text-align:right;color:#334155;">${otHours.toFixed(2)}</td><td style="padding:9px 10px;text-align:right;font-weight:600;color:#334155;">${fmt(ot)}</td></tr>` : '');
+
+  const stub = `
+<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;font-family:'Segoe UI',system-ui,sans-serif;max-width:720px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+  <div style="background:#7C3AED;color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start;">
+    <div><div style="font-size:20px;font-weight:800;letter-spacing:-.5px;">${compName}</div>${compAddr ? '<div style="font-size:12px;color:#e9d5ff;margin-top:2px;">'+compAddr+'</div>' : ''}${ein ? '<div style="font-size:12px;color:#e9d5ff;">EIN: '+ein+'</div>' : ''}</div>
+    <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:#e9d5ff;text-transform:uppercase;letter-spacing:.5px;">Earnings Statement</div><div style="font-size:12px;color:#e9d5ff;margin-top:4px;">Pay Date: ${fd(payDate)}</div><div style="font-size:12px;color:#e9d5ff;">${pl} Pay Period</div>${pStart ? '<div style="font-size:11px;color:#ddd6fe;margin-top:2px;">'+fd(pStart)+' – '+fd(pEnd)+'</div>' : ''}</div>
+  </div>
+  <div style="background:#f5f3ff;padding:16px 24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;border-bottom:1px solid #e9d5ff;">
+    <div><div style="font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;">Employee</div><div style="font-weight:700;font-size:14px;color:#1e293b;margin-top:3px;">${empName}</div><div style="font-size:12px;color:#64748b;">${empTitle}</div></div>
+    <div><div style="font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;">Employee ID</div><div style="font-weight:600;font-size:13px;color:#1e293b;margin-top:3px;">${empId}</div><div style="font-size:12px;color:#64748b;">SSN: ${ssn}</div></div>
+    <div><div style="font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;">Tax Status</div><div style="font-weight:600;font-size:13px;color:#1e293b;margin-top:3px;">${fl}</div><div style="font-size:12px;color:#64748b;">State: ${state} ${sr===0?'(No Income Tax)':''}</div></div>
+  </div>
+  <div style="padding:20px 24px;">
+    <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Earnings</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#f8fafc;"><th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Description</th><th style="text-align:right;padding:8px 10px;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Rate</th><th style="text-align:right;padding:8px 10px;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Hours</th><th style="text-align:right;padding:8px 10px;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Amount</th></tr></thead>
+      <tbody>${earningsRows}<tr style="background:#f0fdf4;"><td colspan="3" style="padding:10px;font-weight:700;color:#15803d;">Gross Pay</td><td style="padding:10px;text-align:right;font-size:16px;font-weight:800;color:#15803d;">${fmt(gross)}</td></tr></tbody>
+    </table>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #e2e8f0;">
+    <div style="padding:20px 24px;border-right:1px solid #e2e8f0;">
+      <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Pre-Tax Deductions</div>
+      <table style="width:100%;font-size:13px;">${deductionRows}<tr style="border-top:1px solid #e2e8f0;"><td style="padding:8px 0;font-weight:700;color:#334155;">Total Pre-Tax</td><td style="text-align:right;font-weight:700;color:#dc2626;">${fmt(preTax)}</td></tr></table>
+    </div>
+    <div style="padding:20px 24px;">
+      <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Taxes Withheld</div>
+      <table style="width:100%;font-size:13px;">
+        <tr><td style="padding:5px 0;color:#334155;">Federal Income Tax</td><td style="text-align:right;color:#334155;">${fmt(fed)}</td></tr>
+        <tr><td style="padding:5px 0;color:#334155;">State Income Tax (${state})</td><td style="text-align:right;color:#334155;">${fmt(stTax)}</td></tr>
+        <tr><td style="padding:5px 0;color:#334155;">Social Security (6.2%)</td><td style="text-align:right;color:#334155;">${fmt(ss)}</td></tr>
+        <tr><td style="padding:5px 0;color:#334155;">Medicare (1.45%)</td><td style="text-align:right;color:#334155;">${fmt(medi)}</td></tr>
+        ${other > 0 ? '<tr><td style="padding:5px 0;color:#334155;">Other (Post-Tax)</td><td style="text-align:right;color:#334155;">'+fmt(other)+'</td></tr>' : ''}
+        <tr style="border-top:1px solid #e2e8f0;"><td style="padding:8px 0;font-weight:700;color:#334155;">Total Taxes</td><td style="text-align:right;font-weight:700;color:#dc2626;">${fmt(fed+stTax+ss+medi)}</td></tr>
+      </table>
+    </div>
+  </div>
+  <div style="background:#7C3AED;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;">
+    <div><div style="font-size:11px;color:#e9d5ff;font-weight:600;text-transform:uppercase;">Total Deductions</div><div style="font-size:18px;font-weight:800;color:#e9d5ff;">${fmt(totalDed)}</div></div>
+    <div style="text-align:center;"><div style="font-size:11px;color:#e9d5ff;margin-bottom:4px;">Est. YTD Gross</div><div style="font-size:14px;font-weight:700;color:#e9d5ff;">${fmt(annGross/2)}</div></div>
+    <div style="text-align:right;"><div style="font-size:11px;color:#e9d5ff;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Net Pay</div><div style="font-size:30px;font-weight:900;color:#fff;">${fmt(net)}</div></div>
+  </div>
+  <div style="padding:14px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;display:flex;justify-content:space-between;">
+    <div>This is an official earnings statement. Retain for your records.</div>
+    <div>Powered by SAIRNhr &bull; SAIRN Technologies</div>
+  </div>
+</div>
+<div style="display:flex;gap:10px;margin-top:14px;">
+  <button onclick="window.print()" style="padding:10px 20px;background:#7C3AED;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">&#128424;&#65039; Print / Save PDF</button>
+  <button onclick="document.getElementById('ps-result').innerHTML=''" style="padding:10px 20px;background:transparent;color:#7C3AED;border:1.5px solid #7C3AED;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">&#10005; Clear</button>
+</div>`;
+
+  const out = document.getElementById('ps-result');
+  if (out) { out.innerHTML = stub; out.scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+</script>
