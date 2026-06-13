@@ -3628,7 +3628,57 @@ function printCheck() {
     '<div><span class="ch-label">Memo</span><div class="ch-val" style="min-width:200px">'+safeHTML(memo)+'</div></div>' +
     '<div class="ch-sig"><span class="ch-label" style="display:block;margin-bottom:4px">Authorized Signature</span></div></div>' +
     '<div class="ch-micr">&#9989;&#9989;&#9989;  '+( document.getElementById('ck-routing-gen').value||'000000000')+':'+( document.getElementById('ck-acct-gen').value||'00000000')+'&#9989;&#9989;&#9989;</div>' +
-    '</div></div></body></html>';
+    '</div></div>
+<script>
+// SAIRN PATCH — missing function fixes
+
+window.runConflictCheck = async function() {
+  var matterEl = document.getElementById('matter-name') || document.getElementById('sl-matter-name');
+  var partiesEl = document.getElementById('matter-parties') || document.getElementById('sl-parties');
+  var clientEl = document.getElementById('matter-client') || document.getElementById('sl-client-name');
+  var matterName = matterEl ? matterEl.value.trim() : '';
+  var parties = partiesEl ? partiesEl.value.trim() : '';
+  var client = clientEl ? clientEl.value.trim() : '';
+  if (!matterName && !parties && !client) {
+    alert('Enter matter name, client, or party names to run a conflict check.');
+    return;
+  }
+  var btn = document.querySelector('[onclick*="runConflictCheck"]');
+  if (btn) { btn.textContent = '\ud83d\udd0d Checking...'; btn.disabled = true; }
+  var existingMatters = [];
+  try { existingMatters = JSON.parse(localStorage.getItem('sl_matters') || '[]'); } catch(e) {}
+  var existingClients = existingMatters.map(function(m) { return (m.client || '') + ' ' + (m.parties || '') + ' ' + (m.name || ''); }).join('; ');
+  try {
+    var res = await fetch('https://sairn.vercel.app/api/claude', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ app_id:'sairnlaw', is_demo:true, messages:[{
+        role:'user',
+        content: 'You are a law firm conflict check system. Check for conflicts between:\n\nNEW MATTER: ' + matterName + '\nNEW CLIENT: ' + client + '\nNEW PARTIES: ' + parties + '\n\nEXISTING MATTERS IN SYSTEM: ' + (existingClients || 'No existing matters') + '\n\nIdentify: 1) Any direct conflicts, 2) Potential conflicts requiring review, 3) Result: CLEAR or CONFLICT DETECTED. Be specific.'
+      }]})
+    });
+    var data = await res.json();
+    var result = data.content && data.content[0] ? data.content[0].text : 'Conflict check unavailable.';
+    var hasConflict = result.toLowerCase().includes('conflict detected') || result.toLowerCase().includes('conflict found');
+    var output = document.getElementById('conflict-result') || document.getElementById('sl-conflict-output');
+    if (output) {
+      output.style.display = 'block';
+      output.style.background = hasConflict ? '#fee2e2' : '#dcfce7';
+      output.style.border = '1px solid ' + (hasConflict ? '#fca5a5' : '#86efac');
+      output.style.borderRadius = '8px';
+      output.style.padding = '14px';
+      output.style.fontSize = '13px';
+      output.style.color = '#1f2937';
+      output.style.whiteSpace = 'pre-wrap';
+      output.textContent = result;
+    } else {
+      alert((hasConflict ? '\u26a0\ufe0f CONFLICT DETECTED\n\n' : '\u2705 CLEAR\n\n') + result);
+    }
+  } catch(e) { alert('Conflict check error: ' + e.message); }
+  finally { if (btn) { btn.textContent = '\ud83d\udd0d Conflict Check First'; btn.disabled = false; } }
+};
+
+</script>
+</body></html>';
   var w = window.open('','_blank');
   w.document.write(checkHtml);
   w.document.close();
