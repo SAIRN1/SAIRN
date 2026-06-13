@@ -1077,7 +1077,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div class="sh-nav-section">Compliance & Planning</div>
       <button class="sh-nav-btn" onclick="shPanel('i9w4',this)">📋 I-9 / W-4 Tracker</button>
       <button class="sh-nav-btn" onclick="shPanel('hcforecast',this)">📈 Headcount Forecast</button>
-          <button class="sh-btn-outline" onclick="shAddPayEmployee()">+ Add Employee</button>
+          <button class="sh-btn-outline" onclick="shAddPayEmployee()">+ Enroll from Roster</button>
           <div style="margin-left:auto;font-size:12px;color:var(--muted)">Period: <strong id="pay-period-label">—</strong></div>
         </div>
         <div class="sh-card" style="padding:0;overflow:hidden">
@@ -3382,11 +3382,132 @@ function shRenderPayrollRows(){
   shUpdatePayKPIs();
 }
 function shAddPayEmployee(){
-  var name=prompt('Employee name:');if(!name)return;
-  var gross=parseFloat(prompt('Gross pay this period (e.g. 2500):'));if(!gross)return;
-  payrollRegister.push({name:name,gross:gross,type:'FT',deductions:0});
-  shSave('sh_payroll',payrollRegister);shRenderPayrollRows();
+  // Build roster-linked enrollment modal
+  var enrolled=payrollRegister.map(function(e){return e.name;});
+  var roster=JSON.parse(localStorage.getItem('sh_employees')||'[]');
+  var available=roster.filter(function(e){
+    var full=(e.firstName||'')+' '+(e.lastName||'');
+    return !enrolled.includes(full.trim());
+  });
+
+  // Remove existing modal if present
+  var existing=document.getElementById('sh-pay-enroll-modal');
+  if(existing)existing.remove();
+
+  var modal=document.createElement('div');
+  modal.id='sh-pay-enroll-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+  var rowsHTML='';
+  if(roster.length===0){
+    rowsHTML='<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--muted)">No employees found in your roster. Add employees in the Employee Directory first, then enroll them here.</td></tr>';
+  } else if(available.length===0){
+    rowsHTML='<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--green)">All employees are already enrolled in the payroll register.</td></tr>';
+  } else {
+    available.forEach(function(emp){
+      var full=((emp.firstName||'')+' '+(emp.lastName||'')).trim();
+      var payVal=emp.pay?parseFloat(emp.pay.replace(/[^0-9.]/g,''))||0:0;
+      // Default gross: if annual salary divide by 26 (bi-weekly), else use as-is
+      var defaultGross=payVal>5000?Math.round(payVal/26):payVal||0;
+      rowsHTML+='<tr style="border-bottom:1px solid var(--border)">' +
+        '<td style="padding:10px 12px"><input type="checkbox" class="sh-enroll-chk" data-name="'+shEscAttr(full)+'" style="width:15px;height:15px;accent-color:var(--a);cursor:pointer"></td>' +
+        '<td style="padding:10px 12px;font-weight:600;font-size:13px">'+shEscHtml(full)+'</td>' +
+        '<td style="padding:10px 12px;font-size:13px;color:var(--muted)">'+shEscHtml(emp.title||'--')+'</td>' +
+        '<td style="padding:10px 12px;font-size:13px;color:var(--muted)">'+shEscHtml(emp.department||'--')+'</td>' +
+        '<td style="padding:10px 12px">' +
+          '<select data-name="'+shEscAttr(full)+'" class="sh-enroll-type" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface)">' +
+            '<option value="FT">Full-Time</option>' +
+            '<option value="PT">Part-Time</option>' +
+            '<option value="Contract">Contract</option>' +
+          '</select>' +
+        '</td>' +
+        '<td style="padding:10px 12px">' +
+          '<input type="number" data-name="'+shEscAttr(full)+'" class="sh-enroll-gross" placeholder="Gross per period" value="'+defaultGross+'" ' +
+            'style="width:110px;padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface)">' +
+        '</td>' +
+      '</tr>';
+    });
+  }
+
+  // Already-enrolled list
+  var enrolledHTML='';
+  if(payrollRegister.length){
+    enrolledHTML='<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">' +
+      '<div style="font-size:12px;font-weight:700;color:var(--a);margin-bottom:8px">Already in register ('+payrollRegister.length+')</div>' +
+      payrollRegister.map(function(e,i){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px;color:var(--text)">' +
+          '<span>'+shEscHtml(e.name)+' &mdash; '+shEscHtml(e.type||'FT')+' &mdash; $'+parseFloat(e.gross||0).toLocaleString()+'/period</span>' +
+          '<button onclick="shRemovePayEmp('+i+');document.getElementById(\'sh-pay-enroll-modal\').remove();shAddPayEmployee();" ' +
+            'style="background:var(--red);color:#fff;border:none;padding:2px 10px;border-radius:4px;font-size:11px;cursor:pointer">Remove</button>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
+  modal.innerHTML=
+    '<div style="background:var(--surface);border-radius:14px;padding:28px;width:700px;max-width:96vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+        '<div>' +
+          '<div style="font-size:16px;font-weight:800;color:var(--text)">Add Employees to Payroll Register</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-top:3px">Select employees from your roster, set pay type and gross pay per period, then click Enroll.</div>' +
+        '</div>' +
+        '<button onclick="document.getElementById(\'sh-pay-enroll-modal\').remove()" ' +
+          'style="background:var(--surface-2);border:1px solid var(--border);padding:6px 14px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--text)">Close</button>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse">' +
+        '<thead><tr style="background:var(--surface-2);border-bottom:2px solid var(--border)">' +
+          '<th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--a);font-weight:700;width:36px"></th>' +
+          '<th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--a);font-weight:700">Name</th>' +
+          '<th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--a);font-weight:700">Title</th>' +
+          '<th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--a);font-weight:700">Dept</th>' +
+          '<th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--a);font-weight:700">Type</th>' +
+          '<th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--a);font-weight:700">Gross / Period</th>' +
+        '</tr></thead>' +
+        '<tbody>'+rowsHTML+'</tbody>' +
+      '</table>' +
+      enrolledHTML +
+      '<div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">' +
+        '<button onclick="shEnrollSelectedPayEmployees()" ' +
+          'style="background:var(--a);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;flex:1">Enroll Selected</button>' +
+        '<button onclick="document.querySelectorAll(\'.sh-enroll-chk\').forEach(function(c){c.checked=true;})" ' +
+          'style="background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer">Select All</button>' +
+      '</div>' +
+      '<div id="sh-enroll-msg" style="display:none;margin-top:10px;background:var(--green-bg,#dcfce7);color:var(--green,#166534);border-radius:6px;padding:10px 14px;font-size:13px;font-weight:700;text-align:center"></div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
 }
+
+function shEnrollSelectedPayEmployees(){
+  var checks=document.querySelectorAll('.sh-enroll-chk:checked');
+  if(!checks.length){shNotify('Select at least one employee to enroll','red');return;}
+  var enrolled=0;
+  checks.forEach(function(chk){
+    var name=chk.dataset.name;
+    var typeEl=document.querySelector('.sh-enroll-type[data-name="'+name.replace(/"/g,'\\"')+'"]');
+    var grossEl=document.querySelector('.sh-enroll-gross[data-name="'+name.replace(/"/g,'\\"')+'"]');
+    var type=typeEl?typeEl.value:'FT';
+    var gross=grossEl?parseFloat(grossEl.value)||0:0;
+    if(!gross){shNotify('Enter gross pay for '+name,'red');return;}
+    if(!payrollRegister.find(function(e){return e.name===name;})){
+      payrollRegister.push({name:name,gross:gross,type:type,deductions:0});
+      enrolled++;
+    }
+  });
+  shSave('sh_payroll',payrollRegister);
+  shRenderPayrollRows();
+  var msg=document.getElementById('sh-enroll-msg');
+  if(msg){msg.textContent=enrolled+' employee(s) enrolled in payroll register.';msg.style.display='block';}
+  shNotify(enrolled+' employee(s) added to payroll','green');
+  setTimeout(function(){
+    var m=document.getElementById('sh-pay-enroll-modal');
+    if(m)m.remove();
+  },1400);
+}
+
+function shEscHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function shEscAttr(s){if(!s)return '';return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function shRemovePayEmp(i){payrollRegister.splice(i,1);shSave('sh_payroll',payrollRegister);shRenderPayrollRows();}
 function shRunPayroll(){
   var gross=payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0);},0);
