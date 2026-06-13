@@ -3653,8 +3653,7 @@ function shGenW2(){
     out+="<div class='w2-box'><div class='lbl'>17 State income tax</div><div class='val'>$"+e.state.toFixed(2)+"</div></div>";
     out+="</div></div>";
   });
-  out+="
-</body></html>";
+  out+="<\/body><\/html>";
   w2.document.write(out);w2.document.close();
   shNotify("W-2s generated for "+rows.length+" employee(s) — "+yr,"green");
 }
