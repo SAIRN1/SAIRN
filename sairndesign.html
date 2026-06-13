@@ -203,20 +203,20 @@ body{background:var(--bg);color:var(--tx);min-height:100vh;font-family:'Inter',s
 <body>
 <script>
 
-// ╔══════════════════════════════════════════════════════════╗
+// +==========================================================+
 
 function checkDesign_SmartFlags(){var f=[];try{var _v=(window.sdes_projects&&sdes_projects.filter(function(p){return p.deadline&&p.deadline<new Date().toISOString().split('T')[0]&&p.status!=='Complete';}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"project(s) past deadline"});}catch(e){}try{var _v=(window.sdes_projects&&sdes_projects.filter(function(p){return p.status==='Awaiting client approval';}).length);if(_v&&_v>0)f.push({t:"a",m:_v+" "+"project(s) awaiting approval"});}catch(e){}var fc=document.getElementById("sairn-flags");if(!fc){fc=document.createElement("div");fc.id="sairn-flags";fc.style.cssText="position:fixed;top:64px;right:12px;z-index:800;max-width:340px;display:flex;flex-direction:column;gap:6px;pointer-events:none";document.body.appendChild(fc);}fc.innerHTML="";f.slice(0,5).forEach(function(fl){var el=document.createElement("div");var bg=fl.t==="r"?"#FEE2E2":fl.t==="a"?"#FEF3C7":"#F0FDF4";var bd=fl.t==="r"?"#FCA5A5":fl.t==="a"?"#FCD34D":"#BBF7D0";var tx=fl.t==="r"?"#991B1B":fl.t==="a"?"#92400E":"#14532D";el.style.cssText="background:"+bg+";border:1px solid "+bd+";color:"+tx+";padding:10px 14px;border-radius:8px;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:all;cursor:pointer";el.textContent=fl.m;el.onclick=function(){el.remove();};fc.appendChild(el);setTimeout(function(){if(el.parentElement)el.remove();},9000);});}
 
-// ║   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  ║
-// ║   30-Layer Protection Framework                          ║
-// ║   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance ║
-// ║   Built by SAIRN Technologies - Michael L. Dibert       ║
-// ╚══════════════════════════════════════════════════════════╝
+// |   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  |
+// |   30-Layer Protection Framework                          |
+// |   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance |
+// |   Built by SAIRN Technologies - Michael L. Dibert       |
+// +==========================================================+
 
 (function() {
 'use strict';
 
-// ── CONFIGURATION ──────────────────────────────────────────
+// -- CONFIGURATION ------------------------------------------
 var SAIRN_SEC = {
   version: '3.0',
   appName: document.title || 'SAIRN App',
@@ -241,9 +241,9 @@ var SAIRN_SEC = {
   loginAttempts: parseInt(sessionStorage.getItem('s_attempts') || '0')
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 1 — BROWSER LAYER (Layers 1-18)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 1 — Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
@@ -614,9 +614,9 @@ window.saSanitizeResponse = function(text) {
   } catch(e) {}
 })();
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 2 — API PROXY LAYER (Layers 19-23)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 19 — Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
@@ -685,9 +685,9 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 3 — DATA LAYER (Layers 24-27)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 24 — Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
@@ -733,9 +733,9 @@ window.saWipeAllData = function() {
   location.reload();
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 4 — COMPLIANCE LAYER (Layers 28-30)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 28 — CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
@@ -811,7 +811,7 @@ window.saShowSecurityStatus = function() {
   alert(report);
 };
 
-// ── INITIALIZATION MESSAGE ─────────────────────────────────
+// -- INITIALIZATION MESSAGE ---------------------------------
 saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
 console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
 
@@ -1219,17 +1219,69 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <button class="bpri" style="max-width:180px;margin-top:14px" onclick="savePB()">&#128190; Save Price Book</button>
     </div>
 
+
+    <!-- SUPPLIERS PANEL -->
+    <div class="panel" id="panel-suppliers" style="overflow-y:auto;background:var(--bg)">
+      <div style="background:var(--adark);padding:20px 20px 16px;color:#fff">
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">&#128205; Regional Supplier Finder</h2>
+        <p style="font-size:12px;color:#A5B4FC;margin-bottom:14px">Enter your zip code to find every plumbing, electrical, and paint supplier near you — national distributors, regional chains, and local independents.</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:0;background:#fff;border-radius:10px;overflow:hidden;flex:1;max-width:320px">
+            <input type="text" id="sup-zip" placeholder="Enter ZIP code (e.g. 44145)" maxlength="5"
+              style="flex:1;padding:10px 14px;border:none;font-size:14px;font-weight:600;outline:none;color:var(--tx)"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            <button onclick="findSuppliers()" style="padding:10px 18px;background:var(--a);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Find Suppliers</button>
+          </div>
+          <div id="sup-region-badge" style="display:none;padding:5px 12px;background:rgba(255,255,255,.15);border-radius:20px;font-size:12px;color:#fff;font-weight:600"></div>
+        </div>
+      </div>
+
+      <!-- Trade filter tabs -->
+      <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:11px;font-weight:700;color:var(--mu);margin-right:4px">Trade:</span>
+        <button class="tbtn on" id="strade-all" onclick="filterTrade('all',this)">All Trades</button>
+        <button class="tbtn" id="strade-plumbing" onclick="filterTrade('plumbing',this)">&#128694; Plumbing</button>
+        <button class="tbtn" id="strade-electrical" onclick="filterTrade('electrical',this)">&#9889; Electrical</button>
+        <button class="tbtn" id="strade-paint" onclick="filterTrade('paint',this)">&#127912; Paint</button>
+        <button class="tbtn" id="strade-hvac" onclick="filterTrade('hvac',this)">&#10052; HVAC</button>
+        <button class="tbtn" id="strade-roofing" onclick="filterTrade('roofing',this)">&#127968; Roofing</button>
+        <button class="tbtn" id="strade-lumber" onclick="filterTrade('lumber',this)">&#129683; Lumber</button>
+        <button class="tbtn" id="strade-tile" onclick="filterTrade('tile',this)">&#129704; Tile/Stone</button>
+      </div>
+
+      <!-- Results area -->
+      <div id="sup-results" style="padding:16px">
+        <div style="text-align:center;padding:48px;color:var(--mu)">
+          <div style="font-size:48px;margin-bottom:14px">&#128205;</div>
+          <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Enter your ZIP code above</div>
+          <div style="font-size:12px">We'll find every supplier within driving distance — national distributors, regional chains, and local independents — organized by trade.</div>
+        </div>
+      </div>
+
+      <!-- AI Procurement Advisor -->
+      <div id="sup-ai-strip" style="display:none;margin:0 16px 16px;background:var(--atint);border:1px solid var(--bd);border-radius:12px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">&#10024; AI Procurement Advisor</div>
+        <div id="sup-ai-txt" style="font-size:12px;line-height:1.7;color:var(--tx)"></div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <span class="achip" onclick="supAsk('Which supplier in my area gives the best contractor pricing for plumbing?')">Best Contractor Pricing</span>
+          <span class="achip" onclick="supAsk('What should I ask when opening a contractor account at a supply house?')">Open Account Tips</span>
+          <span class="achip" onclick="supAsk('Compare Ferguson vs Hajoca vs Winsupply for a residential remodeler')">Compare Top 3</span>
+          <span class="achip" onclick="supAsk('What is the typical contractor discount I should negotiate at electrical distributors?')">Negotiate Discounts</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 <div class="notif" id="notif"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════
+// =======================================================
 //  SAIRNdesign v1.0 — World's Most Powerful Design Tool
 //  Built by SAIRN Technologies for Michael L. Dibert
 //  All apps: SAIRNbuild, StoneDesk, SAIRNdesign
 //  Proxy: sairn.vercel.app/api/claude
-// ═══════════════════════════════════════════════════════
+// =======================================================
 
 const CLAUDE = 'https://sairn.vercel.app/api/claude';
 const PINS = { user:'1234', admin:'9999' };
@@ -1447,9 +1499,9 @@ const APPLS=[
   {id:'wine',n:'Wine / Beverage',ico:'&#127863;',options:['None','15" Under-Counter Wine','18" Wine Column','24" Wine Column','15" Beverage Center'],def:0},
 ];
 
-// ═══════════════════════════════════
+// ===================================
 //  AUTH
-// ═══════════════════════════════════
+// ===================================
 function pp(k){
   const err=document.getElementById('aerr');
   err.textContent='';
@@ -1473,9 +1525,9 @@ function boot(){
   document.getElementById('pres-date').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  PANELS
-// ═══════════════════════════════════
+// ===================================
 function showP(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
@@ -1490,9 +1542,9 @@ function showP(id){
   if(id==='present') document.getElementById('pres-pname').textContent=document.getElementById('pname').textContent;
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  CATALOG
-// ═══════════════════════════════════
+// ===================================
 function initMfrTabs(){
   const tc=document.getElementById('mfrtabs');
   tc.innerHTML='';
@@ -1618,9 +1670,9 @@ function selW(btn,cid,w){
   if(dragCab&&dragCab.id===cid) dragCab.w=w;
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  CANVAS ENGINE
-// ═══════════════════════════════════
+// ===================================
 const SC=40; // scale px per foot
 
 function initCanvas(){
@@ -1768,9 +1820,9 @@ function onDbl(e){
   }
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  DRAG DROP
-// ═══════════════════════════════════
+// ===================================
 function cdOver(e){e.preventDefault();e.dataTransfer.dropEffect='copy';}
 function cdLeave(){}
 function cdDrop(e){
@@ -1792,9 +1844,9 @@ function cdDrop(e){
   dragCab=null;
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  PROPERTIES
-// ═══════════════════════════════════
+// ===================================
 function showCabProps(cab){
   document.getElementById('roomprops').style.display='none';
   document.getElementById('cabprops').style.display='';
@@ -1840,9 +1892,9 @@ function removeSel(){
   notify('Cabinet removed','red');
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  LIVE STATS & QUOTE
-// ═══════════════════════════════════
+// ===================================
 function updateStats(){
   const n=placed.length;
   document.getElementById('stcabs').textContent=n;
@@ -1873,9 +1925,9 @@ function updateStats(){
 
 function getPB(){try{const p=localStorage.getItem('sd_pb3');if(p)return JSON.parse(p);}catch(e){}return PB;}
 
-// ═══════════════════════════════════
+// ===================================
 //  AI
-// ═══════════════════════════════════
+// ===================================
 function toggleAI(){document.getElementById('aistrip').classList.toggle('on');}
 
 async function askAI(prompt){
@@ -1902,15 +1954,15 @@ Total quote estimate: ${tot}
 Designer request: ${prompt}`;
   try{
     const res=await fetch(CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
     const data=await res.json();
     area.textContent=data.content?.[0]?.text||'Unable to get response.';
   }catch(err){area.textContent='Connection error — check network and try again.';}
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  AUTO LAYOUT
-// ═══════════════════════════════════
+// ===================================
 function autoLayout(){
   placed=[];
   const{w,d}=getRoom();
@@ -1958,9 +2010,9 @@ function clearAll(){
   placed=[];selIdx=null;showRoomPanel();redraw();updateStats();checkFlags();
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  FLAGS
-// ═══════════════════════════════════
+// ===================================
 function checkFlags(){
   const bar=document.getElementById('flagbar');
   if(!placed.length){bar.innerHTML='<span class="flag fok">Drag cabinets from the catalog to begin building your layout</span>';return;}
@@ -1981,9 +2033,9 @@ function checkFlags(){
   bar.innerHTML=flags.map(f=>`<span class="flag ${f.t}">${f.m}</span>`).join('');
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  STYLES
-// ═══════════════════════════════════
+// ===================================
 function initStyles(){
   const g=document.getElementById('stgrid');
   g.innerHTML=STYLES.map(s=>`
@@ -2009,9 +2061,9 @@ function applyStyle(){
   showP('design');
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  MATERIALS
-// ═══════════════════════════════════
+// ===================================
 function initMaterials(){
   const g=document.getElementById('matgrid');
   g.innerHTML=MATS.map(m=>`
@@ -2043,9 +2095,9 @@ function calcStone(){
   document.getElementById('stinst2').textContent='$'+Math.round(parseFloat(sqft)*pb.si).toLocaleString();
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  APPLIANCES
-// ═══════════════════════════════════
+// ===================================
 function initAppliances(){
   const g=document.getElementById('applgrid');
   g.innerHTML=APPLS.map(a=>`
@@ -2061,9 +2113,9 @@ function initAppliances(){
     </div>`).join('');
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  LIDAR
-// ═══════════════════════════════════
+// ===================================
 function ldOver(e){e.preventDefault();document.getElementById('lddrop').classList.add('ov');}
 function ldDrop(e){e.preventDefault();document.getElementById('lddrop').classList.remove('ov');const f=e.dataTransfer.files[0];if(f)procLD(f);}
 function ldSel(e){const f=e.target.files[0];if(f)procLD(f);}
@@ -2092,9 +2144,9 @@ function ldManual(){
   redraw();notify("Floor plan: "+w+"' x "+d+"'",'grn');showP('design');
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  QUOTE
-// ═══════════════════════════════════
+// ===================================
 function buildQuote(){
   const tb=document.getElementById('qtbody');
   tb.innerHTML='';
@@ -2132,9 +2184,9 @@ function buildQuote(){
   document.getElementById('benchlbl').textContent='Your quote: $'+grand.toLocaleString();
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  3D
-// ═══════════════════════════════════
+// ===================================
 function gen3D(mode){
   const cv=document.getElementById('cv3d');
   document.getElementById('3d-btns').style.display='none';
@@ -2180,9 +2232,9 @@ function gen3D(mode){
   notify('3D render generated. Full WebGL Three.js render available in SAIRNdesign Pro.','grn');
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  PRESENTATION
-// ═══════════════════════════════════
+// ===================================
 async function genPresentation(){
   const area=document.getElementById('pres-narrative');
   area.innerHTML='<div class="aildr"><div class="aidot"></div><div class="aidot"></div><div class="aidot"></div><span>Generating your client presentation...</span></div>';
@@ -2202,7 +2254,7 @@ Investment: ${tot}
 Key cabinets: ${placed.slice(0,5).map(c=>c.n+' '+c.w+'"').join(', ')}`;
   try{
     const res=await fetch(CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
     const data=await res.json();
     area.textContent=data.content?.[0]?.text||'Unable to generate presentation.';
     // Spec cards
@@ -2220,9 +2272,9 @@ Key cabinets: ${placed.slice(0,5).map(c=>c.n+' '+c.w+'"').join(', ')}`;
   }catch(err){area.textContent='Connection error.';}
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  SAVE / HISTORY
-// ═══════════════════════════════════
+// ===================================
 function saveP(){
   try{
     const proj={id:Date.now(),name:document.getElementById('pname').textContent,date:new Date().toLocaleDateString(),rw:document.getElementById('rw').value,rd:document.getElementById('rd').value,layout:document.getElementById('rlayout').value,placed:[...placed],mat:selMat,style:activeStyle,quote:document.getElementById('qtotal').textContent};
@@ -2267,9 +2319,9 @@ function delP(id){
   try{let h=JSON.parse(localStorage.getItem('sd_dh2')||'[]');h=h.filter(x=>x.id!==id);localStorage.setItem('sd_dh2',JSON.stringify(h));renderHist();notify('Deleted','red');}catch(e){}
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  ADMIN
-// ═══════════════════════════════════
+// ===================================
 function savePB(){
   try{
     PB={bi:parseFloat(document.getElementById('pbbi').value)||85,wi:parseFloat(document.getElementById('pbwi').value)||65,ti:parseFloat(document.getElementById('pbti').value)||120,si:parseFloat(document.getElementById('pbsi').value)||45,mu:parseFloat(document.getElementById('pbmu').value)||30,tx:parseFloat(document.getElementById('pbtx').value)||8.5,lr:parseFloat(document.getElementById('pblr').value)||75,df:parseFloat(document.getElementById('pbdf').value)||250};
@@ -2278,9 +2330,9 @@ function savePB(){
   }catch(e){notify('Save failed','red');}
 }
 
-// ═══════════════════════════════════
+// ===================================
 //  MISC
-// ═══════════════════════════════════
+// ===================================
 function renameP(){
   const n=prompt('Project name:',document.getElementById('pname').textContent);
   if(n&&n.trim()) document.getElementById('pname').textContent=n.trim();
@@ -2334,10 +2386,10 @@ document.addEventListener('keydown',e=>{
 });
 
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 //  REGIONAL SUPPLIER FINDER ENGINE
 //  ZIP => Region => State => Supplier catalog
-// ═══════════════════════════════════════════════════════
+// =======================================================
 
 // Zip prefix to region + state mapping (first 3 digits)
 function getRegionFromZip(zip) {
@@ -2389,7 +2441,7 @@ function getRegionFromZip(zip) {
   return {region:'national',state:'US',city:'Your Area'};
 }
 
-// ── MASTER SUPPLIER DATABASE ──────────────────────────
+// -- MASTER SUPPLIER DATABASE --------------------------
 var SUPPLIERS = {
 
   plumbing: {
@@ -2894,7 +2946,7 @@ async function supAsk(prompt) {
   var msg = 'Contractor ZIP code: '+zip+' ('+region+'). Current design project: Kitchen and Bath remodel from SAIRNdesign. Question: '+prompt;
   try {
     var res = await fetch(CLAUDE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
     var data = await res.json();
     txt.textContent = data.content&&data.content[0] ? data.content[0].text : 'Unable to get response.';
   } catch(e) { txt.textContent = 'Connection error. Try again.'; }
@@ -2902,7 +2954,7 @@ async function supAsk(prompt) {
 
 
 
-// ── SAIRN BRIDGE SYNC ─────────────────────────────────────────────────────
+// -- SAIRN BRIDGE SYNC -----------------------------------------------------
 async function syncToSAIRNBridge() {
   try {
     await fetch('https://sairn.vercel.app/api/bridge', {
@@ -3283,57 +3335,46 @@ window.saDebounce = function(func, wait) {
   };
 };
 </script>
+
+<script>
+// SAIRNdesign Auth Functions
+function saUnlock() {
+  var pin = pinBuf;
+  pinBuf = '';
+  document.querySelectorAll('.pin-dot').forEach(function(d){ d.classList.remove('filled'); });
+  if (pin === PINS.admin) {
+    role = 'admin';
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('role-badge').textContent = 'ADMIN';
+    notify('Admin access granted');
+    boot();
+  } else if (pin === PINS.user) {
+    role = 'user';
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('role-badge').textContent = 'DESIGNER';
+    notify('Welcome to SAIRNdesign');
+    boot();
+  } else {
+    var dots = document.querySelectorAll('.pin-dot');
+    dots.forEach(function(d){ d.style.background='#EF4444'; });
+    setTimeout(function(){
+      pinBuf = '';
+      dots.forEach(function(d){ d.classList.remove('filled'); d.style.background=''; });
+    }, 600);
+  }
+}
+
+function saAcceptPrivacy() {
+  localStorage.setItem('sairn_privacy_sairndesign', '1');
+  var modal = document.getElementById('sa-privacy-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function saDeclinePrivacy() {
+  var modal = document.getElementById('sa-privacy-modal');
+  if (modal) modal.style.display = 'none';
+  notify('Privacy settings not saved. You may be asked again next session.');
+}
+</script>
 </body>
-</html
-    <!-- SUPPLIERS PANEL -->
-    <div class="panel" id="panel-suppliers" style="overflow-y:auto;background:var(--bg)">
-      <div style="background:var(--adark);padding:20px 20px 16px;color:#fff">
-        <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">&#128205; Regional Supplier Finder</h2>
-        <p style="font-size:12px;color:#A5B4FC;margin-bottom:14px">Enter your zip code to find every plumbing, electrical, and paint supplier near you — national distributors, regional chains, and local independents.</p>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <div style="display:flex;gap:0;background:#fff;border-radius:10px;overflow:hidden;flex:1;max-width:320px">
-            <input type="text" id="sup-zip" placeholder="Enter ZIP code (e.g. 44145)" maxlength="5"
-              style="flex:1;padding:10px 14px;border:none;font-size:14px;font-weight:600;outline:none;color:var(--tx)"
-              oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-            <button onclick="findSuppliers()" style="padding:10px 18px;background:var(--a);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Find Suppliers</button>
-          </div>
-          <div id="sup-region-badge" style="display:none;padding:5px 12px;background:rgba(255,255,255,.15);border-radius:20px;font-size:12px;color:#fff;font-weight:600"></div>
-        </div>
-      </div>
-
-      <!-- Trade filter tabs -->
-      <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <span style="font-size:11px;font-weight:700;color:var(--mu);margin-right:4px">Trade:</span>
-        <button class="tbtn on" id="strade-all" onclick="filterTrade('all',this)">All Trades</button>
-        <button class="tbtn" id="strade-plumbing" onclick="filterTrade('plumbing',this)">&#128694; Plumbing</button>
-        <button class="tbtn" id="strade-electrical" onclick="filterTrade('electrical',this)">&#9889; Electrical</button>
-        <button class="tbtn" id="strade-paint" onclick="filterTrade('paint',this)">&#127912; Paint</button>
-        <button class="tbtn" id="strade-hvac" onclick="filterTrade('hvac',this)">&#10052; HVAC</button>
-        <button class="tbtn" id="strade-roofing" onclick="filterTrade('roofing',this)">&#127968; Roofing</button>
-        <button class="tbtn" id="strade-lumber" onclick="filterTrade('lumber',this)">&#129683; Lumber</button>
-        <button class="tbtn" id="strade-tile" onclick="filterTrade('tile',this)">&#129704; Tile/Stone</button>
-      </div>
-
-      <!-- Results area -->
-      <div id="sup-results" style="padding:16px">
-        <div style="text-align:center;padding:48px;color:var(--mu)">
-          <div style="font-size:48px;margin-bottom:14px">&#128205;</div>
-          <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Enter your ZIP code above</div>
-          <div style="font-size:12px">We'll find every supplier within driving distance — national distributors, regional chains, and local independents — organized by trade.</div>
-        </div>
-      </div>
-
-      <!-- AI Procurement Advisor -->
-      <div id="sup-ai-strip" style="display:none;margin:0 16px 16px;background:var(--atint);border:1px solid var(--bd);border-radius:12px;padding:14px">
-        <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">&#10024; AI Procurement Advisor</div>
-        <div id="sup-ai-txt" style="font-size:12px;line-height:1.7;color:var(--tx)"></div>
-        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-          <span class="achip" onclick="supAsk('Which supplier in my area gives the best contractor pricing for plumbing?')">Best Contractor Pricing</span>
-          <span class="achip" onclick="supAsk('What should I ask when opening a contractor account at a supply house?')">Open Account Tips</span>
-          <span class="achip" onclick="supAsk('Compare Ferguson vs Hajoca vs Winsupply for a residential remodeler')">Compare Top 3</span>
-          <span class="achip" onclick="supAsk('What is the typical contractor discount I should negotiate at electrical distributors?')">Negotiate Discounts</span>
-        </div>
-      </div>
-    </div>
-
->
+</html>
