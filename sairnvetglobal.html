@@ -734,17 +734,67 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);font-si
 
 <!-- ANALYTICS -->
 <div id="panel-analytics" class="svg-panel">
-  <div class="svg-title">&#128200; Collection Analytics</div>
-  <div class="svg-sub">Population trends, species distribution, medical activity, breeding success rates, and AI conservation impact report.</div>
+  <div class="svg-title">&#128200; Collection Analytics &amp; Health Score</div>
+  <div class="svg-sub">Live collection health score calculated from welfare observations, enrichment frequency, medical activity, and compliance status. Updates in real time as keepers log data.</div>
   <div class="g4">
     <div class="kpi"><div class="kpi-v" id="an-animals">0</div><div class="kpi-l">Total Animals</div></div>
     <div class="kpi"><div class="kpi-v" id="an-species">0</div><div class="kpi-l">Species</div></div>
     <div class="kpi"><div class="kpi-v" id="an-endangered">0</div><div class="kpi-l">Endangered / CR</div></div>
     <div class="kpi"><div class="kpi-v" id="an-ssp">0</div><div class="kpi-l">SSP Managed</div></div>
   </div>
-  <div class="svg-btn-row"><button class="svg-btn" onclick="aiConservationReport()">&#10024; AI Conservation Impact Report</button></div>
+  <div class="svg-card" style="margin-bottom:14px">
+    <div style="font-size:11px;font-weight:800;color:var(--mu);text-transform:uppercase;margin-bottom:14px">Live Collection Health Score</div>
+    <div style="display:flex;align-items:center;gap:20px;margin-bottom:16px">
+      <div style="text-align:center;min-width:80px">
+        <div style="font-size:48px;font-weight:900;color:var(--a);line-height:1" id="health-score-val">--</div>
+        <div style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px">out of 100</div>
+      </div>
+      <div style="flex:1">
+        <div style="background:var(--bd);border-radius:8px;height:16px;margin-bottom:8px;overflow:hidden">
+          <div id="health-score-bar" style="height:16px;border-radius:8px;background:var(--a);width:0%;transition:width .5s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mu)"><span>0 Critical</span><span>25 Poor</span><span>50 Fair</span><span>75 Good</span><span>100 Excellent</span></div>
+        <div id="health-score-label" style="font-size:12px;font-weight:700;margin-top:8px;color:var(--a)"></div>
+      </div>
+    </div>
+    <div style="font-size:10px;font-weight:800;color:var(--mu);text-transform:uppercase;margin-bottom:10px">Score Breakdown vs AZA Benchmarks</div>
+    <div id="health-breakdown" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div style="font-size:10px;color:var(--mu);margin-top:10px">Score calculated from: welfare observations (40%), enrichment frequency (20%), medical activity (20%), compliance status (20%). AZA benchmark = 75+.</div>
+  </div>
+  <div class="svg-btn-row">
+    <button class="svg-btn" onclick="aiConservationReport()">&#10024; AI Conservation Impact Report</button>
+    <button class="svg-btn-sec" onclick="showPublicView()">&#128196; Public Animal Profiles</button>
+  </div>
   <div id="analytics-ai" style="display:none;margin-bottom:14px" class="ai-box"></div>
   <div id="analytics-breakdown"></div>
+</div>
+<!-- PUBLIC ANIMAL PROFILE VIEW -->
+<div id="public-view-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:32px;max-width:700px;width:95%;margin:20px auto;box-shadow:0 25px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div>
+        <div style="font-size:20px;font-weight:900;color:#134E4A" id="pv-facility-name">SAIRNvet Global Facility</div>
+        <div style="font-size:11px;color:var(--mu)">Animal Collection Report &mdash; <span id="pv-date"></span></div>
+      </div>
+      <button style="padding:8px 16px;background:transparent;border:1px solid var(--bd);border-radius:8px;cursor:pointer;font-size:12px" onclick="document.getElementById('public-view-modal').style.display='none'">Close</button>
+    </div>
+    <div style="background:linear-gradient(135deg,#134E4A,#0F766E);border-radius:12px;padding:20px;color:#fff;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;font-size:12px">
+        <div><div style="font-size:24px;font-weight:900;color:#99F6E4" id="pv-total">0</div><div style="opacity:.8">Animals</div></div>
+        <div><div style="font-size:24px;font-weight:900;color:#99F6E4" id="pv-species-count">0</div><div style="opacity:.8">Species</div></div>
+        <div><div style="font-size:24px;font-weight:900;color:#99F6E4" id="pv-endangered-count">0</div><div style="opacity:.8">Endangered</div></div>
+        <div><div style="font-size:24px;font-weight:900;color:#99F6E4" id="pv-ssp-count">0</div><div style="opacity:.8">SSP Programs</div></div>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:800;color:var(--mu);text-transform:uppercase;margin-bottom:12px">Animals in Our Care</div>
+    <div id="pv-animal-list" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px"></div>
+    <div style="border-top:1px solid var(--bd);padding-top:16px;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--mu);line-height:1.7">This report represents the animals currently in our care. All animals receive daily keeper observation, species-appropriate nutrition and enrichment, and regular veterinary attention. We are committed to the highest standards of animal welfare and conservation.</div>
+    </div>
+    <div style="text-align:center">
+      <button style="padding:12px 24px;background:var(--a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-right:8px" onclick="window.print()">&#128424; Print / PDF for Donors</button>
+    </div>
+  </div>
 </div>
 
 <!-- SUITE -->
@@ -967,7 +1017,80 @@ function askAI(q){document.getElementById('ai-input').value=q;sendAI();}
 document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.activeElement===document.getElementById('ai-input'))sendAI();});
 
 // ANALYTICS
-function updateAnalytics(){var endangered=svg_animals.filter(function(a){return a.iucn&&(a.iucn.includes('Endangered')||a.iucn.includes('Extinct'));}).length;var ssp=svg_animals.filter(function(a){return a.ssp&&a.ssp!=='No';}).length;document.getElementById('an-animals').textContent=svg_animals.length;document.getElementById('an-species').textContent=[...new Set(svg_animals.map(function(a){return a.sci||a.name;}))].length;document.getElementById('an-endangered').textContent=endangered;document.getElementById('an-ssp').textContent=ssp;renderSpeciesSummary();}
+function updateAnalytics(){
+  var endangered=svg_animals.filter(function(a){return a.iucn&&(a.iucn.includes('Endangered')||a.iucn.includes('Extinct'));}).length;
+  var ssp=svg_animals.filter(function(a){return a.ssp&&a.ssp!=='No';}).length;
+  document.getElementById('an-animals').textContent=svg_animals.length;
+  document.getElementById('an-species').textContent=[...new Set(svg_animals.map(function(a){return a.sci||a.name;}))].length;
+  document.getElementById('an-endangered').textContent=endangered;
+  document.getElementById('an-ssp').textContent=ssp;
+  calcCollectionHealthScore();
+  renderSpeciesSummary();
+}
+function calcCollectionHealthScore(){
+  if(!svg_animals.length){document.getElementById('health-score-val').textContent='--';document.getElementById('health-score-label').textContent='Add animals to calculate health score';return;}
+  var t=today();
+  // Component 1: Welfare score (40 pts) -- avg welfare of all recent observations
+  var recentBehav=svg_behavior.filter(function(b){var d=new Date(b.date||t);return (Date.now()-d.getTime())<30*24*60*60*1000;});
+  var welfareScore=0;
+  if(recentBehav.length>0){
+    var avgW=recentBehav.reduce(function(s,b){return s+parseInt(b.welfare||3);},0)/recentBehav.length;
+    welfareScore=Math.round((avgW/5)*40);
+  } else {
+    welfareScore=25; // no data = middle score
+  }
+  // Component 2: Enrichment frequency (20 pts) -- enrichment sessions per animal per month
+  var enrichMonth=svg_enrichment.filter(function(e){var d=new Date(e.date||t);return (Date.now()-d.getTime())<30*24*60*60*1000;});
+  var enrichRate=svg_animals.length>0?enrichMonth.length/svg_animals.length:0;
+  var enrichScore=Math.min(Math.round(enrichRate*10),20); // 2+ sessions/animal/month = full score
+  // Component 3: Medical activity (20 pts) -- active medical monitoring
+  var medMonth=svg_medical.filter(function(m){var d=new Date(m.date||t);return (Date.now()-d.getTime())<60*24*60*60*1000;});
+  var medRate=svg_animals.length>0?medMonth.length/svg_animals.length:0;
+  var medScore=Math.min(Math.round(medRate*20),20);
+  // Component 4: Compliance (20 pts)
+  var expCITES=svg_cites.filter(function(c){return c.exp&&c.exp<t;}).length;
+  var overdueQ=svg_quarantine.filter(function(q){return q.status==='In quarantine'&&q.start&&(Date.now()-new Date(q.start).getTime())>90*24*60*60*1000;}).length;
+  var compScore=20-Math.min(expCITES*5+overdueQ*5,20);
+  var total=welfareScore+enrichScore+medScore+compScore;
+  document.getElementById('health-score-val').textContent=total;
+  var bar=document.getElementById('health-score-bar');
+  bar.style.width=total+'%';
+  bar.style.background=total>=75?'#16a34a':total>=50?'#f59e0b':'#dc2626';
+  var lbl=document.getElementById('health-score-label');
+  if(total>=90)lbl.textContent='Excellent -- AZA gold standard level';
+  else if(total>=75)lbl.textContent='Good -- meets AZA benchmark (75+)';
+  else if(total>=50)lbl.textContent='Fair -- below AZA benchmark, improvement needed';
+  else lbl.textContent='Critical -- immediate welfare review required';
+  lbl.style.color=total>=75?'#16a34a':total>=50?'#d97706':'#dc2626';
+  // Breakdown bars
+  var components=[
+    {label:'Welfare Observations',score:welfareScore,max:40,benchmark:30,unit:'pts'},
+    {label:'Enrichment Frequency',score:enrichScore,max:20,benchmark:15,unit:'pts'},
+    {label:'Medical Monitoring',score:medScore,max:20,benchmark:15,unit:'pts'},
+    {label:'Compliance Status',score:compScore,max:20,benchmark:18,unit:'pts'}
+  ];
+  document.getElementById('health-breakdown').innerHTML=components.map(function(c){
+    var pct=Math.round(c.score/c.max*100);
+    var benchPct=Math.round(c.benchmark/c.max*100);
+    var color=c.score>=c.benchmark?'#16a34a':c.score>=(c.benchmark*.7)?'#f59e0b':'#dc2626';
+    return '<div style="margin-bottom:2px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:600">'+c.label+'</span><span style="color:'+color+';font-weight:700">'+c.score+'/'+c.max+'</span></div><div style="background:var(--bd);border-radius:4px;height:8px;position:relative"><div style="background:'+color+';height:8px;border-radius:4px;width:'+pct+'%"></div><div style="position:absolute;top:-1px;left:'+benchPct+'%;width:2px;height:10px;background:#94a3b8" title="AZA benchmark"></div></div></div>';
+  }).join('');
+}
+function showPublicView(){
+  document.getElementById('pv-facility-name').textContent=svg_settings.name||'SAIRNvet Global Facility';
+  document.getElementById('pv-date').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('pv-total').textContent=svg_animals.length;
+  document.getElementById('pv-species-count').textContent=[...new Set(svg_animals.map(function(a){return a.sci||a.name;}))].length;
+  document.getElementById('pv-endangered-count').textContent=svg_animals.filter(function(a){return a.iucn&&(a.iucn.includes('Endangered')||a.iucn.includes('Extinct'));}).length;
+  document.getElementById('pv-ssp-count').textContent=svg_animals.filter(function(a){return a.ssp&&a.ssp!=='No';}).length;
+  var list=document.getElementById('pv-animal-list');
+  list.innerHTML=svg_animals.slice(0,12).map(function(a){
+    var iucnColor=a.iucn&&a.iucn.includes('Critically')?'#dc2626':a.iucn&&a.iucn.includes('Endangered')?'#d97706':'#16a34a';
+    return '<div style="border:1px solid var(--bd);border-radius:10px;padding:12px"><div style="font-weight:800;font-size:13px;margin-bottom:2px">'+safeH(a.name||'Unknown')+'</div><div style="font-style:italic;font-size:11px;color:var(--mu);margin-bottom:6px">'+safeH(a.sci||a.group||'')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="background:rgba(15,118,110,.1);color:#0F766E;padding:2px 8px;border-radius:100px;font-size:9px;font-weight:700">'+safeH(a.sex||'')+'</span>'+(a.iucn?'<span style="color:'+iucnColor+';font-size:9px;font-weight:700;padding:2px 8px;border-radius:100px;border:1px solid '+iucnColor+'">'+safeH(a.iucn.split(' ')[0]||'')+'</span>':'')+(a.ssp&&a.ssp!=='No'?'<span style="background:rgba(124,58,237,.1);color:#7C3AED;padding:2px 8px;border-radius:100px;font-size:9px;font-weight:700">SSP</span>':'')+'</div></div>';
+  }).join('')+(svg_animals.length>12?'<div style="color:var(--mu);font-size:12px;padding:12px;text-align:center">...and '+(svg_animals.length-12)+' more animals in our care</div>':'');
+  document.getElementById('public-view-modal').style.display='flex';
+}
+
 async function aiConservationReport(){var el=document.getElementById('analytics-ai');el.style.display='block';el.innerHTML=svgLoad('Generating conservation impact report');var endangered=svg_animals.filter(function(a){return a.iucn&&(a.iucn.includes('Endangered')||a.iucn.includes('Extinct'));});var sspAnimals=svg_animals.filter(function(a){return a.ssp&&a.ssp!=='No';});var r=await callClaude(SYS,'Generate a conservation impact report for this facility. Total animals: '+svg_animals.length+'. Endangered or Extinct in Wild: '+endangered.length+' ('+endangered.map(function(a){return a.name;}).slice(0,5).join(', ')+'). SSP-managed: '+sspAnimals.length+'. Medical records: '+svg_medical.length+'. Enrichment sessions: '+svg_enrichment.length+'. Breeding events: '+svg_breeding.length+'. Analyze: (1) Conservation significance of this collection; (2) How this facility contributes to global species survival; (3) Recommendations to strengthen conservation mission; (4) Public education impact estimate; (5) Areas where AI and SAIRNvet Global have improved care and outcomes.',1200);el.textContent=r;}
 
 // SETTINGS
