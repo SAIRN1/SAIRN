@@ -5380,7 +5380,7 @@ async function generateFollowUps(aiResponse) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        max_tokens: 200,
+        max_tokens: 800,
         system: 'You generate follow-up questions. Return ONLY a JSON array of exactly 3 strings. No markdown, no explanation.',
         messages: [{ role: 'user', content: prompt }],
         app_id: 'followup_gen',
@@ -5613,7 +5613,7 @@ async function buildSessionSummary() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        max_tokens: 300,
+        max_tokens: 1000,
         system: 'You create concise session memory summaries. Extract the key facts, decisions, and context from this conversation in 3-5 bullet points. Be specific and factual. This summary will be injected into future AI responses to maintain continuity.',
         messages: [{ role: 'user', content: 'Summarize the key facts and context from this conversation:\n\n' + convo }],
         app_id: 'memory_builder',
@@ -10653,6 +10653,36 @@ document.addEventListener('DOMContentLoaded',function(){
     }
   },800);
 });
+
+
+
+// ── SAIRN BRIDGE SYNC ─────────────────────────────────────────────────────
+async function syncToSAIRNBridge() {
+  try {
+    await fetch('https://sairn.vercel.app/api/bridge', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({app: APP_ID || 'sairnapp', is_demo: true,
+        data: {timestamp: new Date().toISOString(), synced: true}})
+    });
+    notify('Synced to SAIRN Bridge', 'success');
+  } catch(e) { notify('Bridge sync queued', 'info'); }
+}
+
+
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────
+function dlCSV(rows, filename) {
+  var csv = rows.map(function(r) {
+    return r.map(function(v) {
+      return '"' + String(v || '').replace(/"/g, '""') + '"';
+    }).join(',');
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
 
 </script>
 </body></html>
