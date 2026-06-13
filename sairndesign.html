@@ -2907,6 +2907,58 @@ async function syncToSAIRNBridge() {
 
 </script>
 <script>setTimeout(function(){if(typeof checkDesign_SmartFlags==="function")checkDesign_SmartFlags();},2000);</script>
+
+<script>
+function showDesignProposal(){
+var modal=document.getElementById("sdes-proposal-modal");
+if(!modal){
+modal=document.createElement("div");modal.id="sdes-proposal-modal";
+modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";
+var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:580px;width:94%;max-height:92vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.3)";
+var hdr=document.createElement("div");hdr.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #6366F1";
+var title=document.createElement("div");title.style.cssText="font-size:20px;font-weight:900;color:#312E81";title.textContent="Design Proposal";
+var closeBtn=document.createElement("button");closeBtn.textContent="Close";closeBtn.style.cssText="padding:8px 16px;background:transparent;border:1px solid #E5E7EB;border-radius:8px;cursor:pointer;font-size:12px";closeBtn.onclick=function(){modal.style.display="none";};
+hdr.appendChild(title);hdr.appendChild(closeBtn);
+var hero=document.createElement("div");hero.style.cssText="background:#EEF2FF;border-radius:10px;padding:16px;margin-bottom:16px";
+var cName=document.createElement("div");cName.id="dp-client-name";cName.style.cssText="font-size:18px;font-weight:800;color:#312E81";
+var cProj=document.createElement("div");cProj.id="dp-project-name";cProj.style.cssText="font-size:13px;color:#6B7280;margin-top:4px";
+var cDt=document.createElement("div");cDt.style.cssText="font-size:11px;color:#9CA3AF;margin-top:2px";cDt.textContent="Proposal Date: "+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+hero.appendChild(cName);hero.appendChild(cProj);hero.appendChild(cDt);
+var phaseDiv=document.createElement("div");phaseDiv.id="dp-phases";phaseDiv.style.cssText="margin-bottom:16px";
+var budgetDiv=document.createElement("div");budgetDiv.id="dp-budget-bar";budgetDiv.style.cssText="margin-bottom:16px";
+var sigGrid=document.createElement("div");sigGrid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;margin-top:8px";
+["Client Approval Signature","Date"].forEach(function(l){var s=document.createElement("div");s.style.cssText="border-top:1px solid #374151;padding-top:8px";var lb=document.createElement("div");lb.textContent=l;lb.style.cssText="font-size:10px;color:#6B7280;margin-top:4px";s.appendChild(lb);sigGrid.appendChild(s);});
+var disc=document.createElement("div");disc.textContent="This proposal is valid for 14 days. Revisions beyond scope will require a change order. Deposit required to begin.";disc.style.cssText="font-size:10px;color:#9CA3AF;line-height:1.5;margin-bottom:16px";
+var printBtn=document.createElement("button");printBtn.textContent="Print / Save PDF";printBtn.style.cssText="width:100%;padding:12px;background:#6366F1;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer";printBtn.onclick=function(){window.print();};
+inner.appendChild(hdr);inner.appendChild(hero);inner.appendChild(phaseDiv);inner.appendChild(budgetDiv);inner.appendChild(sigGrid);inner.appendChild(disc);inner.appendChild(printBtn);
+modal.appendChild(inner);document.body.appendChild(modal);}
+var projects=window.sdes_projects||[];var p=projects[0]||{};
+document.getElementById("dp-client-name").textContent=p.client||p.clientName||"Client Name";
+document.getElementById("dp-project-name").textContent=(p.name||p.title||"Interior Design Project")+" — "+(p.type||p.room||"Full Design");
+var phases=p.phases||[{name:"Concept & Mood Board",status:"Complete"},{name:"Space Planning & Layout",status:"In Progress"},{name:"Material & Finish Selection",status:"Pending"},{name:"Final Drawings & FF&E Schedule",status:"Pending"},{name:"Installation Coordination",status:"Pending"}];
+var phaseDiv=document.getElementById("dp-phases");
+phaseDiv.innerHTML="<div style='font-size:11px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:8px'>Project Phases</div>";
+phases.forEach(function(ph){var row=document.createElement("div");row.style.cssText="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F3F4F6;font-size:13px";var nm=document.createElement("div");nm.textContent=ph.name;var st=document.createElement("div");var stColor=ph.status==="Complete"?"#16a34a":ph.status==="In Progress"?"#d97706":"#9CA3AF";st.textContent=ph.status||"Pending";st.style.cssText="font-size:11px;font-weight:700;color:"+stColor;row.appendChild(nm);row.appendChild(st);phaseDiv.appendChild(row);});
+var budget=parseFloat(p.budget||p.total||5000);var avg=8500;
+var pct=Math.min(budget/15000*100,100);var color=budget<=avg?"#16a34a":budget<=12000?"#d97706":"#dc2626";
+var bDiv=document.getElementById("dp-budget-bar");
+bDiv.innerHTML="<div style='font-size:11px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:6px'>Project Investment vs Market</div><div style='background:#F3F4F6;border-radius:6px;height:10px;position:relative;overflow:hidden;margin-bottom:4px'><div style='background:"+color+";height:10px;border-radius:6px;width:"+pct+"%;transition:width .4s'></div><div style='position:absolute;top:0;left:"+(avg/15000*100)+"%;width:2px;height:10px;background:#64748b'></div></div><div style='display:flex;justify-content:space-between;font-size:9px;color:#6B7280'><span>$2,500 entry</span><span>Avg $8,500</span><span>$15,000+ premium</span></div><div style='font-size:12px;font-weight:700;color:"+color+";margin-top:4px'>Project total $"+budget.toLocaleString()+" — "+(budget<avg?"Value positioning":"Premium positioning")+"</div>";
+modal.style.display="flex";}
+</script>
+<script>
+function showDesignBudgetBar(budget,type){
+var ranges={Kitchen:{low:4000,avg:9000,high:18000},Living:{low:3000,avg:7500,high:14000},Bedroom:{low:2000,avg:5000,high:10000},Bathroom:{low:2500,avg:6000,high:12000},Office:{low:2000,avg:5500,high:11000},Full:{low:15000,avg:35000,high:75000}};
+var r=ranges[type]||ranges.Full;var pct=Math.min(budget/r.high*100,100);
+var color=budget<=r.avg?"#16a34a":budget<=r.high?"#d97706":"#dc2626";
+var lbl=budget<r.low?"Below typical":budget<=r.avg?"Standard scope":budget<=r.high?"Premium scope":"Ultra-premium";
+var el=document.getElementById("sdes-budget-bar");if(!el)return;
+el.innerHTML="";var d=document.createElement("div");d.style.cssText="background:#F3F4F6;border-radius:10px;padding:12px;margin-top:10px";
+d.innerHTML="<div style='font-size:10px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:6px'>Budget vs "+type+" Market Range</div><div style='background:#E5E7EB;border-radius:6px;height:10px;position:relative;overflow:hidden;margin-bottom:4px'><div style='background:"+color+";height:10px;border-radius:6px;width:"+pct+"%;transition:width .4s'></div><div style='position:absolute;top:0;left:"+(r.avg/r.high*100)+"%;width:2px;height:10px;background:#64748b'></div></div><div style='display:flex;justify-content:space-between;font-size:9px;color:#6B7280;margin-bottom:4px'><span>$"+r.low.toLocaleString()+"</span><span>Avg $"+r.avg.toLocaleString()+"</span><span>$"+r.high.toLocaleString()+"</span></div><div style='font-size:11px;font-weight:700;color:"+color+'">'+"$"+budget.toLocaleString()+" — "+lbl+"</div>";
+el.appendChild(d);}
+</script>
+<script>
+setTimeout(function(){if(typeof checkDesign_SmartFlags==="function")checkDesign_SmartFlags();},2000);
+</script>
 </body>
 </html
     <!-- SUPPLIERS PANEL -->
