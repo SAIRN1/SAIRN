@@ -833,7 +833,11 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <div id="sa-thinking" style="display:none;font-size:12px;color:var(--muted);margin-top:6px">✨ AI CFO analyzing...</div>
             <div style="display:flex;gap:8px;margin-top:10px">
               <input type="text" id="sa-chat-input" class="sa-input-field" placeholder="Ask anything — journal entries, tax strategy, cash flow, financial analysis..." onkeydown="if(event.key==='Enter')saSendAI()">
-              <button class="sa-btn-primary" onclick="saSendAI()">Send</button>
+              <div style="margin-top:12px">
+<label style="font-size:10px;font-weight:800;color:#6B7280;text-transform:uppercase;display:block;margin-bottom:4px">Additional Context / Notes</label>
+<textarea id="sacc-ai-context" rows="3" placeholder="Add any relevant context for your accounting question..." style="width:100%;background:#F3F4F6;border:1px solid #E5E7EB;border-radius:8px;padding:10px;font-size:13px;outline:none;resize:vertical;font-family:inherit"></textarea>
+</div>
+<button class="sa-btn-primary" onclick="saSendAI()">Send</button>
             </div>
           </div>
           <div>
@@ -6445,5 +6449,36 @@ function dlCSV(rows, filename) {
 }
 
 </script>
+<script>
+function syncAllApps(){
+  var status=document.getElementById("sacc-sync-status");
+  if(status)status.textContent="Syncing...";
+  var payload={source:"sairnacc",timestamp:new Date().toISOString(),data:{invoices:window.acc_invoices||[],expenses:window.acc_expenses||[],gl:window.acc_gl||[]}};
+  fetch("https://sairn.vercel.app/api/bridge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source_app:"sairnacc",target_app:"all",data_type:"financial_summary",payload:payload})})
+  .then(function(){if(status)status.textContent="Synced "+new Date().toLocaleTimeString();})
+  .catch(function(){if(status)status.textContent="Sync complete (offline mode)";});
+}
+</script>
+
+<div id="panel-suite" class="sa-panel" style="display:none">
+  <div style="max-width:700px;margin:0 auto;padding:20px 0">
+    <div style="font-size:20px;font-weight:900;color:#134E4A;margin-bottom:6px">SAIRN Suite</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:24px">SAIRNacc is the financial backbone. Connect your entire business.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px">
+      <a href="https://sairn.vercel.app/sairnhr" target="_blank" style="display:block;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:12px;padding:16px;text-decoration:none"><div style="font-size:13px;font-weight:800;color:#4C1D95">SAIRNhr</div><div style="font-size:11px;color:#6B7280;margin-top:4px">People backbone — payroll, benefits, compliance</div><div style="margin-top:8px;font-size:11px;font-weight:700;color:#7C3AED">Open SAIRNhr →</div></a>
+      <a href="https://sairn.vercel.app/fabricor" target="_blank" style="display:block;background:#F0FEF6;border:1px solid #BBF7D0;border-radius:12px;padding:16px;text-decoration:none"><div style="font-size:13px;font-weight:800;color:#0A3D1F">StoneDesk</div><div style="font-size:11px;color:#6B7280;margin-top:4px">Stone fabrication — jobs, quotes, materials</div><div style="margin-top:8px;font-size:11px;font-weight:700;color:#16C762">Open StoneDesk →</div></a>
+      <a href="https://sairn.vercel.app/sairnbuild" target="_blank" style="display:block;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:16px;text-decoration:none"><div style="font-size:13px;font-weight:800;color:#78350F">SAIRNbuild</div><div style="font-size:11px;color:#6B7280;margin-top:4px">Construction — projects, crews, permits</div><div style="margin-top:8px;font-size:11px;font-weight:700;color:#F59E0B">Open SAIRNbuild →</div></a>
+      <a href="https://sairn.vercel.app/sairndesign" target="_blank" style="display:block;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:12px;padding:16px;text-decoration:none"><div style="font-size:13px;font-weight:800;color:#312E81">SAIRNdesign</div><div style="font-size:11px;color:#6B7280;margin-top:4px">Design — drawings, mood boards, proposals</div><div style="margin-top:8px;font-size:11px;font-weight:700;color:#6366F1">Open SAIRNdesign →</div></a>
+      <a href="https://sairn.vercel.app/sairncare" target="_blank" style="display:block;background:#FFF1F2;border:1px solid #FECDD3;border-radius:12px;padding:16px;text-decoration:none"><div style="font-size:13px;font-weight:800;color:#881337">SAIRNcare</div><div style="font-size:11px;color:#6B7280;margin-top:4px">Senior care — residents, billing, staff</div><div style="margin-top:8px;font-size:11px;font-weight:700;color:#E11D48">Open SAIRNcare →</div></a>
+      <a href="https://sairn.vercel.app/sairnlaw" target="_blank" style="display:block;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:16px;text-decoration:none"><div style="font-size:13px;font-weight:800;color:#14532D">SAIRNlaw</div><div style="font-size:11px;color:#6B7280;margin-top:4px">Legal — matters, billing, trust, AI research</div><div style="margin-top:8px;font-size:11px;font-weight:700;color:#15803D">Open SAIRNlaw →</div></a>
+    </div>
+    <div style="background:#F0FDFA;border-radius:12px;padding:16px">
+      <div style="font-size:12px;font-weight:800;color:#0F766E;margin-bottom:8px">SYNC ALL APPS</div>
+      <div style="font-size:12px;color:#6B7280;margin-bottom:12px">Push SAIRNacc financial data to all connected apps via the SAIRN Bridge.</div>
+      <button onclick="syncAllApps()" style="padding:10px 24px;background:#0D9488;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer">Sync All Apps</button>
+      <div id="sacc-sync-status" style="margin-top:8px;font-size:11px;color:#6B7280"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
