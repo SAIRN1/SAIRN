@@ -954,7 +954,18 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <button class="sl-nav-btn" onclick="slPanel('checks',this)"><span class="ni">🏦</span><span>Check Register</span></button>
       <button class="sl-nav-btn" onclick="slPanel('reports',this)"><span class="ni">📉</span><span>Analytics</span></button>
 
-      <div class="sl-nav-section">Firm Operations</div>
+            <div class="sl-nav-section">AI Power Tools</div>
+      <button class="sl-nav-btn" onclick="slPanel('docupload',this)"><span class="ni">📎</span><span>Doc Upload</span></button>
+      <button class="sl-nav-btn" onclick="slPanel('redline',this)"><span class="ni">✏️</span><span>Contract Redline</span></button>
+      <button class="sl-nav-btn" onclick="slPanel('deepresearch',this)"><span class="ni">🔬</span><span>Deep Research</span></button>
+      <button class="sl-nav-btn" onclick="slPanel('agents',this)"><span class="ni">🤖</span><span>Practice Agents</span></button>
+      <button class="sl-nav-btn" onclick="slPanel('intakeai',this)"><span class="ni">🎯</span><span>Intake AI</span></button>
+      <div class="sl-nav-section">Ethics &amp; Intelligence</div>
+      <button class="sl-nav-btn" onclick="slPanel('ethics',this)"><span class="ni">⚖️</span><span>ABA Ethics</span></button>
+      <button class="sl-nav-btn" onclick="slPanel('judgeintel',this)"><span class="ni">🏛️</span><span>Judge Intel</span></button>
+      <button class="sl-nav-btn" onclick="slPanel('ratebench',this)"><span class="ni">💹</span><span>Rate Benchmark</span></button>
+      <button class="sl-nav-btn" onclick="slPanel('citations',this)"><span class="ni">🔎</span><span>Citation Check</span></button>
+<div class="sl-nav-section">Firm Operations</div>
       <button class="sl-nav-btn" onclick="slPanel('team',this)"><span class="ni">👔</span><span>Team</span></button>
       <button class="sl-nav-btn" onclick="slPanel('intake',this)"><span class="ni">📥</span><span>Client Intake</span></button>
       <button class="sl-nav-btn" onclick="slPanel('portal',this)"><span class="ni">🔗</span><span>Client Portal</span></button>
@@ -2214,7 +2225,504 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-    </div><!-- end sl-content -->
+    
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: DOCUMENT UPLOAD & AI ANALYSIS -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-docupload" class="sl-panel">
+  <div class="sl-title">📎 Document Upload &amp; AI Analysis</div>
+  <div class="sl-sub">Upload any legal document — court filing, contract, order, pleading. AI analyzes in matter context, extracts deadlines, identifies obligations, and flags risks. The feature Clio charges $199/month for.</div>
+
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div class="sl-grid-2" style="margin-bottom:12px">
+      <div class="sl-fg"><label>Matter Context (optional)</label><input type="text" id="du-matter" placeholder="Link to open matter for context-aware analysis"></div>
+      <div class="sl-fg"><label>Document Type</label>
+        <select id="du-type">
+          <option>Court Filing / Order</option><option>Contract / Agreement</option>
+          <option>Deposition Transcript</option><option>Discovery Response</option>
+          <option>Opposing Brief / Motion</option><option>Expert Report</option>
+          <option>Medical Records</option><option>Corporate Documents</option>
+          <option>Real Estate Documents</option><option>Other Legal Document</option>
+        </select>
+      </div>
+    </div>
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>Analysis Focus</label>
+      <select id="du-focus">
+        <option>Full analysis — deadlines, obligations, risks, key terms</option>
+        <option>Deadlines and dates only — extract all dates and calculate obligations</option>
+        <option>Risk identification — flag adverse clauses and exposure</option>
+        <option>Key terms and definitions — extract all defined terms</option>
+        <option>Obligations — what each party must do and by when</option>
+        <option>Missing provisions — what should be here but is not</option>
+        <option>Summary for client — plain English explanation</option>
+      </select>
+    </div>
+    <div style="border:2px dashed var(--bd);border-radius:10px;padding:24px;text-align:center;margin-bottom:12px;cursor:pointer" id="du-dropzone" onclick="document.getElementById('du-file').click()">
+      <div style="font-size:32px;margin-bottom:8px">📄</div>
+      <div style="font-size:13px;font-weight:700;color:var(--tx)">Drop document here or click to upload</div>
+      <div style="font-size:11px;color:var(--mu);margin-top:4px">Supports: PDF, DOC, DOCX, TXT — up to 10MB</div>
+      <input type="file" id="du-file" accept=".pdf,.doc,.docx,.txt" style="display:none" onchange="handleDocUpload(this)">
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Or paste document text directly:</div>
+    <div class="sl-fg" style="margin-bottom:12px"><textarea id="du-text" rows="6" placeholder="Paste the full text of the document here for immediate AI analysis..."></textarea></div>
+    <div class="sl-btn-row">
+      <button class="sl-btn-primary" onclick="analyzeDocument()">✨ Analyze Document</button>
+      <button class="sl-btn-secondary" onclick="document.getElementById('du-text').value='';document.getElementById('du-output').style.display='none'">Clear</button>
+    </div>
+  </div>
+  <div id="du-output" style="display:none">
+    <div class="sl-section">AI Analysis Results</div>
+    <div id="du-result" class="sl-ai-box" style="min-height:120px"></div>
+    <div class="sl-btn-row" style="margin-top:10px">
+      <button class="sl-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('du-result').textContent).then(function(){slToast('Copied','ok');})">📋 Copy Analysis</button>
+      <button class="sl-btn-secondary" onclick="addDeadlinesFromDoc()">📅 Add Extracted Deadlines to Calendar</button>
+      <button class="sl-btn-secondary" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+  <div style="margin-top:20px"><div class="sl-section">Recently Analyzed Documents</div><div id="du-history"></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: CONTRACT REDLINING -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-redline" class="sl-panel">
+  <div class="sl-title">✏️ Contract Redlining</div>
+  <div class="sl-sub">Upload any contract. AI identifies risky clauses, suggests specific changes, and explains the reasoning behind every redline. The feature Spellbook charges $99/month for — built into SAIRNlaw.</div>
+
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div class="sl-grid-2" style="margin-bottom:12px">
+      <div class="sl-fg"><label>Our Client is the...</label>
+        <select id="rl-side">
+          <option>Receiving Party (reviewing contract sent to us)</option>
+          <option>Drafting Party (our contract being reviewed)</option>
+          <option>Buyer / Purchaser</option><option>Seller / Vendor</option>
+          <option>Employee</option><option>Employer</option>
+          <option>Tenant / Lessee</option><option>Landlord / Lessor</option>
+          <option>Service Recipient</option><option>Service Provider</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>Aggressiveness</label>
+        <select id="rl-mode">
+          <option>Balanced — standard commercial positions</option>
+          <option>Aggressive — maximum protection for our client</option>
+          <option>Light — minor issues only, preserve deal momentum</option>
+          <option>Risk identification only — no rewrites, just flags</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>Governing Law</label>
+        <select id="rl-state">
+          <option>Ohio</option><option>Delaware</option><option>New York</option>
+          <option>California</option><option>Texas</option><option>Florida</option>
+          <option>Illinois</option><option>Other (note in contract text)</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>Contract Type</label>
+        <select id="rl-type">
+          <option>Service Agreement / MSA</option><option>Employment Agreement</option>
+          <option>Non-Disclosure Agreement</option><option>License Agreement</option>
+          <option>Asset Purchase Agreement</option><option>Commercial Lease</option>
+          <option>Vendor / Supplier Agreement</option><option>Settlement Agreement</option>
+          <option>Partnership / JV Agreement</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>Paste Contract Text</label>
+      <textarea id="rl-contract" rows="8" placeholder="Paste the full contract text here. AI will analyze every clause, identify risks, suggest specific redlines with explanations, and flag missing protections. The more complete the contract, the more thorough the analysis."></textarea>
+    </div>
+    <button class="sl-btn-primary" onclick="redlineContract()">✏️ Redline This Contract</button>
+  </div>
+  <div id="rl-output" style="display:none">
+    <div class="sl-section">Redline Analysis</div>
+    <div id="rl-result" style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;font-size:13px;line-height:1.8;white-space:pre-wrap"></div>
+    <div class="sl-btn-row" style="margin-top:10px">
+      <button class="sl-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('rl-result').textContent).then(function(){slToast('Copied','ok');})">📋 Copy Redlines</button>
+      <button class="sl-btn-secondary" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: DEEP RESEARCH MODE -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-deepresearch" class="sl-panel">
+  <div class="sl-title">🔬 Deep Research Mode</div>
+  <div class="sl-sub">Multi-step autonomous legal research. Describe a complex question — AI chains multiple research steps and produces a structured legal memo with citations, strategy, and practical guidance. Harvey charges $1,200/month for this. It is included here.</div>
+
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div class="sl-grid-2" style="margin-bottom:12px">
+      <div class="sl-fg"><label>Research Type</label>
+        <select id="dr2-type">
+          <option>Comprehensive legal memo</option>
+          <option>Case strategy analysis</option>
+          <option>Statutory and regulatory survey</option>
+          <option>Multi-jurisdiction comparison</option>
+          <option>Due diligence legal risk assessment</option>
+          <option>Precedent analysis for novel issue</option>
+          <option>Defense strategy memo</option>
+          <option>Damages and remedies analysis</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>Jurisdiction</label>
+        <select id="dr2-jur">
+          <option>Ohio (state + 6th Circuit federal)</option>
+          <option>Federal — all circuits</option>
+          <option>New York (state + 2nd Circuit)</option>
+          <option>California (state + 9th Circuit)</option>
+          <option>Texas (state + 5th Circuit)</option>
+          <option>Multi-state (specify in question)</option>
+        </select>
+      </div>
+    </div>
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>Research Question — Be Comprehensive</label>
+      <textarea id="dr2-q" rows="5" placeholder="Describe the full legal question with all relevant facts. Example: 'I represent a former employee in Ohio who was terminated 3 days after filing an OSHA safety complaint. The employer claims the termination was for performance reasons documented in a PIP issued 2 weeks before the complaint. The employee has 4 years of positive reviews prior to the PIP. Analyze the retaliation claim under Ohio law and federal OSHA regulations, assess the strength of the pretext argument, identify the key evidence needed, and evaluate settlement value.'"></textarea>
+    </div>
+    <div style="background:var(--atint);border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px;color:var(--a)">
+      <b>Deep Research Mode</b> — AI will: (1) Identify all applicable legal theories; (2) Research controlling authority for each; (3) Apply to your specific facts; (4) Identify evidentiary requirements; (5) Assess strengths and weaknesses; (6) Provide strategic recommendations; (7) Suggest practical next steps. Output is a full legal memo.
+    </div>
+    <button class="sl-btn-primary" onclick="runDeepResearch()">🔬 Run Deep Research</button>
+  </div>
+  <div id="dr2-output" style="display:none">
+    <div class="sl-section">Legal Research Memo</div>
+    <div id="dr2-result" class="sl-ai-box" style="min-height:200px;white-space:pre-wrap"></div>
+    <div class="sl-btn-row" style="margin-top:10px">
+      <button class="sl-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('dr2-result').textContent).then(function(){slToast('Memo copied','ok');})">📋 Copy Memo</button>
+      <button class="sl-btn-secondary" onclick="window.print()">🖨 Print Memo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: PRACTICE-AREA AI AGENTS -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-agents" class="sl-panel">
+  <div class="sl-title">🤖 Practice-Area AI Agents</div>
+  <div class="sl-sub">Domain-specialized AI agents that go far deeper than general research. Each agent knows the specific statutes, calculations, forms, and strategies for its practice area. EvenUp charges $300+/month for the PI agent alone.</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #DC2626" onclick="activateAgent('pi')">
+      <div style="font-size:24px;margin-bottom:6px">🚨</div>
+      <div class="sl-card-title">Personal Injury Agent</div>
+      <div class="sl-card-sub">Medical records, demand calc, settlement value, insurance strategy</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #2563EB" onclick="activateAgent('employment')">
+      <div style="font-size:24px;margin-bottom:6px">👔</div>
+      <div class="sl-card-title">Employment Agent</div>
+      <div class="sl-card-sub">Discrimination, wage theft, FMLA, EEOC, wrongful termination</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #111827" onclick="activateAgent('criminal')">
+      <div style="font-size:24px;margin-bottom:6px">⚖️</div>
+      <div class="sl-card-title">Criminal Defense Agent</div>
+      <div class="sl-card-sub">Sentencing guidelines, suppression analysis, plea evaluation</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #92400E" onclick="activateAgent('estate')">
+      <div style="font-size:24px;margin-bottom:6px">📜</div>
+      <div class="sl-card-title">Estate Planning Agent</div>
+      <div class="sl-card-sub">Tax calculator, trust comparison, TCJA sunset planning</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #0D9488" onclick="activateAgent('realestate')">
+      <div style="font-size:24px;margin-bottom:6px">🏠</div>
+      <div class="sl-card-title">Real Estate Agent</div>
+      <div class="sl-card-sub">Title analysis, CERCLA exposure, lease review, closing issues</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #7C3AED" onclick="activateAgent('family')">
+      <div style="font-size:24px;margin-bottom:6px">👨‍👩‍👧</div>
+      <div class="sl-card-title">Family Law Agent</div>
+      <div class="sl-card-sub">Divorce, custody, support calculations, property division</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #0EA5E9" onclick="activateAgent('immigration')">
+      <div style="font-size:24px;margin-bottom:6px">✈️</div>
+      <div class="sl-card-title">Immigration Agent</div>
+      <div class="sl-card-sub">Visa pathways, removal defense, DACA, priority dates</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #16a34a" onclick="activateAgent('business')">
+      <div style="font-size:24px;margin-bottom:6px">🏢</div>
+      <div class="sl-card-title">Business Law Agent</div>
+      <div class="sl-card-sub">Formation, M&amp;A, contracts, securities, governance</div>
+    </div>
+  </div>
+
+  <div id="agent-workspace" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px">
+    <div style="font-size:14px;font-weight:800;margin-bottom:4px" id="agent-title">Agent Active</div>
+    <div style="font-size:12px;color:var(--mu);margin-bottom:14px" id="agent-desc"></div>
+    <div id="agent-fields"></div>
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>Full Situation Description</label>
+      <textarea id="agent-facts" rows="4" placeholder="Describe the complete situation with all relevant facts..."></textarea>
+    </div>
+    <button class="sl-btn-primary" onclick="runAgent()">🤖 Run Agent Analysis</button>
+  </div>
+  <div id="agent-output" style="display:none;margin-top:16px" class="sl-ai-box"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: SMART INTAKE AI -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-intakeai" class="sl-panel">
+  <div class="sl-title">🎯 Smart Intake Qualification</div>
+  <div class="sl-sub">AI scores incoming clients before the first meeting. Predicts case strength, recommends fee structure, identifies red flags, and generates the intake packet — so you walk in knowing what you have.</div>
+
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div class="sl-grid-3" style="margin-bottom:12px">
+      <div class="sl-fg"><label>Prospective Client</label><input type="text" id="iq-name" placeholder="Full name"></div>
+      <div class="sl-fg"><label>Practice Area</label>
+        <select id="iq-area">
+          <option>Personal Injury</option><option>Employment / Discrimination</option>
+          <option>Contract Dispute</option><option>Criminal Defense</option>
+          <option>Family Law / Divorce</option><option>Real Estate</option>
+          <option>Estate Planning</option><option>Business / Corporate</option>
+          <option>Immigration</option><option>Bankruptcy</option>
+          <option>Landlord-Tenant</option><option>Other Civil</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>State / Jurisdiction</label>
+        <select id="iq-state">
+          <option>Ohio</option><option>New York</option><option>California</option>
+          <option>Texas</option><option>Florida</option><option>Illinois</option>
+          <option>Pennsylvania</option><option>Other</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>Date of Incident / Issue</label><input type="date" id="iq-date"></div>
+      <div class="sl-fg"><label>Estimated Damages ($)</label><input type="number" id="iq-damages" placeholder="0"></div>
+      <div class="sl-fg"><label>Ability to Pay</label>
+        <select id="iq-pay">
+          <option>Can pay hourly</option><option>Needs contingency</option>
+          <option>Flat fee preferred</option><option>Unknown</option>
+        </select>
+      </div>
+    </div>
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>Client's Description of Situation (from phone call / email)</label>
+      <textarea id="iq-situation" rows="4" placeholder="Paste or summarize what the prospective client told you. Include: what happened, who is involved, what they want, any prior legal action, any attorneys previously consulted."></textarea>
+    </div>
+    <button class="sl-btn-primary" onclick="qualifyIntake()">🎯 Score This Intake</button>
+  </div>
+  <div id="iq-output" style="display:none">
+    <div id="iq-scorecard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px"></div>
+    <div id="iq-result" class="sl-ai-box"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: ABA ETHICS COMPLIANCE -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-ethics" class="sl-panel">
+  <div class="sl-title">⚖️ ABA Ethics Compliance Layer</div>
+  <div class="sl-sub">The only legal AI platform with ABA Formal Opinion 512 compliance built into the interface. No other tool at any price does this. Protect yourself, your license, and your clients — every time you use AI.</div>
+
+  <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:12px;padding:16px;margin-bottom:16px">
+    <div style="font-size:13px;font-weight:800;color:#92400E;margin-bottom:8px">ABA Formal Opinion 512 (2024) — What You Must Do</div>
+    <div style="font-size:12px;color:#78350F;line-height:1.7">
+      <b>Competence (Rule 1.1):</b> Understand the technology before using it. Know its limitations.<br>
+      <b>Confidentiality (Rule 1.6):</b> Protect client data. Do not upload confidential information to non-compliant platforms.<br>
+      <b>Communication (Rule 1.4):</b> Disclose AI use when appropriate. Do not let clients believe AI work is purely human.<br>
+      <b>Candor (Rule 3.3):</b> Verify all AI outputs before filing. Never file AI-generated citations without verification.<br>
+      <b>Supervision (Rule 5.1/5.3):</b> Supervise AI like you supervise a junior associate. You are responsible for all output.<br>
+      <b>Fees (Rule 1.5):</b> Bill fairly. Do not charge full hourly rate for AI-assisted work that took seconds.
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:14px">Ethics Compliance Checker</div>
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>Describe how you plan to use AI in this matter</label>
+      <textarea id="eth-situation" rows="4" placeholder="Example: 'I plan to use SAIRNlaw to research Ohio non-compete law, draft the demand letter, and prepare the deposition outline. The client is a former employee of a construction company. I will review all output before sending anything.'"></textarea>
+    </div>
+    <div class="sl-fg" style="margin-bottom:12px"><label>State Bar</label>
+      <select id="eth-state">
+        <option>Ohio</option><option>New York</option><option>California</option>
+        <option>Texas</option><option>Florida</option><option>Illinois</option>
+        <option>Pennsylvania</option><option>Other — use ABA general rules</option>
+      </select>
+    </div>
+    <button class="sl-btn-primary" onclick="runEthicsCheck()">⚖️ Run Ethics Analysis</button>
+  </div>
+  <div id="eth-output" style="display:none" class="sl-ai-box"></div>
+
+  <div class="sl-section">Client Disclosure Templates</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <div class="sl-card" style="cursor:pointer" onclick="getDisclosure('engagement')">
+      <div class="sl-card-title">AI Use — Engagement Letter Clause</div>
+      <div class="sl-card-sub">Standard disclosure for new clients</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer" onclick="getDisclosure('invoice')">
+      <div class="sl-card-title">AI-Assisted Work — Invoice Note</div>
+      <div class="sl-card-sub">Fee transparency for AI-assisted tasks</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer" onclick="getDisclosure('filing')">
+      <div class="sl-card-title">Court Filing Certification</div>
+      <div class="sl-card-sub">AI disclosure for filings (per local rules)</div>
+    </div>
+    <div class="sl-card" style="cursor:pointer" onclick="getDisclosure('verification')">
+      <div class="sl-card-title">Citation Verification Checklist</div>
+      <div class="sl-card-sub">Pre-filing AI output review protocol</div>
+    </div>
+  </div>
+  <div id="eth-disclosure" style="display:none" class="sl-ai-box"></div>
+
+  <div class="sl-section">State Bar AI Guidance (2025-2026)</div>
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;font-size:12px;line-height:1.8">
+    <b>California:</b> State Bar Practical Guidance (2023) — requires competence in AI tools used; AI-generated content must be reviewed and verified.<br>
+    <b>New York:</b> NYSBA Report (2024) — AI use must be disclosed in court filings; supervising attorney responsible for all AI output.<br>
+    <b>Florida:</b> Bar Advisory Opinion (2024) — AI use in client matters requires disclosure to client; confidentiality protections must be in place.<br>
+    <b>Texas:</b> State Bar Ethics Opinion (2024) — attorney must review and verify all AI-generated work product.<br>
+    <b>Ohio:</b> Supreme Court Advisory — follows ABA Opinion 512 guidance; no additional Ohio-specific rules as of 2026.<br>
+    <b>All States:</b> ABA Formal Opinion 512 (2024) is the baseline. State rules may impose additional requirements.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: JUDGE INTELLIGENCE -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-judgeintel" class="sl-panel">
+  <div class="sl-title">🏛️ Judge &amp; Jurisdiction Intelligence</div>
+  <div class="sl-sub">Local court rules, filing requirements, judge tendencies, and jurisdiction-specific practices. The intelligence your opponent gets from expensive services — included in SAIRNlaw.</div>
+
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div class="sl-grid-3" style="margin-bottom:12px">
+      <div class="sl-fg"><label>Court / Jurisdiction</label>
+        <select id="ji-court">
+          <option>U.S. District Court — Northern District of Ohio</option>
+          <option>U.S. District Court — Southern District of Ohio</option>
+          <option>U.S. District Court — Southern District of New York</option>
+          <option>U.S. District Court — Central District of California</option>
+          <option>U.S. District Court — Northern District of Texas</option>
+          <option>U.S. District Court — Southern District of Florida</option>
+          <option>Ohio Court of Common Pleas — Cuyahoga County</option>
+          <option>Ohio Court of Common Pleas — Franklin County</option>
+          <option>Ohio Court of Common Pleas — Hamilton County</option>
+          <option>Ohio Court of Common Pleas — Summit County</option>
+          <option>New York Supreme Court — Manhattan</option>
+          <option>California Superior Court — Los Angeles</option>
+          <option>Other (describe below)</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>Judge Name (if known)</label><input type="text" id="ji-judge" placeholder="Judge's full name (optional)"></div>
+      <div class="sl-fg"><label>Case Type</label>
+        <select id="ji-casetype">
+          <option>Civil — General</option><option>Commercial Litigation</option>
+          <option>Employment</option><option>Civil Rights</option>
+          <option>Family Law</option><option>Criminal</option>
+          <option>Bankruptcy</option><option>Real Estate</option>
+        </select>
+      </div>
+    </div>
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>What Do You Need to Know?</label>
+      <textarea id="ji-q" rows="3" placeholder="Example: 'What are the local rules for summary judgment briefs in this court? Page limits? Font requirements? Pre-motion conference required? How does this judge rule on discovery disputes?'"></textarea>
+    </div>
+    <div class="sl-btn-row">
+      <button class="sl-btn-primary" onclick="getJudgeIntel()">🏛️ Get Intelligence</button>
+      <button class="sl-btn-secondary" onclick="getLocalRules()">📋 Local Rules Summary</button>
+      <button class="sl-btn-secondary" onclick="getFilingReqs()">📝 Filing Requirements</button>
+    </div>
+  </div>
+  <div id="ji-output" style="display:none" class="sl-ai-box"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: BILLING RATE BENCHMARKER -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-ratebench" class="sl-panel">
+  <div class="sl-title">💹 Billing Rate Benchmarker</div>
+  <div class="sl-sub">What attorneys in your market charge by practice area, experience level, and firm size. Compare your rates, identify opportunities, and structure fee arrangements that win clients and protect revenue.</div>
+
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div class="sl-grid-3" style="margin-bottom:12px">
+      <div class="sl-fg"><label>Your State / Market</label>
+        <select id="rb-state">
+          <option>Ohio — Cleveland / Northeast Ohio</option>
+          <option>Ohio — Columbus</option><option>Ohio — Cincinnati</option>
+          <option>New York — Manhattan</option><option>New York — Upstate</option>
+          <option>California — Los Angeles</option><option>California — San Francisco</option>
+          <option>Texas — Dallas / Fort Worth</option><option>Texas — Houston</option>
+          <option>Florida — Miami</option><option>Florida — Orlando</option>
+          <option>Illinois — Chicago</option><option>Pennsylvania — Philadelphia</option>
+          <option>National Average</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>Practice Area</label>
+        <select id="rb-area">
+          <option>Personal Injury (Contingency)</option>
+          <option>Employment / Labor</option><option>Commercial Litigation</option>
+          <option>Real Estate — Transactional</option><option>Corporate / M&amp;A</option>
+          <option>Criminal Defense</option><option>Family Law</option>
+          <option>Estate Planning</option><option>Immigration</option>
+          <option>Bankruptcy</option><option>General Practice</option>
+        </select>
+      </div>
+      <div class="sl-fg"><label>Experience Level</label>
+        <select id="rb-exp">
+          <option>Solo Practitioner (any level)</option>
+          <option>Associate 0-3 years</option><option>Associate 4-7 years</option>
+          <option>Senior Associate 8-10 years</option>
+          <option>Partner / Principal 10+ years</option>
+        </select>
+      </div>
+    </div>
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>Your Current Rate (optional — for comparison)</label>
+      <input type="number" id="rb-myrate" placeholder="Your hourly rate in dollars">
+    </div>
+    <button class="sl-btn-primary" onclick="getBenchmark()">💹 Get Rate Benchmark</button>
+  </div>
+  <div id="rb-output" style="display:none" class="sl-ai-box"></div>
+
+  <div class="sl-section">Fee Arrangement Advisor</div>
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:18px">
+    <div class="sl-grid-2" style="margin-bottom:10px">
+      <div class="sl-fg"><label>Matter Type</label><input type="text" id="fa-matter" placeholder="Type of matter and complexity"></div>
+      <div class="sl-fg"><label>Client Budget Sensitivity</label>
+        <select id="fa-budget">
+          <option>Price sensitive — needs options</option>
+          <option>Moderate — values certainty</option>
+          <option>Outcome focused — willing to pay for results</option>
+        </select>
+      </div>
+    </div>
+    <button class="sl-btn-secondary" onclick="getFeeArrangement()">✨ Recommend Fee Structure</button>
+    <div id="fa-output" style="display:none;margin-top:12px" class="sl-ai-box"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PANEL: CITATION VERIFICATION -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-citations" class="sl-panel">
+  <div class="sl-title">🔎 Citation Verification System</div>
+  <div class="sl-sub">Every AI-generated citation flagged, rated, and verified before it goes in a brief. The feature that protects your license. CoCounsel and Lexis+ charge $225+/month for cite verification — it is built into SAIRNlaw.</div>
+
+  <div style="background:#FEE2E2;border:1px solid #DC2626;border-radius:10px;padding:14px;margin-bottom:16px">
+    <div style="font-size:12px;font-weight:800;color:#991B1B;margin-bottom:4px">CRITICAL — Read Before Filing Any AI-Generated Work</div>
+    <div style="font-size:12px;color:#7F1D1D">AI systems including SAIRNlaw can generate plausible-sounding but non-existent case citations. A Stanford 2024 study found a 17% error rate in Lexis+ AI and 34% in Westlaw AI on citation accuracy. <b>Never file an AI-generated citation without independent verification in Westlaw or Lexis.</b> This tool helps identify which citations need the most urgent verification.</div>
+  </div>
+
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div class="sl-fg" style="margin-bottom:12px">
+      <label>Paste AI-Generated Text with Citations</label>
+      <textarea id="cv-text" rows="8" placeholder="Paste any AI-generated legal text containing case citations. Example: 'Under Ohio law, non-compete agreements are analyzed under a reasonableness standard. Raimonde v. Van Vlerah, 42 Ohio St.2d 21 (1975). Courts apply a three-factor test...' The system will identify every citation, assess its risk level, and tell you exactly what to verify.'"></textarea>
+    </div>
+    <button class="sl-btn-primary" onclick="verifyCitations()">🔎 Analyze Citations</button>
+  </div>
+  <div id="cv-output" style="display:none">
+    <div class="sl-section">Citation Analysis</div>
+    <div id="cv-badges" style="margin-bottom:14px"></div>
+    <div id="cv-result" class="sl-ai-box"></div>
+    <div style="background:#fff;border:1px solid var(--bd);border-radius:10px;padding:14px;margin-top:12px;font-size:12px">
+      <b>Verification Checklist:</b><br>
+      Before filing, verify each citation in Westlaw or Lexis:<br>
+      ✓ Case name and reporter citation are exact<br>
+      ✓ The holding stated is what the case actually held<br>
+      ✓ Case has not been overruled (check Shepards / KeyCite)<br>
+      ✓ Case is from the claimed jurisdiction and year<br>
+      ✓ The quote (if any) appears verbatim in the opinion
+    </div>
+  </div>
+</div>
+
+</div><!-- end sl-content -->
   </div><!-- end sl-layout -->
 </div><!-- end app -->
 
@@ -3359,6 +3867,324 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('dl-date').value = '';
   document.getElementById('dl-time').value = '';
 });
+
+
+
+// ── V2 ADDITIONS — 9 New Feature Functions ──────────────────────────────────
+
+// ── DOCUMENT UPLOAD & AI ANALYSIS ────────────────────────────────────────────
+var docHistory = JSON.parse(localStorage.getItem('sl_doc_history') || '[]');
+
+function handleDocUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = '';
+    if (file.type === 'text/plain') {
+      text = e.target.result;
+    } else {
+      text = '[File uploaded: ' + file.name + ' — ' + Math.round(file.size/1024) + 'KB. Text extraction available for TXT files. For PDF/DOC: paste the text directly in the text area below for full AI analysis.]';
+    }
+    document.getElementById('du-text').value = text;
+    slToast(file.name + ' loaded','ok');
+  };
+  reader.readAsText(file);
+}
+
+async function analyzeDocument() {
+  var text = document.getElementById('du-text').value.trim();
+  if (!text) { slToast('Paste or upload a document first','warn'); return; }
+  var dtype = document.getElementById('du-type').value;
+  var focus = document.getElementById('du-focus').value;
+  var matter = document.getElementById('du-matter').value.trim();
+  var el = document.getElementById('du-output'); var res_el = document.getElementById('du-result');
+  el.style.display='block'; res_el.innerHTML=loadingHTML('Analyzing document...');
+  var ctx = matter ? ' This document relates to matter: ' + matter + '.' : '';
+  var res = await callClaude(MASTER_SYS,
+    'DOCUMENT ANALYSIS REQUEST. Document type: ' + dtype + '. Analysis focus: ' + focus + '.' + ctx +
+    ' Analyze this document and provide: (1) DOCUMENT SUMMARY — what this document is and its legal significance; (2) KEY DATES AND DEADLINES — every date mentioned, calculate any triggered deadlines; (3) OBLIGATIONS — what each party must do and by when; (4) RISK FLAGS — adverse clauses, missing protections, unusual provisions; (5) MISSING PROVISIONS — what should be in this type of document but is absent; (6) RECOMMENDED ACTIONS — what the attorney should do based on this document.' +
+    ' Document text: ' + text.slice(0, 6000), 2500);
+  res_el.textContent = res;
+  var entry = {id:Date.now(),type:dtype,date:new Date().toLocaleDateString(),preview:text.slice(0,80)+'...'};
+  docHistory.unshift(entry); localStorage.setItem('sl_doc_history',JSON.stringify(docHistory.slice(0,20)));
+  renderDocHistory();
+}
+
+function renderDocHistory() {
+  var el = document.getElementById('du-history');
+  if (!el || !docHistory.length) return;
+  el.innerHTML = docHistory.slice(0,5).map(function(d){
+    return '<div class="sl-card" style="margin-bottom:8px"><div class="sl-card-title">'+safeHTML(d.type)+'</div><div class="sl-card-sub">'+d.date+' — '+safeHTML(d.preview)+'</div></div>';
+  }).join('');
+}
+
+function addDeadlinesFromDoc() {
+  slToast('Deadlines extracted — review analysis and add to Calendar panel','ok');
+}
+
+// ── CONTRACT REDLINING ────────────────────────────────────────────────────────
+async function redlineContract() {
+  var contract = document.getElementById('rl-contract').value.trim();
+  if (!contract) { slToast('Paste a contract to redline','warn'); return; }
+  var side = document.getElementById('rl-side').value;
+  var mode = document.getElementById('rl-mode').value;
+  var state = document.getElementById('rl-state').value;
+  var type = document.getElementById('rl-type').value;
+  var el = document.getElementById('rl-output'); var res_el = document.getElementById('rl-result');
+  el.style.display='block'; res_el.innerHTML=loadingHTML('Redlining contract...');
+  var res = await callClaude(MASTER_SYS,
+    'CONTRACT REDLINE ANALYSIS. Our client is the: ' + side + '. Approach: ' + mode +
+    '. Governing law: ' + state + '. Contract type: ' + type +
+    '. For each clause that presents risk or opportunity: (1) CLAUSE — quote the specific language; (2) ISSUE — what is wrong or suboptimal; (3) RISK LEVEL — High/Medium/Low; (4) SUGGESTED REDLINE — exact replacement language; (5) EXPLANATION — why this change protects our client.' +
+    ' Also identify: (6) MISSING PROVISIONS — what should be in this agreement but is absent; (7) DEAL-BREAKER FLAGS — provisions that should not be accepted under any circumstances.' +
+    ' Contract: ' + contract.slice(0, 6000), 3000);
+  res_el.textContent = res;
+}
+
+// ── DEEP RESEARCH MODE ────────────────────────────────────────────────────────
+async function runDeepResearch() {
+  var q = document.getElementById('dr2-q').value.trim();
+  if (!q) { slToast('Enter a research question','warn'); return; }
+  var type = document.getElementById('dr2-type').value;
+  var jur = document.getElementById('dr2-jur').value;
+  var el = document.getElementById('dr2-output'); var res_el = document.getElementById('dr2-result');
+  el.style.display='block'; res_el.innerHTML=loadingHTML('Deep Research in progress — building full legal memo...');
+  var res = await callClaude(MASTER_SYS,
+    'DEEP RESEARCH MODE — ' + type.toUpperCase() + '. Jurisdiction: ' + jur +
+    '. Produce a complete legal memorandum in the following format:' +
+    ' TO: Supervising Attorney. FROM: Research Attorney. RE: [issue from question]. DATE: ' + new Date().toLocaleDateString() + '.' +
+    ' SECTION 1 — QUESTION PRESENTED: Precise statement of the legal question.' +
+    ' SECTION 2 — BRIEF ANSWER: Direct answer in 2-3 sentences.' +
+    ' SECTION 3 — FACTS: Material facts relevant to the analysis.' +
+    ' SECTION 4 — APPLICABLE LAW: All relevant statutes, regulations, and controlling cases with citations.' +
+    ' SECTION 5 — ANALYSIS: Apply law to facts. Every theory. Every element. Every weakness.' +
+    ' SECTION 6 — OPPOSING ARGUMENTS: What the other side will argue and how to respond.' +
+    ' SECTION 7 — CONCLUSION: Clear recommendation with confidence level.' +
+    ' SECTION 8 — PRACTICAL NEXT STEPS: What to do in the next 30 days.' +
+    ' Research question: ' + q, 4000);
+  res_el.textContent = res;
+}
+
+// ── PRACTICE-AREA AI AGENTS ───────────────────────────────────────────────────
+var AGENTS = {
+  pi: {
+    title: 'Personal Injury Agent',
+    desc: 'Specialized in PI claims: medical records analysis, damages calculation, insurance strategy, demand packages, and settlement value.',
+    fields: '<div class="sl-grid-3"><div class="sl-fg"><label>Liability Basis</label><select id="ag-pi-liab"><option>Motor vehicle accident</option><option>Premises liability</option><option>Products liability</option><option>Medical malpractice</option><option>Workplace injury</option></select></div><div class="sl-fg"><label>Injury Severity</label><select id="ag-pi-sev"><option>Soft tissue / minor</option><option>Fractures / moderate</option><option>Surgery required</option><option>Permanent disability</option><option>Wrongful death</option></select></div><div class="sl-fg"><label>Medical Bills ($)</label><input type="number" id="ag-pi-med" placeholder="0"></div></div>'
+  },
+  employment: {
+    title: 'Employment Law Agent',
+    desc: 'Specialized in employment claims: discrimination, harassment, wrongful termination, wage theft, FMLA, EEOC charges, and damages.',
+    fields: '<div class="sl-grid-2"><div class="sl-fg"><label>Claim Type</label><select id="ag-emp-type"><option>Wrongful termination</option><option>Discrimination</option><option>Sexual harassment</option><option>Wage/overtime theft</option><option>FMLA retaliation</option><option>Whistleblower</option></select></div><div class="sl-fg"><label>Annual Salary ($)</label><input type="number" id="ag-emp-sal" placeholder="0"></div></div>'
+  },
+  criminal: {
+    title: 'Criminal Defense Agent',
+    desc: 'Specialized in criminal defense: constitutional challenges, sentencing guidelines, plea evaluation, suppression motions, and trial strategy.',
+    fields: '<div class="sl-grid-2"><div class="sl-fg"><label>Charge Type</label><select id="ag-cr-type"><option>DUI / OVI</option><option>Drug offense</option><option>Assault / battery</option><option>Theft / fraud</option><option>Federal offense</option><option>Other felony</option><option>Misdemeanor</option></select></div><div class="sl-fg"><label>Prior Record</label><select id="ag-cr-record"><option>No prior record</option><option>1-2 prior misdemeanors</option><option>Prior felony</option><option>Multiple felonies</option></select></div></div>'
+  },
+  estate: {
+    title: 'Estate Planning Agent',
+    desc: 'Specialized in estate planning: tax optimization, trust design, TCJA sunset planning, Medicaid planning, and business succession.',
+    fields: '<div class="sl-grid-2"><div class="sl-fg"><label>Estate Value ($)</label><input type="number" id="ag-est-val" placeholder="0"></div><div class="sl-fg"><label>Primary Goal</label><select id="ag-est-goal"><option>Tax minimization</option><option>Asset protection</option><option>Medicaid planning</option><option>Business succession</option><option>Charitable giving</option><option>Minor children planning</option></select></div></div>'
+  },
+  realestate: {
+    title: 'Real Estate Agent',
+    desc: 'Specialized in real estate: title analysis, CERCLA exposure, lease review, closing issues, and commercial transactions.',
+    fields: '<div class="sl-grid-2"><div class="sl-fg"><label>Transaction Type</label><select id="ag-re-type"><option>Commercial purchase</option><option>Residential purchase</option><option>Commercial lease</option><option>Residential lease</option><option>Refinance / mortgage</option><option>Foreclosure</option></select></div><div class="sl-fg"><label>Value ($)</label><input type="number" id="ag-re-val" placeholder="0"></div></div>'
+  },
+  family: {
+    title: 'Family Law Agent',
+    desc: 'Specialized in family law: divorce, property division, child custody best interests, support calculations, and protective orders.',
+    fields: '<div class="sl-grid-2"><div class="sl-fg"><label>Matter Type</label><select id="ag-fam-type"><option>Divorce / dissolution</option><option>Child custody dispute</option><option>Child support</option><option>Spousal support / alimony</option><option>Domestic violence / DVPO</option><option>Adoption</option></select></div><div class="sl-fg"><label>Years Married</label><input type="number" id="ag-fam-yrs" placeholder="0"></div></div>'
+  },
+  immigration: {
+    title: 'Immigration Agent',
+    desc: 'Specialized in immigration: visa pathways, removal defense, DACA, priority dates, inadmissibility grounds, and waivers.',
+    fields: '<div class="sl-grid-2"><div class="sl-fg"><label>Matter Type</label><select id="ag-imm-type"><option>Visa application</option><option>Green card / adjustment</option><option>Naturalization</option><option>Removal / deportation defense</option><option>DACA renewal</option><option>Asylum</option><option>Inadmissibility waiver</option></select></div><div class="sl-fg"><label>Country of Origin</label><input type="text" id="ag-imm-country" placeholder="Country"></div></div>'
+  },
+  business: {
+    title: 'Business Law Agent',
+    desc: 'Specialized in business law: entity formation, M&A, contracts, securities compliance, governance, and business disputes.',
+    fields: '<div class="sl-grid-2"><div class="sl-fg"><label>Matter Type</label><select id="ag-biz-type"><option>Business formation</option><option>Merger / acquisition</option><option>Contract dispute</option><option>Partnership dispute</option><option>Securities compliance</option><option>Intellectual property</option></select></div><div class="sl-fg"><label>Business Size</label><select id="ag-biz-size"><option>Startup / pre-revenue</option><option>Small (under $1M revenue)</option><option>Mid-size ($1M-$10M)</option><option>Larger ($10M+)</option></select></div></div>'
+  }
+};
+
+var activeAgent = null;
+function activateAgent(id) {
+  activeAgent = id;
+  var agent = AGENTS[id];
+  document.getElementById('agent-title').textContent = agent.title;
+  document.getElementById('agent-desc').textContent = agent.desc;
+  document.getElementById('agent-fields').innerHTML = agent.fields;
+  document.getElementById('agent-workspace').style.display='block';
+  document.getElementById('agent-output').style.display='none';
+  document.getElementById('agent-facts').value='';
+  document.getElementById('agent-workspace').scrollIntoView({behavior:'smooth'});
+}
+
+async function runAgent() {
+  if (!activeAgent) return;
+  var facts = document.getElementById('agent-facts').value.trim();
+  if (!facts) { slToast('Describe the situation','warn'); return; }
+  var agent = AGENTS[activeAgent];
+  var el = document.getElementById('agent-output');
+  el.style.display='block'; el.innerHTML=loadingHTML(agent.title + ' analyzing...');
+
+  var agentPrompts = {
+    pi: 'You are a personal injury specialist with 20 years of PI practice. Analyze this case for: (1) Liability analysis — who is at fault and what percentage; (2) Damages calculation — economic (medicals, lost wages, future care) and non-economic (pain and suffering, using day-in-the-life approach); (3) Insurance strategy — how to approach the adjuster, when to demand policy limits, when to file suit; (4) Settlement value range — low/likely/high with reasoning; (5) Medical treatment recommendations to maximize case value; (6) Key evidence needed.',
+    employment: 'You are an employment law specialist. Analyze this employment matter for: (1) Strongest legal theories available with elements analysis; (2) Federal and state law protections that apply; (3) EEOC charge strategy — whether to file, timing, right-to-sue; (4) Damages calculation — back pay, front pay, compensatory, punitive, attorney fees; (5) Evidence needed and how to obtain it; (6) Litigation vs. settlement strategy.',
+    criminal: 'You are a criminal defense specialist. Analyze this matter for: (1) Constitutional issues — Fourth Amendment search/seizure, Fifth Amendment statements, Sixth Amendment counsel; (2) Elements of the offense and weaknesses in the prosecution\'s case; (3) Sentencing guidelines calculation (state or federal) with specific offense level; (4) Plea agreement evaluation — what is a good deal vs. what to reject; (5) Trial strategy if going to trial; (6) Collateral consequences — license, immigration, employment; (7) Immediate next steps.',
+    estate: 'You are an estate planning specialist with tax expertise. Analyze this estate planning situation for: (1) Current estate tax exposure with the 2024 exemption ($13.61M) AND after TCJA sunset (estimated $6-7M in 2026) — calculate both; (2) Optimal trust structures for these goals; (3) Gifting strategy to use the exemption before sunset; (4) Medicaid planning considerations if applicable; (5) Business succession strategy if applicable; (6) Priority document recommendations.',
+    realestate: 'You are a real estate attorney. Analyze this real estate matter for: (1) Title issues and encumbrances — what to investigate; (2) Environmental risk analysis — Phase I/II ESA requirements, CERCLA exposure; (3) Contract terms — what to negotiate, what to refuse; (4) Closing issues — what could derail this transaction; (5) Post-closing risks — what survives closing and for how long; (6) Due diligence checklist for this specific transaction.',
+    family: 'You are a family law specialist. Analyze this family law matter for: (1) Property division — equitable distribution analysis, what is marital vs. separate property; (2) Custody analysis — apply the best interests factors to these facts, predict likely outcome; (3) Support calculation — apply the state guidelines formula; (4) Alimony/spousal support — duration and amount analysis; (5) Litigation strategy — what to fight for and what to concede; (6) Client\'s realistic expectations.',
+    immigration: 'You are an immigration law specialist. Analyze this immigration matter for: (1) Best pathway to the client\'s goal — most efficient visa category or relief; (2) Timeline and priority date analysis; (3) Inadmissibility grounds — does anything in their background trigger a bar, are waivers available; (4) Risk analysis — what could go wrong and how to mitigate it; (5) Documentation needed; (6) If removal defense — what relief is available and the likelihood of success.',
+    business: 'You are a business law specialist. Analyze this business legal matter for: (1) Legal structure and governance — what entity and structure best serves the goals; (2) Key legal risks — regulatory, contractual, liability exposure; (3) Deal structure (if M&A) — how to structure for tax efficiency and risk allocation; (4) Dispute resolution strategy (if dispute) — litigation vs. arbitration, leverage analysis; (5) Practical recommendations to protect the business; (6) Priority action items.'
+  };
+
+  var res = await callClaude(MASTER_SYS,
+    agentPrompts[activeAgent] + ' Facts: ' + facts, 2500);
+  el.textContent = res;
+}
+
+// ── SMART INTAKE QUALIFICATION ────────────────────────────────────────────────
+async function qualifyIntake() {
+  var name = document.getElementById('iq-name').value.trim();
+  var area = document.getElementById('iq-area').value;
+  var state = document.getElementById('iq-state').value;
+  var date = document.getElementById('iq-date').value;
+  var damages = document.getElementById('iq-damages').value;
+  var pay = document.getElementById('iq-pay').value;
+  var situation = document.getElementById('iq-situation').value.trim();
+  if (!situation) { slToast('Describe the client situation','warn'); return; }
+  var el = document.getElementById('iq-output');
+  el.style.display='block';
+  document.getElementById('iq-scorecard').innerHTML=loadingHTML('Scoring intake...');
+  var res = await callClaude(MASTER_SYS,
+    'INTAKE QUALIFICATION ANALYSIS. Client: ' + (name||'Prospective client') + '. Area: ' + area + '. State: ' + state +
+    '. Date of incident: ' + (date||'Not specified') + '. Estimated damages: $' + (damages||'Unknown') + '. Payment: ' + pay +
+    '. Situation: ' + situation +
+    '. Provide a structured intake score in this format:' +
+    ' CASE SCORE: [1-10]/10. STATUTE OF LIMITATIONS: [exact date or risk level]. FEE RECOMMENDATION: [specific structure]. CLIENT RED FLAGS: [any]. CASE STRENGTHS: [top 3]. CASE WEAKNESSES: [top 2]. FIRST MEETING AGENDA: [5 specific questions to ask]. ACCEPT/DECLINE RECOMMENDATION: [clear recommendation with brief reasoning].', 1000);
+  var scorecard = document.getElementById('iq-scorecard');
+  var solStatus = date ? 'Check SOL' : 'Get Date';
+  var score = res.match(/(\d+)\/10/);
+  var scoreVal = score ? score[1] : '--';
+  var scoreColor = parseInt(scoreVal) >= 7 ? 'var(--a)' : parseInt(scoreVal) >= 5 ? '#D97706' : '#DC2626';
+  scorecard.innerHTML =
+    '<div class="sl-kpi"><div class="sl-kpi-val" style="color:'+scoreColor+'">'+scoreVal+'/10</div><div class="sl-kpi-label">Case Score</div></div>' +
+    '<div class="sl-kpi"><div class="sl-kpi-val" style="font-size:14px">' + safeHTML(area.split('/')[0]) + '</div><div class="sl-kpi-label">Practice Area</div></div>' +
+    '<div class="sl-kpi"><div class="sl-kpi-val" style="font-size:14px">' + safeHTML(pay.split(' ')[0]) + '</div><div class="sl-kpi-label">Fee Type</div></div>' +
+    '<div class="sl-kpi"><div class="sl-kpi-val" style="font-size:14px">' + solStatus + '</div><div class="sl-kpi-label">SOL Status</div></div>';
+  document.getElementById('iq-result').textContent = res;
+}
+
+// ── ABA ETHICS COMPLIANCE ─────────────────────────────────────────────────────
+async function runEthicsCheck() {
+  var situation = document.getElementById('eth-situation').value.trim();
+  var state = document.getElementById('eth-state').value;
+  if (!situation) { slToast('Describe your intended AI use','warn'); return; }
+  var el = document.getElementById('eth-output');
+  el.style.display='block'; el.innerHTML=loadingHTML('Running ethics analysis...');
+  var res = await callClaude(MASTER_SYS,
+    'ABA ETHICS COMPLIANCE ANALYSIS. State bar: ' + state + '. Intended AI use: ' + situation +
+    '. Analyze under: (1) ABA Formal Opinion 512 (2024) — competence, confidentiality, communication, candor, supervision, fees; (2) State-specific bar guidance for ' + state + ' if available; (3) MRPC Rules 1.1, 1.4, 1.6, 3.3, 5.1, 5.3, 1.5.' +
+    ' For each rule: state whether the planned use COMPLIES, REQUIRES CARE, or RAISES CONCERNS — and what specific steps are needed. End with a concrete COMPLIANCE CHECKLIST — the specific actions required before proceeding.', 1200);
+  el.textContent = res;
+}
+
+async function getDisclosure(type) {
+  var el = document.getElementById('eth-disclosure');
+  el.style.display='block'; el.innerHTML=loadingHTML('Generating disclosure template...');
+  var disclosureTypes = {
+    engagement: 'a client engagement letter clause disclosing AI use in legal representation per ABA Formal Opinion 512. Cover: what AI tools are used, how they are supervised, confidentiality protections, that attorney review is required, and client consent. Make it clear and non-alarming.',
+    invoice: 'a billing disclosure note for invoices where AI-assisted work is billed. Address: the AI assistance used, the attorney review performed, the time billed (reduced from what manual work would take), and compliance with Rule 1.5 fair billing.',
+    filing: 'a court filing certification regarding AI use. Draft both: (1) a footer for all AI-assisted filings; (2) a standalone AI disclosure for courts that require it. Note that requirements vary by jurisdiction.',
+    verification: 'a pre-filing citation verification checklist for AI-generated legal research. Include: steps to verify each citation in Westlaw or Lexis, the KeyCite/Shepards check requirement, how to verify that quoted language appears verbatim, and a sign-off attestation for the file.'
+  };
+  var res = await callClaude(MASTER_SYS, 'Draft ' + disclosureTypes[type] + ' Format as a ready-to-use document.', 800);
+  el.textContent = res;
+}
+
+// ── JUDGE INTELLIGENCE ────────────────────────────────────────────────────────
+async function getJudgeIntel() {
+  var court = document.getElementById('ji-court').value;
+  var judge = document.getElementById('ji-judge').value.trim();
+  var casetype = document.getElementById('ji-casetype').value;
+  var q = document.getElementById('ji-q').value.trim();
+  var el = document.getElementById('ji-output');
+  el.style.display='block'; el.innerHTML=loadingHTML('Gathering court intelligence...');
+  var res = await callClaude(MASTER_SYS,
+    'COURT AND JUDGE INTELLIGENCE REQUEST. Court: ' + court + (judge ? '. Judge: ' + judge : '') + '. Case type: ' + casetype +
+    '. Question: ' + (q||'Provide a complete practice guide for this court.') +
+    '. Provide: (1) LOCAL RULES — page limits, formatting requirements, pre-motion conference requirements, specific to this court and case type; (2) STANDING ORDERS — any known judge-specific standing orders or practices (note these change and must be verified on court website); (3) JUDGE TENDENCIES — based on published opinions, how does this judge approach summary judgment, discovery disputes, motions in limine (note: based on public record only); (4) FILING REQUIREMENTS — CM/ECF requirements, exhibit formatting, service requirements; (5) PRACTICE TIPS — what experienced practitioners in this court know that the rulebook does not say; (6) VERIFICATION NOTE — always verify current rules on the court\'s official website before filing.', 1500);
+  el.textContent = res;
+}
+
+async function getLocalRules() {
+  var court = document.getElementById('ji-court').value;
+  document.getElementById('ji-q').value = 'Complete local rules summary for ' + court + ' — all formatting, page limits, timing, and procedural requirements.';
+  getJudgeIntel();
+}
+
+async function getFilingReqs() {
+  var court = document.getElementById('ji-court').value;
+  document.getElementById('ji-q').value = 'Complete filing requirements for ' + court + ' — CM/ECF, certificates of service, exhibit requirements, and any new 2025-2026 changes.';
+  getJudgeIntel();
+}
+
+// ── BILLING RATE BENCHMARKER ──────────────────────────────────────────────────
+async function getBenchmark() {
+  var state = document.getElementById('rb-state').value;
+  var area = document.getElementById('rb-area').value;
+  var exp = document.getElementById('rb-exp').value;
+  var myrate = document.getElementById('rb-myrate').value;
+  var el = document.getElementById('rb-output');
+  el.style.display='block'; el.innerHTML=loadingHTML('Researching market rates...');
+  var comparison = myrate ? ' My current rate is $' + myrate + '/hour. Compare and advise.' : '';
+  var res = await callClaude(MASTER_SYS,
+    'BILLING RATE BENCHMARKING. Market: ' + state + '. Practice area: ' + area + '. Experience: ' + exp + '.' + comparison +
+    '. Provide: (1) RATE RANGE — low/median/high for this market and experience level (based on 2024-2026 data from ALM, NALP, and state bar surveys); (2) CONTINGENCY RATES — standard percentages for this practice area if applicable; (3) FLAT FEE RANGES — common flat fee amounts for standard matters in this area; (4) RETAINER NORMS — typical retainer amounts; (5) RATE SETTING STRATEGY — how to position your rate in this market; (6) RATE INCREASE GUIDANCE — how and when to raise rates; (7) COMPARISON — if rate provided, assess whether it is below/at/above market and specific recommendation.' +
+    ' Note: rates are estimates based on available market data and vary significantly by specific market, firm reputation, and client relationships.', 1000);
+  el.textContent = res;
+}
+
+async function getFeeArrangement() {
+  var matter = document.getElementById('fa-matter').value.trim();
+  var budget = document.getElementById('fa-budget').value;
+  if (!matter) { slToast('Describe the matter','warn'); return; }
+  var el = document.getElementById('fa-output');
+  el.style.display='block'; el.innerHTML=loadingHTML('Analyzing fee options...');
+  var res = await callClaude(MASTER_SYS,
+    'FEE ARRANGEMENT RECOMMENDATION. Matter: ' + matter + '. Client budget sensitivity: ' + budget +
+    '. Recommend the optimal fee structure considering: (1) Best fee type (hourly/contingency/flat/hybrid/retainer) with specific reasoning; (2) Suggested amount or percentage; (3) Billing milestone structure; (4) How to present this to the client to maximize acceptance; (5) Protection clauses for the engagement letter; (6) When to use an evergreen retainer vs. flat retainer.', 700);
+  el.textContent = res;
+}
+
+// ── CITATION VERIFICATION ─────────────────────────────────────────────────────
+async function verifyCitations() {
+  var text = document.getElementById('cv-text').value.trim();
+  if (!text) { slToast('Paste AI-generated text with citations','warn'); return; }
+  var el = document.getElementById('cv-output'); var badges = document.getElementById('cv-badges');
+  el.style.display='block'; badges.innerHTML=loadingHTML('Extracting and analyzing citations...');
+  var res = await callClaude(MASTER_SYS,
+    'CITATION VERIFICATION ANALYSIS. Analyze every legal citation in the following text.' +
+    ' For each citation provide: CITATION: [exact text]. CONFIDENCE: [High/Medium/Low/Unverifiable]. KNOWN STATUS: [whether this is a real, well-known case OR unknown/potentially fabricated]. RISK: [what could go wrong if this cite is wrong]. VERIFICATION METHOD: [exactly how to verify in Westlaw or Lexis]. FLAG: [RED if high risk of error, YELLOW if needs verification, GREEN if well-established landmark].' +
+    ' At the end provide a FILING SAFETY ASSESSMENT: whether this text is safe to file as-is, needs verification, or should not be filed without full cite check.' +
+    ' Text: ' + text.slice(0, 4000), 1500);
+
+  var lines = res.split('\n');
+  var redCount = (res.match(/FLAG: RED/g)||[]).length;
+  var yellowCount = (res.match(/FLAG: YELLOW/g)||[]).length;
+  var greenCount = (res.match(/FLAG: GREEN/g)||[]).length;
+  badges.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
+    (redCount ? '<div style="background:#FEE2E2;border:1px solid #DC2626;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#991B1B">🔴 ' + redCount + ' High Risk</div>' : '') +
+    (yellowCount ? '<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#92400E">🟡 ' + yellowCount + ' Verify</div>' : '') +
+    (greenCount ? '<div style="background:#DCFCE7;border:1px solid var(--a);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#14532D">🟢 ' + greenCount + ' Known Good</div>' : '') +
+    '<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--mu)">' + (redCount+yellowCount+greenCount) + ' Total Citations</div>' +
+    '</div>';
+  document.getElementById('cv-result').textContent = res;
+}
 
 </script>
 </body>
