@@ -1235,7 +1235,7 @@ async function generateFollowUps(aiResponse) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        max_tokens: 200,
+        max_tokens: 800,
         system: 'You generate follow-up questions. Return ONLY a JSON array of exactly 3 strings. No markdown, no explanation.',
         messages: [{ role: 'user', content: prompt }],
         app_id: 'followup_gen',
@@ -1468,7 +1468,7 @@ async function buildSessionSummary() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        max_tokens: 300,
+        max_tokens: 1000,
         system: 'You create concise session memory summaries. Extract the key facts, decisions, and context from this conversation in 3-5 bullet points. Be specific and factual. This summary will be injected into future AI responses to maintain continuity.',
         messages: [{ role: 'user', content: 'Summarize the key facts and context from this conversation:\n\n' + convo }],
         app_id: 'memory_builder',
@@ -7616,5 +7616,35 @@ console.log('ForeSee Medical, Verisys, Waystar, nThrive CRISP — all at $59/mo.
 var prodStats=JSON.parse(localStorage.getItem('sc_stats')||'{"queries":0,"cdi":0,"denials":0,"hcc":0,"history":[]}');
 function updateProdStats(t){prodStats.queries++;if(t==='cdi')prodStats.cdi++;if(t==='denial')prodStats.denials++;if(t==='hcc')prodStats.hcc++;prodStats.history.unshift({time:new Date().toLocaleTimeString(),type:t,date:new Date().toLocaleDateString()});if(prodStats.history.length>50)prodStats.history.pop();localStorage.setItem('sc_stats',JSON.stringify(prodStats));}
 function openDashboard(){document.getElementById('kpi-queries').textContent=prodStats.queries;document.getElementById('kpi-cdi').textContent=prodStats.cdi;document.getElementById('kpi-denials').textContent=prodStats.denials;document.getElementById('kpi-hcc').textContent=prodStats.hcc;var hist=prodStats.history.slice(0,10);document.getElementById('prod-history').innerHTML=hist.length?hist.map(function(h){return'<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'+h.date+' '+h.time+' — '+h.type+'</div>';}).join(''):'No activity yet.';document.getElementById('prod-dashboard').style.display='block';}
+
+
+// ── SAIRN BRIDGE SYNC ─────────────────────────────────────────────────────
+async function syncToSAIRNBridge() {
+  try {
+    await fetch('https://sairn.vercel.app/api/bridge', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({app: APP_ID || 'sairnapp', is_demo: true,
+        data: {timestamp: new Date().toISOString(), synced: true}})
+    });
+    console.log('Synced to SAIRN Bridge');
+  } catch(e) { console.log('Bridge sync queued'); }
+}
+
+
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────
+function dlCSV(rows, filename) {
+  var csv = rows.map(function(r) {
+    return r.map(function(v) {
+      return '"' + String(v || '').replace(/"/g, '""') + '"';
+    }).join(',');
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
+
 </script>
 </html>
