@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SAIRNcare — AI Operations Platform for Assisted Living</title>
+<title>SAIRNcare v2.0 — Complete AI Operations Platform for Assisted Living</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23E11D48'/><text x='16' y='22' text-anchor='middle' font-size='18' font-family='Arial' fill='white'>&#x2665;</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -1864,6 +1864,517 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
+<!-- ═══════════════════════ V2 NEW PANELS ═══════════════════════ -->
+<!-- 15 new panels: healthtrend, nutrition, woundcare, painlog, advancecare,
+     changeofcondition, shifthandoff, onboarding, agencystaff, qapi,
+     lifestory, activities, crmleads, infectioncontrol, policies -->
+
+<!-- ── HEALTH TREND MONITOR ────────────────────────────────────── -->
+<div id="panel-healthtrend" class="sc-panel">
+  <div class="sc-title">📈 Health Trend Monitor</div>
+  <div class="sc-sub">AI watches vitals, weight, ADL scores, and appetite over time. Flags decline before crisis. The feature that prevents hospitalizations.</div>
+  <div style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:10px;padding:12px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:800;color:#991B1B;margin-bottom:3px">WHY THIS MATTERS</div>
+    <div style="font-size:12px;color:#7F1D1D">75% of ALF residents who end up in the ER had detectable decline in the preceding weeks. Weight loss of 5% over 30 days is a survey deficiency trigger AND a predictor of hospitalization. This panel catches it before the family does.</div>
+  </div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="runHealthTrendAnalysis()">✨ AI Analyze All Residents</button>
+    <button class="sc-btn-sec" onclick="showTrendForm()">+ Log Health Data Point</button>
+    <button class="sc-btn-sec" onclick="exportTrendCSV()">📊 Export Trends</button>
+  </div>
+  <div id="trend-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Resident</label><input type="text" id="tr2-res" placeholder="Resident name"></div>
+      <div class="sc-fg"><label>Date</label><input type="date" id="tr2-date"></div>
+      <div class="sc-fg"><label>Weight (lbs)</label><input type="number" id="tr2-wt" placeholder="140"></div>
+      <div class="sc-fg"><label>Appetite</label><select id="tr2-appetite"><option>Good — ate 75%+ of meals</option><option>Fair — ate 50-75%</option><option>Poor — ate less than 50%</option><option>Refused most meals</option></select></div>
+      <div class="sc-fg"><label>Mobility Change</label><select id="tr2-mobility"><option>No change</option><option>Slight decline</option><option>Significant decline</option><option>Improvement</option></select></div>
+      <div class="sc-fg"><label>Mood / Affect</label><select id="tr2-mood"><option>Baseline / Normal</option><option>Mildly withdrawn</option><option>Notably withdrawn / depressed</option><option>Agitated</option><option>Improved / elevated</option></select></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Staff Observations</label><input type="text" id="tr2-notes" placeholder="Any changes staff have noticed this week..."></div>
+    <button class="sc-btn" onclick="saveTrendPoint()">Save Data Point</button>
+  </div>
+  <div id="trend-ai" style="display:none;margin-bottom:14px" class="sc-ai-box"></div>
+  <div id="trend-list"></div>
+</div>
+
+<!-- ── NUTRITION & DINING ──────────────────────────────────────── -->
+<div id="panel-nutrition" class="sc-panel">
+  <div class="sc-title">🍽 Nutrition &amp; Dining Management</div>
+  <div class="sc-sub">Dietary profiles, therapeutic diets, allergens, texture modifications, weekly weigh-ins, and AI nutrition flags. A 5% weight loss in 30 days is a survey deficiency — catch it first.</div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showDietProfileForm()">+ Add Dietary Profile</button>
+    <button class="sc-btn-sec" onclick="aiNutritionReview()">✨ AI Nutrition Review</button>
+    <button class="sc-btn-sec" onclick="exportNutritionCSV()">📊 Export</button>
+  </div>
+  <div id="diet-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Resident</label><input type="text" id="nut-res" placeholder="Resident name"></div>
+      <div class="sc-fg"><label>Diet Order</label><select id="nut-diet"><option>Regular</option><option>No Added Salt (NAS)</option><option>Low Sodium</option><option>Diabetic / ADA</option><option>Low Fat / Low Cholesterol</option><option>Renal / Low Potassium</option><option>High Protein</option><option>High Calorie</option><option>Cardiac</option><option>Mechanical Soft</option><option>Pureed</option><option>Thickened Liquids — Nectar</option><option>Thickened Liquids — Honey</option><option>Thickened Liquids — Pudding</option><option>NPO / Nothing by Mouth</option></select></div>
+      <div class="sc-fg"><label>Food Allergies</label><input type="text" id="nut-allergy" placeholder="Peanuts, shellfish, dairy..."></div>
+      <div class="sc-fg"><label>Food Dislikes</label><input type="text" id="nut-dislikes" placeholder="Specific foods resident refuses..."></div>
+      <div class="sc-fg"><label>Favorite Foods</label><input type="text" id="nut-likes" placeholder="Foods that improve intake..."></div>
+      <div class="sc-fg"><label>Supplements</label><input type="text" id="nut-supps" placeholder="Ensure, Boost, vitamins..."></div>
+      <div class="sc-fg"><label>Swallowing Screen</label><select id="nut-swallow"><option>No dysphagia</option><option>Mild dysphagia — SLP eval done</option><option>Moderate dysphagia — texture modified</option><option>Severe dysphagia — pureed/thickened</option><option>PEG tube / enteral feeding</option></select></div>
+      <div class="sc-fg"><label>Dining Assistance</label><select id="nut-assist"><option>Independent</option><option>Setup only</option><option>Minimal assist</option><option>Moderate assist</option><option>Total assist</option></select></div>
+      <div class="sc-fg"><label>Dining Location</label><select id="nut-loc"><option>Dining room</option><option>Room — by choice</option><option>Room — due to condition</option><option>Requires 1:1 supervision</option></select></div>
+    </div>
+    <div class="sc-btn-row">
+      <button class="sc-btn" onclick="saveDietProfile()">Save Profile</button>
+      <button class="sc-btn-sec" onclick="document.getElementById('diet-form').style.display='none'">Cancel</button>
+    </div>
+  </div>
+  <div id="nut-alert-bar" style="margin-bottom:12px"></div>
+  <div id="nut-ai" style="display:none;margin-bottom:12px" class="sc-ai-box"></div>
+  <div id="nutrition-list"></div>
+</div>
+
+<!-- ── WOUND CARE ──────────────────────────────────────────────── -->
+<div id="panel-woundcare" class="sc-panel">
+  <div class="sc-title">🩹 Wound Care Tracker</div>
+  <div class="sc-sub">Pressure ulcers, skin tears, wounds, and tissue injuries. Braden Scale risk assessment, wound staging, measurements, treatment log. Top F-tag deficiency category nationally.</div>
+  <div style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:10px;padding:12px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:800;color:#991B1B;margin-bottom:3px">SURVEY ALERT</div>
+    <div style="font-size:12px;color:#7F1D1D">Pressure ulcer prevention and wound care documentation are among the top F-tag citations nationally. Every wound must be staged, measured, photographed (when possible), and have a treatment order. Undocumented wounds = automatic deficiency.</div>
+  </div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showWoundForm()">+ New Wound Assessment</button>
+    <button class="sc-btn-sec" onclick="showBradenForm()">📋 Braden Scale</button>
+    <button class="sc-btn-sec" onclick="aiWoundCare()">✨ AI Treatment Plan</button>
+    <button class="sc-btn-sec" onclick="exportWoundsCSV()">📊 Export</button>
+  </div>
+  <div id="wound-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Resident</label><input type="text" id="wd-res" placeholder="Resident name"></div>
+      <div class="sc-fg"><label>Assessment Date</label><input type="date" id="wd-date"></div>
+      <div class="sc-fg"><label>Wound Type</label><select id="wd-type"><option>Pressure Injury</option><option>Skin Tear</option><option>Diabetic Ulcer</option><option>Venous Stasis Ulcer</option><option>Arterial Ulcer</option><option>Surgical Wound</option><option>Abrasion / Laceration</option><option>Moisture-Associated Skin Damage</option></select></div>
+      <div class="sc-fg"><label>Location on Body</label><input type="text" id="wd-loc" placeholder="Sacrum, heel, hip..."></div>
+      <div class="sc-fg"><label>Stage / Classification</label><select id="wd-stage"><option>Stage 1 — Non-blanchable redness</option><option>Stage 2 — Partial thickness skin loss</option><option>Stage 3 — Full thickness skin loss</option><option>Stage 4 — Full thickness tissue loss</option><option>Unstageable — slough/eschar present</option><option>Deep Tissue Injury — suspected</option><option>Skin Tear — Type 1 (no loss)</option><option>Skin Tear — Type 2 (partial loss)</option><option>Skin Tear — Type 3 (total loss)</option></select></div>
+      <div class="sc-fg"><label>Size (L x W x D in cm)</label><input type="text" id="wd-size" placeholder="3.0 x 2.5 x 0.3 cm"></div>
+      <div class="sc-fg"><label>Wound Bed</label><select id="wd-bed"><option>Pink/Red — granulating</option><option>Yellow — slough present</option><option>Black — eschar present</option><option>Mixed tissue</option><option>Epithelializing / closing</option></select></div>
+      <div class="sc-fg"><label>Drainage</label><select id="wd-drain"><option>None</option><option>Minimal — serous</option><option>Moderate — serosanguinous</option><option>Heavy — purulent</option></select></div>
+      <div class="sc-fg"><label>Odor</label><select id="wd-odor"><option>None</option><option>Mild</option><option>Strong — possible infection</option></select></div>
+      <div class="sc-fg"><label>Physician Notified</label><select id="wd-md"><option>Yes — treatment ordered</option><option>Yes — awaiting order</option><option>No — monitoring</option></select></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:8px"><label>Current Treatment / Dressing Order</label><input type="text" id="wd-tx" placeholder="Wet to dry, foam dressing, wound VAC, enzymatic debridement..."></div>
+    <div class="sc-btn-row">
+      <button class="sc-btn" onclick="saveWound()">Save Assessment</button>
+      <button class="sc-btn-sec" onclick="aiWoundCare()">✨ AI Treatment Plan</button>
+      <button class="sc-btn-sec" onclick="document.getElementById('wound-form').style.display='none'">Cancel</button>
+    </div>
+  </div>
+  <div id="wd-ai" style="display:none;margin-bottom:14px" class="sc-ai-box"></div>
+  <div id="wound-list"></div>
+</div>
+
+<!-- ── PAIN ASSESSMENT ─────────────────────────────────────────── -->
+<div id="panel-painlog" class="sc-panel">
+  <div class="sc-title">😣 Pain Assessment Log</div>
+  <div class="sc-sub">Numeric rating, PAINAD scale for non-verbal residents, documentation every shift for residents with pain. Unmanaged pain is a dignity violation and a survey deficiency.</div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showPainForm()">+ Log Pain Assessment</button>
+    <button class="sc-btn-sec" onclick="aiPainReview()">✨ AI Pain Management Review</button>
+    <button class="sc-btn-sec" onclick="exportPainCSV()">📊 Export</button>
+  </div>
+  <div id="pain-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Resident</label><input type="text" id="pn-res" placeholder="Resident name"></div>
+      <div class="sc-fg"><label>Date &amp; Time</label><input type="datetime-local" id="pn-dt"></div>
+      <div class="sc-fg"><label>Assessment Tool</label><select id="pn-tool"><option>Numeric Rating (0-10) — verbal</option><option>PAINAD Scale — non-verbal/dementia</option><option>FACES Scale — cognitive impairment</option></select></div>
+      <div class="sc-fg"><label>Pain Score</label><select id="pn-score"><option>0 — No pain</option><option>1-3 — Mild pain</option><option>4-6 — Moderate pain</option><option>7-9 — Severe pain</option><option>10 — Worst imaginable</option></select></div>
+      <div class="sc-fg"><label>Pain Location</label><input type="text" id="pn-loc" placeholder="Lower back, hip, knee, abdomen..."></div>
+      <div class="sc-fg"><label>Pain Quality</label><select id="pn-quality"><option>Aching / dull</option><option>Sharp / stabbing</option><option>Burning</option><option>Throbbing</option><option>Cramping</option><option>Non-verbal cues only</option></select></div>
+      <div class="sc-fg"><label>Intervention</label><select id="pn-intervention"><option>PRN medication given</option><option>Repositioning</option><option>Heat / cold application</option><option>Distraction / relaxation</option><option>Physician notified — new order pending</option><option>No intervention — monitoring</option></select></div>
+      <div class="sc-fg"><label>Re-assessment Score (1 hr later)</label><select id="pn-reassess"><option>Not yet done</option><option>Resolved — 0</option><option>Improved — 1-3</option><option>Unchanged — same level</option><option>Worsened</option></select></div>
+      <div class="sc-fg"><label>Assessed By</label><input type="text" id="pn-staff" placeholder="Staff name"></div>
+    </div>
+    <button class="sc-btn" onclick="savePain()">Log Assessment</button>
+  </div>
+  <div id="pain-ai" style="display:none;margin-bottom:12px" class="sc-ai-box"></div>
+  <div id="pain-list"></div>
+</div>
+
+<!-- ── ADVANCE CARE PLANNING ──────────────────────────────────── -->
+<div id="panel-advancecare" class="sc-panel">
+  <div class="sc-title">📜 Advance Care Planning</div>
+  <div class="sc-sub">POLST/MOLST status, advance directives, hospice eligibility, and AI-guided family conversation support. Written advance directives produce 3x better emotional outcomes at end of life.</div>
+  <div style="background:#F0FEF6;border:1px solid #86EFAC;border-radius:10px;padding:12px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:800;color:#14532D;margin-bottom:3px">WHY THIS MATTERS — THE HARDEST CONVERSATION MADE EASIER</div>
+    <div style="font-size:12px;color:#166534">25% of ALF residents die in place. Families who have had advance care planning conversations report lower guilt, less regret, and better peace of mind. Residents with written directives are less likely to die in the ER hooked to machines they never wanted. This panel facilitates the conversation before the crisis.</div>
+  </div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showACPForm()">+ Log ACP Status</button>
+    <button class="sc-btn-sec" onclick="aiACPConversationGuide()">✨ Family Conversation Guide</button>
+    <button class="sc-btn-sec" onclick="aiHospiceScreening()">✨ Hospice Eligibility Screen</button>
+    <button class="sc-btn-sec" onclick="exportACPCSV()">📊 Export</button>
+  </div>
+  <div id="acp-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-2" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Resident</label><input type="text" id="acp-res" placeholder="Resident name"></div>
+      <div class="sc-fg"><label>Date Reviewed</label><input type="date" id="acp-date"></div>
+      <div class="sc-fg"><label>Advance Directive on File</label><select id="acp-ad"><option>Yes — current, signed, dated</option><option>Yes — needs updating</option><option>No — family conversation needed</option><option>Resident declined to complete</option><option>Resident lacks decision-making capacity</option></select></div>
+      <div class="sc-fg"><label>POLST / MOLST Status</label><select id="acp-polst"><option>Signed POLST on file — current</option><option>Signed POLST — needs physician review</option><option>Not completed — needs discussion</option><option>Not applicable — full code resident</option></select></div>
+      <div class="sc-fg"><label>Code Status</label><select id="acp-code"><option>Full Code</option><option>DNR — Do Not Resuscitate</option><option>DNI — Do Not Intubate</option><option>DNR / DNI</option><option>Comfort Care Only</option><option>Hospice — comfort focused</option></select></div>
+      <div class="sc-fg"><label>Healthcare Proxy / POA</label><input type="text" id="acp-proxy" placeholder="Name, relationship, phone"></div>
+      <div class="sc-fg"><label>Hospice Enrolled</label><select id="acp-hospice"><option>No</option><option>Yes — hospice agency: </option><option>Referred — pending evaluation</option><option>Declined by family</option><option>Under discussion</option></select></div>
+      <div class="sc-fg"><label>Family Conversation Status</label><select id="acp-fam"><option>Conversation completed — documented</option><option>Conversation scheduled</option><option>Family avoiding discussion</option><option>Family in conflict about wishes</option><option>Not yet initiated</option></select></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Resident's Expressed Wishes / Goals of Care</label><textarea id="acp-wishes" rows="2" placeholder="What has the resident expressed about their wishes? What matters most to them at end of life?"></textarea></div>
+    <div class="sc-btn-row">
+      <button class="sc-btn" onclick="saveACP()">Save ACP Record</button>
+      <button class="sc-btn-sec" onclick="document.getElementById('acp-form').style.display='none'">Cancel</button>
+    </div>
+  </div>
+  <div id="acp-ai" style="display:none;margin-bottom:14px" class="sc-ai-box"></div>
+  <div id="acp-list"></div>
+</div>
+
+<!-- ── CHANGE OF CONDITION ────────────────────────────────────── -->
+<div id="panel-changeofcondition" class="sc-panel">
+  <div class="sc-title">🔔 Change of Condition Workflow</div>
+  <div class="sc-sub">The formal documented process when a resident's condition changes. Detects the change → nurse assessment → physician notification → family notification → care plan update. Creates the paper trail that protects the facility and protects the resident.</div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showCOCForm()">+ Log Change of Condition</button>
+    <button class="sc-btn-sec" onclick="aiCOCReport()">✨ AI Clinical Report</button>
+    <button class="sc-btn-sec" onclick="exportCOCCSV()">📊 Export</button>
+  </div>
+  <div id="coc-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Resident</label><input type="text" id="coc-res" placeholder="Resident name"></div>
+      <div class="sc-fg"><label>Date / Time Detected</label><input type="datetime-local" id="coc-dt"></div>
+      <div class="sc-fg"><label>Detected By</label><input type="text" id="coc-by" placeholder="Staff name, role"></div>
+      <div class="sc-fg"><label>Change Type</label><select id="coc-type"><option>Acute change in mental status</option><option>Respiratory change</option><option>Cardiovascular change</option><option>Fall / Injury</option><option>Skin breakdown / new wound</option><option>Eating / weight change</option><option>Pain — new or worsening</option><option>Mobility decline</option><option>Behavioral change — new onset</option><option>Fever / infection signs</option><option>Urinary / bowel change</option><option>Lab or vital sign change</option><option>Other</option></select></div>
+      <div class="sc-fg"><label>Vital Signs at Time of Change</label><input type="text" id="coc-vitals" placeholder="BP, Temp, O2, Pulse..."></div>
+      <div class="sc-fg"><label>Physician Notified</label><select id="coc-md"><option>Yes — within 1 hour</option><option>Yes — within 4 hours</option><option>Yes — next business day</option><option>Not yet notified</option></select></div>
+      <div class="sc-fg"><label>Orders Received</label><input type="text" id="coc-orders" placeholder="New medications, labs, transfer orders, comfort measures..."></div>
+      <div class="sc-fg"><label>Family Notified</label><select id="coc-fam"><option>Yes — within 24 hours</option><option>Yes — immediately (urgent)</option><option>Attempted — unable to reach</option><option>Not yet notified</option></select></div>
+      <div class="sc-fg"><label>Hospital Transfer</label><select id="coc-transfer"><option>No — managed in facility</option><option>Yes — 911 called</option><option>Yes — planned transfer</option><option>Pending physician decision</option></select></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:8px"><label>Clinical Description of Change</label><textarea id="coc-desc" rows="2" placeholder="Describe exactly what was observed, when it started, how it differs from baseline..."></textarea></div>
+    <div class="sc-btn-row">
+      <button class="sc-btn" onclick="saveCOC()">Document Change</button>
+      <button class="sc-btn-sec" onclick="aiCOCReport()">✨ AI Write Clinical Report</button>
+      <button class="sc-btn-sec" onclick="document.getElementById('coc-form').style.display='none'">Cancel</button>
+    </div>
+  </div>
+  <div id="coc-ai" style="display:none;margin-bottom:14px" class="sc-ai-box"></div>
+  <div id="coc-list"></div>
+</div>
+
+<!-- ── SHIFT HANDOFF ──────────────────────────────────────────── -->
+<div id="panel-shifthandoff" class="sc-panel">
+  <div class="sc-title">🔄 Shift Handoff Notes</div>
+  <div class="sc-sub">AI writes the shift handoff report. Staff speak their observations, AI produces a structured, legally defensible handoff document. Saves 45 minutes every shift. The #1 CNA burnout driver — eliminated.</div>
+  <div style="background:var(--atint);border:1px solid #FCA5A5;border-radius:10px;padding:12px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:800;color:var(--adark);margin-bottom:3px">HOW TO USE</div>
+    <div style="font-size:12px;color:var(--tx)">Fill in your observations below — bullet points, rough notes, anything. AI turns it into a complete, professional shift handoff report covering every resident and every priority the oncoming shift needs to know. Takes 3 minutes instead of 45.</div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:10px">
+      <div class="sc-fg"><label>Outgoing Nurse / CNA</label><input type="text" id="ho-staff" placeholder="Your name"></div>
+      <div class="sc-fg"><label>Shift</label><select id="ho-shift"><option>Days (7a-3p) → Evenings</option><option>Evenings (3p-11p) → Nights</option><option>Nights (11p-7a) → Days</option></select></div>
+      <div class="sc-fg"><label>Date</label><input type="date" id="ho-date"></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Key Events &amp; Observations This Shift (rough notes are fine)</label><textarea id="ho-events" rows="5" placeholder="Room 101 - Mrs. Smith refused meds at 2pm, complained of nausea. Room 103 - Mr. Jones had a fall scare near bathroom, no injury, family called. Room 107 - dementia patient was sundowning badly around 3pm, calmed with music. Room 112 - new wound on sacrum found during ADL care, nurse notified, treatment started. All residents ate well at lunch except Room 104..."></textarea></div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Priority Tasks for Oncoming Shift</label><textarea id="ho-tasks" rows="2" placeholder="Room 108 needs lab draw at 6am. Family of Room 101 calling back tomorrow morning. Dr. Martinez needs to be called about Room 105 if no improvement by 8pm..."></textarea></div>
+    <div class="sc-btn-row">
+      <button class="sc-btn" onclick="aiGenerateHandoff()">✨ AI Write Full Handoff Report</button>
+      <button class="sc-btn-sec" onclick="saveHandoffOnly()">💾 Save Notes Only</button>
+      <button class="sc-btn-sec" onclick="window.print()">🖨 Print Handoff</button>
+    </div>
+  </div>
+  <div id="handoff-output" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:8px">AI-Generated Shift Handoff Report</div>
+    <div id="handoff-result" class="sc-ai-box" style="min-height:80px"></div>
+    <div class="sc-btn-row" style="margin-top:8px">
+      <button class="sc-btn-sec" onclick="navigator.clipboard.writeText(document.getElementById('handoff-result').textContent).then(function(){scToast('Copied','ok');})">📋 Copy</button>
+      <button class="sc-btn-sec" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+  <div id="handoff-list"></div>
+</div>
+
+<!-- ── STAFF ONBOARDING ───────────────────────────────────────── -->
+<div id="panel-onboarding" class="sc-panel">
+  <div class="sc-title">🌱 Staff Onboarding</div>
+  <div class="sc-sub">First 90-day checklist, mentor assignments, competency check-offs, and AI onboarding guidance. The first 90 days determine if a CNA stays — this is how you keep them.</div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showOnboardingForm()">+ Start New Employee Onboarding</button>
+    <button class="sc-btn-sec" onclick="aiOnboardingPlan()">✨ AI 90-Day Plan</button>
+    <button class="sc-btn-sec" onclick="exportOnboardingCSV()">📊 Export</button>
+  </div>
+  <div id="onboard-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Employee Name</label><input type="text" id="ob-name" placeholder="New employee name"></div>
+      <div class="sc-fg"><label>Role</label><select id="ob-role"><option>CNA</option><option>LPN</option><option>RN</option><option>Caregiver</option><option>Med Aide</option><option>Activity Director</option><option>Dietary</option><option>Housekeeping</option><option>Administrator</option></select></div>
+      <div class="sc-fg"><label>Start Date</label><input type="date" id="ob-start"></div>
+      <div class="sc-fg"><label>Mentor Assigned</label><input type="text" id="ob-mentor" placeholder="Experienced staff member name"></div>
+      <div class="sc-fg"><label>Supervisor</label><input type="text" id="ob-supervisor" placeholder="Direct supervisor name"></div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:8px">Onboarding Checklist — Week 1</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px" id="ob-checklist">
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ob1"> Facility orientation completed</label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ob2"> Resident rights training</label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ob3"> Abuse/neglect prevention</label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ob4"> Emergency procedures reviewed</label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ob5"> HIPAA training</label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ob6"> Infection control training</label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ob7"> Shadowed experienced staff</label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ob8"> 30-day check-in scheduled</label>
+    </div>
+    <div class="sc-btn-row">
+      <button class="sc-btn" onclick="saveOnboarding()">Save Onboarding Record</button>
+      <button class="sc-btn-sec" onclick="aiOnboardingPlan()">✨ Generate 90-Day Plan</button>
+    </div>
+  </div>
+  <div id="ob-ai" style="display:none;margin-bottom:12px" class="sc-ai-box"></div>
+  <div id="onboarding-list"></div>
+</div>
+
+<!-- ── AGENCY STAFF ───────────────────────────────────────────── -->
+<div id="panel-agencystaff" class="sc-panel">
+  <div class="sc-title">🏢 Agency Staff Manager</div>
+  <div class="sc-sub">Track temp/agency worker credentials, hours, performance, and costs. Most facilities use agency staff but have no system for managing them. Survey risk and liability without documentation.</div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showAgencyForm()">+ Add Agency Staff</button>
+    <button class="sc-btn-sec" onclick="exportAgencyCSV()">📊 Export</button>
+  </div>
+  <div id="agency-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Name</label><input type="text" id="ag-name" placeholder="Agency staff name"></div>
+      <div class="sc-fg"><label>Agency</label><input type="text" id="ag-agency" placeholder="Staffing agency name"></div>
+      <div class="sc-fg"><label>Role / License</label><select id="ag-role"><option>CNA</option><option>LPN</option><option>RN</option><option>Caregiver</option></select></div>
+      <div class="sc-fg"><label>License Number</label><input type="text" id="ag-license" placeholder="State license number"></div>
+      <div class="sc-fg"><label>License Expiration</label><input type="date" id="ag-expiry"></div>
+      <div class="sc-fg"><label>Background Check on File</label><select id="ag-bgcheck"><option>Yes — verified</option><option>Agency-provided — copy on file</option><option>Pending</option></select></div>
+      <div class="sc-fg"><label>Date First Used</label><input type="date" id="ag-start"></div>
+      <div class="sc-fg"><label>Hourly Rate ($)</label><input type="number" id="ag-rate" placeholder="35.00"></div>
+      <div class="sc-fg"><label>Performance Rating</label><select id="ag-perf"><option>Excellent — request again</option><option>Good — acceptable</option><option>Fair — marginal</option><option>Poor — do not use again</option></select></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Notes</label><input type="text" id="ag-notes" placeholder="Specific skills, resident preferences, any concerns..."></div>
+    <button class="sc-btn" onclick="saveAgency()">Save Agency Staff</button>
+  </div>
+  <div id="agency-list"></div>
+</div>
+
+<!-- ── QAPI ───────────────────────────────────────────────────── -->
+<div id="panel-qapi" class="sc-panel">
+  <div class="sc-title">📊 QAPI — Quality Assurance &amp; Performance Improvement</div>
+  <div class="sc-sub">State-required Quality Assurance and Performance Improvement program. AI generates your monthly QAPI report from facility data. No more manual compilation — done automatically from your SAIRNcare data.</div>
+  <div style="background:#F0FEF6;border:1px solid #86EFAC;border-radius:10px;padding:12px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:800;color:#14532D;margin-bottom:3px">WHAT IS QAPI?</div>
+    <div style="font-size:12px;color:#166534">QAPI is a federal and state requirement — a systematic approach to identifying and fixing care problems. Facilities must demonstrate they track quality indicators, identify problems, implement solutions, and verify improvement. Survey teams now require documented QAPI meetings and action plans. Without them: deficiency citation.</div>
+  </div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="generateQAPIReport()">✨ Generate Monthly QAPI Report</button>
+    <button class="sc-btn-sec" onclick="aiQAPIActionPlan()">✨ AI Action Plan for Issues</button>
+    <button class="sc-btn-sec" onclick="window.print()">🖨 Print for QAPI Meeting</button>
+  </div>
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px">
+    <div class="sc-grid-2" style="margin-bottom:10px">
+      <div class="sc-fg"><label>Report Month</label><input type="month" id="qapi-month"></div>
+      <div class="sc-fg"><label>QAPI Committee Chair</label><input type="text" id="qapi-chair" placeholder="Administrator or DON name"></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Current Areas of Concern (optional — AI will find more)</label><textarea id="qapi-concerns" rows="2" placeholder="Areas the committee has flagged for this month..."></textarea></div>
+    <button class="sc-btn" onclick="generateQAPIReport()">✨ Auto-Generate from Facility Data</button>
+  </div>
+  <div id="qapi-output" style="display:none" class="sc-ai-box"></div>
+</div>
+
+<!-- ── RESIDENT LIFE STORY ────────────────────────────────────── -->
+<div id="panel-lifestory" class="sc-panel">
+  <div class="sc-title">📖 Resident Life Story</div>
+  <div class="sc-sub">Who was this person before they needed care? Career, family, passions, music, memories. AI uses this to personalize care. The feature that makes families choose your facility and never leave a bad review.</div>
+  <div style="background:var(--atint);border:1px solid #FCA5A5;border-radius:10px;padding:12px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:800;color:var(--adark);margin-bottom:3px">THE HUMAN BEHIND THE RESIDENT</div>
+    <div style="font-size:12px;color:var(--tx)">Mrs. Johnson was a first-grade teacher for 31 years. She loves Sinatra, hates football, and raised four children on her own after her husband died young. When she's agitated, Frank Sinatra calms her down in minutes. No other platform captures this. SAIRNcare does.</div>
+  </div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showLifeStoryForm()">+ Create Life Story</button>
+    <button class="sc-btn-sec" onclick="aiLifeStoryInsights()">✨ AI Care Insights from Story</button>
+  </div>
+  <div id="lifestory-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-2" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Resident Name</label><input type="text" id="ls-name" placeholder="Resident name"></div>
+      <div class="sc-fg"><label>Preferred Name / Nickname</label><input type="text" id="ls-nick" placeholder="What do they like to be called?"></div>
+      <div class="sc-fg"><label>Career / Life Work</label><input type="text" id="ls-career" placeholder="Teacher, farmer, nurse, engineer, homemaker..."></div>
+      <div class="sc-fg"><label>Hometown / Where They Grew Up</label><input type="text" id="ls-home" placeholder="City, state, or country"></div>
+      <div class="sc-fg"><label>Family</label><input type="text" id="ls-family" placeholder="Children, grandchildren, siblings, spouse..."></div>
+      <div class="sc-fg"><label>Faith / Spiritual Life</label><input type="text" id="ls-faith" placeholder="Religious tradition, important to them?"></div>
+    </div>
+    <div class="sc-grid-2" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Favorite Music / Artists</label><input type="text" id="ls-music" placeholder="Frank Sinatra, country music, hymns, jazz..."></div>
+      <div class="sc-fg"><label>Favorite Foods / Comfort Foods</label><input type="text" id="ls-food" placeholder="Chocolate chip cookies, pot roast, sweet tea..."></div>
+      <div class="sc-fg"><label>Hobbies &amp; Interests</label><input type="text" id="ls-hobbies" placeholder="Gardening, knitting, sports, reading, cards..."></div>
+      <div class="sc-fg"><label>Things That Comfort Them</label><input type="text" id="ls-comfort" placeholder="Old photos, a specific TV show, being outdoors, cats..."></div>
+      <div class="sc-fg"><label>Things That Upset Them</label><input type="text" id="ls-upset" placeholder="Loud noises, strangers, being rushed, certain topics..."></div>
+      <div class="sc-fg"><label>Personality / Communication Style</label><select id="ls-personality"><option>Quiet / reserved — likes calm</option><option>Social / outgoing — loves company</option><option>Independent — values autonomy</option><option>Likes routine — predictability matters</option><option>Sense of humor — lighten the mood</option><option>Dignified / private — respect personal space</option></select></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Their Story — In Their Own Words or Family's Words</label><textarea id="ls-story" rows="3" placeholder="Tell us about this person's life. What are they proud of? What do they want staff to know about them? What would they want people to remember?"></textarea></div>
+    <div class="sc-btn-row">
+      <button class="sc-btn" onclick="saveLifeStory()">Save Life Story</button>
+      <button class="sc-btn-sec" onclick="aiLifeStoryInsights()">✨ AI Care Insights</button>
+      <button class="sc-btn-sec" onclick="window.print()">🖨 Print for Care Team</button>
+    </div>
+  </div>
+  <div id="ls-ai" style="display:none;margin-bottom:12px" class="sc-ai-box"></div>
+  <div id="lifestory-list"></div>
+</div>
+
+<!-- ── ACTIVITIES & ENGAGEMENT ───────────────────────────────── -->
+<div id="panel-activities" class="sc-panel">
+  <div class="sc-title">🎭 Activities &amp; Engagement</div>
+  <div class="sc-sub">Daily activity log, resident participation, mood during activities, and AI alerts for social isolation. 13% of ALF residents are chronically lonely. Loneliness predicts cognitive decline and early death. This panel catches it.</div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showActivityForm()">+ Log Activity</button>
+    <button class="sc-btn-sec" onclick="aiEngagementAnalysis()">✨ AI Isolation Alert</button>
+    <button class="sc-btn-sec" onclick="exportActivitiesCSV()">📊 Export</button>
+  </div>
+  <div id="activity-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Date</label><input type="date" id="act-date"></div>
+      <div class="sc-fg"><label>Activity</label><input type="text" id="act-name" placeholder="Bingo, music therapy, chair exercise, movie, pet visit..."></div>
+      <div class="sc-fg"><label>Activity Type</label><select id="act-type"><option>Social / group</option><option>Physical / exercise</option><option>Cognitive / mental</option><option>Creative / artistic</option><option>Spiritual / religious</option><option>Sensory / reminiscence</option><option>One-on-one visit</option><option>Family visit</option></select></div>
+      <div class="sc-fg"><label>Resident</label><input type="text" id="act-res" placeholder="Resident name — or leave blank for group"></div>
+      <div class="sc-fg"><label>Participation Level</label><select id="act-participation"><option>Active — engaged fully</option><option>Passive — attended but not engaged</option><option>Declined — offered but refused</option><option>Unable — due to condition</option></select></div>
+      <div class="sc-fg"><label>Mood Before</label><select id="act-mood-before"><option>Good baseline</option><option>Withdrawn / quiet</option><option>Agitated</option><option>Anxious</option><option>Neutral</option></select></div>
+      <div class="sc-fg"><label>Mood After</label><select id="act-mood-after"><option>Improved — more engaged</option><option>Same as before</option><option>Slightly worse</option><option>Notably better — smile, laughter</option></select></div>
+      <div class="sc-fg"><label>Led By</label><input type="text" id="act-staff" placeholder="Activity director, volunteer, family..."></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Observations</label><input type="text" id="act-notes" placeholder="Specific resident interactions, notable moments, what worked well..."></div>
+    <button class="sc-btn" onclick="saveActivity()">Log Activity</button>
+  </div>
+  <div id="eng-ai" style="display:none;margin-bottom:12px" class="sc-ai-box"></div>
+  <div id="activities-list"></div>
+</div>
+
+<!-- ── CENSUS CRM ──────────────────────────────────────────────── -->
+<div id="panel-crmleads" class="sc-panel">
+  <div class="sc-title">📞 Census CRM — Prospect Pipeline</div>
+  <div class="sc-sub">Prospect inquiry log, tour scheduler, automated follow-up sequences, and referral source tracking. The sales cycle is 60-120 days. Communities with strong occupancy respond to inquiries in minutes, not hours. This is how you fill beds without paying A Place for Mom.</div>
+  <div class="sc-kpi-grid" style="margin-bottom:14px">
+    <div class="sc-kpi"><div class="sc-kpi-val" id="crm-inquiries">0</div><div class="sc-kpi-label">Active Inquiries</div></div>
+    <div class="sc-kpi"><div class="sc-kpi-val" id="crm-tours">0</div><div class="sc-kpi-label">Tours Scheduled</div></div>
+    <div class="sc-kpi"><div class="sc-kpi-val" id="crm-pipeline">$0</div><div class="sc-kpi-label">Pipeline Revenue</div></div>
+    <div class="sc-kpi"><div class="sc-kpi-val" id="crm-conversion">0%</div><div class="sc-kpi-label">Conversion Rate</div></div>
+  </div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showLeadForm()">+ New Inquiry</button>
+    <button class="sc-btn-sec" onclick="aiFollowUpScript()">✨ AI Follow-Up Script</button>
+    <button class="sc-btn-sec" onclick="exportLeadsCSV()">📊 Export Pipeline</button>
+  </div>
+  <div id="lead-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Prospect Name</label><input type="text" id="lead-name" placeholder="Prospective resident name"></div>
+      <div class="sc-fg"><label>Contact (Family)</label><input type="text" id="lead-contact" placeholder="Family contact name &amp; phone"></div>
+      <div class="sc-fg"><label>Inquiry Date</label><input type="date" id="lead-date"></div>
+      <div class="sc-fg"><label>How They Found Us</label><select id="lead-source"><option>Hospital discharge planner</option><option>Physician referral</option><option>Family referral / word of mouth</option><option>A Place for Mom</option><option>Caring.com</option><option>Google search</option><option>Website</option><option>Facebook / Social media</option><option>Drive by / walk-in</option><option>Senior center referral</option></select></div>
+      <div class="sc-fg"><label>Care Level Needed</label><select id="lead-care"><option>Assisted Living</option><option>Memory Care</option><option>Independent Living</option><option>Respite Care</option><option>Skilled Nursing</option></select></div>
+      <div class="sc-fg"><label>Timeline</label><select id="lead-timeline"><option>Immediate — within 2 weeks</option><option>Soon — 1 month</option><option>Planning — 2-3 months</option><option>Future — 6+ months</option><option>Emergency placement</option></select></div>
+      <div class="sc-fg"><label>Budget / Payor</label><select id="lead-budget"><option>Private Pay</option><option>Medicaid</option><option>LTC Insurance</option><option>VA Benefits</option><option>Mixed / Unknown</option></select></div>
+      <div class="sc-fg"><label>Tour Scheduled</label><input type="date" id="lead-tour" placeholder="Tour date"></div>
+      <div class="sc-fg"><label>Pipeline Stage</label><select id="lead-stage"><option>New inquiry</option><option>Tour scheduled</option><option>Tour completed — follow-up</option><option>Application submitted</option><option>Deposit received</option><option>Move-in confirmed</option><option>Lost — chose another facility</option><option>Lost — family decided home care</option></select></div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Notes</label><textarea id="lead-notes" rows="2" placeholder="Medical background, family concerns, what they're looking for, next steps..."></textarea></div>
+    <div class="sc-btn-row">
+      <button class="sc-btn" onclick="saveLead()">Save Inquiry</button>
+      <button class="sc-btn-sec" onclick="aiFollowUpScript()">✨ AI Follow-Up Script</button>
+    </div>
+  </div>
+  <div id="crm-ai" style="display:none;margin-bottom:12px" class="sc-ai-box"></div>
+  <div id="leads-list"></div>
+</div>
+
+<!-- ── INFECTION CONTROL ──────────────────────────────────────── -->
+<div id="panel-infectioncontrol" class="sc-panel">
+  <div class="sc-title">🦠 Infection Control Log</div>
+  <div class="sc-sub">Track infections by type and resident, detect outbreaks early, generate state reporting, and document prevention protocols. Required in all 50 states. The post-COVID non-negotiable.</div>
+  <div class="sc-btn-row">
+    <button class="sc-btn" onclick="showInfectionForm()">+ Log Infection</button>
+    <button class="sc-btn-sec" onclick="aiOutbreakAnalysis()">✨ AI Outbreak Analysis</button>
+    <button class="sc-btn-sec" onclick="exportInfectionCSV()">📊 Export</button>
+  </div>
+  <div id="inf-alert-bar" style="margin-bottom:12px"></div>
+  <div id="infection-form" style="display:none;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-3" style="margin-bottom:8px">
+      <div class="sc-fg"><label>Resident / Staff</label><input type="text" id="inf-who" placeholder="Name — or 'Staff' for employee case"></div>
+      <div class="sc-fg"><label>Date of Onset</label><input type="date" id="inf-date"></div>
+      <div class="sc-fg"><label>Infection Type</label><select id="inf-type"><option>URI — Upper Respiratory</option><option>Influenza</option><option>COVID-19</option><option>Pneumonia</option><option>UTI — Urinary Tract Infection</option><option>C. diff — Clostridioides difficile</option><option>MRSA</option><option>VRE</option><option>Skin / Wound Infection</option><option>Conjunctivitis / Pink Eye</option><option>Gastroenteritis / GI illness</option><option>Scabies</option><option>Unknown — under investigation</option></select></div>
+      <div class="sc-fg"><label>Location / Wing</label><input type="text" id="inf-location" placeholder="East wing, Room 101, Memory care unit..."></div>
+      <div class="sc-fg"><label>Isolation Implemented</label><select id="inf-isolation"><option>Yes — contact precautions</option><option>Yes — droplet precautions</option><option>Yes — airborne precautions</option><option>No — monitoring</option></select></div>
+      <div class="sc-fg"><label>Physician Notified</label><select id="inf-md"><option>Yes</option><option>No — not required</option></select></div>
+      <div class="sc-fg"><label>State Reportable</label><select id="inf-report"><option>No — not reportable</option><option>Yes — reported to state</option><option>Yes — pending report</option><option>Checking reporting requirements</option></select></div>
+      <div class="sc-fg"><label>Resolved Date</label><input type="date" id="inf-resolved"></div>
+    </div>
+    <button class="sc-btn" onclick="saveInfection()">Log Infection</button>
+  </div>
+  <div id="inf-ai" style="display:none;margin-bottom:12px" class="sc-ai-box"></div>
+  <div id="infection-list"></div>
+</div>
+
+<!-- ── POLICY & PROCEDURE GENERATOR ──────────────────────────── -->
+<div id="panel-policies" class="sc-panel">
+  <div class="sc-title">📋 Policy &amp; Procedure Generator</div>
+  <div class="sc-sub">AI generates compliant, state-specific Policies &amp; Procedures on demand. Most small facilities have outdated or borrowed P&Ps from 2018. Surveyors will cite you for it. Fix it in 60 seconds.</div>
+  <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:12px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:800;color:#92400E;margin-bottom:3px">SURVEY RISK</div>
+    <div style="font-size:12px;color:#78350F">State surveyors routinely ask to see your P&Ps during annual surveys. Outdated policies, policies borrowed from other facilities, or policies that don't match your actual practices = deficiency citations. Generate current, state-specific P&Ps that match how you actually operate.</div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div class="sc-grid-2" style="margin-bottom:10px">
+      <div class="sc-fg"><label>Your State</label>
+        <select id="pol-state">
+          <option>Ohio</option><option>Florida</option><option>California</option><option>Texas</option>
+          <option>New York</option><option>Pennsylvania</option><option>Illinois</option>
+          <option>Michigan</option><option>Georgia</option><option>North Carolina</option>
+          <option>Other — use NCAL model P&Ps</option>
+        </select>
+      </div>
+      <div class="sc-fg"><label>Policy Category</label>
+        <select id="pol-category">
+          <option>Abuse/Neglect Prevention &amp; Reporting</option>
+          <option>Resident Rights</option>
+          <option>Medication Management</option>
+          <option>Fall Prevention Program</option>
+          <option>Incident Reporting</option>
+          <option>Infection Control</option>
+          <option>Elopement Prevention &amp; Response</option>
+          <option>Emergency Preparedness</option>
+          <option>Advance Directives / POLST</option>
+          <option>Restraint &amp; Restraint Alternatives</option>
+          <option>Grievance Procedure</option>
+          <option>Staffing — Minimum Requirements</option>
+          <option>Admission, Transfer &amp; Discharge</option>
+          <option>Memory Care — Dementia Protocols</option>
+          <option>QAPI Program</option>
+          <option>Staff Training Requirements</option>
+          <option>Privacy &amp; HIPAA</option>
+          <option>Nutrition &amp; Therapeutic Diets</option>
+          <option>Wound Care Prevention &amp; Management</option>
+          <option>Pain Management</option>
+        </select>
+      </div>
+    </div>
+    <div class="sc-fg" style="margin-bottom:10px"><label>Facility-Specific Details (optional — makes the policy more accurate)</label><input type="text" id="pol-details" placeholder="Facility name, bed count, any specific practices or circumstances to incorporate..."></div>
+    <button class="sc-btn" onclick="generatePolicy()">✨ Generate Policy &amp; Procedure</button>
+  </div>
+  <div id="pol-output" style="display:none">
+    <div id="pol-result" class="sc-ai-box" style="min-height:100px"></div>
+    <div class="sc-btn-row" style="margin-top:8px">
+      <button class="sc-btn-sec" onclick="navigator.clipboard.writeText(document.getElementById('pol-result').textContent).then(function(){scToast('Copied to clipboard','ok');})">📋 Copy Full P&P</button>
+      <button class="sc-btn-sec" onclick="window.print()">🖨 Print for Policy Binder</button>
+    </div>
+  </div>
+  <div class="sc-chips" style="margin-top:14px">
+    <span class="sc-chip" onclick="quickPolicy('Abuse/Neglect Prevention &amp; Reporting')">Abuse Prevention</span>
+    <span class="sc-chip" onclick="quickPolicy('Medication Management')">Medication Management</span>
+    <span class="sc-chip" onclick="quickPolicy('Fall Prevention Program')">Fall Prevention</span>
+    <span class="sc-chip" onclick="quickPolicy('Elopement Prevention &amp; Response')">Elopement</span>
+    <span class="sc-chip" onclick="quickPolicy('Infection Control')">Infection Control</span>
+    <span class="sc-chip" onclick="quickPolicy('QAPI Program')">QAPI Program</span>
+  </div>
+</div>
+
     </div><!-- end sc-content -->
   </div><!-- end sc-layout -->
 </div><!-- end app -->
@@ -2890,6 +3401,583 @@ document.addEventListener('DOMContentLoaded', function() {
     if (el) el.addEventListener('change', updateMorseScore);
   });
 });
+
+
+
+// ================================================================
+//  SAIRNcare v2.0 -- New Panels JavaScript Engine
+//  15 new panels + SAIRN Bridge to SAIRNcode, SAIRNhr, SAIRNacc
+//  SAIRN Technologies | Michael L. Dibert
+// ================================================================
+
+// -- V2 DATA STORES ----------------------------------------------
+var trend_log = [];
+var nutrition_profiles = [];
+var wound_log = [];
+var pain_log = [];
+var acp_log = [];
+var coc_log = [];
+var handoff_log = [];
+var onboarding_log = [];
+var agency_log = [];
+var lifestory_log = [];
+var activities_log = [];
+var leads_log = [];
+var infection_log = [];
+
+function scLoadV2() {
+  trend_log         = JSON.parse(localStorage.getItem('sc_trends')     || '[]');
+  nutrition_profiles= JSON.parse(localStorage.getItem('sc_nutrition')  || '[]');
+  wound_log         = JSON.parse(localStorage.getItem('sc_wounds')     || '[]');
+  pain_log          = JSON.parse(localStorage.getItem('sc_pain')       || '[]');
+  acp_log           = JSON.parse(localStorage.getItem('sc_acp')        || '[]');
+  coc_log           = JSON.parse(localStorage.getItem('sc_coc')        || '[]');
+  handoff_log       = JSON.parse(localStorage.getItem('sc_handoffs')   || '[]');
+  onboarding_log    = JSON.parse(localStorage.getItem('sc_onboarding') || '[]');
+  agency_log        = JSON.parse(localStorage.getItem('sc_agency')     || '[]');
+  lifestory_log     = JSON.parse(localStorage.getItem('sc_lifestories')|| '[]');
+  activities_log    = JSON.parse(localStorage.getItem('sc_activities') || '[]');
+  leads_log         = JSON.parse(localStorage.getItem('sc_leads')      || '[]');
+  infection_log     = JSON.parse(localStorage.getItem('sc_infections') || '[]');
+}
+
+// Extend scInit to include v2 data
+var _origScInit = scInit;
+scInit = function() {
+  _origScInit();
+  scLoadV2();
+  renderTrendList(); renderNutritionList(); renderWoundList();
+  renderPainList(); renderACPList(); renderCOCList();
+  renderHandoffList(); renderOnboardingList(); renderAgencyList();
+  renderLifeStoryList(); renderActivitiesList(); renderLeadsList();
+  renderInfectionList();
+  updateCRMStats();
+};
+
+// -- HEALTH TREND MONITOR ----------------------------------------
+function showTrendForm() { document.getElementById('trend-form').style.display='block'; document.getElementById('tr2-date').value=today(); }
+function saveTrendPoint() {
+  var t={id:Date.now(),res:document.getElementById('tr2-res').value.trim(),date:document.getElementById('tr2-date').value,wt:parseFloat(document.getElementById('tr2-wt').value)||0,appetite:document.getElementById('tr2-appetite').value,mobility:document.getElementById('tr2-mobility').value,mood:document.getElementById('tr2-mood').value,notes:document.getElementById('tr2-notes').value.trim()};
+  if (!t.res) { scToast('Enter resident name','warn'); return; }
+  trend_log.unshift(t); localStorage.setItem('sc_trends',JSON.stringify(trend_log));
+  document.getElementById('trend-form').style.display='none'; renderTrendList();
+  scToast('Trend data saved for '+t.res,'ok');
+}
+async function runHealthTrendAnalysis() {
+  var el=document.getElementById('trend-ai'); el.style.display='block'; el.innerHTML=scLoad('AI analyzing health trends across all residents...');
+  var recent = trend_log.slice(0,30).map(function(t){ return t.res+' '+t.date+': wt='+t.wt+'lbs appetite='+t.appetite+' mobility='+t.mobility+' mood='+t.mood; }).join('\n') || 'No trend data recorded yet';
+  // Also pull from vitals
+  var vitalsSummary = vitals_sc.slice(0,20).map(function(v){ return v.res+' '+v.dt+': BP='+v.bp+' O2='+v.o2+'% wt='+v.wt+'lbs'; }).join('\n') || 'No vitals';
+  var res = await callClaude(SYS,
+    'Health trend analysis for all residents. Trend observations:\n'+recent+'\nVitals log:\n'+vitalsSummary+
+    '\n\nFor each resident with data, assess: (1) Are there concerning downward trends in weight, appetite, or functional status? (2) Is any resident at risk for hospitalization based on patterns? (3) Who needs a physician notification or care plan review? (4) Identify any 5% weight loss in 30 days (survey deficiency trigger). (5) Flag residents showing early signs of decline that staff should watch more closely. Be specific and name each resident.',
+    2000);
+  el.textContent = res;
+}
+function renderTrendList() {
+  var el=document.getElementById('trend-list');
+  if (!trend_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No health trend data yet. Log weekly observations for each resident.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Date</th><th>Resident</th><th>Weight</th><th>Appetite</th><th>Mobility</th><th>Mood</th></tr></thead><tbody>'+
+    trend_log.slice(0,40).map(function(t){ var appBad=t.appetite&&t.appetite.includes('Poor')||t.appetite&&t.appetite.includes('Refused'); return '<tr><td style="color:var(--mu)">'+(t.date||'--')+'</td><td style="font-weight:700">'+safeHTML(t.res||'')+'</td><td>'+(t.wt?t.wt+' lbs':'--')+'</td><td style="color:'+(appBad?'#DC2626':'inherit')+'">'+safeHTML(t.appetite||'').split('--')[0].trim()+'</td><td>'+safeHTML(t.mobility||'').split('--')[0].trim()+'</td><td>'+safeHTML(t.mood||'').split('--')[0].trim()+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportTrendCSV() { var rows=[['Date','Resident','Weight','Appetite','Mobility','Mood','Notes']]; trend_log.forEach(function(t){rows.push([t.date||'',t.res,t.wt||'',t.appetite,t.mobility,t.mood,t.notes||'']);}); dlCSV(rows,'SAIRNcare-HealthTrends.csv'); }
+
+// -- NUTRITION ---------------------------------------------------
+function showDietProfileForm() { document.getElementById('diet-form').style.display='block'; }
+function saveDietProfile() {
+  var n={id:Date.now(),res:document.getElementById('nut-res').value.trim(),diet:document.getElementById('nut-diet').value,allergy:document.getElementById('nut-allergy').value.trim(),dislikes:document.getElementById('nut-dislikes').value.trim(),likes:document.getElementById('nut-likes').value.trim(),supps:document.getElementById('nut-supps').value.trim(),swallow:document.getElementById('nut-swallow').value,assist:document.getElementById('nut-assist').value,loc:document.getElementById('nut-loc').value,updated:today()};
+  if (!n.res) { scToast('Enter resident name','warn'); return; }
+  // Update existing or add
+  var idx=nutrition_profiles.findIndex(function(x){return x.res===n.res;});
+  if (idx>=0) nutrition_profiles[idx]=n; else nutrition_profiles.unshift(n);
+  localStorage.setItem('sc_nutrition',JSON.stringify(nutrition_profiles));
+  document.getElementById('diet-form').style.display='none'; renderNutritionList();
+  scToast('Dietary profile saved for '+n.res,'ok');
+}
+async function aiNutritionReview() {
+  var el=document.getElementById('nut-ai'); el.style.display='block'; el.innerHTML=scLoad('AI nutrition review...');
+  var profiles=nutrition_profiles.slice(0,15).map(function(n){ return n.res+': diet='+n.diet+(n.allergy?', allergies='+n.allergy:'')+', swallow='+n.swallow; }).join('\n')||'No profiles';
+  var wts=trend_log.filter(function(t){return t.wt>0;}).slice(0,20).map(function(t){return t.res+' '+t.date+' '+t.wt+'lbs';}).join('\n')||'No weight data';
+  var res=await callClaude(SYS,'Nutrition review. Dietary profiles:\n'+profiles+'\nWeight data:\n'+wts+'\nIdentify: (1) residents at malnutrition risk based on diet orders and swallowing status; (2) any 5% weight loss in 30 days (survey deficiency trigger); (3) residents who may benefit from supplements or dietitian referral; (4) texture/swallowing concerns that need speech therapy evaluation; (5) hydration risks for residents on thickened liquids or with poor intake.',1200);
+  el.textContent=res;
+}
+function renderNutritionList() {
+  var el=document.getElementById('nutrition-list');
+  // Alert bar for residents with high-risk diets
+  var highRisk=nutrition_profiles.filter(function(n){return n.swallow&&(n.swallow.includes('Severe')||n.swallow.includes('PEG'));});
+  document.getElementById('nut-alert-bar').innerHTML=highRisk.length?'<div class="alert-amber"><b>'+highRisk.length+' resident(s) with high dysphagia risk</b> — verify correct diet textures at every meal.</div>':'';
+  if (!nutrition_profiles.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No dietary profiles yet. Create a profile for each resident.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Resident</th><th>Diet Order</th><th>Allergies</th><th>Swallowing</th><th>Assistance</th><th>Updated</th></tr></thead><tbody>'+
+    nutrition_profiles.map(function(n){ var riskColor=n.swallow&&n.swallow.includes('Severe')?'#DC2626':n.swallow&&n.swallow.includes('Moderate')?'#D97706':'inherit'; return '<tr><td style="font-weight:700">'+safeHTML(n.res)+'</td><td><span class="badge badge-rose">'+safeHTML(n.diet||'')+'</span></td><td style="color:var(--mu)">'+safeHTML(n.allergy||'None')+'</td><td style="color:'+riskColor+'">'+safeHTML((n.swallow||'').split(' ')[0])+'</td><td>'+safeHTML(n.assist||'')+'</td><td style="color:var(--mu)">'+(n.updated||'--')+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportNutritionCSV() { var rows=[['Resident','Diet','Allergies','Dislikes','Likes','Supplements','Swallowing','Assistance','Location','Updated']]; nutrition_profiles.forEach(function(n){rows.push([n.res,n.diet,n.allergy||'',n.dislikes||'',n.likes||'',n.supps||'',n.swallow,n.assist,n.loc,n.updated||'']);}); dlCSV(rows,'SAIRNcare-Nutrition.csv'); }
+
+// -- WOUND CARE --------------------------------------------------
+function showWoundForm() { document.getElementById('wound-form').style.display='block'; document.getElementById('wd-date').value=today(); }
+function showBradenForm() { scToast('Braden Scale: enter the wound assessment above and use AI Treatment Plan for Braden-guided intervention recommendations.','ok'); }
+function saveWound() {
+  var w={id:Date.now(),res:document.getElementById('wd-res').value.trim(),date:document.getElementById('wd-date').value,type:document.getElementById('wd-type').value,loc:document.getElementById('wd-loc').value.trim(),stage:document.getElementById('wd-stage').value,size:document.getElementById('wd-size').value.trim(),bed:document.getElementById('wd-bed').value,drain:document.getElementById('wd-drain').value,odor:document.getElementById('wd-odor').value,md:document.getElementById('wd-md').value,tx:document.getElementById('wd-tx').value.trim(),status:'Open'};
+  if (!w.res) { scToast('Enter resident name','warn'); return; }
+  wound_log.unshift(w); localStorage.setItem('sc_wounds',JSON.stringify(wound_log));
+  document.getElementById('wound-form').style.display='none'; renderWoundList();
+  scToast('Wound assessment saved for '+w.res,'ok');
+}
+async function aiWoundCare() {
+  var res=document.getElementById('wd-res').value.trim(), type=document.getElementById('wd-type').value, stage=document.getElementById('wd-stage').value, size=document.getElementById('wd-size').value.trim(), bed=document.getElementById('wd-bed').value, drain=document.getElementById('wd-drain').value, odor=document.getElementById('wd-odor').value, tx=document.getElementById('wd-tx').value.trim(), loc=document.getElementById('wd-loc').value.trim();
+  if (!res) { scToast('Enter resident name first','warn'); return; }
+  var el=document.getElementById('wd-ai'); el.style.display='block'; el.innerHTML=scLoad('Generating treatment plan...');
+  var result=await callClaude(SYS,'Wound care treatment plan for: '+res+'. Type: '+type+'. Location: '+loc+'. '+stage+'. Size: '+size+'. Wound bed: '+bed+'. Drainage: '+drain+'. Odor: '+odor+'. Current treatment: '+(tx||'None documented')+'. Provide: (1) Evidence-based treatment recommendations for this wound type and stage; (2) Dressing selection rationale; (3) Repositioning schedule; (4) Nutrition support to promote healing; (5) Infection monitoring parameters — when to escalate; (6) Expected healing trajectory; (7) Documentation required to protect against survey deficiency; (8) Braden Scale preventive interventions for adjacent skin areas.',1500);
+  el.textContent=result;
+}
+function renderWoundList() {
+  var el=document.getElementById('wound-list');
+  var open=wound_log.filter(function(w){return w.status!=='Healed';}).length;
+  if (open>0) { /* already handled in panel */ }
+  if (!wound_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No wound assessments on file. Document any skin breakdown immediately upon discovery.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Resident</th><th>Date</th><th>Type</th><th>Location</th><th>Stage</th><th>Size</th><th>MD Notified</th><th>Status</th></tr></thead><tbody>'+
+    wound_log.map(function(w){ var s4=w.stage&&(w.stage.includes('Stage 4')||w.stage.includes('Unstageable')||w.stage.includes('Deep Tissue')); return '<tr><td style="font-weight:700">'+safeHTML(w.res)+'</td><td style="color:var(--mu)">'+(w.date||'--')+'</td><td>'+safeHTML(w.type||'')+'</td><td>'+safeHTML(w.loc||'--')+'</td><td style="color:'+(s4?'#DC2626':'inherit');+';font-weight:'+(s4?'700':'400')+'">'+safeHTML(w.stage||'').split(' ').slice(0,2).join(' ')+'</td><td>'+safeHTML(w.size||'--')+'</td><td>'+safeHTML(w.md||'--')+'</td><td><span class="badge '+(w.status==='Healed'?'badge-green':'badge-red')+'">'+safeHTML(w.status||'Open')+'</span></td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportWoundsCSV() { var rows=[['Resident','Date','Type','Location','Stage','Size','Bed','Drainage','Odor','MD','Treatment','Status']]; wound_log.forEach(function(w){rows.push([w.res,w.date||'',w.type,w.loc||'',w.stage,w.size||'',w.bed,w.drain,w.odor,w.md,w.tx||'',w.status]);}); dlCSV(rows,'SAIRNcare-WoundCare.csv'); }
+
+// -- PAIN --------------------------------------------------------
+function showPainForm() { document.getElementById('pain-form').style.display='block'; document.getElementById('pn-dt').value=nowDT(); }
+function savePain() {
+  var p={id:Date.now(),res:document.getElementById('pn-res').value.trim(),dt:document.getElementById('pn-dt').value,tool:document.getElementById('pn-tool').value,score:document.getElementById('pn-score').value,loc:document.getElementById('pn-loc').value.trim(),quality:document.getElementById('pn-quality').value,intervention:document.getElementById('pn-intervention').value,reassess:document.getElementById('pn-reassess').value,staff:document.getElementById('pn-staff').value.trim()};
+  if (!p.res) { scToast('Enter resident name','warn'); return; }
+  pain_log.unshift(p); localStorage.setItem('sc_pain',JSON.stringify(pain_log));
+  document.getElementById('pain-form').style.display='none'; renderPainList();
+  scToast('Pain assessment saved for '+p.res,'ok');
+}
+async function aiPainReview() {
+  var el=document.getElementById('pain-ai'); el.style.display='block'; el.innerHTML=scLoad('AI pain management review...');
+  var recent=pain_log.slice(0,15).map(function(p){return p.res+' '+p.dt+': '+p.score+', '+p.loc+', intervention='+p.intervention;}).join('\n')||'No pain data';
+  var res=await callClaude(SYS,'Pain management review: '+recent+'\nIdentify: (1) residents with persistent or undertreated pain; (2) residents requiring physician notification for pain medication adjustment; (3) non-pharmacological interventions that may reduce reliance on PRN medications; (4) residents where pain may be contributing to behavioral symptoms or refusal of care; (5) documentation gaps that could create survey vulnerability.',1000);
+  el.textContent=res;
+}
+function renderPainList() {
+  var el=document.getElementById('pain-list');
+  if (!pain_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No pain assessments logged yet.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Date/Time</th><th>Resident</th><th>Score</th><th>Location</th><th>Intervention</th><th>Re-assessment</th></tr></thead><tbody>'+
+    pain_log.slice(0,50).map(function(p){ var severe=p.score&&p.score.includes('7-9')||p.score&&p.score.includes('10'); return '<tr><td style="color:var(--mu)">'+(p.dt||'--')+'</td><td style="font-weight:700">'+safeHTML(p.res||'')+'</td><td style="font-weight:'+(severe?'800':'400')+';color:'+(severe?'#DC2626':'inherit')+'">'+safeHTML(p.score||'')+'</td><td>'+safeHTML(p.loc||'--')+'</td><td style="font-size:11px">'+safeHTML(p.intervention||'')+'</td><td style="font-size:11px;color:var(--mu)">'+safeHTML(p.reassess||'')+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportPainCSV() { var rows=[['Date/Time','Resident','Score','Tool','Location','Quality','Intervention','Reassessment','Staff']]; pain_log.forEach(function(p){rows.push([p.dt||'',p.res,p.score,p.tool,p.loc||'',p.quality,p.intervention,p.reassess,p.staff||'']);}); dlCSV(rows,'SAIRNcare-PainLog.csv'); }
+
+// -- ADVANCE CARE PLANNING ---------------------------------------
+function showACPForm() { document.getElementById('acp-form').style.display='block'; document.getElementById('acp-date').value=today(); }
+function saveACP() {
+  var a={id:Date.now(),res:document.getElementById('acp-res').value.trim(),date:document.getElementById('acp-date').value,ad:document.getElementById('acp-ad').value,polst:document.getElementById('acp-polst').value,code:document.getElementById('acp-code').value,proxy:document.getElementById('acp-proxy').value.trim(),hospice:document.getElementById('acp-hospice').value,fam:document.getElementById('acp-fam').value,wishes:document.getElementById('acp-wishes').value.trim()};
+  if (!a.res) { scToast('Enter resident name','warn'); return; }
+  var idx=acp_log.findIndex(function(x){return x.res===a.res;});
+  if (idx>=0) acp_log[idx]=a; else acp_log.unshift(a);
+  localStorage.setItem('sc_acp',JSON.stringify(acp_log));
+  document.getElementById('acp-form').style.display='none'; renderACPList();
+  scToast('ACP record saved for '+a.res,'ok');
+}
+async function aiACPConversationGuide() {
+  var res=document.getElementById('acp-res').value.trim();
+  var el=document.getElementById('acp-ai'); el.style.display='block'; el.innerHTML=scLoad('Preparing family conversation guide...');
+  var existing=acp_log.find(function(a){return a.res===res;});
+  var context=existing?'Current status: '+existing.code+', advance directive: '+existing.ad+', family status: '+existing.fam:'No ACP record on file';
+  var r=await callClaude(SYS,'Generate a compassionate family conversation guide for advance care planning discussion with family of '+( res||'this resident')+'. Context: '+context+'. Include: (1) How to open the conversation with empathy; (2) Key questions to elicit the resident\'s values and wishes; (3) How to explain POLST, DNR, and hospice in plain language families understand; (4) How to handle family disagreement about care decisions; (5) What to document after the conversation; (6) How to follow up if the family needs more time. This guide is for a nurse or administrator facilitating this conversation, not a physician.',1200);
+  el.textContent=r;
+}
+async function aiHospiceScreening() {
+  var res=document.getElementById('acp-res').value.trim();
+  if (!res) { res='this resident'; }
+  var el=document.getElementById('acp-ai'); el.style.display='block'; el.innerHTML=scLoad('Running hospice eligibility screen...');
+  // Pull relevant data
+  var resData=residents_sc.find(function(r){return r.name===res;});
+  var context=resData?'Diagnoses: '+resData.dx+', care level: '+resData.care:'Limited clinical data available';
+  var r=await callClaude(SYS,'Hospice eligibility screening for '+res+'. '+context+'. Provide: (1) General hospice eligibility criteria for common diagnoses (heart failure, COPD, cancer, dementia, end-stage renal); (2) Clinical indicators suggesting this resident may benefit from hospice evaluation; (3) How to discuss hospice with the family — common misconceptions to address; (4) How to make a hospice referral — process and what to include in the referral; (5) What changes after hospice enrollment — what stays the same at the ALF; (6) Medicare hospice benefit explained in plain language.',1200);
+  el.textContent=r;
+}
+function renderACPList() {
+  var el=document.getElementById('acp-list');
+  var noDoc=acp_log.filter(function(a){return a.ad&&a.ad.includes('No --');}).length;
+  if (noDoc>0) { /* alert handled in panel */ }
+  if (!acp_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No ACP records. Every resident should have an advance care planning conversation documented.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Resident</th><th>Code Status</th><th>Advance Directive</th><th>POLST</th><th>Hospice</th><th>Family Conversation</th></tr></thead><tbody>'+
+    acp_log.map(function(a){ var noAD=a.ad&&a.ad.includes('No --'); return '<tr><td style="font-weight:700">'+safeHTML(a.res)+'</td><td><span class="badge '+(a.code&&a.code!=='Full Code'?'badge-rose':'badge-green')+'">'+safeHTML(a.code||'')+'</span></td><td style="color:'+(noAD?'#DC2626':'inherit')+'">'+safeHTML(a.ad||'').split('--')[0].trim()+'</td><td style="color:var(--mu)">'+safeHTML(a.polst||'').split('--')[0].trim()+'</td><td>'+safeHTML(a.hospice||'No')+'</td><td style="font-size:11px;color:var(--mu)">'+safeHTML(a.fam||'').split('--')[0].trim()+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportACPCSV() { var rows=[['Resident','Code Status','Advance Directive','POLST','Proxy','Hospice','Family Conv','Wishes']]; acp_log.forEach(function(a){rows.push([a.res,a.code||'',a.ad||'',a.polst||'',a.proxy||'',a.hospice||'',a.fam||'',a.wishes||'']);}); dlCSV(rows,'SAIRNcare-ACP.csv'); }
+
+// -- CHANGE OF CONDITION -----------------------------------------
+function showCOCForm() { document.getElementById('coc-form').style.display='block'; document.getElementById('coc-dt').value=nowDT(); }
+function saveCOC() {
+  var c={id:Date.now(),res:document.getElementById('coc-res').value.trim(),dt:document.getElementById('coc-dt').value,by:document.getElementById('coc-by').value.trim(),type:document.getElementById('coc-type').value,vitals:document.getElementById('coc-vitals').value.trim(),md:document.getElementById('coc-md').value,orders:document.getElementById('coc-orders').value.trim(),fam:document.getElementById('coc-fam').value,transfer:document.getElementById('coc-transfer').value,desc:document.getElementById('coc-desc').value.trim()};
+  if (!c.res) { scToast('Enter resident name','warn'); return; }
+  coc_log.unshift(c); localStorage.setItem('sc_coc',JSON.stringify(coc_log));
+  document.getElementById('coc-form').style.display='none'; renderCOCList();
+  scToast('Change of condition documented for '+c.res,'ok');
+}
+async function aiCOCReport() {
+  var res=document.getElementById('coc-res').value.trim(), type=document.getElementById('coc-type').value, desc=document.getElementById('coc-desc').value.trim(), vitals=document.getElementById('coc-vitals').value.trim(), md=document.getElementById('coc-md').value, orders=document.getElementById('coc-orders').value.trim();
+  if (!res) { scToast('Enter resident name','warn'); return; }
+  var el=document.getElementById('coc-ai'); el.style.display='block'; el.innerHTML=scLoad('Writing clinical change of condition report...');
+  var r=await callClaude(SYS,'Write a complete clinical Change of Condition report. Resident: '+res+'. Change: '+type+'. Description: '+(desc||'Not provided')+'. Vitals: '+(vitals||'Not documented')+'. Physician notification: '+md+'. Orders received: '+(orders||'None')+'. Write: (1) Objective clinical description of the change from baseline; (2) Baseline reference (what is this resident\'s normal?); (3) Interventions taken in sequence with timestamps placeholder; (4) Physician and family notification documentation; (5) Monitoring plan for next 24-48 hours; (6) Care plan update trigger assessment. Format as a complete clinical document.',1200);
+  el.textContent=r;
+}
+function renderCOCList() {
+  var el=document.getElementById('coc-list');
+  if (!coc_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No change of condition reports.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Date/Time</th><th>Resident</th><th>Change Type</th><th>MD Notified</th><th>Transfer</th></tr></thead><tbody>'+
+    coc_log.slice(0,40).map(function(c){ return '<tr><td style="color:var(--mu)">'+(c.dt||'--')+'</td><td style="font-weight:700">'+safeHTML(c.res||'')+'</td><td><span class="badge badge-amber">'+safeHTML(c.type||'')+'</span></td><td>'+safeHTML(c.md||'--')+'</td><td>'+safeHTML(c.transfer||'--')+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportCOCCSV() { var rows=[['Date/Time','Resident','Change','Vitals','MD','Orders','Family','Transfer']]; coc_log.forEach(function(c){rows.push([c.dt||'',c.res,c.type,c.vitals||'',c.md,c.orders||'',c.fam,c.transfer]);}); dlCSV(rows,'SAIRNcare-ChangeOfCondition.csv'); }
+
+// -- SHIFT HANDOFF -----------------------------------------------
+function saveHandoffOnly() {
+  var h={id:Date.now(),staff:document.getElementById('ho-staff').value.trim(),shift:document.getElementById('ho-shift').value,date:document.getElementById('ho-date').value,events:document.getElementById('ho-events').value.trim(),tasks:document.getElementById('ho-tasks').value.trim()};
+  if (!h.staff) { scToast('Enter your name','warn'); return; }
+  handoff_log.unshift(h); localStorage.setItem('sc_handoffs',JSON.stringify(handoff_log));
+  renderHandoffList(); scToast('Handoff notes saved','ok');
+}
+async function aiGenerateHandoff() {
+  var staff=document.getElementById('ho-staff').value.trim(), shift=document.getElementById('ho-shift').value, date=document.getElementById('ho-date').value, events=document.getElementById('ho-events').value.trim(), tasks=document.getElementById('ho-tasks').value.trim();
+  if (!events) { scToast('Enter shift observations first','warn'); return; }
+  var el=document.getElementById('handoff-output'), res_el=document.getElementById('handoff-result');
+  el.style.display='block'; res_el.innerHTML=scLoad('Writing shift handoff report...');
+  var r=await callClaude(SYS,'Write a complete, professional shift handoff report. Shift: '+shift+'. Date: '+date+'. Outgoing staff: '+(staff||'Not specified')+'. Observations this shift:\n'+events+'\nPriority tasks for oncoming shift:\n'+(tasks||'None specified')+'\n\nFormat as a structured handoff report with: (1) Shift summary — overall status of unit; (2) Resident-by-resident updates organized by room number if mentioned; (3) Medications administered, refused, or pending; (4) Any incidents or changes in condition; (5) Critical tasks and follow-ups for oncoming shift in priority order; (6) Any physician or family calls expected. Use clinical language. This document must be defensible if reviewed during a survey.',1500);
+  res_el.textContent=r;
+  saveHandoffOnly();
+}
+function renderHandoffList() {
+  var el=document.getElementById('handoff-list');
+  if (!handoff_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:12px;padding:12px;text-align:center">No handoff reports yet.</div>'; return; }
+  el.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;margin:10px 0 6px">Recent Handoffs</div>'+
+    handoff_log.slice(0,5).map(function(h){ return '<div class="sc-card"><div style="font-size:12px;font-weight:700">'+safeHTML(h.shift)+' — '+(h.date||'')+'</div><div style="font-size:11px;color:var(--mu)">'+safeHTML(h.staff||'Unknown')+'</div></div>'; }).join('');
+}
+
+// -- ONBOARDING --------------------------------------------------
+function showOnboardingForm() { document.getElementById('onboard-form').style.display='block'; document.getElementById('ob-start').value=today(); }
+function saveOnboarding() {
+  var items=['ob1','ob2','ob3','ob4','ob5','ob6','ob7','ob8'];
+  var completed=items.filter(function(i){return document.getElementById(i)&&document.getElementById(i).checked;}).length;
+  var o={id:Date.now(),name:document.getElementById('ob-name').value.trim(),role:document.getElementById('ob-role').value,start:document.getElementById('ob-start').value,mentor:document.getElementById('ob-mentor').value.trim(),supervisor:document.getElementById('ob-supervisor').value.trim(),week1completed:completed,total:items.length};
+  if (!o.name) { scToast('Enter employee name','warn'); return; }
+  onboarding_log.unshift(o); localStorage.setItem('sc_onboarding',JSON.stringify(onboarding_log));
+  document.getElementById('onboard-form').style.display='none'; renderOnboardingList();
+  scToast('Onboarding started for '+o.name,'ok');
+}
+async function aiOnboardingPlan() {
+  var name=document.getElementById('ob-name').value.trim(), role=document.getElementById('ob-role').value, start=document.getElementById('ob-start').value;
+  if (!name) { scToast('Enter employee name','warn'); return; }
+  var el=document.getElementById('ob-ai'); el.style.display='block'; el.innerHTML=scLoad('Generating 90-day onboarding plan...');
+  var settings=JSON.parse(localStorage.getItem('sc_facility_settings')||'{}'), state=settings.state||'Ohio';
+  var r=await callClaude(SYS,'Generate a complete 90-day onboarding plan for: '+name+', role: '+role+', start date: '+(start||'today')+', facility state: '+state+'. Include: Week 1 orientation checklist; Month 1 training milestones and competency check-offs; 30-day check-in agenda; Month 2 independence goals; Month 3 full competency assessment; State-required training that must be completed in first 90 days in '+state+'; Retention strategies for '+role+' staff based on current research; Red flags to watch for indicating this employee may leave within 6 months; How to use a mentorship assignment effectively.',1500);
+  el.textContent=r;
+}
+function renderOnboardingList() {
+  var el=document.getElementById('onboarding-list');
+  if (!onboarding_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No onboarding records. Start tracking new hires from day one.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Employee</th><th>Role</th><th>Start Date</th><th>Mentor</th><th>Week 1 Progress</th></tr></thead><tbody>'+
+    onboarding_log.slice(0,20).map(function(o){ var pct=Math.round(o.week1completed/o.total*100); return '<tr><td style="font-weight:700">'+safeHTML(o.name)+'</td><td>'+safeHTML(o.role)+'</td><td style="color:var(--mu)">'+(o.start||'--')+'</td><td>'+safeHTML(o.mentor||'Unassigned')+'</td><td><span class="badge '+(pct>=80?'badge-green':pct>=50?'badge-amber':'badge-red')+'">'+pct+'% ('+o.week1completed+'/'+o.total+')</span></td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportOnboardingCSV() { var rows=[['Employee','Role','Start','Mentor','Supervisor','Week1%']]; onboarding_log.forEach(function(o){rows.push([o.name,o.role,o.start||'',o.mentor||'',o.supervisor||'',Math.round(o.week1completed/o.total*100)+'%']);}); dlCSV(rows,'SAIRNcare-Onboarding.csv'); }
+
+// -- AGENCY STAFF ------------------------------------------------
+function showAgencyForm() { document.getElementById('agency-form').style.display='block'; document.getElementById('ag-start').value=today(); }
+function saveAgency() {
+  var a={id:Date.now(),name:document.getElementById('ag-name').value.trim(),agency:document.getElementById('ag-agency').value.trim(),role:document.getElementById('ag-role').value,license:document.getElementById('ag-license').value.trim(),expiry:document.getElementById('ag-expiry').value,bgcheck:document.getElementById('ag-bgcheck').value,start:document.getElementById('ag-start').value,rate:parseFloat(document.getElementById('ag-rate').value)||0,perf:document.getElementById('ag-perf').value,notes:document.getElementById('ag-notes').value.trim()};
+  if (!a.name) { scToast('Enter staff name','warn'); return; }
+  agency_log.unshift(a); localStorage.setItem('sc_agency',JSON.stringify(agency_log));
+  document.getElementById('agency-form').style.display='none'; renderAgencyList();
+  scToast('Agency staff record saved for '+a.name,'ok');
+}
+function renderAgencyList() {
+  var el=document.getElementById('agency-list'), t=today();
+  if (!agency_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No agency staff records. Track every temp worker credential for survey protection.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Name</th><th>Agency</th><th>Role</th><th>License</th><th>Expiration</th><th>BG Check</th><th>Rate</th><th>Performance</th></tr></thead><tbody>'+
+    agency_log.map(function(a){ var exp=a.expiry&&a.expiry<t; var poor=a.perf&&a.perf.includes('Poor'); return '<tr><td style="font-weight:700">'+safeHTML(a.name)+'</td><td style="color:var(--mu)">'+safeHTML(a.agency||'--')+'</td><td>'+safeHTML(a.role)+'</td><td style="color:var(--mu)">'+safeHTML(a.license||'--')+'</td><td style="color:'+(exp?'#DC2626':'var(--mu)')+'">'+(a.expiry||'--')+(exp?' EXPIRED':'')+'</td><td><span class="badge '+(a.bgcheck&&a.bgcheck.includes('Yes')?'badge-green':'badge-amber')+'">'+safeHTML(a.bgcheck||'').split('--')[0]+'</span></td><td>'+(a.rate?'$'+a.rate+'/hr':'--')+'</td><td style="color:'+(poor?'#DC2626':'inherit')+'">'+safeHTML(a.perf||'').split('--')[0].trim()+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportAgencyCSV() { var rows=[['Name','Agency','Role','License','Expiration','BG Check','Rate','Performance']]; agency_log.forEach(function(a){rows.push([a.name,a.agency||'',a.role,a.license||'',a.expiry||'',a.bgcheck||'',a.rate||'',a.perf||'']);}); dlCSV(rows,'SAIRNcare-AgencyStaff.csv'); }
+
+// -- QAPI --------------------------------------------------------
+async function generateQAPIReport() {
+  var month=document.getElementById('qapi-month').value||new Date().toISOString().slice(0,7);
+  var chair=document.getElementById('qapi-chair').value.trim();
+  var concerns=document.getElementById('qapi-concerns').value.trim();
+  var el=document.getElementById('qapi-output'); el.style.display='block'; el.innerHTML=scLoad('Generating QAPI report from facility data...');
+  var settings=JSON.parse(localStorage.getItem('sc_facility_settings')||'{}');
+  var census=residents_sc.filter(function(r){return r.status==='Active';}).length;
+  var mthInc=incidents_sc.filter(function(i){return (i.datetime||'').slice(0,7)===month;}).length;
+  var falls=incidents_sc.filter(function(i){return (i.datetime||'').slice(0,7)===month&&i.type&&i.type.includes('Fall');}).length;
+  var openGriev=grievances_sc.filter(function(g){return g.status!=='Resolved';}).length;
+  var openWounds=wound_log.filter(function(w){return w.status!=='Healed';}).length;
+  var lowAppetite=trend_log.filter(function(t){return t.appetite&&t.appetite.includes('Poor');}).length;
+  var highPain=pain_log.filter(function(p){return p.score&&(p.score.includes('7-9')||p.score.includes('10'));}).length;
+  var r=await callClaude(SYS,
+    'Generate a complete QAPI (Quality Assurance and Performance Improvement) report for '+month+'. Facility: '+(settings.facilityName||'This facility')+', State: '+(settings.state||'Unknown')+'. QAPI Chair: '+(chair||'Administrator')+'. Facility data this month: Census='+census+', Total incidents='+mthInc+', Falls='+falls+', Open grievances='+openGriev+', Open wounds='+openWounds+', Residents with poor appetite='+lowAppetite+', High pain assessments='+highPain+(concerns?'. Additional concerns: '+concerns:'')+'. Generate: (1) Executive summary of quality indicators this month; (2) Areas meeting quality benchmarks; (3) Areas requiring performance improvement — ranked by priority; (4) Root cause analysis for each improvement area; (5) SMART action plans for top 3 issues (Specific, Measurable, Achievable, Relevant, Time-bound); (6) Responsible parties and target dates; (7) Metrics to track improvement; (8) Items for next QAPI committee meeting agenda. Format as a complete QAPI document suitable for survey review.',
+    2500);
+  el.textContent=r;
+}
+async function aiQAPIActionPlan() {
+  var concerns=document.getElementById('qapi-concerns').value.trim();
+  if (!concerns) { scToast('Enter areas of concern first','warn'); return; }
+  var el=document.getElementById('qapi-output'); el.style.display='block'; el.innerHTML=scLoad('Generating action plan...');
+  var r=await callClaude(SYS,'Generate a detailed QAPI Performance Improvement action plan for these issues: '+concerns+'. For each issue: (1) Problem statement; (2) Root cause analysis (use 5-Why methodology); (3) SMART goal; (4) Interventions — who does what, when; (5) Timeline and milestones; (6) How improvement will be measured; (7) Sustainability plan. Format ready for QAPI committee review.',1500);
+  el.textContent=r;
+}
+
+// -- LIFE STORY --------------------------------------------------
+function showLifeStoryForm() { document.getElementById('lifestory-form').style.display='block'; }
+function saveLifeStory() {
+  var l={id:Date.now(),name:document.getElementById('ls-name').value.trim(),nick:document.getElementById('ls-nick').value.trim(),career:document.getElementById('ls-career').value.trim(),home:document.getElementById('ls-home').value.trim(),family:document.getElementById('ls-family').value.trim(),faith:document.getElementById('ls-faith').value.trim(),music:document.getElementById('ls-music').value.trim(),food:document.getElementById('ls-food').value.trim(),hobbies:document.getElementById('ls-hobbies').value.trim(),comfort:document.getElementById('ls-comfort').value.trim(),upset:document.getElementById('ls-upset').value.trim(),personality:document.getElementById('ls-personality').value,story:document.getElementById('ls-story').value.trim()};
+  if (!l.name) { scToast('Enter resident name','warn'); return; }
+  var idx=lifestory_log.findIndex(function(x){return x.name===l.name;});
+  if (idx>=0) lifestory_log[idx]=l; else lifestory_log.unshift(l);
+  localStorage.setItem('sc_lifestories',JSON.stringify(lifestory_log));
+  document.getElementById('lifestory-form').style.display='none'; renderLifeStoryList();
+  scToast('Life story saved for '+l.name,'ok');
+}
+async function aiLifeStoryInsights() {
+  var name=document.getElementById('ls-name').value.trim();
+  var l=lifestory_log.find(function(x){return x.name===name;});
+  if (!l) { scToast('Save life story first','warn'); return; }
+  var el=document.getElementById('ls-ai'); el.style.display='block'; el.innerHTML=scLoad('Generating personalized care insights...');
+  var r=await callClaude(SYS,'Generate personalized care insights for '+l.name+'. Life story: Career: '+l.career+'. Hometown: '+l.home+'. Family: '+l.family+'. Faith: '+l.faith+'. Music: '+l.music+'. Favorite foods: '+l.food+'. Hobbies: '+l.hobbies+'. Comforts: '+l.comfort+'. Upsets: '+l.upset+'. Personality: '+l.personality+'. Story: '+l.story+'. Provide: (1) Care approach recommendations tailored to their personality and history; (2) Activities most likely to engage them based on their life story; (3) Communication strategies that resonate with their background; (4) De-escalation strategies using their comfort items; (5) What to tell new staff about this resident before their first shift; (6) What information to share with the family to strengthen their visits; (7) Dining preferences and mealtime support. Write with warmth — this is a person with a full life.',1500);
+  el.textContent=r;
+}
+function renderLifeStoryList() {
+  var el=document.getElementById('lifestory-list');
+  if (!lifestory_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No life stories yet. Every resident deserves to be known as a person, not a medical record.</div>'; return; }
+  el.innerHTML=lifestory_log.map(function(l){ return '<div class="sc-card" style="margin-bottom:10px"><div style="font-size:14px;font-weight:800;color:var(--a);margin-bottom:4px">'+safeHTML(l.name)+(l.nick?' — called "'+safeHTML(l.nick)+'"':'')+'</div><div style="font-size:12px;color:var(--mu);margin-bottom:6px">'+(l.career?l.career+' from ':'')+safeHTML(l.home||'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap">'+(l.music?'<span class="badge badge-rose">🎵 '+safeHTML(l.music)+'</span>':'')+(l.food?'<span class="badge badge-green">🍽 '+safeHTML(l.food)+'</span>':'')+(l.hobbies?'<span class="badge badge-blue">🎯 '+safeHTML(l.hobbies)+'</span>':'')+'</div>'+(l.story?'<div style="font-size:12px;margin-top:8px;font-style:italic;color:var(--tx)">'+safeHTML(l.story.slice(0,200))+(l.story.length>200?'...':'')+'</div>':'')+'</div>'; }).join('');
+}
+
+// -- ACTIVITIES --------------------------------------------------
+function showActivityForm() { document.getElementById('activity-form').style.display='block'; document.getElementById('act-date').value=today(); }
+function saveActivity() {
+  var a={id:Date.now(),date:document.getElementById('act-date').value,name:document.getElementById('act-name').value.trim(),type:document.getElementById('act-type').value,res:document.getElementById('act-res').value.trim(),participation:document.getElementById('act-participation').value,moodBefore:document.getElementById('act-mood-before').value,moodAfter:document.getElementById('act-mood-after').value,staff:document.getElementById('act-staff').value.trim(),notes:document.getElementById('act-notes').value.trim()};
+  if (!a.name) { scToast('Enter activity name','warn'); return; }
+  activities_log.unshift(a); localStorage.setItem('sc_activities',JSON.stringify(activities_log));
+  document.getElementById('activity-form').style.display='none'; renderActivitiesList();
+  scToast('Activity logged','ok');
+}
+async function aiEngagementAnalysis() {
+  var el=document.getElementById('eng-ai'); el.style.display='block'; el.innerHTML=scLoad('Analyzing resident engagement and isolation risk...');
+  var recent=activities_log.slice(0,30);
+  var declined=recent.filter(function(a){return a.participation&&a.participation.includes('Declined');});
+  var passive=recent.filter(function(a){return a.participation&&a.participation.includes('Passive');});
+  var withdrawn=recent.filter(function(a){return a.moodBefore&&a.moodBefore.includes('Withdrawn');});
+  var summary='Recent activity logs: '+recent.length+' entries. Declined activities: '+declined.length+'. Passive participation: '+passive.length+'. Residents presenting as withdrawn: '+[...new Set(withdrawn.map(function(a){return a.res;}))].length;
+  var r=await callClaude(SYS,'Social isolation and engagement analysis. '+summary+'. Detail: '+recent.slice(0,10).map(function(a){return (a.res||'Group')+': '+a.name+' -- '+a.participation;}).join('; ')+'. Identify: (1) residents at risk for social isolation based on participation patterns; (2) residents where mood improved with specific activities -- what should be scheduled more often; (3) residents consistently declining -- what barriers exist and how to address; (4) activities producing the best engagement for this resident population; (5) recommendations for increasing social connection among withdrawn residents; (6) residents who should be flagged to physician for possible depression assessment.',1200);
+  el.textContent=r;
+}
+function renderActivitiesList() {
+  var el=document.getElementById('activities-list');
+  if (!activities_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No activities logged yet.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Date</th><th>Activity</th><th>Resident</th><th>Participation</th><th>Mood Improvement</th></tr></thead><tbody>'+
+    activities_log.slice(0,40).map(function(a){ var declined=a.participation&&a.participation.includes('Declined'); var improved=a.moodAfter&&a.moodAfter.includes('better'); return '<tr><td style="color:var(--mu)">'+(a.date||'--')+'</td><td style="font-weight:700">'+safeHTML(a.name||'')+'</td><td>'+safeHTML(a.res||'Group')+'</td><td style="color:'+(declined?'#DC2626':'inherit')+'">'+safeHTML(a.participation||'')+'</td><td style="color:'+(improved?'#16a34a':'var(--mu)')+'">'+safeHTML(a.moodAfter||'--')+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportActivitiesCSV() { var rows=[['Date','Activity','Type','Resident','Participation','Mood Before','Mood After','Staff']]; activities_log.forEach(function(a){rows.push([a.date||'',a.name,a.type,a.res||'Group',a.participation,a.moodBefore,a.moodAfter,a.staff||'']);}); dlCSV(rows,'SAIRNcare-Activities.csv'); }
+
+// -- CRM LEADS ---------------------------------------------------
+function showLeadForm() { document.getElementById('lead-form').style.display='block'; document.getElementById('lead-date').value=today(); }
+function saveLead() {
+  var l={id:Date.now(),name:document.getElementById('lead-name').value.trim(),contact:document.getElementById('lead-contact').value.trim(),date:document.getElementById('lead-date').value,source:document.getElementById('lead-source').value,care:document.getElementById('lead-care').value,timeline:document.getElementById('lead-timeline').value,budget:document.getElementById('lead-budget').value,tour:document.getElementById('lead-tour').value,stage:document.getElementById('lead-stage').value,notes:document.getElementById('lead-notes').value.trim()};
+  if (!l.name) { scToast('Enter prospect name','warn'); return; }
+  leads_log.unshift(l); localStorage.setItem('sc_leads',JSON.stringify(leads_log));
+  document.getElementById('lead-form').style.display='none'; renderLeadsList(); updateCRMStats();
+  scToast(l.name+' inquiry logged','ok');
+}
+function updateCRMStats() {
+  var active=leads_log.filter(function(l){return l.stage&&!l.stage.includes('Lost')&&!l.stage.includes('Move-in confirmed');}).length;
+  var tours=leads_log.filter(function(l){return l.tour;}).length;
+  var moveins=leads_log.filter(function(l){return l.stage&&l.stage.includes('Move-in confirmed');}).length;
+  var total=leads_log.length;
+  var el1=document.getElementById('crm-inquiries'), el2=document.getElementById('crm-tours'), el3=document.getElementById('crm-pipeline'), el4=document.getElementById('crm-conversion');
+  if (el1) el1.textContent=active;
+  if (el2) el2.textContent=tours;
+  var settings=JSON.parse(localStorage.getItem('sc_facility_settings')||'{}');
+  var avgRate=parseInt(settings.beds)>=75?349:parseInt(settings.beds)>=25?249:149;
+  if (el3) el3.textContent='$'+(active*avgRate*12).toLocaleString();
+  if (el4) el4.textContent=total>0?Math.round(moveins/total*100)+'%':'0%';
+}
+async function aiFollowUpScript() {
+  var name=document.getElementById('lead-name').value.trim(), source=document.getElementById('lead-source').value, care=document.getElementById('lead-care').value, timeline=document.getElementById('lead-timeline').value, notes=document.getElementById('lead-notes').value.trim();
+  if (!name) { scToast('Enter prospect name','warn'); return; }
+  var el=document.getElementById('crm-ai'); el.style.display='block'; el.innerHTML=scLoad('Writing follow-up script...');
+  var r=await callClaude(SYS,'Write a compassionate, non-salesy family follow-up script for: Prospect: '+name+'. Referred by: '+source+'. Needs: '+care+'. Timeline: '+timeline+'. Family notes: '+(notes||'None')+'. This is a family making one of the hardest decisions of their lives. The script should: (1) Acknowledge the difficulty of the situation with genuine empathy; (2) Reference specific details the family mentioned (from notes); (3) Answer common unspoken fears (is my parent safe, will they be lonely, is this the right decision); (4) Include a specific next step with a clear ask (tour date, visit, call); (5) Feel human, not like a sales pitch. Write three versions: phone call script, follow-up text, and follow-up email.',1200);
+  el.textContent=r;
+}
+function renderLeadsList() {
+  var el=document.getElementById('leads-list');
+  if (!leads_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No inquiries yet. Start tracking every lead — each one is potential revenue and a family that needs help.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Name</th><th>Care Level</th><th>Timeline</th><th>Tour</th><th>Source</th><th>Stage</th></tr></thead><tbody>'+
+    leads_log.map(function(l){ var lost=l.stage&&l.stage.includes('Lost'); var confirmed=l.stage&&l.stage.includes('confirmed'); return '<tr style="'+(lost?'opacity:.6':'')+'"><td style="font-weight:700">'+safeHTML(l.name||'')+'</td><td><span class="badge badge-rose">'+safeHTML(l.care||'')+'</span></td><td style="color:var(--mu)">'+safeHTML(l.timeline||'').split('--')[0]+'</td><td style="color:var(--mu)">'+(l.tour||'--')+'</td><td style="color:var(--mu)">'+safeHTML(l.source||'')+'</td><td><span class="badge '+(confirmed?'badge-green':lost?'badge-gray':'badge-amber')+'">'+safeHTML(l.stage||'')+'</span></td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportLeadsCSV() { var rows=[['Name','Contact','Date','Source','Care Level','Timeline','Budget','Tour','Stage','Notes']]; leads_log.forEach(function(l){rows.push([l.name,l.contact||'',l.date||'',l.source,l.care,l.timeline,l.budget,l.tour||'',l.stage,l.notes||'']);}); dlCSV(rows,'SAIRNcare-CRM.csv'); }
+
+// -- INFECTION CONTROL -------------------------------------------
+function showInfectionForm() { document.getElementById('infection-form').style.display='block'; document.getElementById('inf-date').value=today(); }
+function saveInfection() {
+  var i={id:Date.now(),who:document.getElementById('inf-who').value.trim(),date:document.getElementById('inf-date').value,type:document.getElementById('inf-type').value,location:document.getElementById('inf-location').value.trim(),isolation:document.getElementById('inf-isolation').value,md:document.getElementById('inf-md').value,report:document.getElementById('inf-report').value,resolved:document.getElementById('inf-resolved').value};
+  if (!i.who) { scToast('Enter resident or staff name','warn'); return; }
+  infection_log.unshift(i); localStorage.setItem('sc_infections',JSON.stringify(infection_log));
+  document.getElementById('infection-form').style.display='none'; renderInfectionList();
+  // Outbreak detection
+  var recent=infection_log.filter(function(x){ return x.date>=new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0]&&x.type===i.type; });
+  if (recent.length>=3) scToast('OUTBREAK ALERT: '+recent.length+' cases of '+i.type+' in 7 days','err');
+  else scToast('Infection logged for '+i.who,'ok');
+}
+async function aiOutbreakAnalysis() {
+  var el=document.getElementById('inf-ai'); el.style.display='block'; el.innerHTML=scLoad('Analyzing infection patterns...');
+  var recent=infection_log.slice(0,20).map(function(i){return i.date+' '+i.who+': '+i.type+' ('+i.location+')';}).join('\n')||'No infections logged';
+  var settings=JSON.parse(localStorage.getItem('sc_facility_settings')||'{}'), state=settings.state||'Ohio';
+  var r=await callClaude(SYS,'Infection control analysis for ALF in '+state+'. Recent infections:\n'+recent+'\nProvide: (1) Outbreak risk assessment -- is any infection type appearing at a rate suggesting an outbreak? (Threshold: 2+ cases same type within 7 days = investigate; 3+ = outbreak protocol); (2) State reporting requirements for '+state+' for any infection types listed; (3) Recommended isolation and containment measures; (4) Staff and resident exposure assessment; (5) Environmental cleaning and disinfection priorities; (6) Communication plan for families; (7) Documentation required to protect against survey deficiency.',1200);
+  el.textContent=r;
+}
+function renderInfectionList() {
+  var el=document.getElementById('infection-list');
+  // Outbreak alert
+  var last7=new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+  var byType={};
+  infection_log.filter(function(i){return i.date>=last7;}).forEach(function(i){if(!byType[i.type])byType[i.type]=0;byType[i.type]++;});
+  var outbreaks=Object.entries(byType).filter(function(e){return e[1]>=3;});
+  document.getElementById('inf-alert-bar').innerHTML=outbreaks.length?outbreaks.map(function(e){return '<div class="alert-red"><b>OUTBREAK ALERT: '+e[1]+' cases of '+safeHTML(e[0])+' in last 7 days</b> — activate outbreak protocol immediately.</div>';}).join(''):infection_log.filter(function(i){return i.date>=last7;}).length>=2?'<div class="alert-amber">Multiple infections in last 7 days — monitor for cluster development.</div>':'';
+  if (!infection_log.length) { el.innerHTML='<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No infections logged. Document every confirmed infection case.</div>'; return; }
+  el.innerHTML='<table class="sc-table"><thead><tr><th>Date</th><th>Resident/Staff</th><th>Infection Type</th><th>Location</th><th>Isolation</th><th>State Report</th><th>Resolved</th></tr></thead><tbody>'+
+    infection_log.slice(0,40).map(function(i){ return '<tr><td style="color:var(--mu)">'+(i.date||'--')+'</td><td style="font-weight:700">'+safeHTML(i.who||'')+'</td><td><span class="badge badge-red">'+safeHTML(i.type||'')+'</span></td><td style="color:var(--mu)">'+safeHTML(i.location||'--')+'</td><td style="color:var(--mu)">'+safeHTML(i.isolation||'--')+'</td><td>'+safeHTML(i.report||'--')+'</td><td style="color:var(--mu)">'+(i.resolved||'Ongoing')+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function exportInfectionCSV() { var rows=[['Date','Resident/Staff','Type','Location','Isolation','MD Notified','State Reported','Resolved']]; infection_log.forEach(function(i){rows.push([i.date||'',i.who,i.type,i.location||'',i.isolation,i.md,i.report,i.resolved||'Ongoing']);}); dlCSV(rows,'SAIRNcare-Infections.csv'); }
+
+// -- POLICIES ----------------------------------------------------
+async function generatePolicy() {
+  var state=document.getElementById('pol-state').value, cat=document.getElementById('pol-category').value, details=document.getElementById('pol-details').value.trim();
+  var el=document.getElementById('pol-output'), res_el=document.getElementById('pol-result');
+  el.style.display='block'; res_el.innerHTML=scLoad('Generating '+cat+' policy for '+state+'...');
+  var r=await callClaude(SYS,'Generate a complete, current, state-compliant Policy and Procedure for "'+cat+'" for an assisted living facility in '+state+(details?'. Facility details: '+details:'')+'. The policy must: (1) Reference specific '+state+' regulatory requirements with citation where applicable; (2) Be written in practical operational language staff can actually follow; (3) Include Policy Statement, Purpose, Scope, Definitions, Policy, Procedure (numbered step-by-step), Responsibilities, Documentation Requirements, and Review Date; (4) Reflect current 2025-2026 regulatory standards; (5) Be specific enough to demonstrate your facility actually follows it -- not generic boilerplate. Format ready to print and place in a policy binder.',2500);
+  res_el.textContent=r;
+}
+function quickPolicy(cat) { document.getElementById('pol-category').value=cat; generatePolicy(); }
+
+// ================================================================
+//  SAIRN BRIDGE v2 -- FULL INTEGRATION
+//  SAIRNcare → SAIRNhr, SAIRNacc, SAIRNcode
+// ================================================================
+
+async function syncToSAIRNBridge() {
+  scToast('Syncing all SAIRN apps...','ok');
+  try {
+    var settings=JSON.parse(localStorage.getItem('sc_facility_settings')||'{}');
+    var activeRes=residents_sc.filter(function(r){return r.status==='Active';});
+    var census=activeRes.length;
+    var wkAgo=new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+
+    // ── DATA FOR SAIRNhr ────────────────────────────────────────
+    var hrPayload = {
+      source: 'sairncare',
+      facilityName: settings.facilityName||'Unknown',
+      state: settings.state||'Unknown',
+      timestamp: new Date().toISOString(),
+      // Staff roster from shifts
+      staffRoster: [...new Set(shifts_sc.map(function(s){return s.staff;}))].map(function(name){
+        var lastShift=shifts_sc.find(function(s){return s.staff===name;});
+        return {name:name, role:lastShift?lastShift.role:'Unknown'};
+      }),
+      // Timecard hours for payroll
+      timecardExport: timecards_sc.filter(function(t){return t.date>=wkAgo;}).map(function(t){
+        return {staff:t.staff, role:t.role, date:t.date, hours:t.hours, shift:t.shift};
+      }),
+      // Training completions
+      trainingRecords: training_sc.slice(0,50).map(function(t){
+        return {staff:t.staff, topic:t.topic, date:t.date, hours:t.hours, expiry:t.expiry};
+      }),
+      // Onboarding status
+      onboardingActive: onboarding_log.filter(function(o){
+        var start=new Date(o.start); var days=(Date.now()-start)/86400000;
+        return days<=90;
+      }).map(function(o){return {name:o.name, role:o.role, start:o.start, mentor:o.mentor};}),
+      // Agency staff
+      agencyCount: agency_log.length,
+      agencyHours: 0 // future: sum from timecards filtered by agency staff names
+    };
+
+    // ── DATA FOR SAIRNacc ───────────────────────────────────────
+    var accPayload = {
+      source: 'sairncare',
+      facilityName: settings.facilityName||'Unknown',
+      timestamp: new Date().toISOString(),
+      // Billing AR
+      billingAR: billing_sc.filter(function(b){return b.status!=='Paid';}).reduce(function(s,b){return s+parseFloat(b.total||0);},0),
+      billingCollected: billing_sc.filter(function(b){return b.status==='Paid';}).reduce(function(s,b){return s+parseFloat(b.total||0);},0),
+      // Monthly revenue by payor
+      payorMix: (function(){
+        var mix={};
+        billing_sc.forEach(function(b){if(!mix[b.payor])mix[b.payor]=0;mix[b.payor]+=parseFloat(b.total||0);});
+        return mix;
+      })(),
+      // Census for occupancy revenue projection
+      census: census,
+      capacity: parseInt(settings.beds)||0,
+      occupancyRate: settings.beds>0?Math.round(census/parseInt(settings.beds)*100):0,
+      // Medicaid tracking
+      medicaidResidents: medicaid_sc.length,
+      medicaidMonthlyTotal: medicaid_sc.reduce(function(s,m){return s+parseFloat(m.rate||0);},0),
+      // Check register
+      checksWritten: checks_sc.length,
+      checksTotal: checks_sc.reduce(function(s,c){return s+parseFloat(c.amount||0);},0),
+      // Payroll labor cost (from timecards)
+      laborHoursThisWeek: timecards_sc.filter(function(t){return t.date>=wkAgo;}).reduce(function(s,t){return s+parseFloat(t.hours||0);},0)
+    };
+
+    // ── DATA FOR SAIRNcode ──────────────────────────────────────
+    var codePayload = {
+      source: 'sairncare',
+      facilityName: settings.facilityName||'Unknown',
+      timestamp: new Date().toISOString(),
+      // Resident clinical snapshot for coding optimization
+      residentClinical: activeRes.slice(0,20).map(function(r){
+        return {name:r.name, diagnoses:r.dx||'', careLevel:r.care, payor:r.payor, dnr:r.dnr};
+      }),
+      // Payor mix for billing code analysis
+      payorBreakdown: (function(){
+        var breakdown={};
+        activeRes.forEach(function(r){if(!breakdown[r.payor])breakdown[r.payor]=0;breakdown[r.payor]++;});
+        return breakdown;
+      })(),
+      // Incident types for ICD-10 suggestions
+      incidentTypes: incidents_sc.slice(0,20).map(function(i){return {type:i.type, date:i.datetime, resident:i.res};}),
+      // Medication list snapshot
+      medicationCount: medications_sc.length,
+      refusedMeds: medications_sc.filter(function(m){return m.status==='Refused';}).length,
+      // Wound data for coding
+      openWounds: wound_log.filter(function(w){return w.status!=='Healed';}).map(function(w){return {type:w.type, stage:w.stage, resident:w.res};}),
+      // Advance care planning codes
+      hospiceResidents: acp_log.filter(function(a){return a.hospice&&a.hospice.includes('Yes');}).length,
+      dnrResidents: acp_log.filter(function(a){return a.code&&a.code!=='Full Code';}).length
+    };
+
+    // Push all three payloads
+    var pushResults = await Promise.allSettled([
+      fetch('https://sairn.vercel.app/api/bridge', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({app:'sairncare', target:'sairnhr', is_demo:true, data:hrPayload})
+      }),
+      fetch('https://sairn.vercel.app/api/bridge', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({app:'sairncare', target:'sairnaccounting', is_demo:true, data:accPayload})
+      }),
+      fetch('https://sairn.vercel.app/api/bridge', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({app:'sairncare', target:'sairncode', is_demo:true, data:codePayload})
+      })
+    ]);
+
+    var succeeded=pushResults.filter(function(r){return r.status==='fulfilled';}).length;
+    scToast('Synced to '+succeeded+'/3 SAIRN apps (HR, Accounting, Code)','ok');
+  } catch(e) {
+    scToast('Bridge sync queued — will retry on reconnect','warn');
+  }
+}
+
+// Extend suite panel sync button
+function syncAllApps() { syncToSAIRNBridge(); }
+
+// What SAIRNhr gets from SAIRNcare: staff roster, timecards, training, onboarding, agency
+// What SAIRNacc gets from SAIRNcare: billing AR, payor mix, census, checks, labor hours
+// What SAIRNcode gets from SAIRNcare: resident diagnoses, payor breakdown, incidents, wounds, hospice status
+
 
 </script>
 </body>
