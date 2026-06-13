@@ -6807,7 +6807,109 @@ function scTelehealthPrint(){
     '<tr><td>Audio-only (Medicare)</td><td>02 or 10</td><td>93</td><td>Per payer</td><td>Extended through Dec 31, 2027</td></tr>'+
     '<tr><td>Brief virtual check-in</td><td>10 or 02</td><td>95</td><td>CPT 98016</td><td>Replaces HCPCS G2012 in 2026</td></tr>'+
     '<tr><td>Mental health telehealth</td><td>10 or 02</td><td>95 or 93</td><td>No geographic restriction</td><td>In-person requirement delayed to Jan 2028</td></tr>'+
-    '</tbody></table></body></html>');
+    '</tbody></table>
+<script>
+// SAIRNcode PATCH — missing function definitions
+// setMode: switches the AI assistant mode (label + placeholder)
+window.setMode = function(label, placeholder) {
+  var inp = document.getElementById('userInput');
+  if (inp) {
+    inp.placeholder = placeholder || ('Ask Claude about ' + label + '...');
+    inp.focus();
+  }
+  // Update active mode button
+  document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
+  // Set system context for next message
+  window._currentMode = label;
+  window._currentPlaceholder = placeholder || '';
+  // Show mode name in chat if addMsg exists
+  if (typeof addMsg === 'function') {
+    addMsg('system-notice', '🔄 Mode: ' + label);
+  } else {
+    var chat = document.getElementById('chatArea');
+    if (chat) {
+      var notice = document.createElement('div');
+      notice.style.cssText = 'text-align:center;font-size:11px;color:rgba(255,255,255,.4);padding:6px;';
+      notice.textContent = 'Mode: ' + label;
+      chat.appendChild(notice);
+      chat.scrollTop = chat.scrollHeight;
+    }
+  }
+};
+
+// setModeById: switches mode by tool/mode ID key
+window.setModeById = function(toolId) {
+  var MODES = {
+    cdi:     { label:'CDI Query', ph:'Describe a clinical scenario and I will help write a CDI query...' },
+    denial:  { label:'Denial Prevention', ph:'Describe the denial reason and I will help with the appeal...' },
+    hcc:     { label:'HCC Analysis', ph:'Enter patient conditions and I will analyze HCC risk adjustment...' },
+    em:      { label:'E&M Coding', ph:'Describe the visit and I will determine the correct E&M level...' },
+    fraud:   { label:'Fraud Detection', ph:'Describe a coding pattern and I will analyze for fraud indicators...' },
+    audit:   { label:'Claim Audit', ph:'Paste the claim details and I will audit for compliance issues...' },
+    history: { label:'Code History', ph:'Enter a procedure code and I will explain its history and usage...' },
+    docs:    { label:'Doc Templates', ph:'Describe the documentation you need and I will generate a template...' },
+    query:   { label:'Query Builder', ph:'Describe the clinical scenario and I will build a payer query...' }
+  };
+  var mode = MODES[toolId] || { label: toolId, ph: 'Ask Claude...' };
+  window.setMode(mode.label, mode.ph);
+};
+
+// showPage: shows the main app or home view
+window.showPage = function(page) {
+  var appView = document.getElementById('app-view') || document.getElementById('chatArea') || document.querySelector('.chat-container');
+  var homeView = document.getElementById('home-view') || document.querySelector('.home-screen');
+  if (page === 'app') {
+    if (appView) appView.style.display = '';
+    if (homeView) homeView.style.display = 'none';
+  } else {
+    if (appView) appView.style.display = 'none';
+    if (homeView) homeView.style.display = '';
+  }
+};
+
+// useSuggestion: fills the chat input with the suggestion text and sends
+window.useSuggestion = function(el) {
+  var text = el ? el.textContent.trim() : '';
+  if (!text) return;
+  var inp = document.getElementById('userInput');
+  if (inp) { inp.value = text; inp.focus(); }
+  if (typeof window.sendMessage === 'function') window.sendMessage();
+};
+
+// startFlow: starts a guided workflow mode
+window.startFlow = function(flowType) {
+  var flows = {
+    fraud:   'Fraud Detection',
+    em:      'E&M Coding',
+    hcc:     'HCC Analysis',
+    denial:  'Denial Prevention',
+    audit:   'Claim Audit'
+  };
+  var label = flows[flowType] || flowType;
+  window.setMode(label, 'Walk me through the ' + label + ' process step by step...');
+};
+
+// showClaimAudit: switches to claim audit mode
+window.showClaimAudit = function() {
+  window.setMode('Claim Audit', 'Paste claim details (patient, DOS, codes, payer) and I will audit for compliance...');
+};
+
+// showCodeHistory: switches to code history mode
+window.showCodeHistory = function() {
+  window.setMode('Code History', 'Enter a CPT, ICD-10, or HCPCS code and I will explain its history and proper usage...');
+};
+
+// showDocTemplates: switches to documentation templates mode
+window.showDocTemplates = function() {
+  window.setMode('Doc Templates', 'Describe the clinical documentation you need and I will generate a compliant template...');
+};
+
+// showQueryTemplates: switches to query builder mode
+window.showQueryTemplates = function() {
+  window.setMode('Query Builder', 'Describe the payer, denial reason, or clinical scenario and I will build the query...');
+};
+</script>
+</body></html>');
   w.document.close();
 }
 
