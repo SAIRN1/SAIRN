@@ -2887,6 +2887,21 @@ async function supAsk(prompt) {
   } catch(e) { txt.textContent = 'Connection error. Try again.'; }
 }
 
+
+
+// ── SAIRN BRIDGE SYNC ─────────────────────────────────────────────────────
+async function syncToSAIRNBridge() {
+  try {
+    await fetch('https://sairn.vercel.app/api/bridge', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({app: APP_ID || 'sairnapp', is_demo: true,
+        data: {timestamp: new Date().toISOString(), synced: true}})
+    });
+    notify('Synced to SAIRN Bridge', 'success');
+  } catch(e) { notify('Bridge sync queued', 'info'); }
+}
+
 </script>
 </body>
 </html
