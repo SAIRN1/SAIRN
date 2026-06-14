@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23475569'/><text x='16' y='22' text-anchor='middle' font-size='18' font-family='Arial' fill='white'>&#x2695;</text></svg>">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SAIRNcode — AI Medical Coding Intelligence</title>
+<title>SAIRNcode -- AI Medical Coding Platform. ICD-10, CPT, HCPCS. Powered by Claude.</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
@@ -141,7 +141,7 @@ footer{padding:48px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 
 // ------------------------------------------------------------------------------------------------------------------------
 
-function showClaimStatusView(){var modal=document.getElementById("scode-client-modal");if(!modal){modal=document.createElement("div");modal.id="scode-client-modal";modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:500px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,.3)";var title=document.createElement("h3");title.textContent="Claim Status Summary";title.style.cssText="font-size:18px;font-weight:900;color:#1E293B;margin-bottom:16px";var grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px";[["Paid","scode-cr-paid","#F0FDF4","#16a34a"],["Pending","scode-cr-pend","#FEF3C7","#d97706"],["Denied","scode-cr-den","#FEE2E2","#dc2626"]].forEach(function(d){var c=document.createElement("div");c.style.cssText="background:"+d[2]+";border-radius:8px;padding:12px;text-align:center";var v=document.createElement("div");v.id=d[1];v.textContent="0";v.style.cssText="font-size:22px;font-weight:900;color:"+d[3];var l=document.createElement("div");l.textContent=d[0];l.style.cssText="font-size:10px;color:#6B7280;text-transform:uppercase";c.appendChild(v);c.appendChild(l);grid.appendChild(c);});var listDiv=document.createElement("div");listDiv.id="scode-cr-list";var printBtn=document.createElement("button");printBtn.textContent="Print Summary";printBtn.style.cssText="display:block;margin:14px auto 0;padding:10px 20px;background:#475569;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer";printBtn.onclick=function(){window.print();};inner.appendChild(title);inner.appendChild(grid);inner.appendChild(listDiv);inner.appendChild(printBtn);modal.appendChild(inner);document.body.appendChild(modal);}var claims=window.sc_claims||window.scode_claims||[];document.getElementById("scode-cr-paid").textContent=claims.filter(function(c){return c.status&&c.status.toLowerCase().includes("paid");}).length;document.getElementById("scode-cr-pend").textContent=claims.filter(function(c){return c.status&&c.status.toLowerCase().includes("pending");}).length;document.getElementById("scode-cr-den").textContent=claims.filter(function(c){return c.status&&c.status.toLowerCase().includes("denied");}).length;document.getElementById("scode-cr-list").innerHTML=claims.length?claims.slice(0,5).map(function(c){var col=c.status&&c.status.includes("Paid")?"#16a34a":c.status&&c.status.includes("Denied")?"#dc2626":"#d97706";return "<div style=\'display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F3F4F6;font-size:12px\'><span>"+(c.patient||c.code||"Claim")+"</span><span style=\'font-weight:700;color:"+col+"\'>"+c.status+"</span></div>";}).join(""):"<div style=\'color:#6B7280;text-align:center;padding:16px\'>No claims yet.</div>";modal.style.display="flex";}
+function showClaimStatusView(){var modal=document.getElementById("scode-client-modal");if(!modal){modal=document.createElement("div");modal.id="scode-client-modal";modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:500px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,.3)";var title=document.createElement("h3");title.textContent="Claim Status Summary";title.style.cssText="font-size:18px;font-weight:900;color:#1E293B;margin-bottom:16px";var grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px";[["Paid","scode-cr-paid","#F0FDF4","#16a34a"],["Pending","scode-cr-pend","#FEF3C7","#d97706"],["Denied","scode-cr-den","#FEE2E2","#dc2626"]].forEach(function(d){var c=document.createElement("div");c.style.cssText="background:"+d[2]+";border-radius:8px;padding:12px;text-align:center";var v=document.createElement("div");v.id=d[1];v.textContent="0";v.style.cssText="font-size:22px;font-weight:900;color:"+d[3];var l=document.createElement("div");l.textContent=d[0];l.style.cssText="font-size:10px;color:#6B7280;text-transform:uppercase";c.appendChild(v);c.appendChild(l);grid.appendChild(c);});var listDiv=document.createElement("div");listDiv.id="scode-cr-list";var printBtn=document.createElement("button");printBtn.textContent="Print Summary";printBtn.style.cssText="display:block;margin:14px auto 0;padding:10px 20px;background:#F87171;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer";printBtn.onclick=function(){window.print();};inner.appendChild(title);inner.appendChild(grid);inner.appendChild(listDiv);inner.appendChild(printBtn);modal.appendChild(inner);document.body.appendChild(modal);}var claims=window.sc_claims||window.scode_claims||[];document.getElementById("scode-cr-paid").textContent=claims.filter(function(c){return c.status&&c.status.toLowerCase().includes("paid");}).length;document.getElementById("scode-cr-pend").textContent=claims.filter(function(c){return c.status&&c.status.toLowerCase().includes("pending");}).length;document.getElementById("scode-cr-den").textContent=claims.filter(function(c){return c.status&&c.status.toLowerCase().includes("denied");}).length;document.getElementById("scode-cr-list").innerHTML=claims.length?claims.slice(0,5).map(function(c){var col=c.status&&c.status.includes("Paid")?"#16a34a":c.status&&c.status.includes("Denied")?"#dc2626":"#d97706";return "<div style=\'display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F3F4F6;font-size:12px\'><span>"+(c.patient||c.code||"Claim")+"</span><span style=\'font-weight:700;color:"+col+"\'>"+c.status+"</span></div>";}).join(""):"<div style=\'color:#6B7280;text-align:center;padding:16px\'>No claims yet.</div>";modal.style.display="flex";}
 
 // --   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  --
 // --   30-Layer Protection Framework                          --
@@ -274,7 +274,7 @@ function saLockScreen() {
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
     '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
     '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
-    '<button onclick="saUnlock()" style="width:100%;padding:11px;background:#475569;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Unlock</button>' +
+    '<button onclick="saUnlock()" style="width:100%;padding:11px;background:#F87171;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Unlock</button>' +
     '<div id="salock-err" style="color:#DC2626;font-size:12px;margin-top:8px;min-height:16px"></div></div>';
   document.body.appendChild(overlay);
   setTimeout(function() { var inp = document.getElementById('sairn-repin'); if(inp) inp.focus(); }, 100);
@@ -679,10 +679,10 @@ window.saWipeAllData = function() {
   var notice = document.createElement('div');
   notice.id = 'sairn-privacy-notice';
   notice.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1E1B4B;color:#fff;padding:14px 20px;z-index:99990;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:Inter,sans-serif;font-size:12px;box-shadow:0 -4px 20px rgba(0,0,0,.3)';
-  notice.innerHTML = '<div style="flex:1;min-width:280px">&#127468;&#127463; <b>Privacy Notice:</b> SAIRN uses localStorage to save your project data locally on this device only. We do not sell or share your data. Covered under CCPA and GDPR. <a href="#" onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'block\';return false;" style="color:#47556999">Learn more</a></div>' +
+  notice.innerHTML = '<div style="flex:1;min-width:280px">&#127468;&#127463; <b>Privacy Notice:</b> SAIRN uses localStorage to save your project data locally on this device only. We do not sell or share your data. Covered under CCPA and GDPR. <a href="#" onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'block\';return false;" style="color:#F8717199">Learn more</a></div>' +
     '<div style="display:flex;gap:8px;flex-shrink:0">' +
-    '<button onclick="saAcceptPrivacy()" style="padding:7px 18px;background:#475569;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Accept</button>' +
-    '<button onclick="saDeclinePrivacy()" style="padding:7px 14px;background:transparent;color:#47556999;border:1px solid #1E293B;border-radius:7px;font-size:12px;cursor:pointer">Decline</button>' +
+    '<button onclick="saAcceptPrivacy()" style="padding:7px 18px;background:#F87171;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Accept</button>' +
+    '<button onclick="saDeclinePrivacy()" style="padding:7px 14px;background:transparent;color:#F8717199;border:1px solid #1E293B;border-radius:7px;font-size:12px;cursor:pointer">Decline</button>' +
     '<button onclick="document.getElementById(\'sairn-privacy-notice\').remove()" style="background:none;border:none;color:#6B7280;font-size:18px;cursor:pointer;padding:0 4px">&#215;</button></div>';
   document.body.appendChild(notice);
   // Detail panel
@@ -693,7 +693,7 @@ window.saWipeAllData = function() {
     '<p style="margin-bottom:8px;line-height:1.6">SAIRN stores project data in your browser\'s localStorage. This data never leaves your device unless you explicitly use a cloud sync feature.</p>' +
     '<p style="margin-bottom:8px;line-height:1.6">You have the right to delete all stored data at any time using the data wipe function in Settings.</p>' +
     '<p style="line-height:1.6">Contact: michael@sairn.com | CCPA / GDPR compliant</p>' +
-    '<button onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'none\'" style="margin-top:12px;padding:6px 14px;background:#475569;color:#fff;border:none;border-radius:7px;font-size:11px;cursor:pointer">Close</button>';
+    '<button onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'none\'" style="margin-top:12px;padding:6px 14px;background:#F87171;color:#fff;border:none;border-radius:7px;font-size:11px;cursor:pointer">Close</button>';
   document.body.appendChild(detail);
 })();
 
@@ -749,7 +749,7 @@ window.saShowSecurityStatus = function() {
 
 // ---- INITIALIZATION MESSAGE ------------------------------------------------------------------
 saLog('INIT', 'SAIRN Security System v3.0 initialized -- 30 layers active', 'info');
-console.log('%c SAIRN Security v3.0 -- 30-Layer Protection Active ', 'background:#1E1B4B;color:#47556999;font-weight:bold;padding:4px 8px;border-radius:4px');
+console.log('%c SAIRN Security v3.0 -- 30-Layer Protection Active ', 'background:#1E1B4B;color:#F8717199;font-weight:bold;padding:4px 8px;border-radius:4px');
 
 })(); // End SAIRN Security IIFE
 
@@ -1167,12 +1167,12 @@ var APP_COLOR = (function() {
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#475569';
+  if (p.includes('study'))   return '#F87171';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
   if (p.includes('code') || p.includes('clinical')) return '#06B6D4';
-  return '#475569';
+  return '#F87171';
 })();
 
 // Inject CSS
@@ -1374,7 +1374,7 @@ style.textContent =
   '#sairn-memory-indicator{position:fixed;top:68px;right:16px;z-index:799;display:none;align-items:center;gap:6px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:100px;padding:5px 12px;font-size:10px;font-weight:600;color:rgba(99,102,241,0.9);cursor:pointer;transition:all .2s}' +
   '#sairn-memory-indicator.visible{display:flex}' +
   '#sairn-memory-indicator:hover{background:rgba(99,102,241,0.18)}' +
-  '.smi-dot{width:6px;height:6px;border-radius:50%;background:#475569;animation:smiPulse 2s ease-in-out infinite}' +
+  '.smi-dot{width:6px;height:6px;border-radius:50%;background:#F87171;animation:smiPulse 2s ease-in-out infinite}' +
   '@keyframes smiPulse{0%,100%{opacity:.4}50%{opacity:1}}';
 document.head.appendChild(style);
 
@@ -1390,7 +1390,7 @@ memPanel.id = 'sairn-memory-panel';
 memPanel.style.cssText = 'position:fixed;top:100px;right:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:300px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)';
 memPanel.innerHTML =
   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
-  '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#475569">Session Memory</div>' +
+  '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#F87171">Session Memory</div>' +
   '<button onclick="document.getElementById(\'sairn-memory-panel\').style.display=\'none\'" style="background:none;border:none;color:rgba(240,240,255,0.4);font-size:18px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div id="sairn-memory-content" style="font-size:12px;color:rgba(240,240,255,0.6);line-height:1.65;max-height:200px;overflow-y:auto">No memory built yet. Keep chatting and I\'ll start remembering what matters.</div>' +
@@ -1542,11 +1542,11 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#475569';
+  if (p.includes('study'))  return '#F87171';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
-  return '#475569';
+  return '#F87171';
 })();
 
 var TONE_KEY = 'sairn_tone_prefs';
@@ -1679,11 +1679,11 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#475569';
+  if (p.includes('study'))  return '#F87171';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
-  return '#475569';
+  return '#F87171';
 })();
 
 var APP_ID = (function(){
@@ -1895,11 +1895,11 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#475569';
+  if (p.includes('study'))  return '#F87171';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
-  return '#475569';
+  return '#F87171';
 })();
 
 // Inject CSS
@@ -2064,12 +2064,12 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#475569';
+  if (p.includes('study'))  return '#F87171';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
   if (p.includes('roam'))   return '#14B8A6';
-  return '#475569';
+  return '#F87171';
 })();
 
 // Check browser support
@@ -2208,7 +2208,7 @@ function checkIncomingHandoff() {
   // Show a context banner
   var banner = document.createElement('div');
   banner.style.cssText = 'background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:10px 14px;margin:8px 16px;font-size:12px;color:rgba(240,240,255,0.65);line-height:1.5;display:flex;align-items:flex-start;gap:10px';
-  banner.innerHTML = '<span style="font-size:16px;flex-shrink:0"></span><div><strong style="color:#475569">Context from SAIRN NEXUS:</strong> ' + ctx.situation.slice(0, 200) + (ctx.situation.length > 200 ? '...' : '') + '</div>';
+  banner.innerHTML = '<span style="font-size:16px;flex-shrink:0"></span><div><strong style="color:#F87171">Context from SAIRN NEXUS:</strong> ' + ctx.situation.slice(0, 200) + (ctx.situation.length > 200 ? '...' : '') + '</div>';
 
   var chatArea = document.getElementById('chatArea') || document.getElementById('messages');
   if (chatArea) chatArea.insertBefore(banner, chatArea.firstChild);
@@ -2347,12 +2347,12 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#475569';
+  if (p.includes('study'))  return '#F87171';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
   if (p.includes('roam'))   return '#14B8A6';
-  return '#475569';
+  return '#F87171';
 })();
 
 var APP_LABELS = (function(){
@@ -2505,7 +2505,7 @@ if (window._saircProfileInstalled) return;
 window._saircProfileInstalled = true;
 
 var PROFILE_KEY = 'sairn_intelligence_profile';
-var APP_COLOR = '#475569';
+var APP_COLOR = '#F87171';
 
 // Default profile structure
 var DEFAULT_PROFILE = {
@@ -2541,18 +2541,18 @@ st.textContent =
   '.spm-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(0,0,0,0.7);border-bottom:1px solid rgba(99,102,241,0.2);flex-shrink:0}' +
   '.spm-body{flex:1;overflow-y:auto;padding:24px;max-width:760px;margin:0 auto;width:100%}' +
   '.spm-section{margin-bottom:24px}' +
-  '.spm-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#475569;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(99,102,241,0.2)}' +
+  '.spm-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#F87171;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(99,102,241,0.2)}' +
   '.spm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}' +
   '.spm-field label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.4);display:block;margin-bottom:4px}' +
   '.spm-field input,.spm-field select,.spm-field textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F0F0FF;font-size:13px;font-family:Outfit,sans-serif;outline:none;box-sizing:border-box}' +
   '.spm-field select option{background:#0A0A20;color:#F0F0FF}' +
-  '.spm-save-btn{width:100%;padding:14px;background:#475569;border:none;border-radius:12px;color:#fff;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;letter-spacing:.3px}' +
+  '.spm-save-btn{width:100%;padding:14px;background:#F87171;border:none;border-radius:12px;color:#fff;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;letter-spacing:.3px}' +
   '.spm-status{font-size:11px;color:rgba(240,240,255,0.3);text-align:center;margin-top:10px;line-height:1.6}' +
   '#sairn-profile-btn{position:fixed;top:68px;left:16px;z-index:799;display:flex;align-items:center;gap:6px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:100px;padding:5px 12px;font-size:10px;font-weight:600;color:rgba(99,102,241,0.9);cursor:pointer;transition:all .2s}' +
   '#sairn-profile-btn:hover{background:rgba(99,102,241,0.18)}' +
   '.spb-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}' +
   '.spb-dot.complete{background:#4ADE80}' +
-  '.spb-dot.incomplete{background:#475569;animation:profPulse 2s ease-in-out infinite}' +
+  '.spb-dot.incomplete{background:#F87171;animation:profPulse 2s ease-in-out infinite}' +
   '@keyframes profPulse{0%,100%{opacity:.4}50%{opacity:1}}';
 document.head.appendChild(st);
 
@@ -2687,7 +2687,7 @@ if (!profile.completed) {
   setTimeout(function() {
     var tip = document.createElement('div');
     tip.style.cssText = 'position:fixed;bottom:90px;left:16px;z-index:900;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:12px 16px;max-width:280px;cursor:pointer';
-    tip.innerHTML = '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px"> Set up your profile</div><div style="font-size:11px;color:rgba(240,240,255,0.5);line-height:1.5">Fill in once and every SAIRN app personalizes to you automatically.</div>';
+    tip.innerHTML = '<div style="font-size:12px;font-weight:600;color:#F87171;margin-bottom:4px"> Set up your profile</div><div style="font-size:11px;color:rgba(240,240,255,0.5);line-height:1.5">Fill in once and every SAIRN app personalizes to you automatically.</div>';
     tip.onclick = function(){ tip.remove(); openProfileModal(); };
     document.body.appendChild(tip);
     setTimeout(function(){ if (tip.parentNode) tip.remove(); }, 12000);
@@ -2901,7 +2901,7 @@ function installStreamingHook() {
     } catch(err) {
       cursor.remove();
       // Show error state
-      aiEl.innerHTML = '<span style="color:rgba(239,68,68,0.8);font-size:13px"> ' + (err.message || 'Connection error') + ' -- <button onclick="sendMessage()" style="background:none;border:none;color:#475569;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px;text-decoration:underline">Retry</button></span>';
+      aiEl.innerHTML = '<span style="color:rgba(239,68,68,0.8);font-size:13px"> ' + (err.message || 'Connection error') + ' -- <button onclick="sendMessage()" style="background:none;border:none;color:#F87171;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px;text-decoration:underline">Retry</button></span>';
       // Restore user message to input for retry
       if (inp) inp.value = userText;
     }
@@ -3010,7 +3010,7 @@ window.renderMarkdown = function(text) {
   s = s.replace(/^> (.*?)$/gm, '<blockquote style="border-left:3px solid rgba(99,102,241,0.5);margin:8px 0;padding:6px 14px;background:rgba(99,102,241,0.05);border-radius:0 8px 8px 0;color:rgba(240,240,255,0.7);font-style:italic">$1</blockquote>');
 
   // Links
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#475569;text-decoration:underline;text-underline-offset:2px" target="_blank">$1</a>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#F87171;text-decoration:underline;text-underline-offset:2px" target="_blank">$1</a>');
 
   // Line breaks -- double newline = paragraph break
   s = s.replace(/\n\n+/g, '</p><p style="margin:8px 0;line-height:1.75">');
@@ -3475,11 +3475,11 @@ var APP_COLOR = (function(){
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#475569';
+  if (p.includes('study'))   return '#F87171';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
-  return '#475569';
+  return '#F87171';
 })();
 
 var st = document.createElement('style');
@@ -3611,7 +3611,7 @@ var APP_COLOR = (function(){
   if (p.includes('legal'))   return '#7C3AED';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
-  return '#475569';
+  return '#F87171';
 })();
 
 var CACHE_KEY = 'sairn_response_cache_' + (window.APP_ID || 'app');
@@ -3710,7 +3710,7 @@ function showSlowIndicator() {
   if (slowEl) return;
   slowEl = document.createElement('div');
   slowEl.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:100px;padding:8px 20px;font-size:12px;font-weight:600;color:rgba(99,102,241,0.9);z-index:901;white-space:nowrap;display:flex;align-items:center;gap:8px';
-  slowEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#475569;animation:slowPulse 1s ease-in-out infinite"></span>Claude is thinking harder about this one...';
+  slowEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#F87171;animation:slowPulse 1s ease-in-out infinite"></span>Claude is thinking harder about this one...';
   if (!document.getElementById('slow-pulse-style')) {
     var ps = document.createElement('style');
     ps.id = 'slow-pulse-style';
@@ -4193,13 +4193,13 @@ var APP_COLOR = (function(){
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#475569';
+  if (p.includes('study'))   return '#F87171';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
   if (p.includes('roam'))    return '#14B8A6';
   if (p.includes('fabricor'))return '#C9A84C';
-  return '#475569';
+  return '#F87171';
 })();
 
 // App-specific camera prompts
@@ -6928,12 +6928,12 @@ window.showQueryTemplates = function() {
 (function() {
   // Render backbone panel if container exists
   if (document.getElementById('sairnbiz-panel')) {
-    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F87171');
   }
   // Register this app with the bridge on load
   SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
     app: 'SAIRNcode',
-    color: '#475569',
+    color: '#F87171',
     ts: new Date().toISOString()
   });
   console.log('SAIRNbiz Connector active in SAIRNcode');
@@ -6942,7 +6942,7 @@ window.showQueryTemplates = function() {
 
 <!-- SAIRN AI Panel: SAIRNcode -->
 <div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
-  <div style="background:#475569;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+  <div style="background:#F87171;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
     <div style="font-size:14px;font-weight:700;">AI Assistant</div>
     <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
   </div>
@@ -6950,7 +6950,7 @@ window.showQueryTemplates = function() {
   <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Sprint Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Sprint Summary</button><button onclick="sbq('Bug Report')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Bug Report</button><button onclick="sbq('Tech Debt')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Tech Debt</button><button onclick="sbq('Deploy Status')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Deploy Status</button></div>
   <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
     <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
-    <button onclick="sbais()" style="background:#475569;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+    <button onclick="sbais()" style="background:#F87171;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
   </div>
 </div>
 <script>
@@ -6959,7 +6959,7 @@ window.showQueryTemplates = function() {
   var fab=document.createElement('button');
   fab.id='sbai-fab';
   fab.innerHTML='AI';
-  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#475569;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#F87171;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
   fab.onclick=function(){
     var p=document.getElementById('sbai-panel');
     var open=p.style.display==='flex';
@@ -6975,7 +6975,7 @@ window._sbh=[];
 function sbai_add(t,c){
   var msgs=document.getElementById('sbai-msgs');
   var el=document.createElement('div');
-  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#475569;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F87171;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
   el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
 }
 function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNcode'; sbais(); }
@@ -7089,12 +7089,12 @@ function scGenerateSuperbill(){
 (function() {
   // Render backbone panel if container exists
   if (document.getElementById('sairnbiz-panel')) {
-    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F87171');
   }
   // Register this app with the bridge on load
   SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
     app: 'SAIRNcode',
-    color: '#475569',
+    color: '#F87171',
     ts: new Date().toISOString()
   });
   console.log('SAIRNbiz Connector active in SAIRNcode');
@@ -7103,7 +7103,7 @@ function scGenerateSuperbill(){
 
 <!-- SAIRN AI Panel: SAIRNcode -->
 <div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
-  <div style="background:#475569;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+  <div style="background:#F87171;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
     <div style="font-size:14px;font-weight:700;">AI Assistant</div>
     <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
   </div>
@@ -7111,7 +7111,7 @@ function scGenerateSuperbill(){
   <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Sprint Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Sprint Summary</button><button onclick="sbq('Bug Report')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Bug Report</button><button onclick="sbq('Tech Debt')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Tech Debt</button><button onclick="sbq('Deploy Status')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Deploy Status</button></div>
   <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
     <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
-    <button onclick="sbais()" style="background:#475569;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+    <button onclick="sbais()" style="background:#F87171;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
   </div>
 </div>
 <script>
@@ -7120,7 +7120,7 @@ function scGenerateSuperbill(){
   var fab=document.createElement('button');
   fab.id='sbai-fab';
   fab.innerHTML='AI';
-  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#475569;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#F87171;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
   fab.onclick=function(){
     var p=document.getElementById('sbai-panel');
     var open=p.style.display==='flex';
@@ -7136,7 +7136,7 @@ window._sbh=[];
 function sbai_add(t,c){
   var msgs=document.getElementById('sbai-msgs');
   var el=document.createElement('div');
-  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#475569;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F87171;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
   el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
 }
 function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNcode'; sbais(); }
@@ -7747,12 +7747,12 @@ function scPrintCompliancePlan(){
 (function() {
   // Render backbone panel if container exists
   if (document.getElementById('sairnbiz-panel')) {
-    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F87171');
   }
   // Register this app with the bridge on load
   SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
     app: 'SAIRNcode',
-    color: '#475569',
+    color: '#F87171',
     ts: new Date().toISOString()
   });
   console.log('SAIRNbiz Connector active in SAIRNcode');
@@ -7761,7 +7761,7 @@ function scPrintCompliancePlan(){
 
 <!-- SAIRN AI Panel: SAIRNcode -->
 <div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
-  <div style="background:#475569;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+  <div style="background:#F87171;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
     <div style="font-size:14px;font-weight:700;">AI Assistant</div>
     <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
   </div>
@@ -7769,7 +7769,7 @@ function scPrintCompliancePlan(){
   <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Sprint Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Sprint Summary</button><button onclick="sbq('Bug Report')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Bug Report</button><button onclick="sbq('Tech Debt')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Tech Debt</button><button onclick="sbq('Deploy Status')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Deploy Status</button></div>
   <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
     <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
-    <button onclick="sbais()" style="background:#475569;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+    <button onclick="sbais()" style="background:#F87171;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
   </div>
 </div>
 <script>
@@ -7778,7 +7778,7 @@ function scPrintCompliancePlan(){
   var fab=document.createElement('button');
   fab.id='sbai-fab';
   fab.innerHTML='AI';
-  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#475569;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#F87171;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
   fab.onclick=function(){
     var p=document.getElementById('sbai-panel');
     var open=p.style.display==='flex';
@@ -7794,7 +7794,7 @@ window._sbh=[];
 function sbai_add(t,c){
   var msgs=document.getElementById('sbai-msgs');
   var el=document.createElement('div');
-  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#475569;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F87171;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
   el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
 }
 function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNcode'; sbais(); }
@@ -8041,12 +8041,12 @@ console.log('ForeSee Medical, Verisys, Waystar, nThrive CRISP — all at $59/mo.
 (function() {
   // Render backbone panel if container exists
   if (document.getElementById('sairnbiz-panel')) {
-    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F87171');
   }
   // Register this app with the bridge on load
   SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
     app: 'SAIRNcode',
-    color: '#475569',
+    color: '#F87171',
     ts: new Date().toISOString()
   });
   console.log('SAIRNbiz Connector active in SAIRNcode');
@@ -8055,7 +8055,7 @@ console.log('ForeSee Medical, Verisys, Waystar, nThrive CRISP — all at $59/mo.
 
 <!-- SAIRN AI Panel: SAIRNcode -->
 <div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
-  <div style="background:#475569;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+  <div style="background:#F87171;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
     <div style="font-size:14px;font-weight:700;">AI Assistant</div>
     <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
   </div>
@@ -8063,7 +8063,7 @@ console.log('ForeSee Medical, Verisys, Waystar, nThrive CRISP — all at $59/mo.
   <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Sprint Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Sprint Summary</button><button onclick="sbq('Bug Report')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Bug Report</button><button onclick="sbq('Tech Debt')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Tech Debt</button><button onclick="sbq('Deploy Status')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Deploy Status</button></div>
   <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
     <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
-    <button onclick="sbais()" style="background:#475569;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+    <button onclick="sbais()" style="background:#F87171;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
   </div>
 </div>
 <script>
@@ -8072,7 +8072,7 @@ console.log('ForeSee Medical, Verisys, Waystar, nThrive CRISP — all at $59/mo.
   var fab=document.createElement('button');
   fab.id='sbai-fab';
   fab.innerHTML='AI';
-  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#475569;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#F87171;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
   fab.onclick=function(){
     var p=document.getElementById('sbai-panel');
     var open=p.style.display==='flex';
@@ -8088,7 +8088,7 @@ window._sbh=[];
 function sbai_add(t,c){
   var msgs=document.getElementById('sbai-msgs');
   var el=document.createElement('div');
-  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#475569;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F87171;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
   el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
 }
 function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNcode'; sbais(); }
@@ -8348,7 +8348,7 @@ function sairnCalc(vals,op){
   localStorage.setItem('sairn_privacy_accepted', 'true');
   localStorage.setItem('_s_', 'demo');
 
-  console.log('%c SAIRN Demo Data Loaded Successfully ', 'background:#475569;color:#fff;font-size:14px;padding:6px 12px;border-radius:4px;font-weight:700;');
+  console.log('%c SAIRN Demo Data Loaded Successfully ', 'background:#F87171;color:#fff;font-size:14px;padding:6px 12px;border-radius:4px;font-weight:700;');
   console.log('Apps seeded: SAIRNhr, SAIRNacc, SAIRNbuild, SAIRNlaw, SAIRNcare, SAIRNvet, StoneDesk, SAIRNcode');
 
 })();
@@ -8398,12 +8398,12 @@ window.saDebounce = function(func, wait) {
 (function() {
   // Render backbone panel if container exists
   if (document.getElementById('sairnbiz-panel')) {
-    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F87171');
   }
   // Register this app with the bridge on load
   SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
     app: 'SAIRNcode',
-    color: '#475569',
+    color: '#F87171',
     ts: new Date().toISOString()
   });
   console.log('SAIRNbiz Connector active in SAIRNcode');
@@ -8412,7 +8412,7 @@ window.saDebounce = function(func, wait) {
 
 <!-- SAIRN AI Panel: SAIRNcode -->
 <div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
-  <div style="background:#475569;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+  <div style="background:#F87171;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
     <div style="font-size:14px;font-weight:700;">AI Assistant</div>
     <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
   </div>
@@ -8420,7 +8420,7 @@ window.saDebounce = function(func, wait) {
   <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Sprint Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Sprint Summary</button><button onclick="sbq('Bug Report')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Bug Report</button><button onclick="sbq('Tech Debt')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Tech Debt</button><button onclick="sbq('Deploy Status')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Deploy Status</button></div>
   <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
     <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
-    <button onclick="sbais()" style="background:#475569;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+    <button onclick="sbais()" style="background:#F87171;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
   </div>
 </div>
 <script>
@@ -8429,7 +8429,7 @@ window.saDebounce = function(func, wait) {
   var fab=document.createElement('button');
   fab.id='sbai-fab';
   fab.innerHTML='AI';
-  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#475569;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#F87171;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
   fab.onclick=function(){
     var p=document.getElementById('sbai-panel');
     var open=p.style.display==='flex';
@@ -8445,7 +8445,7 @@ window._sbh=[];
 function sbai_add(t,c){
   var msgs=document.getElementById('sbai-msgs');
   var el=document.createElement('div');
-  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#475569;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F87171;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
   el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
 }
 function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNcode'; sbais(); }
