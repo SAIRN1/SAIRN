@@ -717,5 +717,24 @@ document.addEventListener('DOMContentLoaded', function() {
 document.getElementById("userInput").addEventListener("input", function() { this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px"; });
 document.getElementById("userInput").addEventListener("keydown", function(e) { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 </script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNgov
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#14B8A6');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairngov', 'app_loaded', {
+    app: 'SAIRNgov',
+    color: '#14B8A6',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNgov');
+})();
+</script>
 </body>
 </html>
