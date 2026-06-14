@@ -3032,7 +3032,26 @@ setTimeout(function(){if(typeof checkDesign_SmartFlags==="function")checkDesign_
   if (hasData) return; // Real data exists — do not seed
 // SAIRN DEMO DATA SEED — Session 19
 // Injects realistic demo data into all 10 apps via localStorage
-// Run this in browser console on any SAIRN app page, OR inject before </body>
+// Run this in browser console on any SAIRN app page, OR inject before 
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNdesign
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#6366F1');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairndesign', 'app_loaded', {
+    app: 'SAIRNdesign',
+    color: '#6366F1',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNdesign');
+})();
+</script>
+</body>
 // Resets all apps to a rich, impressive demo state
 // Michael L. Dibert — SAIRN Technologies
 
@@ -3375,6 +3394,25 @@ function saDeclinePrivacy() {
   if (modal) modal.style.display = 'none';
   notify('Privacy settings not saved. You may be asked again next session.');
 }
+</script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNdesign
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#6366F1');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairndesign', 'app_loaded', {
+    app: 'SAIRNdesign',
+    color: '#6366F1',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNdesign');
+})();
 </script>
 </body>
 </html>
