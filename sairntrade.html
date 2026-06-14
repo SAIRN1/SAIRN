@@ -1162,28 +1162,398 @@ nav{width:210px;background:var(--cd);overflow-y:auto;flex-shrink:0;padding:10px 
 
 <!-- 19. SUPPLIERS -->
 <div class="panel" id="panel-suppliers">
-  <div class="panel-header"><div class="panel-title">&#127970; Supplier Intelligence</div><div class="panel-sub">Preferred suppliers, part costs, Claude negotiation tips</div></div>
-  <div class="g2">
-    <div class="card">
-      <div class="card-title"><span class="ct-icon">&#127970;</span>Preferred Suppliers</div>
+  <div class="panel-header"><div class="panel-title">&#127970; Vendor Directory &amp; Supplier Intelligence</div><div class="panel-sub">National, regional &amp; specialty distributors for HVAC, Plumbing &amp; Electrical &mdash; with your account tracking and Claude negotiation AI</div></div>
+
+  <!-- MY ACCOUNTS -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title"><span class="ct-icon">&#11088;</span>My Active Supplier Accounts</div>
+    <table class="tbl" id="my-suppliers-table">
+      <thead><tr><th>Supplier</th><th>Trade</th><th>Account #</th><th>Rep Name</th><th>Rep Phone</th><th>Current Discount</th><th>Avg Delivery</th><th>MTD Spend</th><th>Rating</th></tr></thead>
+      <tbody id="my-sup-body">
+        <tr><td><strong>Johnstone Supply</strong></td><td><span class="badge badge-progress">HVAC</span></td><td>JSW-44145</td><td>Mike Torres</td><td>(440) 555-0211</td><td style="font-weight:700;color:var(--green)">18%</td><td>Next day</td><td>$3,200</td><td>&#11088;&#11088;&#11088;&#11088;&#11088;</td></tr>
+        <tr><td><strong>Ferguson</strong></td><td><span class="badge badge-open">Plumbing</span></td><td>FRG-8821</td><td>Sarah Kim</td><td>(440) 555-0388</td><td style="font-weight:700;color:var(--green)">12%</td><td>Same day</td><td>$1,890</td><td>&#11088;&#11088;&#11088;&#11088;</td></tr>
+        <tr><td><strong>Rexel</strong></td><td><span class="badge badge-warn">Electric</span></td><td>RXL-2209</td><td>Dan Walsh</td><td>(440) 555-0490</td><td style="font-weight:700;color:var(--green)">15%</td><td>Next day</td><td>$1,340</td><td>&#11088;&#11088;&#11088;&#11088;</td></tr>
+        <tr><td><strong>Grainger</strong></td><td><span class="badge badge-gray">General</span></td><td>GRG-77412</td><td>Lisa Park</td><td>(800) 323-0620</td><td style="font-weight:700;color:var(--yellow)">8%</td><td>2-3 days</td><td>$640</td><td>&#11088;&#11088;&#11088;</td></tr>
+      </tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="addSupplier()">+ Add Account</button>
+      <button class="btn btn-secondary btn-sm" onclick="aiNegotiate()">&#129302; AI Negotiation Tips</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128229; Export</button>
+    </div>
+  </div>
+
+  <!-- VENDOR DIRECTORY TABS -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title"><span class="ct-icon">&#127760;</span>National &amp; Regional Vendor Directory</div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" id="vd-tab-hvac" onclick="showVendorTab('hvac')">&#129469; HVAC</button>
+      <button class="btn btn-secondary btn-sm" id="vd-tab-plumbing" onclick="showVendorTab('plumbing')">&#128167; Plumbing</button>
+      <button class="btn btn-secondary btn-sm" id="vd-tab-electric" onclick="showVendorTab('electric')">&#9889; Electrical</button>
+      <button class="btn btn-secondary btn-sm" id="vd-tab-general" onclick="showVendorTab('general')">&#128295; General / Multi-Trade</button>
+      <button class="btn btn-secondary btn-sm" id="vd-tab-online" onclick="showVendorTab('online')">&#128421; Online / Emergency</button>
+    </div>
+
+    <!-- HVAC VENDORS -->
+    <div id="vd-hvac">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">HVAC / HVACR Distributors</div>
       <table class="tbl">
-        <thead><tr><th>Supplier</th><th>Trade</th><th>Account #</th><th>Discount</th><th>Avg Delivery</th><th>Rating</th></tr></thead>
+        <thead><tr><th>Distributor</th><th>Type</th><th>Coverage</th><th>Brands Carried</th><th>Strengths</th><th>Website</th><th>Action</th></tr></thead>
         <tbody>
-          <tr><td><strong>Johnstone Supply</strong></td><td>HVAC</td><td>JSW-44145</td><td>18%</td><td>Next day</td><td>&#11088;&#11088;&#11088;&#11088;&#11088;</td></tr>
-          <tr><td><strong>Ferguson</strong></td><td>Plumbing</td><td>FRG-8821</td><td>12%</td><td>Same day</td><td>&#11088;&#11088;&#11088;&#11088;</td></tr>
-          <tr><td><strong>Rexel</strong></td><td>Electrical</td><td>RXL-2209</td><td>15%</td><td>Next day</td><td>&#11088;&#11088;&#11088;&#11088;</td></tr>
-          <tr><td><strong>Grainger</strong></td><td>General</td><td>GRG-77412</td><td>8%</td><td>2-3 days</td><td>&#11088;&#11088;&#11088;</td></tr>
+          <tr>
+            <td><strong>Johnstone Supply</strong></td>
+            <td><span class="badge badge-green">National Co-op</span></td>
+            <td>450+ locations US &amp; Canada</td>
+            <td>Carrier, Lennox, Copeland, Emerson, A.O. Smith, Honeywell</td>
+            <td>Contractor-owned co-op. Best pricing for high-volume buyers. Same-day stock. Technical support.</td>
+            <td><a href="https://www.johnstonesupply.com" target="_blank" style="color:var(--c)">johnstonesupply.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Johnstone Supply','HVAC')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Watsco / Gemaire / Heating &amp; Cooling Supply</strong></td>
+            <td><span class="badge badge-green">National</span></td>
+            <td>675+ locations, all 50 states</td>
+            <td>Carrier, Bryant, Payne, Trane, American Standard, Rheem, Ruud, YORK</td>
+            <td>Largest HVAC distributor in US by revenue ($7B+). OEM-direct pricing on major brands. Strong in Sun Belt.</td>
+            <td><a href="https://www.watsco.com" target="_blank" style="color:var(--c)">watsco.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Watsco/Gemaire','HVAC')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Ferguson HVAC</strong></td>
+            <td><span class="badge badge-green">National</span></td>
+            <td>1,500+ US locations</td>
+            <td>Mitsubishi, Bosch, Daikin, Trane, Rheem, Lennox, Unico</td>
+            <td>Dual HVAC + plumbing capability. Strong mini-split inventory. AHRI matching tool online.</td>
+            <td><a href="https://www.ferguson.com" target="_blank" style="color:var(--c)">ferguson.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Ferguson HVAC','HVAC')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Baker Distributing (Daikin)</strong></td>
+            <td><span class="badge badge-open">National/Regional</span></td>
+            <td>200+ Southeast / Midwest locations</td>
+            <td>Daikin, Goodman, Amana, Bosch</td>
+            <td>Daikin-owned. Best pricing on Daikin/Goodman. Fast stocking of high-volume residential systems.</td>
+            <td><a href="https://www.bakerdist.com" target="_blank" style="color:var(--c)">bakerdist.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Baker Distributing','HVAC')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>RE Michel</strong></td>
+            <td><span class="badge badge-open">Regional</span></td>
+            <td>300+ locations East of Mississippi</td>
+            <td>Lennox, York, Rheem, Nortek, Comfort Maker, Reznor</td>
+            <td>Strong in Mid-Atlantic, Midwest, Southeast. Known for HVAC + refrigeration. Good contractor terms.</td>
+            <td><a href="https://www.remichel.com" target="_blank" style="color:var(--c)">remichel.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('RE Michel','HVAC')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Winsupply HVAC</strong></td>
+            <td><span class="badge badge-open">National (#3 HVACR)</span></td>
+            <td>670+ locally owned branches nationwide</td>
+            <td>Multiple brands per local store</td>
+            <td>Decentralized, locally owned model. Good for relationship-based buying. $7B revenue company.</td>
+            <td><a href="https://www.winsupplyinc.com" target="_blank" style="color:var(--c)">winsupplyinc.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Winsupply HVAC','HVAC')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Shearer Supply</strong></td>
+            <td><span class="badge badge-open">Regional (TX/SE)</span></td>
+            <td>Texas, Southeast US</td>
+            <td>Goodman, Amana, Daikin, ClimateMaster</td>
+            <td>Texas-dominant HVAC specialist. Strong geothermal line. Contractor-focused.</td>
+            <td><a href="https://www.shearersupply.com" target="_blank" style="color:var(--c)">shearersupply.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Shearer Supply','HVAC')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Total Air &amp; Heat / Texas AirSystems</strong></td>
+            <td><span class="badge badge-open">Regional (TX/SW)</span></td>
+            <td>Texas, Southwest US</td>
+            <td>Trane, AAON, Daikin, Emerson</td>
+            <td>Commercial HVAC specialist. Strong in large rooftop units and controls.</td>
+            <td>&mdash;</td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Texas AirSystems','HVAC')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>National Refrigerants (NRI)</strong></td>
+            <td><span class="badge badge-progress">Specialty</span></td>
+            <td>National</td>
+            <td>R-410A, R-32, R-454B, R-22, R-134a, refrigerant cylinders</td>
+            <td>Refrigerant specialist. Best bulk pricing on refrigerants. Critical as A2L transition continues in 2025-26.</td>
+            <td><a href="https://www.refrigerants.com" target="_blank" style="color:var(--c)">refrigerants.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('National Refrigerants','HVAC')">+ Add</button></td>
+          </tr>
         </tbody>
       </table>
-      <div class="btn-row">
-        <button class="btn btn-primary btn-sm" onclick="addSupplier()">+ Add Supplier</button>
-        <button class="btn btn-secondary btn-sm" onclick="aiNegotiate()">&#129302; AI Negotiation Tips</button>
-      </div>
     </div>
+
+    <!-- PLUMBING VENDORS -->
+    <div id="vd-plumbing" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Plumbing Distributors</div>
+      <table class="tbl">
+        <thead><tr><th>Distributor</th><th>Type</th><th>Coverage</th><th>Brands Carried</th><th>Strengths</th><th>Website</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Ferguson</strong></td>
+            <td><span class="badge badge-green">National (#1)</span></td>
+            <td>1,517 US branches, all 50 states</td>
+            <td>Kohler, Moen, Delta, Rinnai, Rheem, Bradford White, Viega, Watts, Elkay</td>
+            <td>Largest plumbing distributor in North America ($29.6B revenue, Fortune 500 #146). Same-day / next-day at most locations. Online ordering with real-time pricing.</td>
+            <td><a href="https://www.ferguson.com" target="_blank" style="color:var(--c)">ferguson.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Ferguson Plumbing','Plumbing')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Hajoca Corporation</strong></td>
+            <td><span class="badge badge-green">National (Private)</span></td>
+            <td>450+ branches nationwide</td>
+            <td>Kohler, Moen, Delta, Viega, Uponor, Rinnai, Weil-McLain, Navien, Slant/Fin</td>
+            <td>Largest privately-held plumbing wholesaler in US. Contractor-focused, relationship-driven. No public pricing pressure &mdash; negotiable terms.</td>
+            <td><a href="https://www.hajoca.com" target="_blank" style="color:var(--c)">hajoca.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Hajoca','Plumbing')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Winsupply Plumbing</strong></td>
+            <td><span class="badge badge-green">National (#2)</span></td>
+            <td>670+ locally owned branches</td>
+            <td>Rheem, Kohler, Bradford White, American Standard, Watts, Sioux Chief</td>
+            <td>#2 plumbing distributor in US ($7B total). Local ownership model = flexible terms &amp; fast decisions. Good for residential plumbing stock.</td>
+            <td><a href="https://www.winsupplyinc.com" target="_blank" style="color:var(--c)">winsupplyinc.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Winsupply Plumbing','Plumbing')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Core &amp; Main</strong></td>
+            <td><span class="badge badge-open">National</span></td>
+            <td>500+ branches nationwide</td>
+            <td>Ductile iron pipe, HDPE, valves, meters, fire hydrants, storm drainage</td>
+            <td>Specialist in waterworks, underground utilities, fire protection. $7.4B revenue. Fortune 500 #497. Best for commercial/municipal plumbing work.</td>
+            <td><a href="https://www.coreandmain.com" target="_blank" style="color:var(--c)">coreandmain.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Core & Main','Plumbing')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>F.W. Webb</strong></td>
+            <td><span class="badge badge-open">Regional (Northeast)</span></td>
+            <td>New England, Mid-Atlantic</td>
+            <td>Moen, Kohler, Navien, Weil-McLain, Buderus, Uponor, Viega</td>
+            <td>Dominant in Northeast. Known for hydronic / radiant heating expertise. Kitchen &amp; bath showrooms. Strong commercial PVF.</td>
+            <td><a href="https://www.fwwebb.com" target="_blank" style="color:var(--c)">fwwebb.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('F.W. Webb','Plumbing')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>HD Supply / White Cap</strong></td>
+            <td><span class="badge badge-open">National</span></td>
+            <td>Nationwide (MRO &amp; construction)</td>
+            <td>Moen, Delta, American Standard, Fluidmaster, Zurn, Sioux Chief</td>
+            <td>Strong in maintenance, repair &amp; operations plumbing. Good for apartment / property management contractors. Fast delivery.</td>
+            <td><a href="https://www.hdsupply.com" target="_blank" style="color:var(--c)">hdsupply.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('HD Supply','Plumbing')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Plumbers Supply Co. (local/regional)</strong></td>
+            <td><span class="badge badge-progress">Regional</span></td>
+            <td>Varies by market</td>
+            <td>Full line including pipe, fittings, fixtures, drains, water heaters</td>
+            <td>Locally owned regional wholesalers often have best service &amp; fastest counter access. Search your metro for independent plumbing supply.</td>
+            <td>&mdash;</td>
+            <td><button class="btn btn-primary btn-sm" onclick="addSupplier()">+ Add Local</button></td>
+          </tr>
+          <tr>
+            <td><strong>Wilmar / Barnett (Multifamily)</strong></td>
+            <td><span class="badge badge-progress">Specialty</span></td>
+            <td>National</td>
+            <td>Fluidmaster, Mansfield, American Standard, Eljer, Grohe</td>
+            <td>Multifamily / apartment specialist. Bulk pricing on turnover plumbing parts. Best for property management contractors.</td>
+            <td>&mdash;</td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Wilmar/Barnett','Plumbing')">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ELECTRICAL VENDORS -->
+    <div id="vd-electric" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Electrical Distributors</div>
+      <table class="tbl">
+        <thead><tr><th>Distributor</th><th>Type</th><th>Coverage</th><th>Brands Carried</th><th>Strengths</th><th>Website</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Sonepar USA</strong></td>
+            <td><span class="badge badge-green">National (#1)</span></td>
+            <td>Nationwide (inc. VESCO, Crawford Electric, Irby, etc.)</td>
+            <td>Square D, Eaton, Siemens, GE, Leviton, Hubbell, Lutron, Panduit</td>
+            <td>Largest electrical distributor in US. Operates under many regional brands. Strong contractor credit programs. 40,000+ SKUs.</td>
+            <td><a href="https://www.sonepar-us.com" target="_blank" style="color:var(--c)">sonepar-us.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Sonepar / VESCO','Electric')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Rexel USA</strong></td>
+            <td><span class="badge badge-green">National (#2)</span></td>
+            <td>560+ US locations</td>
+            <td>Square D, Eaton, Hubbell, Legrand, Leviton, ABB, Siemens, Acuity Lighting</td>
+            <td>Strong residential &amp; commercial contractor focus. Energy solutions expertise. Online ordering with real-time pricing. Based in Dallas.</td>
+            <td><a href="https://www.rexel.us" target="_blank" style="color:var(--c)">rexel.us</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Rexel','Electric')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>WESCO International</strong></td>
+            <td><span class="badge badge-green">National (Fortune 500)</span></td>
+            <td>700+ sites in 50 countries</td>
+            <td>Eaton, ABB, Siemens, Panduit, Belden, Hubbell, General Cable</td>
+            <td>$22B revenue. Industrial &amp; commercial specialist. Best for large commercial contractors. Supply chain solutions, MRO management.</td>
+            <td><a href="https://www.wesco.com" target="_blank" style="color:var(--c)">wesco.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('WESCO','Electric')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Graybar Electric</strong></td>
+            <td><span class="badge badge-green">National (Employee-owned)</span></td>
+            <td>270+ distribution centers nationwide</td>
+            <td>Eaton, Siemens, GE, Hubbell, Leviton, Schneider Electric, Panduit, CommScope</td>
+            <td>100% employee-owned (no public shareholders). Excellent customer service reputation. Strong in communications &amp; networking alongside electrical. $10B+ revenue.</td>
+            <td><a href="https://www.graybar.com" target="_blank" style="color:var(--c)">graybar.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Graybar','Electric')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>CED (Consolidated Electrical Distributors)</strong></td>
+            <td><span class="badge badge-green">National</span></td>
+            <td>700+ locations across US</td>
+            <td>Square D, Eaton, Hubbell, Lithonia, Cooper, Leviton</td>
+            <td>Employee-owned. Strong in residential &amp; commercial. Local branch autonomy = faster decisions. Known for contractor relationships.</td>
+            <td><a href="https://www.ced.com" target="_blank" style="color:var(--c)">ced.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('CED','Electric')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Crescent Electric Supply</strong></td>
+            <td><span class="badge badge-open">National</span></td>
+            <td>Midwest, South, Mountain West</td>
+            <td>Eaton, Hubbell, Leviton, Pass &amp; Seymour, Thomas &amp; Betts, Belden</td>
+            <td>Strong in Midwest &amp; Mountain West. Industrial &amp; construction contractor focus. Value pricing.</td>
+            <td><a href="https://www.crescentelectric.com" target="_blank" style="color:var(--c)">crescentelectric.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Crescent Electric','Electric')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Border States Electric</strong></td>
+            <td><span class="badge badge-open">Regional (Midwest/West)</span></td>
+            <td>Midwest, Central, Mountain States</td>
+            <td>Square D, Hubbell, Belden, Cooper, Acuity, Southwire</td>
+            <td>Employee-owned. Strong Midwest presence. Utility &amp; industrial focus. Good contractor terms.</td>
+            <td><a href="https://www.borderstates.com" target="_blank" style="color:var(--c)">borderstates.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Border States Electric','Electric')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>City Electric Supply (CES)</strong></td>
+            <td><span class="badge badge-open">National/Family-owned</span></td>
+            <td>800+ locations nationwide</td>
+            <td>Square D, Eaton, Legrand, Leviton, Southwire, Lutron, Hubbell</td>
+            <td>Family-owned. Personalized contractor service. Counter-oriented. Known for fast counter access &amp; will-call speed.</td>
+            <td><a href="https://www.cityelectricsupply.com" target="_blank" style="color:var(--c)">cityelectricsupply.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('City Electric Supply','Electric')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Elliott Electric Supply</strong></td>
+            <td><span class="badge badge-open">Regional (TX/South)</span></td>
+            <td>Texas, Southeast US</td>
+            <td>Square D, Eaton, Hubbell, Leviton, Pass &amp; Seymour</td>
+            <td>Texas-dominant. Competitive pricing. Fast delivery in South. Good residential contractor focus.</td>
+            <td><a href="https://www.elliottelectric.com" target="_blank" style="color:var(--c)">elliottelectric.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Elliott Electric','Electric')">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- GENERAL / MULTI-TRADE VENDORS -->
+    <div id="vd-general" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">General / Multi-Trade Suppliers</div>
+      <table class="tbl">
+        <thead><tr><th>Distributor</th><th>Type</th><th>Best For</th><th>Strengths</th><th>Website</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Grainger</strong></td>
+            <td><span class="badge badge-green">National MRO</span></td>
+            <td>Safety gear, tools, general MRO, filters, belts, motors</td>
+            <td>4M+ SKUs. Next-day or same-day on millions of items. Good for obscure parts and emergency supply. Contractor account with NET 30.</td>
+            <td><a href="https://www.grainger.com" target="_blank" style="color:var(--c)">grainger.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Grainger','General')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Home Depot Pro / Fulfillment</strong></td>
+            <td><span class="badge badge-open">Retail/Pro</span></td>
+            <td>Emergency runs, small parts, tools, fasteners</td>
+            <td>Every market in US. Pro Xtra account gives 2-5% back. Best for emergency parts when suppliers are closed. Open 6am-10pm most locations.</td>
+            <td><a href="https://www.homedepot.com/c/Pro" target="_blank" style="color:var(--c)">homedepot.com/pro</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Home Depot Pro','General')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Fastenal</strong></td>
+            <td><span class="badge badge-open">National Industrial</span></td>
+            <td>Fasteners, tools, safety equipment, shop supplies</td>
+            <td>3,200+ locations. Vending machine inventory programs. Good for high-volume fasteners and safety PPE. Will-call same day.</td>
+            <td><a href="https://www.fastenal.com" target="_blank" style="color:var(--c)">fastenal.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Fastenal','General')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>Lowes Pro / Pro Desk</strong></td>
+            <td><span class="badge badge-open">Retail/Pro</span></td>
+            <td>Lumber, drywall, general materials, small parts</td>
+            <td>1,700+ locations. Contractor Pro account with billing. Competitive on commodity items. Good for job-site supply runs.</td>
+            <td><a href="https://www.lowes.com/l/pro.html" target="_blank" style="color:var(--c)">lowes.com/pro</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('Lowes Pro','General')">+ Add</button></td>
+          </tr>
+          <tr>
+            <td><strong>MSC Industrial Supply</strong></td>
+            <td><span class="badge badge-open">National Industrial</span></td>
+            <td>Tools, cutting tools, motors, industrial supplies</td>
+            <td>2M+ SKUs. Strong in metalworking, shop floor supplies. Good for service shop equipment and specialty motors.</td>
+            <td><a href="https://www.mscdirect.com" target="_blank" style="color:var(--c)">mscdirect.com</a></td>
+            <td><button class="btn btn-primary btn-sm" onclick="addAccountQuick('MSC Industrial','General')">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ONLINE / EMERGENCY VENDORS -->
+    <div id="vd-online" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Online &amp; Emergency Parts Sources</div>
+      <table class="tbl">
+        <thead><tr><th>Source</th><th>Best For</th><th>Delivery</th><th>Notes</th><th>Website</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Repair Clinic</strong></td><td>HVAC, appliance OEM parts by model #</td><td>1-2 days</td><td>Best site for finding exact OEM parts by model/serial. Huge HVAC database. No account needed.</td><td><a href="https://www.repairclinic.com" target="_blank" style="color:var(--c)">repairclinic.com</a></td></tr>
+          <tr><td><strong>HVAC Parts Shop</strong></td><td>HVAC parts, motors, capacitors, contactors</td><td>1-2 days</td><td>Contractor pricing available. Good backup when local supply is out of stock.</td><td><a href="https://www.hvacpartsshop.com" target="_blank" style="color:var(--c)">hvacpartsshop.com</a></td></tr>
+          <tr><td><strong>Amazon Business</strong></td><td>Emergency general parts, tools, supplies</td><td>Same/next day (Prime)</td><td>Business account gives tax exemption &amp; analytics. Good for obscure parts not stocked locally. NOT for branded HVAC equipment.</td><td><a href="https://business.amazon.com" target="_blank" style="color:var(--c)">business.amazon.com</a></td></tr>
+          <tr><td><strong>ePlumbing Products</strong></td><td>Specialty plumbing, rough-in parts</td><td>2-3 days</td><td>Good for uncommon fixtures and specialty rough-in valves not in local stock.</td><td>&mdash;</td></tr>
+          <tr><td><strong>Plumbingsupply.com</strong></td><td>Plumbing fixtures, parts, commercial valves</td><td>2-5 days</td><td>Huge selection of hard-to-find fixtures. Good for remodel jobs needing matching parts.</td><td><a href="https://www.plumbingsupply.com" target="_blank" style="color:var(--c)">plumbingsupply.com</a></td></tr>
+          <tr><td><strong>Digi-Key / Mouser</strong></td><td>Electronic components, controls, sensors</td><td>1-2 days</td><td>For sourcing thermostats, control boards, sensors, relays at component level. Saves vs OEM pricing.</td><td><a href="https://www.digikey.com" target="_blank" style="color:var(--c)">digikey.com</a></td></tr>
+          <tr><td><strong>eBay (commercial sellers)</strong></td><td>Refurb equipment, discontinued parts</td><td>Varies</td><td>Use ONLY for parts no longer available new. Verify seller rating. Good for vintage HVAC boards and obsolete valves.</td><td><a href="https://www.ebay.com" target="_blank" style="color:var(--c)">ebay.com</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AI + NEGOTIATION -->
+  <div class="g2">
     <div class="card">
       <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Supplier Intelligence</div>
-      <div id="sup-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click AI Negotiation Tips to get Claude's analysis of your supplier relationships and discount opportunities...</div>
-      <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="aiNegotiate()">&#129302; Get Negotiation Strategy</button></div>
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="field"><label>Trade / Category</label><select id="neg-trade"><option>HVAC</option><option>Plumbing</option><option>Electrical</option><option>All Trades</option></select></div>
+        <div class="field"><label>Monthly Spend (all suppliers)</label><input id="neg-spend" type="number" placeholder="6400" value="6400"></div>
+        <div class="field field-full"><label>Your goal (optional)</label><input id="neg-goal" placeholder="e.g. push Rexel from 15% to 20%, add a second HVAC supplier"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="aiNegotiate()">&#129302; Get Negotiation Strategy</button>
+        <button class="btn btn-secondary btn-sm" onclick="aiSupplierRec()">&#129302; Recommend New Suppliers</button>
+      </div>
+      <div id="sup-ai" class="ai-response" style="margin-top:14px;color:var(--muted);font-style:italic">Enter your spend and click to get Claude's analysis of your supplier relationships, what discounts you should be getting, and how to negotiate better terms...</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128202;</span>Spend Summary</div>
+      <table class="tbl">
+        <thead><tr><th>Trade</th><th>MTD Spend</th><th>Avg Discount</th><th>Est. Savings</th></tr></thead>
+        <tbody>
+          <tr><td>HVAC (Johnstone)</td><td>$3,200</td><td>18%</td><td style="color:var(--green)">$704</td></tr>
+          <tr><td>Plumbing (Ferguson)</td><td>$1,890</td><td>12%</td><td style="color:var(--green)">$257</td></tr>
+          <tr><td>Electric (Rexel)</td><td>$1,340</td><td>15%</td><td style="color:var(--green)">$236</td></tr>
+          <tr><td>General (Grainger)</td><td>$640</td><td>8%</td><td style="color:var(--green)">$56</td></tr>
+          <tr style="border-top:2px solid var(--border)"><td><strong>Total</strong></td><td><strong>$7,070</strong></td><td><strong>14.5% avg</strong></td><td style="font-weight:800;color:var(--green)">$1,253</td></tr>
+        </tbody>
+      </table>
+      <div class="flag flag-info" style="margin-top:12px"><span class="flag-icon">&#129302;</span><div>At $7K+/mo spend, you should be getting 20%+ from Johnstone and 18%+ from Ferguson. Click Negotiation Strategy to see Claude's playbook.</div></div>
     </div>
   </div>
 </div>
@@ -2219,7 +2589,34 @@ async function aiForecast(){
   var user='Forecast parts demand for next 30 days for HVAC/Plumbing/Electrical contractor in Westlake OH. Current critical low stock: R-410A (1 unit), Contactor 40A (3 units). Current season: summer (high HVAC demand). Recommend reorder quantities and timing.';
   await callClaude(sys,user,null,function(text){notify('Demand forecast: '+text.substring(0,100)+'...');});
 }
-async function aiNegotiate(){
+async function aiSupplierRec(){
+  var trade=document.getElementById('neg-trade').value;
+  var spend=document.getElementById('neg-spend').value||'6400';
+  var sys='You are a procurement expert for trade contractors. Recommend 2-3 additional supplier accounts this contractor should open to improve pricing, availability, and backup coverage. Be specific about which distributors, what discounts to negotiate, and why.';
+  var user='Trade focus: '+trade+'. Monthly parts spend: $'+spend+'. Current suppliers: Johnstone (HVAC, 18%), Ferguson (Plumbing, 12%), Rexel (Electric, 15%), Grainger (General, 8%). Location: Westlake OH (Cleveland metro). Recommend new accounts to add.';
+  await callClaude(sys,user,'sup-ai');
+}
+function showVendorTab(tab){
+  ['hvac','plumbing','electric','general','online'].forEach(function(t){
+    var el=document.getElementById('vd-'+t);
+    var btn=document.getElementById('vd-tab-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+    if(btn){btn.className=t===tab?'btn btn-primary btn-sm':'btn btn-secondary btn-sm';}
+  });
+}
+function addAccountQuick(name,trade){
+  var tbody=document.getElementById('my-sup-body');
+  var row=tbody.insertRow(0);
+  var badgeClass={HVAC:'badge-progress',Plumbing:'badge-open',Electric:'badge-warn',General:'badge-gray'}[trade]||'badge-gray';
+  row.innerHTML='<td><strong>'+name+'</strong></td><td><span class="badge '+badgeClass+'">'+trade.toUpperCase()+'</span></td>'+
+    '<td><input placeholder="Account #" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;width:100px"></td>'+
+    '<td><input placeholder="Rep name" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;width:110px"></td>'+
+    '<td><input placeholder="Rep phone" style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;width:120px"></td>'+
+    '<td><input type="number" value="10" style="border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;width:55px">%</td>'+
+    '<td>TBD</td><td>$0</td><td>New</td>';
+  notify(name+' added to your accounts -- fill in account # and rep details');
+  showP('suppliers');
+}
   var sys='You are a procurement specialist for a field service company.';
   var user='Suggest negotiation strategies to improve supplier discounts: Currently: Johnstone (HVAC, 18% discount, $3,200/mo spend), Ferguson (Plumbing, 12% discount, $1,800/mo spend), Rexel (Electrical, 15% discount, $1,400/mo spend). Total monthly parts spend ~$6,400. Goal: improve all by 3-5%.';
   await callClaude(sys,user,'sup-ai');
