@@ -289,7 +289,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--c);}textarea{resize:v
   <div class="fg"><label>Equipment Rate ($/hr)</label><input type="number" value="45"></div>
   <div class="fg"><label>Material Markup %</label><input type="number" value="35"></div>
   <div class="fg"><label>Minimum Job ($)</label><input type="number" value="85"></div>
-</div><div style="margin-top:14px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairnscape');toast('Rates saved')">Save Rates</button></div></div></div></div>
+</div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:var(--cd);margin-bottom:10px;">License Key</div>
+      <div class="fgrid">
+        <div class="fg">
+          <label>Your SAIRN License Key</label>
+          <input type="text" id="license-key-input" placeholder="SAIRN-SD01-2025-XXXXX" style="font-family:monospace;font-weight:600;">
+        </div>
+        <div class="fg" style="justify-content:flex-end;padding-top:18px;">
+          <button class="btn btn-c" onclick="saveLicenseKey()">Activate Key</button>
+        </div>
+      </div>
+      <div id="license-status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+    </div>
+    <div style="margin-top:14px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairnscape');toast('Rates saved')">Save Rates</button></div></div></div></div>
 
 <div class="page" id="pg-csv"><div class="pt">CSV Tools</div><div class="ps">Import and export all data</div>
 <div class="two-col">
@@ -356,7 +370,7 @@ var _aih=[];
 function toggleAI(){document.getElementById('aip').classList.toggle('open');}
 function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}
 function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnscape',is_demo:true,system:"You are the AI for SAIRNscape, a landscaping business management platform. You know about lawn care routing, crew scheduling, irrigation systems, snow removal contracts, landscape installation, and green industry pricing. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnscape',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnscape',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairnscape')||''),system:"You are the AI for SAIRNscape, a landscaping business management platform. You know about lawn care routing, crew scheduling, irrigation systems, snow removal contracts, landscape installation, and green industry pricing. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnscape',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
 function initAI(){var prompts=[["Route Optimize", "Optimize today's crew routes by geography"], ["Weather Alert", "Rain is forecast. Which jobs should reschedule?"], ["Revenue Report", "Generate a revenue report by service type"], ["Low Margin Jobs", "Which jobs have the lowest margin this month?"], ["Contract Renewals", "Which seasonal contracts are up for renewal?"], ["Crew Productivity", "Rate crew productivity this month"]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});</script>
 
