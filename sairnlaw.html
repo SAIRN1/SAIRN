@@ -280,10 +280,10 @@ var SAIRN_SEC = {
 };
 
 // ===========================================================
-// WALL 1 — BROWSER LAYER (Layers 1-18)
+// WALL 1 -- BROWSER LAYER (Layers 1-18)
 // ===========================================================
 
-// LAYER 1 — Domain Allowlist Fetch Interceptor
+// LAYER 1 -- Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
 window.fetch = function(url, opts) {
   try {
@@ -308,7 +308,7 @@ window.fetch = function(url, opts) {
   return _origFetch.apply(this, arguments);
 };
 
-// LAYER 2 — XSS Output Sanitizer
+// LAYER 2 -- XSS Output Sanitizer
 window.safeHTML = function(str) {
   if (typeof str !== 'string') return str;
   return str
@@ -323,7 +323,7 @@ window.safeHTML = function(str) {
     .replace(/data:text\/html/gi, '');
 };
 
-// LAYER 3 — Input Sanitization on All Form Fields
+// LAYER 3 -- Input Sanitization on All Form Fields
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('input[type=text], input[type=email], textarea').forEach(function(el) {
     el.addEventListener('input', function() {
@@ -337,14 +337,14 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 4 — Clickjacking Protection (Frame-Busting)
+// LAYER 4 -- Clickjacking Protection (Frame-Busting)
 if (window !== window.top) {
   window.top.location = window.location;
   document.body.innerHTML = '<h2 style="padding:40px;font-family:sans-serif">SAIRN Security: Embedded framing not permitted.</h2>';
   saLog('L4-FRAME', 'Clickjacking attempt detected', 'critical');
 }
 
-// LAYER 5 — Session Timeout & Auto-Lock
+// LAYER 5 -- Session Timeout & Auto-Lock
 function saResetTimer() {
   SAIRN_SEC.lastActivity = Date.now();
   if (SAIRN_SEC.sessionLocked) {
@@ -400,7 +400,7 @@ window.saUnlock = function() {
   }
 };
 
-// LAYER 6 — Brute-Force Protection on PIN
+// LAYER 6 -- Brute-Force Protection on PIN
 window.saTrackLoginAttempt = function(success) {
   if (success) {
     SAIRN_SEC.loginAttempts = 0;
@@ -410,14 +410,14 @@ window.saTrackLoginAttempt = function(success) {
   SAIRN_SEC.loginAttempts++;
   sessionStorage.setItem('s_attempts', String(SAIRN_SEC.loginAttempts));
   if (SAIRN_SEC.loginAttempts >= SAIRN_SEC.maxLoginAttempts) {
-    saLog('L6-BRUTE', 'Max login attempts exceeded — lockout triggered', 'critical');
+    saLog('L6-BRUTE', 'Max login attempts exceeded -- lockout triggered', 'critical');
     document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:sans-serif"><h2 style="color:#DC2626">Too Many Failed Attempts</h2><p>Access temporarily locked. Please try again in 15 minutes.</p></div>';
     setTimeout(function() { sessionStorage.setItem('s_attempts','0'); }, 15 * 60 * 1000);
   }
   return false;
 };
 
-// LAYER 7 — Prompt Injection Detection (Claude-specific)
+// LAYER 7 -- Prompt Injection Detection (Claude-specific)
 window.saCleanPrompt = function(text) {
   if (!text) return text;
   var injectionPatterns = [
@@ -440,7 +440,7 @@ window.saCleanPrompt = function(text) {
   return text;
 };
 
-// LAYER 8 — PII Scrubbing (24 patterns)
+// LAYER 8 -- PII Scrubbing (24 patterns)
 window.saScrubPII = function(text) {
   if (!text || typeof text !== 'string') return text;
   var patterns = [
@@ -473,7 +473,7 @@ window.saScrubPII = function(text) {
   return text;
 };
 
-// LAYER 9 — Data Exfiltration Monitor
+// LAYER 9 -- Data Exfiltration Monitor
 var _origXHR = window.XMLHttpRequest;
 window.XMLHttpRequest = function() {
   var xhr = new _origXHR();
@@ -496,7 +496,7 @@ window.XMLHttpRequest = function() {
   return xhr;
 };
 
-// LAYER 10 — Content Security Policy (Meta tag)
+// LAYER 10 -- Content Security Policy (Meta tag)
 (function() {
   var csp = document.createElement('meta');
   csp.httpEquiv = 'Content-Security-Policy';
@@ -509,7 +509,7 @@ window.XMLHttpRequest = function() {
   }
 })();
 
-// LAYER 11 — localStorage Encryption (AES-like obfuscation)
+// LAYER 11 -- localStorage Encryption (AES-like obfuscation)
 window.saStore = {
   _key: SAIRN_SEC.dataEncryptKey,
   _encode: function(data) {
@@ -555,7 +555,7 @@ window.saStore = {
   }
 };
 
-// LAYER 12 — Subresource Integrity Check
+// LAYER 12 -- Subresource Integrity Check
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('script[src], link[rel=stylesheet]').forEach(function(el) {
     var src = el.src || el.href;
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 13 — DevTools Detection (Production Mode Alert)
+// LAYER 13 -- DevTools Detection (Production Mode Alert)
 var devToolsOpen = false;
 setInterval(function() {
   var threshold = 160;
@@ -583,7 +583,7 @@ setInterval(function() {
   }
 }, 5000);
 
-// LAYER 14 — Right-Click Protection on Sensitive Areas
+// LAYER 14 -- Right-Click Protection on Sensitive Areas
 document.addEventListener('contextmenu', function(e) {
   var el = e.target;
   if (el && (el.dataset.sensitive || el.closest('[data-sensitive]'))) {
@@ -592,7 +592,7 @@ document.addEventListener('contextmenu', function(e) {
   }
 });
 
-// LAYER 15 — Clipboard Protection
+// LAYER 15 -- Clipboard Protection
 document.addEventListener('copy', function(e) {
   var sel = window.getSelection ? window.getSelection().toString() : '';
   var piiPatterns = [/\b\d{3}[-.\s]?\d{2}[-.\s]?\d{4}\b/, /\b4[0-9]{12,15}\b/];
@@ -602,7 +602,7 @@ document.addEventListener('copy', function(e) {
   }
 });
 
-// LAYER 16 — Rate Limiting (API calls per minute)
+// LAYER 16 -- Rate Limiting (API calls per minute)
 var apiCallLog = [];
 window.saCheckRateLimit = function(appId) {
   var now = Date.now();
@@ -616,7 +616,7 @@ window.saCheckRateLimit = function(appId) {
   return true;
 };
 
-// LAYER 17 — Response Sanitization (Claude output scrubbing)
+// LAYER 17 -- Response Sanitization (Claude output scrubbing)
 window.saSanitizeResponse = function(text) {
   if (!text) return text;
   // Strip any accidentally echoed credentials
@@ -629,7 +629,7 @@ window.saSanitizeResponse = function(text) {
   return text;
 };
 
-// LAYER 18 — Auto Data Purge (90-day expiry on localStorage)
+// LAYER 18 -- Auto Data Purge (90-day expiry on localStorage)
 (function saAutoPurge() {
   try {
     var ageKey = 'sairn_created';
@@ -653,10 +653,10 @@ window.saSanitizeResponse = function(text) {
 })();
 
 // ===========================================================
-// WALL 2 — API PROXY LAYER (Layers 19-23)
+// WALL 2 -- API PROXY LAYER (Layers 19-23)
 // ===========================================================
 
-// LAYER 19 — Request Signing (HMAC-style app_id validation)
+// LAYER 19 -- Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
   if (!payload.app_id) {
     saLog('L19-SIGN', 'Request missing app_id', 'high');
@@ -669,7 +669,7 @@ window.saSignRequest = function(payload) {
   return payload;
 };
 
-// LAYER 20 — Prompt Injection on Every Claude Call
+// LAYER 20 -- Prompt Injection on Every Claude Call
 var _origSAIRNFetch = null;
 window.saSecureClaudeCall = function(url, opts) {
   if (opts && opts.body) {
@@ -692,7 +692,7 @@ window.saSecureClaudeCall = function(url, opts) {
   return window.fetch(url, opts);
 };
 
-// LAYER 21 — Anomaly Detection (unusual patterns)
+// LAYER 21 -- Anomaly Detection (unusual patterns)
 var requestPatterns = {};
 window.saDetectAnomaly = function(appId, endpoint) {
   var key = appId + ':' + endpoint;
@@ -707,7 +707,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
   return false;
 };
 
-// LAYER 22 — Direct API Call Blocker
+// LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
     if (typeof url === 'string' && url.includes('api.anthropic.com')) {
@@ -718,16 +718,16 @@ window.fetch = (function(originalFetch) {
   };
 })(window.fetch);
 
-// LAYER 23 — SSL/HTTPS Enforcement
+// LAYER 23 -- SSL/HTTPS Enforcement
 if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
 // ===========================================================
-// WALL 3 — DATA LAYER (Layers 24-27)
+// WALL 3 -- DATA LAYER (Layers 24-27)
 // ===========================================================
 
-// LAYER 24 — Data Minimization Checker
+// LAYER 24 -- Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
   var sensitiveFields = ['ssn','password','creditCard','bankAccount','routingNumber','medicalRecord','biometric'];
   var found = [];
@@ -741,14 +741,14 @@ window.saCheckDataMinimization = function(data) {
   return found.length === 0;
 };
 
-// LAYER 25 — Session Storage Isolation
+// LAYER 25 -- Session Storage Isolation
 window.saSessionStore = {
   set: function(key, val) { try { sessionStorage.setItem('sairn_' + key, JSON.stringify(val)); } catch(e) {} },
   get: function(key) { try { var v=sessionStorage.getItem('sairn_'+key); return v?JSON.parse(v):null; } catch(e) { return null; } },
   clear: function() { Object.keys(sessionStorage).filter(function(k){return k.startsWith('sairn_');}).forEach(function(k){sessionStorage.removeItem(k);}); }
 };
 
-// LAYER 26 — Credential Storage Prevention
+// LAYER 26 -- Credential Storage Prevention
 window.addEventListener('beforeunload', function() {
   ['password','passwd','pwd','pin','secret','token'].forEach(function(field) {
     var els = document.querySelectorAll('input[name*="' + field + '"], input[id*="' + field + '"]');
@@ -756,7 +756,7 @@ window.addEventListener('beforeunload', function() {
   });
 });
 
-// LAYER 27 — Right to Delete (One-click data wipe)
+// LAYER 27 -- Right to Delete (One-click data wipe)
 window.saWipeAllData = function() {
   if (!confirm('PERMANENT: Delete all SAIRN data from this device? This cannot be undone.')) return;
   localStorage.clear();
@@ -772,10 +772,10 @@ window.saWipeAllData = function() {
 };
 
 // ===========================================================
-// WALL 4 — COMPLIANCE LAYER (Layers 28-30)
+// WALL 4 -- COMPLIANCE LAYER (Layers 28-30)
 // ===========================================================
 
-// LAYER 28 — CCPA/Privacy Consent Notice
+// LAYER 28 -- CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
   if (localStorage.getItem('sairn_privacy_accepted')) return;
   var notice = document.createElement('div');
@@ -812,7 +812,7 @@ window.saDeclinePrivacy = function() {
   alert('SAIRN requires localStorage consent to function. Some features may not work.');
 };
 
-// LAYER 29 — Security Audit Log
+// LAYER 29 -- Security Audit Log
 function saLog(layer, message, severity) {
   var entry = { ts: new Date().toISOString(), layer: layer, msg: message, sev: severity, url: location.href };
   SAIRN_SEC.auditLog.push(entry);
@@ -830,7 +830,7 @@ function saLog(layer, message, severity) {
   } catch(e) {}
 }
 
-// LAYER 30 — Security Status Dashboard (Admin only)
+// LAYER 30 -- Security Status Dashboard (Admin only)
 window.saShowSecurityStatus = function() {
   var logs = JSON.parse(sessionStorage.getItem('sairn_audit') || '[]');
   var critical = logs.filter(function(l) { return l.sev === 'critical'; }).length;
@@ -850,8 +850,8 @@ window.saShowSecurityStatus = function() {
 };
 
 // -- INITIALIZATION MESSAGE ---------------------------------
-saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
-console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
+saLog('INIT', 'SAIRN Security System v3.0 initialized -- 30 layers active', 'info');
+console.log('%c SAIRN Security v3.0 -- 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
 
 })(); // End SAIRN Security IIFE
 
@@ -2767,7 +2767,7 @@ function slReadFromBridge(){
 
 <script>
 // ===========================================================
-//  SAIRNlaw v1.0 — Complete JavaScript Engine
+//  SAIRNlaw v1.0 -- Complete JavaScript Engine
 //  Forest Green #15803D | Law Firm AI Intelligence Platform
 //  SAIRN Technologies | Michael L. Dibert
 //  Proxy: sairn.vercel.app/api/claude | Model: claude-sonnet-4-20250514
@@ -2880,7 +2880,7 @@ async function callClaude(system, userMsg, maxTokens) {
   }
 }
 
-var MASTER_SYS = 'You are the SAIRNlaw Master Attorney — the most capable legal mind any attorney has ever had access to. You have 30 years of experience across all practice areas: litigation, transactional, corporate, employment, real estate, criminal defense, immigration, estate planning, IP, tax, family law, and bankruptcy. You trained at Harvard Law, clerked on the Second Circuit, practiced BigLaw M&A at Sullivan & Cromwell, complex litigation at Skadden, and ran a solo practice covering all areas. You know Black\'s Law Dictionary cold. You cite landmark cases by name and year. You quote ALI Restatements by section. You apply Federal Rules by number. You know the law in all 50 states. Your analysis always has three layers: (1) THE LAW — exact statute, rule, or controlling case with full citation; (2) THE STRATEGY — what to do and why, what opposing counsel argues, what the judge focuses on; (3) THE PRACTICAL — Monday morning action items, hard deadlines, what it costs to be wrong. You are direct, precise, and honest when a case is weak. Deadlines always come first. One brief disclaimer at the end of complex matters only.';
+var MASTER_SYS = 'You are the SAIRNlaw Master Attorney -- the most capable legal mind any attorney has ever had access to. You have 30 years of experience across all practice areas: litigation, transactional, corporate, employment, real estate, criminal defense, immigration, estate planning, IP, tax, family law, and bankruptcy. You trained at Harvard Law, clerked on the Second Circuit, practiced BigLaw M&A at Sullivan & Cromwell, complex litigation at Skadden, and ran a solo practice covering all areas. You know Black\'s Law Dictionary cold. You cite landmark cases by name and year. You quote ALI Restatements by section. You apply Federal Rules by number. You know the law in all 50 states. Your analysis always has three layers: (1) THE LAW -- exact statute, rule, or controlling case with full citation; (2) THE STRATEGY -- what to do and why, what opposing counsel argues, what the judge focuses on; (3) THE PRACTICAL -- Monday morning action items, hard deadlines, what it costs to be wrong. You are direct, precise, and honest when a case is weak. Deadlines always come first. One brief disclaimer at the end of complex matters only.';
 
 function loadingHTML(msg) {
   return '<div class="sl-ai-loading"><div class="sl-ai-dot"></div><div class="sl-ai-dot"></div><div class="sl-ai-dot"></div><span>' + (msg || 'AI working...') + '</span></div>';
@@ -3071,8 +3071,8 @@ function renderCalendar() {
   var t3 = new Date(Date.now()+3*24*60*60*1000).toISOString().split('T')[0];
   var urg = deadlines_sl.filter(function(d){ return d.date >= today && d.date <= t3; });
   urgEl.innerHTML = urg.length ? '<div style="background:#FEE2E2;border:1px solid #DC2626;border-radius:10px;padding:12px;margin-bottom:12px">' +
-    '<div style="font-size:11px;font-weight:800;color:#991B1B;margin-bottom:6px">URGENT — Next 72 Hours</div>' +
-    urg.map(function(d){ return '<div style="font-size:12px;margin-bottom:4px"><b>' + d.date + '</b> — ' + safeHTML(d.type||'') + ' — ' + safeHTML(d.matter||'') + '</div>'; }).join('') + '</div>' : '';
+    '<div style="font-size:11px;font-weight:800;color:#991B1B;margin-bottom:6px">URGENT -- Next 72 Hours</div>' +
+    urg.map(function(d){ return '<div style="font-size:12px;margin-bottom:4px"><b>' + d.date + '</b> -- ' + safeHTML(d.type||'') + ' -- ' + safeHTML(d.matter||'') + '</div>'; }).join('') + '</div>' : '';
   var sorted = deadlines_sl.filter(function(d){ return d.date >= today; }).sort(function(a,b){ return a.date.localeCompare(b.date); });
   if (!sorted.length) { el.innerHTML = '<div style="color:var(--mu);font-size:13px;padding:20px;text-align:center">No upcoming deadlines logged.</div>'; return; }
   el.innerHTML = '<table class="sl-table"><thead><tr><th>Date</th><th>Type</th><th>Matter</th><th>Court</th><th>Attorney</th></tr></thead><tbody>' +
@@ -3090,7 +3090,7 @@ async function aiCalendarReview() {
   el.style.display = 'block'; el.innerHTML = loadingHTML('Reviewing deadline risk...');
   var today = new Date().toISOString().split('T')[0];
   var list = deadlines_sl.filter(function(d){ return d.date >= today; }).slice(0,15)
-    .map(function(d){ return d.date + ': ' + d.type + ' — ' + d.matter; }).join('; ');
+    .map(function(d){ return d.date + ': ' + d.type + ' -- ' + d.matter; }).join('; ');
   var res = await callClaude(MASTER_SYS, 'Review these upcoming legal deadlines. Today: ' + today + '. Deadlines: ' + list + '. Identify: (1) critical items in next 7 days requiring immediate prep, (2) any deadlines that trigger related obligations, (3) workload concentration risks. Be direct and specific.', 600);
   el.textContent = res;
 }
@@ -3162,7 +3162,7 @@ async function runResearch() {
   var jur = document.getElementById('res-jur').value;
   var el = document.getElementById('res-output'); var res_el = document.getElementById('res-result');
   el.style.display='block'; res_el.innerHTML=loadingHTML('Master Attorney researching...');
-  var res = await callClaude(MASTER_SYS, 'Practice area: '+area+'. Jurisdiction: '+jur+'. Research question: '+q+'. Provide the Three-Layer Analysis: (1) THE LAW — exact statute or controlling case with citation; (2) THE STRATEGY — strongest argument, what opposing counsel argues, what the judge focuses on; (3) THE PRACTICAL — Monday morning actions, deadlines, cost-benefit. Be precise and cite specifically.', 2000);
+  var res = await callClaude(MASTER_SYS, 'Practice area: '+area+'. Jurisdiction: '+jur+'. Research question: '+q+'. Provide the Three-Layer Analysis: (1) THE LAW -- exact statute or controlling case with citation; (2) THE STRATEGY -- strongest argument, what opposing counsel argues, what the judge focuses on; (3) THE PRACTICAL -- Monday morning actions, deadlines, cost-benefit. Be precise and cite specifically.', 2000);
   res_el.textContent = res;
 }
 function resChip(q){ document.getElementById('res-q').value=q; runResearch(); }
@@ -3213,7 +3213,7 @@ async function calculateSOL() {
 function renderSOLTracked() {
   var el = document.getElementById('sol-tracked-list');
   if (!solTracked.length) { el.innerHTML='<div style="color:var(--mu);font-size:12px">No SOL calculations saved yet.</div>'; return; }
-  el.innerHTML = solTracked.slice(0,8).map(function(s){ return '<div class="sl-card" style="margin-bottom:8px"><div class="sl-card-title">'+safeHTML(s.type)+' — '+safeHTML(s.state)+'</div><div class="sl-card-sub">Incident: '+s.incident+' | Calculated: '+s.calc+'</div></div>'; }).join('');
+  el.innerHTML = solTracked.slice(0,8).map(function(s){ return '<div class="sl-card" style="margin-bottom:8px"><div class="sl-card-title">'+safeHTML(s.type)+' -- '+safeHTML(s.state)+'</div><div class="sl-card-sub">Incident: '+s.incident+' | Calculated: '+s.calc+'</div></div>'; }).join('');
 }
 
 // -- 50-STATE --------------------------------------------------
@@ -3222,7 +3222,7 @@ async function run50State() {
   if (!q) { slToast('Enter a legal question','warn'); return; }
   var el = document.getElementById('jur-result');
   el.style.display='block'; el.innerHTML=loadingHTML('Analyzing all 50 states...');
-  var res = await callClaude(MASTER_SYS, '50-State Analysis: '+q+'. Organize states by approach — group states with the same rule, cite key statutory references for each group, identify the most favorable jurisdictions for each party type, and note any 2024-2026 statutory changes practitioners must know.', 2000);
+  var res = await callClaude(MASTER_SYS, '50-State Analysis: '+q+'. Organize states by approach -- group states with the same rule, cite key statutory references for each group, identify the most favorable jurisdictions for each party type, and note any 2024-2026 statutory changes practitioners must know.', 2000);
   el.textContent = res;
 }
 function jurChip(q){ document.getElementById('jur-q').value=q; run50State(); }
@@ -3284,7 +3284,7 @@ function copyMotion(){ navigator.clipboard.writeText(document.getElementById('mo
 var currentLetterType = 'demand_contract';
 function setLetterType(type) {
   currentLetterType = type;
-  var labels = {demand_contract:'Demand Letter — Breach of Contract',demand_injury:'Demand Letter — Personal Injury',cnd_trademark:'Cease and Desist — Trademark',cnd_defamation:'Cease and Desist — Defamation',client_update:'Client Status Update',opposing_counsel:'Letter to Opposing Counsel',engagement:'Engagement Letter / Fee Agreement',custom:'Custom Legal Letter'};
+  var labels = {demand_contract:'Demand Letter -- Breach of Contract',demand_injury:'Demand Letter -- Personal Injury',cnd_trademark:'Cease and Desist -- Trademark',cnd_defamation:'Cease and Desist -- Defamation',client_update:'Client Status Update',opposing_counsel:'Letter to Opposing Counsel',engagement:'Engagement Letter / Fee Agreement',custom:'Custom Legal Letter'};
   document.getElementById('lt-type-display').value = labels[type] || type;
 }
 async function generateLetter() {
@@ -3307,7 +3307,7 @@ async function generateLetter() {
     custom: 'a professional legal letter per the instructions provided'
   };
   var instr = typeInstructions[currentLetterType] || typeInstructions.custom;
-  var res = await callClaude(MASTER_SYS, 'Draft '+instr+'. From: '+(from||'Attorney')+'. To: '+(to||'Recipient')+'. Re: '+(re||'Legal Matter')+'. Facts and instructions: '+facts+'. Tone: '+tone+'. Complete letter with date, addresses, salutation, body, professional close. This letter may become evidence — be precise.', 2000);
+  var res = await callClaude(MASTER_SYS, 'Draft '+instr+'. From: '+(from||'Attorney')+'. To: '+(to||'Recipient')+'. Re: '+(re||'Legal Matter')+'. Facts and instructions: '+facts+'. Tone: '+tone+'. Complete letter with date, addresses, salutation, body, professional close. This letter may become evidence -- be precise.', 2000);
   res_el.textContent = res;
 }
 function copyLetter(){ navigator.clipboard.writeText(document.getElementById('lt-result').textContent).then(function(){slToast('Copied','ok');}); }
@@ -3326,7 +3326,7 @@ async function getClause(type) {
     arbitration:'a complete Arbitration clause: JAMS Commercial Rules, seat/location, arbitrator selection, discovery limits, confidentiality, class action waiver, injunctive relief carve-out. FAA applicability.',
     confidentiality:'a complete embedded Confidentiality clause for use inside a larger agreement: definition with carve-outs, obligations, permitted disclosures, compelled disclosure procedure, survival, return/destroy.',
     nonsolicit:'a complete Non-Solicitation clause for employees and customers: general posting exception for employee non-solicit, customer scope, 12-24 month tail options. Distinguish from non-compete enforceability.',
-    assignment:'an Assignment clause — two versions: (1) consent required for all including M&A change of control; (2) consent required except for M&A. Explain which to use and why.',
+    assignment:'an Assignment clause -- two versions: (1) consent required for all including M&A change of control; (2) consent required except for M&A. Explain which to use and why.',
     attorneys_fees:'an Attorney\'s Fees provision: American Rule default, how to create fee-shifting, one-way vs. mutual, California Civil Code 1717 converting one-way to mutual, statutory fee awards (Title VII, ADA, FLSA).',
     warranties:'complete Representations and Warranties provisions: seller/provider reps, buyer reps, mutual reps. Survival period negotiation guidance (18 months general, indefinite for fraud).'
   };
@@ -3352,7 +3352,7 @@ async function analyzeCase() {
   el.style.display='block'; el.innerHTML=loadingHTML('Analyzing case strength...');
   var res = await callClaude(MASTER_SYS,
     'CASE STRENGTH ANALYSIS. Claim: '+claim+'. Jurisdiction: '+jur+'. Facts: '+facts+
-    '. Provide: (1) ELEMENTS — list every element, state whether facts satisfy each (Strong/Weak/Missing/Disputed) with authority; (2) PROBABILITY — MSJ survival % and trial success % with reasoning; (3) OPPOSING STRATEGY — 3 strongest counterarguments; (4) DAMAGES — calculation method, range, punitive availability; (5) RECOMMENDED STRATEGY — fight/settle/demand/negotiate; (6) NEXT 30 DAYS — specific actions.', 2000);
+    '. Provide: (1) ELEMENTS -- list every element, state whether facts satisfy each (Strong/Weak/Missing/Disputed) with authority; (2) PROBABILITY -- MSJ survival % and trial success % with reasoning; (3) OPPOSING STRATEGY -- 3 strongest counterarguments; (4) DAMAGES -- calculation method, range, punitive availability; (5) RECOMMENDED STRATEGY -- fight/settle/demand/negotiate; (6) NEXT 30 DAYS -- specific actions.', 2000);
   el.textContent = res;
 }
 
@@ -3386,7 +3386,7 @@ async function buildDepOutline() {
   el.style.display='block'; el.innerHTML=loadingHTML('Building deposition outline...');
   var res = await callClaude(MASTER_SYS,
     'Build a complete deposition outline for: '+type+'. Goal: '+goal+'. Case: '+caseType+'. Witness: '+facts+
-    '. Include: (1) Opening questions (background, prior testimony, document review); (2) Key topics in logical sequence with specific questions and follow-up probes; (3) Impeachment strategy — inconsistencies to expose; (4) Exhibit list with questions for each; (5) Closing completeness questions. For experts: add Daubert vulnerability analysis.', 2000);
+    '. Include: (1) Opening questions (background, prior testimony, document review); (2) Key topics in logical sequence with specific questions and follow-up probes; (3) Impeachment strategy -- inconsistencies to expose; (4) Exhibit list with questions for each; (5) Closing completeness questions. For experts: add Daubert vulnerability analysis.', 2000);
   el.textContent = res;
 }
 
@@ -3587,7 +3587,7 @@ async function runPayroll() {
     return r.name + ' (' + r.role + '): $' + pp.toFixed(2) + ' this period';
   }).join('; ') || 'No compensation records';
   var totalPP = compRecords.reduce(function(s,r){var p={'Bi-weekly':26,'Semi-monthly':24,'Monthly':12};return s+r.salary/(p[r.period]||24);},0);
-  el.innerHTML = '<div style="font-size:13px;font-weight:700;margin-bottom:10px">Pay Period Summary — '+payDate+'</div>' +
+  el.innerHTML = '<div style="font-size:13px;font-weight:700;margin-bottom:10px">Pay Period Summary -- '+payDate+'</div>' +
     '<div style="font-size:12px;color:var(--mu);margin-bottom:8px">'+summary+'</div>' +
     '<div style="font-size:14px;font-weight:800;color:var(--a)">Total This Period: $'+totalPP.toFixed(2)+'</div>' +
     '<div style="font-size:10px;color:var(--mu);margin-top:8px">Note: Consult SAIRNacc for full payroll journal entries and tax filings.</div>';
@@ -3650,7 +3650,7 @@ function printCheck() {
     '</style></head><body><div class="check-page">' +
     '<div class="check-stub"><div style="font-size:11px"><b>'+safeHTML(settings.firmName||'Law Firm')+'</b><br>' +
     'Date: '+date+' | Pay to: '+safeHTML(payee)+'<br>Amount: $'+amount.toFixed(2)+' | Memo: '+safeHTML(memo)+'</div></div>' +
-    '<div class="check-stub"><div style="font-size:11px;color:#666">CLIENT COPY<br>'+safeHTML(payee)+' — $'+amount.toFixed(2)+'</div></div>' +
+    '<div class="check-stub"><div style="font-size:11px;color:#666">CLIENT COPY<br>'+safeHTML(payee)+' -- $'+amount.toFixed(2)+'</div></div>' +
     '<div class="check-main">' +
     '<div class="ch-bank">'+safeHTML(bankName)+' | '+acct+'</div>' +
     '<div class="ch-row"><div><span class="ch-label">Date</span><div class="ch-val">'+date+'</div></div>' +
@@ -3665,7 +3665,7 @@ function printCheck() {
     '<div class="ch-micr">&#9989;&#9989;&#9989;  '+( document.getElementById('ck-routing-gen').value||'000000000')+':'+( document.getElementById('ck-acct-gen').value||'00000000')+'&#9989;&#9989;&#9989;</div>' +
     '</div></div>
 <script>
-// SAIRN PATCH — missing function fixes
+// SAIRN PATCH -- missing function fixes
 
 window.runConflictCheck = async function() {
   var matterEl = document.getElementById('matter-name') || document.getElementById('sl-matter-name');
@@ -3732,6 +3732,96 @@ window.runConflictCheck = async function() {
   });
   console.log('SAIRNbiz Connector active in SAIRNlaw');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNlaw -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#15803D;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Case Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Case Summary</button><button onclick="sbq('Billing Hours')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Billing Hours</button><button onclick="sbq('Deadline Alert')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Deadline Alert</button><button onclick="sbq('Client Update')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Client Update</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#15803D;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#15803D;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNlaw AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#15803D;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNlaw'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnlaw',is_demo:true,
+        system:'You are the AI for SAIRNlaw, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body></html>';
   var w = window.open('','_blank');
@@ -4331,7 +4421,7 @@ inner.appendChild(hdr);inner.appendChild(hero);inner.appendChild(statsGrid);inne
 modal.appendChild(inner);document.body.appendChild(modal);}
 var matters=window.sl_matters||[];var m=matters[0]||{};
 document.getElementById("cm-matter-name").textContent=m.clientName||m.client||"Client Name";
-document.getElementById("cm-matter-type").textContent=(m.name||m.title||"Matter")+" — "+(m.type||m.practiceArea||"General");
+document.getElementById("cm-matter-type").textContent=(m.name||m.title||"Matter")+" -- "+(m.type||m.practiceArea||"General");
 document.getElementById("cm-report-date").textContent="Report Date: "+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
 document.getElementById("cm-status").textContent=m.status||"Active";
 var tasks=window.sl_tasks||[];
@@ -4351,8 +4441,8 @@ modal.style.display="flex";}
   var hasData = localStorage.getItem('sh_employees') || localStorage.getItem('sd_jobs') || 
                 localStorage.getItem('sl_matters') || localStorage.getItem('sb_projects') ||
                 localStorage.getItem('sc_residents') || localStorage.getItem('sa_invoices');
-  if (hasData) return; // Real data exists — do not seed
-// SAIRN DEMO DATA SEED — Session 19
+  if (hasData) return; // Real data exists -- do not seed
+// SAIRN DEMO DATA SEED -- Session 19
 // Injects realistic demo data into all 10 apps via localStorage
 // Run this in browser console on any SAIRN app page, OR inject before 
 <!-- SAIRNbiz Connector v1.0 -->
@@ -4372,6 +4462,96 @@ modal.style.display="flex";}
   });
   console.log('SAIRNbiz Connector active in SAIRNlaw');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNlaw -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#15803D;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Case Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Case Summary</button><button onclick="sbq('Billing Hours')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Billing Hours</button><button onclick="sbq('Deadline Alert')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Deadline Alert</button><button onclick="sbq('Client Update')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Client Update</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#15803D;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#15803D;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNlaw AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#15803D;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNlaw'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnlaw',is_demo:true,
+        system:'You are the AI for SAIRNlaw, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 // Resets all apps to a rich, impressive demo state
@@ -4588,7 +4768,7 @@ modal.style.display="flex";}
 </script>
 
 <script>
-// SAIRNlaw — Legal disclaimer enforcer
+// SAIRNlaw -- Legal disclaimer enforcer
 (function() {
   var LEGAL_DISCLAIMER = 'This is general legal information, not legal advice. Laws vary by jurisdiction. Consult a licensed attorney for your specific situation.';
   // Append disclaimer after every AI response render
@@ -4605,7 +4785,7 @@ modal.style.display="flex";}
 </script>
 
 <script>
-// SAIRN Admin Formula Editor — P10 Universal Pattern
+// SAIRN Admin Formula Editor -- P10 Universal Pattern
 function showAdminFormulaEditor() {
   var pin = prompt('Admin PIN required:');
   if (pin !== '9999' && pin !== '1234') { alert('Invalid PIN.'); return; }
@@ -4632,7 +4812,7 @@ function saveAdminRates_sairnlaw() {
 </script>
 
 <script>
-// SAIRN Debounce Utility — prevents Claude call hammering on rapid input
+// SAIRN Debounce Utility -- prevents Claude call hammering on rapid input
 window.saDebounce = function(func, wait) {
   var timeout;
   return function() {
@@ -4660,6 +4840,96 @@ window.saDebounce = function(func, wait) {
   });
   console.log('SAIRNbiz Connector active in SAIRNlaw');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNlaw -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#15803D;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Case Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Case Summary</button><button onclick="sbq('Billing Hours')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Billing Hours</button><button onclick="sbq('Deadline Alert')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Deadline Alert</button><button onclick="sbq('Client Update')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Client Update</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#15803D;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#15803D;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNlaw AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#15803D;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNlaw'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnlaw',is_demo:true,
+        system:'You are the AI for SAIRNlaw, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 </html>
