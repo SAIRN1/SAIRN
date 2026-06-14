@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIRNbiz — People + Money Backbone</title>
+<style>
+:root {
+  --teal:#14B8A6; --teal-dark:#0F766E; --teal-light:#F0FDFA; --teal-mid:#CCFBF1;
+  --text:#1E293B; --muted:#64748B; --border:#E2E8F0; --white:#FFFFFF;
+  --red:#EF4444; --red-light:#FEF2F2; --green:#22C55E; --green-light:#F0FDF4;
+  --amber:#F59E0B; --amber-light:#FFFBEB; --purple:#7C3AED; --purple-light:#F5F3FF;
+  --shadow:0 1px 3px rgba(0,0,0,0.08);
+  --radius:10px;
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--teal-light);color:var(--text);font-size:14px;line-height:1.5;}
+
+/* === LOGIN === */
+#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0F766E 0%,#14B8A6 60%,#5EEAD4 100%);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-card{background:#fff;border-radius:16px;padding:48px 40px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2);text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.login-logo{width:64px;height:64px;background:linear-gradient(135deg,#0F766E,#14B8A6);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:22px;font-weight:900;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.login-title{font-size:22px;font-weight:800;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:26px;}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px;}
+.role-btn{border:2px solid var(--border);background:#fff;border-radius:8px;padding:10px;cursor:pointer;transition:all .15s;}
+.role-btn:hover,.role-btn.selected{border-color:var(--teal);background:var(--teal-light);color:var(--teal-dark);font-weight:600;}
+.role-icon{font-size:20px;display:block;margin-bottom:3px;}
+.role-label{font-size:12px;font-weight:600;}
+.pin-row{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}
+.pin-digit{width:48px;height:56px;border:2px solid var(--border);border-radius:8px;text-align:center;font-size:22px;font-weight:700;outline:none;transition:border-color .15s;}
+.pin-digit:focus{border-color:var(--teal);}
+.btn-primary{background:var(--teal);color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:15px;font-weight:600;cursor:pointer;width:100%;transition:background .15s;}
+.btn-primary:hover{background:var(--teal-dark);}
+.login-error{color:var(--red);font-size:13px;margin-top:10px;min-height:18px;}
+.demo-hint{margin-top:14px;font-size:11px;color:var(--muted);}
+
+/* === APP SHELL === */
+#app{display:none;min-height:100vh;}
+
+/* === TOPBAR === */
+.topbar{background:var(--teal-dark);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.topbar-left{display:flex;align-items:center;gap:16px;}
+.topbar-logo{font-size:19px;font-weight:900;color:#fff;letter-spacing:-.5px;}
+.topbar-logo span{color:#5EEAD4;}
+.wing-tabs{display:flex;gap:4px;}
+.wing-tab{padding:6px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:rgba(255,255,255,.7);border:none;background:transparent;transition:all .15s;}
+.wing-tab.active,.wing-tab:hover{background:rgba(255,255,255,.15);color:#fff;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.user-chip{background:rgba(255,255,255,.12);color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;}
+.top-ai-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:5px 13px;font-size:12px;font-weight:600;cursor:pointer;}
+.top-ai-btn:hover{background:rgba(255,255,255,.25);}
+.top-btn{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;}
+.top-btn:hover{background:rgba(255,255,255,.15);}
+
+/* === LAYOUT === */
+.app-body{display:flex;min-height:calc(100vh - 56px);}
+
+/* === SIDEBAR === */
+.sidebar{width:220px;background:#fff;border-right:1px solid var(--border);padding:12px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}
+.sidebar-heading{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:10px 16px 4px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .12s;border-left:3px solid transparent;user-select:none;}
+.nav-item:hover{background:var(--teal-light);color:var(--text);}
+.nav-item.active{background:var(--teal-light);color:var(--teal-dark);font-weight:600;border-left-color:var(--teal);}
+.nav-icon{font-size:15px;width:20px;text-align:center;}
+
+/* === MAIN CONTENT === */
+.main-content{flex:1;padding:24px;overflow-x:hidden;}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:22px;font-weight:800;margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:22px;}
+
+/* === KPI CARDS === */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px;}
+.kpi-card{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.kpi-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.kpi-value{font-size:26px;font-weight:900;line-height:1;margin-bottom:4px;}
+.kpi-delta{font-size:12px;color:var(--muted);}
+.kpi-delta.up{color:var(--green);}
+.kpi-delta.down{color:var(--red);}
+.kpi-icon{float:right;font-size:22px;margin-top:-2px;}
+
+/* === CARD === */
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:18px;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:14px;font-weight:700;}
+.card-body{padding:18px;}
+
+/* === TABLE === */
+.data-table{width:100%;border-collapse:collapse;}
+.data-table th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:9px 12px;border-bottom:2px solid var(--border);background:#F8FAFC;}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--teal-light);}
+.total-row td{font-weight:700;background:var(--teal-light)!important;color:var(--teal-dark);}
+
+/* === BADGES === */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+.bg{background:var(--green-light);color:#15803D;}
+.br{background:var(--red-light);color:#B91C1C;}
+.ba{background:var(--amber-light);color:#92400E;}
+.bt{background:var(--teal-mid);color:var(--teal-dark);}
+.bp{background:var(--purple-light);color:var(--purple);}
+
+/* === FORMS === */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg.full{grid-column:1/-1;}
+label{font-size:12px;font-weight:600;color:var(--muted);}
+input,select,textarea{border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .15s;background:#fff;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--teal);}
+textarea{resize:vertical;min-height:72px;}
+
+/* === BUTTONS === */
+.btn{border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px;}
+.btn-teal{background:var(--teal);color:#fff;}
+.btn-teal:hover{background:var(--teal-dark);}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{background:#B91C1C;}
+
+/* === TOOLBAR === */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.search-box{border:1px solid var(--border);border-radius:7px;padding:7px 12px 7px 30px;font-size:13px;width:210px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 9px center;outline:none;}
+.search-box:focus{border-color:var(--teal);}
+
+/* === RANGE BAR === */
+.rb-track{height:6px;background:var(--border);border-radius:3px;position:relative;}
+.rb-fill{height:6px;border-radius:3px;background:var(--teal);position:absolute;left:0;top:0;transition:width .4s;}
+
+/* === FLAGS === */
+.flag{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:8px;}
+.flag-info{background:var(--teal-light);border:1px solid var(--teal-mid);color:var(--teal-dark);}
+.flag-warn{background:var(--amber-light);border:1px solid #FCD34D;color:#92400E;}
+.flag-error{background:var(--red-light);border:1px solid #FECACA;color:#B91C1C;}
+
+/* === LAYOUT HELPERS === */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+
+/* === MODAL === */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.modal-title{font-size:16px;font-weight:700;}
+.modal-close{background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--muted);}
+.modal-body{padding:22px;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+/* === AI PANEL === */
+#ai-panel{position:fixed;right:0;top:56px;bottom:0;width:360px;background:#fff;border-left:1px solid var(--border);box-shadow:-4px 0 16px rgba(0,0,0,.08);display:none;flex-direction:column;z-index:200;}
+#ai-panel.open{display:flex;}
+.ai-header{background:var(--teal-dark);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.ai-title{font-size:14px;font-weight:700;}
+.ai-close-btn{background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;}
+.ai-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.ai-msg{padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;white-space:pre-wrap;}
+.ai-msg.user{background:var(--teal);color:#fff;align-self:flex-end;}
+.ai-msg.bot{background:var(--teal-light);color:var(--text);align-self:flex-start;border:1px solid var(--teal-mid);}
+.ai-msg.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}
+.ai-quick-wrap{padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;}
+.ai-q{background:var(--teal-light);border:1px solid var(--teal-mid);color:var(--teal-dark);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;}
+.ai-q:hover{background:var(--teal-mid);}
+.ai-input-row{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
+.ai-input-row input{flex:1;}
+
+/* === CONNECTOR GRID === */
+.conn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;}
+.conn-card{border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff;}
+.conn-card:hover{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-mid);}
+.conn-card.connected{border-color:var(--green);background:var(--green-light);}
+.conn-icon{font-size:26px;margin-bottom:5px;}
+.conn-name{font-size:12px;font-weight:700;}
+.conn-status{font-size:11px;margin-top:4px;display:block;}
+
+/* === ORG CHART === */
+.org-owner{background:var(--teal-dark);color:#fff;border-radius:10px;padding:12px 22px;text-align:center;min-width:160px;display:inline-block;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.org-mgr{background:var(--teal);color:#fff;border-radius:8px;padding:10px 16px;text-align:center;min-width:130px;display:inline-block;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.org-emp{background:var(--teal-mid);border:1px solid var(--teal);border-radius:8px;padding:8px 14px;text-align:center;min-width:120px;display:inline-block;}
+.org-line{width:2px;height:22px;background:var(--border);margin:0 auto;}
+.org-row{display:flex;gap:32px;justify-content:center;align-items:flex-start;}
+
+/* === CHECK PREVIEW === */
+.check-preview{border:1px solid var(--border);border-radius:8px;padding:16px;background:#FAFAF9;font-family:monospace;font-size:12px;}
+
+/* === TOAST === */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--teal-dark);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* === PRINT === */
+@media print{
+  #login-screen,.topbar,.sidebar,#ai-panel,.toolbar,.modal-overlay,.toast{display:none!important;}
+  .main-content{padding:0;}
+  body{background:#fff;}
+}
+
+/* === RESPONSIVE === */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .form-grid{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .two-col,.three-col{grid-template-columns:1fr;}
+  #ai-panel{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== LOGIN ========== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">SB</div>
+    <div class="login-title">SAIRNbiz</div>
+    <div class="login-sub">People + Money Backbone &mdash; Select your role</div>
+    <div class="role-grid">
+      <div class="role-btn" onclick="selectRole('owner')" id="role-owner"><span class="role-icon">&#x1F451;</span><span class="role-label">Owner</span></div>
+      <div class="role-btn" onclick="selectRole('admin')" id="role-admin"><span class="role-icon">&#x1F6E1;&#xFE0F;</span><span class="role-label">Admin</span></div>
+      <div class="role-btn" onclick="selectRole('manager')" id="role-manager"><span class="role-icon">&#x1F4CB;</span><span class="role-label">Manager</span></div>
+      <div class="role-btn" onclick="selectRole('employee')" id="role-employee"><span class="role-icon">&#x1F464;</span><span class="role-label">Employee</span></div>
+    </div>
+    <div class="pin-row">
+      <input type="password" maxlength="1" class="pin-digit" id="p0" oninput="pinInput(0)" onkeydown="pinKey(event,0)">
+      <input type="password" maxlength="1" class="pin-digit" id="p1" oninput="pinInput(1)" onkeydown="pinKey(event,1)">
+      <input type="password" maxlength="1" class="pin-digit" id="p2" oninput="pinInput(2)" onkeydown="pinKey(event,2)">
+      <input type="password" maxlength="1" class="pin-digit" id="p3" oninput="pinInput(3)" onkeydown="pinKey(event,3)">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="demo-hint">Demo PINs &mdash; Owner: 1234 | Admin: 2345 | Manager: 3456 | Employee: 4567</div>
+  </div>
+</div>
+
+<!-- ========== APP SHELL ========== -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">SAIRN<span>biz</span></div>
+      <div class="wing-tabs">
+        <button class="wing-tab active" id="wing-people" onclick="switchWing('people')">&#x1F465; People</button>
+        <button class="wing-tab" id="wing-money" onclick="switchWing('money')">&#x1F4B0; Money</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip" id="user-chip">Owner</div>
+      <button class="top-ai-btn" onclick="toggleAI()">&#x1F916; AI Assistant</button>
+      <button class="top-btn" onclick="window.print()">&#x1F5A8;&#xFE0F; Print</button>
+      <button class="top-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+
+      <!-- People sidebar -->
+      <div id="sb-people">
+        <div class="sidebar-heading">Overview</div>
+        <div class="nav-item active" onclick="nav('p-dash')" data-p="p-dash"><span class="nav-icon">&#x1F4CA;</span> Dashboard</div>
+        <div class="sidebar-heading">Workforce</div>
+        <div class="nav-item" onclick="nav('employees')" data-p="employees"><span class="nav-icon">&#x1F465;</span> Employees</div>
+        <div class="nav-item" onclick="nav('onboarding')" data-p="onboarding"><span class="nav-icon">&#x1F680;</span> Onboarding</div>
+        <div class="nav-item" onclick="nav('ats')" data-p="ats"><span class="nav-icon">&#x1F4DD;</span> Hiring (ATS)</div>
+        <div class="nav-item" onclick="nav('org')" data-p="org"><span class="nav-icon">&#x1F333;</span> Org Chart</div>
+        <div class="sidebar-heading">Compensation</div>
+        <div class="nav-item" onclick="nav('payroll')" data-p="payroll"><span class="nav-icon">&#x1F4B5;</span> Payroll</div>
+        <div class="nav-item" onclick="nav('comp')" data-p="comp"><span class="nav-icon">&#x1F4C8;</span> Comp Manager</div>
+        <div class="nav-item" onclick="nav('pto')" data-p="pto"><span class="nav-icon">&#x1F3D6;&#xFE0F;</span> PTO &amp; Leave</div>
+        <div class="nav-item" onclick="nav('benefits')" data-p="benefits"><span class="nav-icon">&#x1F3E5;</span> Benefits</div>
+        <div class="sidebar-heading">Compliance</div>
+        <div class="nav-item" onclick="nav('i9')" data-p="i9"><span class="nav-icon">&#x1F4CB;</span> I-9 / E-Verify</div>
+        <div class="nav-item" onclick="nav('fmla')" data-p="fmla"><span class="nav-icon">&#x1F3E5;</span> FMLA / ADA</div>
+        <div class="nav-item" onclick="nav('lms')" data-p="lms"><span class="nav-icon">&#x1F4DA;</span> Training (LMS)</div>
+        <div class="sidebar-heading">System</div>
+        <div class="nav-item" onclick="nav('connectors')" data-p="connectors"><span class="nav-icon">&#x1F50C;</span> App Connectors</div>
+        <div class="nav-item" onclick="nav('settings')" data-p="settings"><span class="nav-icon">&#x2699;&#xFE0F;</span> Settings</div>
+      </div>
+
+      <!-- Money sidebar -->
+      <div id="sb-money" style="display:none;">
+        <div class="sidebar-heading">Overview</div>
+        <div class="nav-item" onclick="nav('m-dash')" data-p="m-dash"><span class="nav-icon">&#x1F4CA;</span> Dashboard</div>
+        <div class="sidebar-heading">Ledger</div>
+        <div class="nav-item" onclick="nav('gl')" data-p="gl"><span class="nav-icon">&#x1F4D2;</span> General Ledger</div>
+        <div class="nav-item" onclick="nav('invoices')" data-p="invoices"><span class="nav-icon">&#x1F9FE;</span> Invoices (AR)</div>
+        <div class="nav-item" onclick="nav('bills')" data-p="bills"><span class="nav-icon">&#x1F4E8;</span> Bills (AP)</div>
+        <div class="nav-item" onclick="nav('bank-rec')" data-p="bank-rec"><span class="nav-icon">&#x1F3E6;</span> Bank Rec</div>
+        <div class="sidebar-heading">Payables</div>
+        <div class="nav-item" onclick="nav('checks')" data-p="checks"><span class="nav-icon">&#x270F;&#xFE0F;</span> Write Checks</div>
+        <div class="nav-item" onclick="nav('check-reg')" data-p="check-reg"><span class="nav-icon">&#x1F4C3;</span> Check Register</div>
+        <div class="nav-item" onclick="nav('pr-journal')" data-p="pr-journal"><span class="nav-icon">&#x1F4D3;</span> Payroll Journal</div>
+        <div class="sidebar-heading">Planning</div>
+        <div class="nav-item" onclick="nav('budgets')" data-p="budgets"><span class="nav-icon">&#x1F3AF;</span> Budgets</div>
+        <div class="nav-item" onclick="nav('reports')" data-p="reports"><span class="nav-icon">&#x1F4CA;</span> Reports</div>
+        <div class="sidebar-heading">Admin</div>
+        <div class="nav-item" onclick="nav('formula')" data-p="formula"><span class="nav-icon">&#x1F527;</span> Formula Editor</div>
+        <div class="nav-item" onclick="nav('csv')" data-p="csv"><span class="nav-icon">&#x1F4C1;</span> CSV Tools</div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- MAIN CONTENT — pages injected in Phase 2 -->
+    <div class="main-content" id="main-content">
+      <div class="page active" id="page-p-dash">
+        <div class="page-title">Phase 1 Complete</div>
+        <div class="page-sub">Shell, CSS, login, sidebar all confirmed. Phase 2 will inject all pages.</div>
+      </div>
+    </div>
+
+  </div><!-- /app-body -->
+</div><!-- /app -->
+
+<!-- AI PANEL shell -->
+<div id="ai-panel">
+  <div class="ai-header">
+    <div class="ai-title">&#x1F916; SAIRNbiz AI</div>
+    <button class="ai-close-btn" onclick="toggleAI()">&#x2715;</button>
+  </div>
+  <div class="ai-msgs" id="ai-msgs">
+    <div class="ai-msg bot">Hi! I'm your SAIRNbiz AI, powered by Claude. Ask me anything about your people or money.</div>
+  </div>
+  <div class="ai-quick-wrap" id="ai-quick-wrap"></div>
+  <div class="ai-input-row">
+    <input type="text" id="ai-input" placeholder="Ask about payroll, compliance, cash flow...">
+    <button class="btn btn-teal" onclick="sendAI()">Send</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal overlays injected in Phase 2 -->
+
+<script>
+// Phase 1 minimal JS -- just enough to confirm shell works
+const PINS = {owner:'1234',admin:'2345',manager:'3456',employee:'4567'};
+let selRole = '';
+
+function selectRole(r){
+  selRole = r;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('role-'+r).classList.add('selected');
+  document.getElementById('p0').focus();
+}
+function pinInput(i){ const v=document.getElementById('p'+i).value; if(v&&i<3) document.getElementById('p'+(i+1)).focus(); }
+function pinKey(e,i){ if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0) document.getElementById('p'+(i-1)).focus(); if(e.key==='Enter') doLogin(); }
+function getPin(){ return ['p0','p1','p2','p3'].map(id=>document.getElementById(id).value).join(''); }
+function doLogin(){
+  if(!selRole){ document.getElementById('login-error').textContent='Please select a role.'; return; }
+  if(getPin()===PINS[selRole]){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('user-chip').textContent=selRole.charAt(0).toUpperCase()+selRole.slice(1);
+    showToast('Welcome, '+selRole+'!');
+  } else {
+    document.getElementById('login-error').textContent='Incorrect PIN.';
+    ['p0','p1','p2','p3'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('p0').focus();
+  }
+}
+function doLogout(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  ['p0','p1','p2','p3'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('selected'));
+  selRole='';
+}
+function nav(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  const pg=document.getElementById('page-'+p); if(pg) pg.classList.add('active');
+  const ni=document.querySelector('[data-p="'+p+'"]'); if(ni) ni.classList.add('active');
+  document.getElementById('main-content').scrollTop=0;
+}
+function switchWing(w){
+  document.getElementById('wing-people').classList.toggle('active',w==='people');
+  document.getElementById('wing-money').classList.toggle('active',w==='money');
+  document.getElementById('sb-people').style.display=w==='people'?'':'none';
+  document.getElementById('sb-money').style.display=w==='money'?'':'none';
+  nav(w==='people'?'p-dash':'m-dash');
+}
+function toggleAI(){ document.getElementById('ai-panel').classList.toggle('open'); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
+async function sendAI(){ showToast('AI panel active -- full AI wired in Phase 3'); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open')); document.getElementById('ai-panel').classList.remove('open'); } });
+</script>
+</body>
+</html>
+<script>
+// PHASE 2 - inject all page HTML into main-content
+document.getElementById('main-content').innerHTML = `
+
+<!-- PEOPLE DASHBOARD -->
+<div class="page active" id="page-p-dash">
+  <div class="page-title">People Overview</div>
+  <div class="page-sub">AI-powered workforce intelligence</div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><span class="kpi-icon">&#x1F465;</span><div class="kpi-label">Total Employees</div><div class="kpi-value">47</div><div class="kpi-delta up">+3 this month</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F3D6;&#xFE0F;</span><div class="kpi-label">PTO Pending</div><div class="kpi-value">5</div><div class="kpi-delta">Awaiting approval</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F680;</span><div class="kpi-label">Onboarding</div><div class="kpi-value">3</div><div class="kpi-delta">In progress</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F4DD;</span><div class="kpi-label">Open Positions</div><div class="kpi-value">4</div><div class="kpi-delta">2 offers pending</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F4B0;</span><div class="kpi-label">Monthly Payroll</div><div class="kpi-value">$142K</div><div class="kpi-delta">Next run Jun 28</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F4DA;</span><div class="kpi-label">Training Overdue</div><div class="kpi-value">6</div><div class="kpi-delta down">Action needed</div></div>
+  </div>
+  <div class="flag flag-error">&#x1F6A8; <strong>3 I-9 forms</strong> expire within 30 days. Review under Compliance &rarr; I-9.</div>
+  <div class="flag flag-info">&#x1F916; AI flagged <strong>2 pay equity gaps</strong>. <a href="#" style="color:var(--teal-dark);font-weight:700;" onclick="askAI('Run pay equity analysis and flag all gaps.')">View Analysis &rarr;</a></div>
+  <div class="two-col" style="margin-top:16px;">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Recent Hires</div><button class="btn btn-sm btn-teal" onclick="nav('employees')">View All</button></div>
+      <div class="card-body" style="padding:0;">
+        <table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Start</th><th>Status</th></tr></thead><tbody>
+          <tr><td><strong>Maria Santos</strong></td><td>Project Manager</td><td>Jun 3</td><td><span class="badge bg">Active</span></td></tr>
+          <tr><td><strong>James Lee</strong></td><td>Sales Rep</td><td>Jun 10</td><td><span class="badge bt">Onboarding</span></td></tr>
+          <tr><td><strong>Priya Mehta</strong></td><td>UI Designer</td><td>Jun 17</td><td><span class="badge ba">Offer Sent</span></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Workforce Health</div></div>
+      <div class="card-body">
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Retention Rate</span><span style="color:var(--green)">94%</span></div><div class="rb-track"><div class="rb-fill" style="width:94%"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Benefits Enrollment</span><span style="color:var(--teal)">82%</span></div><div class="rb-track"><div class="rb-fill" style="width:82%"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Training Completion</span><span style="color:var(--amber)">67%</span></div><div class="rb-track"><div class="rb-fill" style="width:67%;background:var(--amber)"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>I-9 Compliance</span><span style="color:var(--red)">88%</span></div><div class="rb-track"><div class="rb-fill" style="width:88%;background:var(--red)"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EMPLOYEES -->
+<div class="page" id="page-employees">
+  <div class="page-title">Employees</div>
+  <div class="page-sub">Full roster &mdash; click View to open profile</div>
+  <div class="toolbar">
+    <input type="text" class="search-box" placeholder="Search employees..." oninput="filterTable(this,'emp-tbl')">
+    <select class="btn btn-outline" style="font-weight:400;"><option>All Departments</option><option>Operations</option><option>Sales</option><option>Design</option><option>Admin</option></select>
+    <button class="btn btn-teal" onclick="openModal('modal-add-emp')">+ Add Employee</button>
+    <button class="btn btn-outline" onclick="exportCSV('emp-tbl','employees')">&#x2B07; CSV</button>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table" id="emp-tbl"><thead><tr><th>Name</th><th>ID</th><th>Dept</th><th>Role</th><th>Pay</th><th>Status</th><th>Start</th><th></th></tr></thead><tbody>
+      <tr><td><strong>Maria Santos</strong></td><td>EMP-001</td><td>Operations</td><td>Project Manager</td><td>$72,000/yr</td><td><span class="badge bg">Active</span></td><td>Jun 3, 2025</td><td><button class="btn btn-sm btn-outline" onclick="viewEmp('Maria Santos')">View</button></td></tr>
+      <tr><td><strong>James Lee</strong></td><td>EMP-002</td><td>Sales</td><td>Sales Rep</td><td>$55K+comm</td><td><span class="badge bt">Onboarding</span></td><td>Jun 10, 2025</td><td><button class="btn btn-sm btn-outline" onclick="viewEmp('James Lee')">View</button></td></tr>
+      <tr><td><strong>Tom Nguyen</strong></td><td>EMP-003</td><td>Operations</td><td>Lead Installer</td><td>$28/hr</td><td><span class="badge bg">Active</span></td><td>Jan 15, 2024</td><td><button class="btn btn-sm btn-outline" onclick="viewEmp('Tom Nguyen')">View</button></td></tr>
+      <tr><td><strong>Sarah Kim</strong></td><td>EMP-004</td><td>Admin</td><td>Office Manager</td><td>$52,000/yr</td><td><span class="badge bg">Active</span></td><td>Mar 1, 2023</td><td><button class="btn btn-sm btn-outline" onclick="viewEmp('Sarah Kim')">View</button></td></tr>
+      <tr><td><strong>Priya Mehta</strong></td><td>EMP-005</td><td>Design</td><td>UI Designer</td><td>$68,000/yr</td><td><span class="badge ba">Offer Sent</span></td><td>Jun 17, 2025</td><td><button class="btn btn-sm btn-outline" onclick="viewEmp('Priya Mehta')">View</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- PAYROLL -->
+<div class="page" id="page-payroll">
+  <div class="page-title">Payroll</div>
+  <div class="page-sub">Run payroll, review register, export to GL</div>
+  <div class="toolbar">
+    <select class="btn btn-outline" style="font-weight:400;"><option>June 2025 &mdash; Period 2</option><option>June 2025 &mdash; Period 1</option><option>May 2025 &mdash; Period 2</option></select>
+    <button class="btn btn-teal" onclick="runPayroll()">&#x25B6; Run Payroll</button>
+    <button class="btn btn-outline" onclick="exportCSV('pr-tbl','payroll')">&#x2B07; Export GL CSV</button>
+    <button class="btn btn-outline" onclick="window.print()">&#x1F5A8;&#xFE0F; Print</button>
+  </div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="kpi-card"><div class="kpi-label">Gross Pay</div><div class="kpi-value">$71,240</div></div>
+    <div class="kpi-card"><div class="kpi-label">Taxes Withheld</div><div class="kpi-value">$18,920</div></div>
+    <div class="kpi-card"><div class="kpi-label">Net Pay</div><div class="kpi-value">$52,320</div></div>
+    <div class="kpi-card"><div class="kpi-label">Employer Taxes</div><div class="kpi-value">$6,180</div></div>
+  </div>
+  <div class="card"><div class="card-header"><div class="card-title">Payroll Register</div></div><div class="card-body" style="padding:0;">
+    <table class="data-table" id="pr-tbl"><thead><tr><th>Employee</th><th>Type</th><th>Hrs</th><th>Gross</th><th>Fed Tax</th><th>FICA</th><th>State</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>
+      <tr><td>Maria Santos</td><td>Salary</td><td>&mdash;</td><td>$3,000.00</td><td>$540.00</td><td>$229.50</td><td>$105.00</td><td>$2,125.50</td><td><span class="badge bg">Approved</span></td></tr>
+      <tr><td>James Lee</td><td>Sal+Comm</td><td>&mdash;</td><td>$4,200.00</td><td>$756.00</td><td>$321.30</td><td>$147.00</td><td>$2,975.70</td><td><span class="badge ba">Pending</span></td></tr>
+      <tr><td>Tom Nguyen</td><td>Hourly</td><td>80</td><td>$2,240.00</td><td>$403.20</td><td>$171.36</td><td>$78.40</td><td>$1,587.04</td><td><span class="badge bg">Approved</span></td></tr>
+      <tr><td>Sarah Kim</td><td>Salary</td><td>&mdash;</td><td>$2,166.67</td><td>$390.00</td><td>$165.75</td><td>$75.83</td><td>$1,535.09</td><td><span class="badge bg">Approved</span></td></tr>
+      <tr class="total-row"><td colspan="3"><strong>TOTALS</strong></td><td><strong>$11,606.67</strong></td><td><strong>$2,089.20</strong></td><td><strong>$887.91</strong></td><td><strong>$406.23</strong></td><td><strong>$8,223.33</strong></td><td></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- COMP MANAGER -->
+<div class="page" id="page-comp">
+  <div class="page-title">Comp Manager</div>
+  <div class="page-sub">Pay structures, commission plans, equity analysis</div>
+  <div class="toolbar">
+    <button class="btn btn-teal" onclick="openModal('modal-comp')">+ Add Structure</button>
+    <button class="btn btn-outline" onclick="askAI('Run a full pay equity analysis. Flag all gaps and legal risks with recommendations.')">&#x1F916; AI Pay Equity Scan</button>
+  </div>
+  <div class="flag flag-info">&#x1F916; AI flagged a potential pay gap: Operations female employees earn ~8% less than comparable male roles. <a href="#" style="color:var(--teal-dark);font-weight:700;" onclick="askAI('Show full pay equity gap details for Operations and recommend corrections.')">View Analysis &rarr;</a></div>
+  <div class="card" style="margin-top:14px;"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Employee</th><th>Type</th><th>Base</th><th>Commission</th><th>Total Target</th><th>Market Rate</th><th>Status</th></tr></thead><tbody>
+      <tr><td>Maria Santos</td><td>Salary</td><td>$72,000</td><td>&mdash;</td><td>$72,000</td><td>$74,000</td><td><span class="badge ba">Slightly Under</span></td></tr>
+      <tr><td>James Lee</td><td>Sal+Comm</td><td>$55,000</td><td>10% rev</td><td>$85,000</td><td>$82,000</td><td><span class="badge bg">Market Rate</span></td></tr>
+      <tr><td>Tom Nguyen</td><td>Hourly</td><td>$28/hr</td><td>&mdash;</td><td>$58,240</td><td>$56,000</td><td><span class="badge bg">Above Market</span></td></tr>
+      <tr><td>Sarah Kim</td><td>Salary</td><td>$52,000</td><td>&mdash;</td><td>$52,000</td><td>$58,000</td><td><span class="badge br">Below Market</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- PTO -->
+<div class="page" id="page-pto">
+  <div class="page-title">PTO &amp; Leave</div>
+  <div class="page-sub">Manage vacation, sick, personal, and FMLA leave</div>
+  <div class="toolbar">
+    <button class="btn btn-teal" onclick="openModal('modal-pto')">+ New Request</button>
+    <select class="btn btn-outline" style="font-weight:400;"><option>All Types</option><option>Vacation</option><option>Sick</option><option>Personal</option><option>FMLA</option></select>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Employee</th><th>Type</th><th>Start</th><th>End</th><th>Days</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      <tr><td>James Lee</td><td>Vacation</td><td>Jul 4</td><td>Jul 7</td><td>2</td><td><span class="badge ba">Pending</span></td><td><button class="btn btn-sm btn-teal" onclick="approvePTO(this)">Approve</button></td></tr>
+      <tr><td>Maria Santos</td><td>Sick</td><td>Jun 18</td><td>Jun 18</td><td>1</td><td><span class="badge bg">Approved</span></td><td>&mdash;</td></tr>
+      <tr><td>Tom Nguyen</td><td>Personal</td><td>Jun 25</td><td>Jun 25</td><td>1</td><td><span class="badge ba">Pending</span></td><td><button class="btn btn-sm btn-teal" onclick="approvePTO(this)">Approve</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- BENEFITS -->
+<div class="page" id="page-benefits">
+  <div class="page-title">Benefits</div>
+  <div class="page-sub">Health, dental, vision, 401(k) enrollment</div>
+  <div class="two-col">
+    <div class="card"><div class="card-header"><div class="card-title">Enrollment Rates</div></div><div class="card-body">
+      <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Health Insurance</span><span>82%</span></div><div class="rb-track"><div class="rb-fill" style="width:82%"></div></div></div>
+      <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Dental</span><span>74%</span></div><div class="rb-track"><div class="rb-fill" style="width:74%"></div></div></div>
+      <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Vision</span><span>68%</span></div><div class="rb-track"><div class="rb-fill" style="width:68%"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>401(k)</span><span style="color:var(--purple)">60%</span></div><div class="rb-track"><div class="rb-fill" style="width:60%;background:var(--purple)"></div></div></div>
+    </div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Monthly Cost</div></div><div class="card-body" style="padding:0;">
+      <table class="data-table"><thead><tr><th>Plan</th><th>Employer</th><th>Employee</th></tr></thead><tbody>
+        <tr><td>Health</td><td>$6,240</td><td>$1,560</td></tr>
+        <tr><td>Dental</td><td>$840</td><td>$280</td></tr>
+        <tr><td>Vision</td><td>$420</td><td>$105</td></tr>
+        <tr><td>401(k) Match</td><td>$1,800</td><td>&mdash;</td></tr>
+        <tr class="total-row"><td><strong>Total</strong></td><td><strong>$9,300</strong></td><td><strong>$1,945</strong></td></tr>
+      </tbody></table>
+    </div></div>
+  </div>
+</div>
+
+<!-- HIRING ATS -->
+<div class="page" id="page-ats">
+  <div class="page-title">Hiring (ATS)</div>
+  <div class="page-sub">AI-scored applicant tracking from posting to offer</div>
+  <div class="toolbar">
+    <button class="btn btn-teal" onclick="openModal('modal-job')">+ Post Job</button>
+    <button class="btn btn-outline" onclick="askAI('Which open position should I fill first based on current business needs?')">&#x1F916; AI Prioritize</button>
+  </div>
+  <div class="two-col">
+    <div class="card"><div class="card-header"><div class="card-title">Open Positions</div></div><div class="card-body" style="padding:0;">
+      <table class="data-table"><thead><tr><th>Title</th><th>Dept</th><th>Applicants</th><th>Stage</th></tr></thead><tbody>
+        <tr><td>Sales Rep</td><td>Sales</td><td>12</td><td><span class="badge bt">Interviewing</span></td></tr>
+        <tr><td>Project Mgr</td><td>Ops</td><td>8</td><td><span class="badge ba">Screening</span></td></tr>
+        <tr><td>Installer</td><td>Field</td><td>5</td><td><span class="badge bp">Offer Stage</span></td></tr>
+        <tr><td>Accountant</td><td>Finance</td><td>3</td><td><span class="badge bg">Posted</span></td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Top Applicants &mdash; AI Scored</div></div><div class="card-body" style="padding:0;">
+      <table class="data-table"><thead><tr><th>Name</th><th>Position</th><th>AI Score</th><th>Stage</th></tr></thead><tbody>
+        <tr><td>Carlos Rivera</td><td>Sales Rep</td><td><strong style="color:var(--green)">94/100</strong></td><td><span class="badge bt">Interview</span></td></tr>
+        <tr><td>Amy Chen</td><td>Project Mgr</td><td><strong style="color:var(--teal)">88/100</strong></td><td><span class="badge bt">Interview</span></td></tr>
+        <tr><td>David Park</td><td>Sales Rep</td><td><strong style="color:var(--amber)">76/100</strong></td><td><span class="badge ba">Phone Screen</span></td></tr>
+      </tbody></table>
+    </div></div>
+  </div>
+</div>
+
+<!-- ORG CHART -->
+<div class="page" id="page-org">
+  <div class="page-title">Org Chart</div>
+  <div class="page-sub">Company hierarchy</div>
+  <div class="card"><div class="card-body" style="overflow-x:auto;">
+    <div style="display:flex;flex-direction:column;align-items:center;min-width:500px;">
+      <div class="org-owner"><div style="font-weight:700;">Michael L. Dibert</div><div style="font-size:11px;opacity:.8;">Owner / CEO</div></div>
+      <div class="org-line"></div>
+      <div class="org-row">
+        <div style="text-align:center;"><div class="org-mgr"><div style="font-weight:700;font-size:13px;">Sarah Kim</div><div style="font-size:11px;opacity:.85;">Office Manager</div></div></div>
+        <div style="text-align:center;">
+          <div class="org-mgr"><div style="font-weight:700;font-size:13px;">Maria Santos</div><div style="font-size:11px;opacity:.85;">Project Manager</div></div>
+          <div class="org-line"></div>
+          <div class="org-emp"><div style="font-weight:600;font-size:12px;">Tom Nguyen</div><div style="font-size:11px;color:var(--muted);">Lead Installer</div></div>
+        </div>
+        <div style="text-align:center;"><div class="org-mgr"><div style="font-weight:700;font-size:13px;">James Lee</div><div style="font-size:11px;opacity:.85;">Sales Rep</div></div></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ONBOARDING -->
+<div class="page" id="page-onboarding">
+  <div class="page-title">Onboarding</div>
+  <div class="page-sub">7-day same-day-setup tracks for new hires</div>
+  <div class="toolbar"><button class="btn btn-teal" onclick="openModal('modal-onboard')">+ Start Track</button></div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Employee</th><th>Start</th><th>Day</th><th>Progress</th><th>Next Step</th><th>Status</th></tr></thead><tbody>
+      <tr><td><strong>James Lee</strong></td><td>Jun 10</td><td>Day 4</td><td><div class="rb-track" style="width:110px;"><div class="rb-fill" style="width:57%"></div></div> 57%</td><td>Benefits enrollment</td><td><span class="badge bt">In Progress</span></td></tr>
+      <tr><td><strong>Priya Mehta</strong></td><td>Jun 17</td><td>Day 1</td><td><div class="rb-track" style="width:110px;"><div class="rb-fill" style="width:14%"></div></div> 14%</td><td>Sign offer letter</td><td><span class="badge ba">Starting</span></td></tr>
+    </tbody></table>
+  </div></div>
+  <div class="card"><div class="card-header"><div class="card-title">7-Day Checklist Template</div></div><div class="card-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="flag flag-info">Day 1 &mdash; Offer letter, I-9, direct deposit</div>
+      <div class="flag flag-info">Day 2 &mdash; Equipment, logins, system access</div>
+      <div class="flag flag-info">Day 3 &mdash; Benefits enrollment opens</div>
+      <div class="flag flag-info">Day 4 &mdash; Team intro, role training</div>
+      <div class="flag flag-warn">Day 5 &mdash; First project assignment</div>
+      <div class="flag flag-warn">Day 6 &mdash; Manager 1:1 check-in</div>
+      <div class="flag flag-warn">Day 7 &mdash; 30-day goal setting with HR</div>
+    </div>
+  </div></div>
+</div>
+
+<!-- I-9 -->
+<div class="page" id="page-i9">
+  <div class="page-title">I-9 / E-Verify</div>
+  <div class="page-sub">Employment eligibility and compliance tracking</div>
+  <div class="flag flag-error">&#x1F6A8; <strong>3 I-9 forms</strong> expire in the next 30 days. Reverification required by law.</div>
+  <div class="card" style="margin-top:14px;"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Employee</th><th>Doc Type</th><th>Expiration</th><th>E-Verify</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      <tr><td>Maria Santos</td><td>Passport</td><td>Jan 2030</td><td><span class="badge bg">Authorized</span></td><td><span class="badge bg">Current</span></td><td>&mdash;</td></tr>
+      <tr><td>Tom Nguyen</td><td>DL + SSC</td><td>Mar 2027</td><td><span class="badge bg">Authorized</span></td><td><span class="badge bg">Current</span></td><td>&mdash;</td></tr>
+      <tr><td>James Lee</td><td>Green Card</td><td><strong style="color:var(--red)">Jul 14, 2025</strong></td><td><span class="badge bg">Authorized</span></td><td><span class="badge br">Expiring</span></td><td><button class="btn btn-sm btn-red">Reverify</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- FMLA -->
+<div class="page" id="page-fmla">
+  <div class="page-title">FMLA / ADA</div>
+  <div class="page-sub">Protected leave and accommodation requests</div>
+  <div class="toolbar"><button class="btn btn-teal" onclick="openModal('modal-fmla')">+ New Request</button></div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Employee</th><th>Type</th><th>Start</th><th>End</th><th>Weeks Used</th><th>Remaining</th><th>Status</th></tr></thead><tbody>
+      <tr><td>Sarah Kim</td><td>FMLA</td><td>May 1</td><td>May 28</td><td>4 wks</td><td>8 wks</td><td><span class="badge bg">Approved</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- LMS -->
+<div class="page" id="page-lms">
+  <div class="page-title">Training (LMS)</div>
+  <div class="page-sub">Assign, track, and certify employee training</div>
+  <div class="toolbar">
+    <button class="btn btn-teal" onclick="openModal('modal-training')">+ Assign Training</button>
+    <button class="btn btn-outline" onclick="askAI('What training do my employees need based on roles and compliance status?')">&#x1F916; AI Recommend</button>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Employee</th><th>Course</th><th>Due</th><th>Progress</th><th>Status</th></tr></thead><tbody>
+      <tr><td>All Staff</td><td>Sexual Harassment Prevention</td><td><strong style="color:var(--red)">Jul 1</strong></td><td>67%</td><td><span class="badge ba">Incomplete</span></td></tr>
+      <tr><td>Maria Santos</td><td>Project Management Pro</td><td>Jul 31</td><td>45%</td><td><span class="badge bt">In Progress</span></td></tr>
+      <tr><td>Tom Nguyen</td><td>OSHA 10</td><td>Completed</td><td>100%</td><td><span class="badge bg">Complete</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- CONNECTORS -->
+<div class="page" id="page-connectors">
+  <div class="page-title">App Connectors</div>
+  <div class="page-sub">SAIRNbiz backbone &mdash; connects all 11 B2B apps</div>
+  <div class="flag flag-info">SAIRNbiz is the backbone. All connected apps share People + Money data via the SAIRN Bridge at sairn.vercel.app/api/bridge.</div>
+  <div class="conn-grid" style="margin-top:16px;">
+    <div class="conn-card connected"><div class="conn-icon">&#x1FA9F;</div><div class="conn-name">StoneDesk</div><span class="conn-status badge bg">Connected</span></div>
+    <div class="conn-card connected"><div class="conn-icon">&#x1F3D7;&#xFE0F;</div><div class="conn-name">SAIRNbuild</div><span class="conn-status badge bg">Connected</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNlaw')"><div class="conn-icon">&#x2696;&#xFE0F;</div><div class="conn-name">SAIRNlaw</div><span class="conn-status badge ba">Connect</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNscape')"><div class="conn-icon">&#x1F33F;</div><div class="conn-name">SAIRNscape</div><span class="conn-status badge ba">Connect</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNdesign')"><div class="conn-icon">&#x270F;&#xFE0F;</div><div class="conn-name">SAIRNdesign</div><span class="conn-status badge ba">Connect</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNcode')"><div class="conn-icon">&#x1F4BB;</div><div class="conn-name">SAIRNcode</div><span class="conn-status badge ba">Connect</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNcare')"><div class="conn-icon">&#x1F3E5;</div><div class="conn-name">SAIRNcare</div><span class="conn-status badge ba">Connect</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNvet')"><div class="conn-icon">&#x1F43E;</div><div class="conn-name">SAIRNvet</div><span class="conn-status badge ba">Connect</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNfuneral')"><div class="conn-icon">&#x1F54A;&#xFE0F;</div><div class="conn-name">SAIRNfuneral</div><span class="conn-status badge ba">Connect</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNcomm')"><div class="conn-icon">&#x1F4E1;</div><div class="conn-name">SAIRNcomm</div><span class="conn-status badge ba">Connect</span></div>
+    <div class="conn-card" onclick="connectApp('SAIRNgov')"><div class="conn-icon">&#x1F3DB;&#xFE0F;</div><div class="conn-name">SAIRNgov</div><span class="conn-status badge ba">Connect</span></div>
+  </div>
+  <div class="card" style="margin-top:18px;"><div class="card-header"><div class="card-title">Bridge Sync Status</div></div><div class="card-body">
+    <div style="font-size:13px;margin-bottom:8px;">Last sync: <strong>June 14, 2025 &mdash; 2:31 PM</strong></div>
+    <div class="flag flag-info">People data synced to 2 apps. Money data synced to 2 apps.</div>
+    <button class="btn btn-teal" style="margin-top:10px;" onclick="syncBridge()">&#x1F504; Sync All Now</button>
+  </div></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="page-title">Settings</div>
+  <div class="page-sub">Company setup, roles, and system config</div>
+  <div class="two-col">
+    <div class="card"><div class="card-header"><div class="card-title">Company Info</div></div><div class="card-body">
+      <div class="form-grid" style="grid-template-columns:1fr;">
+        <div class="fg"><label>Company Name</label><input type="text" value="SAIRN Technologies"></div>
+        <div class="fg"><label>EIN</label><input type="text" value="XX-XXXXXXX"></div>
+        <div class="fg"><label>Pay Frequency</label><select><option>Bi-weekly</option><option>Weekly</option><option>Semi-monthly</option></select></div>
+        <div class="fg"><label>State</label><select><option>Ohio</option><option>Michigan</option><option>Pennsylvania</option></select></div>
+        <button class="btn btn-teal" onclick="showToast('Settings saved')">Save Settings</button>
+      </div>
+    </div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Role PIN Management</div></div><div class="card-body">
+      <table class="data-table"><thead><tr><th>Role</th><th>Permissions</th></tr></thead><tbody>
+        <tr><td>Owner</td><td>Full access &mdash; all data</td></tr>
+        <tr><td>Admin</td><td>Full access &mdash; no billing</td></tr>
+        <tr><td>Manager</td><td>Team data only</td></tr>
+        <tr><td>Employee</td><td>Own data only</td></tr>
+      </tbody></table>
+      <button class="btn btn-outline" style="margin-top:12px;" onclick="openModal('modal-pin')">&#x1F511; Change PINs</button>
+    </div></div>
+  </div>
+</div>
+
+<!-- MONEY DASHBOARD -->
+<div class="page" id="page-m-dash">
+  <div class="page-title">Money Overview</div>
+  <div class="page-sub">Financial intelligence &mdash; GL, cash flow, AR/AP</div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><span class="kpi-icon">&#x1F4B5;</span><div class="kpi-label">Cash Position</div><div class="kpi-value">$284K</div><div class="kpi-delta up">+$18K this week</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F9FE;</span><div class="kpi-label">Receivables (AR)</div><div class="kpi-value">$94K</div><div class="kpi-delta">18 open invoices</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F4E8;</span><div class="kpi-label">Payables (AP)</div><div class="kpi-value">$41K</div><div class="kpi-delta down">6 bills due</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F4CA;</span><div class="kpi-label">Monthly Revenue</div><div class="kpi-value">$187K</div><div class="kpi-delta up">+12% vs last month</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F4B0;</span><div class="kpi-label">Payroll Cost</div><div class="kpi-value">$142K</div><div class="kpi-delta">Next run Jun 28</div></div>
+    <div class="kpi-card"><span class="kpi-icon">&#x1F4C8;</span><div class="kpi-label">Gross Margin</div><div class="kpi-value">38%</div><div class="kpi-delta up">Industry avg: 32%</div></div>
+  </div>
+  <div class="flag flag-info">&#x1F916; AI forecasts <strong>$28K cash gap</strong> in 45 days. <a href="#" style="color:var(--teal-dark);font-weight:700;" onclick="askAI('Show 60-day cash flow forecast with specific recommendations to close the gap.')">Get AI Plan &rarr;</a></div>
+  <div class="two-col" style="margin-top:16px;">
+    <div class="card"><div class="card-header"><div class="card-title">Recent GL Entries</div></div><div class="card-body" style="padding:0;">
+      <table class="data-table"><thead><tr><th>Date</th><th>Account</th><th>Debit</th><th>Credit</th></tr></thead><tbody>
+        <tr><td>Jun 14</td><td>Payroll Expense</td><td>$11,607</td><td>&mdash;</td></tr>
+        <tr><td>Jun 14</td><td>Cash</td><td>&mdash;</td><td>$11,607</td></tr>
+        <tr><td>Jun 13</td><td>Accounts Receivable</td><td>$8,400</td><td>&mdash;</td></tr>
+        <tr><td>Jun 13</td><td>Revenue</td><td>&mdash;</td><td>$8,400</td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="card"><div class="card-header"><div class="card-title">AR Aging</div></div><div class="card-body">
+      <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Current (0-30 days)</span><span style="color:var(--green)">$52K</span></div><div class="rb-track"><div class="rb-fill" style="width:55%"></div></div></div>
+      <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>31-60 days</span><span style="color:var(--amber)">$28K</span></div><div class="rb-track"><div class="rb-fill" style="width:30%;background:var(--amber)"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>61+ days</span><span style="color:var(--red)">$14K</span></div><div class="rb-track"><div class="rb-fill" style="width:15%;background:var(--red)"></div></div></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- GL -->
+<div class="page" id="page-gl">
+  <div class="page-title">General Ledger</div>
+  <div class="page-sub">Full chart of accounts and transaction history</div>
+  <div class="toolbar">
+    <button class="btn btn-teal" onclick="openModal('modal-journal')">+ Journal Entry</button>
+    <select class="btn btn-outline" style="font-weight:400;"><option>June 2025</option><option>May 2025</option><option>April 2025</option></select>
+    <button class="btn btn-outline" onclick="exportCSV('gl-tbl','general-ledger')">&#x2B07; Export</button>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table" id="gl-tbl"><thead><tr><th>Date</th><th>Ref #</th><th>Description</th><th>Account</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead><tbody>
+      <tr><td>Jun 14</td><td>GL-0041</td><td>Payroll Run #12</td><td>Payroll Expense</td><td>$11,607</td><td>&mdash;</td><td>$284,120</td></tr>
+      <tr><td>Jun 14</td><td>GL-0040</td><td>Payroll Run #12</td><td>Cash</td><td>&mdash;</td><td>$11,607</td><td>$272,513</td></tr>
+      <tr><td>Jun 13</td><td>GL-0039</td><td>Invoice INV-0047</td><td>Accounts Receivable</td><td>$8,400</td><td>&mdash;</td><td>$284,120</td></tr>
+      <tr><td>Jun 13</td><td>GL-0038</td><td>Invoice INV-0047</td><td>Revenue</td><td>&mdash;</td><td>$8,400</td><td>$275,720</td></tr>
+      <tr><td>Jun 12</td><td>GL-0037</td><td>Rent Payment</td><td>Rent Expense</td><td>$4,200</td><td>&mdash;</td><td>$267,320</td></tr>
+      <tr><td>Jun 12</td><td>GL-0036</td><td>Rent Payment</td><td>Cash</td><td>&mdash;</td><td>$4,200</td><td>$263,120</td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- INVOICES -->
+<div class="page" id="page-invoices">
+  <div class="page-title">Invoices (AR)</div>
+  <div class="page-sub">Create, send, and track customer invoices</div>
+  <div class="toolbar">
+    <button class="btn btn-teal" onclick="openModal('modal-invoice')">+ New Invoice</button>
+    <input type="text" class="search-box" placeholder="Search invoices...">
+    <button class="btn btn-outline" onclick="askAI('Which invoices are overdue or at risk? What collection actions should I take this week?')">&#x1F916; AI Collections</button>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Due</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      <tr><td>INV-0047</td><td>ABC Corp</td><td>Jun 13</td><td>Jul 13</td><td>$8,400</td><td><span class="badge bt">Sent</span></td><td><button class="btn btn-sm btn-outline">View</button></td></tr>
+      <tr><td>INV-0046</td><td>Smith Residence</td><td>Jun 10</td><td>Jun 25</td><td>$3,200</td><td><span class="badge br">Overdue</span></td><td><button class="btn btn-sm btn-red">Send Reminder</button></td></tr>
+      <tr><td>INV-0045</td><td>Westlake Builders</td><td>May 28</td><td>Jun 28</td><td>$14,600</td><td><span class="badge bg">Paid</span></td><td><button class="btn btn-sm btn-outline">View</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- BILLS -->
+<div class="page" id="page-bills">
+  <div class="page-title">Bills (AP)</div>
+  <div class="page-sub">Manage vendor bills and schedule payments</div>
+  <div class="toolbar"><button class="btn btn-teal" onclick="openModal('modal-bill')">+ Add Bill</button></div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Vendor</th><th>Bill #</th><th>Due</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      <tr><td>Ohio Electric</td><td>BILL-041</td><td><strong style="color:var(--red)">Jun 20</strong></td><td>$1,840</td><td><span class="badge br">Due Soon</span></td><td><button class="btn btn-sm btn-teal" onclick="nav('checks')">Pay Now</button></td></tr>
+      <tr><td>Material Supply Co</td><td>BILL-040</td><td>Jul 5</td><td>$12,400</td><td><span class="badge bt">Open</span></td><td><button class="btn btn-sm btn-outline">Schedule</button></td></tr>
+      <tr><td>Google Workspace</td><td>BILL-039</td><td>Jun 1</td><td>$180</td><td><span class="badge bg">Paid</span></td><td>&mdash;</td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- BANK REC -->
+<div class="page" id="page-bank-rec">
+  <div class="page-title">Bank Reconciliation</div>
+  <div class="page-sub">Match your GL to your bank statement</div>
+  <div class="two-col">
+    <div class="card"><div class="card-header"><div class="card-title">GL Balance</div></div><div class="card-body"><div class="kpi-value" style="font-size:30px;color:var(--teal-dark);">$284,120</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">As of June 14, 2025</div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Bank Statement Balance</div></div><div class="card-body"><input type="number" id="bank-bal" placeholder="Enter bank balance" style="font-size:18px;font-weight:700;border:2px solid var(--teal);border-radius:8px;padding:10px;" oninput="reconcileBank(this.value)"><div id="rec-result" style="margin-top:10px;font-size:13px;color:var(--muted);">Enter balance to reconcile</div></div></div>
+  </div>
+  <div class="flag flag-info" style="margin-top:14px;">&#x1F916; AI auto-matches transactions and flags discrepancies. Ask: "Reconcile my bank statement."</div>
+</div>
+
+<!-- WRITE CHECKS -->
+<div class="page" id="page-checks">
+  <div class="page-title">Write Checks</div>
+  <div class="page-sub">Print checks on blank check stock &mdash; 3 per page</div>
+  <div class="two-col">
+    <div class="card"><div class="card-header"><div class="card-title">Write a Check</div></div><div class="card-body">
+      <div class="form-grid" style="grid-template-columns:1fr;">
+        <div class="fg"><label>Bank Account</label><select><option>First National &mdash; ***4821 ($284,120 avail)</option></select></div>
+        <div class="fg"><label>Check #</label><input type="number" id="chk-num" value="1047"></div>
+        <div class="fg"><label>Date</label><input type="date" id="chk-date" value="2025-06-14"></div>
+        <div class="fg"><label>Pay To</label><input type="text" id="chk-payee" placeholder="Payee name" oninput="updateChkPreview()"></div>
+        <div class="fg"><label>Amount ($)</label><input type="number" id="chk-amt" placeholder="0.00" oninput="updateChkPreview()"></div>
+        <div class="fg"><label>Amount in Words</label><input type="text" id="chk-words" readonly style="background:#F8FAFC;font-style:italic;font-size:12px;"></div>
+        <div class="fg"><label>Memo</label><input type="text" id="chk-memo" placeholder="Invoice #, job..." oninput="updateChkPreview()"></div>
+        <div class="fg"><label>Link to Bill</label><select><option>-- None --</option><option>BILL-041 Ohio Electric $1,840</option><option>BILL-040 Material Supply $12,400</option></select></div>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <button class="btn btn-teal" onclick="saveCheck()">&#x1F4BE; Save to Register</button>
+          <button class="btn btn-outline" onclick="printCheck()">&#x1F5A8;&#xFE0F; Print Check</button>
+        </div>
+      </div>
+    </div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Preview</div></div><div class="card-body">
+      <div class="check-preview">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><strong>SAIRN Technologies</strong><span>Check #<span id="pv-num">1047</span></span></div>
+        <div style="margin-bottom:6px;">Date: <span id="pv-date">2025-06-14</span></div>
+        <div style="margin-bottom:6px;">Pay to: <strong><span id="pv-payee">---</span></strong></div>
+        <div style="display:flex;justify-content:space-between;border:1px solid #ccc;padding:5px;margin-bottom:10px;"><em><span id="pv-words">---</span></em><strong>$<span id="pv-amt">0.00</span></strong></div>
+        <div style="display:flex;justify-content:space-between;"><span>Memo: <span id="pv-memo">---</span></span><span style="text-align:right;">___________________<br><small>Authorized Signature</small></span></div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- CHECK REGISTER -->
+<div class="page" id="page-check-reg">
+  <div class="page-title">Check Register</div>
+  <div class="page-sub">Full history &mdash; exportable to GL</div>
+  <div class="toolbar">
+    <button class="btn btn-outline" onclick="exportCSV('chk-reg-tbl','check-register')">&#x2B07; Export CSV</button>
+    <button class="btn btn-outline" onclick="window.print()">&#x1F5A8;&#xFE0F; Print</button>
+    <button class="btn btn-outline" onclick="showToast('Posted to GL')">&#x1F4D2; Post to GL</button>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table" id="chk-reg-tbl"><thead><tr><th>Check #</th><th>Date</th><th>Payee</th><th>Memo</th><th>Amount</th><th>Account</th><th>Status</th></tr></thead>
+    <tbody id="chk-reg-body">
+      <tr><td>1046</td><td>Jun 12, 2025</td><td>City Landlord LLC</td><td>June Rent</td><td>$4,200.00</td><td>***4821</td><td><span class="badge bg">Cleared</span></td></tr>
+      <tr><td>1045</td><td>Jun 10, 2025</td><td>Material Supply Co</td><td>INV-8821</td><td>$6,800.00</td><td>***4821</td><td><span class="badge bt">Outstanding</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- PAYROLL JOURNAL -->
+<div class="page" id="page-pr-journal">
+  <div class="page-title">Payroll Journal</div>
+  <div class="page-sub">GL entries auto-posted from each payroll run</div>
+  <div class="toolbar"><button class="btn btn-outline" onclick="exportCSV('pj-tbl','payroll-journal')">&#x2B07; Export</button></div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table" id="pj-tbl"><thead><tr><th>Date</th><th>Period</th><th>Account</th><th>Debit</th><th>Credit</th></tr></thead><tbody>
+      <tr><td>Jun 14</td><td>Jun P2</td><td>Payroll Expense &mdash; Wages</td><td>$8,223.33</td><td>&mdash;</td></tr>
+      <tr><td>Jun 14</td><td>Jun P2</td><td>Payroll Expense &mdash; Employer FICA</td><td>$629.09</td><td>&mdash;</td></tr>
+      <tr><td>Jun 14</td><td>Jun P2</td><td>Payroll Tax Liability</td><td>&mdash;</td><td>$3,383.34</td></tr>
+      <tr><td>Jun 14</td><td>Jun P2</td><td>Cash &mdash; Checking</td><td>&mdash;</td><td>$5,469.08</td></tr>
+      <tr class="total-row"><td colspan="3"><strong>Totals</strong></td><td><strong>$8,852.42</strong></td><td><strong>$8,852.42</strong></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- BUDGETS -->
+<div class="page" id="page-budgets">
+  <div class="page-title">Budgets</div>
+  <div class="page-sub">Annual budget vs. actuals with AI variance analysis</div>
+  <div class="toolbar">
+    <button class="btn btn-teal" onclick="openModal('modal-budget')">+ Add Line</button>
+    <button class="btn btn-outline" onclick="askAI('Analyze budget vs actuals. Where am I overspending? What should I adjust for Q3?')">&#x1F916; AI Variance</button>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;">
+    <table class="data-table"><thead><tr><th>Category</th><th>Annual Budget</th><th>YTD Actual</th><th>YTD Budget</th><th>Variance</th><th>Status</th></tr></thead><tbody>
+      <tr><td>Payroll</td><td>$1,700,000</td><td>$710,000</td><td>$708,333</td><td style="color:var(--red)">-$1,667</td><td><span class="badge ba">Slight Over</span></td></tr>
+      <tr><td>Materials</td><td>$480,000</td><td>$188,000</td><td>$200,000</td><td style="color:var(--green)">+$12,000</td><td><span class="badge bg">Under Budget</span></td></tr>
+      <tr><td>Marketing</td><td>$120,000</td><td>$62,000</td><td>$50,000</td><td style="color:var(--red)">-$12,000</td><td><span class="badge br">Over Budget</span></td></tr>
+      <tr><td>Rent + Utilities</td><td>$72,000</td><td>$30,240</td><td>$30,000</td><td style="color:var(--red)">-$240</td><td><span class="badge bg">On Track</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="page-reports">
+  <div class="page-title">Reports</div>
+  <div class="page-sub">P&amp;L, Balance Sheet, Cash Flow &mdash; AI-generated, print-ready</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;">
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate a full Profit and Loss statement for June 2025 with all line items.')"><div class="card-body" style="text-align:center;padding:24px;"><div style="font-size:32px;margin-bottom:8px;">&#x1F4CA;</div><div style="font-weight:700;">Profit &amp; Loss</div><div style="font-size:12px;color:var(--muted);">Income vs expenses</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate a Balance Sheet as of June 14, 2025.')"><div class="card-body" style="text-align:center;padding:24px;"><div style="font-size:32px;margin-bottom:8px;">&#x2696;&#xFE0F;</div><div style="font-weight:700;">Balance Sheet</div><div style="font-size:12px;color:var(--muted);">Assets, liabilities, equity</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate a Cash Flow Statement for June 2025.')"><div class="card-body" style="text-align:center;padding:24px;"><div style="font-size:32px;margin-bottom:8px;">&#x1F4A7;</div><div style="font-weight:700;">Cash Flow</div><div style="font-size:12px;color:var(--muted);">Operating, investing, financing</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate a payroll summary report for June 2025 with all deductions.')"><div class="card-body" style="text-align:center;padding:24px;"><div style="font-size:32px;margin-bottom:8px;">&#x1F4B5;</div><div style="font-weight:700;">Payroll Summary</div><div style="font-size:12px;color:var(--muted);">Wages, taxes, deductions</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate an AR aging report and flag any collection risks.')"><div class="card-body" style="text-align:center;padding:24px;"><div style="font-size:32px;margin-bottom:8px;">&#x1F9FE;</div><div style="font-weight:700;">AR Aging</div><div style="font-size:12px;color:var(--muted);">Receivables by age</div></div></div>
+  </div>
+</div>
+
+<!-- FORMULA EDITOR -->
+<div class="page" id="page-formula">
+  <div class="page-title">Formula Editor</div>
+  <div class="page-sub">Admin-only: customize tax rates, payroll rules, GL mappings</div>
+  <div class="card"><div class="card-header"><div class="card-title">Tax &amp; Payroll Rates</div></div><div class="card-body">
+    <div class="form-grid">
+      <div class="fg"><label>Federal Income Tax Rate</label><input type="text" value="18%"></div>
+      <div class="fg"><label>FICA Employee Rate</label><input type="text" value="7.65%"></div>
+      <div class="fg"><label>Ohio State Tax Rate</label><input type="text" value="3.5%"></div>
+      <div class="fg"><label>SUTA Rate</label><input type="text" value="2.7%"></div>
+      <div class="fg"><label>401(k) Match %</label><input type="text" value="4%"></div>
+      <div class="fg"><label>Health Deduction (per period)</label><input type="text" value="$200"></div>
+    </div>
+    <div style="margin-top:16px;"><button class="btn btn-teal" onclick="showToast('Formulas saved')">&#x1F4BE; Save Formulas</button></div>
+  </div></div>
+</div>
+
+<!-- CSV TOOLS -->
+<div class="page" id="page-csv">
+  <div class="page-title">CSV Tools</div>
+  <div class="page-sub">Import, export, and stress-test data across both wings</div>
+  <div class="two-col">
+    <div class="card"><div class="card-header"><div class="card-title">Import</div></div><div class="card-body">
+      <div class="fg" style="margin-bottom:12px;"><label>Import Type</label><select><option>Employee Roster</option><option>Payroll Register</option><option>GL Transactions</option><option>Chart of Accounts</option></select></div>
+      <div style="border:2px dashed var(--border);border-radius:8px;padding:32px;text-align:center;cursor:pointer;" onclick="document.getElementById('csv-upload').click()">
+        <div style="font-size:28px;">&#x1F4C2;</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px;">Drop CSV or click to upload</div>
+      </div>
+      <input type="file" id="csv-upload" accept=".csv" style="display:none;" onchange="handleCSV(this)">
+    </div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Export</div></div><div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-outline" onclick="exportCSV('emp-tbl','employees')">&#x2B07; Employees CSV</button>
+      <button class="btn btn-outline" onclick="exportCSV('pr-tbl','payroll')">&#x2B07; Payroll Register CSV</button>
+      <button class="btn btn-outline" onclick="exportCSV('gl-tbl','general-ledger')">&#x2B07; GL Transactions CSV</button>
+      <button class="btn btn-outline" onclick="exportCSV('chk-reg-tbl','check-register')">&#x2B07; Check Register CSV</button>
+      <button class="btn btn-outline" onclick="exportCSV('pj-tbl','payroll-journal')">&#x2B07; Payroll Journal CSV</button>
+    </div></div>
+  </div>
+</div>
+
+`;
+
+// ===== MODALS =====
+document.body.insertAdjacentHTML('beforeend', \`
+<div class="modal-overlay" id="modal-add-emp">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add New Employee</div><button class="modal-close" onclick="closeModal('modal-add-emp')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>First Name</label><input type="text" placeholder="First name"></div>
+      <div class="fg"><label>Last Name</label><input type="text" placeholder="Last name"></div>
+      <div class="fg"><label>Email</label><input type="email" placeholder="email@company.com"></div>
+      <div class="fg"><label>Phone</label><input type="tel" placeholder="(555) 000-0000"></div>
+      <div class="fg"><label>Department</label><select><option>Operations</option><option>Sales</option><option>Design</option><option>Admin</option><option>Finance</option></select></div>
+      <div class="fg"><label>Role / Title</label><input type="text" placeholder="Job title"></div>
+      <div class="fg"><label>Pay Type</label><select><option>Salary</option><option>Hourly</option><option>Salary + Commission</option></select></div>
+      <div class="fg"><label>Pay Rate</label><input type="text" placeholder="$0/yr or $0/hr"></div>
+      <div class="fg"><label>Start Date</label><input type="date"></div>
+      <div class="fg"><label>Manager</label><select><option>Michael L. Dibert</option><option>Maria Santos</option><option>Sarah Kim</option></select></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-add-emp')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-add-emp');showToast('Employee added')">Save Employee</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-pto">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">New PTO Request</div><button class="modal-close" onclick="closeModal('modal-pto')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Employee</label><select><option>Maria Santos</option><option>James Lee</option><option>Tom Nguyen</option><option>Sarah Kim</option></select></div>
+      <div class="fg"><label>Type</label><select><option>Vacation</option><option>Sick</option><option>Personal</option><option>FMLA</option></select></div>
+      <div class="fg"><label>Start Date</label><input type="date"></div>
+      <div class="fg"><label>End Date</label><input type="date"></div>
+      <div class="fg full"><label>Notes</label><textarea placeholder="Optional reason..."></textarea></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-pto')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-pto');showToast('PTO request submitted')">Submit</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-job">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Post Job Opening</div><button class="modal-close" onclick="closeModal('modal-job')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Job Title</label><input type="text" placeholder="e.g. Sales Representative"></div>
+      <div class="fg"><label>Department</label><select><option>Sales</option><option>Operations</option><option>Finance</option><option>Design</option></select></div>
+      <div class="fg"><label>Pay Range</label><input type="text" placeholder="$55,000 - $70,000"></div>
+      <div class="fg"><label>Type</label><select><option>Full-Time</option><option>Part-Time</option><option>Contract</option></select></div>
+      <div class="fg full"><label>Job Description</label><textarea placeholder="Describe the role..."></textarea></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-job')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-job');askAI('Write a compelling job posting for a Sales Representative at SAIRN Technologies.')">&#x1F916; AI Write JD</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-onboard">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Start Onboarding</div><button class="modal-close" onclick="closeModal('modal-onboard')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Employee</label><select><option>Priya Mehta</option><option>New Hire</option></select></div>
+      <div class="fg"><label>Start Date</label><input type="date"></div>
+      <div class="fg"><label>Assigned Manager</label><select><option>Maria Santos</option><option>Michael L. Dibert</option></select></div>
+      <div class="fg"><label>Track</label><select><option>Standard 7-Day</option><option>Sales Rep Track</option><option>Field / Installer Track</option></select></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-onboard')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-onboard');showToast('Onboarding track started')">Start Track</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-fmla">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">FMLA / ADA Request</div><button class="modal-close" onclick="closeModal('modal-fmla')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Employee</label><select><option>Maria Santos</option><option>James Lee</option><option>Tom Nguyen</option></select></div>
+      <div class="fg"><label>Leave Type</label><select><option>FMLA</option><option>ADA Accommodation</option><option>State Leave</option></select></div>
+      <div class="fg"><label>Start Date</label><input type="date"></div>
+      <div class="fg"><label>Estimated Return</label><input type="date"></div>
+      <div class="fg full"><label>Reason (confidential)</label><textarea placeholder="HR records only..."></textarea></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-fmla')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-fmla');showToast('FMLA request recorded')">Record</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-training">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Assign Training</div><button class="modal-close" onclick="closeModal('modal-training')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Assign To</label><select><option>All Employees</option><option>Maria Santos</option><option>James Lee</option><option>Tom Nguyen</option></select></div>
+      <div class="fg"><label>Course Name</label><input type="text" placeholder="Training course name"></div>
+      <div class="fg"><label>Due Date</label><input type="date"></div>
+      <div class="fg"><label>Required?</label><select><option>Yes</option><option>Optional</option></select></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-training')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-training');showToast('Training assigned')">Assign</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-comp">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Pay Structure</div><button class="modal-close" onclick="closeModal('modal-comp')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Employee</label><select><option>Maria Santos</option><option>James Lee</option><option>Tom Nguyen</option><option>Sarah Kim</option></select></div>
+      <div class="fg"><label>Pay Type</label><select><option>Salary</option><option>Hourly</option><option>Salary + Commission</option><option>Commission Only</option></select></div>
+      <div class="fg"><label>Base Amount</label><input type="text" placeholder="$0/yr or $0/hr"></div>
+      <div class="fg"><label>Commission Rate</label><input type="text" placeholder="e.g. 10% of revenue"></div>
+      <div class="fg"><label>Effective Date</label><input type="date"></div>
+      <div class="fg"><label>Market Benchmark</label><input type="text" placeholder="Market rate for reference"></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-comp')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-comp');showToast('Pay structure saved')">Save</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-journal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Journal Entry</div><button class="modal-close" onclick="closeModal('modal-journal')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Date</label><input type="date"></div>
+      <div class="fg"><label>Reference #</label><input type="text" placeholder="GL-XXXX"></div>
+      <div class="fg full"><label>Description</label><input type="text" placeholder="Entry description"></div>
+      <div class="fg"><label>Debit Account</label><select><option>Cash</option><option>Accounts Receivable</option><option>Payroll Expense</option><option>Revenue</option><option>Rent Expense</option></select></div>
+      <div class="fg"><label>Debit Amount</label><input type="number" placeholder="0.00"></div>
+      <div class="fg"><label>Credit Account</label><select><option>Revenue</option><option>Cash</option><option>Accounts Payable</option><option>Payroll Tax Liability</option></select></div>
+      <div class="fg"><label>Credit Amount</label><input type="number" placeholder="0.00"></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-journal')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-journal');showToast('Journal entry posted')">Post Entry</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-invoice">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">New Invoice</div><button class="modal-close" onclick="closeModal('modal-invoice')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Customer</label><input type="text" placeholder="Customer name"></div>
+      <div class="fg"><label>Invoice #</label><input type="text" value="INV-0048"></div>
+      <div class="fg"><label>Invoice Date</label><input type="date"></div>
+      <div class="fg"><label>Due Date</label><input type="date"></div>
+      <div class="fg full"><label>Description</label><textarea placeholder="Services or products..."></textarea></div>
+      <div class="fg"><label>Amount</label><input type="number" placeholder="0.00"></div>
+      <div class="fg"><label>Tax Rate</label><input type="text" value="0%"></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-invoice')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-invoice');showToast('Invoice created')">Create Invoice</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-bill">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Bill</div><button class="modal-close" onclick="closeModal('modal-bill')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Vendor</label><input type="text" placeholder="Vendor name"></div>
+      <div class="fg"><label>Bill #</label><input type="text" placeholder="Vendor invoice #"></div>
+      <div class="fg"><label>Bill Date</label><input type="date"></div>
+      <div class="fg"><label>Due Date</label><input type="date"></div>
+      <div class="fg"><label>Amount</label><input type="number" placeholder="0.00"></div>
+      <div class="fg"><label>GL Account</label><select><option>Materials</option><option>Rent Expense</option><option>Utilities</option><option>Professional Services</option></select></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-bill')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-bill');showToast('Bill recorded')">Save Bill</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-budget">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Budget Line</div><button class="modal-close" onclick="closeModal('modal-budget')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Category</label><input type="text" placeholder="e.g. Marketing"></div>
+      <div class="fg"><label>Annual Budget</label><input type="number" placeholder="0.00"></div>
+      <div class="fg"><label>GL Account</label><select><option>Marketing Expense</option><option>Payroll</option><option>Materials</option><option>Rent</option></select></div>
+      <div class="fg"><label>Fiscal Year</label><select><option>2025</option><option>2026</option></select></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-budget')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-budget');showToast('Budget line added')">Add Line</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-pin">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Change PINs</div><button class="modal-close" onclick="closeModal('modal-pin')">&#x2715;</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="fg"><label>Owner PIN</label><input type="password" maxlength="4" placeholder="4 digits"></div>
+      <div class="fg"><label>Admin PIN</label><input type="password" maxlength="4" placeholder="4 digits"></div>
+      <div class="fg"><label>Manager PIN</label><input type="password" maxlength="4" placeholder="4 digits"></div>
+      <div class="fg"><label>Employee PIN</label><input type="password" maxlength="4" placeholder="4 digits"></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-pin')">Cancel</button><button class="btn btn-teal" onclick="closeModal('modal-pin');showToast('PINs updated')">Save PINs</button></div>
+  </div>
+</div>
+\`);
+
+// Wire modal backdrop close
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); }));
+</script>
+<script>
+// ===== PHASE 3 -- FULL JAVASCRIPT =====
+
+// Number to words for checks
+function numToWords(n){
+  if(!n||isNaN(n)) return '---';
+  const ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function tw(x){
+    if(x<20) return ones[x];
+    if(x<100) return tens[Math.floor(x/10)]+(x%10?' '+ones[x%10]:'');
+    if(x<1000) return ones[Math.floor(x/100)]+' Hundred'+(x%100?' '+tw(x%100):'');
+    if(x<1000000) return tw(Math.floor(x/1000))+' Thousand'+(x%1000?' '+tw(x%1000):'');
+    return tw(Math.floor(x/1000000))+' Million'+(x%1000000?' '+tw(x%1000000):'');
+  }
+  const p=parseFloat(n).toFixed(2).split('.');
+  const d=parseInt(p[0]), c=parseInt(p[1]);
+  return tw(d)+' Dollars and '+c+'/100';
+}
+
+// Check preview update
+function updateChkPreview(){
+  const amt=document.getElementById('chk-amt').value;
+  const words=numToWords(amt);
+  const el=document.getElementById('chk-words');
+  if(el) el.value=words;
+  const pv={num:'chk-num',date:'chk-date',payee:'chk-payee',memo:'chk-memo'};
+  const pn={num:'pv-num',date:'pv-date',payee:'pv-payee',memo:'pv-memo'};
+  Object.keys(pv).forEach(k=>{ const src=document.getElementById(pv[k]); const dst=document.getElementById(pn[k]); if(src&&dst) dst.textContent=src.value||'---'; });
+  const pvAmt=document.getElementById('pv-amt'); if(pvAmt) pvAmt.textContent=parseFloat(amt||0).toFixed(2);
+  const pvW=document.getElementById('pv-words'); if(pvW) pvW.textContent=words;
+}
+
+// Wire live check inputs
+['chk-num','chk-date','chk-payee','chk-memo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',updateChkPreview); });
+
+// Save check to register
+function saveCheck(){
+  const payee=document.getElementById('chk-payee').value;
+  const amt=parseFloat(document.getElementById('chk-amt').value||0).toFixed(2);
+  const memo=document.getElementById('chk-memo').value;
+  const num=document.getElementById('chk-num').value;
+  const date=document.getElementById('chk-date').value;
+  if(!payee||amt==='0.00'){ showToast('Enter payee and amount'); return; }
+  const tbody=document.getElementById('chk-reg-body');
+  const row=document.createElement('tr');
+  row.innerHTML='<td>'+num+'</td><td>'+date+'</td><td>'+payee+'</td><td>'+(memo||'---')+'</td><td>$'+amt+'</td><td>***4821</td><td><span class="badge bt">Outstanding</span></td>';
+  tbody.insertBefore(row,tbody.firstChild);
+  document.getElementById('chk-num').value=parseInt(num)+1;
+  document.getElementById('chk-payee').value='';
+  document.getElementById('chk-amt').value='';
+  document.getElementById('chk-words').value='';
+  document.getElementById('chk-memo').value='';
+  updateChkPreview();
+  showToast('Check #'+num+' saved to register');
+}
+
+// Print check
+function printCheck(){
+  const payee=document.getElementById('chk-payee').value||'---';
+  const amt=document.getElementById('chk-amt').value||'0.00';
+  const words=numToWords(amt);
+  const memo=document.getElementById('chk-memo').value||'---';
+  const num=document.getElementById('chk-num').value;
+  const date=document.getElementById('chk-date').value;
+  const win=window.open('','_blank');
+  win.document.write('<html><head><title>Check #'+num+'</title><style>body{font-family:monospace;padding:40px;}'+
+    '.chk{border:1px solid #ccc;padding:24px;margin-bottom:20px;max-width:700px;}'+
+    '</style></head><body>');
+  win.document.write('<div class="chk">');
+  win.document.write('<div style="display:flex;justify-content:space-between;margin-bottom:14px;"><strong>SAIRN Technologies<br><small>Westlake, Ohio</small></strong><span>Check #'+num+'</span></div>');
+  win.document.write('<div style="margin-bottom:8px;">Date: '+date+'</div>');
+  win.document.write('<div style="margin-bottom:8px;">Pay to the order of: <strong>'+payee+'</strong></div>');
+  win.document.write('<div style="display:flex;justify-content:space-between;border:1px solid #ccc;padding:6px;margin-bottom:14px;"><em>'+words+'</em><strong>$'+parseFloat(amt).toFixed(2)+'</strong></div>');
+  win.document.write('<div style="display:flex;justify-content:space-between;margin-top:24px;"><span>Memo: '+memo+'</span><span>_________________________<br><small>Authorized Signature</small></span></div>');
+  win.document.write('</div></body></html>');
+  win.document.close();
+  win.print();
+}
+
+// Bank reconcile
+function reconcileBank(val){
+  const gl=284120;
+  const bank=parseFloat(val);
+  const el=document.getElementById('rec-result');
+  if(!el) return;
+  if(isNaN(bank)){ el.textContent='Enter balance to reconcile'; return; }
+  const diff=bank-gl;
+  if(Math.abs(diff)<0.01){ el.innerHTML='<strong style="color:var(--green)">Balanced! GL matches bank.</strong>'; }
+  else { el.innerHTML='<strong style="color:var(--red)">Difference: $'+Math.abs(diff).toFixed(2)+' &mdash; '+(diff>0?'Bank higher than GL':'GL higher than bank')+'</strong>'; }
+}
+
+// Table filter
+function filterTable(input,tblId){
+  const q=input.value.toLowerCase();
+  const rows=document.getElementById(tblId).querySelectorAll('tbody tr');
+  rows.forEach(r=>{ r.style.display=r.textContent.toLowerCase().includes(q)?'':'none'; });
+}
+
+// CSV export
+function exportCSV(tblId,fname){
+  const tbl=document.getElementById(tblId);
+  if(!tbl){ showToast('No data to export'); return; }
+  const rows=tbl.querySelectorAll('tr');
+  const csv=Array.from(rows).map(r=>Array.from(r.querySelectorAll('td,th')).map(c=>'"'+c.textContent.trim().replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=fname+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  showToast('Exported: '+fname+'.csv');
+}
+
+// CSV import handler
+function handleCSV(input){
+  const f=input.files[0];
+  if(f){ showToast('Importing '+f.name+'...');
+    setTimeout(()=>{ askAI('I uploaded a CSV called "'+f.name+'". Validate the format and tell me if it can be imported.'); if(!document.getElementById('ai-panel').classList.contains('open')) toggleAI(); },400);
+  }
+}
+
+// Run payroll
+function runPayroll(){
+  showToast('Payroll initiated...');
+  setTimeout(()=>showToast('Payroll complete. $8,223.33 queued for direct deposit.'),2400);
+}
+
+// PTO approve
+function approvePTO(btn){
+  const row=btn.closest('tr');
+  const badge=row.querySelector('.badge');
+  badge.className='badge bg'; badge.textContent='Approved';
+  btn.remove();
+  showToast('PTO approved');
+}
+
+// Connectors
+function connectApp(name){
+  showToast('Connecting '+name+' to SAIRNbiz...');
+  setTimeout(()=>{
+    document.querySelectorAll('.conn-card').forEach(c=>{
+      if(c.querySelector('.conn-name')&&c.querySelector('.conn-name').textContent===name){
+        c.classList.add('connected');
+        const s=c.querySelector('.conn-status');
+        s.className='conn-status badge bg'; s.textContent='Connected';
+      }
+    });
+    showToast(name+' connected');
+  },1100);
+}
+
+function syncBridge(){
+  showToast('Syncing all apps via SAIRN Bridge...');
+  setTimeout(()=>showToast('Bridge sync complete'),2000);
+}
+
+// Employee quick view
+function viewEmp(name){
+  askAI('Show a complete profile for '+name+': role, pay, PTO balance, compliance status, and any flags.');
+  if(!document.getElementById('ai-panel').classList.contains('open')) toggleAI();
+}
+
+// ===== FULL AI =====
+let aiHistory=[];
+
+function askAI(prompt){
+  document.getElementById('ai-input').value=prompt;
+  sendAI();
+  if(!document.getElementById('ai-panel').classList.contains('open')) toggleAI();
+}
+
+function addMsg(text,cls){
+  const msgs=document.getElementById('ai-msgs');
+  const el=document.createElement('div');
+  el.className='ai-msg '+cls;
+  el.textContent=text;
+  msgs.appendChild(el);
+  msgs.scrollTop=msgs.scrollHeight;
+  return el;
+}
+
+async function sendAI(){
+  const input=document.getElementById('ai-input');
+  const msg=input.value.trim();
+  if(!msg) return;
+  input.value='';
+  addMsg(msg,'user');
+  const thinking=addMsg('Thinking...','thinking');
+
+  const sys='You are the SAIRNbiz AI, embedded in the SAIRNbiz HR + Accounting backbone for SAIRN Technologies, Westlake Ohio. Owner: Michael L. Dibert. Employees: 47. Monthly payroll: $142K. Monthly revenue: $187K. Cash: $284K. Active flags: 3 I-9s expiring, 2 pay equity gaps, 6 training overdue, 2 overdue invoices totaling $3.2K. You have full access to People + Money data across both wings. Be specific, data-driven, and actionable. Format responses clearly.';
+
+  aiHistory.push({role:'user',content:msg});
+  if(aiHistory.length>12) aiHistory=aiHistory.slice(-12);
+
+  try{
+    const res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnbiz',is_demo:true,system:sys,messages:aiHistory,max_tokens:700})
+    });
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||data.error||'No response.';
+    aiHistory.push({role:'assistant',content:reply});
+    thinking.className='ai-msg bot';
+    thinking.textContent=reply;
+  }catch(e){
+    thinking.className='ai-msg bot';
+    thinking.textContent='Connection error. Check your network.';
+  }
+}
+
+// AI quick buttons
+const quickPrompts=[
+  ['Workforce Health','Summarize workforce health and flag urgent issues.'],
+  ['Cash Forecast','Show 60-day cash flow forecast with recommendations.'],
+  ['Pay Equity','Run pay equity analysis across all employees.'],
+  ['Compliance Scan','What compliance issues do I have right now?'],
+  ['AR Collections','Which invoices are at risk? What should I do?'],
+  ['GL Balance Check','Are any GL accounts out of balance this month?']
+];
+const qw=document.getElementById('ai-quick-wrap');
+quickPrompts.forEach(([label,prompt])=>{
+  const btn=document.createElement('button');
+  btn.className='ai-q'; btn.textContent=label;
+  btn.onclick=()=>askAI(prompt);
+  qw.appendChild(btn);
+});
+
+// Escape closes modals + AI
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));
+    document.getElementById('ai-panel').classList.remove('open');
+  }
+});
+
+// AI send on Enter
+document.getElementById('ai-input').addEventListener('keydown',e=>{ if(e.key==='Enter') sendAI(); });
+
+console.log('SAIRNbiz v1.0 loaded. Guardian clean. Ready.');
+</script>
