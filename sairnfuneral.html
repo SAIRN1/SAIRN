@@ -900,5 +900,42 @@ function sairnCalc(vals,op){
   return vals[0];
 }
 </script>
+
+<!-- Pattern 10: Formula Editor (Admin) -->
+<div id="funeral-formula-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;width:540px;max-width:95vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.2);font-family:'Segoe UI',system-ui,sans-serif;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-size:16px;font-weight:700;color:#1E293B;">Formula Editor (Admin Only)</div>
+      <button onclick="document.getElementById('funeral-formula-panel').style.display='none'" style="background:transparent;border:none;font-size:18px;cursor:pointer;color:#64748B;">X</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Basic Service Fee</label><input type="number" value="1200" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
+      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Casket Markup %</label><input type="number" value="40" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
+      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Embalming Fee</label><input type="number" value="650" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
+      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Cremation Base Fee</label><input type="number" value="895" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
+      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Flowers Markup %</label><input type="number" value="25" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
+      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Overhead %</label><input type="number" value="18" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
+      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Death Certificate Fee</label><input type="number" value="25" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
+      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Veteran Discount %</label><input type="number" value="10" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
+    </div>
+    <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
+      <button onclick="document.getElementById('funeral-formula-panel').style.display='none'" style="background:#fff;border:1px solid #E2E8F0;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+      <button onclick="saveFuneralFormulas()" style="background:#6B7280;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">Save Formulas</button>
+    </div>
+  </div>
+</div>
+<script>
+function openFormulaEditor() {
+  document.getElementById('funeral-formula-panel').style.display = 'flex';
+}
+function saveFuneralFormulas() {
+  document.getElementById('funeral-formula-panel').style.display = 'none';
+  var t = document.createElement('div');
+  t.textContent = 'Formulas saved';
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#6B7280;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;';
+  document.body.appendChild(t);
+  setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 2500);
+}
+</script>
 </body>
 </html>
