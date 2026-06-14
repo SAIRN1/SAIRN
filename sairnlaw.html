@@ -8,7 +8,7 @@
 <title>SAIRNlaw ⚖️ — AI Legal Intelligence for Law Firms</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-/* ── SAIRN COLOR SYSTEM — FOREST GREEN (SAIRNlaw) ── */
+/* -- SAIRN COLOR SYSTEM — FOREST GREEN (SAIRNlaw) -- */
 :root {
   --a:      #15803D;
   --adark:  #14532D;
@@ -24,7 +24,7 @@
   --white:  #FFFFFF;
   --red:    #DC2626;
   --amber:  #D97706;
-  --blue:   #2563EB;
+  --blue:   #15803D;
   --sand:   #E5E7EB;
   --cream:  #F9FAFB;
   --text:   #111827;
@@ -34,7 +34,7 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white); color:var(--tx); }
 
-/* ── LOGIN ── */
+/* -- LOGIN -- */
 #login-screen {
   position:fixed; inset:0; background:var(--adark);
   display:flex; align-items:center; justify-content:center; z-index:1000;
@@ -67,11 +67,11 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 .pin-key:hover { background:var(--atint); border-color:var(--a); }
 .login-err { color:var(--red); font-size:12px; min-height:18px; margin-bottom:4px; }
 
-/* ── APP SHELL ── */
+/* -- APP SHELL -- */
 #app { display:none; height:100vh; flex-direction:column; }
 #app.visible { display:flex; }
 
-/* ── TOP BAR ── */
+/* -- TOP BAR -- */
 .topbar {
   height:52px; background:var(--adark); display:flex;
   align-items:center; padding:0 20px; gap:14px; flex-shrink:0;
@@ -91,10 +91,10 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 }
 .topbar-btn:hover { background:rgba(255,255,255,.12); }
 
-/* ── LAYOUT ── */
+/* -- LAYOUT -- */
 .sl-layout { display:flex; flex:1; overflow:hidden; }
 
-/* ── SIDEBAR NAV ── */
+/* -- SIDEBAR NAV -- */
 .sl-nav {
   width:210px; background:var(--white); border-right:1px solid var(--bd);
   overflow-y:auto; flex-shrink:0; padding:8px 0;
@@ -116,17 +116,17 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 .sl-nav-btn.active { background:var(--atint); color:var(--a); font-weight:700; border-right:3px solid var(--a); }
 .sl-nav-btn .ni { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
 
-/* ── CONTENT ── */
+/* -- CONTENT -- */
 .sl-content { flex:1; overflow-y:auto; background:var(--sf); }
 .sl-panel { display:none; padding:24px; }
 .sl-panel.active { display:block; }
 
-/* ── TYPOGRAPHY ── */
+/* -- TYPOGRAPHY -- */
 .sl-title { font-size:22px; font-weight:800; color:var(--tx); margin-bottom:4px; letter-spacing:-.3px; }
 .sl-sub { font-size:13px; color:var(--mu); margin-bottom:20px; }
 .sl-section { font-size:11px; font-weight:800; color:var(--mu); text-transform:uppercase; letter-spacing:1.2px; margin-bottom:10px; margin-top:20px; }
 
-/* ── CARDS & GRIDS ── */
+/* -- CARDS & GRIDS -- */
 .sl-kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-bottom:20px; }
 .sl-kpi { background:#fff; border:1px solid var(--bd); border-radius:12px; padding:16px; }
 .sl-kpi-val { font-size:26px; font-weight:900; color:var(--a); margin-bottom:2px; }
@@ -135,7 +135,7 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 .sl-card-title { font-size:13px; font-weight:700; color:var(--tx); margin-bottom:4px; }
 .sl-card-sub { font-size:11px; color:var(--mu); }
 
-/* ── BUTTONS ── */
+/* -- BUTTONS -- */
 .sl-btn-primary {
   padding:9px 18px; background:var(--a); color:#fff; border:none;
   border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;
@@ -150,7 +150,7 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 .sl-btn-secondary:hover { border-color:var(--a); color:var(--a); }
 .sl-btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
 
-/* ── FORM ELEMENTS ── */
+/* -- FORM ELEMENTS -- */
 .sl-fg { display:flex; flex-direction:column; gap:4px; }
 .sl-fg label { font-size:11px; font-weight:700; color:var(--mu); text-transform:uppercase; letter-spacing:.5px; }
 .sl-fg input, .sl-fg select, .sl-fg textarea {
@@ -162,14 +162,14 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 .sl-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
 .sl-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px; }
 
-/* ── TABLE ── */
+/* -- TABLE -- */
 .sl-table { width:100%; border-collapse:collapse; font-size:12px; }
 .sl-table thead tr { background:var(--sf2); }
 .sl-table th { padding:8px 10px; text-align:left; font-size:10px; font-weight:800; color:var(--mu); text-transform:uppercase; letter-spacing:.5px; }
 .sl-table td { padding:10px; border-bottom:1px solid var(--bd); color:var(--tx); }
 .sl-table tr:hover td { background:var(--atint); }
 
-/* ── STATUS BADGES ── */
+/* -- STATUS BADGES -- */
 .sl-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; }
 .sl-badge.open { background:#FEF3C7; color:#92400E; }
 .sl-badge.active { background:#DCFCE7; color:#14532D; }
@@ -177,7 +177,7 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 .sl-badge.urgent { background:#FEE2E2; color:#991B1B; }
 .sl-badge.draft { background:#EDE9FE; color:#5B21B6; }
 
-/* ── AI OUTPUT ── */
+/* -- AI OUTPUT -- */
 .sl-ai-box {
   background:var(--atint); border:1px solid #BBF7D0;
   border-radius:10px; padding:14px; font-size:13px;
@@ -195,7 +195,7 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 .sl-ai-dot:nth-child(3) { animation-delay:.4s; }
 @keyframes pulse { 0%,80%,100% { transform:scale(0); opacity:.3; } 40% { transform:scale(1); opacity:1; } }
 
-/* ── AI CHIPS ── */
+/* -- AI CHIPS -- */
 .sl-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
 .sl-chip {
   padding:5px 12px; background:#fff; border:1px solid var(--bd);
@@ -204,9 +204,9 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 }
 .sl-chip:hover { background:var(--atint); border-color:var(--a); }
 
-/* ── MATTER COLORS ── */
+/* -- MATTER COLORS -- */
 .matter-litigation { border-left:3px solid #DC2626; }
-.matter-transactional { border-left:3px solid #2563EB; }
+.matter-transactional { border-left:3px solid #15803D; }
 .matter-corporate { border-left:3px solid #7C3AED; }
 .matter-employment { border-left:3px solid #D97706; }
 .matter-realestate { border-left:3px solid #0D9488; }
@@ -215,7 +215,7 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 .matter-estate { border-left:3px solid #92400E; }
 .matter-ip { border-left:3px solid #0EA5E9; }
 
-/* ── NOTIFICATION ── */
+/* -- NOTIFICATION -- */
 .sl-toast {
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
   background:var(--adark); color:#fff; padding:10px 24px;
@@ -224,14 +224,14 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 }
 .sl-toast.show { opacity:1; }
 
-/* ── PRINT ── */
+/* -- PRINT -- */
 @media print {
   .sl-nav, .topbar, .sl-btn-row { display:none !important; }
   .sl-content { overflow:visible; }
   .sl-panel { padding:0; }
 }
 
-/* ── RESPONSIVE ── */
+/* -- RESPONSIVE -- */
 @media (max-width:768px) {
   .sl-nav { width:56px; }
   .sl-nav-btn span:not(.ni) { display:none; }
@@ -244,17 +244,17 @@ html,body { height:100%; font-family:'Inter',sans-serif; background:var(--white)
 <body>
 <script>
 
-// ╔══════════════════════════════════════════════════════════╗
-// ║   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  ║
-// ║   30-Layer Protection Framework                          ║
-// ║   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance ║
-// ║   Built by SAIRN Technologies - Michael L. Dibert       ║
-// ╚══════════════════════════════════════════════════════════╝
+// +==========================================================+
+// |   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  |
+// |   30-Layer Protection Framework                          |
+// |   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance |
+// |   Built by SAIRN Technologies - Michael L. Dibert       |
+// +==========================================================+
 
 (function() {
 'use strict';
 
-// ── CONFIGURATION ──────────────────────────────────────────
+// -- CONFIGURATION ------------------------------------------
 var SAIRN_SEC = {
   version: '3.0',
   appName: document.title || 'SAIRN App',
@@ -279,9 +279,9 @@ var SAIRN_SEC = {
   loginAttempts: parseInt(sessionStorage.getItem('s_attempts') || '0')
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 1 — BROWSER LAYER (Layers 1-18)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 1 — Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
@@ -652,9 +652,9 @@ window.saSanitizeResponse = function(text) {
   } catch(e) {}
 })();
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 2 — API PROXY LAYER (Layers 19-23)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 19 — Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
@@ -723,9 +723,9 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 3 — DATA LAYER (Layers 24-27)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 24 — Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
@@ -771,9 +771,9 @@ window.saWipeAllData = function() {
   location.reload();
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 4 — COMPLIANCE LAYER (Layers 28-30)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 28 — CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
@@ -784,7 +784,7 @@ window.saWipeAllData = function() {
   notice.innerHTML = '<div style="flex:1;min-width:280px">&#127468;&#127463; <b>Privacy Notice:</b> SAIRN uses localStorage to save your project data locally on this device only. We do not sell or share your data. Covered under CCPA and GDPR. <a href="#" onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'block\';return false;" style="color:#A5B4FC">Learn more</a></div>' +
     '<div style="display:flex;gap:8px;flex-shrink:0">' +
     '<button onclick="saAcceptPrivacy()" style="padding:7px 18px;background:#6366F1;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Accept</button>' +
-    '<button onclick="saDeclinePrivacy()" style="padding:7px 14px;background:transparent;color:#A5B4FC;border:1px solid #4F46E5;border-radius:7px;font-size:12px;cursor:pointer">Decline</button>' +
+    '<button onclick="saDeclinePrivacy()" style="padding:7px 14px;background:transparent;color:#A5B4FC;border:1px solid #15803D;border-radius:7px;font-size:12px;cursor:pointer">Decline</button>' +
     '<button onclick="document.getElementById(\'sairn-privacy-notice\').remove()" style="background:none;border:none;color:#6B7280;font-size:18px;cursor:pointer;padding:0 4px">&#215;</button></div>';
   document.body.appendChild(notice);
   // Detail panel
@@ -849,18 +849,53 @@ window.saShowSecurityStatus = function() {
   alert(report);
 };
 
-// ── INITIALIZATION MESSAGE ─────────────────────────────────
+// -- INITIALIZATION MESSAGE ---------------------------------
 saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
 console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
 
 })(); // End SAIRN Security IIFE
 
+
+function slReadFromBridge(){
+  // SAIRNlaw reads: staff list + billing rates for matter assignment
+  // READ ONLY -- never writes back to HR or ACC
+  try {
+    var employees = [];
+    var raw = localStorage.getItem('sh_employees');
+    if(raw) employees = JSON.parse(raw);
+    if(!employees.length) {
+      var bd = localStorage.getItem('sairn_bridge_hr_payload');
+      if(bd) { var bdp = JSON.parse(bd); employees = bdp.data&&bdp.data.employees||[]; }
+    }
+    
+    // Get ACC invoices for matter billing cross-reference
+    var accInvoices = [];
+    try {
+      var accRaw = localStorage.getItem('sairn_bridge_acc_payload');
+      if(accRaw) { var acp = JSON.parse(accRaw); accInvoices = acp.data&&acp.data.invoices||[]; }
+    } catch(e){}
+    
+    // Map staff for matter assignment
+    var staff = employees.map(function(e){
+      var name = ((e.firstName||'')+' '+(e.lastName||'')).trim();
+      var payVal = parseFloat((e.pay||'0').replace(/[^0-9.]/g,''))||0;
+      return { name:name, title:e.title||'', dept:e.department||'', billingRate: payVal>5000?(payVal/2080*3).toFixed(0):payVal };
+    });
+    
+    localStorage.setItem('sl_hr_staff', JSON.stringify(staff));
+    localStorage.setItem('sl_acc_invoices', JSON.stringify(accInvoices.slice(0,20)));
+    
+    var msg = staff.length+' staff members loaded for matter assignment';
+    if(typeof slNotify==='function') slNotify(msg,'green');
+    return staff;
+  } catch(e) { return []; }
+}
 </script>
 
 
-<!-- ═══════════════════════════════════════════════════ -->
+<!-- =================================================== -->
 <!-- LOGIN SCREEN -->
-<!-- ═══════════════════════════════════════════════════ -->
+<!-- =================================================== -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">⚖️ SAIRNlaw</div>
@@ -901,9 +936,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════ -->
+<!-- =================================================== -->
 <!-- APP SHELL -->
-<!-- ═══════════════════════════════════════════════════ -->
+<!-- =================================================== -->
 <div id="app">
 
   <!-- TOP BAR -->
@@ -978,9 +1013,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     <!-- CONTENT AREA -->
     <div class="sl-content">
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: DASHBOARD -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-dashboard" class="sl-panel active">
   <div class="sl-title">📊 Firm Command Center</div>
   <div class="sl-sub">Your practice at a glance. Every matter, every deadline, every dollar.</div>
@@ -1013,9 +1048,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="dash-briefing" class="sl-ai-box" style="display:none;min-height:80px"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: MATTERS -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-matters" class="sl-panel">
   <div class="sl-title">📁 Matter Management</div>
   <div class="sl-sub">Open, track, and close every client matter. Full lifecycle from intake to close.</div>
@@ -1060,9 +1095,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="matter-list"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: COURT CALENDAR -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-calendar" class="sl-panel">
   <div class="sl-title">📅 Court Calendar & Deadlines</div>
   <div class="sl-sub">Every hearing, filing deadline, and statute of limitations in one view. Never miss a court date.</div>
@@ -1103,9 +1138,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="cal-ai" style="display:none;margin-top:16px" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CONFLICT CHECK -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-conflicts" class="sl-panel">
   <div class="sl-title">🔍 Conflict of Interest Checker</div>
   <div class="sl-sub">Check every new matter for conflicts before opening. Protects the firm from disqualification and malpractice claims.</div>
@@ -1135,9 +1170,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CLIENTS -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-clients" class="sl-panel">
   <div class="sl-title">👥 Client Management</div>
   <div class="sl-sub">Every client, every matter history, every communication. The foundation of your practice.</div>
@@ -1167,9 +1202,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="client-list"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: AI RESEARCH -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-research" class="sl-panel">
   <div class="sl-title">🧠 AI Legal Research</div>
   <div class="sl-sub">Jurisdiction-specific legal research powered by the Master Attorney skill. Black letter law, landmark cases, strategy — in seconds.</div>
@@ -1224,9 +1259,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: BLACK'S LAW DICTIONARY -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-blackslaw" class="sl-panel">
   <div class="sl-title">📚 Black's Law Dictionary</div>
   <div class="sl-sub">70,000+ legal terms. The most cited legal reference in the world, 12th Edition (2024). Cited 250+ times by the U.S. Supreme Court since 2000.</div>
@@ -1252,9 +1287,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="bl-result" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: LANDMARK CASES -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-precedents" class="sl-panel">
   <div class="sl-title">⚖️ Landmark Cases & Precedents</div>
   <div class="sl-sub">Every precedent-setting case that built American law. Full holdings, why each matters, and how to cite them.</div>
@@ -1278,9 +1313,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="prec-result" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: SOL CALCULATOR -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-statutes" class="sl-panel">
   <div class="sl-title">⏱️ Statute of Limitations Calculator</div>
   <div class="sl-sub">Every SOL by state and cause of action. The clock that cannot be ignored. Missing a SOL is malpractice.</div>
@@ -1338,9 +1373,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div style="margin-top:20px"><div class="sl-section">Active SOL Calendars</div><div id="sol-tracked-list"></div></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: 50-STATE LOOKUP -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-jurisdiction" class="sl-panel">
   <div class="sl-title">🗺️ 50-State Legal Lookup</div>
   <div class="sl-sub">Any legal question answered for every state simultaneously. Compare laws, identify favorable jurisdictions, know the landscape before you file.</div>
@@ -1366,9 +1401,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 </div>
 
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: AI DRAFTING -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-drafting" class="sl-panel">
   <div class="sl-title">✍️ AI Document Drafting</div>
   <div class="sl-sub">Describe any legal document. AI produces a partner-quality draft — not a template, a real document built for your specific situation.</div>
@@ -1427,9 +1462,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CONTRACT BUILDER -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-contracts" class="sl-panel">
   <div class="sl-title">📄 Contract Builder</div>
   <div class="sl-sub">Build any contract clause by clause. Every provision annotated. Partner-quality output with [NOTE:] explanations for client review.</div>
@@ -1463,9 +1498,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: MOTION BUILDER -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-motions" class="sl-panel">
   <div class="sl-title">⚡ Motion Builder</div>
   <div class="sl-sub">AI drafts any motion — MTD, MSJ, Preliminary Injunction, Discovery motions — with proper standard of review, case citations, and argument structure.</div>
@@ -1516,9 +1551,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: LETTER GENERATOR -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-letters" class="sl-panel">
   <div class="sl-title">✉️ Legal Letter Generator</div>
   <div class="sl-sub">Demand letters, cease and desist, client communications, opposing counsel — every letter firm, professional, and legally sound.</div>
@@ -1564,9 +1599,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CLAUSE LIBRARY -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-templates" class="sl-panel">
   <div class="sl-title">🗂️ Clause Library</div>
   <div class="sl-sub">200+ standard legal clauses — ready to copy, customized for your deal by AI. Every provision explained.</div>
@@ -1632,9 +1667,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="clause-output" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CASE STRENGTH -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-casestrength" class="sl-panel">
   <div class="sl-title">📈 Case Strength Analyzer</div>
   <div class="sl-sub">Elements analysis, probability assessment, damages calculation, and opposing counsel strategy. Know your position before you commit.</div>
@@ -1672,9 +1707,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="cs-output" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: DISCOVERY -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-discovery" class="sl-panel">
   <div class="sl-title">🔎 Discovery Planner</div>
   <div class="sl-sub">Build a complete discovery strategy — interrogatories, document requests, depositions, ESI protocols, and 30(b)(6) topics.</div>
@@ -1715,9 +1750,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="disc-output" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: DEPOSITION PREP -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-deposition" class="sl-panel">
   <div class="sl-title">🎙️ Deposition Preparation</div>
   <div class="sl-sub">Witness outlines, question sequences, impeachment strategy, expert cross-examination — walk in prepared for every witness.</div>
@@ -1756,9 +1791,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="dep-output" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: SETTLEMENT -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-settlement" class="sl-panel">
   <div class="sl-title">🤝 Settlement Strategy</div>
   <div class="sl-sub">BATNA analysis, settlement range, negotiation strategy, demand package structure. Know your number and your walk-away.</div>
@@ -1786,9 +1821,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="set-output" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: TRIAL NOTEBOOK -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-trial" class="sl-panel">
   <div class="sl-title">🏛️ Trial Notebook</div>
   <div class="sl-sub">Theory of the case, opening statement, closing argument, witness order, exhibit list, and jury instructions — built for your specific trial.</div>
@@ -1815,9 +1850,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 </div>
 
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: TIME TRACKING -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-timekeeping" class="sl-panel">
   <div class="sl-title">⏰ Time Tracking</div>
   <div class="sl-sub">Log billable hours by matter. Track rates per attorney. See unbilled time at a glance. The foundation of firm revenue.</div>
@@ -1862,9 +1897,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="time-list"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: BILLING -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-billing" class="sl-panel">
   <div class="sl-title">💰 Billing &amp; Invoices</div>
   <div class="sl-sub">Generate invoices from logged time. Track payment. Manage AR. IOLTA trust account awareness built in.</div>
@@ -1901,9 +1936,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="billing-list"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: COMPENSATION -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-compensation" class="sl-panel">
   <div class="sl-title">💵 Attorney Compensation</div>
   <div class="sl-sub">Salary, origination credit, billable hour bonuses — transparent and auditable. Every attorney sees their own; managing partner sees all.</div>
@@ -1934,9 +1969,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="payroll-output" style="display:none;margin-top:16px;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:18px"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CHECK REGISTER -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-checks" class="sl-panel">
   <div class="sl-title">🏦 Check Register</div>
   <div class="sl-sub">Write and print checks on blank check stock. General account and IOLTA trust account. Full register history with CSV export.</div>
@@ -1994,9 +2029,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: ANALYTICS -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-reports" class="sl-panel">
   <div class="sl-title">📉 Practice Analytics</div>
   <div class="sl-sub">Revenue by matter, utilization rate, realization rate, attorney profitability, and business development pipeline.</div>
@@ -2018,9 +2053,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="analytics-detail"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: TEAM -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-team" class="sl-panel">
   <div class="sl-title">👔 Team Management</div>
   <div class="sl-sub">Attorneys, paralegals, and staff. Roles, billing rates, assignments, and performance.</div>
@@ -2047,9 +2082,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="team-list"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CLIENT INTAKE -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-intake" class="sl-panel">
   <div class="sl-title">📥 Client Intake</div>
   <div class="sl-sub">New matter intake, engagement letter generator, fee agreement — everything needed to properly open a new representation.</div>
@@ -2098,9 +2133,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="intake-output" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CLIENT PORTAL -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-portal" class="sl-panel">
   <div class="sl-title">🔗 Client Portal</div>
   <div class="sl-sub">Clients see their matter status, documents, and next steps — without calling your office. Read-only access with a secure portal PIN.</div>
@@ -2123,9 +2158,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: SAIRN SUITE -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-suite" class="sl-panel">
   <div class="sl-title">🔁 SAIRN Suite</div>
   <div class="sl-sub">SAIRNlaw connects to SAIRNhr for employee management and SAIRNacc for financial integration. One firm, one ecosystem.</div>
@@ -2143,7 +2178,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div style="font-size:11px;opacity:.8">General ledger, invoicing, check printing, financial reports</div>
       <div style="margin-top:12px;font-size:11px;font-weight:700;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px;display:inline-block">Open SAIRNacc ↗</div>
     </a>
-    <a href="https://sairn.vercel.app" target="_blank" style="text-decoration:none;background:linear-gradient(135deg,#1E40AF,#1D4ED8);border-radius:14px;padding:20px;color:#fff;display:block">
+    <a href="https://sairn.vercel.app" target="_blank" style="text-decoration:none;background:linear-gradient(135deg,#1E40AF,#15803D);border-radius:14px;padding:20px;color:#fff;display:block">
       <div style="font-size:20px;margin-bottom:8px">🏠</div>
       <div style="font-size:15px;font-weight:800;margin-bottom:4px">SAIRN Hub</div>
       <div style="font-size:11px;opacity:.8">All SAIRN apps — your complete business ecosystem</div>
@@ -2170,9 +2205,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: SETTINGS -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-settings" class="sl-panel">
   <div class="sl-title">⚙️ Settings</div>
   <div class="sl-sub">Firm information, billing rates, PIN management, subscription, and security.</div>
@@ -2228,9 +2263,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 </div>
 
     
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: DOCUMENT UPLOAD & AI ANALYSIS -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-docupload" class="sl-panel">
   <div class="sl-title">📎 Document Upload &amp; AI Analysis</div>
   <div class="sl-sub">Upload any legal document — court filing, contract, order, pleading. AI analyzes in matter context, extracts deadlines, identifies obligations, and flags risks. The feature Clio charges $199/month for.</div>
@@ -2285,9 +2320,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div style="margin-top:20px"><div class="sl-section">Recently Analyzed Documents</div><div id="du-history"></div></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CONTRACT REDLINING -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-redline" class="sl-panel">
   <div class="sl-title">✏️ Contract Redlining</div>
   <div class="sl-sub">Upload any contract. AI identifies risky clauses, suggests specific changes, and explains the reasoning behind every redline. The feature Spellbook charges $99/month for — built into SAIRNlaw.</div>
@@ -2345,9 +2380,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: DEEP RESEARCH MODE -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-deepresearch" class="sl-panel">
   <div class="sl-title">🔬 Deep Research Mode</div>
   <div class="sl-sub">Multi-step autonomous legal research. Describe a complex question — AI chains multiple research steps and produces a structured legal memo with citations, strategy, and practical guidance. Harvey charges $1,200/month for this. It is included here.</div>
@@ -2396,9 +2431,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: PRACTICE-AREA AI AGENTS -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-agents" class="sl-panel">
   <div class="sl-title">🤖 Practice-Area AI Agents</div>
   <div class="sl-sub">Domain-specialized AI agents that go far deeper than general research. Each agent knows the specific statutes, calculations, forms, and strategies for its practice area. EvenUp charges $300+/month for the PI agent alone.</div>
@@ -2409,7 +2444,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div class="sl-card-title">Personal Injury Agent</div>
       <div class="sl-card-sub">Medical records, demand calc, settlement value, insurance strategy</div>
     </div>
-    <div class="sl-card" style="cursor:pointer;border-left:3px solid #2563EB" onclick="activateAgent('employment')">
+    <div class="sl-card" style="cursor:pointer;border-left:3px solid #15803D" onclick="activateAgent('employment')">
       <div style="font-size:24px;margin-bottom:6px">👔</div>
       <div class="sl-card-title">Employment Agent</div>
       <div class="sl-card-sub">Discrimination, wage theft, FMLA, EEOC, wrongful termination</div>
@@ -2459,9 +2494,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="agent-output" style="display:none;margin-top:16px" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: SMART INTAKE AI -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-intakeai" class="sl-panel">
   <div class="sl-title">🎯 Smart Intake Qualification</div>
   <div class="sl-sub">AI scores incoming clients before the first meeting. Predicts case strength, recommends fee structure, identifies red flags, and generates the intake packet — so you walk in knowing what you have.</div>
@@ -2507,9 +2542,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: ABA ETHICS COMPLIANCE -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-ethics" class="sl-panel">
   <div class="sl-title">⚖️ ABA Ethics Compliance Layer</div>
   <div class="sl-sub">The only legal AI platform with ABA Formal Opinion 512 compliance built into the interface. No other tool at any price does this. Protect yourself, your license, and your clients — every time you use AI.</div>
@@ -2575,9 +2610,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: JUDGE INTELLIGENCE -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-judgeintel" class="sl-panel">
   <div class="sl-title">🏛️ Judge &amp; Jurisdiction Intelligence</div>
   <div class="sl-sub">Local court rules, filing requirements, judge tendencies, and jurisdiction-specific practices. The intelligence your opponent gets from expensive services — included in SAIRNlaw.</div>
@@ -2624,9 +2659,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div id="ji-output" style="display:none" class="sl-ai-box"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: BILLING RATE BENCHMARKER -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-ratebench" class="sl-panel">
   <div class="sl-title">💹 Billing Rate Benchmarker</div>
   <div class="sl-sub">What attorneys in your market charge by practice area, experience level, and firm size. Compare your rates, identify opportunities, and structure fee arrangements that win clients and protect revenue.</div>
@@ -2689,9 +2724,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <!-- PANEL: CITATION VERIFICATION -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- =========================================== -->
 <div id="panel-citations" class="sl-panel">
   <div class="sl-title">🔎 Citation Verification System</div>
   <div class="sl-sub">Every AI-generated citation flagged, rated, and verified before it goes in a brief. The feature that protects your license. CoCounsel and Lexis+ charge $225+/month for cite verification — it is built into SAIRNlaw.</div>
@@ -2731,17 +2766,17 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 <div class="sl-toast" id="sl-toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 //  SAIRNlaw v1.0 — Complete JavaScript Engine
 //  Forest Green #15803D | Law Firm AI Intelligence Platform
 //  SAIRN Technologies | Michael L. Dibert
 //  Proxy: sairn.vercel.app/api/claude | Model: claude-sonnet-4-20250514
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 var CLAUDE_URL = 'https://sairn.vercel.app/api/claude';
 var APP_ID = 'sairnlaw';
 
-// ── PINS & AUTH ─────────────────────────────────────────────
+// -- PINS & AUTH ---------------------------------------------
 var DEFAULT_PINS = {managing_partner:'1234',associate:'2345',paralegal:'3456',secretary:'4567'};
 var ROLE_LABELS = {managing_partner:'Managing Partner',associate:'Associate Attorney',paralegal:'Paralegal',secretary:'Legal Secretary'};
 var currentRole = 'managing_partner';
@@ -2798,7 +2833,7 @@ function signOut() {
   currentPin = ''; updatePinDots();
 }
 
-// ── NAVIGATION ──────────────────────────────────────────────
+// -- NAVIGATION ----------------------------------------------
 function slPanel(id, btn) {
   document.querySelectorAll('.sl-panel').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.sl-nav-btn').forEach(function(b){ b.classList.remove('active'); });
@@ -2811,7 +2846,7 @@ function slPanel(id, btn) {
   if (id === 'reports') updateAnalytics();
 }
 
-// ── TOAST ────────────────────────────────────────────────────
+// -- TOAST ----------------------------------------------------
 function slToast(msg, type) {
   var t = document.getElementById('sl-toast');
   t.textContent = msg;
@@ -2820,7 +2855,7 @@ function slToast(msg, type) {
   setTimeout(function(){ t.classList.remove('show'); }, 3000);
 }
 
-// ── CLAUDE ENGINE ────────────────────────────────────────────
+// -- CLAUDE ENGINE --------------------------------------------
 async function callClaude(system, userMsg, maxTokens) {
   if (!saCheckRateLimit(APP_ID)) { return 'Rate limit reached. Please wait one minute.'; }
   var cleanMsg = saCleanPrompt(saScrubPII(userMsg));
@@ -2851,7 +2886,7 @@ function loadingHTML(msg) {
   return '<div class="sl-ai-loading"><div class="sl-ai-dot"></div><div class="sl-ai-dot"></div><div class="sl-ai-dot"></div><span>' + (msg || 'AI working...') + '</span></div>';
 }
 
-// ── DATA STORES ──────────────────────────────────────────────
+// -- DATA STORES ----------------------------------------------
 var matters = [];
 var deadlines_sl = [];
 var timeEntries = [];
@@ -2896,7 +2931,7 @@ function initApp() {
   refreshMultiDashSL();
 }
 
-// ── DASHBOARD ────────────────────────────────────────────────
+// -- DASHBOARD ------------------------------------------------
 function renderDashboard() {
   var today = new Date().toISOString().split('T')[0];
   var nextWeek = new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0];
@@ -2951,7 +2986,7 @@ async function aiMorningBriefing() {
   el.textContent = res;
 }
 
-// ── MATTERS ──────────────────────────────────────────────────
+// -- MATTERS --------------------------------------------------
 function showMatterForm() {
   document.getElementById('matter-form').style.display = 'block';
   document.getElementById('m-sol').value = '';
@@ -3006,7 +3041,7 @@ function exportMattersCSV() {
   dlCSV(rows,'SAIRNlaw-Matters.csv');
 }
 
-// ── CALENDAR ──────────────────────────────────────────────────
+// -- CALENDAR --------------------------------------------------
 function showDeadlineForm() {
   document.getElementById('deadline-form').style.display = 'block';
   document.getElementById('dl-date').value = '';
@@ -3065,7 +3100,7 @@ function exportCalendar() {
   dlCSV(rows,'SAIRNlaw-Calendar.csv');
 }
 
-// ── CONFLICT CHECK ────────────────────────────────────────────
+// -- CONFLICT CHECK --------------------------------------------
 async function runConflictCheckFull() {
   var client = document.getElementById('cc-client').value.trim();
   if (!client) { slToast('Enter prospective client name','warn'); return; }
@@ -3102,7 +3137,7 @@ function renderConflictHistory() {
   }).join('');
 }
 
-// ── CLIENTS ───────────────────────────────────────────────────
+// -- CLIENTS ---------------------------------------------------
 function showClientForm() { document.getElementById('client-form').style.display='block'; document.getElementById('cl-date').value=new Date().toISOString().split('T')[0]; }
 function saveClient() {
   var c = {id:Date.now(),name:document.getElementById('cl-name').value.trim(),type:document.getElementById('cl-type').value,email:document.getElementById('cl-email').value.trim(),phone:document.getElementById('cl-phone').value.trim(),addr:document.getElementById('cl-addr').value.trim(),city:document.getElementById('cl-city').value.trim(),ref:document.getElementById('cl-ref').value.trim(),date:document.getElementById('cl-date').value,notes:document.getElementById('cl-notes').value.trim()};
@@ -3119,7 +3154,7 @@ function renderClientList() {
 }
 function exportClientsCSV() { var rows=[['Name','Type','Email','Phone','City','Retained']]; clients_sl.forEach(function(c){rows.push([c.name,c.type,c.email||'',c.phone||'',c.city||'',c.date||'']);}); dlCSV(rows,'SAIRNlaw-Clients.csv'); }
 
-// ── AI RESEARCH ───────────────────────────────────────────────
+// -- AI RESEARCH -----------------------------------------------
 async function runResearch() {
   var q = document.getElementById('res-q').value.trim();
   if (!q) { slToast('Enter a research question','warn'); return; }
@@ -3134,7 +3169,7 @@ function resChip(q){ document.getElementById('res-q').value=q; runResearch(); }
 function copyResearch(){ navigator.clipboard.writeText(document.getElementById('res-result').textContent).then(function(){slToast('Copied','ok');}); }
 function saveResearchToMatter(){ slToast('Research saved to matter file','ok'); }
 
-// ── BLACKS LAW ────────────────────────────────────────────────
+// -- BLACKS LAW ------------------------------------------------
 async function lookupBlacks() {
   var term = document.getElementById('bl-term').value.trim();
   if (!term) { slToast('Enter a legal term','warn'); return; }
@@ -3145,7 +3180,7 @@ async function lookupBlacks() {
 }
 function blChip(t){ document.getElementById('bl-term').value=t; lookupBlacks(); }
 
-// ── LANDMARK CASES ────────────────────────────────────────────
+// -- LANDMARK CASES --------------------------------------------
 async function lookupCase() {
   var q = document.getElementById('prec-q').value.trim();
   if (!q) { slToast('Enter a case name or legal principle','warn'); return; }
@@ -3156,7 +3191,7 @@ async function lookupCase() {
 }
 function precChip(q){ document.getElementById('prec-q').value=q; lookupCase(); }
 
-// ── SOL CALCULATOR ────────────────────────────────────────────
+// -- SOL CALCULATOR --------------------------------------------
 async function calculateSOL() {
   var type = document.getElementById('sol-type').value;
   var state = document.getElementById('sol-state').value;
@@ -3181,7 +3216,7 @@ function renderSOLTracked() {
   el.innerHTML = solTracked.slice(0,8).map(function(s){ return '<div class="sl-card" style="margin-bottom:8px"><div class="sl-card-title">'+safeHTML(s.type)+' — '+safeHTML(s.state)+'</div><div class="sl-card-sub">Incident: '+s.incident+' | Calculated: '+s.calc+'</div></div>'; }).join('');
 }
 
-// ── 50-STATE ──────────────────────────────────────────────────
+// -- 50-STATE --------------------------------------------------
 async function run50State() {
   var q = document.getElementById('jur-q').value.trim();
   if (!q) { slToast('Enter a legal question','warn'); return; }
@@ -3192,7 +3227,7 @@ async function run50State() {
 }
 function jurChip(q){ document.getElementById('jur-q').value=q; run50State(); }
 
-// ── DOCUMENT DRAFTING ─────────────────────────────────────────
+// -- DOCUMENT DRAFTING -----------------------------------------
 async function draftDocument() {
   var type = document.getElementById('dr-type').value;
   var state = document.getElementById('dr-state').value;
@@ -3214,7 +3249,7 @@ async function reviseDraft() {
   res_el.textContent = res;
 }
 
-// ── CONTRACT BUILDER ──────────────────────────────────────────
+// -- CONTRACT BUILDER ------------------------------------------
 async function buildContract(type) {
   var p1 = document.getElementById('cb-party1').value || '[PARTY A]';
   var p2 = document.getElementById('cb-party2').value || '[PARTY B]';
@@ -3231,7 +3266,7 @@ async function buildContract(type) {
 async function buildContractCustom() { var sp=document.getElementById('cb-special').value; if(!sp){slToast('Describe the contract','warn');return;} buildContract('custom'); }
 function copyContract(){ navigator.clipboard.writeText(document.getElementById('cb-result').textContent).then(function(){slToast('Copied','ok');}); }
 
-// ── MOTION BUILDER ────────────────────────────────────────────
+// -- MOTION BUILDER --------------------------------------------
 async function buildMotion() {
   var type = document.getElementById('mo-type').value;
   var court = document.getElementById('mo-court').value;
@@ -3245,7 +3280,7 @@ async function buildMotion() {
 }
 function copyMotion(){ navigator.clipboard.writeText(document.getElementById('mo-result').textContent).then(function(){slToast('Copied','ok');}); }
 
-// ── LETTER GENERATOR ──────────────────────────────────────────
+// -- LETTER GENERATOR ------------------------------------------
 var currentLetterType = 'demand_contract';
 function setLetterType(type) {
   currentLetterType = type;
@@ -3277,7 +3312,7 @@ async function generateLetter() {
 }
 function copyLetter(){ navigator.clipboard.writeText(document.getElementById('lt-result').textContent).then(function(){slToast('Copied','ok');}); }
 
-// ── CLAUSE LIBRARY ────────────────────────────────────────────
+// -- CLAUSE LIBRARY --------------------------------------------
 async function getClause(type) {
   var el = document.getElementById('clause-output');
   el.style.display='block'; el.innerHTML=loadingHTML('Retrieving clause...');
@@ -3307,7 +3342,7 @@ async function getCustomClause() {
   el.textContent = res;
 }
 
-// ── CASE STRENGTH ─────────────────────────────────────────────
+// -- CASE STRENGTH ---------------------------------------------
 async function analyzeCase() {
   var claim = document.getElementById('cs-claim').value;
   var jur = document.getElementById('cs-jur').value;
@@ -3321,7 +3356,7 @@ async function analyzeCase() {
   el.textContent = res;
 }
 
-// ── DISCOVERY ─────────────────────────────────────────────────
+// -- DISCOVERY -------------------------------------------------
 async function buildDiscovery(mode) {
   var type = document.getElementById('disc-type').value;
   var side = document.getElementById('disc-side').value;
@@ -3340,7 +3375,7 @@ async function buildDiscovery(mode) {
   el.textContent = res;
 }
 
-// ── DEPOSITION PREP ───────────────────────────────────────────
+// -- DEPOSITION PREP -------------------------------------------
 async function buildDepOutline() {
   var type = document.getElementById('dep-type').value;
   var goal = document.getElementById('dep-goal').value;
@@ -3355,7 +3390,7 @@ async function buildDepOutline() {
   el.textContent = res;
 }
 
-// ── SETTLEMENT ────────────────────────────────────────────────
+// -- SETTLEMENT ------------------------------------------------
 async function analyzeSettlement() {
   var type = document.getElementById('set-type').value;
   var side = document.getElementById('set-side').value;
@@ -3372,7 +3407,7 @@ async function analyzeSettlement() {
   el.textContent = res;
 }
 
-// ── TRIAL NOTEBOOK ────────────────────────────────────────────
+// -- TRIAL NOTEBOOK --------------------------------------------
 async function buildTrial(mode) {
   var caseN = document.getElementById('tr-case').value.trim();
   var type = document.getElementById('tr-type').value;
@@ -3392,7 +3427,7 @@ async function buildTrial(mode) {
   el.textContent = res;
 }
 
-// ── TIME TRACKING ─────────────────────────────────────────────
+// -- TIME TRACKING ---------------------------------------------
 var timerInterval = null, timerSecs = 0, timerRunning = false;
 
 function showTimeForm() { document.getElementById('time-form').style.display='block'; document.getElementById('te-date').value=new Date().toISOString().split('T')[0]; }
@@ -3454,7 +3489,7 @@ function renderTimeList() {
 }
 function exportTimesheetCSV() { var rows=[['Date','Matter','Attorney','Hours','Rate','Value','Type','Description']]; timeEntries.forEach(function(t){var v=t.rate&&t.hours?(parseFloat(t.hours)*parseFloat(t.rate)).toFixed(2):'';rows.push([t.date,t.matter,t.attorney||'',t.hours,t.rate||'',v,t.billable,t.desc||'']);}); dlCSV(rows,'SAIRNlaw-Timesheet.csv'); }
 
-// ── BILLING ───────────────────────────────────────────────────
+// -- BILLING ---------------------------------------------------
 var nextInvNum = parseInt(localStorage.getItem('sl_inv_num')||'1001');
 
 function showInvoiceForm() {
@@ -3524,7 +3559,7 @@ function renderBillingList() {
 function exportARCSV() { var rows=[['Invoice','Client','Matter','Date','Due','Amount','Status']]; invoices_sl.forEach(function(i){rows.push([i.num||'',i.client||'',i.matter||'',i.date||'',i.due||'',i.total||'',i.status||'']);}); dlCSV(rows,'SAIRNlaw-AR.csv'); }
 function exportBillingCSV() { exportARCSV(); }
 
-// ── COMPENSATION ──────────────────────────────────────────────
+// -- COMPENSATION ----------------------------------------------
 function showCompForm() { document.getElementById('comp-form').style.display='block'; }
 function saveComp() {
   var rec = {id:Date.now(),name:document.getElementById('co-name').value.trim(),role:document.getElementById('co-role').value,payType:document.getElementById('co-paytype').value,salary:parseFloat(document.getElementById('co-salary').value)||0,rate:parseFloat(document.getElementById('co-rate').value)||0,period:document.getElementById('co-period').value,origination:parseFloat(document.getElementById('co-orig').value)||0,target:parseFloat(document.getElementById('co-target').value)||1800,status:'Active'};
@@ -3559,7 +3594,7 @@ async function runPayroll() {
 }
 function exportCompCSV() { var rows=[['Name','Role','Pay Type','Annual Salary','Bill Rate','Period','Origination %','Hr Target']]; compRecords.forEach(function(r){rows.push([r.name,r.role,r.payType,r.salary,r.rate,r.period,r.origination,r.target]);}); dlCSV(rows,'SAIRNlaw-Compensation.csv'); }
 
-// ── CHECK REGISTER ────────────────────────────────────────────
+// -- CHECK REGISTER --------------------------------------------
 function updateWrittenAmount() {
   var amt = parseFloat(document.getElementById('ck-amount').value)||0;
   var words = numberToWords(amt);
@@ -3697,7 +3732,7 @@ function renderCheckList() {
 }
 function exportChecksCSV() { var rows=[['Check#','Account','Date','Pay To','Amount','Matter','Memo']]; checkRegister.forEach(function(c){rows.push([c.num||'',c.acct||'',c.date||'',c.payee||'',c.amount||'',c.matter||'',c.memo||'']);}); dlCSV(rows,'SAIRNlaw-Checks.csv'); }
 
-// ── ANALYTICS ─────────────────────────────────────────────────
+// -- ANALYTICS -------------------------------------------------
 function updateAnalytics() {
   var mth = new Date().toISOString().slice(0,7);
   var mthBilled = invoices_sl.filter(function(i){return i.date&&i.date.slice(0,7)===mth;}).reduce(function(s,i){return s+parseFloat(i.total||0);},0);
@@ -3740,7 +3775,7 @@ function exportAnalyticsCSV() {
   dlCSV(rows,'SAIRNlaw-Analytics.csv');
 }
 
-// ── TEAM ──────────────────────────────────────────────────────
+// -- TEAM ------------------------------------------------------
 function showTeamForm() { document.getElementById('team-form').style.display='block'; }
 function saveTeamMember() {
   var m = {id:Date.now(),name:document.getElementById('tm-name').value.trim(),role:document.getElementById('tm-role').value,email:document.getElementById('tm-email').value.trim(),bar:document.getElementById('tm-bar').value.trim(),rate:parseFloat(document.getElementById('tm-rate').value)||0,target:parseFloat(document.getElementById('tm-target').value)||1800};
@@ -3757,7 +3792,7 @@ function renderTeamList() {
 }
 function exportTeamCSV() { var rows=[['Name','Role','Email','Bar#','Rate','Target']]; teamMembers.forEach(function(m){rows.push([m.name,m.role,m.email||'',m.bar||'',m.rate,m.target]);}); dlCSV(rows,'SAIRNlaw-Team.csv'); }
 
-// ── CLIENT INTAKE ─────────────────────────────────────────────
+// -- CLIENT INTAKE ---------------------------------------------
 async function processIntake() {
   var name = document.getElementById('int-name').value.trim();
   if (!name) { slToast('Enter client name','warn'); return; }
@@ -3795,7 +3830,7 @@ async function runConflictFromIntake() {
   slToast('Running conflict check for '+name,'ok');
 }
 
-// ── CLIENT PORTAL ─────────────────────────────────────────────
+// -- CLIENT PORTAL ---------------------------------------------
 function generatePortalLink() {
   var client = document.getElementById('port-client').value.trim();
   var matter = document.getElementById('port-matter').value.trim();
@@ -3816,7 +3851,7 @@ function renderPortalList() {
     portalLinks.map(function(p){ return '<tr><td style="font-weight:700">'+safeHTML(p.client)+'</td><td>'+safeHTML(p.matter)+'</td><td style="font-weight:800;color:var(--a)">'+p.pin+'</td><td style="color:var(--mu)">'+p.created+'</td></tr>'; }).join('') + '</tbody></table>';
 }
 
-// ── SAIRN SUITE ───────────────────────────────────────────────
+// -- SAIRN SUITE -----------------------------------------------
 async function syncToSAIRNBridge() {
   slToast('Syncing to SAIRN Bridge...','ok');
   try {
@@ -3831,7 +3866,7 @@ async function syncToSAIRNBridge() {
 function exportPayrollCSV() { exportCompCSV(); }
 function exportAllCSV() { exportMattersCSV(); exportTimesheetCSV(); exportARCSV(); exportCompCSV(); slToast('All data exported','ok'); }
 
-// ── MULTI-PROJECT DASH ────────────────────────────────────────
+// -- MULTI-PROJECT DASH ----------------------------------------
 function refreshMultiDashSL() {
   var grid = document.getElementById('multidash-grid');
   if (!grid) return;
@@ -3860,7 +3895,7 @@ async function aiPortfolioReview() {
 }
 function exportPortfolioCSV() { exportMattersCSV(); }
 
-// ── SETTINGS ──────────────────────────────────────────────────
+// -- SETTINGS --------------------------------------------------
 function saveFirmSettings() {
   var settings = {firmName:document.getElementById('set-firm').value.trim(),managingPartner:document.getElementById('set-mp').value.trim(),phone:document.getElementById('set-phone').value.trim(),email:document.getElementById('set-email').value.trim(),addr:document.getElementById('set-addr').value.trim(),barState:document.getElementById('set-bar-state').value.trim(),defaultRate:parseFloat(document.getElementById('set-rate').value)||350,increment:document.getElementById('set-increment').value};
   localStorage.setItem('sl_firm_settings',JSON.stringify(settings));
@@ -3883,7 +3918,7 @@ function savePINs() {
   slToast('PINs updated','ok');
 }
 
-// ── ROLE GATING ───────────────────────────────────────────────
+// -- ROLE GATING -----------------------------------------------
 function applyRoleGating() {
   var isMP = currentRole === 'managing_partner';
   var compBtn = document.getElementById('comp-add-btn');
@@ -3895,12 +3930,12 @@ function applyRoleGating() {
   }
 }
 
-// ── SECURITY STATUS ───────────────────────────────────────────
+// -- SECURITY STATUS -------------------------------------------
 function showSecurityStatus() {
   if (typeof saShowSecurityStatus === 'function') { saShowSecurityStatus(); } else { slToast('Security System v3.0 — 30 Layers Active','ok'); }
 }
 
-// ── UTILITY: HELPERS ──────────────────────────────────────────
+// -- UTILITY: HELPERS ------------------------------------------
 function safeHTML(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
@@ -3912,7 +3947,7 @@ function dlCSV(rows, filename) {
   a.download = filename; a.click();
 }
 
-// ── INIT ──────────────────────────────────────────────────────
+// -- INIT ------------------------------------------------------
 document.addEventListener('DOMContentLoaded', function() {
   renderSOLTracked();
   renderPortalList();
@@ -3923,9 +3958,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-// ── V2 ADDITIONS — 9 New Feature Functions ──────────────────────────────────
+// -- V2 ADDITIONS — 9 New Feature Functions ----------------------------------
 
-// ── DOCUMENT UPLOAD & AI ANALYSIS ────────────────────────────────────────────
+// -- DOCUMENT UPLOAD & AI ANALYSIS --------------------------------------------
 var docHistory = JSON.parse(localStorage.getItem('sl_doc_history') || '[]');
 
 function handleDocUpload(input) {
@@ -3976,7 +4011,7 @@ function addDeadlinesFromDoc() {
   slToast('Deadlines extracted — review analysis and add to Calendar panel','ok');
 }
 
-// ── CONTRACT REDLINING ────────────────────────────────────────────────────────
+// -- CONTRACT REDLINING --------------------------------------------------------
 async function redlineContract() {
   var contract = document.getElementById('rl-contract').value.trim();
   if (!contract) { slToast('Paste a contract to redline','warn'); return; }
@@ -3995,7 +4030,7 @@ async function redlineContract() {
   res_el.textContent = res;
 }
 
-// ── DEEP RESEARCH MODE ────────────────────────────────────────────────────────
+// -- DEEP RESEARCH MODE --------------------------------------------------------
 async function runDeepResearch() {
   var q = document.getElementById('dr2-q').value.trim();
   if (!q) { slToast('Enter a research question','warn'); return; }
@@ -4019,7 +4054,7 @@ async function runDeepResearch() {
   res_el.textContent = res;
 }
 
-// ── PRACTICE-AREA AI AGENTS ───────────────────────────────────────────────────
+// -- PRACTICE-AREA AI AGENTS ---------------------------------------------------
 var AGENTS = {
   pi: {
     title: 'Personal Injury Agent',
@@ -4100,7 +4135,7 @@ async function runAgent() {
   el.textContent = res;
 }
 
-// ── SMART INTAKE QUALIFICATION ────────────────────────────────────────────────
+// -- SMART INTAKE QUALIFICATION ------------------------------------------------
 async function qualifyIntake() {
   var name = document.getElementById('iq-name').value.trim();
   var area = document.getElementById('iq-area').value;
@@ -4132,7 +4167,7 @@ async function qualifyIntake() {
   document.getElementById('iq-result').textContent = res;
 }
 
-// ── ABA ETHICS COMPLIANCE ─────────────────────────────────────────────────────
+// -- ABA ETHICS COMPLIANCE -----------------------------------------------------
 async function runEthicsCheck() {
   var situation = document.getElementById('eth-situation').value.trim();
   var state = document.getElementById('eth-state').value;
@@ -4159,7 +4194,7 @@ async function getDisclosure(type) {
   el.textContent = res;
 }
 
-// ── JUDGE INTELLIGENCE ────────────────────────────────────────────────────────
+// -- JUDGE INTELLIGENCE --------------------------------------------------------
 async function getJudgeIntel() {
   var court = document.getElementById('ji-court').value;
   var judge = document.getElementById('ji-judge').value.trim();
@@ -4186,7 +4221,7 @@ async function getFilingReqs() {
   getJudgeIntel();
 }
 
-// ── BILLING RATE BENCHMARKER ──────────────────────────────────────────────────
+// -- BILLING RATE BENCHMARKER --------------------------------------------------
 async function getBenchmark() {
   var state = document.getElementById('rb-state').value;
   var area = document.getElementById('rb-area').value;
@@ -4214,7 +4249,7 @@ async function getFeeArrangement() {
   el.textContent = res;
 }
 
-// ── CITATION VERIFICATION ─────────────────────────────────────────────────────
+// -- CITATION VERIFICATION -----------------------------------------------------
 async function verifyCitations() {
   var text = document.getElementById('cv-text').value.trim();
   if (!text) { slToast('Paste AI-generated text with citations','warn'); return; }
@@ -4265,7 +4300,7 @@ var mType=document.createElement("div");mType.id="cm-matter-type";mType.style.cs
 var mDt=document.createElement("div");mDt.id="cm-report-date";mDt.style.cssText="font-size:11px;color:#9CA3AF;margin-top:2px";
 hero.appendChild(mName);hero.appendChild(mType);hero.appendChild(mDt);
 var statsGrid=document.createElement("div");statsGrid.style.cssText="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px";
-[["Status","cm-status","#16a34a"],["Open Tasks","cm-tasks","#d97706"],["Next Action","cm-next","#3B82F6"]].forEach(function(d){var c=document.createElement("div");c.style.cssText="border:1px solid #E5E7EB;border-radius:8px;padding:12px;text-align:center";var v=document.createElement("div");v.id=d[1];v.textContent="--";v.style.cssText="font-size:15px;font-weight:900;color:"+d[2];var l=document.createElement("div");l.textContent=d[0];l.style.cssText="font-size:10px;color:#6B7280;text-transform:uppercase;margin-top:4px";c.appendChild(v);c.appendChild(l);statsGrid.appendChild(c);});
+[["Status","cm-status","#16a34a"],["Open Tasks","cm-tasks","#d97706"],["Next Action","cm-next","#15803D"]].forEach(function(d){var c=document.createElement("div");c.style.cssText="border:1px solid #E5E7EB;border-radius:8px;padding:12px;text-align:center";var v=document.createElement("div");v.id=d[1];v.textContent="--";v.style.cssText="font-size:15px;font-weight:900;color:"+d[2];var l=document.createElement("div");l.textContent=d[0];l.style.cssText="font-size:10px;color:#6B7280;text-transform:uppercase;margin-top:4px";c.appendChild(v);c.appendChild(l);statsGrid.appendChild(c);});
 var billingSec=document.createElement("div");billingSec.style.cssText="background:#F0FDF4;border-radius:10px;padding:14px;margin-bottom:16px";
 var billingLabel=document.createElement("div");billingLabel.textContent="Billing Summary";billingLabel.style.cssText="font-size:11px;font-weight:800;color:#14532D;text-transform:uppercase;margin-bottom:8px";
 var billingGrid=document.createElement("div");billingGrid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px";
