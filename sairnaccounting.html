@@ -130,10 +130,10 @@ var SAIRN_SEC = {
 };
 
 // ===========================================================
-// WALL 1 — BROWSER LAYER (Layers 1-18)
+// WALL 1 -- BROWSER LAYER (Layers 1-18)
 // ===========================================================
 
-// LAYER 1 — Domain Allowlist Fetch Interceptor
+// LAYER 1 -- Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
 window.fetch = function(url, opts) {
   try {
@@ -158,7 +158,7 @@ window.fetch = function(url, opts) {
   return _origFetch.apply(this, arguments);
 };
 
-// LAYER 2 — XSS Output Sanitizer
+// LAYER 2 -- XSS Output Sanitizer
 window.safeHTML = function(str) {
   if (typeof str !== 'string') return str;
   return str
@@ -173,7 +173,7 @@ window.safeHTML = function(str) {
     .replace(/data:text\/html/gi, '');
 };
 
-// LAYER 3 — Input Sanitization on All Form Fields
+// LAYER 3 -- Input Sanitization on All Form Fields
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('input[type=text], input[type=email], textarea').forEach(function(el) {
     el.addEventListener('input', function() {
@@ -187,14 +187,14 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 4 — Clickjacking Protection (Frame-Busting)
+// LAYER 4 -- Clickjacking Protection (Frame-Busting)
 if (window !== window.top) {
   window.top.location = window.location;
   document.body.innerHTML = '<h2 style="padding:40px;font-family:sans-serif">SAIRN Security: Embedded framing not permitted.</h2>';
   saLog('L4-FRAME', 'Clickjacking attempt detected', 'critical');
 }
 
-// LAYER 5 — Session Timeout & Auto-Lock
+// LAYER 5 -- Session Timeout & Auto-Lock
 function saResetTimer() {
   SAIRN_SEC.lastActivity = Date.now();
   if (SAIRN_SEC.sessionLocked) {
@@ -250,7 +250,7 @@ window.saUnlock = function() {
   }
 };
 
-// LAYER 6 — Brute-Force Protection on PIN
+// LAYER 6 -- Brute-Force Protection on PIN
 window.saTrackLoginAttempt = function(success) {
   if (success) {
     SAIRN_SEC.loginAttempts = 0;
@@ -260,14 +260,14 @@ window.saTrackLoginAttempt = function(success) {
   SAIRN_SEC.loginAttempts++;
   sessionStorage.setItem('s_attempts', String(SAIRN_SEC.loginAttempts));
   if (SAIRN_SEC.loginAttempts >= SAIRN_SEC.maxLoginAttempts) {
-    saLog('L6-BRUTE', 'Max login attempts exceeded — lockout triggered', 'critical');
+    saLog('L6-BRUTE', 'Max login attempts exceeded -- lockout triggered', 'critical');
     document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:sans-serif"><h2 style="color:#DC2626">Too Many Failed Attempts</h2><p>Access temporarily locked. Please try again in 15 minutes.</p></div>';
     setTimeout(function() { sessionStorage.setItem('s_attempts','0'); }, 15 * 60 * 1000);
   }
   return false;
 };
 
-// LAYER 7 — Prompt Injection Detection (Claude-specific)
+// LAYER 7 -- Prompt Injection Detection (Claude-specific)
 window.saCleanPrompt = function(text) {
   if (!text) return text;
   var injectionPatterns = [
@@ -290,7 +290,7 @@ window.saCleanPrompt = function(text) {
   return text;
 };
 
-// LAYER 8 — PII Scrubbing (24 patterns)
+// LAYER 8 -- PII Scrubbing (24 patterns)
 window.saScrubPII = function(text) {
   if (!text || typeof text !== 'string') return text;
   var patterns = [
@@ -323,7 +323,7 @@ window.saScrubPII = function(text) {
   return text;
 };
 
-// LAYER 9 — Data Exfiltration Monitor
+// LAYER 9 -- Data Exfiltration Monitor
 var _origXHR = window.XMLHttpRequest;
 window.XMLHttpRequest = function() {
   var xhr = new _origXHR();
@@ -346,7 +346,7 @@ window.XMLHttpRequest = function() {
   return xhr;
 };
 
-// LAYER 10 — Content Security Policy (Meta tag)
+// LAYER 10 -- Content Security Policy (Meta tag)
 (function() {
   var csp = document.createElement('meta');
   csp.httpEquiv = 'Content-Security-Policy';
@@ -359,7 +359,7 @@ window.XMLHttpRequest = function() {
   }
 })();
 
-// LAYER 11 — localStorage Encryption (AES-like obfuscation)
+// LAYER 11 -- localStorage Encryption (AES-like obfuscation)
 window.saStore = {
   _key: SAIRN_SEC.dataEncryptKey,
   _encode: function(data) {
@@ -405,7 +405,7 @@ window.saStore = {
   }
 };
 
-// LAYER 12 — Subresource Integrity Check
+// LAYER 12 -- Subresource Integrity Check
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('script[src], link[rel=stylesheet]').forEach(function(el) {
     var src = el.src || el.href;
@@ -419,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 13 — DevTools Detection (Production Mode Alert)
+// LAYER 13 -- DevTools Detection (Production Mode Alert)
 var devToolsOpen = false;
 setInterval(function() {
   var threshold = 160;
@@ -433,7 +433,7 @@ setInterval(function() {
   }
 }, 5000);
 
-// LAYER 14 — Right-Click Protection on Sensitive Areas
+// LAYER 14 -- Right-Click Protection on Sensitive Areas
 document.addEventListener('contextmenu', function(e) {
   var el = e.target;
   if (el && (el.dataset.sensitive || el.closest('[data-sensitive]'))) {
@@ -442,7 +442,7 @@ document.addEventListener('contextmenu', function(e) {
   }
 });
 
-// LAYER 15 — Clipboard Protection
+// LAYER 15 -- Clipboard Protection
 document.addEventListener('copy', function(e) {
   var sel = window.getSelection ? window.getSelection().toString() : '';
   var piiPatterns = [/\b\d{3}[-.\s]?\d{2}[-.\s]?\d{4}\b/, /\b4[0-9]{12,15}\b/];
@@ -452,7 +452,7 @@ document.addEventListener('copy', function(e) {
   }
 });
 
-// LAYER 16 — Rate Limiting (API calls per minute)
+// LAYER 16 -- Rate Limiting (API calls per minute)
 var apiCallLog = [];
 window.saCheckRateLimit = function(appId) {
   var now = Date.now();
@@ -466,7 +466,7 @@ window.saCheckRateLimit = function(appId) {
   return true;
 };
 
-// LAYER 17 — Response Sanitization (Claude output scrubbing)
+// LAYER 17 -- Response Sanitization (Claude output scrubbing)
 window.saSanitizeResponse = function(text) {
   if (!text) return text;
   // Strip any accidentally echoed credentials
@@ -479,7 +479,7 @@ window.saSanitizeResponse = function(text) {
   return text;
 };
 
-// LAYER 18 — Auto Data Purge (90-day expiry on localStorage)
+// LAYER 18 -- Auto Data Purge (90-day expiry on localStorage)
 (function saAutoPurge() {
   try {
     var ageKey = 'sairn_created';
@@ -503,10 +503,10 @@ window.saSanitizeResponse = function(text) {
 })();
 
 // ===========================================================
-// WALL 2 — API PROXY LAYER (Layers 19-23)
+// WALL 2 -- API PROXY LAYER (Layers 19-23)
 // ===========================================================
 
-// LAYER 19 — Request Signing (HMAC-style app_id validation)
+// LAYER 19 -- Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
   if (!payload.app_id) {
     saLog('L19-SIGN', 'Request missing app_id', 'high');
@@ -519,7 +519,7 @@ window.saSignRequest = function(payload) {
   return payload;
 };
 
-// LAYER 20 — Prompt Injection on Every Claude Call
+// LAYER 20 -- Prompt Injection on Every Claude Call
 var _origSAIRNFetch = null;
 window.saSecureClaudeCall = function(url, opts) {
   if (opts && opts.body) {
@@ -542,7 +542,7 @@ window.saSecureClaudeCall = function(url, opts) {
   return window.fetch(url, opts);
 };
 
-// LAYER 21 — Anomaly Detection (unusual patterns)
+// LAYER 21 -- Anomaly Detection (unusual patterns)
 var requestPatterns = {};
 window.saDetectAnomaly = function(appId, endpoint) {
   var key = appId + ':' + endpoint;
@@ -557,7 +557,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
   return false;
 };
 
-// LAYER 22 — Direct API Call Blocker
+// LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
     if (typeof url === 'string' && url.includes('api.anthropic.com')) {
@@ -568,16 +568,16 @@ window.fetch = (function(originalFetch) {
   };
 })(window.fetch);
 
-// LAYER 23 — SSL/HTTPS Enforcement
+// LAYER 23 -- SSL/HTTPS Enforcement
 if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
 // ===========================================================
-// WALL 3 — DATA LAYER (Layers 24-27)
+// WALL 3 -- DATA LAYER (Layers 24-27)
 // ===========================================================
 
-// LAYER 24 — Data Minimization Checker
+// LAYER 24 -- Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
   var sensitiveFields = ['ssn','password','creditCard','bankAccount','routingNumber','medicalRecord','biometric'];
   var found = [];
@@ -591,14 +591,14 @@ window.saCheckDataMinimization = function(data) {
   return found.length === 0;
 };
 
-// LAYER 25 — Session Storage Isolation
+// LAYER 25 -- Session Storage Isolation
 window.saSessionStore = {
   set: function(key, val) { try { sessionStorage.setItem('sairn_' + key, JSON.stringify(val)); } catch(e) {} },
   get: function(key) { try { var v=sessionStorage.getItem('sairn_'+key); return v?JSON.parse(v):null; } catch(e) { return null; } },
   clear: function() { Object.keys(sessionStorage).filter(function(k){return k.startsWith('sairn_');}).forEach(function(k){sessionStorage.removeItem(k);}); }
 };
 
-// LAYER 26 — Credential Storage Prevention
+// LAYER 26 -- Credential Storage Prevention
 window.addEventListener('beforeunload', function() {
   ['password','passwd','pwd','pin','secret','token'].forEach(function(field) {
     var els = document.querySelectorAll('input[name*="' + field + '"], input[id*="' + field + '"]');
@@ -606,7 +606,7 @@ window.addEventListener('beforeunload', function() {
   });
 });
 
-// LAYER 27 — Right to Delete (One-click data wipe)
+// LAYER 27 -- Right to Delete (One-click data wipe)
 window.saWipeAllData = function() {
   if (!confirm('PERMANENT: Delete all SAIRN data from this device? This cannot be undone.')) return;
   localStorage.clear();
@@ -622,10 +622,10 @@ window.saWipeAllData = function() {
 };
 
 // ===========================================================
-// WALL 4 — COMPLIANCE LAYER (Layers 28-30)
+// WALL 4 -- COMPLIANCE LAYER (Layers 28-30)
 // ===========================================================
 
-// LAYER 28 — CCPA/Privacy Consent Notice
+// LAYER 28 -- CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
   if (localStorage.getItem('sairn_privacy_accepted')) return;
   var notice = document.createElement('div');
@@ -662,7 +662,7 @@ window.saDeclinePrivacy = function() {
   alert('SAIRN requires localStorage consent to function. Some features may not work.');
 };
 
-// LAYER 29 — Security Audit Log
+// LAYER 29 -- Security Audit Log
 function saLog(layer, message, severity) {
   var entry = { ts: new Date().toISOString(), layer: layer, msg: message, sev: severity, url: location.href };
   SAIRN_SEC.auditLog.push(entry);
@@ -680,7 +680,7 @@ function saLog(layer, message, severity) {
   } catch(e) {}
 }
 
-// LAYER 30 — Security Status Dashboard (Admin only)
+// LAYER 30 -- Security Status Dashboard (Admin only)
 window.saShowSecurityStatus = function() {
   var logs = JSON.parse(sessionStorage.getItem('sairn_audit') || '[]');
   var critical = logs.filter(function(l) { return l.sev === 'critical'; }).length;
@@ -700,8 +700,8 @@ window.saShowSecurityStatus = function() {
 };
 
 // -- INITIALIZATION MESSAGE ---------------------------------
-saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
-console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#0D9488;font-weight:bold;padding:4px 8px;border-radius:4px');
+saLog('INIT', 'SAIRN Security System v3.0 initialized -- 30 layers active', 'info');
+console.log('%c SAIRN Security v3.0 -- 30-Layer Protection Active ', 'background:#1E1B4B;color:#0D9488;font-weight:bold;padding:4px 8px;border-radius:4px');
 
 })(); // End SAIRN Security IIFE
 
@@ -1560,7 +1560,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 <script>
 
 // ============================================================
-// SAIRNaccounting JS — SAIRN Technologies
+// SAIRNaccounting JS -- SAIRN Technologies
 // Forest green #16a34a | Auth: SA_RAILWAY | Proxy: SA_CLAUDE
 // ============================================================
 var SA_RAILWAY='https://fabricor-production.up.railway.app';
@@ -1600,7 +1600,7 @@ async function saLogin(){
     var data=await res.json();
     if(!res.ok){err.textContent=data.error||'Login failed';return;}
     saCurrentUser=data.user;saShowApp();
-  }catch(e){err.textContent='Connection error — try again.';}
+  }catch(e){err.textContent='Connection error -- try again.';}
 }
 function saShowApp(){
   document.getElementById('sa-auth').style.display='none';
@@ -1806,7 +1806,7 @@ function saInitDashboard(){
     if(dueBills.length)list.push({c:'orange',t:dueBills.length+' bill(s) due within 7 days'});
     var uncat=receipts.filter(function(r){return !r.account;});
     if(uncat.length)list.push({c:'amber',t:uncat.length+' unmatched receipt(s) need GL coding'});
-    if(!list.length)list.push({c:'green',t:'All clear — no urgent actions needed'});
+    if(!list.length)list.push({c:'green',t:'All clear -- no urgent actions needed'});
     acts.innerHTML=list.map(function(a){
       var col=a.c==='red'?'#dc2626':a.c==='orange'?'#f97316':a.c==='amber'?'#d97706':'#16a34a';
       return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">'+
@@ -1859,7 +1859,7 @@ async function saSendAI(){
   try{
     var res=await fetch(SA_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',max_tokens:1000,
-        system:'You are SAIRNaccounting AI — Big 4 CPA + CFO + Tax Attorney. SAIRN Technologies. Always cite account codes (Dr XXXX, Cr XXXX) for journal entries. Provide exact 2026 rates. End every recommendation with the risk if ignored.',
+        system:'You are SAIRNaccounting AI -- Big 4 CPA + CFO + Tax Attorney. SAIRN Technologies. Always cite account codes (Dr XXXX, Cr XXXX) for journal entries. Provide exact 2026 rates. End every recommendation with the risk if ignored.',
         messages:[{role:'user',content:msg}]})});
     var data=await res.json();
     var text=data.content&&data.content[0]?data.content[0].text:'Unable to get response.';
@@ -2816,11 +2816,11 @@ function rptPrint(title,content){
   w.document.write('<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print Report</button>');
   w.document.write('<h1>'+escHtml(company)+'<br><small style="font-size:13px;font-weight:400">'+escHtml(title)+' | '+escHtml(period)+' | '+escHtml(basis)+'<br>Generated '+new Date().toLocaleDateString()+'</small></h1>');
   w.document.write(content);
-  w.document.write('<div style="margin-top:40px;font-size:10px;color:#666">Generated by SAIRNacc — SAIRN Technologies</div>');
+  w.document.write('<div style="margin-top:40px;font-size:10px;color:#666">Generated by SAIRNacc -- SAIRN Technologies</div>');
   w.document.write('<div style="margin-top:36px;padding-top:16px;border-top:2px solid #eee"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">Prepared By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">Reviewed By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">CFO / Date</div></div></div>');
   w.document.write('
 <script>
-// SAIRN PATCH — missing function fixes
+// SAIRN PATCH -- missing function fixes
 
 window.saExportInventory = function() {
   var inv = [];
@@ -2875,6 +2875,96 @@ window.saExportInventory = function() {
   });
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body></html>');
   w.document.close();
@@ -3280,6 +3370,96 @@ function saStatementContact(i){
   });
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body></html>';
   w.document.write(html2);w.document.close();
@@ -3786,6 +3966,96 @@ function saMileageReport(){
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
 </script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
+</script>
 </body></html>';
   w.document.write(html2);w.document.close();
   saNotify('IRS mileage report generated','green');
@@ -4021,6 +4291,96 @@ async function saProjectPL(){
   });
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body></html>';
   w.document.write(html2);w.document.close();
@@ -4711,21 +5071,21 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 
 <script>
-// SAIRN Pricing Engine v1.0 — sairnaccounting
+// SAIRN Pricing Engine v1.0 -- sairnaccounting
 
 // ============================================================
 // SAIRN UNIVERSAL PRICING ENGINE v1.0
-// June 11, 2026 — Michael L. Dibert · SAIRN Technologies
+// June 11, 2026 -- Michael L. Dibert · SAIRN Technologies
 // Applied to: SAIRNcode · SAIRNhr · SAIRNaccounting
 //
-// Pricing (final — market-verified June 11 2026):
+// Pricing (final -- market-verified June 11 2026):
 //   SAIRNcode:        Free 20q | Pro $59/mo | Enterprise $99/mo
 //   SAIRNhr:          Free 10q | Pro $199/mo | Enterprise $349/mo
 //   SAIRNaccounting:  Free 25tx | Pro $79/mo | Enterprise $129/mo
 //
-// Pattern 6 — Smart Flags: fires at 75% and 100% query usage
-// Pattern 7 — Save + History: counter in localStorage
-// Pattern 8 — Print/PDF: plan confirmation printable
+// Pattern 6 -- Smart Flags: fires at 75% and 100% query usage
+// Pattern 7 -- Save + History: counter in localStorage
+// Pattern 8 -- Print/PDF: plan confirmation printable
 // ============================================================
 
 (function() {
@@ -4787,7 +5147,7 @@ document.addEventListener('DOMContentLoaded',function(){
           priceId: 'price_1Th989PAZMGVs7fEls9HpnMM'
         }
       ],
-      competitorNote: 'AAPC Codify Complete: $52/mo (no AI). Optum EncoderPro Expert: $83/mo (no AI). SAIRNcode includes Claude AI coding intelligence — built in.'
+      competitorNote: 'AAPC Codify Complete: $52/mo (no AI). Optum EncoderPro Expert: $83/mo (no AI). SAIRNcode includes Claude AI coding intelligence -- built in.'
     },
 
     sairnhr: {
@@ -4844,7 +5204,7 @@ document.addEventListener('DOMContentLoaded',function(){
           priceId: 'price_1Th99wPAZMGVs7fEkQh3Yh1X'
         }
       ],
-      competitorNote: 'BambooHR floor: $250/mo (25 employees, no AI). Rippling: $375-$625/mo for 25 employees. SAIRNhr is flat rate with Claude AI built in — no per-employee fees ever.'
+      competitorNote: 'BambooHR floor: $250/mo (25 employees, no AI). Rippling: $375-$625/mo for 25 employees. SAIRNhr is flat rate with Claude AI built in -- no per-employee fees ever.'
     },
 
     sairnaccounting: {
@@ -5027,7 +5387,7 @@ document.addEventListener('DOMContentLoaded',function(){
     setTimeout(function() { sairiShowPricing(); }, 800);
   }
 
-  // -- PRICING MODAL (Pattern 8 — print ready) ---------------
+  // -- PRICING MODAL (Pattern 8 -- print ready) ---------------
   window.sairiShowPricing = function() {
     var existing = document.getElementById('sairn-pricing-modal');
     if (existing) { existing.remove(); return; }
@@ -5095,7 +5455,7 @@ document.addEventListener('DOMContentLoaded',function(){
   window.sairiActivatePlan = function() {
     var code = prompt('Enter your subscription confirmation code (from your Stripe receipt email):');
     if (!code) return;
-    // Simple validation — in production this calls Railway to verify
+    // Simple validation -- in production this calls Railway to verify
     var code2 = code.trim().toLowerCase();
     var plan = 'free';
     if (code2.includes('ent') || code2.includes('enterprise') || code2.includes('349') || code2.includes('99') || code2.includes('129')) {
@@ -5120,7 +5480,7 @@ document.addEventListener('DOMContentLoaded',function(){
   // -- PATCH THE SEND FUNCTION -------------------------------
   // Wrap the app's send function to intercept queries
   function patchSendFunction() {
-    // For SAIRNcode — wraps sendMessage
+    // For SAIRNcode -- wraps sendMessage
     var origSend = window.sendMessage;
     if (typeof origSend === 'function' && !window._sairiSendPatched) {
       window._sairiSendPatched = true;
@@ -5133,7 +5493,7 @@ document.addEventListener('DOMContentLoaded',function(){
         return origSend.apply(this, arguments);
       };
     }
-    // For SAIRNhr — wraps shSendAI or the SAIRI send fn
+    // For SAIRNhr -- wraps shSendAI or the SAIRI send fn
     var origShSend = window.shSendAI;
     if (typeof origShSend === 'function' && !window._sairiShSendPatched) {
       window._sairiShSendPatched = true;
@@ -5143,7 +5503,7 @@ document.addEventListener('DOMContentLoaded',function(){
         return origShSend.apply(this, arguments);
       };
     }
-    // For SAIRNaccounting — wraps saSendAI
+    // For SAIRNaccounting -- wraps saSendAI
     var origSaSend = window.saSendAI;
     if (typeof origSaSend === 'function' && !window._sairiSaSendPatched) {
       window._sairiSaSendPatched = true;
@@ -5625,7 +5985,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
 <script>
 // ============================================================
-// SAIRNaccounting — 8 New Feature JS
+// SAIRNaccounting -- 8 New Feature JS
 // 90-Day Forecast, Quarterly Tax, Break-Even, Burn Rate,
 // Section 179, Sales Tax, Purchase Orders, Margin Optimizer
 // ============================================================
@@ -5650,7 +6010,7 @@ async function saCallClaude(prompt,maxTokens){
     var r=await fetch(SA_CLAUDE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'accounting',is_demo:true,model:'claude-sonnet-4-20250514',
         max_tokens:maxTokens||600,
-        system:'You are SAIRNaccounting AI — Big 4 CPA + CFO advisor. Be specific, data-driven, and direct.',
+        system:'You are SAIRNaccounting AI -- Big 4 CPA + CFO advisor. Be specific, data-driven, and direct.',
         messages:[{role:'user',content:prompt}]})});
     var d=await r.json();
     return d.content&&d.content[0]?d.content[0].text:'';
@@ -5753,7 +6113,7 @@ function saQTCalc(){
   el=document.getElementById('qt-kpi-self-emp');if(el)el.textContent=saFmtN(selfEmpTax);
   el=document.getElementById('qt-kpi-next-due');if(el)el.textContent=nextDue;
   var result=document.getElementById('qt-result');
-  if(result)result.innerHTML='<div style="font-weight:700;margin-bottom:12px">2026 Tax Summary — '+status.toUpperCase()+'</div>'+
+  if(result)result.innerHTML='<div style="font-weight:700;margin-bottom:12px">2026 Tax Summary -- '+status.toUpperCase()+'</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
     '<div>'+
     '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">Gross Revenue</div><div style="font-weight:700">'+saFmtN(gross)+'</div>'+
@@ -5789,11 +6149,11 @@ function saQTPrint(){
   var css='body{font-family:Arial,sans-serif;padding:30px;font-size:12px;color:#000}@media print{button{display:none}}';
   w.document.write('<!DOCTYPE html><html><head><title>Quarterly Tax Schedule 2026</title><style>'+css+'</style></head><body>');
   w.document.write('<button onclick="window.print()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print</button>');
-  w.document.write('<h2>'+escHtml(company)+' — 2026 Quarterly Tax Payment Schedule</h2>');
+  w.document.write('<h2>'+escHtml(company)+' -- 2026 Quarterly Tax Payment Schedule</h2>');
   if(r)w.document.write(r.innerHTML);
   w.document.write('<div style="margin-top:24px"><h3>Payment Dates</h3><table border="1" cellpadding="8" style="border-collapse:collapse;width:100%"><tr><th>Quarter</th><th>Period</th><th>Due Date</th><th>Amount Due</th></tr>');
   var quarterly=parseFloat((document.getElementById('qt-kpi-quarterly')&&document.getElementById('qt-kpi-quarterly').textContent)||'0');
-  var quarters=[['Q1','Jan 1 – Mar 31'],['Q2','Apr 1 – May 31'],['Q3','Jun 1 – Aug 31'],['Q4','Sep 1 – Dec 31']];
+  var quarters=[['Q1','Jan 1 -- Mar 31'],['Q2','Apr 1 -- May 31'],['Q3','Jun 1 -- Aug 31'],['Q4','Sep 1 -- Dec 31']];
   quarters.forEach(function(q,i){
     w.document.write('<tr><td>'+q[0]+'</td><td>'+q[1]+'</td><td>'+SA_QUE_DUE_2026[i]+'</td><td style="font-weight:bold">'+saFmtN(quarterly)+'</td></tr>');
   });
@@ -5817,6 +6177,96 @@ function saQTPrint(){
   });
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body></html>');w.document.close();
 }
@@ -6088,6 +6538,96 @@ function saPrintPO(i){
   });
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body></html>');w.document.close();
 }
@@ -6678,6 +7218,96 @@ function chkPrintPreview() {
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
 </script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
+</script>
 </body></html>`);
   w.document.close();
 
@@ -6842,8 +7472,8 @@ function syncAllApps(){
   var hasData = localStorage.getItem('sh_employees') || localStorage.getItem('sd_jobs') || 
                 localStorage.getItem('sl_matters') || localStorage.getItem('sb_projects') ||
                 localStorage.getItem('sc_residents') || localStorage.getItem('sa_invoices');
-  if (hasData) return; // Real data exists — do not seed
-// SAIRN DEMO DATA SEED — Session 19
+  if (hasData) return; // Real data exists -- do not seed
+// SAIRN DEMO DATA SEED -- Session 19
 // Injects realistic demo data into all 10 apps via localStorage
 // Run this in browser console on any SAIRN app page, OR inject before 
 <!-- SAIRNbiz Connector v1.0 -->
@@ -6863,6 +7493,96 @@ function syncAllApps(){
   });
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 // Resets all apps to a rich, impressive demo state
@@ -7079,7 +7799,7 @@ function syncAllApps(){
 </script>
 
 <script>
-// SAIRN Debounce Utility — prevents Claude call hammering on rapid input
+// SAIRN Debounce Utility -- prevents Claude call hammering on rapid input
 window.saDebounce = function(func, wait) {
   var timeout;
   return function() {
@@ -7107,6 +7827,96 @@ window.saDebounce = function(func, wait) {
   });
   console.log('SAIRNbiz Connector active in SAIRNacc');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNacc -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#0D9488;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Cash Flow')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Cash Flow</button><button onclick="sbq('AR Aging')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">AR Aging</button><button onclick="sbq('Budget vs Actuals')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Budget vs Actuals</button><button onclick="sbq('GL Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">GL Summary</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#0D9488;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#0D9488;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNacc AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#0D9488;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNacc'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnacc',is_demo:true,
+        system:'You are the AI for SAIRNacc, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 </html>
