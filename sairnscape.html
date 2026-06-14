@@ -459,7 +459,7 @@ function showSaveBar(content) {
   bar.innerHTML = `
     <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>
     <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>
-    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#60A5FA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔗 Share</button>
+    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#22C55E;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔗 Share</button>
     <button onclick="document.getElementById('sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>`;
   document.body.appendChild(bar);
   setTimeout(() => { if(document.getElementById('sairn-save-bar')) document.getElementById('sairn-save-bar').remove(); }, 8000);
@@ -492,7 +492,7 @@ const SAIRN_USER_ID = getSAIRNUserId();
 // Outcome tracking
 let sessionOutcomes = {queries: 0, saved: 0, startTime: Date.now()};
 
-// ── CLOUD MEMORY ────────────────────────────────────────────
+// -- CLOUD MEMORY --------------------------------------------
 async function cloudSaveMemory(content) {
   if(!content || content.length < 20) return;
   // Save locally first (instant, no latency)
@@ -539,7 +539,7 @@ async function cloudLoadMemory() {
   return '';
 }
 
-// ── VOICE MODE ──────────────────────────────────────────────
+// -- VOICE MODE ----------------------------------------------
 let isListening = false;
 let voiceRecognition = null;
 
@@ -608,7 +608,7 @@ function addVoiceButton() {
   document.head.appendChild(style);
 }
 
-// ── OUTCOME TRACKING ─────────────────────────────────────────
+// -- OUTCOME TRACKING -----------------------------------------
 function trackOutcome() {
   sessionOutcomes.queries++;
   updateOutcomeDisplay();
@@ -638,7 +638,7 @@ function addOutcomeBar() {
   header.after(bar);
 }
 
-// ── ENHANCED SAVE BAR ────────────────────────────────────────
+// -- ENHANCED SAVE BAR ----------------------------------------
 function showSaveBar() {
   // Auto-save to cloud silently
   cloudSaveMemory(lastResponse);
@@ -661,7 +661,7 @@ function showSaveBar() {
   setTimeout(function() { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 6000);
 }
 
-// ── INIT ──────────────────────────────────────────────────────
+// -- INIT ------------------------------------------------------
 document.addEventListener('DOMContentLoaded', function() {
   // Add voice button and outcome bar after app page loads
   const observer = new MutationObserver(function() {
@@ -787,6 +787,45 @@ function saveOILSettings() {
 setTimeout(function() { showOILBadge(); }, 1500);
 // =======================================================================
 
+
+function ssReadFromBridge(){
+  // SAIRNscape reads: crew roster + schedules for route assignment
+  // READ ONLY -- never writes back to HR or ACC
+  try {
+    var employees = [];
+    var raw = localStorage.getItem('sh_employees');
+    if(raw) employees = JSON.parse(raw);
+    if(!employees.length) {
+      var bd = localStorage.getItem('sairn_bridge_hr_payload');
+      if(bd) { var bdp = JSON.parse(bd); employees = bdp.data&&bdp.data.employees||[]; }
+    }
+    var crew = employees.filter(function(e){ return e.status!=='Inactive'; })
+      .map(function(e){ return { name:((e.firstName||'')+' '+(e.lastName||'')).trim(), title:e.title||'', phone:e.phone||'' }; });
+    localStorage.setItem('ss_hr_crew', JSON.stringify(crew));
+    return crew;
+  } catch(e) { return []; }
+}
+
+function ssNotify(msg, color){
+  var n = document.getElementById('ss-notify');
+  if(!n){ n=document.createElement('div'); n.id='ss-notify';
+    n.style.cssText='position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;transition:opacity 0.3s';
+    document.body.appendChild(n); }
+  n.textContent=msg;
+  n.style.background=color==='green'?'#16C762':color==='red'?'#EF4444':'#F59E0B';
+  n.style.color='#fff'; n.style.opacity='1';
+  setTimeout(function(){ n.style.opacity='0'; },3000);
+}
+
+function ssSyncBridge(){
+  try {
+    fetch('https://sairn.vercel.app/api/bridge',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({source:'sairnscape',timestamp:new Date().toISOString(),
+        data:{crew:JSON.parse(localStorage.getItem('ss_hr_crew')||'[]')}})
+    }).then(function(r){if(r.ok)ssNotify('Synced to SAIRN Bridge','green');});
+  }catch(e){}
+}
 </script>
 </body>
 </html>
