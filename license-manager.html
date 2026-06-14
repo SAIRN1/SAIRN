@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIRN License Key Manager</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F0FEF6; color: #1E293B; padding: 24px; }
+  .card { background: #fff; border-radius: 12px; border: 1px solid #E2E8F0; padding: 24px; margin-bottom: 20px; max-width: 900px; }
+  h1 { font-size: 22px; font-weight: 800; color: #0A3D1F; margin-bottom: 4px; }
+  h2 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: #0A3D1F; }
+  .sub { font-size: 13px; color: #64748B; margin-bottom: 20px; }
+  label { font-size: 12px; font-weight: 600; color: #64748B; display: block; margin-bottom: 4px; }
+  input, select { width: 100%; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 10px; font-size: 13px; margin-bottom: 12px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .btn { background: #16C762; color: #fff; border: none; border-radius: 7px; padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn:hover { background: #0A3D1F; }
+  .btn-copy { background: #0A3D1F; }
+  .key-out { background: #F0FEF6; border: 1px solid #BBF7D0; border-radius: 8px; padding: 14px; font-family: monospace; font-size: 14px; font-weight: 700; color: #0A3D1F; margin: 12px 0; word-break: break-all; }
+  .json-out { background: #1E293B; color: #5CFF9D; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #0A3D1F; color: #fff; padding: 8px 10px; text-align: left; }
+  td { padding: 7px 10px; border-bottom: 1px solid #E2E8F0; }
+  tr:nth-child(even) td { background: #F0FEF6; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .bg { background: #F0FDF4; color: #15803D; } .br { background: #FEF2F2; color: #B91C1C; }
+  .warn { background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 12px 14px; font-size: 12px; margin: 12px 0; }
+  .step { background: #F8FAFC; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; font-size: 13px; border-left: 3px solid #16C762; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>SAIRN License Key Manager</h1>
+  <div class="sub">Generate and manage license keys for paying StoneDesk customers. Keys are stored in Vercel environment variables.</div>
+</div>
+
+<div class="card">
+  <h2>Generate New License Key</h2>
+  <div class="row">
+    <div>
+      <label>Shop Name</label>
+      <input type="text" id="shop" placeholder="e.g. Granite Works Stone Design">
+    </div>
+    <div>
+      <label>App</label>
+      <select id="app">
+        <option value="stonedesk">StoneDesk</option>
+        <option value="sairnbuild">SAIRNbuild</option>
+        <option value="sairnlaw">SAIRNlaw</option>
+        <option value="sairnscape">SAIRNscape</option>
+        <option value="sairndesign">SAIRNdesign</option>
+        <option value="sairncode">SAIRNcode</option>
+        <option value="sairncare">SAIRNcare</option>
+        <option value="sairnvet">SAIRNvet</option>
+        <option value="sairnfuneral">SAIRNfuneral</option>
+        <option value="sairnmechanical">SAIRNmechanical</option>
+        <option value="all">All Apps (Suite)</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label>Plan</label>
+      <select id="plan">
+        <option value="founding">Founding Member ($199/mo)</option>
+        <option value="standard">Standard ($299/mo)</option>
+      </select>
+    </div>
+    <div>
+      <label>Customer Number (01-99)</label>
+      <input type="number" id="custnum" value="01" min="1" max="99">
+    </div>
+  </div>
+  <button class="btn" onclick="generateKey()">Generate License Key</button>
+
+  <div id="key-result" style="display:none;margin-top:16px;">
+    <label>Generated Key (give this to the customer)</label>
+    <div class="key-out" id="key-display"></div>
+    <button class="btn btn-copy" onclick="copyKey()">Copy Key</button>
+
+    <label style="margin-top:16px;">Add to Vercel Environment Variable (SAIRN_LICENSE_KEYS)</label>
+    <div class="json-out" id="json-display"></div>
+    <button class="btn btn-copy" style="margin-top:8px;" onclick="copyJSON()">Copy JSON Entry</button>
+
+    <div class="warn" style="margin-top:12px;">
+      <strong>To activate this key:</strong><br>
+      1. Copy the JSON entry above<br>
+      2. Go to <a href="https://vercel.com/dashboard" target="_blank">vercel.com/dashboard</a> → your SAIRN project → Settings → Environment Variables<br>
+      3. Find SAIRN_LICENSE_KEYS → Edit → add the new entry inside the JSON object<br>
+      4. Click Save → Redeploy. Key is live in ~60 seconds.
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>How to Activate a New Customer</h2>
+  <div class="step"><strong>Step 1</strong> — Customer pays (Zelle, check, Stripe link, whatever). Confirm payment received.</div>
+  <div class="step"><strong>Step 2</strong> — Open this tool. Enter shop name, app, plan. Click Generate.</div>
+  <div class="step"><strong>Step 3</strong> — Copy the key and the JSON entry. Go to Vercel → SAIRN project → Settings → Environment Variables → SAIRN_LICENSE_KEYS. Add the new entry and save.</div>
+  <div class="step"><strong>Step 4</strong> — Email the customer their license key and the 7-Day SOP. Tell them to go to their app → Formula Editor → License Key field → paste key → Save.</div>
+  <div class="step"><strong>Step 5</strong> — Done. They now have unlimited AI calls, higher token limits, and their key in the footer of every response.</div>
+</div>
+
+<div class="card">
+  <h2>License Key Format</h2>
+  <table>
+    <tr><th>Segment</th><th>Example</th><th>Meaning</th></tr>
+    <tr><td>SAIRN</td><td>SAIRN</td><td>SAIRN Technologies prefix</td></tr>
+    <tr><td>App Code</td><td>SD</td><td>SD=StoneDesk, SB=SAIRNbuild, SL=SAIRNlaw, SS=SAIRNscape, etc.</td></tr>
+    <tr><td>Customer #</td><td>01</td><td>Sequential customer number (first 20 = Founding Members)</td></tr>
+    <tr><td>Year</td><td>2025</td><td>Year of subscription start</td></tr>
+    <tr><td>Unique</td><td>ALPHA</td><td>Random 4-5 char identifier</td></tr>
+  </table>
+  <p style="margin-top:10px;font-size:12px;color:#64748B;">Example: <strong>SAIRN-SD01-2025-ALPHA</strong> = StoneDesk, Customer #1, 2025, unique ID ALPHA</p>
+</div>
+
+<script>
+var currentKey = '';
+var currentJSON = '';
+
+var APP_CODES = {
+  stonedesk:'SD', sairnbuild:'SB', sairnlaw:'SL', sairnscape:'SS',
+  sairndesign:'SD2', sairncode:'SC', sairncare:'SCA', sairnvet:'SV',
+  sairnfuneral:'SF', sairnmechanical:'SM', all:'ALL'
+};
+
+function randId(len) {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var out = '';
+  for (var i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function generateKey() {
+  var shop = document.getElementById('shop').value.trim();
+  var app = document.getElementById('app').value;
+  var plan = document.getElementById('plan').value;
+  var num = String(document.getElementById('custnum').value).padStart(2,'0');
+  if (!shop) { alert('Enter shop name'); return; }
+
+  var code = APP_CODES[app] || 'SD';
+  var year = new Date().getFullYear();
+  var uid = randId(5);
+  currentKey = 'SAIRN-' + code + num + '-' + year + '-' + uid;
+
+  var entry = {};
+  entry[currentKey] = { app: app, shop: shop, plan: plan, active: true, created: new Date().toISOString().slice(0,10) };
+  currentJSON = JSON.stringify(entry, null, 2);
+
+  document.getElementById('key-display').textContent = currentKey;
+  document.getElementById('json-display').textContent = currentJSON;
+  document.getElementById('key-result').style.display = 'block';
+}
+
+function copyKey() {
+  navigator.clipboard.writeText(currentKey).then(function() {
+    alert('Key copied: ' + currentKey);
+  });
+}
+
+function copyJSON() {
+  navigator.clipboard.writeText(currentJSON).then(function() {
+    alert('JSON copied. Paste into SAIRN_LICENSE_KEYS in Vercel.');
+  });
+}
+</script>
+</body>
+</html>
