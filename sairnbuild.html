@@ -3466,6 +3466,25 @@ window.viewMarkup = function(photoId) {
 
 </script>
 
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNbuild
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F59E0B');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnbuild', 'app_loaded', {
+    app: 'SAIRNbuild',
+    color: '#F59E0B',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNbuild');
+})();
+</script>
 </body></html>';
   var w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
@@ -3640,7 +3659,26 @@ function sbPrintEstimate() {
     '<div style="margin-top:32px;padding-top:20px;border-top:2px solid #eee;display:grid;grid-template-columns:1fr 1fr;gap:32px">' +
     '<div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Client Signature / Date</div>' +
     '<div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Contractor Signature / Date</div></div>' +
-    '</body></html>';
+    '
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNbuild
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F59E0B');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnbuild', 'app_loaded', {
+    app: 'SAIRNbuild',
+    color: '#F59E0B',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNbuild');
+})();
+</script>
+</body></html>';
   var w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
@@ -3997,7 +4035,26 @@ function sbPrintInvoice(id) {
     '</tbody></table>' +
     '<div style="text-align:right;font-size:18px;font-weight:900">AMOUNT DUE: ' + sbFmt2(inv.amount - (inv.retainage||0)) + '</div>' +
     '<div style="margin-top:40px;font-size:11px;color:#888">Remit payment to: ' + esc(company) + ' · ' + esc(sbSettings.address||'') + '</div>' +
-    '</body></html>';
+    '
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNbuild
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F59E0B');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnbuild', 'app_loaded', {
+    app: 'SAIRNbuild',
+    color: '#F59E0B',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNbuild');
+})();
+</script>
+</body></html>';
   var w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
@@ -4938,7 +4995,26 @@ function sbGenProfitReport() {
     '<h2>Job Profitability Report — ' + (sbSettings.company || 'SAIRNbuild') + '</h2><p>' + new Date().toLocaleDateString() + '</p>' +
     '<table><thead><tr><th>Project</th><th>Contract</th><th>Costs</th><th>Gross Profit</th><th>Margin</th></tr></thead><tbody>' + rows + '</tbody></table>' +
     '<div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Prepared By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Reviewed By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Owner / Date</div></div>' +
-    '</body></html>';
+    '
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNbuild
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F59E0B');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnbuild', 'app_loaded', {
+    app: 'SAIRNbuild',
+    color: '#F59E0B',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNbuild');
+})();
+</script>
+</body></html>';
   var w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
@@ -5208,7 +5284,26 @@ function chkPrintCheck() {
     '<div><div style="font-size:10px;color:#888">MEMO</div><div style="border-bottom:1px solid #999;min-width:200px;padding-bottom:2px">' + esc(memo) + '</div></div>' +
     '<div class="sig-line">Authorized Signature</div></div>' +
     '<div class="routing-line">A ' + routingLine + ' A</div>' +
-    '</div></body></html>';
+    '</div>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNbuild
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F59E0B');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnbuild', 'app_loaded', {
+    app: 'SAIRNbuild',
+    color: '#F59E0B',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNbuild');
+})();
+</script>
+</body></html>';
   var w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
@@ -5368,7 +5463,26 @@ function sbPrintContent(title, content) {
     '<div style="border-top:1px solid #999;padding-top:8px;font-size:10px;color:#888">Prepared By / Date</div>' +
     '<div style="border-top:1px solid #999;padding-top:8px;font-size:10px;color:#888">Reviewed By / Date</div>' +
     '<div style="border-top:1px solid #999;padding-top:8px;font-size:10px;color:#888">Authorized / Date</div>' +
-    '</div></body></html>';
+    '</div>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNbuild
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F59E0B');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnbuild', 'app_loaded', {
+    app: 'SAIRNbuild',
+    color: '#F59E0B',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNbuild');
+})();
+</script>
+</body></html>';
   var w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
@@ -6354,7 +6468,26 @@ setTimeout(function(){if(typeof checkBuild_SmartFlags==="function")checkBuild_Sm
   if (hasData) return; // Real data exists — do not seed
 // SAIRN DEMO DATA SEED — Session 19
 // Injects realistic demo data into all 10 apps via localStorage
-// Run this in browser console on any SAIRN app page, OR inject before </body>
+// Run this in browser console on any SAIRN app page, OR inject before 
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNbuild
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F59E0B');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnbuild', 'app_loaded', {
+    app: 'SAIRNbuild',
+    color: '#F59E0B',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNbuild');
+})();
+</script>
+</body>
 // Resets all apps to a rich, impressive demo state
 // Michael L. Dibert — SAIRN Technologies
 
@@ -6633,6 +6766,25 @@ window.saDebounce = function(func, wait) {
     timeout = setTimeout(function() { func.apply(context, args); }, wait || 300);
   };
 };
+</script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNbuild
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#F59E0B');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnbuild', 'app_loaded', {
+    app: 'SAIRNbuild',
+    color: '#F59E0B',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNbuild');
+})();
 </script>
 </body>
 </html>
