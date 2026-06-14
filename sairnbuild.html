@@ -204,20 +204,20 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 <body>
 <script>
 
-// ╔══════════════════════════════════════════════════════════╗
+// +==========================================================+
 
 function showHomeownerReport(){var modal=document.getElementById("sb-client-modal");if(!modal){modal=document.createElement("div");modal.id="sb-client-modal";modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:92%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.3)";inner.innerHTML="<div style=\'display:flex;justify-content:space-between;align-items:center;margin-bottom:20px\'><div style=\'font-size:18px;font-weight:900;color:#78350F\'>Project Report</div><button onclick=\'document.getElementById(&quot;sb-client-modal&quot;).style.display=&quot;none&quot;\' style=\'padding:8px 16px;background:transparent;border:1px solid #E5E7EB;border-radius:8px;cursor:pointer;font-size:12px\'>Close</button></div><div id=\'sbcr-date\' style=\'font-size:11px;color:#6B7280;margin-bottom:16px\'></div><div id=\'sbcr-jobs\'></div><button onclick=\'window.print()\' style=\'margin-top:14px;padding:10px 20px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer\'>Print / PDF</button>";modal.appendChild(inner);document.body.appendChild(modal);}document.getElementById("sbcr-date").textContent=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});var jobs=window.sb_jobs||[];document.getElementById("sbcr-jobs").innerHTML=jobs.length?jobs.slice(0,8).map(function(j){var pct=Math.min(j.progress||j.completion||25,100);return "<div style=\'border:1px solid #E5E7EB;border-radius:10px;padding:14px;margin-bottom:8px\'><div style=\'font-weight:800\'>"+(j.name||j.customer||"Project")+"</div><div style=\'background:#F3F4F6;border-radius:4px;height:8px;margin:8px 0\'><div style=\'background:#F59E0B;height:8px;border-radius:4px;width:"+pct+"%\'></div></div><div style=\'font-size:11px;color:#6B7280;text-align:right\'>"+pct+"% complete</div></div>";}).join(""):"<div style=\'color:#6B7280;text-align:center;padding:20px\'>No active projects.</div>";modal.style.display="flex";}
 
-// ║   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  ║
-// ║   30-Layer Protection Framework                          ║
-// ║   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance ║
-// ║   Built by SAIRN Technologies - Michael L. Dibert       ║
-// ╚══════════════════════════════════════════════════════════╝
+// |   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  |
+// |   30-Layer Protection Framework                          |
+// |   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance |
+// |   Built by SAIRN Technologies - Michael L. Dibert       |
+// +==========================================================+
 
 (function() {
 'use strict';
 
-// ── CONFIGURATION ──────────────────────────────────────────
+// -- CONFIGURATION ------------------------------------------
 var SAIRN_SEC = {
   version: '3.0',
   appName: document.title || 'SAIRN App',
@@ -242,9 +242,9 @@ var SAIRN_SEC = {
   loginAttempts: parseInt(sessionStorage.getItem('s_attempts') || '0')
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 1 — BROWSER LAYER (Layers 1-18)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 1 — Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
@@ -615,9 +615,9 @@ window.saSanitizeResponse = function(text) {
   } catch(e) {}
 })();
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 2 — API PROXY LAYER (Layers 19-23)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 19 — Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
@@ -686,9 +686,9 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 3 — DATA LAYER (Layers 24-27)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 24 — Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
@@ -734,9 +734,9 @@ window.saWipeAllData = function() {
   location.reload();
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 4 — COMPLIANCE LAYER (Layers 28-30)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 28 — CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
@@ -747,7 +747,7 @@ window.saWipeAllData = function() {
   notice.innerHTML = '<div style="flex:1;min-width:280px">&#127468;&#127463; <b>Privacy Notice:</b> SAIRN uses localStorage to save your project data locally on this device only. We do not sell or share your data. Covered under CCPA and GDPR. <a href="#" onclick="document.getElementById(\'sairn-privacy-detail\').style.display=\'block\';return false;" style="color:#A5B4FC">Learn more</a></div>' +
     '<div style="display:flex;gap:8px;flex-shrink:0">' +
     '<button onclick="saAcceptPrivacy()" style="padding:7px 18px;background:#6366F1;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Accept</button>' +
-    '<button onclick="saDeclinePrivacy()" style="padding:7px 14px;background:transparent;color:#A5B4FC;border:1px solid #4F46E5;border-radius:7px;font-size:12px;cursor:pointer">Decline</button>' +
+    '<button onclick="saDeclinePrivacy()" style="padding:7px 14px;background:transparent;color:#A5B4FC;border:1px solid #F59E0B;border-radius:7px;font-size:12px;cursor:pointer">Decline</button>' +
     '<button onclick="document.getElementById(\'sairn-privacy-notice\').remove()" style="background:none;border:none;color:#6B7280;font-size:18px;cursor:pointer;padding:0 4px">&#215;</button></div>';
   document.body.appendChild(notice);
   // Detail panel
@@ -812,7 +812,7 @@ window.saShowSecurityStatus = function() {
   alert(report);
 };
 
-// ── INITIALIZATION MESSAGE ─────────────────────────────────
+// -- INITIALIZATION MESSAGE ---------------------------------
 saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
 console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
 
@@ -2048,7 +2048,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <option value="#DC2626">🔴 Red (Issues)</option>
       <option value="#F59E0B">🟡 Yellow (Notes)</option>
       <option value="#16a34a">🟢 Green (Approved)</option>
-      <option value="#2563EB">🔵 Blue (Info)</option>
+      <option value="#F59E0B">🔵 Blue (Info)</option>
       <option value="#000000">⚫ Black</option>
     </select>
   </div>
@@ -2178,7 +2178,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
     <button class="sb-btn-secondary" onclick="aiWeatherRisk()">✨ AI Delay Risk Analysis</button>
   </div>
-  <div id="weather-current" style="display:none;background:linear-gradient(135deg,#1E3A5F,#2563EB);border-radius:16px;padding:24px;color:#fff;margin-bottom:16px">
+  <div id="weather-current" style="display:none;background:linear-gradient(135deg,#1E3A5F,#F59E0B);border-radius:16px;padding:24px;color:#fff;margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
       <div>
         <div style="font-size:48px;font-weight:900" id="wx-temp">--°F</div>
@@ -2260,7 +2260,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <option value="#DC2626">🔴 Red - Issue</option>
       <option value="#16a34a">🟢 Green - OK</option>
       <option value="#F59E0B">🟡 Yellow - Note</option>
-      <option value="#2563EB">🔵 Blue - Info</option>
+      <option value="#F59E0B">🔵 Blue - Info</option>
     </select>
     <button class="sb-btn-secondary" onclick="saveMarkupPhoto()">💾 Save Markup</button>
     <button class="sb-btn-secondary" onclick="aiPhotoAnalysis()">✨ AI Deficiency Check</button>
@@ -2628,6 +2628,37 @@ function sbPct(n) { return (parseFloat(n) || 0).toFixed(1) + '%'; }
 function sbDateFmt(d) { if (!d) return '-'; return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+
+function sbReadFromBridge(){
+  // SAIRNbuild reads: crew roster + labor rates for bid calculations
+  // READ ONLY -- never writes back to HR or ACC
+  try {
+    var employees = [];
+    var raw = localStorage.getItem('sh_employees');
+    if(raw) employees = JSON.parse(raw);
+    if(!employees.length) {
+      var bd = localStorage.getItem('sairn_bridge_hr_payload');
+      if(bd) { var bdp = JSON.parse(bd); employees = bdp.data&&bdp.data.employees||[]; }
+    }
+    
+    // Also get ACC budget data for bid validation
+    var accData = {};
+    try {
+      var accRaw = localStorage.getItem('sairn_bridge_acc_payload');
+      if(accRaw) accData = JSON.parse(accRaw).data||{};
+    } catch(e){}
+    
+    localStorage.setItem('sb_hr_crew', JSON.stringify(employees));
+    localStorage.setItem('sb_acc_budget', JSON.stringify(accData.summary||{}));
+    
+    if(employees.length) {
+      sbNotify('Bridge sync: '+employees.length+' crew members loaded from SAIRNhr','green');
+    } else {
+      sbNotify('No crew data -- run Sync All Apps in SAIRNhr first','orange');
+    }
+    return employees;
+  } catch(e) { sbNotify('Bridge read failed','red'); return []; }
+}
 function sbNotify(msg, color) {
   var colors = { sky: '#F59E0B', green: '#059669', red: '#DC2626', amber: '#D97706' };
   var n = document.getElementById('sb-notif');
@@ -5351,11 +5382,11 @@ document.addEventListener('keydown', function(e) {
 console.log('SAIRNbuild v2.0 loaded — SAIRN Technologies — Sky Blue #F59E0B — 25+ panels — AI at the core');
 
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 //  SAIRNbuild v3.0 — 20 New Feature Functions
-// ═══════════════════════════════════════════════════════
+// =======================================================
 
-// ── DRAWING / PLAN VIEWER ────────────────────────────
+// -- DRAWING / PLAN VIEWER ----------------------------
 var drawCtx = null, drawCanvas = null, drawImg = null;
 var drawingTool = 'pen', drawColor = '#DC2626', isDrawing = false;
 var drawStartX = 0, drawStartY = 0;
@@ -5419,7 +5450,7 @@ function downloadMarkup() {
   sbNotify('Markup saved', 'ok');
 }
 
-// ── SAFETY LOG ──────────────────────────────────────
+// -- SAFETY LOG --------------------------------------
 var safetyLogs = JSON.parse(localStorage.getItem('sb_safety') || '[]');
 
 function newSafetyIncident(type) {
@@ -5482,7 +5513,7 @@ async function aiSafetyReview() {
 
 function generateOSHAReport() { sbNotify('OSHA 300 Log generated — print from browser', 'ok'); window.print(); }
 
-// ── EQUIPMENT TRACKER ────────────────────────────────
+// -- EQUIPMENT TRACKER --------------------------------
 var equipment = JSON.parse(localStorage.getItem('sb_equipment') || '[]');
 
 function showEquipForm() { document.getElementById('equip-form').style.display = 'block'; }
@@ -5553,7 +5584,7 @@ function exportEquipCSV() {
   var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'SAIRNbuild-Equipment.csv'; a.click();
 }
 
-// ── MATERIAL DELIVERY ────────────────────────────────
+// -- MATERIAL DELIVERY --------------------------------
 var materials_sb = JSON.parse(localStorage.getItem('sb_materials') || '[]');
 
 function showMatForm() { document.getElementById('mat-form').style.display = 'block'; document.getElementById('mat-exp-date').value = new Date().toISOString().split('T')[0]; }
@@ -5591,7 +5622,7 @@ function renderMaterialList() {
   document.getElementById('mat-received').textContent = received;
   document.getElementById('mat-backorder').textContent = backorder;
   if (!materials_sb.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">No deliveries tracked yet.</div>'; return; }
-  var statusColors = {'Ordered':'#2563EB','In Transit':'#7C3AED','Partial':'#F59E0B','Received':'#16a34a','Backordered':'#DC2626','Cancelled':'#6B7280'};
+  var statusColors = {'Ordered':'#F59E0B','In Transit':'#7C3AED','Partial':'#F59E0B','Received':'#16a34a','Backordered':'#DC2626','Cancelled':'#6B7280'};
   el.innerHTML = materials_sb.map(function(m) {
     var isLate = (m.status === 'Ordered' || m.status === 'In Transit') && m.expDate && m.expDate < today;
     return '<div style="background:#fff;border:1px solid' + (isLate ? '#DC2626' : ' var(--sand)') + ';border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
@@ -5604,7 +5635,7 @@ function renderMaterialList() {
   }).join('');
 }
 
-// ── WEATHER ──────────────────────────────────────────
+// -- WEATHER ------------------------------------------
 var weatherDelays = JSON.parse(localStorage.getItem('sb_wxdelays') || '[]');
 
 async function fetchWeather() {
@@ -5672,7 +5703,7 @@ function renderWxDelayLog() {
   }).join('');
 }
 
-// ── PERMITS ──────────────────────────────────────────
+// -- PERMITS ------------------------------------------
 var permits_sb = JSON.parse(localStorage.getItem('sb_permits') || '[]');
 
 function showPermitForm() { document.getElementById('permit-form').style.display = 'block'; document.getElementById('perm-app-date').value = new Date().toISOString().split('T')[0]; }
@@ -5712,7 +5743,7 @@ function renderPermitList() {
   document.getElementById('perm-approved').textContent = approved;
   document.getElementById('perm-expired').textContent = expiring;
   if (!permits_sb.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">No permits tracked yet.</div>'; return; }
-  var statusColors = {'Applied':'#2563EB','Under Review':'#7C3AED','Approved':'#16a34a','Inspection Scheduled':'#F59E0B','Inspection Passed':'#16a34a','Inspection Failed':'#DC2626','Final / CO Issued':'#16a34a','Expired':'#6B7280'};
+  var statusColors = {'Applied':'#F59E0B','Under Review':'#7C3AED','Approved':'#16a34a','Inspection Scheduled':'#F59E0B','Inspection Passed':'#16a34a','Inspection Failed':'#DC2626','Final / CO Issued':'#16a34a','Expired':'#6B7280'};
   el.innerHTML = permits_sb.map(function(p) {
     var expiring2 = p.expDate && p.expDate >= today && p.expDate <= thirtyDays;
     return '<div style="background:#fff;border:1px solid var(--sand);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">' +
@@ -5733,7 +5764,7 @@ async function aiPermitReview() {
   sbNotify(res.substring(0,100) + '...', 'info');
 }
 
-// ── PHOTO MARKUP ─────────────────────────────────────
+// -- PHOTO MARKUP -------------------------------------
 var markupCanvas2 = null, markupCtx2 = null, markupImgData = null;
 var markupPhotos = JSON.parse(localStorage.getItem('sb_markups') || '[]');
 
@@ -5807,7 +5838,7 @@ async function aiPhotoAnalysis() {
   sbNotify('AI photo analysis requires Pro plan photo processing', 'info');
 }
 
-// ── SELECTIONS ───────────────────────────────────────
+// -- SELECTIONS ---------------------------------------
 var selections = JSON.parse(localStorage.getItem('sb_selections') || '[]');
 
 function showSelForm() { document.getElementById('sel-form').style.display = 'block'; }
@@ -5855,7 +5886,7 @@ function renderSelectionList() {
   document.getElementById('sel-overages').textContent = '$'+totalOverage.toLocaleString();
   document.getElementById('sel-approved').textContent = approved;
   if (!selections.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">No selections logged yet.</div>'; return; }
-  var statusColors = {'Pending Selection':'#6B7280','Presented to Client':'#2563EB','Client Approved':'#16a34a','Ordered':'#7C3AED','Delivered':'#F59E0B','Installed':'#16a34a'};
+  var statusColors = {'Pending Selection':'#6B7280','Presented to Client':'#F59E0B','Client Approved':'#16a34a','Ordered':'#7C3AED','Delivered':'#F59E0B','Installed':'#16a34a'};
   el.innerHTML = selections.map(function(s) {
     var overage = s.actual > s.allowance && s.allowance > 0 ? s.actual - s.allowance : 0;
     return '<div style="background:#fff;border:1px solid' + (overage > 0 ? ' #DC2626' : ' var(--sand)') + ';border-radius:10px;padding:12px;margin-bottom:8px">' +
@@ -5867,7 +5898,7 @@ function renderSelectionList() {
   }).join('');
 }
 
-// ── ALLOWANCES ───────────────────────────────────────
+// -- ALLOWANCES ---------------------------------------
 var allowances = JSON.parse(localStorage.getItem('sb_allowances') || '[]');
 
 function showAlwForm() { document.getElementById('alw-form').style.display = 'block'; }
@@ -5918,7 +5949,7 @@ function renderAllowanceList() {
   }).join('');
 }
 
-// ── WARRANTIES ───────────────────────────────────────
+// -- WARRANTIES ---------------------------------------
 var warranties = JSON.parse(localStorage.getItem('sb_warranties2') || '[]');
 
 function showWarrForm() { document.getElementById('warr-form').style.display = 'block'; }
@@ -5965,7 +5996,7 @@ function renderWarrantyList() {
   }).join('');
 }
 
-// ── OWNER REPORT ─────────────────────────────────────
+// -- OWNER REPORT -------------------------------------
 async function generateOwnerReport() {
   var el = document.getElementById('owner-report-output');
   el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">AI generating your owner progress report...</div>';
@@ -5987,7 +6018,7 @@ function emailOwnerReport() {
   navigator.clipboard.writeText(text).then(function() { sbNotify('Report copied — paste into email', 'ok'); });
 }
 
-// ── CLOSEOUT PACKAGE ─────────────────────────────────
+// -- CLOSEOUT PACKAGE ---------------------------------
 async function generateCloseout() {
   var el = document.getElementById('closeout-output');
   el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">AI compiling closeout package...</div>';
@@ -6009,7 +6040,7 @@ async function generateCloseout() {
     }).join('');
 }
 
-// ── BID MANAGER ──────────────────────────────────────
+// -- BID MANAGER --------------------------------------
 var bidPackages = JSON.parse(localStorage.getItem('sb_bids') || '[]');
 
 function showBidForm() { document.getElementById('bid-form').style.display = 'block'; document.getElementById('bid-due').value = new Date(Date.now()+7*24*60*60*1000).toISOString().split('T')[0]; }
@@ -6119,7 +6150,7 @@ function awardBid(id) {
   sbNotify(bp.name + ' awarded to ' + winner, 'ok');
 }
 
-// ── INVOICE SCANNER ──────────────────────────────────
+// -- INVOICE SCANNER ----------------------------------
 var scannedInvoices = JSON.parse(localStorage.getItem('sb_invoices') || '[]');
 
 async function scanInvoice(event) {
@@ -6210,7 +6241,7 @@ function renderInvHistory() {
   }).join('');
 }
 
-// ── MULTI-PROJECT DASHBOARD ──────────────────────────
+// -- MULTI-PROJECT DASHBOARD --------------------------
 function refreshMultiDash() {
   var grid = document.getElementById('multidash-grid');
   var projects = typeof sbProjects !== 'undefined' ? sbProjects : [];
@@ -6222,7 +6253,7 @@ function refreshMultiDash() {
     return;
   }
   grid.innerHTML = projects.map(function(p) {
-    var statusColors = {'Lead':'#6B7280','Estimating':'#2563EB','Awarded':'#7C3AED','Active':'#F59E0B','Punch':'#F59E0B','Complete':'#16a34a','On Hold':'#DC2626'};
+    var statusColors = {'Lead':'#6B7280','Estimating':'#F59E0B','Awarded':'#7C3AED','Active':'#F59E0B','Punch':'#F59E0B','Complete':'#16a34a','On Hold':'#DC2626'};
     var color = statusColors[p.status] || '#6B7280';
     var health = p.status === 'Active' ? Math.round(Math.random()*30+65) : p.status === 'Complete' ? 100 : Math.round(Math.random()*40+40);
     var healthColor = health >= 80 ? '#16a34a' : health >= 60 ? '#F59E0B' : '#DC2626';
@@ -6260,7 +6291,7 @@ function exportPortfolioCSV() {
   var a = document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='SAIRNbuild-Portfolio.csv'; a.click();
 }
 
-// ── UTILITY: Claude API call ─────────────────────────
+// -- UTILITY: Claude API call -------------------------
 async function callClaude(system, userMsg) {
   try {
     var res = await fetch('https://sairn.vercel.app/api/claude', {
@@ -6290,7 +6321,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-// ── CSV EXPORT ────────────────────────────────────────────────────────────
+// -- CSV EXPORT ------------------------------------------------------------
 function dlCSV(rows, filename) {
   var csv = rows.map(function(r) {
     return r.map(function(v) {
