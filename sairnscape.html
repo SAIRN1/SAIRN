@@ -266,9 +266,9 @@ const SYSTEM = "You are SAIRNscape, an AI business management platform for lands
 const APP_NAME = "SAIRNscape";
 const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnscape';
-const APP_ICON = '🌿';
+const APP_ICON = '';
 let messages = [], isLoading = false, lastResponse = '';
-const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Property",intro:"Let us build your estimate. Tell me about the property -- size, services needed, and anything special about it.",steps:["What services are they asking for -- mowing, mulching, cleanup, planting, design?","How many crew members would you send and how many hours?","Any materials -- mulch, plants, seed, equipment rental?"],finish:"Here is your complete estimate with labor, materials, overhead, profit margin, and recommended price. I will also flag anything that could affect your margin."},{id:"schedule",emoji:"🗓️",label:"Build My Week Schedule",intro:"Let us optimize your crew schedule. How many crew members do you have available this week?",steps:["How many jobs are on your list for this week -- give me the locations or neighborhoods.","Any time constraints -- specific days clients need service, or jobs that must go first?"],finish:"Here is your optimized weekly schedule with route grouping to minimize drive time and maximize billable hours."},{id:"costing",emoji:"💰",label:"Analyze a Job s Profitability",intro:"Let us see if this job is actually making you money. What is the account -- residential or commercial, and what do you charge them?",steps:["How many crew hours does it take each visit, and how often do you service them?","What are your direct costs -- labor rate, fuel, materials per visit?"],finish:"Here is the true profitability of this account -- and whether you should reprice, keep, or let it go."}];
+const GUIDED_FLOWS = [{id:"estimate",emoji:"",label:"Estimate This Property",intro:"Let us build your estimate. Tell me about the property -- size, services needed, and anything special about it.",steps:["What services are they asking for -- mowing, mulching, cleanup, planting, design?","How many crew members would you send and how many hours?","Any materials -- mulch, plants, seed, equipment rental?"],finish:"Here is your complete estimate with labor, materials, overhead, profit margin, and recommended price. I will also flag anything that could affect your margin."},{id:"schedule",emoji:"",label:"Build My Week Schedule",intro:"Let us optimize your crew schedule. How many crew members do you have available this week?",steps:["How many jobs are on your list for this week -- give me the locations or neighborhoods.","Any time constraints -- specific days clients need service, or jobs that must go first?"],finish:"Here is your optimized weekly schedule with route grouping to minimize drive time and maximize billable hours."},{id:"costing",emoji:"",label:"Analyze a Job s Profitability",intro:"Let us see if this job is actually making you money. What is the account -- residential or commercial, and what do you charge them?",steps:["How many crew hours does it take each visit, and how often do you service them?","What are your direct costs -- labor rate, fuel, materials per visit?"],finish:"Here is the true profitability of this account -- and whether you should reprice, keep, or let it go."}];
 let activeFlow = null, flowStep = 0;
 
 (function() {
@@ -318,7 +318,7 @@ function addMsg(role, content) {
     
     ;
   if(role==='ai') {
-    div.innerHTML=`<div class="msg-avatar">🤖</div><div class="msg-bubble"><p>${formatted}</p></div>`;
+    div.innerHTML=`<div class="msg-avatar"></div><div class="msg-bubble"><p>${formatted}</p></div>`;
   } else {
     div.innerHTML=`<div class="msg-bubble">${content}</div>`;
   }
@@ -330,7 +330,7 @@ function showTyping() {
   const area = document.getElementById('chatArea');
   const div = document.createElement('div');
   div.className='msg ai';div.id='typing-indicator';
-  div.innerHTML=`<div class="msg-avatar">🤖</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  div.innerHTML=`<div class="msg-avatar"></div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
   area.appendChild(div);
   area.scrollTop=area.scrollHeight;
 }
@@ -397,7 +397,7 @@ function showTokenBar(usage) {
   const pct = usage.pct;
   const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
   bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
-  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px">×</button>`;
+  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px"></button>`;
   document.body.appendChild(bar);
 }
 
@@ -407,7 +407,7 @@ function showUpgradeBar(data) {
   const bar = document.createElement('div');
   bar.id = 'sairn-upgrade-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
-  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
+  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px"></button>`;
   document.body.appendChild(bar);
 }
 async function loadUserMemory() {
@@ -437,7 +437,7 @@ async function loadFirstMessage() {
     if (empty) empty.remove();
     const div = document.createElement('div');
     div.className = 'msg ai';
-    div.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble"><p>${greeting}</p></div>`;
+    div.innerHTML = `<div class="msg-avatar"></div><div class="msg-bubble"><p>${greeting}</p></div>`;
     div.style.opacity = '0';
     div.style.transform = 'translateY(10px)';
     area.appendChild(div);
@@ -458,10 +458,10 @@ function showSaveBar(content) {
   bar.id = 'sairn-save-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:slideUp .2s ease';
   bar.innerHTML = `
-    <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>
-    <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>
-    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#22C55E;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔗 Share</button>
-    <button onclick="document.getElementById('sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>`;
+    <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit"> Copy</button>
+    <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit"> Save</button>
+    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#22C55E;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit"> Share</button>
+    <button onclick="document.getElementById('sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px"></button>`;
   document.body.appendChild(bar);
   setTimeout(() => { if(document.getElementById('sairn-save-bar')) document.getElementById('sairn-save-bar').remove(); }, 8000);
 }
@@ -472,7 +472,7 @@ window.addEventListener('beforeunload',()=>{
 
 // ============================================================
 // SAIRN Universal Intelligence Layer v6.2
-// Cloud Memory · Voice Mode · Outcome Tracking · White Label
+// Cloud Memory  Voice Mode  Outcome Tracking  White Label
 // ============================================================
 
 // White label config -- enterprise clients override these
@@ -597,7 +597,7 @@ function addVoiceButton() {
   if(!inputArea || document.getElementById('voice-btn')) return;
   const btn = document.createElement('button');
   btn.id = 'voice-btn';
-  btn.innerHTML = '🎤';
+  btn.innerHTML = '';
   btn.title = 'Voice input';
   btn.style.cssText = 'width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit';
   btn.onclick = toggleVoice;
@@ -620,7 +620,7 @@ function updateOutcomeDisplay() {
   if(!el) return;
   const mins = Math.round((Date.now() - sessionOutcomes.startTime) / 60000);
   const saved = Math.round(sessionOutcomes.queries * 4.2); // avg 4.2 min saved per query
-  el.textContent = sessionOutcomes.queries + ' queries · ' + saved + ' min saved this session';
+  el.textContent = sessionOutcomes.queries + ' queries  ' + saved + ' min saved this session';
 }
 
 function addOutcomeBar() {
@@ -634,7 +634,7 @@ function addOutcomeBar() {
   const label = document.createElement('span');
   label.id = 'sairn-outcomes';
   label.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);font-family:inherit';
-  label.textContent = '0 queries · 0 min saved this session';
+  label.textContent = '0 queries  0 min saved this session';
   bar.appendChild(dot); bar.appendChild(label);
   header.after(bar);
 }
@@ -652,7 +652,7 @@ function showSaveBar() {
   copyBtn.style.cssText = 'background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
   copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000); }); };
   const savedBadge = document.createElement('span');
-  savedBadge.textContent = '✓ Saved';
+  savedBadge.textContent = ' Saved';
   savedBadge.style.cssText = 'font-size:11px;color:#10B981;font-weight:600';
   const closeBtn = document.createElement('button'); closeBtn.textContent = 'x';
   closeBtn.style.cssText = 'background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px';
@@ -747,7 +747,7 @@ function showOILBadge() {
   const badge = document.createElement('div');
   badge.id = 'oil-badge';
   badge.style.cssText = 'position:fixed;top:68px;right:16px;background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;color:#F0B429;z-index:998;cursor:pointer';
-  badge.textContent = '🏢 ' + LOCATION_NAME;
+  badge.textContent = ' ' + LOCATION_NAME;
   badge.onclick = function() { showLocationSwitcher(); };
   document.body.appendChild(badge);
 }
@@ -935,6 +935,59 @@ function sairnCalc(vals,op){
   if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
   if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
   return vals[0];
+}
+</script>
+
+<!-- Pattern 10: Formula Editor (Admin) -->
+<div id="sairnscape-formula-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;width:540px;max-width:95vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.2);font-family:'Segoe UI',system-ui,sans-serif;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-size:16px;font-weight:700;color:#1E293B;">Formula Editor (Admin)</div>
+      <button onclick="document.getElementById('sairnscape-formula-panel').style.display='none'" style="background:transparent;border:none;font-size:18px;cursor:pointer;color:#64748B;">X</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:12px;font-weight:600;color:#64748B;">Lawn Mow Base Rate ($/sqft)</label>
+        <input type="number" value="0.012" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:12px;font-weight:600;color:#64748B;">Landscape Markup %</label>
+        <input type="number" value="35" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:12px;font-weight:600;color:#64748B;">Irrigation Labor Rate ($/hr)</label>
+        <input type="number" value="85" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:12px;font-weight:600;color:#64748B;">Snow Removal Base ($/visit)</label>
+        <input type="number" value="120" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:12px;font-weight:600;color:#64748B;">Tree Service Min Charge</label>
+        <input type="number" value="250" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:12px;font-weight:600;color:#64748B;">Overhead % (all jobs)</label>
+        <input type="number" value="18" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;">
+      </div>
+    </div>
+    <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
+      <button onclick="document.getElementById('sairnscape-formula-panel').style.display='none'" style="background:#fff;border:1px solid #E2E8F0;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+      <button onclick="document.getElementById('sairnscape-formula-panel').style.display='none';sairnscapeFormulaToast()" style="background:#22C55E;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">Save Formulas</button>
+    </div>
+  </div>
+</div>
+<script>
+function openFormulaEditor() {
+  var p = document.getElementById('sairnscape-formula-panel');
+  p.style.display = 'flex';
+}
+function sairnscapeFormulaToast() {
+  var t = document.createElement('div');
+  t.textContent = 'Formulas saved';
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#22C55E;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;';
+  document.body.appendChild(t);
+  setTimeout(function(){ document.body.removeChild(t); }, 2500);
 }
 </script>
 </body>
