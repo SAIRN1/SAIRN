@@ -1,941 +1,190 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SAIRNfuneral — AI that handles the paperwork so you can focus on the families.</title>
-<meta name="description" content="Obituary writing, family communication, documentation, vendor coordination, and aftercare — powered by Claude AI. Built with compassion for the funeral profession.">
-<meta name="theme-color" content="#0A0B14">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
-:root{--bg:#F8FAFC;--card:#FFFFFF;--a:#8B5CF6;--a2:#7C3AED;--grad:linear-gradient(135deg,#8B5CF6,#7C3AED);--ar:rgba(139,92,246,0.15);--ab:rgba(139,92,246,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
-html{scroll-behavior:smooth;background:var(--bg)}
-body{color:var(--w);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
-#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
-@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,.1)}90%{opacity:var(--o,.1)}50%{transform:translateY(-50px) scale(1.2)}}
-.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:60px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06)}
-.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
-.nav-gem{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 24px rgba(139,92,246,0.4)}
-.nav-brand{font-size:21px;font-weight:800;color:var(--w);letter-spacing:-0.5px}
-.nav-r{display:flex;align-items:center;gap:12px}
-.nav-badge{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
-.nav-cta{padding:10px 28px;border-radius:100px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(139,92,246,0.4);transition:all 0.2s}
-.nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(139,92,246,0.55)}
-.page{display:none;position:relative;z-index:1}.page.active{display:block}
-#appPage{display:none;height:100vh;padding-top:60px;flex-direction:column;position:relative;z-index:1}
-#appPage.active{display:flex}
-.hero{min-height:100vh;padding:80px 24px 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.1) 0%,transparent 60%)}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:32px}
-.hero-icon{font-size:80px;margin-bottom:24px;filter:drop-shadow(0 0 28px rgba(139,92,246,0.5))}
-.hero-title{font-size:clamp(42px,8vw,84px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;background:linear-gradient(135deg,#FFFFFF 0%,#8B5CF6 55%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-sub{font-size:clamp(16px,2.5vw,21px);color:var(--m);max-width:680px;line-height:1.75;margin-bottom:16px}
-.hero-market{font-size:13px;color:rgba(139,92,246,0.9);font-weight:600;letter-spacing:0.5px;margin-bottom:48px}
-.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
-.btn-grad{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(139,92,246,0.45);transition:all 0.2s}
-.btn-grad:hover{transform:translateY(-2px);box-shadow:0 14px 44px rgba(139,92,246,0.6)}
-.btn-outline{padding:18px 44px;border-radius:100px;font-size:16px;font-weight:600;background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;font-family:inherit;transition:all 0.2s}
-.btn-outline:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.3)}
-.hero-stats{display:flex;gap:48px;justify-content:center;flex-wrap:wrap}
-.hero-stat-val{font-size:30px;font-weight:800;color:var(--w);letter-spacing:-1px;margin-bottom:3px}
-.hero-stat-lbl{font-size:12px;color:var(--m)}
-.section{padding:100px 24px;max-width:1200px;margin:0 auto}
-.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);text-align:center;margin-bottom:12px}
-.sec-title{font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:16px;color:var(--w)}
-.sec-sub{font-size:16px;color:var(--m);text-align:center;max-width:580px;margin:0 auto 56px;line-height:1.7}
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
-.feat-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s}
-.feat-card:hover{border-color:rgba(139,92,246,0.3);transform:translateY(-3px);box-shadow:0 16px 40px rgba(139,92,246,0.1)}
-.feat-n{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--a);margin-bottom:12px}
-.feat-e{font-size:32px;margin-bottom:14px}
-.feat-t{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
-.feat-d{font-size:14px;color:var(--m);line-height:1.65}
-.pricing-section{padding:100px 24px;background:rgba(255,255,255,0.015)}
-.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:980px;margin:0 auto}
-.pc{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:36px 28px;text-align:left;position:relative}
-.pc.featured{border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.04)}
-.pc.featured::before{content:"Most Popular";position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 16px;border-radius:100px}
-.pt{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:8px}
-.pa{font-size:54px;font-weight:800;color:var(--w);letter-spacing:-2px;line-height:1}
-.pp{font-size:15px;color:var(--m);margin-bottom:4px}
-.pd{font-size:13px;color:var(--d);margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06)}
-.pf{margin-bottom:28px}
-.pf-item{display:flex;align-items:flex-start;gap:10px;padding:6px 0;font-size:13px;color:var(--m)}
-.pf-item::before{content:"✓";color:var(--a);font-weight:700;flex-shrink:0;margin-top:1px}
-.pb{width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
-.pb-grad{background:var(--grad);color:#fff;box-shadow:0 4px 16px rgba(139,92,246,0.35)}
-.pb-out{background:transparent;color:var(--a);border:1.5px solid rgba(139,92,246,0.3)}
-.app-header{padding:13px 20px;background:rgba(6,8,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
-.app-dot{width:9px;height:9px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a)}
-.mode-bar{display:flex;gap:7px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
-.mode-bar::-webkit-scrollbar{display:none}
-.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
-.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
-.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
-.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
-.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
-.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}.msg.user{justify-content:flex-end}
-@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 0 12px rgba(139,92,246,0.3)}
-.msg-bubble{max-width:70%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
-.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
-.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
-.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}
-.msg-bubble strong{color:var(--a)}.msg-bubble ul{padding-left:16px;margin:6px 0}.msg-bubble li{margin-bottom:4px}
-.typing{display:flex;gap:5px;align-items:center;padding:12px 16px}
-.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
-.typing-dot:nth-child(2){animation-delay:0.2s}.typing-dot:nth-child(3){animation-delay:0.4s}
-@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
-.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.88)}
-textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
-textarea#userInput:focus{border-color:rgba(139,92,246,0.5);background:rgba(255,255,255,0.07)}
-textarea#userInput::placeholder{color:var(--d)}
-#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 4px 16px rgba(139,92,246,0.4);transition:all 0.2s}
-#sendBtn:hover{transform:scale(1.07)}#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
-.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
-.empty-icon{font-size:56px;margin-bottom:16px;filter:drop-shadow(0 0 16px rgba(139,92,246,0.35))}
-.empty-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
-.empty-sub{font-size:14px;color:var(--m);max-width:380px;line-height:1.65;margin-bottom:24px}
-.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:460px}
-.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:inherit}
-.suggestion:hover{border-color:rgba(139,92,246,0.35);color:var(--w);background:rgba(139,92,246,0.06)}
-@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
-.footer-brand{font-size:20px;font-weight:800;color:var(--w);margin-bottom:6px}
-.footer-sub{font-size:13px;color:var(--d);margin-bottom:20px}
-.footer-links{display:flex;gap:24px;justify-content:center}
-.footer-link{font-size:12px;color:var(--d);text-decoration:none;transition:color 0.2s}
-.footer-link:hover{color:var(--a)}
-</style>
-<style>*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}@media print{.no-print,.sidebar,.topbar,button{display:none!important;}body{background:#fff!important;}}</style>
-</head>
-<body>
-<div id="particles"></div>
-<nav class="nav">
-  <a class="nav-logo" href="/" onclick="showPage('home');return false">
-    <div class="nav-gem">🕊️</div>
-    <div class="nav-brand">SAIRNfuneral</div>
-  </a>
-  <div class="nav-r">
-    <div class="nav-badge">SAIRN Technologies · B2B</div>
-    <button class="nav-cta" onclick="showPage('app')">Open Free Trial</button>
-  </div>
-</nav>
-
-<div id="homePage" class="page active">
-  <section class="hero">
-    <div class="hero-eyebrow">✦ AI-Native · Claude Powered · Patents Pending</div>
-    <div class="hero-icon">🕊️</div>
-    <h1 class="hero-title">SAIRNfuneral</h1>
-    <p class="hero-sub">AI that handles the paperwork so you can focus on the families.</p>
-    <p class="hero-market">$23B US funeral industry · 19,000 funeral homes · Virtually zero AI competitors</p>
-    <div class="hero-ctas">
-      <button class="btn-grad" onclick="showPage('app')">Start Free Trial — No Card Required</button>
-      <button class="btn-outline" onclick="document.querySelector('.pricing-section').scrollIntoView({behavior:'smooth'})">View Pricing</button>
-    </div>
-    <div class="hero-stats">
-      <div><div class="hero-stat-val">0</div><div class="hero-stat-lbl">AI competitors in this space</div></div>
-      <div><div class="hero-stat-val">Claude</div><div class="hero-stat-lbl">AI engine — world class</div></div>
-      <div><div class="hero-stat-val">14 day</div><div class="hero-stat-lbl">Free trial — full access</div></div>
-    </div>
-  </section>
-
-  <div class="section">
-    <div class="sec-eye">Built for funeral professionals</div>
-    <div class="sec-title">Everything you need.<br>AI that actually understands your work.</div>
-    <div class="sec-sub">Obituary writing, family communication, documentation, vendor coordination, and aftercare — powered by Claude AI. Built with compassion for the funeral profession.</div>
-    <div class="feat-grid">
-      <div class="feat-card"><div class="feat-n">01</div><div class="feat-e">✍️</div><div class="feat-t">Write Obituary</div><div class="feat-d">Generate a beautiful obituary from intake information</div></div><div class="feat-card"><div class="feat-n">02</div><div class="feat-e">💌</div><div class="feat-t">Family Communication</div><div class="feat-d">Help me communicate with a grieving family</div></div><div class="feat-card"><div class="feat-n">03</div><div class="feat-e">📋</div><div class="feat-t">Documentation</div><div class="feat-d">Help me complete or review required documentation</div></div><div class="feat-card"><div class="feat-n">04</div><div class="feat-e">🤝</div><div class="feat-t">Vendor Coordination</div><div class="feat-d">Help me coordinate with vendors and partners</div></div><div class="feat-card"><div class="feat-n">05</div><div class="feat-e">💙</div><div class="feat-t">Aftercare Follow-Up</div><div class="feat-d">Help me reach out to a family after services</div></div>
-      <div class="feat-card"><div class="feat-n">06</div><div class="feat-e">🧠</div><div class="feat-t">Memory across every client</div><div class="feat-d">Claude remembers every patient, property, case, and client. The more you use SAIRNfuneral, the smarter it gets — and the more it knows about your practice.</div></div>
-    </div>
-  </div>
-
-  <section class="pricing-section">
-    <div class="sec-eye" style="text-align:center">Pricing</div>
-    <div class="sec-title" style="text-align:center;font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;color:var(--w);margin-bottom:16px">Flat monthly. No per-user games.</div>
-    <div class="sec-sub">One price covers your whole team. Cancel anytime.</div>
-    <div class="pricing-grid">
-      <div class="pc">
-        <div class="pt">Starter</div>
-        <div class="pa">$199</div>
-        <div class="pp">/month</div>
-        <div class="pd">Solo practitioners and small teams</div>
-        <div class="pf">
-          <div class="pf-item">Full Claude AI — all modes and features</div>
-          <div class="pf-item">Guided flows — step-by-step intelligence</div>
-          <div class="pf-item">Memory — gets smarter every session</div>
-          <div class="pf-item">Up to 3 users</div>
-          <div class="pf-item">14-day free trial</div>
-        </div>
-        <button class="pb pb-out" onclick="showPage('app')">Start Free Trial</button>
-      </div>
-      <div class="pc featured">
-        <div class="pt">Professional</div>
-        <div class="pa">$299</div>
-        <div class="pp">/month</div>
-        <div class="pd">Growing practices with multiple staff</div>
-        <div class="pf">
-          <div class="pf-item">Everything in Starter</div>
-          <div class="pf-item">Unlimited users</div>
-          <div class="pf-item">Advanced reporting and analytics</div>
-          <div class="pf-item">Priority support</div>
-          <div class="pf-item">QuickBooks integration</div>
-          <div class="pf-item">API access</div>
-        </div>
-        <button class="pb pb-grad" onclick="showPage('app')">Start Free Trial</button>
-      </div>
-      <div class="pc">
-        <div class="pt">Business</div>
-        <div class="pa">$399</div>
-        <div class="pp">/month</div>
-        <div class="pd">Multi-location and high-volume operations</div>
-        <div class="pf">
-          <div class="pf-item">Everything in Professional</div>
-          <div class="pf-item">Custom AI training on your workflows</div>
-          <div class="pf-item">Dedicated onboarding and support</div>
-          <div class="pf-item">SLA and uptime guarantee</div>
-          <div class="pf-item">Enterprise data agreement</div>
-        </div>
-        <button class="pb pb-out" onclick="alert('Contact us at support@sairntechnologies.com for enterprise pricing')">Contact Sales</button>
-      </div>
-    </div>
-  </section>
-
-  <footer>
-    <div class="footer-brand">SAIRNfuneral</div>
-    <div class="footer-sub">Powered by Claude AI · SAIRN Technologies · © 2026 Michael L. Dibert · Patents Pending · Funeral homes · Cremation services · Multi-location memorial businesses · 19,000 US funeral homes</div>
-    <div class="footer-links">
-      <a class="footer-link" href="mailto:support@sairntechnologies.com">Support</a>
-      <a class="footer-link" href="https://sairn.vercel.app">SAIRN Platform</a>
-      <a class="footer-link" href="https://sairn.vercel.app/legal">Legal</a>
-    </div>
-  </footer>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>SAIRNfuneral -- SAIRN AI</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}:root{--c:#6B7280;--cd:#374151;--cl:#F9FAFB;--cm:#D1D5DB;--text:#1E293B;--muted:#64748B;--border:#E2E8F0;--red:#EF4444;--rl:#FEF2F2;--green:#22C55E;--gl:#F0FDF4;--amber:#F59E0B;--al:#FFFBEB;--sh:0 1px 3px rgba(0,0,0,.08);--r:10px;--f:'Segoe UI',system-ui,sans-serif;}body{font-family:var(--f);background:var(--cl);color:var(--text);font-size:14px;line-height:1.5;}#ls{position:fixed;inset:0;background:linear-gradient(135deg,#374151,#6B7280);display:flex;align-items:center;justify-content:center;z-index:9999;}.lc{background:#fff;border-radius:16px;padding:40px 36px;width:370px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;}.ll{width:56px;height:56px;background:linear-gradient(135deg,#374151,#6B7280);border-radius:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:18px;font-weight:900;color:#fff;}.lti{font-size:20px;font-weight:800;margin-bottom:3px;}.lsu{font-size:12px;color:var(--muted);margin-bottom:20px;}.rg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px;}.rb{border:2px solid var(--border);background:#fff;border-radius:8px;padding:9px;cursor:pointer;transition:all .15s;}.rb:hover,.rb.sel{border-color:var(--c);background:var(--cl);color:var(--cd);font-weight:600;}.ri{font-size:17px;display:block;margin-bottom:3px;}.rl{font-size:11px;font-weight:600;}.pr{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}.pd{width:44px;height:52px;border:2px solid var(--border);border-radius:8px;text-align:center;font-size:20px;font-weight:700;outline:none;}.pd:focus{border-color:var(--c);}.bl{background:var(--c);color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;width:100%;}.bl:hover{background:var(--cd);}.le{color:var(--red);font-size:12px;margin-top:7px;min-height:16px;}.lh{margin-top:10px;font-size:11px;color:var(--muted);}#app{display:none;min-height:100vh;}.tb{background:var(--cd);color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}.tlo{font-size:17px;font-weight:900;color:#fff;}.tr{display:flex;align-items:center;gap:8px;}.uc{background:rgba(255,255,255,.12);color:#fff;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:600;}.tbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:6px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;}.tbtn:hover{background:rgba(255,255,255,.22);}.ab{display:flex;min-height:calc(100vh - 56px);}.sb{width:214px;background:#fff;border-right:1px solid var(--border);padding:10px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}.sh{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:9px 15px 3px;}.ni{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all .12s;user-select:none;}.ni:hover{background:var(--cl);color:var(--text);}.ni.active{background:var(--cl);color:var(--cd);font-weight:600;border-left-color:var(--c);}.nicon{font-size:13px;width:17px;text-align:center;}.mn{flex:1;padding:20px;overflow-x:hidden;}.page{display:none;}.page.active{display:block;}.pt{font-size:20px;font-weight:800;margin-bottom:3px;}.ps{font-size:13px;color:var(--muted);margin-bottom:18px;}.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:11px;margin-bottom:18px;}.kc{background:#fff;border-radius:var(--r);padding:15px;box-shadow:var(--sh);border:1px solid var(--border);}.kl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}.kv{font-size:23px;font-weight:900;line-height:1;margin-bottom:3px;}.kd{font-size:12px;color:var(--muted);}.kd.up{color:var(--green);}.kd.dn{color:var(--red);}.ki{float:right;font-size:19px;margin-top:-2px;}.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);margin-bottom:14px;}.ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}.ct{font-size:13px;font-weight:700;}.cb{padding:16px;}.dt{width:100%;border-collapse:collapse;}.dt th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:7px 10px;border-bottom:2px solid var(--border);background:#F8FAFC;}.dt td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}.dt tr:last-child td{border-bottom:none;}.dt tr:hover td{background:var(--cl);}.ttr td{font-weight:700;background:var(--cl)!important;color:var(--cd);}.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:600;}.bg{background:var(--gl);color:#15803D;}.br{background:var(--rl);color:#B91C1C;}.ba{background:var(--al);color:#92400E;}.bc{background:var(--cl);color:var(--cd);}.fg{display:flex;flex-direction:column;gap:5px;}.fg.full{grid-column:1/-1;}.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}label{font-size:12px;font-weight:600;color:var(--muted);}input,select,textarea{border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--f);outline:none;background:#fff;width:100%;}input:focus,select:focus,textarea:focus{border-color:var(--c);}textarea{resize:vertical;min-height:65px;}.btn{border:none;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}.btn-sm{padding:4px 9px;font-size:12px;border-radius:5px;}.btn-c{background:var(--c);color:#fff;}.btn-c:hover{background:var(--cd);}.btn-o{background:#fff;border:1px solid var(--border);color:var(--text);}.btn-o:hover{border-color:var(--c);color:var(--c);}.btn-r{background:var(--red);color:#fff;}.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:11px;flex-wrap:wrap;}.sbox{border:1px solid var(--border);border-radius:7px;padding:6px 10px 6px 27px;font-size:13px;width:190px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center;outline:none;}.rbt{height:6px;background:var(--border);border-radius:3px;position:relative;margin:3px 0;}.rbf{height:6px;border-radius:3px;background:var(--c);position:absolute;left:0;top:0;}.flag{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:8px;}.fi{background:var(--cl);border:1px solid var(--cm);color:var(--cd);}.fw{background:var(--al);border:1px solid #FCD34D;color:#92400E;}.fe{background:var(--rl);border:1px solid #FECACA;color:#B91C1C;}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.mo{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;}.mo.open{display:flex;}.modal{background:#fff;border-radius:13px;width:530px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}.mh{padding:15px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}.mt{font-size:15px;font-weight:700;}.mc{background:transparent;border:none;font-size:17px;cursor:pointer;color:var(--muted);}.mb{padding:20px;}.mf{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}#aip{position:fixed;right:0;top:56px;bottom:0;width:345px;background:#fff;border-left:1px solid var(--border);box-shadow:-4px 0 14px rgba(0,0,0,.08);display:none;flex-direction:column;z-index:200;}#aip.open{display:flex;}.aih{background:var(--cd);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}.ait{font-size:13px;font-weight:700;}.aic{background:transparent;border:none;color:#fff;cursor:pointer;font-size:16px;}.aim{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}.amsg{padding:8px 11px;border-radius:9px;font-size:13px;line-height:1.5;max-width:92%;white-space:pre-wrap;}.amsg.u{background:var(--c);color:#fff;align-self:flex-end;}.amsg.b{background:var(--cl);color:var(--text);align-self:flex-start;border:1px solid var(--cm);}.amsg.t{color:var(--muted);font-style:italic;align-self:flex-start;}.aiq{padding:0 12px 8px;display:flex;flex-wrap:wrap;gap:5px;}.aqb{background:var(--cl);border:1px solid var(--cm);color:var(--cd);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;}.air{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:6px;}.air input{flex:1;}.toast{position:fixed;bottom:20px;right:20px;background:var(--cd);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}.toast.show{opacity:1;transform:translateY(0);}@media print{#ls,.tb,.sb,#aip,.toolbar,.mo,.toast{display:none!important;}.mn{padding:0;}body{background:#fff;}}@media(max-width:768px){.sb{display:none;}.fgrid{grid-template-columns:1fr;}.kg{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}#aip{width:100%;}}</style>
+</head><body>
+<div id="ls"><div class="lc"><div class="ll">SF</div><div class="lti">SAIRNfuneral</div><div class="lsu">AI Platform for Funeral Homes -- Included free with SAIRNbiz</div><div class="rg"><div class="rb" onclick="selRole('owner')" id="r-owner"><span class="ri">&#x1F451;</span><span class="rl">Owner</span></div><div class="rb" onclick="selRole('director')" id="r-director"><span class="ri">&#x1F4BC;</span><span class="rl">Director</span></div><div class="rb" onclick="selRole('staff')" id="r-staff"><span class="ri">&#x1F464;</span><span class="rl">Staff</span></div><div class="rb" onclick="selRole('coordinator')" id="r-coordinator"><span class="ri">&#x1F49C;</span><span class="rl">Family Coord.</span></div></div>
+<div class="pr"><input type="password" maxlength="1" class="pd" id="p0" oninput="pi(0)" onkeydown="pk(event,0)"><input type="password" maxlength="1" class="pd" id="p1" oninput="pi(1)" onkeydown="pk(event,1)"><input type="password" maxlength="1" class="pd" id="p2" oninput="pi(2)" onkeydown="pk(event,2)"><input type="password" maxlength="1" class="pd" id="p3" oninput="pi(3)" onkeydown="pk(event,3)"></div>
+<button class="bl" onclick="doLogin()">Sign In</button><div class="le" id="le"></div><div class="lh">Owner: 1234 | Director: 2345 | Staff: 3456 | Family Coord.: 4567</div></div></div>
+<div id="app"><div class="tb"><div class="tlo">SAIRNfuneral</div><div class="tr"><div class="uc" id="uc">Owner</div><button class="tbtn" onclick="toggleAI()">AI Assistant</button><button class="tbtn" onclick="window.print()">Print</button><button class="tbtn" onclick="doLogout()">Sign Out</button></div></div>
+<div class="ab"><div class="sb"><div class="sh">Overview</div>
+<div class="ni" onclick="nav('dash')" data-p="dash"><span class="nicon">&#x1F4CA;</span> Dashboard</div>
+<div class="sh">Cases</div>
+<div class="ni" onclick="nav('cases')" data-p="cases"><span class="nicon">&#x1F4BC;</span> All Cases</div>
+<div class="ni" onclick="nav('arrangements')" data-p="arrangements"><span class="nicon">&#x1F4CB;</span> Arrangements</div>
+<div class="ni" onclick="nav('preneed')" data-p="preneed"><span class="nicon">&#x1F4C5;</span> Pre-Need</div>
+<div class="sh">Services</div>
+<div class="ni" onclick="nav('inventory')" data-p="inventory"><span class="nicon">&#x26B0;&#xFE0F;</span> Caskets & Urns</div>
+<div class="ni" onclick="nav('cremation')" data-p="cremation"><span class="nicon">&#x1F525;</span> Cremation</div>
+<div class="ni" onclick="nav('vehicles')" data-p="vehicles"><span class="nicon">&#x1F697;</span> Vehicles</div>
+<div class="ni" onclick="nav('aftercare')" data-p="aftercare"><span class="nicon">&#x1F49C;</span> Aftercare</div>
+<div class="sh">Families</div>
+<div class="ni" onclick="nav('families')" data-p="families"><span class="nicon">&#x1F465;</span> Families</div>
+<div class="ni" onclick="nav('invoices')" data-p="invoices"><span class="nicon">&#x1F9FE;</span> Invoices</div>
+<div class="ni" onclick="nav('insurance')" data-p="insurance"><span class="nicon">&#x1F4C4;</span> Insurance Claims</div>
+<div class="sh">Finance</div>
+<div class="ni" onclick="nav('reports')" data-p="reports"><span class="nicon">&#x1F4C8;</span> Reports</div>
+<div class="ni" onclick="nav('costing')" data-p="costing"><span class="nicon">&#x1F4B9;</span> Job Costing</div>
+<div class="sh">Admin</div>
+<div class="ni" onclick="nav('formula')" data-p="formula"><span class="nicon">&#x1F527;</span> Formula Editor</div>
+<div class="ni" onclick="nav('csv')" data-p="csv"><span class="nicon">&#x1F4C1;</span> CSV Tools</div>
+<div class="ni" onclick="nav('sairnbiz')" data-p="sairnbiz"><span class="nicon">&#x1F517;</span> SAIRNbiz</div>
+</div><div class="mn" id="mn">
+<div class="page active" id="pg-dash"><div class="pt">SAIRNfuneral Dashboard</div><div class="ps">Funeral home management -- powered by Claude AI</div>
+<div class="kg">
+  <div class="kc"><span class="ki">&#x1F4BC;</span><div class="kl">Active Cases</div><div class="kv">7</div><div class="kd">3 this week</div></div>
+  <div class="kc"><span class="ki">&#x1F4C5;</span><div class="kl">Pre-Need Contracts</div><div class="kv">84</div><div class="kd up">+4 this month</div></div>
+  <div class="kc"><span class="ki">&#x1F525;</span><div class="kl">Cremations MTD</div><div class="kv">9</div><div class="kd">of 14 total</div></div>
+  <div class="kc"><span class="ki">&#x1F4B0;</span><div class="kl">Monthly Revenue</div><div class="kv">$94K</div><div class="kd up">Avg case: $6,700</div></div>
+  <div class="kc"><span class="ki">&#x1F49C;</span><div class="kl">Aftercare Follow-Ups</div><div class="kv">12</div><div class="kd">Due this week</div></div>
+  <div class="kc"><span class="ki">&#x1F4CA;</span><div class="kl">Pre-Need Pipeline</div><div class="kv">$1.2M</div><div class="kd">Funded</div></div>
 </div>
+<div class="flag fi">&#x1F916; 3 families are approaching their 30-day aftercare check-in window. <a href="#" style="color:var(--cd);font-weight:700;" onclick="askAI('Draft compassionate 30-day aftercare follow-up messages for the Smith, Rivera, and Park families.')">AI Draft Follow-Ups</a></div>
+<div class="two-col" style="margin-top:14px;">
+  <div class="card"><div class="ch"><div class="ct">Active Cases</div><button class="btn btn-sm btn-c" onclick="nav('cases')">View All</button></div><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Case #</th><th>Deceased</th><th>Family</th><th>Service Type</th><th>Service Date</th><th>Status</th></tr></thead><tbody>
+    <tr><td>FC-2041</td><td>Robert Johnson</td><td>Johnson Family</td><td>Traditional Burial</td><td>Jun 17</td><td><span class="badge bc">In Preparation</span></td></tr>
+    <tr><td>FC-2042</td><td>Maria Rivera</td><td>Rivera Family</td><td>Cremation</td><td>Jun 15</td><td><span class="badge ba">Awaiting Cremation</span></td></tr>
+    <tr><td>FC-2043</td><td>James Park</td><td>Park Family</td><td>Graveside Service</td><td>Jun 19</td><td><span class="badge bc">Arrangements Complete</span></td></tr>
+  </tbody></table></div></div>
+  <div class="card"><div class="ch"><div class="ct">Service Mix</div></div><div class="cb">
+    <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Traditional Burial</span><span>48%</span></div><div class="rbt"><div class="rbf" style="width:48%"></div></div></div>
+    <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Cremation with Service</span><span>32%</span></div><div class="rbt"><div class="rbf" style="width:32%"></div></div></div>
+    <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Direct Cremation</span><span>12%</span></div><div class="rbt"><div class="rbf" style="width:12%"></div></div></div>
+    <div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Graveside Only</span><span>8%</span></div><div class="rbt"><div class="rbf" style="width:8%"></div></div></div>
+  </div></div>
+</div></div>
 
-<div id="appPage" class="page">
-  <div class="app-header">
-    <div class="app-title">
-      <div class="app-dot"></div>
-      SAIRNfuneral <span style="color:var(--m);font-weight:400;font-size:13px">· Claude AI</span>
-    </div>
-    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 8px">← Back</button>
-  </div>
-  <div class="mode-bar">
-    <button class="mode-btn" onclick="setMode('Write Obituary','Generate a beautiful obituary from intake information')"><span class="mode-icon">✍️</span><span class="mode-label">Write Obituary</span></button><button class="mode-btn" onclick="setMode('Family Communication','Help me communicate with a grieving family')"><span class="mode-icon">💌</span><span class="mode-label">Family Communication</span></button><button class="mode-btn" onclick="setMode('Documentation','Help me complete or review required documentation')"><span class="mode-icon">📋</span><span class="mode-label">Documentation</span></button><button class="mode-btn" onclick="setMode('Vendor Coordination','Help me coordinate with vendors and partners')"><span class="mode-icon">🤝</span><span class="mode-label">Vendor Coordination</span></button><button class="mode-btn" onclick="setMode('Aftercare Follow-Up','Help me reach out to a family after services')"><span class="mode-icon">💙</span><span class="mode-label">Aftercare Follow-Up</span></button>
-    <div class="mode-divider"></div>
-    <span class="mode-guided-label">Guided</span>
-    <button class="flow-btn mode-btn" data-flow="obituary" onclick="startFlow('obituary')"><span class="mode-icon">✍️</span><span class="mode-label">an Obituary</span></button><button class="flow-btn mode-btn" data-flow="communication" onclick="startFlow('communication')"><span class="mode-icon">💌</span><span class="mode-label">With a Family</span></button><button class="flow-btn mode-btn" data-flow="documentation" onclick="startFlow('documentation')"><span class="mode-icon">📋</span><span class="mode-label">Documentation</span></button>
-  </div>
-  <div class="chat-area" id="chatArea">
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">🕊️</div>
-      <div class="empty-title">Welcome to SAIRNfuneral</div>
-      <div class="empty-sub">AI that handles the paperwork so you can focus on the families.</div>
-      <div class="suggestions">
-        <button class="suggestion" onclick="useSuggestion(this)">Generate a beautiful obituary from intake information</button>
-        <button class="suggestion" onclick="useSuggestion(this)">Help me communicate with a grieving family</button>
-        <button class="suggestion" onclick="useSuggestion(this)">Help me complete or review required documentation</button>
-      </div>
-    </div>
-  </div>
-  <div class="input-area">
-    <textarea id="userInput" placeholder="Ask SAIRNfuneral anything..." rows="1"></textarea>
-    <button id="sendBtn" onclick="sendMessage()">➤</button>
-  </div>
-</div>
+<div class="page" id="pg-cases"><div class="pt">All Cases</div><div class="ps">Full case management from first call to aftercare</div>
+<div class="toolbar"><input type="text" class="sbox" placeholder="Search cases..." oninput="ft(this,'case-tbl')"><button class="btn btn-c" onclick="openM('m-new-case')">+ New Case</button><button class="btn btn-o" onclick="exportCSV('case-tbl','sairnfuneral-cases')">Export CSV</button></div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="case-tbl"><thead><tr><th>Case #</th><th>Deceased</th><th>Family Contact</th><th>Service Type</th><th>Director</th><th>Service Date</th><th>Status</th></tr></thead><tbody>
+  <tr><td>FC-2041</td><td><strong>Robert Johnson</strong></td><td>Susan Johnson (440) 555-4001</td><td>Traditional Burial</td><td>M. Dibert</td><td>Jun 17</td><td><span class="badge bc">In Preparation</span></td></tr>
+  <tr><td>FC-2042</td><td><strong>Maria Rivera</strong></td><td>Carlos Rivera (216) 555-4002</td><td>Cremation w/ Service</td><td>M. Dibert</td><td>Jun 15</td><td><span class="badge ba">Awaiting Cremation</span></td></tr>
+  <tr><td>FC-2043</td><td><strong>James Park</strong></td><td>Kim Park (440) 555-4003</td><td>Graveside</td><td>J. Smith</td><td>Jun 19</td><td><span class="badge bc">Arrangements Done</span></td></tr>
+  <tr><td>FC-2040</td><td><strong>Dorothy Chen</strong></td><td>David Chen (440) 555-4004</td><td>Direct Cremation</td><td>M. Dibert</td><td>Jun 12</td><td><span class="badge bg">Complete</span></td></tr>
+</tbody></table></div></div></div>
 
-<script>
-const SYSTEM = "You are SAIRNfuneral, an AI-powered platform for funeral homes and cremation services powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve funeral directors and funeral home staff at independent funeral homes, cremation services, and multi-location memorial businesses across the United States.\n\nYOUR MISSION:\nTo handle the administrative burden of funeral service so funeral professionals can devote their full attention and compassion to the families they serve.\n\nYOUR EXPERTISE:\n- Obituary writing: transforming intake information into meaningful, dignified tributes\n- Family communication: compassionate, clear communication at every stage of service\n- Documentation: death certificates, authorizations, merchandise agreements, preneed contracts\n- Vendor coordination: cemetery, florist, clergy, musicians, caterers, newspapers\n- Aftercare: follow-up programs, grief resources, anniversary remembrance\n- Compliance: FTC Funeral Rule requirements, state-specific regulations, price list compliance\n- Preneed: contract documentation, trust requirements, transfer procedures\n\nCRITICAL GUIDELINES:\n- Every word you write may be read by a grieving family -- choose words with extraordinary care\n- Never use clinical or cold language with families -- warmth and compassion in every communication\n- You are supporting funeral professionals, not replacing their judgment or relationship with families\n- Death certificates and legal documents must be reviewed by a licensed funeral director before submission\n- FTC Funeral Rule compliance is non-negotiable -- always flag potential compliance issues\n- Respect all religious, cultural, and personal traditions equally\n\nOBITUARY CRAFT:\n- Lead with the person s name and what made them remarkable -- not just when they died\n- Include family survivors in traditional order: spouse, children, grandchildren, siblings, parents\n- Capture one specific memory or characteristic that makes this person real, not generic\n- Match the family's tone: some want dignified and formal, others want warm and personal\n- Avoid clichs: \"passed peacefully,\" \"gone too soon,\" \"in lieu of flowers\" -- find fresh language\n- Always include service details if provided: visitation, service, burial/cremation, reception\n\nCOMMUNICATION PRINCIPLES:\n- First call follow-up: acknowledge their loss, confirm arrangements, set clear next steps\n- When families are overwhelmed: simplify everything, give them one clear next action\n- Difficult situations: financial constraints, family conflict, unexpected death -- always lead with empathy\n- Never rush a family. Patience is a professional obligation in this work.";
-const APP_NAME = "SAIRNfuneral";
-const SAIRN_API = 'https://sairn.vercel.app/api/claude';
-const APP_ID = 'sairnfuneral';
-const APP_ICON = '';
-let messages = [], isLoading = false, lastResponse = '';
-const GUIDED_FLOWS = [{id:"obituary",emoji:"",label:"Write an Obituary",intro:"Let us write a beautiful obituary. Tell me the person s full name and age, and when and where they passed.",steps:["Tell me about their life -- family, career, passions, community involvement, faith, and what made them unique.","What tone does the family want -- traditional and dignified, warm and personal, or celebratory of life?","Any specific wishes from the family -- phrases to include, things to avoid, service details to mention?"],finish:"Here is the complete obituary. Please review with the family and let me know any adjustments."},{id:"communication",emoji:"",label:"Communicate With a Family",intro:"Let us handle this communication with care. What do you need to communicate -- first call follow-up, service details, paperwork request, or something else?",steps:["What is the family s current emotional state and how have communications gone so far?","Is there anything sensitive or specific I should know before writing this message?"],finish:"Here is a compassionate, clear message for this family. Adjust as you feel appropriate."},{id:"documentation",emoji:"",label:"Complete Documentation",intro:"Let us work through this documentation together. What document needs to be completed -- death certificate, authorization form, merchandise agreement, or something else?",steps:["What information do you have so far, and what is missing or unclear?","Are there any unusual circumstances or complications with this case?"],finish:"Here is the completed documentation with all required fields addressed and any gaps flagged for follow-up."}];
-let activeFlow = null, flowStep = 0;
+<div class="page" id="pg-arrangements"><div class="pt">Arrangements</div><div class="ps">Service arrangements with AI-assisted planning</div>
+<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-arr')">+ New Arrangement</button><button class="btn btn-o" onclick="askAI('Help me plan a traditional funeral service for a 78-year-old male, Catholic, with a family of 40 expected attendees. What are all the arrangements I need to confirm?')">AI Arrangement Guide</button></div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Case</th><th>Casket/Urn</th><th>Clergy</th><th>Cemetery</th><th>Flowers</th><th>Obituary</th><th>Complete</th></tr></thead><tbody>
+  <tr><td>FC-2041 Johnson</td><td>Mahogany Heritage</td><td>Fr. O'Brien</td><td>Westlake Memorial</td><td><span class="badge bg">Yes</span></td><td><span class="badge bg">Published</span></td><td><span class="badge ba">In Progress</span></td></tr>
+  <tr><td>FC-2042 Rivera</td><td>Rosewood Cremation Urn</td><td>None</td><td>N/A</td><td><span class="badge bc">No</span></td><td><span class="badge ba">Draft</span></td><td><span class="badge ba">In Progress</span></td></tr>
+  <tr><td>FC-2043 Park</td><td>Bronze Heritage</td><td>Rev. Kim</td><td>Bay Village Cemetery</td><td><span class="badge bg">Yes</span></td><td><span class="badge bg">Published</span></td><td><span class="badge bg">Complete</span></td></tr>
+</tbody></table></div></div></div>
 
-(function() {
-  const c = document.getElementById('particles');
-  for(let i=0;i<20;i++) {
-    const p = document.createElement('div'); p.className = 'particle';
-    const s = 3 + Math.random()*8;
-    p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:rgba(139,92,246,0.5);--d:${7+Math.random()*9}s;--del:${Math.random()*6}s;--o:${0.05+Math.random()*0.1}`;
-    c.appendChild(p);
-  }
-})();
+<div class="page" id="pg-preneed"><div class="pt">Pre-Need</div><div class="ps">Pre-arranged funeral contracts and funded trust tracking</div>
+<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-preneed')">+ New Pre-Need Contract</button><button class="btn btn-o" onclick="askAI('Review my pre-need portfolio. Which contracts are fully funded and which need follow-up?')">AI Review Portfolio</button><button class="btn btn-o" onclick="exportCSV('pn-tbl','sairnfuneral-preneed')">Export CSV</button></div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="pn-tbl"><thead><tr><th>Contract #</th><th>Name</th><th>Plan Type</th><th>Contract Value</th><th>Funded</th><th>Status</th></tr></thead><tbody>
+  <tr><td>PN-0441</td><td>Harold Williams</td><td>Traditional Burial</td><td>$8,400</td><td>$8,400</td><td><span class="badge bg">Fully Funded</span></td></tr>
+  <tr><td>PN-0442</td><td>Beatrice Smith</td><td>Cremation with Service</td><td>$4,800</td><td>$4,800</td><td><span class="badge bg">Fully Funded</span></td></tr>
+  <tr><td>PN-0443</td><td>Frank Martinez</td><td>Traditional Burial</td><td>$9,200</td><td>$4,600</td><td><span class="badge ba">Partial -- 4 payments remaining</span></td></tr>
+</tbody></table></div></div></div>
 
-function showPage(page) {
-  ['homePage','appPage'].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.remove('active'); el.style.display = 'none';
-  });
-  if(page === 'home') {
-    const h = document.getElementById('homePage');
-    h.classList.add('active'); h.style.display = '';
-    window.scrollTo(0,0);
-  } else {
-    const a = document.getElementById('appPage');
-    a.classList.add('active'); a.style.display = 'flex';
-    setTimeout(() => document.getElementById('userInput').focus(), 100);
-    if(!messages.length) loadFirstMessage();
-  }
-}
-function setMode(label, ph) {
-  activeFlow = null; flowStep = 0;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-  document.getElementById('userInput').placeholder = ph;
-  document.getElementById('userInput').focus();
-}
-function startFlow(id) {
-  const f = GUIDED_FLOWS.find(x => x.id === id); if(!f) return;
-  activeFlow = f; flowStep = 0;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('[data-flow="'+id+'"]').forEach(b => b.classList.add('active'));
-  const area = document.getElementById('chatArea');
-  const empty = document.getElementById('emptyState'); if(empty) empty.remove();
-  addMsg('ai', f.intro); messages.push({role:'assistant', content:f.intro});
-  document.getElementById('userInput').placeholder = 'Reply to continue the guided flow...';
-  document.getElementById('userInput').focus();
-}
-function useSuggestion(el) { document.getElementById('userInput').value = el.textContent; sendMessage(); }
-function addMsg(role, content) {
-  const area = document.getElementById('chatArea');
-  const empty = document.getElementById('emptyState');
-  if(empty) empty.remove();
-  const div = document.createElement('div');
-  div.className = `msg ${role}`;
-  const formatted = content
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\n\n/g,'</p><p>')
-    .replace(/\n/g,'<br>')
-    
-    ;
-  if(role==='ai') {
-    div.innerHTML=`<div class="msg-avatar"></div><div class="msg-bubble"><p>${formatted}</p></div>`;
-  } else {
-    div.innerHTML=`<div class="msg-bubble">${content}</div>`;
-  }
-  area.appendChild(div);
-  area.scrollTop = area.scrollHeight;
-  if(role==='ai'){lastResponse=content;showSaveBar(content);}
-}
-function showTyping() {
-  const area = document.getElementById('chatArea');
-  const div = document.createElement('div');
-  div.className='msg ai';div.id='typing-indicator';
-  div.innerHTML=`<div class="msg-avatar"></div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
-  area.appendChild(div);
-  area.scrollTop=area.scrollHeight;
-}
-async function sendMessage() {
-  const inp = document.getElementById('userInput');
-  const text = inp.value.trim();
-  if(!text || isLoading) return;
-  if(activeFlow !== null) {
-    addMsg('user', text);
-    inp.value=''; inp.style.height='';
-    if(flowStep < activeFlow.steps.length) {
-      const nxt = activeFlow.steps[flowStep++];
-      setTimeout(function() { addMsg('ai', nxt); messages.push({role:'assistant',content:nxt}); }, 700);
-    } else if(flowStep === activeFlow.steps.length) {
-      flowStep++;
-      setTimeout(function() { addMsg('ai', activeFlow.finish); messages.push({role:'assistant',content:activeFlow.finish}); activeFlow = null; }, 700);
-    } else {
-      activeFlow = null;
-    }
-    return;
-  }
-  inp.value='';inp.style.height='';
-  isLoading=true;
-  document.getElementById('sendBtn').disabled=true;
-  addMsg('user', text);
-  messages.push({role:'user',content:text});
-  showTyping();
-  try {
-    const res = await fetch(SAIRN_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        max_tokens:1000,
-        system: SYSTEM,
-        messages: messages.slice(-20),
-        app_id: APP_ID,
-        is_demo: true
-      })
-    });
-    const data = await res.json();
-    document.getElementById('typing-indicator')?.remove();
-    if(res.status===429) {
-      const msg = data.message || 'Daily demo limit reached. Sign up for unlimited access.';
-      addMsg('ai', msg + '\n\nGet unlimited access at sairn.vercel.app');
-    } else {
-      const reply = data.content?.[0]?.text || 'Sorry, I had trouble with that. Please try again.';
-      messages.push({role:'assistant',content:reply});
-      addMsg('ai', reply);
-    }
-  } catch(e) {
-    document.getElementById('typing-indicator')?.remove();
-    addMsg('ai','Connection issue. Please check your connection and try again.');
-  }
-  isLoading=false;
-  document.getElementById('sendBtn').disabled=false;
-  document.getElementById('userInput').focus();
-}
+<div class="page" id="pg-inventory"><div class="pt">Caskets & Urns</div><div class="ps">Merchandise inventory and showroom management</div>
+<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-merch')">+ Add Item</button><button class="btn btn-o" onclick="askAI('Analyze my casket and urn inventory. What is selling well and what should I discontinue or reorder?')">AI Inventory Analysis</button></div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Item</th><th>Type</th><th>Cost</th><th>Retail Price</th><th>Margin</th><th>In Stock</th></tr></thead><tbody>
+  <tr><td>Mahogany Heritage</td><td>Casket</td><td>$1,800</td><td>$4,200</td><td><span style="color:var(--green);font-weight:700">57%</span></td><td>2</td></tr>
+  <tr><td>Bronze Heritage</td><td>Casket</td><td>$2,400</td><td>$5,600</td><td><span style="color:var(--green);font-weight:700">57%</span></td><td>1</td></tr>
+  <tr><td>Rosewood Cremation Urn</td><td>Urn</td><td>$180</td><td>$480</td><td><span style="color:var(--green);font-weight:700">63%</span></td><td>6</td></tr>
+  <tr><td>Simple Pine Casket</td><td>Casket</td><td>$480</td><td>$1,200</td><td><span style="color:var(--amber);font-weight:700">60%</span></td><td>3</td></tr>
+</tbody></table></div></div></div>
 
-function showTokenBar(usage) {
-  const existing = document.getElementById('sairn-token-bar');
-  if(existing) existing.remove();
-  const bar = document.createElement('div');
-  bar.id = 'sairn-token-bar';
-  const pct = usage.pct;
-  const color = pct >= 95 ? '#F43F5E' : pct >= 80 ? '#F59E0B' : '#22C55E';
-  bar.style.cssText = 'position:fixed;top:60px;left:0;right:0;padding:6px 20px;background:#1A1C32;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;z-index:999;font-size:12px;color:#9090B0';
-  bar.innerHTML = `<span>Token usage: ${pct}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .3s"></div></div><span style="color:${color};font-weight:600">${pct >= 95 ? 'Add tokens now' : pct >= 80 ? 'Consider upgrading' : 'OK'}</span><button onclick="document.getElementById('sairn-token-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:14px"></button>`;
-  document.body.appendChild(bar);
-}
+<div class="page" id="pg-cremation"><div class="pt">Cremation</div><div class="ps">Track cremation authorization, scheduling, and completion</div>
+<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-crem')">+ New Cremation Order</button></div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Case</th><th>Deceased</th><th>Auth Received</th><th>Scheduled</th><th>Retort</th><th>Status</th></tr></thead><tbody>
+  <tr><td>FC-2042</td><td>Maria Rivera</td><td><span class="badge bg">Yes</span></td><td>Jun 15, 2:00 PM</td><td>Unit 1</td><td><span class="badge ba">Scheduled</span></td></tr>
+  <tr><td>FC-2040</td><td>Dorothy Chen</td><td><span class="badge bg">Yes</span></td><td>Jun 12, 10:00 AM</td><td>Unit 1</td><td><span class="badge bg">Complete</span></td></tr>
+</tbody></table></div></div></div>
 
-function showUpgradeBar(data) {
-  const existing = document.getElementById('sairn-upgrade-bar');
-  if(existing) existing.remove();
-  const bar = document.createElement('div');
-  bar.id = 'sairn-upgrade-bar';
-  bar.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;padding:12px 16px;background:#1A1C32;border:1px solid rgba(244,63,94,0.3);border-radius:12px;z-index:999;font-size:13px;color:#F0F0FF;display:flex;align-items:center;justify-content:space-between;gap:12px';
-  bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px"></button>`;
-  document.body.appendChild(bar);
-}
-async function loadUserMemory() {
-  const token = localStorage.getItem('sairn_token'); if(!token) return '';
-  try {
-    const res = await fetch('https://sairn.vercel.app/api/memory', {headers:{'Authorization':'Bearer '+token}});
-    const {memory} = await res.json();
-    if(!memory?.facts?.length) return '';
-    return '\n\nClient and case history on record:\n' + memory.facts.slice(-20).map(f => '- ' + f.fact).join('\n');
-  } catch(e) { return ''; }
-}
-async function loadFirstMessage() {
-  try {
-    const now = new Date();
-    const res = await fetch('https://sairn.vercel.app/api/greeting', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(localStorage.getItem('sairn_token') ? { 'Authorization': 'Bearer ' + localStorage.getItem('sairn_token') } : {})
-      },
-      body: JSON.stringify({
-        app_id: APP_ID,
-        client_hour: now.getHours(),
-        client_day: now.getDay(),
-      })
-    });
-    const data = await res.json();
-    const greeting = data.greeting;
-    if (!greeting) return;
-    const area = document.getElementById('chatArea');
-    const empty = document.getElementById('emptyState');
-    if (empty) empty.remove();
-    const div = document.createElement('div');
-    div.className = 'msg ai';
-    div.innerHTML = `<div class="msg-avatar"></div><div class="msg-bubble"><p>${greeting}</p></div>`;
-    div.style.opacity = '0';
-    div.style.transform = 'translateY(10px)';
-    area.appendChild(div);
-    messages.push({ role: 'assistant', content: greeting });
-    requestAnimationFrame(() => {
-      div.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-      div.style.opacity = '1';
-      div.style.transform = 'translateY(0)';
-    });
-  } catch(e) {
-    // Silently fail -- app works fine without the greeting
-  }
-}
-function showSaveBar(content) {
-  const existing = document.getElementById('sairn-save-bar');
-  if (existing) existing.remove();
-  const bar = document.createElement('div');
-  bar.id = 'sairn-save-bar';
-  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:slideUp .2s ease';
-  bar.innerHTML = `
-    <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit"> Copy</button>
-    <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit"> Save</button>
-    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#6B7280;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit"> Share</button>
-    <button onclick="document.getElementById('sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px"></button>`;
-  document.body.appendChild(bar);
-  setTimeout(() => { if(document.getElementById('sairn-save-bar')) document.getElementById('sairn-save-bar').remove(); }, 8000);
-}
-window.addEventListener('beforeunload', () => {
-  const token = localStorage.getItem('sairn_token');
-  if(token && messages.length >= 2) {
-    try { fetch('https://sairn.vercel.app/api/memory', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({action:'extract', messages:messages.slice(-10), app_id:APP_ID})}); } catch(e) {}
-  }
-});
+<div class="page" id="pg-vehicles"><div class="pt">Vehicles</div><div class="ps">Fleet management -- hearses, family cars, removal vans</div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Vehicle</th><th>Type</th><th>Year/Make</th><th>Mileage</th><th>Next Service</th><th>Status</th></tr></thead><tbody>
+  <tr><td>Unit 1</td><td>Hearse</td><td>2022 Cadillac</td><td>28,400</td><td>Aug 2025</td><td><span class="badge bg">Available</span></td></tr>
+  <tr><td>Unit 2</td><td>Family Car</td><td>2023 Lincoln</td><td>18,200</td><td>Sep 2025</td><td><span class="badge bc">In Use</span></td></tr>
+  <tr><td>Unit 3</td><td>Removal Van</td><td>2021 Ford</td><td>44,800</td><td><strong style="color:var(--red)">Due Now</strong></td><td><span class="badge ba">Service Needed</span></td></tr>
+</tbody></table></div></div></div>
 
-// ============================================================
-// SAIRN Universal Intelligence Layer v6.2
-// Cloud Memory  Voice Mode  Outcome Tracking  White Label
-// ============================================================
+<div class="page" id="pg-aftercare"><div class="pt">Aftercare</div><div class="ps">Family follow-up and grief support program</div>
+<div class="toolbar"><button class="btn btn-c" onclick="askAI('Generate a compassionate 30-day aftercare follow-up message for the Johnson family who lost Robert Johnson on June 14, 2025.')">AI Draft Message</button></div>
+<div class="flag fi">Aftercare is one of the most powerful relationship builders in funeral service. AI can help you draft personalized, compassionate follow-up messages for every family.</div>
+<div class="card" style="margin-top:12px;"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Family</th><th>Case</th><th>Service Date</th><th>30-Day Follow-Up</th><th>6-Month</th><th>1-Year</th></tr></thead><tbody>
+  <tr><td>Johnson Family</td><td>FC-2041</td><td>Jun 17</td><td><span class="badge ba">Due Jul 17</span></td><td><span class="badge bc">Pending</span></td><td><span class="badge bc">Pending</span></td></tr>
+  <tr><td>Chen Family</td><td>FC-2040</td><td>Jun 12</td><td><span class="badge ba">Due Jul 12</span></td><td><span class="badge bc">Pending</span></td><td><span class="badge bc">Pending</span></td></tr>
+  <tr><td>Park Family</td><td>FC-2035</td><td>May 10</td><td><span class="badge bg">Sent</span></td><td><span class="badge ba">Due Nov 10</span></td><td><span class="badge bc">Pending</span></td></tr>
+</tbody></table></div></div></div>
 
-// White label config -- enterprise clients override these
-const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || 'SAIRN';
-const SAIRN_BRAND_COLOR = window.SAIRN_BRAND_COLOR || null;
+<div class="page" id="pg-families"><div class="pt">Families</div><div class="ps">Family contact database</div>
+<div class="toolbar"><input type="text" class="sbox" placeholder="Search families..." oninput="ft(this,'fam-tbl')"><button class="btn btn-o" onclick="exportCSV('fam-tbl','sairnfuneral-families')">Export CSV</button></div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="fam-tbl"><thead><tr><th>Family</th><th>Contact</th><th>Phone</th><th>Cases</th><th>Total Spend</th></tr></thead><tbody>
+  <tr><td>Johnson Family</td><td>Susan Johnson</td><td>(440) 555-4001</td><td>2</td><td>$14,800</td></tr>
+  <tr><td>Rivera Family</td><td>Carlos Rivera</td><td>(216) 555-4002</td><td>1</td><td>$5,200</td></tr>
+  <tr><td>Park Family</td><td>Kim Park</td><td>(440) 555-4003</td><td>1</td><td>$8,400</td></tr>
+  <tr><td>Chen Family</td><td>David Chen</td><td>(440) 555-4004</td><td>1</td><td>$2,800</td></tr>
+</tbody></table></div></div></div>
 
-// User identity -- persistent across sessions
-function getSAIRNUserId() {
-  let uid = localStorage.getItem('sairn_uid');
-  if(!uid) {
-    uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-    localStorage.setItem('sairn_uid', uid);
-  }
-  return uid;
-}
-const SAIRN_USER_ID = getSAIRNUserId();
+<div class="page" id="pg-invoices"><div class="pt">Invoices</div><div class="ps">Family billing and payment tracking</div>
+<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-inv')">+ New Invoice</button><button class="btn btn-o" onclick="exportCSV('inv-tbl','sairnfuneral-invoices')">Export CSV</button></div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="inv-tbl"><thead><tr><th>Invoice #</th><th>Family</th><th>Case</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead><tbody>
+  <tr><td>INV-5041</td><td>Johnson Family</td><td>FC-2041</td><td>$9,200</td><td>Jul 17</td><td><span class="badge bc">Open</span></td></tr>
+  <tr><td>INV-5042</td><td>Rivera Family</td><td>FC-2042</td><td>$5,200</td><td>Jul 15</td><td><span class="badge ba">Partial Paid</span></td></tr>
+  <tr><td>INV-5040</td><td>Chen Family</td><td>FC-2040</td><td>$2,800</td><td>Jul 12</td><td><span class="badge bg">Paid</span></td></tr>
+</tbody></table></div></div></div>
 
-// Outcome tracking
-let sessionOutcomes = {queries: 0, saved: 0, startTime: Date.now()};
+<div class="page" id="pg-insurance"><div class="pt">Insurance Claims</div><div class="ps">Life insurance assignment and claim tracking</div>
+<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-ins')">+ New Claim</button></div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Family</th><th>Insurer</th><th>Policy #</th><th>Claim Amount</th><th>Submitted</th><th>Status</th></tr></thead><tbody>
+  <tr><td>Johnson Family</td><td>Prudential</td><td>PR-2241884</td><td>$9,200</td><td>Jun 15</td><td><span class="badge bc">Pending</span></td></tr>
+  <tr><td>Park Family</td><td>MetLife</td><td>ML-8841220</td><td>$8,400</td><td>Jun 12</td><td><span class="badge bg">Approved</span></td></tr>
+</tbody></table></div></div></div>
 
-// ---- CLOUD MEMORY ----------------------------------------------------------------------------------------
-async function cloudSaveMemory(content) {
-  if(!content || content.length < 20) return;
-  // Save locally first (instant, no latency)
-  try {
-    const key = 'sairn_local_' + APP_ID;
-    const existing = JSON.parse(localStorage.getItem(key) || '[]');
-    existing.unshift({ts: Date.now(), text: content.slice(0, 400)});
-    localStorage.setItem(key, JSON.stringify(existing.slice(0, 100)));
-  } catch(e) {}
-  // Save to cloud (async, best effort)
-  try {
-    await fetch('https://sairn.vercel.app/api/memory-cloud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-User-ID': SAIRN_USER_ID,
-        'X-App-ID': APP_ID,
-      },
-      body: JSON.stringify({content: content.slice(0, 400), user_id: SAIRN_USER_ID, app_id: APP_ID}),
-    });
-    sessionOutcomes.saved++;
-  } catch(e) {
-    // Cloud save failed -- local backup is enough
-  }
-}
+<div class="page" id="pg-reports"><div class="pt">Reports</div><div class="ps">AI-generated business intelligence</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;">
+  <div class="card" style="cursor:pointer;" onclick="askAI('Generate a revenue report for June 2025 by service type. Include average case value and margin.')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F4CA;</div><div style="font-weight:700;">Revenue Report</div></div></div>
+  <div class="card" style="cursor:pointer;" onclick="askAI('Analyze my pre-need portfolio growth. How many new contracts per month and what is the trend?')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F4C5;</div><div style="font-weight:700;">Pre-Need Growth</div></div></div>
+  <div class="card" style="cursor:pointer;" onclick="askAI('Generate an aftercare program report. How many families received follow-up and what are response rates?')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F49C;</div><div style="font-weight:700;">Aftercare Report</div></div></div>
+</div></div>
 
-async function cloudLoadMemory() {
-  // Try cloud first, fall back to local
-  try {
-    const res = await fetch('https://sairn.vercel.app/api/memory-cloud?uid=' + SAIRN_USER_ID, {
-      headers: {'X-User-ID': SAIRN_USER_ID, 'X-App-ID': APP_ID}
-    });
-    const data = await res.json();
-    if(data.entries && data.entries.length) {
-      return 'Memory from previous sessions:\n' + data.entries.slice(0, 8).map(function(e) { return e.content; }).join('\n---\n');
-    }
-  } catch(e) {}
-  // Fall back to local
-  try {
-    const key = 'sairn_local_' + APP_ID;
-    const entries = JSON.parse(localStorage.getItem(key) || '[]');
-    if(entries.length) return 'Recent context:\n' + entries.slice(0, 5).map(function(e) { return e.text; }).join('\n---\n');
-  } catch(e) {}
-  return '';
-}
+<div class="page" id="pg-costing"><div class="pt">Job Costing</div><div class="ps">True cost and margin per service type</div>
+<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Service Type</th><th>Avg Revenue</th><th>Merch Cost</th><th>Staff/Overhead</th><th>Cemetery/Other</th><th>Margin</th></tr></thead><tbody>
+  <tr><td>Traditional Burial</td><td>$9,200</td><td>$2,400</td><td>$1,800</td><td>$1,200</td><td><span style="color:var(--green);font-weight:700">41%</span></td></tr>
+  <tr><td>Cremation with Service</td><td>$5,200</td><td>$480</td><td>$1,200</td><td>$480</td><td><span style="color:var(--green);font-weight:700">58%</span></td></tr>
+  <tr><td>Direct Cremation</td><td>$2,800</td><td>$420</td><td>$680</td><td>$200</td><td><span style="color:var(--amber);font-weight:700">53%</span></td></tr>
+  <tr><td>Graveside Service</td><td>$6,400</td><td>$1,800</td><td>$1,200</td><td>$800</td><td><span style="color:var(--c);font-weight:700">44%</span></td></tr>
+</tbody></table></div></div></div>
 
-// ---- VOICE MODE --------------------------------------------------------------------------------------------
-let isListening = false;
-let voiceRecognition = null;
+<div class="page" id="pg-formula"><div class="pt">Formula Editor</div><div class="ps">Admin: set service pricing and merchandise markups</div>
+<div class="card"><div class="cb"><div class="fgrid">
+  <div class="fg"><label>Traditional Burial Base ($)</label><input type="number" value="4800"></div>
+  <div class="fg"><label>Cremation w/ Service Base ($)</label><input type="number" value="2800"></div>
+  <div class="fg"><label>Direct Cremation Base ($)</label><input type="number" value="1800"></div>
+  <div class="fg"><label>Merchandise Markup %</label><input type="number" value="135"></div>
+  <div class="fg"><label>Death Certificate Fee</label><input type="number" value="25"></div>
+  <div class="fg"><label>Obituary Placement Fee</label><input type="number" value="150"></div>
+</div><div style="margin-top:14px;"><button class="btn btn-c" onclick="toast('Pricing saved')">Save Pricing</button></div></div></div></div>
 
-function initVoice() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SpeechRecognition) return false;
-  voiceRecognition = new SpeechRecognition();
-  voiceRecognition.continuous = false;
-  voiceRecognition.interimResults = true;
-  voiceRecognition.lang = 'en-US';
-  voiceRecognition.onresult = function(event) {
-    const transcript = Array.from(event.results).map(function(r) { return r[0].transcript; }).join('');
-    const inp = document.getElementById('userInput');
-    if(inp) inp.value = transcript;
-    if(event.results[event.results.length - 1].isFinal) {
-      stopVoice();
-      sendMessage();
-    }
-  };
-  voiceRecognition.onerror = function() { stopVoice(); };
-  voiceRecognition.onend = function() { stopVoice(); };
-  return true;
-}
-
-function toggleVoice() {
-  if(isListening) { stopVoice(); return; }
-  if(!voiceRecognition && !initVoice()) {
-    alert('Voice input is not supported in this browser. Try Chrome.');
-    return;
-  }
-  isListening = true;
-  voiceRecognition.start();
-  const btn = document.getElementById('voice-btn');
-  if(btn) {
-    btn.style.background = 'var(--grad)';
-    btn.style.animation = 'pulse-voice 1s infinite';
-    btn.title = 'Listening... click to stop';
-  }
-}
-
-function stopVoice() {
-  isListening = false;
-  if(voiceRecognition) try { voiceRecognition.stop(); } catch(e) {}
-  const btn = document.getElementById('voice-btn');
-  if(btn) {
-    btn.style.background = 'rgba(255,255,255,0.05)';
-    btn.style.animation = '';
-    btn.title = 'Voice input';
-  }
-}
-
-function addVoiceButton() {
-  const inputArea = document.querySelector('.input-area');
-  if(!inputArea || document.getElementById('voice-btn')) return;
-  const btn = document.createElement('button');
-  btn.id = 'voice-btn';
-  btn.innerHTML = '';
-  btn.title = 'Voice input';
-  btn.style.cssText = 'width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit';
-  btn.onclick = toggleVoice;
-  const sendBtn = document.getElementById('sendBtn');
-  if(sendBtn) inputArea.insertBefore(btn, sendBtn);
-  // Add pulse animation
-  const style = document.createElement('style');
-  style.textContent = '@keyframes pulse-voice{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.3)}50%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}';
-  document.head.appendChild(style);
-}
-
-// ---- OUTCOME TRACKING ----------------------------------------------------------------------------------
-function trackOutcome() {
-  sessionOutcomes.queries++;
-  updateOutcomeDisplay();
-}
-
-function updateOutcomeDisplay() {
-  const el = document.getElementById('sairn-outcomes');
-  if(!el) return;
-  const mins = Math.round((Date.now() - sessionOutcomes.startTime) / 60000);
-  const saved = Math.round(sessionOutcomes.queries * 4.2); // avg 4.2 min saved per query
-  el.textContent = sessionOutcomes.queries + ' queries  ' + saved + ' min saved this session';
-}
-
-function addOutcomeBar() {
-  if(document.getElementById('sairn-outcomes')) return;
-  const header = document.querySelector('.app-header');
-  if(!header) return;
-  const bar = document.createElement('div');
-  bar.style.cssText = 'padding:5px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0';
-  const dot = document.createElement('span');
-  dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#10B981;display:inline-block;animation:pulse 2s infinite';
-  const label = document.createElement('span');
-  label.id = 'sairn-outcomes';
-  label.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);font-family:inherit';
-  label.textContent = '0 queries  0 min saved this session';
-  bar.appendChild(dot); bar.appendChild(label);
-  header.after(bar);
-}
-
-// ---- ENHANCED SAVE BAR --------------------------------------------------------------------------------
-function showSaveBar() {
-  // Auto-save to cloud silently
-  cloudSaveMemory(lastResponse);
-  trackOutcome();
-  // Show copy bar
-  const existing = document.getElementById('sairn-save-bar'); if(existing) existing.remove();
-  const bar = document.createElement('div'); bar.id = 'sairn-save-bar';
-  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';
-  const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy';
-  copyBtn.style.cssText = 'background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
-  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000); }); };
-  const savedBadge = document.createElement('span');
-  savedBadge.textContent = ' Saved';
-  savedBadge.style.cssText = 'font-size:11px;color:#10B981;font-weight:600';
-  const closeBtn = document.createElement('button'); closeBtn.textContent = 'x';
-  closeBtn.style.cssText = 'background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px';
-  closeBtn.onclick = function() { bar.remove(); };
-  bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
-  document.body.appendChild(bar);
-  setTimeout(function() { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 6000);
-}
-
-// ---- INIT ------------------------------------------------------------------------------------------------------------
-document.addEventListener('DOMContentLoaded', function() {
-  // Add voice button and outcome bar after app page loads
-  const observer = new MutationObserver(function() {
-    if(document.getElementById('appPage') && document.getElementById('appPage').style.display !== 'none') {
-      addVoiceButton();
-      addOutcomeBar();
-    }
-  });
-  observer.observe(document.body, {childList: true, subtree: true, attributes: true});
-});
-
-
-// SAIRN OIL
-const SAIRN_ORG_ID = localStorage.getItem('sairn_org_id') || null;
-const SAIRN_ORG_NAME = localStorage.getItem('sairn_location_name') || 'My Organization';
-function getSAIRNContext() {
-  const parts = [];
-  if(SAIRN_ORG_ID) parts.push('Organization: ' + SAIRN_ORG_NAME);
-  const mem = localStorage.getItem('sairn_mem_' + APP_ID);
-  if(mem) parts.push('Context: ' + mem.slice(0,200));
-  return parts.join('\n');
-}
-function showOILBadge() {
-  if(!SAIRN_ORG_ID||document.getElementById('oil-badge')) return;
-  const b=document.createElement('div'); b.id='oil-badge';
-  b.style.cssText='position:fixed;top:68px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px 12px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.5);z-index:998;display:flex;align-items:center;gap:6px;font-family:inherit';
-  b.innerHTML='<span style=\"width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block\"></span>'+SAIRN_ORG_NAME;
-  document.body.appendChild(b);
-}
-
-document.getElementById('userInput').addEventListener('input', function() { this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 140) + 'px'; });
-document.getElementById('userInput').addEventListener('keydown', function(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-
-// === Organization Intelligence Layer ===
-const ORG_ID = localStorage.getItem('sairn_org_id') || null;
-const LOCATION_ID = localStorage.getItem('sairn_location_id') || null;
-const LOCATION_NAME = localStorage.getItem('sairn_location_name') || 'Main Office';
-
-async function getOrgIntelligence(query) {
-  if (!ORG_ID) return '';
-  try {
-    const res = await fetch('https://sairn.vercel.app/api/org-intel', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        action: 'query',
-        org_id: ORG_ID,
-        app_id: APP_ID,
-        query: query
-      })
-    });
-    const data = await res.json();
-    if (!data.insights || !data.insights.length) return '';
-    return '\n\nWhat your other locations know about this:\n' +
-      data.insights.map(i => '- [' + i.location + '] ' + i.insight).join('\n');
-  } catch(e) { return ''; }
-}
-
-async function saveOrgIntelligence(insight, category) {
-  if (!ORG_ID || !insight) return;
-  try {
-    await fetch('https://sairn.vercel.app/api/org-intel', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        action: 'save',
-        org_id: ORG_ID,
-        location_id: LOCATION_ID,
-        location_name: LOCATION_NAME,
-        app_id: APP_ID,
-        insight: insight,
-        category: category || 'general'
-      })
-    });
-  } catch(e) {}
-}
-
-function showOILBadge() {
-  if (!ORG_ID) return;
-  const existing = document.getElementById('oil-badge');
-  if (existing) return;
-  const badge = document.createElement('div');
-  badge.id = 'oil-badge';
-  badge.style.cssText = 'position:fixed;top:68px;right:16px;background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;color:#F0B429;z-index:998;cursor:pointer';
-  badge.textContent = ' ' + LOCATION_NAME;
-  badge.onclick = function() { showLocationSwitcher(); };
-  document.body.appendChild(badge);
-}
-
-function showLocationSwitcher() {
-  const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
-  modal.innerHTML = '<div style="background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:28px;max-width:360px;width:90%">' +
-    '<div style="font-size:16px;font-weight:700;color:#F0F0FF;margin-bottom:8px">Organization Setup</div>' +
-    '<div style="font-size:13px;color:#9090B0;margin-bottom:20px">Connect to your organization to share intelligence across locations.</div>' +
-    '<input id="oil-org-input" placeholder="Organization ID" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:10px;outline:none">' +
-    '<input id="oil-loc-input" placeholder="Location name (e.g. Columbus Office)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:16px;outline:none">' +
-    '<div style="display:flex;gap:10px">' +
-    '<button onclick="saveOILSettings()" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#F0B429,#E09900);border:none;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Connect</button>' +
-    '<button onclick="closeOILModal()" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9090B0;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>' +
-    '</div></div>';
-  document.body.appendChild(modal);
-  document.getElementById('oil-org-input').value = ORG_ID || '';
-  document.getElementById('oil-loc-input').value = LOCATION_NAME || '';
-}
-
-
-function closeOILModal() {
-  const modals = document.querySelectorAll('[style*="position:fixed"][style*="inset:0"]');
-  modals.forEach(function(m) { m.remove(); });
-}
-function saveOILSettings() {
-  const orgId = document.getElementById('oil-org-input').value.trim();
-  const locName = document.getElementById('oil-loc-input').value.trim();
-  if (orgId) {
-    localStorage.setItem('sairn_org_id', orgId);
-    localStorage.setItem('sairn_location_name', locName || 'Main Office');
-    location.reload();
-  }
-}
-
-// Show badge on load if org is set
-setTimeout(function() { showOILBadge(); }, 1500);
-// =======================================================================
-
-</script>
-
-<!-- SAIRNbiz Connector v1.0 -->
+<div class="page" id="pg-csv"><div class="pt">CSV Tools</div>
+<div class="two-col"><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:8px;">
+  <button class="btn btn-o" onclick="exportCSV('case-tbl','sairnfuneral-cases')">Export Cases</button>
+  <button class="btn btn-o" onclick="exportCSV('pn-tbl','sairnfuneral-preneed')">Export Pre-Need</button>
+  <button class="btn btn-o" onclick="exportCSV('inv-tbl','sairnfuneral-invoices')">Export Invoices</button>
+  <button class="btn btn-o" onclick="exportCSV('fam-tbl','sairnfuneral-families')">Export Families</button>
+</div></div></div></div>
+<div class="page" id="pg-sairnbiz"><div class="pt">SAIRNbiz</div><div class="ps">HR + Accounting -- included free with SAIRNfuneral</div><div id="sbiz-container" style="margin-bottom:14px;"></div><div class="flag fi">SAIRNbiz manages all payroll, GL entries, and financial reporting.</div><div style="margin-top:12px;display:flex;gap:9px;"><button class="btn btn-c" onclick="SAIRNbiz.openHub()">Open SAIRNbiz</button><button class="btn btn-o" onclick="SAIRNbiz.sendEvent('sairnfuneral','sync',{ts:new Date().toISOString()});toast('Synced')">Sync to SAIRNbiz</button></div></div></div></div></div>
+<div id="aip"><div class="aih"><div class="ait">SAIRNfuneral AI</div><button class="aic" onclick="toggleAI()">X</button></div><div class="aim" id="aim"><div class="amsg b">Hi! I am your SAIRNfuneral AI, powered by Claude. Ask me anything about your operations.</div></div><div class="aiq" id="aiq"></div><div class="air"><input type="text" id="ai-in" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn btn-c" onclick="sendAI()">Send</button></div></div>
+<div class="toast" id="toast"></div>
 <script src="sairnbiz-connector.js"></script>
 <script>
-// SAIRNbiz Connector init for SAIRNfuneral
-(function() {
-  // Render backbone panel if container exists
-  if (document.getElementById('sairnbiz-panel')) {
-    SAIRNbiz.renderPanel('sairnbiz-panel', '#14B8A6');
-  }
-  // Register this app with the bridge on load
-  SAIRNbiz.sendEvent('sairnfuneral', 'app_loaded', {
-    app: 'SAIRNfuneral',
-    color: '#14B8A6',
-    ts: new Date().toISOString()
-  });
-  console.log('SAIRNbiz Connector active in SAIRNfuneral');
-})();
-</script>
-
-<!-- SAIRN AI Panel: SAIRNfuneral -->
-<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
-  <div style="background:#6B7280;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
-    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
-  </div>
-  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
-  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Service Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Service Summary</button><button onclick="sbq('Family Comms')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Family Comms</button><button onclick="sbq('Revenue Report')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Revenue Report</button><button onclick="sbq('Staff Schedule')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Staff Schedule</button></div>
-  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
-    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
-    <button onclick="sbais()" style="background:#6B7280;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
-  </div>
-</div>
-<script>
-(function(){
-  if(document.getElementById('sbai-fab')) return;
-  var fab=document.createElement('button');
-  fab.id='sbai-fab';
-  fab.innerHTML='AI';
-  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#6B7280;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
-  fab.onclick=function(){
-    var p=document.getElementById('sbai-panel');
-    var open=p.style.display==='flex';
-    p.style.display=open?'none':'flex';
-    p.style.flexDirection='column';
-    if(!open&&document.getElementById('sbai-msgs').children.length===0){
-      sbai_add('Hi! I am your SAIRNfuneral AI. Ask me anything.','bot');
-    }
-  };
-  document.body.appendChild(fab);
-})();
-window._sbh=[];
-function sbai_add(t,c){
-  var msgs=document.getElementById('sbai-msgs');
-  var el=document.createElement('div');
-  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#6B7280;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
-  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
-}
-function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNfuneral'; sbais(); }
-async function sbais(){
-  var inp=document.getElementById('sbai-input');
-  var msg=inp.value.trim(); if(!msg) return; inp.value='';
-  sbai_add(msg,'user');
-  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
-  window._sbh.push({role:'user',content:msg});
-  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
-  try{
-    var res=await fetch('https://sairn.vercel.app/api/claude',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'sairnfuneral',is_demo:true,
-        system:'You are the AI for SAIRNfuneral, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
-        messages:window._sbh,max_tokens:600})
-    });
-    var d=await res.json();
-    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
-    window._sbh.push({role:'assistant',content:r});
-    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
-  }catch(e){ th.textContent='Connection error.'; }
-}
-</script>
-
-<!-- SAIRN Pattern Completeness -->
-<style>
-.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
-.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
-.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
-@media print{.sairn-print-only{display:block!important;}}
-</style>
-<script>
-function sairnExportCSV(tableId,fname){
-  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
-  if(!tbl){return;}
-  var rows=tbl.querySelectorAll('tr');
-  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
-}
-function sairnSetBar(id,pct,color){
-  var el=document.getElementById(id);
-  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
-}
-function sairnCalc(vals,op){
-  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
-  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
-  return vals[0];
-}
-</script>
-
-<!-- Pattern 10: Formula Editor (Admin) -->
-<div id="funeral-formula-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:12px;width:540px;max-width:95vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.2);font-family:'Segoe UI',system-ui,sans-serif;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div style="font-size:16px;font-weight:700;color:#1E293B;">Formula Editor (Admin Only)</div>
-      <button onclick="document.getElementById('funeral-formula-panel').style.display='none'" style="background:transparent;border:none;font-size:18px;cursor:pointer;color:#64748B;">X</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Basic Service Fee</label><input type="number" value="1200" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
-      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Casket Markup %</label><input type="number" value="40" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
-      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Embalming Fee</label><input type="number" value="650" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
-      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Cremation Base Fee</label><input type="number" value="895" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
-      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Flowers Markup %</label><input type="number" value="25" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
-      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Overhead %</label><input type="number" value="18" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
-      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Death Certificate Fee</label><input type="number" value="25" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
-      <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#64748B;">Veteran Discount %</label><input type="number" value="10" style="border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;width:100%;"></div>
-    </div>
-    <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
-      <button onclick="document.getElementById('funeral-formula-panel').style.display='none'" style="background:#fff;border:1px solid #E2E8F0;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
-      <button onclick="saveFuneralFormulas()" style="background:#6B7280;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">Save Formulas</button>
-    </div>
-  </div>
-</div>
-<script>
-function openFormulaEditor() {
-  document.getElementById('funeral-formula-panel').style.display = 'flex';
-}
-function saveFuneralFormulas() {
-  document.getElementById('funeral-formula-panel').style.display = 'none';
-  var t = document.createElement('div');
-  t.textContent = 'Formulas saved';
-  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#6B7280;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;';
-  document.body.appendChild(t);
-  setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 2500);
-}
-</script>
-</body>
-</html>
+var PINS={"owner": "1234", "director": "2345", "staff": "3456", "coordinator": "4567"};var curRole='';
+function selRole(r){curRole=r;document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});var el=document.getElementById('r-'+r);if(el)el.classList.add('sel');document.getElementById('p0').focus();}
+function pi(i){var v=document.getElementById('p'+i).value;if(v&&i<3)document.getElementById('p'+(i+1)).focus();}
+function pk(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();if(e.key==='Enter')doLogin();}
+function getPin(){return ['p0','p1','p2','p3'].map(function(id){return document.getElementById(id).value;}).join('');}
+function doLogin(){if(!curRole){document.getElementById('le').textContent='Select a role.';return;}if(getPin()===PINS[curRole]){document.getElementById('ls').style.display='none';document.getElementById('app').style.display='block';document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);SAIRNbiz.sendEvent('sairnfuneral','app_loaded',{role:curRole,ts:new Date().toISOString()});initAI();toast('Welcome back!');}else{document.getElementById('le').textContent='Incorrect PIN.';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.getElementById('p0').focus();}}
+function doLogout(){document.getElementById('ls').style.display='flex';document.getElementById('app').style.display='none';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});curRole='';}
+function nav(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.ni').forEach(function(x){x.classList.remove('active');});var pg=document.getElementById('pg-'+p);if(pg)pg.classList.add('active');var ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('active');document.getElementById('mn').scrollTop=0;if(p==='sairnbiz'){SAIRNbiz.renderPanel('sbiz-container','#6B7280');}}
+function openM(id){document.getElementById(id).classList.add('open');}function closeM(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.mo').forEach(function(o){o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});});
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2600);}
+function ft(inp,tid){var q=inp.value.toLowerCase();document.getElementById(tid).querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});}
+function exportCSV(tid,fname){var t=document.getElementById(tid);if(!t){toast('No data');return;}var csv=Array.from(t.querySelectorAll('tr')).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(fname||'export')+'.csv';a.click();toast('Exported');}
+var _aih=[];function toggleAI(){document.getElementById('aip').classList.toggle('open');}function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnfuneral',is_demo:true,system:"You are the AI for SAIRNfuneral, a funeral home management platform. You know about funeral arrangements, pre-need contracts, cremation, merchandise, death certificates, insurance assignments, grief aftercare programs, and funeral home operations. Be compassionate, professional, and specific.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+function initAI(){var prompts=[["Aftercare Follow-Up", "Draft compassionate 30-day aftercare messages for families"], ["Pre-Need Review", "Which pre-need contracts need follow-up or are partially funded?"], ["Revenue Report", "Generate revenue by service type this month"], ["Arrangements Checklist", "What arrangements still need to be confirmed for active cases?"], ["Insurance Claims", "Which insurance claims are pending? What is the status?"], ["Inventory Check", "Which casket and urn models are running low?"]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
+</script></body></html>
