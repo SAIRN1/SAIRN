@@ -1008,7 +1008,7 @@ function saLockScreen() {
   overlay.id = 'sairn-lock-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(30,27,75,.97);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:40px;width:340px;text-align:center">' +
-    '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
+    '<div style="font-size:48px;margin-bottom:12px"></div>' +
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
     '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
     '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
@@ -1346,7 +1346,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
 // LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
-    if (typeof url === 'string' && url.includes('api.anthropic.com')) {
+    if (typeof url === 'string' && url.includes('sairn.vercel.app/api/claude')) {
       saLog('L22-DIRECT-API', 'Direct Anthropic API call blocked', 'critical');
       return Promise.reject(new Error('SAIRN Security: Direct Anthropic calls not permitted. Use SAIRN proxy.'));
     }
@@ -3567,7 +3567,7 @@ const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'fabricor';
 
 // -- SYSTEM PROMPT ----------------------------------------------
-const SYSTEM = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops -- granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite -- Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite -- harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble -- Calacatta, Carrara, Statuario, Arabescato -- etching risks must be communicated. Engineered quartz -- Cambria, Silestone, MSI Q Premium, Caesarstone -- consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
+const SYSTEM = "You are StoneDesk AI, the world's most advanced AI platform built exclusively for stone fabrication shops -- granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite -- Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite -- harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble -- Calacatta, Carrara, Statuario, Arabescato -- etching risks must be communicated. Engineered quartz -- Cambria, Silestone, MSI Q Premium, Caesarstone -- consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
 
 // -- STATE ------------------------------------------------------
 let CODES = { sales: '1234', admin: '9999' };
@@ -3768,7 +3768,7 @@ function addMessage(role, content) {
   if (role === 'assistant') {
     const avatar = document.createElement('div');
     avatar.className = 'msg-avatar';
-    avatar.textContent = '🪨';
+    avatar.textContent = '';
     const bubble = document.createElement('div');
     bubble.className = 'msg-bubble';
     bubble.innerHTML = formatMessage(content);
@@ -3812,7 +3812,7 @@ async function sendMessage() {
   const typingDiv = document.createElement('div');
   typingDiv.className = 'msg assistant';
   typingDiv.id = 'typing-indicator';
-  typingDiv.innerHTML = '<div class="msg-avatar">🪨</div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+  typingDiv.innerHTML = '<div class="msg-avatar"></div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
   msgs.appendChild(typingDiv);
   msgs.scrollTop = msgs.scrollHeight;
 
@@ -4040,7 +4040,7 @@ function saveQuote() {
   // Flash confirmation
   const btn = document.querySelector('[onclick="saveQuote()"]');
   const orig = btn.textContent;
-  btn.textContent = '✓ Saved!';
+  btn.textContent = ' Saved!';
   btn.style.color = '#4ADE80';
   setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
 }
@@ -4081,7 +4081,7 @@ function buildEstimate() {
   const finishName = finishVal === 0 ? 'polished' : finishVal === 0.06 ? 'honed' : 'leathered';
   const thickVal = parseFloat(document.getElementById('thickness').value);
   const thickName = thickVal === 0.85 ? '2CM' : thickVal === 1.15 ? '4CM' : '3CM';
-  products.push({ name:c.mat.name + ' Countertops', desc:thickName + ' ' + finishName + ' -- ' + c.proj.name + ' · Custom fabricated and installed' });
+  products.push({ name:c.mat.name + ' Countertops', desc:thickName + ' ' + finishName + ' -- ' + c.proj.name + '  Custom fabricated and installed' });
 
   const edgeSel = document.getElementById('edge');
   const edgeText = edgeSel.options[edgeSel.selectedIndex].text.split(' --')[0];
@@ -4509,7 +4509,7 @@ function calcDrawing() {
     {n:totalMat.toFixed(2)+' sqft',l:'Order Qty +15%',s:'All pieces including waste allowance'},
     {n:slabs,l:'Slabs Needed',s:'Estimated at 50 sqft per slab'},
     {n:thh+' hr',l:'Est. Labor (THH)',s:'Granite benchmark 4hr per 50sqft'},
-    {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
+    {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join('  '):'No extras selected'},
   ];
   metrics.forEach(m=>{
     const card=document.createElement('div');
@@ -5206,7 +5206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Feature 1 of enhanced AI features -- highest impact
 // Supports: PDF, images (JPG/PNG), text files, Word docs
 // Claude reads the document and analyzes it in context
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -5230,7 +5230,7 @@ var APP = (function() {
 var DOC_CONFIG = {
   law: {
     color: '#7C3AED',
-    label: '📄 Upload Document',
+    label: ' Upload Document',
     accept: '.pdf,.jpg,.jpeg,.png,.txt,.doc,.docx',
     prompts: [
       'Lease Agreement -- review for unfair clauses, missing protections, red flags',
@@ -5243,7 +5243,7 @@ var DOC_CONFIG = {
   },
   health: {
     color: '#06B6D4',
-    label: '📋 Upload Medical Doc',
+    label: ' Upload Medical Doc',
     accept: '.pdf,.jpg,.jpeg,.png,.txt',
     prompts: [
       'Medical Bill -- explain the charges and flag anything unusual',
@@ -5256,7 +5256,7 @@ var DOC_CONFIG = {
   },
   money: {
     color: '#10B981',
-    label: '💳 Upload Financial Doc',
+    label: ' Upload Financial Doc',
     accept: '.pdf,.jpg,.jpeg,.png,.txt,.csv',
     prompts: [
       'Bank Statement -- analyze spending patterns and flag issues',
@@ -5269,7 +5269,7 @@ var DOC_CONFIG = {
   },
   home: {
     color: '#FB923C',
-    label: '🏠 Upload Home Doc',
+    label: ' Upload Home Doc',
     accept: '.pdf,.jpg,.jpeg,.png,.txt',
     prompts: [
       'Lease -- review for tenant protections and red flags',
@@ -5282,7 +5282,7 @@ var DOC_CONFIG = {
   },
   senior: {
     color: '#EAB308',
-    label: '📋 Upload Document',
+    label: ' Upload Document',
     accept: '.pdf,.jpg,.jpeg,.png,.txt',
     prompts: [
       'Medicare Statement -- explain what was covered and what I owe',
@@ -5295,7 +5295,7 @@ var DOC_CONFIG = {
   },
   general: {
     color: '#16C762',
-    label: '📎 Upload Document',
+    label: ' Upload Document',
     accept: '.pdf,.jpg,.jpeg,.png,.txt,.doc,.docx,.csv',
     prompts: [
       'Summarize this document for me',
@@ -5359,21 +5359,21 @@ modal.innerHTML =
   '<div class="sdm-hdr">' +
     '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">' + cfg.label + '</div>' +
     '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Upload a document -- Claude reads it and analyzes it for you</div></div>' +
-    '<button onclick="closeDocModal()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
+    '<button onclick="closeDocModal()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div class="sdm-body">' +
     // Drop zone
     '<div class="sdm-drop-zone" id="sdm-drop" onclick="document.getElementById(\'sdm-file-input\').click()">' +
-      '<div class="sdm-drop-icon">📄</div>' +
+      '<div class="sdm-drop-icon"></div>' +
       '<div class="sdm-drop-title">Drop your document here or tap to browse</div>' +
-      '<div class="sdm-drop-sub">Supports PDF, JPG, PNG, and text files · Max 10MB<br>Your document is processed securely and never stored</div>' +
+      '<div class="sdm-drop-sub">Supports PDF, JPG, PNG, and text files  Max 10MB<br>Your document is processed securely and never stored</div>' +
     '</div>' +
     '<input type="file" id="sdm-file-input" class="sdm-file-input" accept="' + cfg.accept + '">' +
 
     // File preview
     '<div class="sdm-file-preview" id="sdm-file-preview">' +
       '<div class="sdm-file-info">' +
-        '<div class="sdm-file-icon" id="sdm-file-icon">📄</div>' +
+        '<div class="sdm-file-icon" id="sdm-file-icon"></div>' +
         '<div><div class="sdm-file-name" id="sdm-file-name">--</div><div class="sdm-file-size" id="sdm-file-size">--</div></div>' +
         '<button onclick="clearDocFile()" style="margin-left:auto;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:7px;color:#EF4444;font-size:11px;font-weight:600;padding:4px 12px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button>' +
       '</div>' +
@@ -5391,11 +5391,11 @@ modal.innerHTML =
     '</div>' +
 
     '<div id="sdm-progress" class="sdm-progress">' +
-      '<div class="sdm-prog-icon">⚙️</div>' +
+      '<div class="sdm-prog-icon"></div>' +
       '<div style="font-size:13px;color:rgba(240,240,255,0.5);margin-top:12px">Claude is reading your document...</div>' +
     '</div>' +
 
-    '<button class="sdm-analyze-btn" id="sdm-analyze-btn" onclick="analyzeDocument()">🧠 Analyze This Document →</button>' +
+    '<button class="sdm-analyze-btn" id="sdm-analyze-btn" onclick="analyzeDocument()"> Analyze This Document </button>' +
     '<div class="sdm-disclaimer">Your document is sent directly to Claude AI for analysis. It is not stored on SAIRN servers. Analysis is AI-assisted guidance -- always consult qualified professionals for important decisions.</div>' +
   '</div>';
 
@@ -5454,12 +5454,12 @@ function handleDocFile(file) {
   _docMime = file.type || 'application/octet-stream';
 
   // File icon by type
-  var icon = '📄';
-  if (_docMime.includes('pdf')) icon = '📕';
-  else if (_docMime.includes('image')) icon = '🖼️';
-  else if (_docMime.includes('text') || file.name.endsWith('.txt')) icon = '📝';
-  else if (file.name.endsWith('.csv')) icon = '📊';
-  else if (file.name.endsWith('.doc') || file.name.endsWith('.docx')) icon = '📘';
+  var icon = '';
+  if (_docMime.includes('pdf')) icon = '';
+  else if (_docMime.includes('image')) icon = '';
+  else if (_docMime.includes('text') || file.name.endsWith('.txt')) icon = '';
+  else if (file.name.endsWith('.csv')) icon = '';
+  else if (file.name.endsWith('.doc') || file.name.endsWith('.docx')) icon = '';
 
   // Show preview
   var preview = document.getElementById('sdm-file-preview');
@@ -5590,7 +5590,7 @@ window.analyzeDocument = async function() {
     closeDocModal();
 
     if (typeof addMsg === 'function') addMsg('user', userDisplay);
-    if (typeof messages !== 'undefined') messages.push({ role: 'user', content: '📄 Uploaded: ' + fileName + '\n\nQuestion: ' + question });
+    if (typeof messages !== 'undefined') messages.push({ role: 'user', content: ' Uploaded: ' + fileName + '\n\nQuestion: ' + question });
     if (typeof addMsg === 'function') addMsg('ai', reply);
     if (typeof messages !== 'undefined') messages.push({ role: 'assistant', content: reply });
 
@@ -5650,7 +5650,7 @@ setTimeout(injectDocButton, 600);
 // SAIRN UNIVERSAL AI FOLLOW-UP QUESTIONS MODULE
 // Feature 2 -- after every Claude response, 3 smart follow-up chips
 // appear. One tap sends the question instantly.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -5680,7 +5680,7 @@ style.textContent =
   '.sairn-followup-row{display:flex;gap:7px;flex-wrap:wrap;padding:10px 16px 4px;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px}' +
   '.sairn-fu-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.3);margin-bottom:6px;width:100%}' +
   '.sairn-fu-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:100px;font-size:11px;color:rgba(240,240,255,0.65);cursor:pointer;transition:all .15s;line-height:1.3;text-align:left}' +
-  '.sairn-fu-chip::before{content:"→";color:' + APP_COLOR + ';font-size:11px;flex-shrink:0}' +
+  '.sairn-fu-chip::before{content:"";color:' + APP_COLOR + ';font-size:11px;flex-shrink:0}' +
   '.sairn-fu-chip:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.2);color:#F0F0FF}' +
   '.sairn-fu-chip.loading{opacity:0.5;pointer-events:none}' +
   '.sairn-fu-generating{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:11px;color:rgba(240,240,255,0.3)}';
@@ -5841,7 +5841,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // After every 3rd AI response, Claude summarizes the session.
 // That summary is injected into all future prompts as context.
 // The AI stops forgetting what it told you 2 questions ago.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -5890,7 +5890,7 @@ memPanel.style.cssText = 'position:fixed;top:100px;right:16px;z-index:800;backgr
 memPanel.innerHTML =
   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#16C762">Session Memory</div>' +
-  '<button onclick="document.getElementById(\'sairn-memory-panel\').style.display=\'none\'" style="background:none;border:none;color:rgba(240,240,255,0.4);font-size:18px;cursor:pointer;line-height:1">×</button>' +
+  '<button onclick="document.getElementById(\'sairn-memory-panel\').style.display=\'none\'" style="background:none;border:none;color:rgba(240,240,255,0.4);font-size:18px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div id="sairn-memory-content" style="font-size:12px;color:rgba(240,240,255,0.6);line-height:1.65;max-height:200px;overflow-y:auto">No memory built yet. Keep chatting and I\'ll start remembering what matters.</div>' +
   '<button onclick="clearSessionMemory()" style="margin-top:12px;width:100%;padding:7px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:7px;color:#EF4444;font-size:11px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif">Clear Memory</button>';
@@ -6027,7 +6027,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // User sets preferred response style once -- stored in localStorage
 // Injected into every system prompt automatically
 // Options: Simple / Detailed / Formal / Casual / Expert
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -6051,11 +6051,11 @@ var APP_COLOR = (function(){
 var TONE_KEY = 'sairn_tone_prefs';
 
 var PRESETS = [
-  { id:'simple',   label:'Simple',   icon:'🌱', desc:'Plain language, short sentences, no jargon. Best for everyday use.' },
-  { id:'detailed', label:'Detailed', icon:'📖', desc:'Thorough explanations with context. Best when you want to learn.' },
-  { id:'formal',   label:'Formal',   icon:'🎩', desc:'Professional tone, structured output. Best for work or legal matters.' },
-  { id:'casual',   label:'Casual',   icon:'💬', desc:'Friendly and conversational. Best for everyday questions.' },
-  { id:'expert',   label:'Expert',   icon:'🎓', desc:'Technical depth, assumes knowledge. Best for professionals.' },
+  { id:'simple',   label:'Simple',   icon:'', desc:'Plain language, short sentences, no jargon. Best for everyday use.' },
+  { id:'detailed', label:'Detailed', icon:'', desc:'Thorough explanations with context. Best when you want to learn.' },
+  { id:'formal',   label:'Formal',   icon:'', desc:'Professional tone, structured output. Best for work or legal matters.' },
+  { id:'casual',   label:'Casual',   icon:'', desc:'Friendly and conversational. Best for everyday questions.' },
+  { id:'expert',   label:'Expert',   icon:'', desc:'Technical depth, assumes knowledge. Best for professionals.' },
 ];
 
 var TONE_PROMPTS = {
@@ -6164,7 +6164,7 @@ setTimeout(buildToneBar, 700);
 // When Claude produces a numbered list, auto-render it as an
 // interactive checklist. Progress saved to localStorage.
 // Returns to living action list the user works through over time.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -6267,7 +6267,7 @@ function buildChecklist(steps, planId, existingState) {
 
   wrap.innerHTML =
     '<div class="sap-header">' +
-    '<span class="sap-title">✅ Action Plan</span>' +
+    '<span class="sap-title"> Action Plan</span>' +
     '<span class="sap-progress" id="sap-prog-' + planId + '">' + done + ' of ' + steps.length + ' complete</span>' +
     '</div>' +
     '<div class="sap-progress-bar"><div class="sap-progress-fill" id="sap-fill-' + planId + '" style="width:' + pct + '%"></div></div>';
@@ -6278,7 +6278,7 @@ function buildChecklist(steps, planId, existingState) {
     item.className = 'sap-item' + (isDone ? ' done' : '');
     item.dataset.idx = i;
     item.innerHTML =
-      '<div class="sap-checkbox"><span class="sap-checkmark">✓</span></div>' +
+      '<div class="sap-checkbox"><span class="sap-checkmark"></span></div>' +
       '<div class="sap-text">' + step + '</div>';
     item.onclick = function() { toggleStep(planId, i, steps.length, item); };
     wrap.appendChild(item);
@@ -6286,14 +6286,14 @@ function buildChecklist(steps, planId, existingState) {
 
   var saveBtn = document.createElement('button');
   saveBtn.className = 'sap-save-btn';
-  saveBtn.innerHTML = '💾 Save This Action Plan';
+  saveBtn.innerHTML = ' Save This Action Plan';
   saveBtn.onclick = function() {
     var plans = loadPlans();
     if (!plans[planId]) plans[planId] = { steps: steps, state: existingState };
     savePlans(plans);
-    saveBtn.textContent = '✓ Saved';
+    saveBtn.textContent = ' Saved';
     saveBtn.style.color = '#4ADE80';
-    setTimeout(function(){ saveBtn.innerHTML = '💾 Save This Action Plan'; saveBtn.style.color = ''; }, 2000);
+    setTimeout(function(){ saveBtn.innerHTML = ' Save This Action Plan'; saveBtn.style.color = ''; }, 2000);
   };
   wrap.appendChild(saveBtn);
   return wrap;
@@ -6380,7 +6380,7 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installActi
 //   "Simplify" -- rewrite in plain language, short sentences
 //   "Go Deeper" -- expand with more detail and examples
 // One tap -- instant. No typing required.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -6452,7 +6452,7 @@ function buildResponseActions(aiContent) {
   // Simplify button
   var simplifyBtn = document.createElement('button');
   simplifyBtn.className = 'sra-btn';
-  simplifyBtn.innerHTML = '🌱 Simplify';
+  simplifyBtn.innerHTML = ' Simplify';
   simplifyBtn.onclick = function() {
     requestRewrite(
       'Please rewrite your previous response in much simpler language. Use very short sentences. No jargon or technical terms. Explain as if talking to someone who is completely new to this topic. Keep it brief and clear.',
@@ -6463,7 +6463,7 @@ function buildResponseActions(aiContent) {
   // Go Deeper button
   var deeperBtn = document.createElement('button');
   deeperBtn.className = 'sra-btn';
-  deeperBtn.innerHTML = '📖 Go Deeper';
+  deeperBtn.innerHTML = ' Go Deeper';
   deeperBtn.onclick = function() {
     requestRewrite(
       'Please expand on your previous response with much more detail. Add examples, explain the reasoning behind each point, cover edge cases, and give me a more comprehensive understanding of the topic.',
@@ -6474,7 +6474,7 @@ function buildResponseActions(aiContent) {
   // Bullet Points button (bonus -- high value)
   var bulletBtn = document.createElement('button');
   bulletBtn.className = 'sra-btn';
-  bulletBtn.innerHTML = '📋 As Bullets';
+  bulletBtn.innerHTML = ' As Bullets';
   bulletBtn.onclick = function() {
     requestRewrite(
       'Please reformat your previous response as a clean bullet-point list. Group related items together. Use sub-bullets where helpful. Make each point concise and scannable.',
@@ -6485,7 +6485,7 @@ function buildResponseActions(aiContent) {
   // Give me an example button
   var exampleBtn = document.createElement('button');
   exampleBtn.className = 'sra-btn';
-  exampleBtn.innerHTML = '💡 Example';
+  exampleBtn.innerHTML = ' Example';
   exampleBtn.onclick = function() {
     requestRewrite(
       'Give me a concrete, real-world example that illustrates your previous response. Make it specific and practical -- something I could actually relate to or use.',
@@ -6547,9 +6547,9 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installSimp
 // ================================================================
 // SAIRN FEATURE 7 -- VOICE INPUT (Web Speech API)
 // Microphone button next to the send button.
-// Speech → text → fills the input → sends to Claude.
+// Speech  text  fills the input  sends to Claude.
 // Works in Chrome, Edge, Safari. Falls back gracefully.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -6587,7 +6587,7 @@ document.head.appendChild(st);
 
 var statusEl = document.createElement('div');
 statusEl.id = 'sairn-voice-status';
-statusEl.textContent = '🎙️ Listening...';
+statusEl.textContent = ' Listening...';
 document.body.appendChild(statusEl);
 
 var recognition = null;
@@ -6638,10 +6638,10 @@ function startVoice() {
     if (btn) btn.classList.remove('listening');
     statusEl.classList.remove('show');
     if (e.error !== 'no-speech') {
-      statusEl.textContent = '⚠️ Microphone access denied';
+      statusEl.textContent = ' Microphone access denied';
       statusEl.style.color = '#F59E0B';
       statusEl.classList.add('show');
-      setTimeout(function(){ statusEl.classList.remove('show'); statusEl.textContent = '🎙️ Listening...'; statusEl.style.color = ''; }, 2500);
+      setTimeout(function(){ statusEl.classList.remove('show'); statusEl.textContent = ' Listening...'; statusEl.style.color = ''; }, 2500);
     }
   };
 
@@ -6660,7 +6660,7 @@ function injectVoiceButton() {
   var btn = document.createElement('button');
   btn.id = 'sairn-voice-btn';
   btn.title = 'Voice input';
-  btn.innerHTML = '🎙️';
+  btn.innerHTML = '';
   btn.onclick = startVoice;
   sendBtn.parentNode.insertBefore(btn, sendBtn);
 }
@@ -6678,7 +6678,7 @@ setTimeout(injectVoiceButton, 700);
 // When NEXUS routes you to a cell, your intake context travels with you.
 // The destination app opens pre-loaded with your situation.
 // Also: "Continue in [App]" button after any Claude response.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -6707,7 +6707,7 @@ function checkIncomingHandoff() {
   // Show a context banner
   var banner = document.createElement('div');
   banner.style.cssText = 'background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:10px 14px;margin:8px 16px;font-size:12px;color:rgba(240,240,255,0.65);line-height:1.5;display:flex;align-items:flex-start;gap:10px';
-  banner.innerHTML = '<span style="font-size:16px;flex-shrink:0">↩️</span><div><strong style="color:#16C762">Context from SAIRN NEXUS:</strong> ' + ctx.situation.slice(0, 200) + (ctx.situation.length > 200 ? '...' : '') + '</div>';
+  banner.innerHTML = '<span style="font-size:16px;flex-shrink:0"></span><div><strong style="color:#16C762">Context from SAIRN NEXUS:</strong> ' + ctx.situation.slice(0, 200) + (ctx.situation.length > 200 ? '...' : '') + '</div>';
 
   var chatArea = document.getElementById('chatArea') || document.getElementById('messages');
   if (chatArea) chatArea.insertBefore(banner, chatArea.firstChild);
@@ -6726,15 +6726,15 @@ function checkIncomingHandoff() {
 
 // -- SENDER: "Continue in [App]" buttons after AI responses ------
 var CELL_MAP = [
-  { name:'SAIRNtype',    file:'/index.html',   icon:'⌨️', keywords:['write','draft','email','letter','post','document','essay','cover'] },
-  { name:'SAIRNhealth',  file:'/health.html',  icon:'❤️', keywords:['symptom','medication','health','doctor','pain','medical','diagnosis'] },
-  { name:'SAIRNmoney',   file:'/money.html',   icon:'💰', keywords:['budget','debt','money','invest','saving','credit','financial'] },
-  { name:'SAIRNlaw',     file:'/legal.html',   icon:'⚖️', keywords:['legal','rights','lawyer','lease','contract','tenant','lawsuit'] },
-  { name:'SAIRNstudy',   file:'/study.html',   icon:'📚', keywords:['study','learn','exam','homework','tutor','course','school'] },
-  { name:'SAIRNlingual', file:'/lingual.html', icon:'🌍', keywords:['language','spanish','french','chinese','translate','speak','fluent'] },
-  { name:'SAIRNsenior',  file:'/senior.html',  icon:'🌟', keywords:['medicare','social security','senior','retirement','benefit','medication'] },
-  { name:'SAIRNhome',    file:'/home.html',    icon:'🏠', keywords:['home','mortgage','rent','landlord','buy','sell','property','house'] },
-  { name:'SAIRNroam',    file:'/roam.html',    icon:'✈️', keywords:['travel','trip','hotel','flight','vacation','visit','destination'] },
+  { name:'SAIRNtype',    file:'/index.html',   icon:'', keywords:['write','draft','email','letter','post','document','essay','cover'] },
+  { name:'SAIRNhealth',  file:'/health.html',  icon:'', keywords:['symptom','medication','health','doctor','pain','medical','diagnosis'] },
+  { name:'SAIRNmoney',   file:'/money.html',   icon:'', keywords:['budget','debt','money','invest','saving','credit','financial'] },
+  { name:'SAIRNlaw',     file:'/legal.html',   icon:'', keywords:['legal','rights','lawyer','lease','contract','tenant','lawsuit'] },
+  { name:'SAIRNstudy',   file:'/study.html',   icon:'', keywords:['study','learn','exam','homework','tutor','course','school'] },
+  { name:'SAIRNlingual', file:'/lingual.html', icon:'', keywords:['language','spanish','french','chinese','translate','speak','fluent'] },
+  { name:'SAIRNsenior',  file:'/senior.html',  icon:'', keywords:['medicare','social security','senior','retirement','benefit','medication'] },
+  { name:'SAIRNhome',    file:'/home.html',    icon:'', keywords:['home','mortgage','rent','landlord','buy','sell','property','house'] },
+  { name:'SAIRNroam',    file:'/roam.html',    icon:'', keywords:['travel','trip','hotel','flight','vacation','visit','destination'] },
 ];
 
 var st = document.createElement('style');
@@ -6831,7 +6831,7 @@ else {
 // Run two scenarios side by side.
 // Two mortgage options, two debt payoff plans, two lease terms.
 // Claude analyzes both and recommends.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -6886,9 +6886,9 @@ var modal = document.createElement('div');
 modal.id = 'sairn-compare-modal';
 modal.innerHTML =
   '<div class="scm-hdr">' +
-  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">⚖️ Compare Two Options</div>' +
+  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF"> Compare Two Options</div>' +
   '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Describe both options -- Claude analyzes and recommends</div></div>' +
-  '<button onclick="closeCompare()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
+  '<button onclick="closeCompare()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div class="scm-body">' +
   '<div class="scm-grid">' +
@@ -6907,7 +6907,7 @@ modal.innerHTML =
   '</div>' +
   '<div class="scm-field" style="margin-bottom:14px"><label>What matters most to you?</label>' +
   '<input type="text" id="scm-priority" placeholder="e.g. lowest monthly payment, least risk, fastest payoff, best location..."></div>' +
-  '<button class="scm-compare-btn" style="background:' + APP_COLOR + ';color:#fff" onclick="runComparison()">⚖️ Claude -- Analyze Both and Recommend →</button>' +
+  '<button class="scm-compare-btn" style="background:' + APP_COLOR + ';color:#fff" onclick="runComparison()"> Claude -- Analyze Both and Recommend </button>' +
   '<div id="scm-result" class="scm-result"></div>' +
   '</div>';
 document.body.appendChild(modal);
@@ -6975,7 +6975,7 @@ function injectCompareButton() {
   var btn = document.createElement('button');
   btn.id = 'sairn-compare-trigger';
   btn.style.cssText = 'padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(240,240,255,0.5);font-size:10px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;transition:all .15s;letter-spacing:.3px';
-  btn.textContent = '⚖️ Compare';
+  btn.textContent = ' Compare';
   btn.onclick = window.openCompare;
   btn.onmouseenter = function(){ this.style.color='rgba(240,240,255,0.9)'; this.style.borderColor='rgba(255,255,255,0.2)'; };
   btn.onmouseleave = function(){ this.style.color='rgba(240,240,255,0.5)'; this.style.borderColor='rgba(255,255,255,0.1)'; };
@@ -6995,7 +6995,7 @@ setTimeout(injectCompareButton, 800);
 // THE MOAT. Cross-cell persistent context.
 // User fills out once -- every app gets smarter forever.
 // Health, money, legal, home, senior -- all share context.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -7057,7 +7057,7 @@ document.head.appendChild(st);
 // Profile button
 var profBtn = document.createElement('div');
 profBtn.id = 'sairn-profile-btn';
-profBtn.innerHTML = '<span class="spb-dot ' + (profile.completed ? 'complete' : 'incomplete') + '"></span><span id="spb-label">' + (profile.completed ? '✓ Your Profile' : 'Set Up Profile') + '</span>';
+profBtn.innerHTML = '<span class="spb-dot ' + (profile.completed ? 'complete' : 'incomplete') + '"></span><span id="spb-label">' + (profile.completed ? ' Your Profile' : 'Set Up Profile') + '</span>';
 profBtn.onclick = openProfileModal;
 document.body.appendChild(profBtn);
 
@@ -7074,13 +7074,13 @@ var modal = document.createElement('div');
 modal.id = 'sairn-profile-modal';
 modal.innerHTML =
   '<div class="spm-hdr">' +
-  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">🧠 SAIRN Intelligence Profile</div>' +
+  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF"> SAIRN Intelligence Profile</div>' +
   '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Fill in once -- every SAIRN app gets smarter for you, forever</div></div>' +
-  '<button onclick="closeProfileModal()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
+  '<button onclick="closeProfileModal()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div class="spm-body">' +
 
-  '<div class="spm-section"><div class="spm-section-title">👤 About You</div>' +
+  '<div class="spm-section"><div class="spm-section-title"> About You</div>' +
   '<div class="spm-grid">' +
   inp('name', 'First Name (optional)', 'e.g. Michael', profile.name) +
   inp('age', 'Age', 'e.g. 58', profile.age) +
@@ -7090,7 +7090,7 @@ modal.innerHTML =
   sel('employment', 'Employment', ['-- Select --','Full-time employed','Part-time employed','Self-employed','Business owner','Retired','Student','Unemployed / searching','Stay at home'], profile.employment) +
   '</div></div>' +
 
-  '<div class="spm-section"><div class="spm-section-title">💰 Financial Context</div>' +
+  '<div class="spm-section"><div class="spm-section-title"> Financial Context</div>' +
   '<div class="spm-grid">' +
   sel('income_range', 'Annual Household Income', ['-- Select --','Under $30,000','$30,000-$50,000','$50,000-$75,000','$75,000-$100,000','$100,000-$150,000','$150,000-$250,000','Over $250,000','Prefer not to say'], profile.income_range) +
   sel('debt_situation', 'Debt Situation', ['-- Select --','Debt-free','Minimal debt -- under $10K','Moderate debt -- $10K-$50K','Significant debt -- $50K-$100K','High debt -- over $100K','In process of paying off'], profile.debt_situation) +
@@ -7098,7 +7098,7 @@ modal.innerHTML =
   inp('financial_goals', 'Top Financial Goal', 'e.g. pay off debt, buy a home, retire early', profile.financial_goals) +
   '</div></div>' +
 
-  '<div class="spm-section"><div class="spm-section-title">❤️ Health Context</div>' +
+  '<div class="spm-section"><div class="spm-section-title"> Health Context</div>' +
   '<div class="spm-grid">' +
   inp('health_conditions', 'Known Health Conditions (if any)', 'e.g. diabetes, hypertension -- or none', profile.health_conditions) +
   inp('medications', 'Current Medications (if any)', 'e.g. metformin, lisinopril -- or none', profile.medications) +
@@ -7106,7 +7106,7 @@ modal.innerHTML =
   sel('homeowner', 'Housing', ['-- Select --','Own my home -- paid off','Own my home -- with mortgage','Renting','Living with family','Other'], profile.homeowner) +
   '</div></div>' +
 
-  '<div class="spm-section"><div class="spm-section-title">📚 Learning & Language</div>' +
+  '<div class="spm-section"><div class="spm-section-title"> Learning & Language</div>' +
   '<div class="spm-grid">' +
   sel('education_level', 'Education Level', ['-- Select --','High school diploma/GED','Some college','Associate degree','Bachelor\'s degree','Graduate degree','Professional degree (JD/MD)','Doctorate'], profile.education_level) +
   sel('learning_style', 'Learning Style', ['-- Select --','Visual -- diagrams and examples','Detailed -- thorough explanations','Simple -- plain language please','Practical -- just tell me what to do','Expert -- I have professional knowledge'], profile.learning_style) +
@@ -7114,7 +7114,7 @@ modal.innerHTML =
   inp('language_goals', 'Languages I\'m Learning', 'e.g. French (beginner)', profile.language_goals) +
   '</div></div>' +
 
-  '<button class="spm-save-btn" onclick="saveProfileData()">🧠 Save My Profile -- Make Every App Smarter →</button>' +
+  '<button class="spm-save-btn" onclick="saveProfileData()"> Save My Profile -- Make Every App Smarter </button>' +
   '<div class="spm-status">Your profile is stored locally on your device only. It is never sent to SAIRN servers. It is only used to personalize your Claude AI responses.</div>' +
   '</div>';
 document.body.appendChild(modal);
@@ -7136,14 +7136,14 @@ window.saveProfileData = function() {
   var dot = profBtn.querySelector('.spb-dot');
   var lbl = document.getElementById('spb-label');
   if (dot) { dot.classList.remove('incomplete'); dot.classList.add('complete'); }
-  if (lbl) lbl.textContent = '✓ Your Profile';
+  if (lbl) lbl.textContent = ' Your Profile';
 
   closeProfileModal();
 
   // Flash confirmation
   var flag = document.createElement('div');
   flag.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:#4ADE80;z-index:9999';
-  flag.textContent = '✓ Profile saved -- all SAIRN apps are now personalized to you';
+  flag.textContent = ' Profile saved -- all SAIRN apps are now personalized to you';
   document.body.appendChild(flag);
   setTimeout(function(){ flag.remove(); }, 3500);
 };
@@ -7170,7 +7170,7 @@ if (!window._saircProfileFetchPatched) {
           if (profile.learning_style)  ctx.push('Learning style: ' + profile.learning_style);
           if (profile.languages)       ctx.push('Languages: ' + profile.languages);
           if (ctx.length > 0) {
-            body.system = 'USER PROFILE (use this to personalize every response):\n' + ctx.join(' · ') + '\n\nTailor your response to this specific person based on their profile.\n\n---\n\n' + body.system;
+            body.system = 'USER PROFILE (use this to personalize every response):\n' + ctx.join('  ') + '\n\nTailor your response to this specific person based on their profile.\n\n---\n\n' + body.system;
             opts = Object.assign({}, opts, { body: JSON.stringify(body) });
           }
         }
@@ -7185,7 +7185,7 @@ if (!profile.completed) {
   setTimeout(function() {
     var tip = document.createElement('div');
     tip.style.cssText = 'position:fixed;bottom:90px;left:16px;z-index:900;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:12px 16px;max-width:280px;cursor:pointer';
-    tip.innerHTML = '<div style="font-size:12px;font-weight:600;color:#16C762;margin-bottom:4px">🧠 Set up your profile</div><div style="font-size:11px;color:rgba(240,240,255,0.5);line-height:1.5">Fill in once and every SAIRN app personalizes to you automatically.</div>';
+    tip.innerHTML = '<div style="font-size:12px;font-weight:600;color:#16C762;margin-bottom:4px"> Set up your profile</div><div style="font-size:11px;color:rgba(240,240,255,0.5);line-height:1.5">Fill in once and every SAIRN app personalizes to you automatically.</div>';
     tip.onclick = function(){ tip.remove(); openProfileModal(); };
     document.body.appendChild(tip);
     setTimeout(function(){ if (tip.parentNode) tip.remove(); }, 12000);
@@ -7203,7 +7203,7 @@ if (!profile.completed) {
 // Words appear as Claude generates them -- instant, alive, real.
 // Patches the sendMessage function to use SSE streaming.
 // Falls back to standard fetch if streaming unavailable.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -7320,7 +7320,7 @@ function installStreamingHook() {
               if (prof.income_range) ctx.push('Income: ' + prof.income_range);
               if (prof.health_conditions) ctx.push('Health: ' + prof.health_conditions);
               if (prof.learning_style) ctx.push('Learning style: ' + prof.learning_style);
-              if (ctx.length) patches.push('USER PROFILE: ' + ctx.join(' · '));
+              if (ctx.length) patches.push('USER PROFILE: ' + ctx.join('  '));
             }
           } catch(e) {}
 
@@ -7399,7 +7399,7 @@ function installStreamingHook() {
     } catch(err) {
       cursor.remove();
       // Show error state
-      aiEl.innerHTML = '<span style="color:rgba(239,68,68,0.8);font-size:13px">⚠️ ' + (err.message || 'Connection error') + ' -- <button onclick="sendMessage()" style="background:none;border:none;color:#16C762;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px;text-decoration:underline">Retry</button></span>';
+      aiEl.innerHTML = '<span style="color:rgba(239,68,68,0.8);font-size:13px"> ' + (err.message || 'Connection error') + ' -- <button onclick="sendMessage()" style="background:none;border:none;color:#16C762;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px;text-decoration:underline">Retry</button></span>';
       // Restore user message to input for retry
       if (inp) inp.value = userText;
     }
@@ -7428,7 +7428,7 @@ setTimeout(tryInstall, 1000);
 // Claude returns beautiful markdown. Apps display raw symbols.
 // This fixes that -- **bold**, headers, bullets, code, tables
 // all render properly across every SAIRN app.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -7441,7 +7441,7 @@ window.renderMarkdown = function(text) {
   var s = text;
 
   // Escape HTML first (except we want to allow our own tags)
-  // Actually we process markdown → HTML so we need to be careful
+  // Actually we process markdown  HTML so we need to be careful
   // Process in order: code blocks first, then inline
 
   // Fenced code blocks ```lang\n...\n```
@@ -7569,7 +7569,7 @@ else {
 // Current facts injected into every app's system prompt.
 // 2026 rates, guidelines, statutes -- Claude knows them cold.
 // No extra API calls. Just smarter system prompts.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -7652,11 +7652,11 @@ var DOMAIN_KNOWLEDGE = {
     '-- Sepsis Hour-1 Bundle: lactate, blood cultures, broad-spectrum antibiotics, 30mL/kg crystalloid, vasopressors if MAP <65',
     '-- AHA/ACC 2026 PE guidelines: Wells score + PERC standard pathway; CTA-PE for intermediate probability',
     '-- AHA 2025 Stroke guidelines: tPA window 4.5 hours from LKW; thrombectomy up to 24 hours select patients',
-    '-- HEART score ≥4: admit for serial troponins; ≥7: high risk, cardiology consult',
+    '-- HEART score 4: admit for serial troponins; 7: high risk, cardiology consult',
     '-- ESI Level 1: immediate life threat; Level 2: high risk/severe pain; Level 3: 2+ resources',
-    '-- CURB-65 ≥2: consider hospitalization; ≥3: ICU consideration',
-    '-- GCS ≤8: consider airway management',
-    '-- NEWS2 ≥5: escalate care; ≥7: consider ICU',
+    '-- CURB-65 2: consider hospitalization; 3: ICU consideration',
+    '-- GCS 8: consider airway management',
+    '-- NEWS2 5: escalate care; 7: consider ICU',
     '-- CDC 2024 Antibiotic guidance: de-escalate based on cultures; avoid unnecessary broad-spectrum',
   ],
   study: [
@@ -7676,7 +7676,7 @@ var DOMAIN_KNOWLEDGE = {
     '-- Japanese/Chinese/Arabic: 2,200+ hours for English speakers to reach B2',
     '-- Comprehensible input at i+1 level (Krashen): most effective for acquisition',
     '-- Vocabulary thresholds: 3,000-4,000 words for B2 conversational fluency',
-    '-- CEFR levels: A1 (beginner) → A2 → B1 (intermediate) → B2 (upper-intermediate) → C1 → C2',
+    '-- CEFR levels: A1 (beginner)  A2  B1 (intermediate)  B2 (upper-intermediate)  C1  C2',
     '-- Spaced repetition software (Anki) reduces vocab learning time by 60-70%',
     '-- Speaking from day one (Benny Lewis method) builds confidence faster',
     '-- Native content immersion effective at B1+ level',
@@ -7690,7 +7690,7 @@ var DOMAIN_KNOWLEDGE = {
     '-- Mid-range travel: $150-300/person/day',
     '-- Travel insurance recommendation: 5-10% of trip cost; medical evacuation coverage critical',
     '-- CDC travel health notices current (2026): check cdc.gov/travel before international trips',
-    '-- ETIAS (Europe): required for US visitors starting 2025; apply online, €7, valid 3 years',
+    '-- ETIAS (Europe): required for US visitors starting 2025; apply online, 7, valid 3 years',
     '-- Popular destinations value ranking (2026): Southeast Asia, Mexico, Eastern Europe best value',
   ],
 };
@@ -7746,7 +7746,7 @@ if (!window._saircKnowledgeFetchPatched) {
 // Musk: strip to the bone, ship fast, question every word
 // Optimum Potential: built to outlast, not just to answer
 // Applied to every app's SYSTEM constant at runtime
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -7754,12 +7754,12 @@ if (window._saircPromptsInstalled) return;
 window._saircPromptsInstalled = true;
 
 // Triad Council + Optimum Potential rewritten system prompts
-// Each was run through: Jobs (UX/focus) · Gates (precision/edge cases) · Musk (simplify/ship)
+// Each was run through: Jobs (UX/focus)  Gates (precision/edge cases)  Musk (simplify/ship)
 // Standard: built to outlast, not just to answer
 
 var OPTIMIZED_SYSTEMS = {
 
-  'index.html': `You are SAIRNtype -- the world's best AI writing partner, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'index.html': `You are SAIRNtype -- the world's best AI writing partner, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
 
 YOUR ONE PURPOSE: Make every piece of writing extraordinary. Not good. Not fine. Extraordinary.
 
@@ -7778,7 +7778,7 @@ SPEED (Musk filter): Deliver the finished piece. No preamble. No "Here is your e
 
 FORMAT: Lead with the finished piece. Any explanation follows, briefly. Never explain what you're about to do -- just do it.`,
 
-  'health.html': `You are SAIRNhealth -- the most knowledgeable AI health companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'health.html': `You are SAIRNhealth -- the most knowledgeable AI health companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
 
 YOUR ONE PURPOSE: Help people understand their health so they can make informed decisions and have better conversations with their doctors.
 
@@ -7800,7 +7800,7 @@ OUTPUT: Plain language. No medical jargon without immediate explanation. Imagine
 
 Always end health guidance with: "This is for information only -- please discuss with your healthcare provider before making any changes."`,
 
-  'money.html': `You are SAIRNmoney -- a Fortune 500-level financial intelligence platform powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'money.html': `You are SAIRNmoney -- a Fortune 500-level financial intelligence platform powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
 
 YOUR ONE PURPOSE: Give people the financial guidance that used to cost $300/hour, instantly.
 
@@ -7819,7 +7819,7 @@ OUTPUT: Lead with the answer, then the reasoning. Give a specific first step the
 
 Always note: "This is financial education, not professional financial advice. Consult a licensed advisor for major decisions."`,
 
-  'legal.html': `You are SAIRNlaw -- the most comprehensive AI legal intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'legal.html': `You are SAIRNlaw -- the most comprehensive AI legal intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
 
 YOUR ONE PURPOSE: Make legal rights and information accessible to everyone, not just people who can afford an attorney.
 
@@ -7840,7 +7840,7 @@ OUTPUT: Plain language. Legal terms get immediately explained. Every response en
 
 Always state: "This is general legal information, not legal advice. For your specific situation, consult a licensed attorney."`,
 
-  'study.html': `You are SAIRNstudy -- the world's most effective AI tutor, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'study.html': `You are SAIRNstudy -- the world's most effective AI tutor, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
 
 YOUR ONE PURPOSE: Make the student actually understand -- not just get the answer, but genuinely understand why.
 
@@ -7860,7 +7860,7 @@ ADAPTABILITY: Match language and complexity exactly to the student's level. A 10
 
 NEVER: Give the answer to homework without explanation. Make the student work through the reasoning.`,
 
-  'lingual.html': `You are SAIRNlingual -- the most effective AI language learning companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'lingual.html': `You are SAIRNlingual -- the most effective AI language learning companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
 
 YOUR ONE PURPOSE: Get people actually speaking another language -- not just drilling vocabulary forever.
 
@@ -7880,7 +7880,7 @@ IMMERSION: When the learner is B1+, respond partially in the target language. Pu
 
 NEVER: Let a session end without the learner having practiced producing language, not just receiving it.`,
 
-  'senior.html': `You are SAIRNsenior -- the most compassionate and knowledgeable AI companion for adults 60 and older, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'senior.html': `You are SAIRNsenior -- the most compassionate and knowledgeable AI companion for adults 60 and older, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
 
 YOUR ONE PURPOSE: Be the patient, knowledgeable friend every older adult deserves -- someone who explains everything clearly, never makes them feel rushed, and actually helps.
 
@@ -7899,7 +7899,7 @@ NEVER: Use jargon without explaining it. Rush to the answer without making sure 
 
 ALWAYS: End with a clear summary: "In simple terms: [one sentence]." And the next step: "What to do: [one action]."`,
 
-  'home.html': `You are SAIRNhome -- the most comprehensive AI homeownership intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'home.html': `You are SAIRNhome -- the most comprehensive AI homeownership intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies.
 
 YOUR ONE PURPOSE: Help people navigate the biggest financial decision of their lives with confidence.
 
@@ -7959,7 +7959,7 @@ if (newSystem && !window._saircPromptFetchPatched) {
 // SAIRN GAP 5 -- CONFIDENCE + CITATION INDICATORS
 // When Claude gives data, numbers, or recommendations --
 // a confidence badge appears. Users know what to verify.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -8030,9 +8030,9 @@ function addConfidenceBar(element, text) {
   var bar = document.createElement('div');
   bar.className = 'sairn-conf-bar';
 
-  var label = analysis.level === 'high' ? '✓ High confidence'
-            : analysis.level === 'med'  ? '⚠ Verify figures'
-            :                             '⚡ Expert review advised';
+  var label = analysis.level === 'high' ? ' High confidence'
+            : analysis.level === 'med'  ? ' Verify figures'
+            :                             ' Expert review advised';
   var cls   = 'conf-' + analysis.level;
 
   bar.innerHTML = '<span class="sairn-conf-badge ' + cls + '">' + label + '</span>';
@@ -8040,7 +8040,7 @@ function addConfidenceBar(element, text) {
   if (analysis.issues.length > 0) {
     var note = document.createElement('span');
     note.className = 'sairn-verify-note';
-    note.textContent = analysis.issues.join(' · ');
+    note.textContent = analysis.issues.join('  ');
     bar.appendChild(note);
   }
 
@@ -8093,7 +8093,7 @@ else {
 // "Claude is thinking harder" message on slow responses.
 // Cached last response fallback.
 // No more cold generic errors.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -8227,7 +8227,7 @@ function showRetryIndicator(attempt, delay, status) {
                            : 'Connection issue -- retrying... (attempt ' + attempt + '/' + MAX_RETRIES + ')';
   var el = document.createElement('div');
   el.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);border-radius:100px;padding:8px 20px;font-size:12px;font-weight:600;color:#FBBF24;z-index:901;white-space:nowrap';
-  el.textContent = '⚡ ' + msg;
+  el.textContent = ' ' + msg;
   document.body.appendChild(el);
   setTimeout(function(){ el.remove(); }, delay + 200);
 }
@@ -8258,7 +8258,7 @@ else {
 // Injects it into every subsequent Claude API call.
 // Falls back to cached static knowledge if fetch fails.
 // Updates every hour -- always current.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -8294,7 +8294,7 @@ function showKnowledgeIndicator(fresh) {
   var el = document.createElement('div');
   el.id = 'sairn-knowledge-indicator';
   el.style.cssText = 'position:fixed;top:68px;right:160px;z-index:799;display:flex;align-items:center;gap:5px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:100px;padding:4px 10px;font-size:10px;font-weight:600;color:rgba(16,185,129,0.9);letter-spacing:.3px;cursor:pointer';
-  el.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10B981;' + (fresh ? 'animation:livePulse 2s ease-in-out infinite' : '') + '"></span>' + (fresh ? '⚡ Live data' : '📦 Cached data');
+  el.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10B981;' + (fresh ? 'animation:livePulse 2s ease-in-out infinite' : '') + '"></span>' + (fresh ? ' Live data' : ' Cached data');
   el.title = fresh ? 'Live data fetched just now from Federal Reserve and public APIs' : 'Using cached data -- refreshes every hour';
 
   if (!document.getElementById('live-pulse-style')) {
@@ -8418,7 +8418,7 @@ setInterval(function() {
 // Tracks: question patterns, preferred response style, topics,
 // expertise signals, communication preferences.
 // Gets smarter with every interaction automatically.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -8663,8 +8663,8 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installLear
 // SAIRN MULTI-MODAL INPUT
 // Camera capture -- photo your document, your bill, your condition.
 // Claude sees the image and analyzes it in context.
-// Photo → base64 → Claude vision API → instant analysis.
-// Built by Michael L. Dibert · SAIRN Technologies™
+// Photo  base64  Claude vision API  instant analysis.
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -8705,15 +8705,15 @@ var APP_COLOR = (function(){
 
 // App-specific camera prompts
 var CAM_CONFIG = {
-  health:   { label:'📷 Photo', prompts:['Analyze this medical document or image','What does this prescription say?','Identify this medication','Analyze this medical bill','Describe what you see -- any health concerns?'] },
-  money:    { label:'📷 Photo', prompts:['Analyze this financial document','Read this bill or statement','What does this receipt show?','Analyze this check or money order','Read this loan or credit document'] },
-  law:      { label:'📷 Photo', prompts:['Read this legal document','Analyze this notice or letter','What does this contract say?','Read this court document','Analyze this lease or agreement'] },
-  home:     { label:'📷 Photo', prompts:['Analyze this home document','What do you see -- any damage or issues?','Read this inspection report','Analyze this HOA notice','What type of home issue is this?'] },
-  fabricor: { label:'📷 Stone', prompts:['Identify this stone material and grade','Estimate this countertop project','What edge profile is this?','Analyze this stone for pricing','Identify veining and quality'] },
-  clinical: { label:'📷 Clinical', prompts:['Analyze this clinical document','Read this patient chart or record','What does this lab result show?','Analyze this medical image description','Read this clinical form'] },
-  senior:   { label:'📷 Photo', prompts:['Read this Medicare document','Analyze this medical bill','What does this letter from SSA say?','Read this prescription label','Analyze this insurance document'] },
-  roam:     { label:'📷 Photo', prompts:['Identify this location or landmark','Translate this text or sign','Read this travel document','What does this menu or sign say?','Identify this food or dish'] },
-  default:  { label:'📷 Photo', prompts:['Analyze this image','What do you see in this photo?','Read the text in this image','Describe what this shows'] },
+  health:   { label:' Photo', prompts:['Analyze this medical document or image','What does this prescription say?','Identify this medication','Analyze this medical bill','Describe what you see -- any health concerns?'] },
+  money:    { label:' Photo', prompts:['Analyze this financial document','Read this bill or statement','What does this receipt show?','Analyze this check or money order','Read this loan or credit document'] },
+  law:      { label:' Photo', prompts:['Read this legal document','Analyze this notice or letter','What does this contract say?','Read this court document','Analyze this lease or agreement'] },
+  home:     { label:' Photo', prompts:['Analyze this home document','What do you see -- any damage or issues?','Read this inspection report','Analyze this HOA notice','What type of home issue is this?'] },
+  fabricor: { label:' Stone', prompts:['Identify this stone material and grade','Estimate this countertop project','What edge profile is this?','Analyze this stone for pricing','Identify veining and quality'] },
+  clinical: { label:' Clinical', prompts:['Analyze this clinical document','Read this patient chart or record','What does this lab result show?','Analyze this medical image description','Read this clinical form'] },
+  senior:   { label:' Photo', prompts:['Read this Medicare document','Analyze this medical bill','What does this letter from SSA say?','Read this prescription label','Analyze this insurance document'] },
+  roam:     { label:' Photo', prompts:['Identify this location or landmark','Translate this text or sign','Read this travel document','What does this menu or sign say?','Identify this food or dish'] },
+  default:  { label:' Photo', prompts:['Analyze this image','What do you see in this photo?','Read the text in this image','Describe what this shows'] },
 };
 
 var cfg = CAM_CONFIG[APP_ID] || CAM_CONFIG.default;
@@ -8761,26 +8761,26 @@ modal.innerHTML =
   '<div class="scam-hdr">' +
   '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">' + cfg.label + ' -- Show Claude What You See</div>' +
   '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Take a photo or upload an image -- Claude analyzes it instantly</div></div>' +
-  '<button onclick="closeCamera()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
+  '<button onclick="closeCamera()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div class="scam-body">' +
   '<div class="scam-tab-row">' +
-  '<button class="scam-tab active" id="scam-tab-camera" onclick="switchCamTab(\'camera\')">📷 Camera</button>' +
-  '<button class="scam-tab" id="scam-tab-upload" onclick="switchCamTab(\'upload\')">🖼️ Upload Image</button>' +
+  '<button class="scam-tab active" id="scam-tab-camera" onclick="switchCamTab(\'camera\')"> Camera</button>' +
+  '<button class="scam-tab" id="scam-tab-upload" onclick="switchCamTab(\'upload\')"> Upload Image</button>' +
   '</div>' +
   '<div id="scam-camera-section">' +
   '<div id="scam-viewfinder"><video id="scam-video" autoplay playsinline muted></video></div>' +
   '<canvas id="scam-canvas"></canvas>' +
   '<img id="scam-preview" alt="Captured image">' +
   '<div class="scam-controls">' +
-  '<button class="scam-btn scam-capture" id="scam-capture-btn" onclick="capturePhoto()">📷 Take Photo</button>' +
-  '<button class="scam-btn scam-retake" id="scam-retake-btn" onclick="retakePhoto()" style="display:none">↩ Retake</button>' +
+  '<button class="scam-btn scam-capture" id="scam-capture-btn" onclick="capturePhoto()"> Take Photo</button>' +
+  '<button class="scam-btn scam-retake" id="scam-retake-btn" onclick="retakePhoto()" style="display:none"> Retake</button>' +
   '</div>' +
   '</div>' +
   '<div id="scam-upload-section" style="display:none;text-align:center;padding:20px 0">' +
   '<input type="file" id="scam-file-input" accept="image/*">' +
   '<div style="border:2px dashed rgba(255,255,255,0.15);border-radius:14px;padding:40px 24px;cursor:pointer;margin-bottom:14px" onclick="document.getElementById(\'scam-file-input\').click()">' +
-  '<div style="font-size:40px;margin-bottom:12px">🖼️</div>' +
+  '<div style="font-size:40px;margin-bottom:12px"></div>' +
   '<div style="font-size:14px;font-weight:600;color:#F0F0FF;margin-bottom:6px">Tap to select an image</div>' +
   '<div style="font-size:12px;color:rgba(240,240,255,0.4)">JPG, PNG, GIF, WebP -- max 10MB</div>' +
   '</div>' +
@@ -8792,8 +8792,8 @@ modal.innerHTML =
   cfg.prompts.map(function(p,i){ return '<span class="scam-chip" onclick="selectCamPrompt(this,'+i+')">'+p+'</span>'; }).join('') +
   '</div>' +
   '<input class="scam-custom" id="scam-custom-q" placeholder="Or type your own question...">' +
-  '<button class="scam-analyze" id="scam-analyze-btn" onclick="analyzeImage()">🧠 Claude -- Analyze This →</button>' +
-  '<div style="font-size:11px;color:rgba(240,240,255,0.25);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI · Not stored on SAIRN servers</div>' +
+  '<button class="scam-analyze" id="scam-analyze-btn" onclick="analyzeImage()"> Claude -- Analyze This </button>' +
+  '<div style="font-size:11px;color:rgba(240,240,255,0.25);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI  Not stored on SAIRN servers</div>' +
   '</div>' +
   '</div>';
 document.body.appendChild(modal);
@@ -8921,7 +8921,7 @@ window.analyzeImage = async function() {
   var cq = document.getElementById('scam-custom-q');
   var question = _selectedQ || (cq && cq.value.trim()) || 'Please analyze this image.';
   var btn = document.getElementById('scam-analyze-btn');
-  if (btn) { btn.textContent = '⚙️ Analyzing...'; btn.classList.remove('ready'); }
+  if (btn) { btn.textContent = ' Analyzing...'; btn.classList.remove('ready'); }
 
   try {
     var res = await fetch('https://sairn.vercel.app/api/claude', {
@@ -8947,9 +8947,9 @@ window.analyzeImage = async function() {
 
     closeCamera();
 
-    if (typeof addMsg === 'function') addMsg('user', '📷 ' + question);
+    if (typeof addMsg === 'function') addMsg('user', ' ' + question);
     if (typeof messages !== 'undefined') {
-      messages.push({ role:'user', content: '📷 [Image captured] ' + question });
+      messages.push({ role:'user', content: ' [Image captured] ' + question });
       messages.push({ role:'assistant', content: reply });
     }
     if (typeof addMsg === 'function') addMsg('ai', reply);
@@ -8957,7 +8957,7 @@ window.analyzeImage = async function() {
     var chatArea = document.getElementById('chatArea') || document.getElementById('messages');
     if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
   } catch(e) {
-    if (btn) { btn.textContent = '🧠 Claude -- Analyze This →'; btn.classList.add('ready'); }
+    if (btn) { btn.textContent = ' Claude -- Analyze This '; btn.classList.add('ready'); }
     alert('Analysis failed -- please try again.');
   }
 };
@@ -9024,7 +9024,7 @@ function renderMachines() {
       '<input type="number" value="' + (m.value||'') + '" placeholder="150000" onchange="machines[' + i + '].value=parseFloat(this.value)||0;renderMachines()">' +
       '<input type="number" value="' + (m.life||120) + '" placeholder="120" onchange="machines[' + i + '].life=parseFloat(this.value)||120;renderMachines()">' +
       '<div style="font-size:13px;font-weight:700;color:var(--a);padding:5px 0">$' + monthly + '</div>' +
-      '<button class="biz-del-btn" onclick="removeMachine(' + i + ')">✕</button>' +
+      '<button class="biz-del-btn" onclick="removeMachine(' + i + ')"></button>' +
     '</div>';
   }).join('');
   const total = machines.reduce((s,m) => s + (m.life>0 ? m.value/m.life : 0), 0);
@@ -9147,7 +9147,7 @@ function saveBizData() {
   localStorage.setItem('stondesk_biz', JSON.stringify(data));dbSaveBizData(data);
   // Show confirmation
   const btn = document.querySelector('#panel-business button[onclick="saveBizData()"]');
-  if (btn) { btn.textContent = '✓ Saved!'; btn.style.background = '#16a34a'; setTimeout(() => { btn.textContent = 'Save All'; btn.style.background = ''; }, 2000); }
+  if (btn) { btn.textContent = ' Saved!'; btn.style.background = '#16a34a'; setTimeout(() => { btn.textContent = 'Save All'; btn.style.background = ''; }, 2000); }
 }
 
 function loadBizData() {
@@ -9220,9 +9220,9 @@ function runAlertScan() {
     if (c.status === 'quoted' && c.createdAt) {
       const hrs = hoursAgo(c.createdAt);
       if (hrs >= 24) {
-        alerts.push({level:'red', msg:'🔴 ' + c.name + ' -- quote pending approval ' + Math.floor(hrs) + 'h (OVERDUE)', panel:'customers', id:c.id});
+        alerts.push({level:'red', msg:' ' + c.name + ' -- quote pending approval ' + Math.floor(hrs) + 'h (OVERDUE)', panel:'customers', id:c.id});
       } else if (hrs >= 12) {
-        alerts.push({level:'yellow', msg:'🟡 ' + c.name + ' -- quote pending approval ' + Math.floor(hrs) + 'h', panel:'customers', id:c.id});
+        alerts.push({level:'yellow', msg:' ' + c.name + ' -- quote pending approval ' + Math.floor(hrs) + 'h', panel:'customers', id:c.id});
       }
     }
   });
@@ -9231,9 +9231,9 @@ function runAlertScan() {
     if (w.expiry) {
       const daysLeft = (new Date(w.expiry).getTime() - now) / 86400000;
       if (daysLeft < 0) {
-        alerts.push({level:'red', msg:'🔴 Warranty EXPIRED -- ' + w.customer + ' (' + w.package + ')', panel:'warranty', id:w.id});
+        alerts.push({level:'red', msg:' Warranty EXPIRED -- ' + w.customer + ' (' + w.package + ')', panel:'warranty', id:w.id});
       } else if (daysLeft <= 30) {
-        alerts.push({level:'yellow', msg:'🟡 Warranty expiring in ' + Math.ceil(daysLeft) + ' days -- ' + w.customer, panel:'warranty', id:w.id});
+        alerts.push({level:'yellow', msg:' Warranty expiring in ' + Math.ceil(daysLeft) + ' days -- ' + w.customer, panel:'warranty', id:w.id});
       }
     }
   });
@@ -9252,7 +9252,7 @@ function renderAlertBar(alerts) {
     '<div class="alert-pill ' + a.level + '" onclick="showPanel(\'' + a.panel + '\')" title="Click to view">' +
     '<span class="alert-dot"></span>' +
     '<span>' + a.msg + '</span>' +
-    '<button class="alert-pill-close" onclick="event.stopPropagation();dismissAlert(' + i + ')">×</button>' +
+    '<button class="alert-pill-close" onclick="event.stopPropagation();dismissAlert(' + i + ')"></button>' +
     '</div>'
   ).join('');
 }
@@ -9269,7 +9269,7 @@ function renderCustomerAlertZone(alerts) {
   if (!custAlerts.length) { el.innerHTML = ''; return; }
   const worst = custAlerts.some(a => a.level === 'red') ? 'red' : 'yellow';
   el.innerHTML = '<div class="urgency-banner ' + worst + '">' +
-    '<span class="urgency-icon">' + (worst==='red'?'🚨':'⚠️') + '</span>' +
+    '<span class="urgency-icon">' + (worst==='red'?'':'') + '</span>' +
     '<span>' + custAlerts.length + ' quote(s) need management approval -- ' +
     (worst==='red'?'OVERDUE 24+ hours':'approaching 24h limit') + '</span>' +
     '</div>';
@@ -9279,10 +9279,10 @@ function renderWarrantyAlertZone(alerts) {
   const el = document.getElementById('warr-alerts-zone');
   if (!el) return;
   const warrAlerts = alerts.filter(a => a.panel === 'warranty');
-  if (!warrAlerts.length) { el.innerHTML = '<div class="urgency-banner green"><span class="urgency-icon">✅</span><span>All warranties current -- no action needed</span></div>'; return; }
+  if (!warrAlerts.length) { el.innerHTML = '<div class="urgency-banner green"><span class="urgency-icon"></span><span>All warranties current -- no action needed</span></div>'; return; }
   const worst = warrAlerts.some(a => a.level === 'red') ? 'red' : 'yellow';
   el.innerHTML = '<div class="urgency-banner ' + worst + '">' +
-    '<span class="urgency-icon">' + (worst==='red'?'🚨':'⚠️') + '</span>' +
+    '<span class="urgency-icon">' + (worst==='red'?'':'') + '</span>' +
     '<span>' + warrAlerts.length + ' warranty alert(s) require attention</span></div>';
 }
 
@@ -9367,12 +9367,12 @@ function renderCustomers() {
   el.innerHTML = list.map(c => {
     const hrs = c.status === 'quoted' ? hoursAgo(c.createdAt) : 0;
     const urgency = c.status === 'quoted' ? (hrs >= 24 ? 'red' : hrs >= 12 ? 'yellow' : 'green') : '';
-    const urgencyLabel = urgency === 'red' ? '🔴 OVERDUE '+Math.floor(hrs)+'h' : urgency === 'yellow' ? '🟡 '+Math.floor(hrs)+'h' : '';
+    const urgencyLabel = urgency === 'red' ? ' OVERDUE '+Math.floor(hrs)+'h' : urgency === 'yellow' ? ' '+Math.floor(hrs)+'h' : '';
     return '<div class="portal-card" style="border-left:4px solid ' + (urgency==='red'?'#dc2626':urgency==='yellow'?'#ca8a04':'var(--border)') + '">' +
       '<div class="portal-card-hdr">' +
       '<div>' +
         '<div class="portal-card-title">' + escHtml(c.name) + (urgencyLabel ? ' <span class="item-urgency '+urgency+'" style="margin-left:6px">'+urgencyLabel+'</span>' : '') + '</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + escHtml(c.project) + (c.quote ? ' · <strong style="color:var(--a)">$' + c.quote.toLocaleString() + '</strong>' : '') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + escHtml(c.project) + (c.quote ? '  <strong style="color:var(--a)">$' + c.quote.toLocaleString() + '</strong>' : '') + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px">' +
         '<select onchange="custUpdateStatus(\'' + c.id + '\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">' +
@@ -9380,13 +9380,13 @@ function renderCustomers() {
           '<option value="'+s+'"'+(c.status===s?' selected':'')+'>'+statusLabels[s]+'</option>'
         ).join('') +
         '</select>' +
-        '<button onclick="custDelete(\'' + c.id + '\')" style="background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">×</button>' +
+        '<button onclick="custDelete(\'' + c.id + '\')" style="background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer"></button>' +
       '</div>' +
       '</div>' +
       '<div style="display:flex;gap:16px;font-size:12px;color:var(--muted)">' +
-        (c.phone ? '<span>📞 '+escHtml(c.phone)+'</span>' : '') +
-        (c.email ? '<span>✉️ '+escHtml(c.email)+'</span>' : '') +
-        '<span>📅 Added '+new Date(c.createdAt).toLocaleDateString()+'</span>' +
+        (c.phone ? '<span> '+escHtml(c.phone)+'</span>' : '') +
+        (c.email ? '<span> '+escHtml(c.email)+'</span>' : '') +
+        '<span> Added '+new Date(c.createdAt).toLocaleDateString()+'</span>' +
       '</div>' +
       (c.notes ? '<div style="font-size:12px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">'+escHtml(c.notes)+'</div>' : '') +
       '</div>';
@@ -9460,7 +9460,7 @@ function renderPhotos() {
   grid.innerHTML = photos.map(p =>
     '<div class="photo-thumb">' +
     '<img src="' + p.data + '" alt="' + escHtml(p.name) + '" onclick="photoLightbox(\'' + p.id + '\')" style="cursor:pointer">' +
-    '<button class="photo-thumb-del" onclick="photoDelete(\'' + p.id + '\')">×</button>' +
+    '<button class="photo-thumb-del" onclick="photoDelete(\'' + p.id + '\')"></button>' +
     '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);padding:3px 6px;font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
       '<span style="background:rgba(255,255,255,0.15);border-radius:3px;padding:0 4px">' + (catLabels[p.cat]||p.cat) + '</span> ' + escHtml(p.job) +
     '</div>' +
@@ -9474,8 +9474,8 @@ function photoLightbox(id) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99000;display:flex;align-items:center;justify-content:center;cursor:pointer';
   overlay.innerHTML = '<img src="' + p.data + '" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.5)">' +
-    '<div style="position:absolute;top:20px;right:20px;color:#fff;font-size:28px;cursor:pointer">×</div>' +
-    '<div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px">' + escHtml(p.job) + ' · ' + escHtml(p.name) + '</div>';
+    '<div style="position:absolute;top:20px;right:20px;color:#fff;font-size:28px;cursor:pointer"></div>' +
+    '<div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px">' + escHtml(p.job) + '  ' + escHtml(p.name) + '</div>';
   overlay.onclick = () => document.body.removeChild(overlay);
   document.body.appendChild(overlay);
 }
@@ -9537,14 +9537,14 @@ function renderWarranties() {
     const urgency = expired ? 'red' : soon ? 'yellow' : 'green';
     const expiryStr = w.years >= 90 ? 'Lifetime' : (expired ? 'EXPIRED' : 'Expires '+new Date(w.expiry).toLocaleDateString());
     return '<div class="warranty-card" style="border-left:4px solid ' + (urgency==='red'?'#dc2626':urgency==='yellow'?'#ca8a04':'#16a34a') + '">' +
-      '<div class="warranty-icon">' + (w.years>=90?'🥇':w.years>=3?'🥈':'🥉') + '</div>' +
+      '<div class="warranty-icon">' + (w.years>=90?'':w.years>=3?'':'') + '</div>' +
       '<div class="warranty-info">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' +
         '<div class="warranty-name">' + escHtml(w.customer) + '</div>' +
         '<span class="item-urgency ' + urgency + '">' + (expired?'Expired':soon?daysLeft+'d left':'Active') + '</span>' +
       '</div>' +
-      '<div style="font-size:12px;color:var(--muted)">' + escHtml(w.package) + (w.material?' · '+escHtml(w.material):'') + '</div>' +
-      '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate).toLocaleDateString() + ' · ' + expiryStr + '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">' + escHtml(w.package) + (w.material?'  '+escHtml(w.material):'') + '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate).toLocaleDateString() + '  ' + expiryStr + '</div>' +
       '<div style="margin-top:8px;display:flex;gap:8px">' +
         '<span style="font-size:13px;font-weight:700;color:var(--a)">$' + w.price + '</span>' +
         '<button onclick="warrantyDelete(\'' + w.id + '\')" style="font-size:11px;padding:2px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
@@ -9562,7 +9562,7 @@ function qboConnect() {
   sdQBOConfig = { clientId, secret, companyId, sync: document.getElementById('qbo-sync').value, connectedAt: new Date().toISOString() };
   localStorage.setItem('sd_qbo', JSON.stringify(sdQBOConfig));
   qboSetStatus(true, 'Connected to QuickBooks Online', 'Company ID: ' + companyId);
-  qboLog('✅ QuickBooks credentials saved. Ready to sync.');
+  qboLog(' QuickBooks credentials saved. Ready to sync.');
 }
 
 function qboSetStatus(connected, text, sub) {
@@ -9579,18 +9579,18 @@ function qboSetStatus(connected, text, sub) {
 
 function qboTestSync() {
   if (!sdQBOConfig.clientId) { qboLog('Connect QuickBooks first'); return; }
-  qboLog('🔄 Testing connection... (In production, this calls QBO OAuth API)');
-  setTimeout(() => qboLog('✅ Test connection successful -- ' + sdCustomers.length + ' customers, ' + quoteHistory.length + ' quotes ready to sync'), 1200);
+  qboLog(' Testing connection... (In production, this calls QBO OAuth API)');
+  setTimeout(() => qboLog(' Test connection successful -- ' + sdCustomers.length + ' customers, ' + quoteHistory.length + ' quotes ready to sync'), 1200);
 }
 
 function qboExportInvoices() {
   if (!sdQBOConfig.clientId) { qboLog('Connect QuickBooks first'); return; }
   const invoices = sdCustomers.filter(c => c.status === 'approved' && c.quote > 0);
   if (!invoices.length) { qboLog('No approved quotes to export'); return; }
-  qboLog('📤 Exporting ' + invoices.length + ' invoice(s) to QuickBooks...');
+  qboLog(' Exporting ' + invoices.length + ' invoice(s) to QuickBooks...');
   // In production: POST to /api/qbo/invoices with OAuth token
   setTimeout(() => {
-    qboLog('✅ ' + invoices.length + ' invoice(s) exported: ' + invoices.map(i => i.name).join(', '));
+    qboLog(' ' + invoices.length + ' invoice(s) exported: ' + invoices.map(i => i.name).join(', '));
   }, 1500);
 }
 
@@ -9613,7 +9613,7 @@ function saveAlertSettings() {
   };
   localStorage.setItem('sd_alert_settings', JSON.stringify(sdAlertSettings));
   const el = document.getElementById('alert-save-status');
-  if (el) { el.textContent = '✅ Alert settings saved. Monitoring active.'; el.style.color = '#16a34a'; }
+  if (el) { el.textContent = ' Alert settings saved. Monitoring active.'; el.style.color = '#16a34a'; }
 }
 
 function loadAlertSettingsUI() {
@@ -9638,8 +9638,8 @@ function sendAlertEmail(subject, level) {
     credentials: 'include',
     body: JSON.stringify({
       to: sdAlertSettings.email,
-      subject: '🔔 StoneDesk Alert: ' + subject,
-      html: '<div style="font-family:Arial,sans-serif;padding:24px"><h2 style="color:' + color + '">StoneDesk™ Alert</h2><p style="font-size:15px">' + subject + '</p><p style="font-size:12px;color:#666">Sent from StoneDesk™ -- SAIRN Technologies™</p></div>'
+      subject: ' StoneDesk Alert: ' + subject,
+      html: '<div style="font-family:Arial,sans-serif;padding:24px"><h2 style="color:' + color + '">StoneDesk Alert</h2><p style="font-size:15px">' + subject + '</p><p style="font-size:12px;color:#666">Sent from StoneDesk -- SAIRN Technologies</p></div>'
     })
   }).catch(() => {});
 }
@@ -9657,9 +9657,9 @@ function sendAlertSMS(message) {
 function testAlertEmail() {
   const email = document.getElementById('alert-email').value.trim();
   if (!email) { alert('Enter manager email first'); return; }
-  sendAlertEmail('Test alert from StoneDesk™ -- alert system is working!', 'green');
+  sendAlertEmail('Test alert from StoneDesk -- alert system is working!', 'green');
   const el = document.getElementById('alert-save-status');
-  if (el) { el.textContent = '📧 Test email sent to ' + email; el.style.color = '#16a34a'; }
+  if (el) { el.textContent = ' Test email sent to ' + email; el.style.color = '#16a34a'; }
 }
 
 function testAlertSMS() {
@@ -9667,7 +9667,7 @@ function testAlertSMS() {
   if (!phone) { alert('Enter manager phone first'); return; }
   sendAlertSMS('Test SMS from StoneDesk. Alert system working.');
   const el = document.getElementById('alert-save-status');
-  if (el) { el.textContent = '📱 Test SMS sent to ' + phone; el.style.color = '#16a34a'; }
+  if (el) { el.textContent = ' Test SMS sent to ' + phone; el.style.color = '#16a34a'; }
 }
 
 // -- INIT -----------------------------------------------------
@@ -9717,7 +9717,7 @@ function saveSD4(){
 // -- VENDOR CATALOG --------------------------------------------
 var VENDORS={
   gmr:{
-    name:'GMR Stone',logo:'🏔️',
+    name:'GMR Stone',logo:'',
     website:'https://www.gmrstone.com',
     phone:'tel:18005553467',
     email:'mailto:orders@gmrstone.com',
@@ -9751,7 +9751,7 @@ var VENDORS={
     ]
   },
   granquartz:{
-    name:'Granquartz',logo:'💎',
+    name:'Granquartz',logo:'',
     website:'https://www.granquartz.com',
     phone:'tel:18005285252',
     email:'mailto:customerservice@granquartz.com',
@@ -9785,7 +9785,7 @@ var VENDORS={
     ]
   },
   braxton:{
-    name:'Braxton-Bragg',logo:'🔧',
+    name:'Braxton-Bragg',logo:'',
     website:'https://www.braxton-bragg.com',
     phone:'tel:18003280388',
     email:'mailto:sales@braxton-bragg.com',
@@ -9897,14 +9897,14 @@ function renderSchedule(){
   if(urgFilter) list=list.filter(j=>schedUrgency(j)===urgFilter);
   var el=document.getElementById('sched-list');if(!el) return;
   if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px">No jobs found. Add your first job above.</div>';return;}
-  var stageLabels={templated:'Templated',cutting:'CNC Cutting',polishing:'Polishing',qa:'QA',ready:'Ready',installed:'Installed ✓'};
+  var stageLabels={templated:'Templated',cutting:'CNC Cutting',polishing:'Polishing',qa:'QA',ready:'Ready',installed:'Installed '};
   el.innerHTML=list.map(j=>{
     var days=schedDaysFromTemplate(j);
     var urg=schedUrgency(j);
     var limit=j.volume==='rush'?7:j.volume==='high'?14:10;
     var pct=Math.min(100,Math.round((days/limit)*100));
     var fillColor=urg==='red'?'#dc2626':urg==='yellow'?'#ca8a04':'#16a34a';
-    var badge=urg==='done'?'✓':days+'d';
+    var badge=urg==='done'?'':days+'d';
     return '<div class="job-row '+urg+'">' +
       '<div class="job-day-badge '+urg+'"><div class="day-num">'+badge+'</div><div style="font-size:9px">'+
         (urg==='done'?'done':urg==='red'?'OVERDUE':urg==='yellow'?'at risk':'on track')+'</div></div>' +
@@ -9915,9 +9915,9 @@ function renderSchedule(){
           '<span style="font-size:11px;padding:1px 7px;border-radius:20px;background:rgba(27,58,107,0.1);color:var(--a);font-weight:600">'+stageLabels[j.stage]+'</span>' +
         '</div>' +
         '<div style="font-size:12px;color:var(--muted)">'+
-          (j.material?escHtml(j.material)+' · ':'')+(j.sqft?j.sqft+'sqft · ':'')+'Template: '+new Date(j.templateDate).toLocaleDateString()+
-          (j.targetDate?' · Target: '+new Date(j.targetDate).toLocaleDateString():'') +
-          (j.installer?' · Crew: '+escHtml(j.installer):'') +
+          (j.material?escHtml(j.material)+'  ':'')+(j.sqft?j.sqft+'sqft  ':'')+'Template: '+new Date(j.templateDate).toLocaleDateString()+
+          (j.targetDate?'  Target: '+new Date(j.targetDate).toLocaleDateString():'') +
+          (j.installer?'  Crew: '+escHtml(j.installer):'') +
         '</div>' +
         (urg!=='done'?'<div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>':'') +
         (j.notes?'<div style="font-size:11px;color:var(--muted);margin-top:4px">'+escHtml(j.notes)+'</div>':'') +
@@ -9947,17 +9947,17 @@ function runSchedAlerts(){
   sdJobs.filter(j=>j.stage!=='installed').forEach(j=>{
     var days=schedDaysFromTemplate(j);
     var limit=j.volume==='rush'?7:j.volume==='high'?14:10;
-    if(days>limit+2) alerts.push({level:'red',msg:'🔴 '+j.customer+' ('+j.jobNum+') -- '+days+'d since template. OVERDUE '+limit+'d target',panel:'schedule'});
-    else if(days>limit-2) alerts.push({level:'yellow',msg:'🟡 '+j.customer+' ('+j.jobNum+') -- '+days+'d since template. Approaching '+limit+'d deadline',panel:'schedule'});
+    if(days>limit+2) alerts.push({level:'red',msg:' '+j.customer+' ('+j.jobNum+') -- '+days+'d since template. OVERDUE '+limit+'d target',panel:'schedule'});
+    else if(days>limit-2) alerts.push({level:'yellow',msg:' '+j.customer+' ('+j.jobNum+') -- '+days+'d since template. Approaching '+limit+'d deadline',panel:'schedule'});
   });
   var zone=document.getElementById('sched-alerts-zone');
   if(zone){
     var reds=alerts.filter(a=>a.level==='red');
     var yellows=alerts.filter(a=>a.level==='yellow');
     var html='';
-    if(reds.length) html+='<div class="urgency-banner red"><span class="urgency-icon">🚨</span><span>'+reds.length+' job(s) OVERDUE -- immediate action required</span></div>';
-    else if(yellows.length) html+='<div class="urgency-banner yellow"><span class="urgency-icon">⚠️</span><span>'+yellows.length+' job(s) approaching deadline</span></div>';
-    else if(sdJobs.filter(j=>j.stage!=='installed').length) html+='<div class="urgency-banner green"><span class="urgency-icon">✅</span><span>All jobs on track</span></div>';
+    if(reds.length) html+='<div class="urgency-banner red"><span class="urgency-icon"></span><span>'+reds.length+' job(s) OVERDUE -- immediate action required</span></div>';
+    else if(yellows.length) html+='<div class="urgency-banner yellow"><span class="urgency-icon"></span><span>'+yellows.length+' job(s) approaching deadline</span></div>';
+    else if(sdJobs.filter(j=>j.stage!=='installed').length) html+='<div class="urgency-banner green"><span class="urgency-icon"></span><span>All jobs on track</span></div>';
     zone.innerHTML=html;
   }
   // Send alerts if settings configured
@@ -10059,7 +10059,7 @@ function renderInventory(){
       var pct=Math.min(100,Math.round((item.qty/Math.max(1,item.min*2))*100));
       return '<div class="inv-row" style="display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px;align-items:center">'+
         '<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+escHtml(item.name)+'</div>'+
-          '<div style="font-size:11px;color:var(--muted)">'+vNames[item.vendor]+(item.sku?' · '+item.sku:'')+'</div></div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+vNames[item.vendor]+(item.sku?'  '+item.sku:'')+'</div></div>'+
         '<span class="item-urgency '+color+'">'+
           (color==='red'?(item.qty<=0?'Out':'Low'):color==='yellow'?'Warning':'OK')+'</span>'+
         '<div class="inv-level"><div class="inv-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>'+
@@ -10067,8 +10067,8 @@ function renderInventory(){
         '<div style="font-size:12px">$' + (item.cost||0).toFixed(2)+'</div>'+
         '<div style="display:flex;gap:4px">'+
           '<button onclick="invUpdateQty(\'' + item.id + '\',1)" style="padding:3px 7px;background:rgba(22,163,74,0.12);color:#16a34a;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">+</button>'+
-          '<button onclick="invUpdateQty(\'' + item.id + '\',-1)" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">−</button>'+
-          '<button onclick="invDelete(\'' + item.id + '\')" style="padding:3px 6px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:5px;font-size:11px;cursor:pointer">×</button>'+
+          '<button onclick="invUpdateQty(\'' + item.id + '\',-1)" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700"></button>'+
+          '<button onclick="invDelete(\'' + item.id + '\')" style="padding:3px 6px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:5px;font-size:11px;cursor:pointer"></button>'+
         '</div>'+
       '</div>';
     }).join('')+'</div>';
@@ -10106,7 +10106,7 @@ function renderVendor(){
   var set=(id,val)=>{var el=document.getElementById(id);if(el)el.textContent=val;};
   var seta=(id,attr,val)=>{var el=document.getElementById(id);if(el)el[attr]=val;};
   set('v-logo',v.logo);set('v-name',v.name);set('v-desc',v.desc);
-  seta('v-website','href',v.website);seta('v-website','textContent','🌐 '+v.website.replace('https://',''));
+  seta('v-website','href',v.website);seta('v-website','textContent',' '+v.website.replace('https://',''));
   seta('v-phone','href',v.phone);seta('v-email','href',v.email);
   var products=v.products;
   if(sdVCat!=='all') products=products.filter(p=>p.cat===sdVCat);
@@ -10169,9 +10169,9 @@ function renderCart(){
     '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">'+
     '<span style="flex:1;font-weight:500">'+escHtml(i.name)+'</span>'+
     '<span style="color:var(--muted);font-size:11px">'+i.vendor+'</span>'+
-    '<span style="color:var(--muted)">×'+i.qty+'</span>'+
+    '<span style="color:var(--muted)">'+i.qty+'</span>'+
     '<span style="font-weight:700;color:var(--a)">$' + (i.price*i.qty).toFixed(2)+'</span>'+
-    '<button onclick="cartUpdate(\'' + _activeVendor + '\',\'' + i.id + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
+    '<button onclick="cartUpdate(\'' + _activeVendor + '\',\'' + i.id + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px"></button>'+
     '</div>'
   ).join('');
 }
@@ -10200,12 +10200,12 @@ function vendorAddCustom(){
   var phone=prompt('Phone number:','');
   // Add to vendor tabs
   var key='custom_'+Date.now();
-  VENDORS[key]={name:name,logo:'🏪',website:website||'#',phone:'tel:'+phone,email:'mailto:orders@vendor.com',desc:'Custom vendor',products:[]};
+  VENDORS[key]={name:name,logo:'',website:website||'#',phone:'tel:'+phone,email:'mailto:orders@vendor.com',desc:'Custom vendor',products:[]};
   var tabBar=document.getElementById('vendor-tabs');
   if(tabBar){
     var btn=document.createElement('button');
     btn.className='vendor-tab';
-    btn.textContent='🏪 '+name;
+    btn.textContent=' '+name;
     btn.onclick=function(){vendorSetTab(key,this);};
     tabBar.appendChild(btn);
   }
@@ -10438,17 +10438,17 @@ function renderRemakes(){
             (urg==='red'?'<span class="item-urgency red">OVERDUE '+hrsStr+'</span>':urg==='yellow'?'<span class="item-urgency yellow">'+hrsStr+' elapsed</span>':urg==='approved'?'<span class="item-urgency green">Approved by '+escHtml(r.approvedBy)+'</span>':urg==='done'?'<span class="item-urgency green">Complete</span>':'<span class="item-urgency green">'+hrsStr+'</span>') +
           '</div>' +
           '<div style="font-size:12px;color:var(--muted)">' +
-            (r.material?escHtml(r.material)+' · ':'')+(r.sqft?r.sqft+'sqft · ':'')+
-            'Cause: '+reasonLabels[r.reason]+(r.assignedTo?' · '+escHtml(r.assignedTo):'') +
+            (r.material?escHtml(r.material)+'  ':'')+(r.sqft?r.sqft+'sqft  ':'')+
+            'Cause: '+reasonLabels[r.reason]+(r.assignedTo?'  '+escHtml(r.assignedTo):'') +
           '</div>' +
           (r.notes?'<div style="font-size:12px;color:var(--muted);margin-top:3px">'+escHtml(r.notes)+'</div>':'') +
-          '<div style="font-size:11px;color:var(--muted);margin-top:4px">Limit: '+limitLabel+' · Started: '+new Date(r.startTime).toLocaleString()+'</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:4px">Limit: '+limitLabel+'  Started: '+new Date(r.startTime).toLocaleString()+'</div>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">' +
           (r.status==='open'&&!r.approvedExtension&&document.body.classList.contains('is-exec')?
-            '<button onclick="remakeApprove(\'' + r.id + '\')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve Ext.</button>':'') +
+            '<button onclick="remakeApprove(\'' + r.id + '\')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer"> Approve Ext.</button>':'') +
           (r.status==='open'?'<button onclick="remakeComplete(\'' + r.id + '\')" style="padding:4px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Mark Done</button>':'') +
-          '<button onclick="remakeDelete(\'' + r.id + '\')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer">×</button>' +
+          '<button onclick="remakeDelete(\'' + r.id + '\')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer"></button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -10470,9 +10470,9 @@ function runRemakeAlerts(){
   var open=sdRemakes.filter(r=>r.status==='open');
   var reds=open.filter(r=>remakeUrgency(r)==='red');
   var yellows=open.filter(r=>remakeUrgency(r)==='yellow');
-  if(reds.length) zone.innerHTML='<div class="urgency-banner red"><span class="urgency-icon">🚨</span><span>'+reds.length+' remake(s) OVERDUE -- management approval required</span></div>';
-  else if(yellows.length) zone.innerHTML='<div class="urgency-banner yellow"><span class="urgency-icon">⚠️</span><span>'+yellows.length+' remake(s) approaching time limit</span></div>';
-  else if(open.length) zone.innerHTML='<div class="urgency-banner green"><span class="urgency-icon">✅</span><span>All remakes within time limits</span></div>';
+  if(reds.length) zone.innerHTML='<div class="urgency-banner red"><span class="urgency-icon"></span><span>'+reds.length+' remake(s) OVERDUE -- management approval required</span></div>';
+  else if(yellows.length) zone.innerHTML='<div class="urgency-banner yellow"><span class="urgency-icon"></span><span>'+yellows.length+' remake(s) approaching time limit</span></div>';
+  else if(open.length) zone.innerHTML='<div class="urgency-banner green"><span class="urgency-icon"></span><span>All remakes within time limits</span></div>';
   else zone.innerHTML='';
 }
 
@@ -10526,7 +10526,7 @@ function renderExecEmployees(){
   var bizEmp=[];
   try{var raw=localStorage.getItem('fab_biz_data');if(raw){var bd=JSON.parse(raw);if(bd._employees)bizEmp=JSON.parse(bd._employees);}}catch(e){}
   if(!bizEmp.length){
-    el.innerHTML='<div style="color:var(--muted);font-size:13px">No employees configured yet. Add employees in the Business tab → HR section.</div>';
+    el.innerHTML='<div style="color:var(--muted);font-size:13px">No employees configured yet. Add employees in the Business tab  HR section.</div>';
     if(tbl)tbl.innerHTML='';
     return;
   }
@@ -10573,7 +10573,7 @@ function renderExecRemakes(){
       '<span style="font-weight:600;flex:1">'+escHtml(r.customer)+'</span>'+
       '<span style="color:var(--muted)">'+Math.round(hrs)+'h elapsed</span>'+
       (urg==='red'&&!r.approvedExtension?'<button onclick="remakeApprove(\'' + r.id + '\')" style="padding:3px 8px;background:#16a34a;color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">Approve</button>':
-       r.approvedExtension?'<span style="font-size:10px;color:#16a34a;font-weight:700">Approved ✓</span>':'') +
+       r.approvedExtension?'<span style="font-size:10px;color:#16a34a;font-weight:700">Approved </span>':'') +
     '</div>';
   }).join('');
 }
@@ -10589,7 +10589,7 @@ function renderExecChat(){
   el.innerHTML=sdExecMsgs.map(m=>{
     var isMine=m.role===sdExecRole;
     return '<div class="exec-msg '+(isMine?'mine':'theirs')+'">'+
-      '<div class="exec-msg-sender">'+m.role.toUpperCase()+' · '+new Date(m.ts).toLocaleTimeString()+'</div>'+
+      '<div class="exec-msg-sender">'+m.role.toUpperCase()+'  '+new Date(m.ts).toLocaleTimeString()+'</div>'+
       escHtml(m.text)+
     '</div>';
   }).join('');
@@ -10700,17 +10700,17 @@ function renderComms(){
             '<span class="comms-tag '+(t.status==='approved'||t.status==='responded'?'approved':t.status==='closed'?'normal':'normal')+'">'+t.status.toUpperCase()+'</span>'+
             '<span class="comms-tag normal">'+escHtml(catLabels[t.category]||t.category)+'</span>'+
           '</div>'+
-          '<div style="font-size:11px;color:var(--muted)">From: '+escHtml(t.from)+' · '+new Date(t.ts).toLocaleDateString()+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">From: '+escHtml(t.from)+'  '+new Date(t.ts).toLocaleDateString()+'</div>'+
         '</div>'+
-        '<span style="color:var(--muted);font-size:12px">'+(open?'▲':'▼')+'</span>'+
+        '<span style="color:var(--muted);font-size:12px">'+(open?'*':'*')+'</span>'+
       '</div>'+
       '<div class="comms-body'+(open?' open':'')+'" id="tbody-'+t.id+'">'+
         '<div style="font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.6">'+escHtml(t.body)+'</div>'+
-        (t.response?'<div style="background:var(--surface-2);border-radius:8px;padding:10px;margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">RESPONSE FROM '+escHtml(t.respondedBy)+' · '+new Date(t.respondedAt).toLocaleDateString()+'</div><div style="font-size:13px">'+escHtml(t.response)+'</div></div>':'')+
+        (t.response?'<div style="background:var(--surface-2);border-radius:8px;padding:10px;margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">RESPONSE FROM '+escHtml(t.respondedBy)+'  '+new Date(t.respondedAt).toLocaleDateString()+'</div><div style="font-size:13px">'+escHtml(t.response)+'</div></div>':'')+
         (canRespond&&t.status==='open'?'<div style="display:flex;gap:8px;margin-top:8px"><textarea id="resp-'+t.id+'" placeholder="Write response..." style="flex:1;height:60px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;color:var(--text);resize:vertical;outline:none"></textarea></div>'+
           '<div style="display:flex;gap:6px;margin-top:6px">'+
             '<button onclick="commsRespond(\'' + t.id + '\')" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Respond</button>'+
-            (['remake_ext','shower_ext','request'].includes(t.category)?'<button onclick="commsApprove(\'' + t.id + '\')" style="padding:5px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓ Approve</button>':'')+
+            (['remake_ext','shower_ext','request'].includes(t.category)?'<button onclick="commsApprove(\'' + t.id + '\')" style="padding:5px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer"> Approve</button>':'')+
             '<button onclick="commsClose(\'' + t.id + '\')" style="padding:5px 12px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'+
           '</div>':'') +
       '</div>'+
@@ -10781,8 +10781,8 @@ var EAI_ACTIVE_TAB='ceo';
 
 var EAI_SYSTEMS={
   ceo:[
-    'You are the personal AI executive assistant for the CEO of SAIRN Technologies™ -- a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
-    'Products: StoneDesk™ (stone fabrication SaaS), SAIRNcode™ (medical coding AI), SAIRNhr™ (HR intelligence), SAIRNcomm™ (HIPAA messaging), SAIRNaccounting™ (accounting AI), plus 13 NEXUS consumer apps.',
+    'You are the personal AI executive assistant for the CEO of SAIRN Technologies -- a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
+    'Products: StoneDesk (stone fabrication SaaS), SAIRNcode (medical coding AI), SAIRNhr (HR intelligence), SAIRNcomm (HIPAA messaging), SAIRNaccounting (accounting AI), plus 13 NEXUS consumer apps.',
     'Revenue: StoneDesk targets 2,600+ stone fabrication shops currently using Moraware at $200-400/mo. StoneDesk Starter $199/mo, Professional $299/mo, Enterprise $599/mo.',
     'Your CEO expertise covers: strategic vision and annual planning, sales pipeline management and GTM strategy, investor relations and fundraising (Pre-seed $500K-$2M, Seed $1-5M), competitive positioning vs Moraware and generic SaaS, team culture and hiring decisions, partnership development, press and PR, market expansion, product-market fit analysis.',
     'Stone industry context: 2,600+ shops, avg shop wastes $316/hr in rework, CA SB 20 silica compliance deadline July 1 2026, engineered stone 93% crystalline silica hazard creates urgent compliance need.',
@@ -10791,7 +10791,7 @@ var EAI_SYSTEMS={
     'NEVER say "it depends" without giving specifics. NEVER be vague. Think like a founder-CEO who has built and sold companies before.'
   ].join(' '),
   cfo:[
-    'You are the personal AI executive assistant for the CFO of SAIRN Technologies™ -- a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
+    'You are the personal AI executive assistant for the CFO of SAIRN Technologies -- a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
     'You are a world-class CFO advisor: Big 4 CPA + investment banker + tax attorney combined.',
     'SAIRN Chart of Accounts: Assets 1000s (1010 Cash-Checking, 1100 AR, 1200 Inventory), Liabilities 2000s (2010 AP, 2100 Accrued Wages, 2110 FIT Payable, 2130 FICA), Equity 3000s, Revenue 4000s (4010 Service, 4020 Product), Expenses 5000s+ (5010 COGS, 6010 Wages, 6020 Payroll Taxes, 6030 Benefits, 6100 Rent, 6210 Software).',
     'Payroll tax rates 2026: SS 6.2%+6.2% (wage base $176,100), Medicare 1.45%+1.45%, FUTA 0.6% (first $7K), SUTA varies by state.',
@@ -10802,7 +10802,7 @@ var EAI_SYSTEMS={
     'Format financial data clearly: use line items, totals, and variances. Make it feel like a CFO dashboard briefing.'
   ].join(' '),
   cto:[
-    'You are the personal AI executive assistant for the CTO of SAIRN Technologies™ -- a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
+    'You are the personal AI executive assistant for the CTO of SAIRN Technologies -- a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
     'Current tech stack: React 18 + TypeScript frontend, Express backend, Drizzle ORM, PostgreSQL on Railway, Vercel hosting, Supabase (SAIRNcomm), Anthropic Claude API via sairn.vercel.app/api/claude proxy, Stripe payments, Resend email, Twilio SMS.',
     'Architecture: HONEY COMB cellular platform -- each app is a standalone HTML file deployed to Vercel, authenticated against Railway backend, firewalled to allowlisted domains only. All 21 apps share one Railway PostgreSQL instance.',
     'IP: HONEY COMB architecture and 6-Layer AI Keyboard Privacy Firewall both have provisional patents filed May 21 2026. Non-provisional deadline May 21 2027.',
@@ -10833,7 +10833,7 @@ function execAiSetTab(tab,btn){
 
 function execAiWelcome(role){
   var welcomes={
-    ceo:'Good morning, CEO. I have full context on SAIRN Technologies™, your product suite, competitive landscape, and financial targets. What are we working on today -- strategy, sales pipeline, investor prep, or something else?',
+    ceo:'Good morning, CEO. I have full context on SAIRN Technologies, your product suite, competitive landscape, and financial targets. What are we working on today -- strategy, sales pipeline, investor prep, or something else?',
     cfo:'Good morning. I have your Chart of Accounts loaded, payroll tax rates current for 2026, and StoneDesk pricing on file. Need a journal entry, cash flow analysis, budget review, or something else?',
     cto:'Good morning. Stack context loaded -- React/Railway/Vercel/Supabase/PostgreSQL. Patents filed. QuickBooks OAuth is the next integration on the roadmap. What technical decision are we working through today?'
   };
@@ -10971,9 +10971,9 @@ function renderTriageResults(emails,role){
   var summary={1:0,2:0,3:0,4:0,5:0};
   emails.forEach(e=>{summary[e.priority]=(summary[e.priority]||0)+1;});
   var summaryHtml='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--surface-2);border-radius:10px">'+
-    '<div style="font-size:13px;font-weight:700;color:var(--text);width:100%;margin-bottom:6px">📊 Triage Summary -- '+emails.length+' email(s)</div>'+
+    '<div style="font-size:13px;font-weight:700;color:var(--text);width:100%;margin-bottom:6px"> Triage Summary -- '+emails.length+' email(s)</div>'+
     [1,2,3,4,5].filter(p=>summary[p]).map(p=>
-      '<span class="triage-priority p'+p+'">'+summary[p]+' × '+pLabel[p]+'</span>'
+      '<span class="triage-priority p'+p+'">'+summary[p]+'  '+pLabel[p]+'</span>'
     ).join('')+
   '</div>';
   var cardsHtml=emails.map(e=>{
@@ -10988,14 +10988,14 @@ function renderTriageResults(emails,role){
         '<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(27,58,107,0.08);color:var(--a);font-weight:600">'+escHtml(e.category||'')+'</span>'+
       '</div>'+
       '<div style="font-size:12px;color:var(--text);margin-bottom:6px">'+escHtml(e.summary||'')+'</div>'+
-      (e.action_required&&e.action?'<div style="font-size:12px;font-weight:600;color:var(--a);margin-bottom:6px">→ Action: '+escHtml(e.action)+'</div>':'')+
+      (e.action_required&&e.action?'<div style="font-size:12px;font-weight:600;color:var(--a);margin-bottom:6px"> Action: '+escHtml(e.action)+'</div>':'')+
       (e.delegate_to?'<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Delegate to: '+escHtml(e.delegate_to)+'</div>':'')+
-      (hasDraft?'<details style="margin-top:8px"><summary style="font-size:12px;font-weight:700;color:var(--a);cursor:pointer;padding:4px 0">📝 Draft Reply (click to expand)</summary>'+
+      (hasDraft?'<details style="margin-top:8px"><summary style="font-size:12px;font-weight:700;color:var(--a);cursor:pointer;padding:4px 0"> Draft Reply (click to expand)</summary>'+
         '<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:12px;font-size:12px;white-space:pre-wrap;font-family:inherit;line-height:1.6">'+escHtml(e.draft_reply)+'</div>'+
       '</details>':'')+
     '</div>';
   }).join('');
-  var resetBtn='<div style="margin-top:12px"><button onclick="resetEmailTriage()" style="padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted);cursor:pointer">← Triage Another Batch</button></div>';
+  var resetBtn='<div style="margin-top:12px"><button onclick="resetEmailTriage()" style="padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted);cursor:pointer"> Triage Another Batch</button></div>';
   results.innerHTML=summaryHtml+cardsHtml+resetBtn;
   results.style.display='block';
   if(inputZone) inputZone.style.display='none';
