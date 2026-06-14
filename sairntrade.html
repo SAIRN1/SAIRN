@@ -1,0 +1,2392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAIRNtrade -- AI Field Service Platform</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c:#EA580C;--cd:#7C2D12;--cl:#FFF7ED;--ca:#FB923C;
+  --bg:#F9FAFB;--card:#FFFFFF;--border:#E5E7EB;
+  --text:#111827;--muted:#6B7280;--sm:#374151;
+  --red:#EF4444;--yellow:#F59E0B;--green:#10B981;--blue:#3B82F6;
+  --shadow:0 1px 3px rgba(0,0,0,.1);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+
+/* ---- LOCK SCREEN ---- */
+#lock-screen{position:fixed;inset:0;background:var(--cd);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column}
+.lock-logo{font-size:42px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:6px}
+.lock-logo span{color:var(--ca)}
+.lock-sub{color:#FDA4AF;font-size:13px;margin-bottom:36px;text-align:center}
+.lock-card{background:#fff;border-radius:16px;padding:32px 36px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.lock-card h3{font-size:15px;font-weight:700;color:var(--cd);margin-bottom:20px}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#E5E7EB;transition:.2s}
+.pin-dot.filled{background:var(--c)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.pin-btn{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:14px;font-size:18px;font-weight:600;cursor:pointer;color:var(--text);transition:.15s}
+.pin-btn:hover{background:var(--cl);border-color:var(--c);color:var(--c)}
+.lock-hint{font-size:11px;color:var(--muted);margin-top:8px}
+
+/* ---- PRIVACY MODAL ---- */
+#sa-privacy-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8888;display:flex;align-items:center;justify-content:center}
+.priv-card{background:#fff;border-radius:14px;padding:28px;max-width:420px;width:90%}
+.priv-card h3{font-weight:700;margin-bottom:10px;color:var(--cd)}
+.priv-card p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px}
+.priv-btns{display:flex;gap:10px}
+.priv-btns button{flex:1;padding:10px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600}
+.priv-accept{background:var(--c);color:#fff}
+.priv-decline{background:#F3F4F6;color:var(--muted)}
+
+/* ---- WEATHER STRIP ---- */
+#weather-strip{background:linear-gradient(90deg,var(--cd),#9A3412);color:#fff;padding:7px 20px;font-size:12px;display:none;align-items:center;gap:20px;flex-wrap:wrap}
+#weather-strip.show{display:flex}
+.wx-item{display:flex;align-items:center;gap:5px}
+.wx-alert{background:#FEF08A;color:#713F12;padding:2px 10px;border-radius:20px;font-weight:700;font-size:11px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ---- LAYOUT ---- */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.show{display:flex}
+header{background:var(--cd);color:#fff;padding:0 20px;display:flex;align-items:center;gap:12px;height:54px;flex-shrink:0}
+.logo{font-size:20px;font-weight:900;letter-spacing:-0.5px}
+.logo span{color:var(--ca)}
+.role-badge{background:rgba(255,255,255,.15);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;letter-spacing:.05em}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.header-btn{background:rgba(255,255,255,.12);border:none;color:#fff;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:.2s}
+.header-btn:hover{background:rgba(255,255,255,.22)}
+.notif-badge{background:var(--ca);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+#body-wrap{display:flex;flex:1;overflow:hidden}
+
+/* ---- SIDEBAR ---- */
+nav{width:210px;background:var(--cd);overflow-y:auto;flex-shrink:0;padding:10px 0}
+.nav-section{padding:6px 14px 2px;font-size:10px;font-weight:700;color:#FDA4AF;letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;color:#FED7AA;font-size:13px;font-weight:500;border-radius:0;transition:.15s;border-left:3px solid transparent;margin:1px 0}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(234,88,12,.35);color:#fff;border-left-color:var(--ca);font-weight:700}
+.nav-item .nav-icon{font-size:15px;width:18px;text-align:center}
+.nav-count{margin-left:auto;background:var(--ca);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700}
+
+/* ---- PANELS ---- */
+#panels{flex:1;overflow-y:auto;padding:20px}
+.panel{display:none}
+.panel.active{display:block}
+.panel-header{margin-bottom:20px}
+.panel-title{font-size:20px;font-weight:800;color:var(--cd)}
+.panel-sub{font-size:13px;color:var(--muted);margin-top:3px}
+
+/* ---- CARDS & GRIDS ---- */
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:18px;box-shadow:var(--shadow)}
+.card-title{font-size:14px;font-weight:700;color:var(--sm);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title .ct-icon{background:var(--cl);color:var(--c);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+/* ---- KPI CARDS ---- */
+.kpi{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px 18px;box-shadow:var(--shadow)}
+.kpi-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:800;color:var(--cd)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.kpi-trend-up{color:var(--green);font-weight:700}
+.kpi-trend-dn{color:var(--red);font-weight:700}
+
+/* ---- FORMS ---- */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid.g3{grid-template-columns:1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;font-weight:600;color:var(--sm)}
+.field input,.field select,.field textarea{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:#fff;outline:none;transition:.2s;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(234,88,12,.1)}
+.field textarea{resize:vertical;min-height:80px}
+.field-full{grid-column:1/-1}
+
+/* ---- BUTTONS ---- */
+.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--c);color:#fff}
+.btn-primary:hover{background:#C2410C}
+.btn-secondary{background:#F3F4F6;color:var(--sm);border:1px solid var(--border)}
+.btn-secondary:hover{background:#E5E7EB}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* ---- AI PANEL ---- */
+.ai-box{background:var(--cl);border:1px solid var(--ca);border-radius:12px;padding:16px;margin-top:14px}
+.ai-box-title{font-size:12px;font-weight:700;color:var(--cd);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ai-response{font-size:13px;color:var(--sm);line-height:1.7;white-space:pre-wrap;min-height:60px}
+.ai-thinking{color:var(--c);font-style:italic;font-size:12px}
+.ai-strip{position:fixed;bottom:0;left:210px;right:0;background:var(--cd);padding:10px 18px;display:flex;gap:10px;align-items:center;z-index:100;display:none}
+.ai-strip.show{display:flex}
+.ai-strip input{flex:1;padding:8px 14px;border-radius:8px;border:none;font-size:13px;outline:none}
+.ai-strip button{background:var(--c);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
+
+/* ---- TABLES ---- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--border);color:var(--sm)}
+.tbl tr:hover td{background:#FFFBF7}
+.tbl tr:last-child td{border-bottom:none}
+
+/* ---- STATUS BADGES ---- */
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-open{background:#FEF3C7;color:#92400E}
+.badge-progress{background:#DBEAFE;color:#1E40AF}
+.badge-done{background:#D1FAE5;color:#065F46}
+.badge-urgent{background:#FEE2E2;color:#991B1B}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-warn{background:#FEF3C7;color:#92400E}
+
+/* ---- DISPATCH BOARD ---- */
+.dispatch-board{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.dispatch-col{background:#F9FAFB;border-radius:12px;padding:14px;min-height:300px}
+.dispatch-col-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+.job-card{background:#fff;border-radius:8px;border:1px solid var(--border);padding:12px;margin-bottom:8px;cursor:pointer;transition:.2s}
+.job-card:hover{border-color:var(--c);box-shadow:0 2px 8px rgba(234,88,12,.15)}
+.job-card-title{font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px}
+.job-card-meta{font-size:11px;color:var(--muted)}
+
+/* ---- RANGE BAR (Pattern 5) ---- */
+.range-bar-wrap{margin:14px 0}
+.range-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px}
+.range-bar{height:8px;background:#E5E7EB;border-radius:4px;position:relative;overflow:visible}
+.range-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--c));transition:.4s}
+.range-bar-marker{position:absolute;top:-4px;width:16px;height:16px;background:var(--c);border:2px solid #fff;border-radius:50%;transform:translateX(-50%);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+
+/* ---- SMART FLAGS (Pattern 6) ---- */
+.flag{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:13px}
+.flag-danger{background:#FEE2E2;border-left:4px solid var(--red);color:#991B1B}
+.flag-warn{background:#FEF3C7;border-left:4px solid var(--yellow);color:#92400E}
+.flag-info{background:#EFF6FF;border-left:4px solid var(--blue);color:#1E40AF}
+.flag-icon{font-size:15px;margin-top:1px;flex-shrink:0}
+
+/* ---- WEATHER COMMAND ---- */
+.wx-card{background:linear-gradient(135deg,var(--cd),#C2410C);border-radius:12px;padding:20px;color:#fff;margin-bottom:14px}
+.wx-big-temp{font-size:52px;font-weight:800;line-height:1}
+.wx-condition{font-size:16px;color:#FED7AA;margin-top:4px}
+.wx-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.wx-stat{background:rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center}
+.wx-stat-val{font-size:18px;font-weight:800}
+.wx-stat-lbl{font-size:10px;color:#FED7AA;margin-top:2px}
+.alert-list{margin-top:14px}
+.alert-item{background:rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.alert-dot.red{background:#F87171;animation:pulse 1s infinite}
+.alert-dot.yellow{background:#FCD34D}
+.alert-dot.green{background:#6EE7B7}
+
+/* ---- CHECK REGISTER ---- */
+.check-preview{background:#fff;border:2px solid var(--border);border-radius:8px;padding:20px;font-family:'Courier New',monospace;font-size:12px;margin-top:14px}
+.check-header{display:flex;justify-content:space-between;margin-bottom:16px}
+.check-payline{border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:8px;font-size:13px}
+.check-amount{float:right;font-weight:700;font-size:15px;border:1px solid #000;padding:2px 8px}
+.check-memo{font-size:11px;color:var(--muted);margin-top:12px}
+.check-sig{margin-top:20px;border-top:1px solid #000;padding-top:4px;text-align:right;font-size:11px;color:var(--muted)}
+
+/* ---- NOTIF ---- */
+#notif{position:fixed;top:16px;right:16px;z-index:9000}
+.notif-toast{background:#1F2937;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;margin-bottom:8px;box-shadow:0 4px 20px rgba(0,0,0,.3);border-left:4px solid var(--c);animation:slideIn .3s ease}
+@keyframes slideIn{from{transform:translateX(50px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ---- SUITE LAUNCHER ---- */
+#suite-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:7000;display:none;align-items:center;justify-content:center}
+#suite-modal.show{display:flex}
+.suite-card{background:#fff;border-radius:16px;padding:28px;max-width:500px;width:90%}
+.suite-card h3{font-weight:800;font-size:16px;color:var(--cd);margin-bottom:18px}
+.suite-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.suite-app{border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:.2s;text-decoration:none;color:inherit}
+.suite-app:hover{border-color:var(--c);background:var(--cl)}
+.suite-app-icon{font-size:22px;margin-bottom:4px}
+.suite-app-name{font-size:12px;font-weight:700;color:var(--sm)}
+.suite-app-desc{font-size:10px;color:var(--muted)}
+
+/* PRINT */
+@media print{
+  #lock-screen,#suite-modal,#notif,.ai-strip,nav,header,#weather-strip{display:none!important}
+  .panel{display:block!important}
+  .card{box-shadow:none;border:1px solid #ddd}
+}
+@media(max-width:768px){
+  nav{width:56px}
+  .nav-item span.nav-label{display:none}
+  .nav-section{display:none}
+  .nav-count{display:none}
+  .g4{grid-template-columns:1fr 1fr}
+  .g3,.form-grid.g3{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- PRIVACY MODAL -->
+<div id="sa-privacy-modal" style="display:none">
+  <div class="priv-card">
+    <h3>Privacy Notice</h3>
+    <p>SAIRNtrade processes business data including customer information, job records, and financial data. Your data is encrypted in transit, never sold, and used only to power your operations. Claude AI processes job descriptions and diagnostic requests through the SAIRN secure proxy.</p>
+    <div class="priv-btns">
+      <button class="priv-accept" onclick="saAcceptPrivacy()">Accept & Continue</button>
+      <button class="priv-decline" onclick="saDeclinePrivacy()">Decline</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUITE MODAL -->
+<div id="suite-modal">
+  <div class="suite-card">
+    <h3>&#128736; SAIRN Suite</h3>
+    <div class="suite-grid">
+      <a class="suite-app" href="https://sairn.vercel.app/sairnhr.html" target="_blank">
+        <div class="suite-app-icon">&#128101;</div>
+        <div class="suite-app-name">SAIRNhr</div>
+        <div class="suite-app-desc">People & Payroll</div>
+      </a>
+      <a class="suite-app" href="https://sairn.vercel.app/sairnaccounting.html" target="_blank">
+        <div class="suite-app-icon">&#128200;</div>
+        <div class="suite-app-name">SAIRNacc</div>
+        <div class="suite-app-desc">Accounting & GL</div>
+      </a>
+      <a class="suite-app" href="https://sairn.vercel.app/sairnbuild.html" target="_blank">
+        <div class="suite-app-icon">&#127959;</div>
+        <div class="suite-app-name">SAIRNbuild</div>
+        <div class="suite-app-desc">Construction</div>
+      </a>
+      <a class="suite-app" href="https://sairn.vercel.app/sairnlaw.html" target="_blank">
+        <div class="suite-app-icon">&#9878;</div>
+        <div class="suite-app-name">SAIRNlaw</div>
+        <div class="suite-app-desc">Legal AI</div>
+      </a>
+      <a class="suite-app" href="https://sairn.vercel.app/sairnscape.html" target="_blank">
+        <div class="suite-app-icon">&#127807;</div>
+        <div class="suite-app-name">SAIRNscape</div>
+        <div class="suite-app-desc">Outdoor Ops</div>
+      </a>
+      <a class="suite-app" href="https://sairn.vercel.app/sairndesign.html" target="_blank">
+        <div class="suite-app-icon">&#127968;</div>
+        <div class="suite-app-name">SAIRNdesign</div>
+        <div class="suite-app-desc">Interior Design</div>
+      </a>
+    </div>
+    <div class="btn-row" style="margin-top:18px">
+      <button class="btn btn-primary" onclick="syncToSAIRNBridge()">&#128257; Sync All Apps</button>
+      <button class="btn btn-secondary" onclick="closeSuite()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCK SCREEN -->
+<div id="lock-screen">
+  <div class="lock-logo">SAIRN<span>trade</span></div>
+  <div class="lock-sub">AI Field Service Platform for HVAC · Plumbing · Electrical<br>Enter your PIN to continue</div>
+  <div class="lock-card">
+    <h3>&#128273; Secure Access</h3>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pin(1)">1</button>
+      <button class="pin-btn" onclick="pin(2)">2</button>
+      <button class="pin-btn" onclick="pin(3)">3</button>
+      <button class="pin-btn" onclick="pin(4)">4</button>
+      <button class="pin-btn" onclick="pin(5)">5</button>
+      <button class="pin-btn" onclick="pin(6)">6</button>
+      <button class="pin-btn" onclick="pin(7)">7</button>
+      <button class="pin-btn" onclick="pin(8)">8</button>
+      <button class="pin-btn" onclick="pin(9)">9</button>
+      <button class="pin-btn" onclick="pinClear()" style="font-size:13px">CLR</button>
+      <button class="pin-btn" onclick="pin(0)">0</button>
+      <button class="pin-btn" onclick="saUnlock()" style="background:var(--c);color:#fff;border-color:var(--c)">&#10003;</button>
+    </div>
+    <div class="lock-hint">Tech: 1234 &nbsp;|&nbsp; Office: 5678 &nbsp;|&nbsp; Admin: 9999</div>
+  </div>
+</div>
+
+<!-- WEATHER STRIP -->
+<div id="weather-strip" class="show">
+  <div class="wx-item">&#127777;&#65039; <strong id="wx-temp">72°F</strong></div>
+  <div class="wx-item">&#127754; <span id="wx-cond">Clear</span></div>
+  <div class="wx-item">&#128168; Wind: <span id="wx-wind">8 mph</span></div>
+  <div class="wx-item">&#9748;&#65039; Precip: <span id="wx-precip">0%</span></div>
+  <div class="wx-item">&#128197; Jobs Today: <strong id="wx-jobs">7</strong></div>
+  <div id="wx-alerts"></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+<header>
+  <div class="logo">SAIRN<span>trade</span></div>
+  <div class="role-badge" id="role-badge">TECHNICIAN</div>
+  <div class="header-right">
+    <span id="header-date" style="font-size:12px;color:#FED7AA"></span>
+    <button class="header-btn" onclick="showSAIRNSuite()">&#9889; Suite</button>
+    <button class="header-btn" onclick="toggleAIStrip()">&#129302; Ask AI</button>
+    <button class="header-btn" onclick="printD()">&#128438; Print</button>
+    <button class="header-btn" onclick="location.reload()">&#128274; Lock</button>
+  </div>
+</header>
+
+<div id="body-wrap">
+<nav id="sidebar">
+  <div class="nav-section">Operations</div>
+  <div class="nav-item active" onclick="showP('dashboard')"><span class="nav-icon">&#128200;</span><span class="nav-label">Dashboard</span><span class="nav-count">7</span></div>
+  <div class="nav-item" onclick="showP('intake')"><span class="nav-icon">&#128221;</span><span class="nav-label">Job Intake</span></div>
+  <div class="nav-item" onclick="showP('diagnostic')"><span class="nav-icon">&#129302;</span><span class="nav-label">AI Diagnostic</span></div>
+  <div class="nav-item" onclick="showP('dispatch')"><span class="nav-icon">&#128650;</span><span class="nav-label">Dispatch Board</span><span class="nav-count">3</span></div>
+  <div class="nav-item" onclick="showP('workorders')"><span class="nav-icon">&#128295;</span><span class="nav-label">Work Orders</span><span class="nav-count">5</span></div>
+  <div class="nav-item" onclick="showP('schedule')"><span class="nav-icon">&#128197;</span><span class="nav-label">Schedule</span></div>
+  <div class="nav-item" onclick="showP('route')"><span class="nav-icon">&#128205;</span><span class="nav-label">Route Optimizer</span></div>
+
+  <div class="nav-section">Sales</div>
+  <div class="nav-item" onclick="showP('estimate')"><span class="nav-icon">&#128176;</span><span class="nav-label">Estimate Builder</span></div>
+  <div class="nav-item" onclick="showP('quotewriter')"><span class="nav-icon">&#128393;</span><span class="nav-label">AI Quote Writer</span></div>
+  <div class="nav-item" onclick="showP('pricebook')"><span class="nav-icon">&#128214;</span><span class="nav-label">Price Book</span></div>
+  <div class="nav-item" onclick="showP('leads')"><span class="nav-icon">&#127919;</span><span class="nav-label">Lead Management</span></div>
+  <div class="nav-item" onclick="showP('agreements')"><span class="nav-icon">&#128203;</span><span class="nav-label">Service Agreements</span></div>
+
+  <div class="nav-section">Customers</div>
+  <div class="nav-item" onclick="showP('crm')"><span class="nav-icon">&#128101;</span><span class="nav-label">Customer CRM</span></div>
+  <div class="nav-item" onclick="showP('portal')"><span class="nav-icon">&#127760;</span><span class="nav-label">Customer Portal</span></div>
+  <div class="nav-item" onclick="showP('reviews')"><span class="nav-icon">&#11088;</span><span class="nav-label">Reviews & Rep</span></div>
+  <div class="nav-item" onclick="showP('afterhours')"><span class="nav-icon">&#127761;</span><span class="nav-label">After-Hours AI</span></div>
+
+  <div class="nav-section">Finance</div>
+  <div class="nav-item" onclick="showP('invoicing')"><span class="nav-icon">&#129534;</span><span class="nav-label">Invoicing</span><span class="nav-count">4</span></div>
+  <div class="nav-item" onclick="showP('payments')"><span class="nav-icon">&#128179;</span><span class="nav-label">Payments</span></div>
+  <div class="nav-item" onclick="showP('jobcosting')"><span class="nav-icon">&#128202;</span><span class="nav-label">Job Costing</span></div>
+  <div class="nav-item" onclick="showP('checks')"><span class="nav-icon">&#129534;</span><span class="nav-label">Check Register</span></div>
+  <div class="nav-item" onclick="showP('reporting')"><span class="nav-icon">&#128196;</span><span class="nav-label">Reporting</span></div>
+
+  <div class="nav-section">Field</div>
+  <div class="nav-item" onclick="showP('techs')"><span class="nav-icon">&#128736;</span><span class="nav-label">Tech Management</span></div>
+  <div class="nav-item" onclick="showP('photos')"><span class="nav-icon">&#128247;</span><span class="nav-label">Photo Docs</span></div>
+  <div class="nav-item" onclick="showP('inspection')"><span class="nav-icon">&#9989;</span><span class="nav-label">Inspections</span></div>
+  <div class="nav-item" onclick="showP('warranty')"><span class="nav-icon">&#127863;</span><span class="nav-label">Warranty Tracker</span></div>
+  <div class="nav-item" onclick="showP('fleet')"><span class="nav-icon">&#128661;</span><span class="nav-label">Fleet & Vehicles</span></div>
+
+  <div class="nav-section">Intelligence</div>
+  <div class="nav-item" onclick="showP('weather')"><span class="nav-icon">&#9928;</span><span class="nav-label">Weather Command</span></div>
+  <div class="nav-item" onclick="showP('parts')"><span class="nav-icon">&#129520;</span><span class="nav-label">Parts & Inventory</span></div>
+  <div class="nav-item" onclick="showP('suppliers')"><span class="nav-icon">&#127970;</span><span class="nav-label">Supplier Intel</span></div>
+  <div class="nav-item" onclick="showP('training')"><span class="nav-icon">&#127979;</span><span class="nav-label">Training & SOPs</span></div>
+  <div class="nav-item" onclick="showP('safety')"><span class="nav-icon">&#9940;</span><span class="nav-label">Safety Log</span></div>
+  <div class="nav-item" onclick="showP('compliance')"><span class="nav-icon">&#128196;</span><span class="nav-label">Compliance</span></div>
+
+  <div class="nav-section">Admin</div>
+  <div class="nav-item" onclick="showP('paybridge')"><span class="nav-icon">&#128257;</span><span class="nav-label">Payroll Bridge</span></div>
+  <div class="nav-item" onclick="showP('glbridge')"><span class="nav-icon">&#128257;</span><span class="nav-label">GL Bridge</span></div>
+  <div class="nav-item" onclick="showP('admin')"><span class="nav-icon">&#9881;&#65039;</span><span class="nav-label">Admin Panel</span></div>
+</nav>
+
+<div id="panels">
+
+<!-- 1. DASHBOARD -->
+<div class="panel active" id="panel-dashboard">
+  <div class="panel-header">
+    <div class="panel-title">&#128200; Dashboard</div>
+    <div class="panel-sub">Sunday, June 15, 2026 &mdash; Westlake, OH</div>
+  </div>
+  <div class="g4" style="margin-bottom:16px">
+    <div class="kpi"><div class="kpi-label">Jobs Today</div><div class="kpi-value">7</div><div class="kpi-sub"><span class="kpi-trend-up">+2</span> vs yesterday</div></div>
+    <div class="kpi"><div class="kpi-label">Revenue Today</div><div class="kpi-value" id="dash-rev">$3,840</div><div class="kpi-sub"><span class="kpi-trend-up">+18%</span> vs last week</div></div>
+    <div class="kpi"><div class="kpi-label">Techs in Field</div><div class="kpi-value">4</div><div class="kpi-sub">2 office, 1 unassigned</div></div>
+    <div class="kpi"><div class="kpi-label">Open Invoices</div><div class="kpi-value" style="color:var(--red)">$12,450</div><div class="kpi-sub"><span class="kpi-trend-dn">4 overdue</span></div></div>
+  </div>
+  <div class="g3" style="margin-bottom:16px">
+    <div class="kpi"><div class="kpi-label">Avg Ticket</div><div class="kpi-value">$549</div><div class="kpi-sub">Target: $500</div></div>
+    <div class="kpi"><div class="kpi-label">Close Rate</div><div class="kpi-value">78%</div><div class="kpi-sub">Quotes this month: 23</div></div>
+    <div class="kpi"><div class="kpi-label">Parts on Order</div><div class="kpi-value">11</div><div class="kpi-sub">3 urgent</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128650;</span>Today's Jobs</div>
+      <table class="tbl">
+        <thead><tr><th>Time</th><th>Customer</th><th>Trade</th><th>Tech</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>8:00 AM</td><td>Martinez, J.</td><td>HVAC</td><td>Rodriguez</td><td><span class="badge badge-done">Complete</span></td></tr>
+          <tr><td>9:30 AM</td><td>Thompson Corp</td><td>Electric</td><td>Kim</td><td><span class="badge badge-progress">In Progress</span></td></tr>
+          <tr><td>11:00 AM</td><td>Patel, S.</td><td>Plumbing</td><td>Davis</td><td><span class="badge badge-progress">En Route</span></td></tr>
+          <tr><td>1:00 PM</td><td>Wilson, T.</td><td>HVAC</td><td>Rodriguez</td><td><span class="badge badge-open">Scheduled</span></td></tr>
+          <tr><td>2:30 PM</td><td>Garcia Home</td><td>Plumbing</td><td>Unassigned</td><td><span class="badge badge-urgent">URGENT</span></td></tr>
+          <tr><td>4:00 PM</td><td>Brown Office</td><td>Electric</td><td>Kim</td><td><span class="badge badge-open">Scheduled</span></td></tr>
+          <tr><td>5:30 PM</td><td>Chen, L.</td><td>HVAC</td><td>Davis</td><td><span class="badge badge-open">Scheduled</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title"><span class="ct-icon">&#9940;</span>Smart Flags</div>
+        <div class="flag flag-danger"><span class="flag-icon">&#128680;</span><div><strong>Garcia Home &mdash; No Tech Assigned</strong><br>2:30 PM job has no technician. 90 min to start time.</div></div>
+        <div class="flag flag-warn"><span class="flag-icon">&#9888;</span><div><strong>4 Invoices Overdue &gt; 30 Days</strong><br>$5,200 outstanding. Auto-reminder sent yesterday.</div></div>
+        <div class="flag flag-warn"><span class="flag-icon">&#9928;</span><div><strong>Heat Index 104&deg;F Forecast 2 PM</strong><br>OSHA heat alert threshold. Brief crews before afternoon jobs.</div></div>
+        <div class="flag flag-info"><span class="flag-icon">&#128203;</span><div><strong>3 Service Agreements Due for Renewal</strong><br>Thompson Corp, Patel, Wilson expiring this month.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">&#128202;</span>Revenue This Week</div>
+        <div style="margin-top:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>HVAC</span><span style="font-weight:700;color:var(--c)">$8,240</span></div>
+          <div style="background:#E5E7EB;border-radius:4px;height:8px;margin-bottom:10px"><div style="background:var(--c);height:100%;border-radius:4px;width:68%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Plumbing</span><span style="font-weight:700;color:var(--c)">$4,120</span></div>
+          <div style="background:#E5E7EB;border-radius:4px;height:8px;margin-bottom:10px"><div style="background:var(--ca);height:100%;border-radius:4px;width:34%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Electrical</span><span style="font-weight:700;color:var(--c)">$3,800</span></div>
+          <div style="background:#E5E7EB;border-radius:4px;height:8px"><div style="background:#FCD34D;height:100%;border-radius:4px;width:31%"></div></div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:var(--muted)">Week Total</span>
+          <span style="font-weight:800;font-size:16px;color:var(--cd)">$16,160</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. JOB INTAKE -->
+<div class="panel" id="panel-intake">
+  <div class="panel-header"><div class="panel-title">&#128221; Job Intake</div><div class="panel-sub">Structured intake feeds Claude AI directly</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128101;</span>Customer Information</div>
+      <div class="form-grid">
+        <div class="field"><label>First Name</label><input id="in-fn" placeholder="John"></div>
+        <div class="field"><label>Last Name</label><input id="in-ln" placeholder="Smith"></div>
+        <div class="field field-full"><label>Address</label><input id="in-addr" placeholder="123 Main St, Westlake OH 44145"></div>
+        <div class="field"><label>Phone</label><input id="in-phone" placeholder="(440) 555-0100"></div>
+        <div class="field"><label>Email</label><input id="in-email" placeholder="john@email.com"></div>
+        <div class="field"><label>Customer Type</label>
+          <select id="in-ctype"><option>Residential</option><option>Commercial</option><option>Industrial</option></select>
+        </div>
+        <div class="field"><label>Priority</label>
+          <select id="in-priority"><option>Normal</option><option>Urgent</option><option>Emergency</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128295;</span>Job Details</div>
+      <div class="form-grid">
+        <div class="field"><label>Trade Type</label>
+          <select id="in-trade" onchange="updateJobFields()">
+            <option>HVAC</option><option>Plumbing</option><option>Electrical</option><option>General</option>
+          </select>
+        </div>
+        <div class="field"><label>Service Type</label>
+          <select id="in-service"><option>Repair</option><option>Installation</option><option>Maintenance</option><option>Inspection</option><option>Emergency</option></select>
+        </div>
+        <div class="field"><label>Equipment Type</label><input id="in-equip" placeholder="e.g. Carrier 3-ton heat pump"></div>
+        <div class="field"><label>Equipment Age (yrs)</label><input id="in-age" type="number" placeholder="8"></div>
+        <div class="field"><label>Scheduled Date</label><input id="in-date" type="date"></div>
+        <div class="field"><label>Scheduled Time</label><input id="in-time" type="time"></div>
+        <div class="field"><label>Assign Technician</label>
+          <select id="in-tech"><option>Auto-Assign</option><option>Rodriguez, M.</option><option>Kim, J.</option><option>Davis, T.</option><option>Nguyen, P.</option></select>
+        </div>
+        <div class="field"><label>Referred By</label>
+          <select><option>Phone Call</option><option>Website</option><option>Google</option><option>Referral</option><option>Repeat Customer</option></select>
+        </div>
+        <div class="field field-full"><label>Symptom Description</label>
+          <textarea id="in-symptom" placeholder="Describe the problem in detail: what is happening, when did it start, any noises or smells, what the customer has already tried..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitIntake()">&#128203; Create Job &amp; Run AI Diagnostic</button>
+        <button class="btn btn-secondary" onclick="clearIntake()">Clear</button>
+      </div>
+    </div>
+  </div>
+  <div id="intake-flags" style="margin-top:14px"></div>
+</div>
+
+<!-- 3. AI DIAGNOSTIC (THE KILL SHOT) -->
+<div class="panel" id="panel-diagnostic">
+  <div class="panel-header"><div class="panel-title">&#129302; AI Diagnostic Engine</div><div class="panel-sub">Describe any symptom &mdash; Claude diagnoses, lists likely causes, recommends parts, and estimates labor</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128269;</span>Diagnostic Input</div>
+      <div class="form-grid">
+        <div class="field"><label>Trade</label>
+          <select id="dx-trade"><option>HVAC</option><option>Plumbing</option><option>Electrical</option><option>General</option></select>
+        </div>
+        <div class="field"><label>Equipment</label><input id="dx-equip" placeholder="e.g. Trane XR15, 2019"></div>
+        <div class="field"><label>Equipment Age</label><input id="dx-age" placeholder="e.g. 5 years"></div>
+        <div class="field"><label>Last Serviced</label><input id="dx-last" placeholder="e.g. 18 months ago"></div>
+        <div class="field field-full"><label>Symptom Description</label>
+          <textarea id="dx-symptom" rows="5" placeholder="Be specific: 'Unit turns on but blows warm air. Compressor makes clicking sound on startup then shuts off. Happened suddenly 2 days ago. Outside temp was 95F. Refrigerant last checked 2 years ago.'"></textarea>
+        </div>
+        <div class="field"><label>Error Codes (if any)</label><input id="dx-codes" placeholder="e.g. E3, F07 or 'none'"></div>
+        <div class="field"><label>Customer Budget</label>
+          <select id="dx-budget"><option>Any</option><option>Under $300</option><option>Under $500</option><option>Under $1000</option><option>No limit</option></select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runDiagnostic()">&#9889; Run AI Diagnostic</button>
+        <button class="btn btn-secondary" onclick="clearDiag()">Clear</button>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="dx-result-card">
+        <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Diagnostic Report</div>
+        <div id="dx-result" class="ai-response" style="color:var(--muted);font-style:italic">Run a diagnostic to see Claude's analysis...</div>
+      </div>
+      <div class="card" style="margin-top:14px" id="dx-parts-card">
+        <div class="card-title"><span class="ct-icon">&#129520;</span>Recommended Parts &amp; Labor</div>
+        <div id="dx-parts-table">
+          <table class="tbl">
+            <thead><tr><th>Part / Task</th><th>Part #</th><th>Est. Cost</th><th>Labor Hrs</th></tr></thead>
+            <tbody id="dx-parts-body">
+              <tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">Awaiting diagnostic...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="dx-total-row" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;font-size:14px">
+            <span style="color:var(--muted)">Estimated Total</span>
+            <span style="font-weight:800;color:var(--cd);font-size:18px" id="dx-total">$0</span>
+          </div>
+          <div class="range-bar-wrap">
+            <div class="range-bar-label"><span>Low estimate</span><span>High estimate</span></div>
+            <div class="range-bar"><div class="range-bar-fill" id="dx-range-fill" style="width:60%"></div><div class="range-bar-marker" id="dx-range-marker" style="left:60%"></div></div>
+          </div>
+        </div>
+        <div class="btn-row" id="dx-action-btns" style="display:none">
+          <button class="btn btn-primary btn-sm" onclick="sendDiagToQuote()">&#128196; Convert to Quote</button>
+          <button class="btn btn-secondary btn-sm" onclick="orderParts()">&#128666; Order Parts</button>
+          <button class="btn btn-secondary btn-sm" onclick="printD()">&#128438; Print Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. DISPATCH BOARD -->
+<div class="panel" id="panel-dispatch">
+  <div class="panel-header"><div class="panel-title">&#128650; Dispatch Board</div><div class="panel-sub">Real-time job status across all technicians</div></div>
+  <div class="btn-row" style="margin-bottom:14px">
+    <button class="btn btn-primary btn-sm" onclick="newJob()">+ New Job</button>
+    <button class="btn btn-secondary btn-sm" onclick="autoAssign()">&#129302; AI Auto-Assign</button>
+    <button class="btn btn-secondary btn-sm" onclick="refreshBoard()">&#128257; Refresh</button>
+  </div>
+  <div class="dispatch-board">
+    <div class="dispatch-col">
+      <div class="dispatch-col-title" style="color:var(--red)">&#9679; Unassigned (2)</div>
+      <div class="job-card" onclick="assignJob(this)">
+        <div class="job-card-title">Garcia Home &mdash; Burst Pipe</div>
+        <div class="job-card-meta">&#128205; 441 Oak St &nbsp;|&nbsp; &#128680; EMERGENCY &nbsp;|&nbsp; 2:30 PM</div>
+        <div class="job-card-meta" style="margin-top:4px">Plumbing &mdash; Water coming through ceiling</div>
+        <div class="btn-row" style="margin-top:8px"><button class="btn btn-primary btn-sm">Assign Tech</button></div>
+      </div>
+      <div class="job-card" onclick="assignJob(this)">
+        <div class="job-card-title">New Inquiry &mdash; AC Not Cooling</div>
+        <div class="job-card-meta">&#128205; Call-in &nbsp;|&nbsp; Needs scheduling</div>
+        <div class="job-card-meta" style="margin-top:4px">HVAC &mdash; No cooling, running constantly</div>
+        <div class="btn-row" style="margin-top:8px"><button class="btn btn-primary btn-sm">Schedule &amp; Assign</button></div>
+      </div>
+    </div>
+    <div class="dispatch-col">
+      <div class="dispatch-col-title" style="color:var(--blue)">&#9679; In Progress (3)</div>
+      <div class="job-card">
+        <div class="job-card-title">Thompson Corp &mdash; Panel Upgrade</div>
+        <div class="job-card-meta">&#128101; Kim, J. &nbsp;|&nbsp; Started 9:30 AM &nbsp;|&nbsp; Est 2hrs</div>
+        <div class="job-card-meta" style="margin-top:4px">Electrical &mdash; 200A panel replacement</div>
+        <div class="btn-row" style="margin-top:8px"><button class="btn btn-secondary btn-sm">View Details</button></div>
+      </div>
+      <div class="job-card">
+        <div class="job-card-title">Patel, S. &mdash; Drain Clog</div>
+        <div class="job-card-meta">&#128101; Davis, T. &nbsp;|&nbsp; En Route &nbsp;|&nbsp; ETA 11:15</div>
+        <div class="job-card-meta" style="margin-top:4px">Plumbing &mdash; Kitchen sink, recurring</div>
+        <div class="btn-row" style="margin-top:8px"><button class="btn btn-secondary btn-sm">View Details</button></div>
+      </div>
+      <div class="job-card">
+        <div class="job-card-title">Martinez &mdash; AC Tune-Up</div>
+        <div class="job-card-meta">&#128101; Rodriguez &nbsp;|&nbsp; Wrapping up</div>
+        <div class="job-card-meta" style="margin-top:4px">HVAC &mdash; Annual maintenance</div>
+        <div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm">Mark Complete</button></div>
+      </div>
+    </div>
+    <div class="dispatch-col">
+      <div class="dispatch-col-title" style="color:var(--green)">&#9679; Completed Today (2)</div>
+      <div class="job-card" style="opacity:.7">
+        <div class="job-card-title">Johnson &mdash; Water Heater</div>
+        <div class="job-card-meta">&#128101; Nguyen, P. &nbsp;|&nbsp; Done 10:45 AM</div>
+        <div class="job-card-meta" style="margin-top:4px">&#128176; $685 &nbsp;|&nbsp; Invoice sent</div>
+      </div>
+      <div class="job-card" style="opacity:.7">
+        <div class="job-card-title">ABC Office &mdash; Outlet Repair</div>
+        <div class="job-card-meta">&#128101; Kim, J. &nbsp;|&nbsp; Done 8:30 AM</div>
+        <div class="job-card-meta" style="margin-top:4px">&#128176; $195 &nbsp;|&nbsp; Paid on-site</div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-title"><span class="ct-icon">&#128101;</span>Tech Status</div>
+    <table class="tbl">
+      <thead><tr><th>Technician</th><th>Current Job</th><th>Location</th><th>Status</th><th>Jobs Today</th><th>Revenue Today</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Rodriguez, M.</strong></td><td>Martinez &mdash; AC Tune-Up</td><td>2341 Elm Dr</td><td><span class="badge badge-progress">Working</span></td><td>2</td><td>$1,240</td></tr>
+        <tr><td><strong>Kim, J.</strong></td><td>Thompson Corp</td><td>89 Commerce Blvd</td><td><span class="badge badge-progress">Working</span></td><td>2</td><td>$995</td></tr>
+        <tr><td><strong>Davis, T.</strong></td><td>Patel, S.</td><td>En Route</td><td><span class="badge badge-open">En Route</span></td><td>1</td><td>$0</td></tr>
+        <tr><td><strong>Nguyen, P.</strong></td><td>&mdash;</td><td>Shop</td><td><span class="badge badge-green">Available</span></td><td>1</td><td>$685</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 5. ESTIMATE BUILDER -->
+<div class="panel" id="panel-estimate">
+  <div class="panel-header"><div class="panel-title">&#128176; Estimate Builder</div><div class="panel-sub">Live calculation &mdash; updates on every keystroke. Claude reviews and benchmarks.</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128203;</span>Job &amp; Labor</div>
+      <div class="form-grid">
+        <div class="field"><label>Customer</label><input id="est-cust" placeholder="Customer name" oninput="calcEst()"></div>
+        <div class="field"><label>Trade Type</label>
+          <select id="est-trade" onchange="calcEst()"><option>HVAC</option><option>Plumbing</option><option>Electrical</option><option>General</option></select>
+        </div>
+        <div class="field"><label>Labor Hours</label><input id="est-hrs" type="number" value="2" min="0" step=".5" oninput="calcEst()"></div>
+        <div class="field"><label>Labor Rate ($/hr)</label><input id="est-rate" type="number" value="120" oninput="calcEst()"></div>
+        <div class="field"><label>Trip / Service Call</label><input id="est-trip" type="number" value="95" oninput="calcEst()"></div>
+        <div class="field"><label>Markup %</label><input id="est-markup" type="number" value="35" oninput="calcEst()"></div>
+        <div class="field field-full"><label>Job Description</label>
+          <textarea id="est-desc" rows="3" placeholder="Describe the work..." oninput="calcEst()"></textarea>
+        </div>
+      </div>
+      <div id="est-parts-list" style="margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--sm);margin-bottom:8px">Parts / Materials</div>
+        <div id="est-parts-rows"></div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addEstPart()">+ Add Part</button>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title"><span class="ct-icon">&#128200;</span>Live Estimate Breakdown</div>
+        <table class="tbl" id="est-breakdown">
+          <tbody>
+            <tr><td>Service Call / Trip Fee</td><td style="text-align:right;font-weight:600" id="eb-trip">$95</td></tr>
+            <tr><td>Labor (<span id="eb-hrs">2</span> hrs &times; $<span id="eb-rate">120</span>)</td><td style="text-align:right;font-weight:600" id="eb-labor">$240</td></tr>
+            <tr><td>Parts (cost)</td><td style="text-align:right;font-weight:600" id="eb-parts">$0</td></tr>
+            <tr><td>Parts (markup <span id="eb-mkpct">35</span>%)</td><td style="text-align:right;font-weight:600" id="eb-markup">$0</td></tr>
+            <tr style="border-top:2px solid var(--border)"><td><strong>TOTAL</strong></td><td style="text-align:right;font-size:18px;font-weight:800;color:var(--cd)" id="eb-total">$335</td></tr>
+          </tbody>
+        </table>
+        <div class="range-bar-wrap" style="margin-top:14px">
+          <div class="range-bar-label"><span>Below market</span><span>Above market</span></div>
+          <div class="range-bar"><div class="range-bar-fill" id="est-range-fill" style="width:45%"></div><div class="range-bar-marker" id="est-range-marker" style="left:45%"></div></div>
+          <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:4px" id="est-range-label">On target for this trade / region</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Estimate Review</div>
+        <div id="est-ai-text" class="ai-response" style="color:var(--muted);font-style:italic">Build your estimate &mdash; Claude will review pricing automatically</div>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm" onclick="reviewEstimate()">&#129302; Get Claude Review</button>
+          <button class="btn btn-secondary btn-sm" onclick="sendEstToQuote()">&#128196; Send to Customer</button>
+          <button class="btn btn-secondary btn-sm" onclick="printD()">&#128438; Print</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. WORK ORDERS -->
+<div class="panel" id="panel-workorders">
+  <div class="panel-header"><div class="panel-title">&#128295; Work Orders</div><div class="panel-sub">Active jobs with full detail, notes, and completion tracking</div></div>
+  <div class="btn-row" style="margin-bottom:14px">
+    <button class="btn btn-primary btn-sm" onclick="newJob()">+ New Work Order</button>
+    <button class="btn btn-secondary btn-sm">Filter by Trade</button>
+    <button class="btn btn-secondary btn-sm">Filter by Tech</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128229; Export CSV</button>
+  </div>
+  <div class="card">
+    <table class="tbl">
+      <thead><tr><th>WO #</th><th>Customer</th><th>Trade</th><th>Description</th><th>Tech</th><th>Scheduled</th><th>Status</th><th>Total</th><th>Actions</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>#1042</strong></td><td>Garcia Home</td><td>Plumbing</td><td>Burst pipe &mdash; ceiling leak</td><td><span style="color:var(--red)">Unassigned</span></td><td>Jun 15 2:30 PM</td><td><span class="badge badge-urgent">EMERGENCY</span></td><td>TBD</td>
+          <td><button class="btn btn-primary btn-sm" onclick="showP('diagnostic')">Diagnose</button></td>
+        </tr>
+        <tr>
+          <td><strong>#1041</strong></td><td>Thompson Corp</td><td>Electric</td><td>200A panel upgrade</td><td>Kim, J.</td><td>Jun 15 9:30 AM</td><td><span class="badge badge-progress">In Progress</span></td><td>$1,850</td>
+          <td><button class="btn btn-secondary btn-sm">View</button></td>
+        </tr>
+        <tr>
+          <td><strong>#1040</strong></td><td>Patel, S.</td><td>Plumbing</td><td>Kitchen drain &mdash; recurring clog</td><td>Davis, T.</td><td>Jun 15 11:00 AM</td><td><span class="badge badge-progress">En Route</span></td><td>$285</td>
+          <td><button class="btn btn-secondary btn-sm">View</button></td>
+        </tr>
+        <tr>
+          <td><strong>#1039</strong></td><td>Wilson, T.</td><td>HVAC</td><td>AC not cooling &mdash; possible refrigerant</td><td>Rodriguez</td><td>Jun 15 1:00 PM</td><td><span class="badge badge-open">Scheduled</span></td><td>$420</td>
+          <td><button class="btn btn-secondary btn-sm">View</button></td>
+        </tr>
+        <tr>
+          <td><strong>#1038</strong></td><td>Johnson</td><td>Plumbing</td><td>Water heater replacement</td><td>Nguyen, P.</td><td>Jun 15 8:00 AM</td><td><span class="badge badge-done">Complete</span></td><td>$685</td>
+          <td><button class="btn btn-secondary btn-sm">Invoice</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 7. CUSTOMER CRM -->
+<div class="panel" id="panel-crm">
+  <div class="panel-header"><div class="panel-title">&#128101; Customer CRM</div><div class="panel-sub">Full customer history, equipment on file, service intervals</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128269;</span>Customer Search</div>
+      <div class="field" style="margin-bottom:12px">
+        <input id="crm-search" placeholder="Search by name, phone, address..." oninput="searchCRM()" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+      </div>
+      <table class="tbl" id="crm-table">
+        <thead><tr><th>Customer</th><th>Phone</th><th>Jobs</th><th>Last Service</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr onclick="loadCustomer('garcia')" style="cursor:pointer"><td><strong>Garcia, M.</strong></td><td>(440) 555-0192</td><td>8</td><td>Mar 2026</td><td>$4,240</td></tr>
+          <tr onclick="loadCustomer('thompson')" style="cursor:pointer"><td><strong>Thompson Corp</strong></td><td>(440) 555-0344</td><td>12</td><td>Jun 2026</td><td>$9,100</td></tr>
+          <tr onclick="loadCustomer('patel')" style="cursor:pointer"><td><strong>Patel, S.</strong></td><td>(440) 555-0571</td><td>5</td><td>Apr 2026</td><td>$2,180</td></tr>
+          <tr onclick="loadCustomer('wilson')" style="cursor:pointer"><td><strong>Wilson, T.</strong></td><td>(440) 555-0823</td><td>3</td><td>Jan 2026</td><td>$1,240</td></tr>
+          <tr onclick="loadCustomer('johnson')" style="cursor:pointer"><td><strong>Johnson Family</strong></td><td>(440) 555-0915</td><td>7</td><td>Jun 2026</td><td>$3,680</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="crm-detail-panel">
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">&#128101;</span>Customer Profile</div>
+        <div id="crm-detail">
+          <div style="color:var(--muted);font-style:italic;text-align:center;padding:30px">Select a customer to view their profile</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Customer Intelligence</div>
+        <div id="crm-ai" class="ai-response" style="color:var(--muted);font-style:italic">Select a customer to see AI insights...</div>
+        <div class="btn-row" style="display:none" id="crm-ai-btns">
+          <button class="btn btn-primary btn-sm" onclick="crmGetInsights()">&#129302; Get AI Insights</button>
+          <button class="btn btn-secondary btn-sm" onclick="crmSendFollowup()">&#128140; AI Follow-Up Email</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 8. TECH MANAGEMENT -->
+<div class="panel" id="panel-techs">
+  <div class="panel-header"><div class="panel-title">&#128736; Technician Management</div><div class="panel-sub">Profiles, skills, certifications, assignments</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128101;</span>Team Roster</div>
+      <table class="tbl">
+        <thead><tr><th>Technician</th><th>Role</th><th>Certifications</th><th>Status</th><th>MTD Revenue</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Rodriguez, M.</strong></td><td>Lead HVAC Tech</td><td>EPA 608, NATE</td><td><span class="badge badge-progress">In Field</span></td><td>$18,240</td></tr>
+          <tr><td><strong>Kim, J.</strong></td><td>Master Electrician</td><td>OSHA-30, State Lic</td><td><span class="badge badge-progress">In Field</span></td><td>$14,880</td></tr>
+          <tr><td><strong>Davis, T.</strong></td><td>Plumber</td><td>State Lic, Backflow</td><td><span class="badge badge-progress">En Route</span></td><td>$11,200</td></tr>
+          <tr><td><strong>Nguyen, P.</strong></td><td>HVAC Tech</td><td>EPA 608</td><td><span class="badge badge-green">Available</span></td><td>$9,650</td></tr>
+        </tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="addTech()">+ Add Technician</button>
+        <button class="btn btn-secondary btn-sm" onclick="showP('paybridge')">&#128257; Sync to SAIRNhr</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128202;</span>Tech Performance This Month</div>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Rodriguez, M.</span><span style="font-weight:700;color:var(--c)">$18,240</span></div>
+        <div style="background:#E5E7EB;border-radius:4px;height:8px"><div style="background:var(--c);height:100%;border-radius:4px;width:88%"></div></div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Kim, J.</span><span style="font-weight:700;color:var(--c)">$14,880</span></div>
+        <div style="background:#E5E7EB;border-radius:4px;height:8px"><div style="background:var(--ca);height:100%;border-radius:4px;width:72%"></div></div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Davis, T.</span><span style="font-weight:700;color:var(--c)">$11,200</span></div>
+        <div style="background:#E5E7EB;border-radius:4px;height:8px"><div style="background:#FCD34D;height:100%;border-radius:4px;width:54%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Nguyen, P.</span><span style="font-weight:700;color:var(--c)">$9,650</span></div>
+        <div style="background:#E5E7EB;border-radius:4px;height:8px"><div style="background:#86EFAC;height:100%;border-radius:4px;width:47%"></div></div>
+      </div>
+      <div style="margin-top:14px">
+        <div class="card-title"><span class="ct-icon">&#129302;</span>Claude AI Analysis</div>
+        <div id="tech-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click to get team performance insights...</div>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm" onclick="techAnalysis()">&#129302; Analyze Team Performance</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 9. SCHEDULE -->
+<div class="panel" id="panel-schedule">
+  <div class="panel-header"><div class="panel-title">&#128197; Schedule</div><div class="panel-sub">Weekly view &mdash; drag to reassign</div></div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary btn-sm">&larr; Prev Week</button>
+        <button class="btn btn-primary btn-sm">Today</button>
+        <button class="btn btn-secondary btn-sm">Next Week &rarr;</button>
+      </div>
+      <div style="font-size:14px;font-weight:700;color:var(--cd)">June 9 &mdash; June 15, 2026</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="aiSchedule()">&#129302; AI Optimize</button>
+        <button class="btn btn-secondary btn-sm" onclick="showP('route')">&#128205; Route View</button>
+      </div>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Mon Jun 9</th><th>Tue Jun 10</th><th>Wed Jun 11</th><th>Thu Jun 12</th><th>Fri Jun 13</th><th>Sat Jun 14</th><th>Sun Jun 15</th>
+        </tr>
+      </thead>
+      <tbody id="sched-body">
+        <tr><td style="font-size:11px;color:var(--muted)">8 AM</td><td><div class="job-card" style="margin:2px;padding:6px 8px"><div style="font-size:11px;font-weight:700">Johnson &mdash; WH</div><div style="font-size:10px;color:var(--muted)">Nguyen</div></div></td><td></td><td></td><td></td><td></td><td></td><td><div class="job-card" style="margin:2px;padding:6px 8px"><div style="font-size:11px;font-weight:700">Martinez AC</div><div style="font-size:10px;color:var(--muted)">Rodriguez</div></div></td></tr>
+        <tr><td style="font-size:11px;color:var(--muted)">9 AM</td><td></td><td></td><td></td><td></td><td></td><td></td><td><div class="job-card" style="margin:2px;padding:6px 8px;background:var(--cl);border-color:var(--c)"><div style="font-size:11px;font-weight:700;color:var(--c)">Thompson Panel</div><div style="font-size:10px;color:var(--muted)">Kim</div></div></td></tr>
+        <tr><td style="font-size:11px;color:var(--muted)">11 AM</td><td></td><td></td><td></td><td></td><td></td><td></td><td><div class="job-card" style="margin:2px;padding:6px 8px"><div style="font-size:11px;font-weight:700">Patel Drain</div><div style="font-size:10px;color:var(--muted)">Davis</div></div></td></tr>
+        <tr><td style="font-size:11px;color:var(--muted)">1 PM</td><td></td><td></td><td></td><td></td><td></td><td></td><td><div class="job-card" style="margin:2px;padding:6px 8px"><div style="font-size:11px;font-weight:700">Wilson AC</div><div style="font-size:10px;color:var(--muted)">Rodriguez</div></div></td></tr>
+        <tr><td style="font-size:11px;color:var(--muted)">2:30 PM</td><td></td><td></td><td></td><td></td><td></td><td></td><td><div class="job-card" style="margin:2px;padding:6px 8px;background:#FEE2E2;border-color:var(--red)"><div style="font-size:11px;font-weight:700;color:var(--red)">&#128680; Garcia PIPE</div><div style="font-size:10px;color:var(--red)">UNASSIGNED</div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 10. AI QUOTE WRITER -->
+<div class="panel" id="panel-quotewriter">
+  <div class="panel-header"><div class="panel-title">&#128393; AI Quote Writer</div><div class="panel-sub">Describe the job &mdash; Claude writes a professional customer quote in plain English</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128221;</span>Quote Brief</div>
+      <div class="form-grid">
+        <div class="field"><label>Customer Name</label><input id="qw-name" placeholder="Smith Family"></div>
+        <div class="field"><label>Trade</label><select id="qw-trade"><option>HVAC</option><option>Plumbing</option><option>Electrical</option><option>General</option></select></div>
+        <div class="field field-full"><label>Work Description</label>
+          <textarea id="qw-desc" rows="4" placeholder="e.g. Replace 3-ton Carrier heat pump, 15 years old, unit not cooling. Include labor, materials, new thermostat, electrical disconnect, and 1-year parts/labor warranty."></textarea>
+        </div>
+        <div class="field"><label>Total Amount</label><input id="qw-amount" type="number" placeholder="3200"></div>
+        <div class="field"><label>Quote Tone</label>
+          <select id="qw-tone"><option>Professional</option><option>Friendly & Plain Language</option><option>Premium / Luxury</option><option>Budget-Conscious</option></select>
+        </div>
+        <div class="field field-full"><label>Include Warranty?</label>
+          <select id="qw-warranty"><option>1 Year Parts & Labor</option><option>90 Days Labor Only</option><option>Manufacturer Warranty Only</option><option>No Warranty Mentioned</option></select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="writeQuote()">&#129302; Generate Quote</button>
+        <button class="btn btn-secondary" onclick="clearQW()">Clear</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128196;</span>Generated Quote</div>
+      <div id="qw-output" class="ai-response" style="min-height:200px;color:var(--muted);font-style:italic">Your professional customer quote will appear here...</div>
+      <div class="btn-row" id="qw-btns" style="display:none">
+        <button class="btn btn-primary btn-sm" onclick="sendQuote()">&#128140; Send to Customer</button>
+        <button class="btn btn-secondary btn-sm" onclick="printD()">&#128438; Print / PDF</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveQuoteHistory()">&#128190; Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 11. PRICE BOOK -->
+<div class="panel" id="panel-pricebook">
+  <div class="panel-header"><div class="panel-title">&#128214; Price Book</div><div class="panel-sub">Flat-rate pricing by service &mdash; Claude benchmarks against regional market</div></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="btn-row" style="margin-bottom:14px">
+      <button class="btn btn-primary btn-sm" onclick="addPriceItem()">+ Add Item</button>
+      <button class="btn btn-secondary btn-sm" onclick="aiPricingScan()">&#129302; AI Market Scan</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128229; Export</button>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Trade</th><th>Service</th><th>Flat Rate</th><th>Parts Est</th><th>Labor Hrs</th><th>Margin %</th><th>Market Position</th></tr></thead>
+      <tbody>
+        <tr><td>HVAC</td><td>AC Tune-Up / Maintenance</td><td>$149</td><td>$0</td><td>1.0</td><td>78%</td><td><span class="badge badge-open">Mid-Market</span></td></tr>
+        <tr><td>HVAC</td><td>Refrigerant Recharge (per lb)</td><td>$95</td><td>$35</td><td>0.5</td><td>63%</td><td><span class="badge badge-green">Competitive</span></td></tr>
+        <tr><td>HVAC</td><td>Capacitor Replacement</td><td>$285</td><td>$40</td><td>0.75</td><td>82%</td><td><span class="badge badge-open">Mid-Market</span></td></tr>
+        <tr><td>HVAC</td><td>Blower Motor Replacement</td><td>$680</td><td>$280</td><td>2.0</td><td>58%</td><td><span class="badge badge-open">Mid-Market</span></td></tr>
+        <tr><td>Plumbing</td><td>Service Call / Diagnosis</td><td>$95</td><td>$0</td><td>0.5</td><td>90%</td><td><span class="badge badge-urgent">Below Market</span></td></tr>
+        <tr><td>Plumbing</td><td>Drain Cleaning (basic)</td><td>$225</td><td>$15</td><td>1.0</td><td>79%</td><td><span class="badge badge-green">Competitive</span></td></tr>
+        <tr><td>Plumbing</td><td>Water Heater Replacement (50gal)</td><td>$1,850</td><td>$800</td><td>4.0</td><td>57%</td><td><span class="badge badge-open">Mid-Market</span></td></tr>
+        <tr><td>Electrical</td><td>Outlet/Switch Replacement</td><td>$195</td><td>$25</td><td>1.0</td><td>87%</td><td><span class="badge badge-green">Competitive</span></td></tr>
+        <tr><td>Electrical</td><td>200A Panel Upgrade</td><td>$2,400</td><td>$900</td><td>8.0</td><td>62%</td><td><span class="badge badge-open">Mid-Market</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Pricing Intelligence</div>
+    <div id="pb-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click AI Market Scan to get Claude's pricing analysis for your region...</div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="aiPricingScan()">&#129302; Run Market Scan</button>
+    </div>
+  </div>
+</div>
+
+<!-- 12. INVOICING -->
+<div class="panel" id="panel-invoicing">
+  <div class="panel-header"><div class="panel-title">&#129534; Invoicing</div><div class="panel-sub">Generate, send, and track invoices &mdash; auto-syncs to SAIRNacc GL</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128196;</span>Open Invoices</div>
+      <table class="tbl">
+        <thead><tr><th>Invoice #</th><th>Customer</th><th>Amount</th><th>Date</th><th>Status</th><th>Days</th></tr></thead>
+        <tbody>
+          <tr><td><strong>INV-1041</strong></td><td>Thompson Corp</td><td style="font-weight:700">$1,850</td><td>Jun 15</td><td><span class="badge badge-progress">Sent</span></td><td>0</td></tr>
+          <tr><td><strong>INV-1039</strong></td><td>Wilson, T.</td><td style="font-weight:700">$420</td><td>Jun 14</td><td><span class="badge badge-progress">Viewed</span></td><td>1</td></tr>
+          <tr><td><strong>INV-1036</strong></td><td>Chen, L.</td><td style="font-weight:700">$3,200</td><td>Jun 10</td><td><span class="badge badge-open">Pending</span></td><td>5</td></tr>
+          <tr><td><strong>INV-1032</strong></td><td>Brown Office</td><td style="font-weight:700">$980</td><td>Jun 1</td><td><span class="badge badge-urgent">Overdue</span></td><td>14</td></tr>
+          <tr><td><strong>INV-1029</strong></td><td>ABC Corp</td><td style="font-weight:700">$4,800</td><td>May 22</td><td><span class="badge badge-urgent">Overdue</span></td><td>24</td></tr>
+          <tr><td><strong>INV-1027</strong></td><td>Green Property</td><td style="font-weight:700">$1,200</td><td>May 15</td><td><span class="badge badge-urgent">Overdue 45+</span></td><td>31</td></tr>
+        </tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="createInvoice()">+ New Invoice</button>
+        <button class="btn btn-secondary btn-sm" onclick="bulkReminder()">&#128140; Send Reminders</button>
+        <button class="btn btn-secondary btn-sm" onclick="showP('glbridge')">&#128257; Sync to SAIRNacc</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128179;</span>Invoice Builder</div>
+      <div class="form-grid">
+        <div class="field"><label>Work Order #</label><select><option>WO #1042 &mdash; Garcia Pipe</option><option>WO #1041 &mdash; Thompson</option><option>WO #1040 &mdash; Patel</option></select></div>
+        <div class="field"><label>Invoice Date</label><input type="date"></div>
+        <div class="field"><label>Payment Due</label><select><option>Due on Receipt</option><option>Net 15</option><option>Net 30</option><option>Net 60</option></select></div>
+        <div class="field"><label>Payment Methods</label><select><option>Cash/Check/Card</option><option>Card Only</option><option>ACH/Bank Transfer</option></select></div>
+        <div class="field field-full"><label>Notes to Customer</label><textarea rows="2" placeholder="Thank you for choosing SAIRNtrade. Payment is due within 30 days."></textarea></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generateInvoice()">&#128196; Generate Invoice</button>
+        <button class="btn btn-secondary" onclick="previewInv()">&#128065; Preview</button>
+      </div>
+      <div class="ai-box" style="margin-top:14px">
+        <div class="ai-box-title">&#129302; Claude AI Follow-Up Draft</div>
+        <div id="inv-ai-text" class="ai-response" style="color:var(--muted);font-style:italic">Generate an invoice to get a Claude-written follow-up email draft...</div>
+        <div class="btn-row" style="display:none" id="inv-ai-btns">
+          <button class="btn btn-primary btn-sm" onclick="sendInvoiceEmail()">&#128140; Send Email</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 13. PAYMENTS -->
+<div class="panel" id="panel-payments">
+  <div class="panel-header"><div class="panel-title">&#128179; Payments</div><div class="panel-sub">Payment history, outstanding balances, aging report</div></div>
+  <div class="g4" style="margin-bottom:16px">
+    <div class="kpi"><div class="kpi-label">Collected MTD</div><div class="kpi-value">$42,180</div><div class="kpi-sub"><span class="kpi-trend-up">+12%</span> vs last month</div></div>
+    <div class="kpi"><div class="kpi-label">Outstanding</div><div class="kpi-value" style="color:var(--yellow)">$12,450</div><div class="kpi-sub">6 open invoices</div></div>
+    <div class="kpi"><div class="kpi-label">Overdue 30+</div><div class="kpi-value" style="color:var(--red)">$6,980</div><div class="kpi-sub">3 accounts</div></div>
+    <div class="kpi"><div class="kpi-label">Avg Days to Pay</div><div class="kpi-value">11</div><div class="kpi-sub">Industry avg: 22</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">&#128202;</span>Payment History</div>
+    <table class="tbl">
+      <thead><tr><th>Date</th><th>Customer</th><th>Invoice</th><th>Amount</th><th>Method</th><th>Tech</th></tr></thead>
+      <tbody>
+        <tr><td>Jun 15</td><td>Johnson Family</td><td>INV-1038</td><td style="font-weight:700;color:var(--green)">$685</td><td>Card</td><td>Nguyen</td></tr>
+        <tr><td>Jun 15</td><td>ABC Office</td><td>INV-1037</td><td style="font-weight:700;color:var(--green)">$195</td><td>Card</td><td>Kim</td></tr>
+        <tr><td>Jun 14</td><td>Martinez, J.</td><td>INV-1035</td><td style="font-weight:700;color:var(--green)">$149</td><td>Check</td><td>Rodriguez</td></tr>
+        <tr><td>Jun 13</td><td>Nguyen, T.</td><td>INV-1034</td><td style="font-weight:700;color:var(--green)">$2,400</td><td>ACH</td><td>Kim</td></tr>
+        <tr><td>Jun 12</td><td>Smith Home</td><td>INV-1033</td><td style="font-weight:700;color:var(--green)">$580</td><td>Card</td><td>Davis</td></tr>
+      </tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128229; Export to CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="showP('glbridge')">&#128257; Post to SAIRNacc</button>
+    </div>
+  </div>
+</div>
+
+<!-- 14. JOB COSTING -->
+<div class="panel" id="panel-jobcosting">
+  <div class="panel-header"><div class="panel-title">&#128202; Job Costing</div><div class="panel-sub">Actual vs estimated &mdash; labor, parts, margin per job. Claude flags profitability issues.</div></div>
+  <div class="card" style="margin-bottom:14px">
+    <table class="tbl">
+      <thead><tr><th>WO #</th><th>Customer</th><th>Trade</th><th>Est Revenue</th><th>Actual Revenue</th><th>Est Labor</th><th>Act Labor</th><th>Parts Cost</th><th>Margin</th><th>Flag</th></tr></thead>
+      <tbody>
+        <tr><td>#1038</td><td>Johnson</td><td>Plumbing</td><td>$650</td><td>$685</td><td>$240</td><td>$240</td><td>$120</td><td style="font-weight:700;color:var(--green)">61%</td><td><span class="badge badge-green">Good</span></td></tr>
+        <tr><td>#1037</td><td>ABC Office</td><td>Electric</td><td>$195</td><td>$195</td><td>$120</td><td>$120</td><td>$25</td><td style="font-weight:700;color:var(--green)">77%</td><td><span class="badge badge-green">Good</span></td></tr>
+        <tr><td>#1035</td><td>Martinez</td><td>HVAC</td><td>$149</td><td>$149</td><td>$120</td><td>$180</td><td>$0</td><td style="font-weight:700;color:var(--yellow)">-21%</td><td><span class="badge badge-urgent">&#9888; Over hrs</span></td></tr>
+        <tr><td>#1034</td><td>Nguyen, T.</td><td>Electric</td><td>$2,400</td><td>$2,400</td><td>$960</td><td>$1,080</td><td>$420</td><td style="font-weight:700;color:var(--yellow)">38%</td><td><span class="badge badge-open">Watch</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="g2">
+    <div class="kpi"><div class="kpi-label">Avg Job Margin MTD</div><div class="kpi-value">58%</div><div class="kpi-sub">Target: 60%</div></div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Margin Analysis</div>
+      <div id="jc-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click to get profitability insights...</div>
+      <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="jcAnalysis()">&#129302; Analyze Profitability</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 15. WEATHER COMMAND -->
+<div class="panel" id="panel-weather">
+  <div class="panel-header"><div class="panel-title">&#9928; Weather Command Center</div><div class="panel-sub">Pattern 12 &mdash; Real-time weather intelligence for field operations</div></div>
+  <div class="wx-card">
+    <div class="g2">
+      <div>
+        <div class="wx-big-temp" id="wxc-temp">72°F</div>
+        <div class="wx-condition" id="wxc-cond">Partly Cloudy &mdash; Westlake, OH</div>
+        <div class="wx-grid">
+          <div class="wx-stat"><div class="wx-stat-val" id="wxc-hi">89°F</div><div class="wx-stat-lbl">High Today</div></div>
+          <div class="wx-stat"><div class="wx-stat-val" id="wxc-lo">61°F</div><div class="wx-stat-lbl">Low Tonight</div></div>
+          <div class="wx-stat"><div class="wx-stat-val" id="wxc-wind">8 mph</div><div class="wx-stat-lbl">Wind</div></div>
+          <div class="wx-stat"><div class="wx-stat-val" id="wxc-humid">68%</div><div class="wx-stat-lbl">Humidity</div></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#FED7AA;margin-bottom:10px">Active Alerts &amp; Trade Impacts</div>
+        <div class="alert-list">
+          <div class="alert-item"><div class="alert-dot yellow"></div>Heat Index 104&deg;F forecast 2-5 PM. OSHA briefing required before afternoon HVAC jobs.</div>
+          <div class="alert-item"><div class="alert-dot green"></div>No freeze risk next 7 days. Plumbing winterization demand low.</div>
+          <div class="alert-item"><div class="alert-dot green"></div>No storm alerts. All outdoor electrical work approved to proceed.</div>
+          <div class="alert-item"><div class="alert-dot yellow"></div>AC demand surge expected. HVAC emergency rate may apply today after 3 PM.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#127777;&#65039;</span>Threshold Settings</div>
+      <table class="tbl">
+        <thead><tr><th>Trade</th><th>Trigger</th><th>Threshold</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>Plumbing</td><td>Freeze Warning</td><td>Below 28&deg;F</td><td>Priority dispatch + customer alert</td></tr>
+          <tr><td>HVAC</td><td>Extreme Heat</td><td>Heat index &gt; 95&deg;F</td><td>Emergency rate, surge staffing</td></tr>
+          <tr><td>Electrical</td><td>Lightning</td><td>Any active storm</td><td>Halt outdoor work, notify techs</td></tr>
+          <tr><td>All Trades</td><td>OSHA Heat</td><td>Heat index &gt; 103&deg;F</td><td>Mandatory crew briefing + breaks</td></tr>
+          <tr><td>All Trades</td><td>High Winds</td><td>Gusts &gt; 35 mph</td><td>Roof/ladder work suspended</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Weather Intelligence</div>
+      <div id="wx-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click to get AI analysis of today's weather impact on your schedule...</div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="wxAnalysis()">&#129302; Analyze Today's Impact</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadWeather()">&#128257; Refresh Weather</button>
+      </div>
+      <div class="card-title" style="margin-top:16px"><span class="ct-icon">&#128202;</span>Weather Event Log</div>
+      <table class="tbl" id="wx-log-table">
+        <thead><tr><th>Time</th><th>Event</th><th>Action Taken</th></tr></thead>
+        <tbody>
+          <tr><td>9:02 AM</td><td>Heat index advisory issued</td><td>Crew briefing scheduled 12 PM</td></tr>
+          <tr><td>7:30 AM</td><td>Day forecast loaded</td><td>No alerts &mdash; normal ops</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 16. ROUTE OPTIMIZER -->
+<div class="panel" id="panel-route">
+  <div class="panel-header"><div class="panel-title">&#128205; Route Optimizer</div><div class="panel-sub">Claude suggests optimal daily routes by zip, minimizes drive time</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128650;</span>Today's Jobs by Location</div>
+      <table class="tbl">
+        <thead><tr><th>#</th><th>Time</th><th>Customer</th><th>Address</th><th>Trade</th><th>Tech</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>8 AM</td><td>Johnson</td><td>12 Elm St (44145)</td><td>Plumbing</td><td>Nguyen</td></tr>
+          <tr><td>2</td><td>9:30 AM</td><td>Thompson</td><td>89 Commerce (44145)</td><td>Electric</td><td>Kim</td></tr>
+          <tr><td>3</td><td>11 AM</td><td>Patel</td><td>334 Lake Rd (44116)</td><td>Plumbing</td><td>Davis</td></tr>
+          <tr><td>4</td><td>1 PM</td><td>Wilson</td><td>78 Dover Dr (44145)</td><td>HVAC</td><td>Rodriguez</td></tr>
+          <tr><td>5</td><td>2:30 PM</td><td>Garcia</td><td>441 Oak St (44145)</td><td>Plumbing</td><td>Unassigned</td></tr>
+          <tr><td>6</td><td>4 PM</td><td>Brown Office</td><td>22 Center (44116)</td><td>Electric</td><td>Kim</td></tr>
+        </tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="optimizeRoute()">&#129302; AI Optimize Routes</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Route Plan</div>
+      <div id="route-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click Optimize to get Claude's route plan with estimated drive times and tech assignments...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 17. SERVICE AGREEMENTS -->
+<div class="panel" id="panel-agreements">
+  <div class="panel-header"><div class="panel-title">&#128203; Service Agreements</div><div class="panel-sub">Maintenance contracts, renewal engine, auto-reminders</div></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="btn-row" style="margin-bottom:14px">
+      <button class="btn btn-primary btn-sm" onclick="newAgreement()">+ New Agreement</button>
+      <button class="btn btn-secondary btn-sm" onclick="aiRenewals()">&#129302; AI Renewal Campaign</button>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Customer</th><th>Plan</th><th>Trade</th><th>Annual Value</th><th>Next Service</th><th>Expires</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Thompson Corp</strong></td><td>Premium (quarterly)</td><td>HVAC + Electric</td><td>$1,200</td><td>Jul 1</td><td>Dec 2026</td><td><span class="badge badge-green">Active</span></td></tr>
+        <tr><td><strong>Patel, S.</strong></td><td>Basic (semi-annual)</td><td>Plumbing</td><td>$480</td><td>Oct 15</td><td>Jun 30 2026</td><td><span class="badge badge-urgent">Expires Soon</span></td></tr>
+        <tr><td><strong>Wilson, T.</strong></td><td>HVAC Annual</td><td>HVAC</td><td>$299</td><td>Aug 1</td><td>Jul 15 2026</td><td><span class="badge badge-urgent">Expires Soon</span></td></tr>
+        <tr><td><strong>Chen, L.</strong></td><td>All-Trade Annual</td><td>HVAC + Plumbing</td><td>$899</td><td>Sep 1</td><td>Mar 2027</td><td><span class="badge badge-green">Active</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Renewal Campaign</div>
+    <div id="agr-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click AI Renewal Campaign to get personalized renewal messages for expiring contracts...</div>
+    <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="aiRenewals()">&#129302; Generate Renewal Messages</button></div>
+  </div>
+</div>
+
+<!-- 18. PARTS & INVENTORY -->
+<div class="panel" id="panel-parts">
+  <div class="panel-header"><div class="panel-title">&#129520; Parts &amp; Inventory</div><div class="panel-sub">Stock levels, reorder alerts, supplier pricing, AI demand forecast</div></div>
+  <div class="g4" style="margin-bottom:14px">
+    <div class="kpi"><div class="kpi-label">Total SKUs</div><div class="kpi-value">184</div></div>
+    <div class="kpi"><div class="kpi-label">Reorder Needed</div><div class="kpi-value" style="color:var(--red)">11</div></div>
+    <div class="kpi"><div class="kpi-label">Parts on Order</div><div class="kpi-value" style="color:var(--yellow)">23</div></div>
+    <div class="kpi"><div class="kpi-label">Inventory Value</div><div class="kpi-value">$18,400</div></div>
+  </div>
+  <div class="card">
+    <div class="btn-row" style="margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" onclick="addPart()">+ Add Part</button>
+      <button class="btn btn-secondary btn-sm" onclick="reorderAll()">&#128666; Reorder All Low Stock</button>
+      <button class="btn btn-secondary btn-sm" onclick="aiForecast()">&#129302; AI Demand Forecast</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128229; Export</button>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Part Name</th><th>SKU</th><th>Trade</th><th>In Stock</th><th>Reorder At</th><th>Unit Cost</th><th>Supplier</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Capacitor 45+5 MFD</td><td>CAP-455</td><td>HVAC</td><td>8</td><td>5</td><td>$18</td><td>Johnstone</td><td><span class="badge badge-green">OK</span></td></tr>
+        <tr><td>Contactor 40A Single Pole</td><td>CON-40S</td><td>HVAC</td><td>3</td><td>5</td><td>$22</td><td>Johnstone</td><td><span class="badge badge-urgent">&#128680; Low</span></td></tr>
+        <tr><td>1/2" Copper Fitting 90-elbow</td><td>PLM-12E</td><td>Plumbing</td><td>24</td><td>10</td><td>$2.40</td><td>Ferguson</td><td><span class="badge badge-green">OK</span></td></tr>
+        <tr><td>15A GFCI Outlet White</td><td>ELC-GFCI15</td><td>Electric</td><td>12</td><td>8</td><td>$14</td><td>Rexel</td><td><span class="badge badge-green">OK</span></td></tr>
+        <tr><td>R-410A Refrigerant 25lb</td><td>HVAC-R410</td><td>HVAC</td><td>1</td><td>3</td><td>$180</td><td>Johnstone</td><td><span class="badge badge-urgent">&#128680; Critical</span></td></tr>
+        <tr><td>20A Breaker Single Pole</td><td>ELC-BR20</td><td>Electric</td><td>6</td><td>4</td><td>$8</td><td>Rexel</td><td><span class="badge badge-open">Watch</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 19. SUPPLIERS -->
+<div class="panel" id="panel-suppliers">
+  <div class="panel-header"><div class="panel-title">&#127970; Supplier Intelligence</div><div class="panel-sub">Preferred suppliers, part costs, Claude negotiation tips</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#127970;</span>Preferred Suppliers</div>
+      <table class="tbl">
+        <thead><tr><th>Supplier</th><th>Trade</th><th>Account #</th><th>Discount</th><th>Avg Delivery</th><th>Rating</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Johnstone Supply</strong></td><td>HVAC</td><td>JSW-44145</td><td>18%</td><td>Next day</td><td>&#11088;&#11088;&#11088;&#11088;&#11088;</td></tr>
+          <tr><td><strong>Ferguson</strong></td><td>Plumbing</td><td>FRG-8821</td><td>12%</td><td>Same day</td><td>&#11088;&#11088;&#11088;&#11088;</td></tr>
+          <tr><td><strong>Rexel</strong></td><td>Electrical</td><td>RXL-2209</td><td>15%</td><td>Next day</td><td>&#11088;&#11088;&#11088;&#11088;</td></tr>
+          <tr><td><strong>Grainger</strong></td><td>General</td><td>GRG-77412</td><td>8%</td><td>2-3 days</td><td>&#11088;&#11088;&#11088;</td></tr>
+        </tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="addSupplier()">+ Add Supplier</button>
+        <button class="btn btn-secondary btn-sm" onclick="aiNegotiate()">&#129302; AI Negotiation Tips</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Supplier Intelligence</div>
+      <div id="sup-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click AI Negotiation Tips to get Claude's analysis of your supplier relationships and discount opportunities...</div>
+      <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="aiNegotiate()">&#129302; Get Negotiation Strategy</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 20. REPORTING -->
+<div class="panel" id="panel-reporting">
+  <div class="panel-header"><div class="panel-title">&#128196; Reporting</div><div class="panel-sub">Revenue, job count, tech efficiency, avg ticket, close rate &mdash; Claude interprets the numbers</div></div>
+  <div class="g4" style="margin-bottom:14px">
+    <div class="kpi"><div class="kpi-label">Revenue MTD</div><div class="kpi-value">$54,840</div><div class="kpi-sub"><span class="kpi-trend-up">+22%</span> vs last month</div></div>
+    <div class="kpi"><div class="kpi-label">Jobs MTD</div><div class="kpi-value">98</div><div class="kpi-sub">Avg 4.9/day</div></div>
+    <div class="kpi"><div class="kpi-label">Avg Ticket</div><div class="kpi-value">$559</div><div class="kpi-sub"><span class="kpi-trend-up">Target: $500</span></div></div>
+    <div class="kpi"><div class="kpi-label">Net Margin</div><div class="kpi-value">58%</div><div class="kpi-sub"><span class="kpi-trend-dn">Target: 62%</span></div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128202;</span>Revenue by Trade (MTD)</div>
+      <div style="margin:8px 0">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>HVAC (44%)</span><span style="font-weight:700;color:var(--c)">$24,130</span></div>
+        <div style="background:#E5E7EB;border-radius:4px;height:12px;margin-bottom:10px"><div style="background:var(--c);height:100%;border-radius:4px;width:44%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Plumbing (31%)</span><span style="font-weight:700;color:var(--ca)">$17,000</span></div>
+        <div style="background:#E5E7EB;border-radius:4px;height:12px;margin-bottom:10px"><div style="background:var(--ca);height:100%;border-radius:4px;width:31%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Electrical (25%)</span><span style="font-weight:700;color:#FCD34D">$13,710</span></div>
+        <div style="background:#E5E7EB;border-radius:4px;height:12px"><div style="background:#FCD34D;height:100%;border-radius:4px;width:25%"></div></div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128229; Export</button>
+        <button class="btn btn-secondary btn-sm" onclick="printD()">&#128438; Print Report</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Business Analysis</div>
+      <div id="rpt-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click to get Claude's analysis of your business performance and growth recommendations...</div>
+      <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="reportAnalysis()">&#129302; Analyze My Business</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 21. LEADS -->
+<div class="panel" id="panel-leads">
+  <div class="panel-header"><div class="panel-title">&#127919; Lead Management</div><div class="panel-sub">Inbound leads, quote tracking, win/loss analysis</div></div>
+  <div class="g4" style="margin-bottom:14px">
+    <div class="kpi"><div class="kpi-label">New Leads MTD</div><div class="kpi-value">31</div></div>
+    <div class="kpi"><div class="kpi-label">Quotes Sent</div><div class="kpi-value">23</div></div>
+    <div class="kpi"><div class="kpi-label">Won</div><div class="kpi-value" style="color:var(--green)">18</div></div>
+    <div class="kpi"><div class="kpi-label">Close Rate</div><div class="kpi-value">78%</div></div>
+  </div>
+  <div class="card">
+    <table class="tbl">
+      <thead><tr><th>Lead</th><th>Source</th><th>Trade</th><th>Est Value</th><th>Status</th><th>Age</th><th>Actions</th></tr></thead>
+      <tbody>
+        <tr><td>Reynolds Family</td><td>Google</td><td>HVAC</td><td>$3,200</td><td><span class="badge badge-open">New</span></td><td>2 hrs</td><td><button class="btn btn-primary btn-sm" onclick="showP('quotewriter')">Write Quote</button></td></tr>
+        <tr><td>Summit Properties</td><td>Referral</td><td>Electric</td><td>$8,400</td><td><span class="badge badge-progress">Quote Sent</span></td><td>1 day</td><td><button class="btn btn-secondary btn-sm">Follow Up</button></td></tr>
+        <tr><td>Lee, K.</td><td>Website</td><td>Plumbing</td><td>$450</td><td><span class="badge badge-progress">Quote Sent</span></td><td>3 days</td><td><button class="btn btn-secondary btn-sm">Follow Up</button></td></tr>
+        <tr><td>Metro Hospital</td><td>Cold Call</td><td>HVAC</td><td>$24,000</td><td><span class="badge badge-progress">Negotiating</span></td><td>5 days</td><td><button class="btn btn-secondary btn-sm">&#129302; AI Help</button></td></tr>
+      </tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="addLead()">+ Add Lead</button>
+      <button class="btn btn-secondary btn-sm" onclick="aiFollowups()">&#129302; AI Follow-Up Campaign</button>
+    </div>
+  </div>
+</div>
+
+<!-- 22. AFTER-HOURS AI -->
+<div class="panel" id="panel-afterhours">
+  <div class="panel-header"><div class="panel-title">&#127761; After-Hours AI</div><div class="panel-sub">Logs job requests, triages urgency, auto-dispatches emergencies</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#127761;</span>After-Hours Settings</div>
+      <div class="form-grid">
+        <div class="field"><label>After-Hours Start</label><input type="time" value="18:00"></div>
+        <div class="field"><label>After-Hours End</label><input type="time" value="07:00"></div>
+        <div class="field"><label>Emergency Contact</label><input placeholder="Rodriguez, M. (440) 555-0100"></div>
+        <div class="field"><label>Emergency Rate</label><input type="number" value="150" placeholder="150"></div>
+        <div class="field field-full"><label>AI Greeting Message</label>
+          <textarea>Thank you for calling SAIRNtrade. Our office is currently closed. This is our AI assistant. Please describe your issue and we'll triage your request. For gas leaks or flooding, call 911 immediately.</textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveAH()">&#128190; Save Settings</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128221;</span>After-Hours Requests (Last 24h)</div>
+      <table class="tbl">
+        <thead><tr><th>Time</th><th>Caller</th><th>Trade</th><th>Urgency</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>11:42 PM</td><td>Garcia, M.</td><td>Plumbing</td><td><span class="badge badge-urgent">EMERGENCY</span></td><td>Auto-dispatched Rodriguez</td></tr>
+          <tr><td>10:15 PM</td><td>Unknown</td><td>HVAC</td><td><span class="badge badge-open">Standard</span></td><td>Scheduled 8 AM</td></tr>
+          <tr><td>9:30 PM</td><td>Brown, T.</td><td>Electric</td><td><span class="badge badge-warn">Urgent</span></td><td>Called Davis (on-call)</td></tr>
+        </tbody>
+      </table>
+      <div class="card-title" style="margin-top:16px"><span class="ct-icon">&#129302;</span>Simulate After-Hours Call</div>
+      <div class="field" style="margin-top:10px">
+        <textarea id="ah-sim" placeholder="Describe the customer's problem as if they called after hours..." rows="3"></textarea>
+      </div>
+      <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="simAfterHours()">&#129302; AI Triage Simulation</button></div>
+      <div id="ah-result" class="ai-response" style="margin-top:10px;color:var(--muted);font-style:italic"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 23. FLEET & VEHICLES -->
+<div class="panel" id="panel-fleet">
+  <div class="panel-header"><div class="panel-title">&#128661; Fleet &amp; Vehicles</div><div class="panel-sub">Truck assignments, maintenance due, notes</div></div>
+  <div class="card" style="margin-bottom:14px">
+    <table class="tbl">
+      <thead><tr><th>Vehicle</th><th>Assigned To</th><th>Mileage</th><th>Oil Due</th><th>Inspection</th><th>Notes</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Truck 1 &mdash; F-150 (44-TRD)</strong></td><td>Rodriguez, M.</td><td>87,420</td><td>90,000</td><td>Dec 2026</td><td>Roof rack loose</td><td><span class="badge badge-green">Good</span></td></tr>
+        <tr><td><strong>Truck 2 &mdash; Transit (22-SRN)</strong></td><td>Kim, J.</td><td>61,800</td><td>63,000</td><td>Mar 2027</td><td>&mdash;</td><td><span class="badge badge-open">Oil Soon</span></td></tr>
+        <tr><td><strong>Truck 3 &mdash; Ranger (18-PLM)</strong></td><td>Davis, T.</td><td>112,400</td><td>115,000</td><td>Jun 2026</td><td>Inspection overdue!</td><td><span class="badge badge-urgent">Attention</span></td></tr>
+        <tr><td><strong>Truck 4 &mdash; Transit (31-NVN)</strong></td><td>Nguyen, P.</td><td>44,200</td><td>47,000</td><td>Sep 2026</td><td>&mdash;</td><td><span class="badge badge-green">Good</span></td></tr>
+      </tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="addVehicle()">+ Add Vehicle</button>
+      <button class="btn btn-secondary btn-sm" onclick="aiFleet()">&#129302; AI Maintenance Forecast</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Fleet Analysis</div>
+    <div id="fleet-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click AI Maintenance Forecast to get Claude's predictive maintenance schedule...</div>
+    <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="aiFleet()">&#129302; Predict Maintenance</button></div>
+  </div>
+</div>
+
+<!-- 24. PHOTO DOCS -->
+<div class="panel" id="panel-photos">
+  <div class="panel-header"><div class="panel-title">&#128247; Photo Documentation</div><div class="panel-sub">Job before/after photos, warranty evidence, Claude visual analysis</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128247;</span>Upload Job Photos</div>
+      <div class="form-grid">
+        <div class="field"><label>Work Order #</label><select><option>WO #1042</option><option>WO #1041</option><option>WO #1040</option></select></div>
+        <div class="field"><label>Photo Type</label><select><option>Before</option><option>After</option><option>Equipment Tag</option><option>Problem Area</option><option>Completed Work</option></select></div>
+        <div class="field field-full">
+          <input type="file" accept="image/*" id="photo-upload" multiple style="padding:8px;border:2px dashed var(--border);border-radius:8px;width:100%;cursor:pointer">
+        </div>
+        <div class="field field-full"><label>Caption / Notes</label><input placeholder="Describe what the photo shows..."></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="uploadPhoto()">&#128247; Upload &amp; Analyze</button>
+      </div>
+      <div id="photo-ai" class="ai-box" style="margin-top:14px">
+        <div class="ai-box-title">&#129302; Claude Visual Analysis</div>
+        <div class="ai-response" style="color:var(--muted);font-style:italic">Upload a photo and Claude will describe what it sees, identify any visible issues, and suggest next steps...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128247;</span>Recent Photos</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#F3F4F6;border-radius:8px;padding:30px;text-align:center;color:var(--muted);font-size:12px">WO#1038<br>Water Heater<br>Before</div>
+        <div style="background:#F3F4F6;border-radius:8px;padding:30px;text-align:center;color:var(--muted);font-size:12px">WO#1038<br>Water Heater<br>After</div>
+        <div style="background:#F3F4F6;border-radius:8px;padding:30px;text-align:center;color:var(--muted);font-size:12px">WO#1037<br>Outlet Repair<br>Before</div>
+        <div style="background:#F3F4F6;border-radius:8px;padding:30px;text-align:center;color:var(--muted);font-size:12px">WO#1037<br>Outlet Repair<br>After</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 25. INSPECTIONS -->
+<div class="panel" id="panel-inspection">
+  <div class="panel-header"><div class="panel-title">&#9989; Digital Inspections</div><div class="panel-sub">Checklist-based equipment inspection &mdash; Claude generates the report</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#9989;</span>Inspection Checklist</div>
+      <div class="form-grid">
+        <div class="field"><label>Inspection Type</label>
+          <select id="insp-type" onchange="loadChecklist()">
+            <option>HVAC Annual Maintenance</option><option>Plumbing Inspection</option><option>Electrical Safety</option><option>Pre-Purchase Home</option></select>
+        </div>
+        <div class="field"><label>Customer</label><input id="insp-cust" placeholder="Customer name"></div>
+      </div>
+      <div id="checklist-items" style="margin-top:14px">
+        <div class="flag flag-info"><span class="flag-icon">&#128221;</span>Select inspection type to load checklist</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generateInspReport()">&#129302; Generate AI Report</button>
+        <button class="btn btn-secondary" onclick="printD()">&#128438; Print</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#129302;</span>Inspection Report</div>
+      <div id="insp-report" class="ai-response" style="color:var(--muted);font-style:italic;min-height:200px">Complete the checklist and click Generate to get your professional inspection report...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 26. WARRANTY TRACKER -->
+<div class="panel" id="panel-warranty">
+  <div class="panel-header"><div class="panel-title">&#127863; Warranty Tracker</div><div class="panel-sub">Equipment warranties, expiry alerts, claim history</div></div>
+  <div class="card">
+    <div class="btn-row" style="margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" onclick="addWarranty()">+ Add Warranty</button>
+      <button class="btn btn-secondary btn-sm" onclick="aiWarrantyAlert()">&#129302; AI Expiry Alerts</button>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Customer</th><th>Equipment</th><th>Installed</th><th>Parts Warranty</th><th>Labor Warranty</th><th>Expires</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Johnson</td><td>Rheem 50gal WH</td><td>Jun 15 2026</td><td>6 Years (Mfr)</td><td>1 Year</td><td>Jun 2027</td><td><span class="badge badge-green">Active</span></td></tr>
+        <tr><td>Chen, L.</td><td>Carrier 3-ton HP</td><td>Mar 2024</td><td>10 Years (Mfr)</td><td>1 Year</td><td>Mar 2025</td><td><span class="badge badge-urgent">Labor Expired</span></td></tr>
+        <tr><td>Thompson</td><td>Square D Panel 200A</td><td>Nov 2023</td><td>1 Year (Mfr)</td><td>1 Year</td><td>Nov 2024</td><td><span class="badge badge-urgent">Both Expired</span></td></tr>
+        <tr><td>Patel, S.</td><td>Kohler Toilet</td><td>Apr 2025</td><td>1 Year (Mfr)</td><td>90 Days</td><td>Apr 2026</td><td><span class="badge badge-urgent">Expired</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 27. COMPLIANCE -->
+<div class="panel" id="panel-compliance">
+  <div class="panel-header"><div class="panel-title">&#128196; Compliance &amp; Certifications</div><div class="panel-sub">License expiry, insurance certs, permits, OSHA logs</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128196;</span>Company Credentials</div>
+      <table class="tbl">
+        <thead><tr><th>Credential</th><th>Number</th><th>Issued</th><th>Expires</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>OH Plumbing License</td><td>OH-PLM-44821</td><td>Jan 2024</td><td>Jan 2026</td><td><span class="badge badge-urgent">EXPIRED</span></td></tr>
+          <tr><td>OH Electrical Contractor</td><td>OH-ELC-22190</td><td>Mar 2025</td><td>Mar 2027</td><td><span class="badge badge-green">Active</span></td></tr>
+          <tr><td>EPA 608 Certification</td><td>EPA-608-8821</td><td>Jun 2022</td><td>No Expiry</td><td><span class="badge badge-green">Active</span></td></tr>
+          <tr><td>General Liability Insurance</td><td>GL-2024-99182</td><td>Jan 2025</td><td>Jan 2027</td><td><span class="badge badge-green">Active</span></td></tr>
+          <tr><td>Workers Comp</td><td>WC-OH-55821</td><td>Mar 2025</td><td>Mar 2026</td><td><span class="badge badge-urgent">EXPIRES SOON</span></td></tr>
+        </tbody>
+      </table>
+      <div class="flag flag-danger" style="margin-top:12px"><span class="flag-icon">&#128680;</span><strong>OH Plumbing License Expired!</strong> Renew immediately to avoid fines and job stoppage.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#129302;</span>Claude Compliance Review</div>
+      <div id="comp-ai" class="ai-response" style="color:var(--muted);font-style:italic">Click to get Claude's compliance review and action plan...</div>
+      <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="complianceReview()">&#129302; Run Compliance Review</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 28. TRAINING & SOPs -->
+<div class="panel" id="panel-training">
+  <div class="panel-header"><div class="panel-title">&#127979; Training &amp; SOPs</div><div class="panel-sub">Claude generates step-by-step service procedures by trade</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128221;</span>Generate SOP</div>
+      <div class="form-grid">
+        <div class="field"><label>Trade</label><select id="sop-trade"><option>HVAC</option><option>Plumbing</option><option>Electrical</option></select></div>
+        <div class="field"><label>Procedure Type</label>
+          <select id="sop-proc"><option>Diagnostic</option><option>Installation</option><option>Maintenance</option><option>Emergency Response</option><option>Safety Procedure</option></select>
+        </div>
+        <div class="field field-full"><label>Specific Task</label>
+          <input id="sop-task" placeholder="e.g. Heat pump refrigerant recharge procedure, R-410A">
+        </div>
+        <div class="field"><label>Technician Level</label>
+          <select><option>Apprentice</option><option>Journeyman</option><option>Master</option></select>
+        </div>
+        <div class="field"><label>Include Safety Notes</label>
+          <select><option>Yes &mdash; Detailed</option><option>Yes &mdash; Brief</option><option>No</option></select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generateSOP()">&#129302; Generate SOP</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#129302;</span>Generated Procedure</div>
+      <div id="sop-output" class="ai-response" style="min-height:200px;color:var(--muted);font-style:italic">Enter a task and click Generate to create a professional step-by-step procedure...</div>
+      <div class="btn-row" id="sop-btns" style="display:none">
+        <button class="btn btn-secondary btn-sm" onclick="printD()">&#128438; Print SOP</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveSOP()">&#128190; Save to Library</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 29. SAFETY LOG -->
+<div class="panel" id="panel-safety">
+  <div class="panel-header"><div class="panel-title">&#9940; Safety Log</div><div class="panel-sub">OSHA incidents, near-misses, heat safety, Claude safety review</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#9940;</span>Log Safety Event</div>
+      <div class="form-grid">
+        <div class="field"><label>Event Type</label>
+          <select id="safe-type"><option>Near-Miss</option><option>Incident / Injury</option><option>Property Damage</option><option>Heat Safety Event</option><option>Equipment Failure</option></select>
+        </div>
+        <div class="field"><label>Date &amp; Time</label><input type="datetime-local"></div>
+        <div class="field"><label>Technician Involved</label><select><option>Rodriguez, M.</option><option>Kim, J.</option><option>Davis, T.</option><option>Nguyen, P.</option></select></div>
+        <div class="field"><label>Job / Location</label><input placeholder="Work order # or address"></div>
+        <div class="field field-full"><label>Description</label><textarea rows="3" placeholder="Describe exactly what happened..."></textarea></div>
+        <div class="field"><label>Action Taken</label><input placeholder="Immediate corrective action..."></div>
+        <div class="field"><label>Severity</label><select><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="logSafety()">&#128190; Log Event</button>
+        <button class="btn btn-secondary" onclick="aiSafetyReview()">&#129302; AI Safety Analysis</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128202;</span>Safety Log</div>
+      <table class="tbl">
+        <thead><tr><th>Date</th><th>Type</th><th>Tech</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Jun 15</td><td>Heat Safety</td><td>All Crew</td><td><span class="badge badge-warn">Medium</span></td><td>Briefing scheduled</td></tr>
+          <tr><td>Jun 10</td><td>Near-Miss</td><td>Davis, T.</td><td><span class="badge badge-open">Low</span></td><td>Resolved</td></tr>
+          <tr><td>May 28</td><td>Equipment Failure</td><td>Kim, J.</td><td><span class="badge badge-warn">Medium</span></td><td>Equipment replaced</td></tr>
+        </tbody>
+      </table>
+      <div id="safe-ai" class="ai-response" style="margin-top:14px;color:var(--muted);font-style:italic"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 30. CHECK REGISTER -->
+<div class="panel" id="panel-checks">
+  <div class="panel-header"><div class="panel-title">&#129534; Check Register</div><div class="panel-sub">Write checks to suppliers, 3-per-page print on blank check stock, auto-posts to GL</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#127970;</span>Write a Check</div>
+      <div class="form-grid">
+        <div class="field"><label>Bank Account</label><select><option>Chase Business ****4421</option><option>Fifth Third ****8821</option></select></div>
+        <div class="field"><label>Check Number</label><input id="chk-num" type="number" value="1042" placeholder="1042"></div>
+        <div class="field field-full"><label>Pay to the Order of</label><input id="chk-payee" placeholder="Johnstone Supply" oninput="updateCheck()"></div>
+        <div class="field"><label>Amount ($)</label><input id="chk-amount" type="number" placeholder="0.00" oninput="updateCheck()"></div>
+        <div class="field"><label>Date</label><input id="chk-date" type="date" oninput="updateCheck()"></div>
+        <div class="field"><label>Memo</label><input id="chk-memo" placeholder="Parts order #PO-2241" oninput="updateCheck()"></div>
+        <div class="field"><label>GL Category</label>
+          <select><option>Parts &amp; Materials</option><option>Vehicle Expense</option><option>Office Supplies</option><option>Subcontractors</option><option>Utilities</option></select>
+        </div>
+        <div class="field"><label>Link to Work Order</label>
+          <select><option>None</option><option>WO #1042 &mdash; Garcia</option><option>WO #1041 &mdash; Thompson</option></select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="printCheck()">&#128438; Print Check</button>
+        <button class="btn btn-secondary" onclick="saveCheck()">&#128190; Save to Register</button>
+        <button class="btn btn-secondary" onclick="showP('glbridge')">&#128257; Post to GL</button>
+      </div>
+    </div>
+    <div>
+      <div class="check-preview" id="check-preview">
+        <div class="check-header">
+          <div><strong>SAIRNtrade Services LLC</strong><br>123 Commerce Dr, Westlake OH 44145</div>
+          <div style="text-align:right"><strong>Check #</strong> <span id="cp-num">1042</span><br><span id="cp-date"></span></div>
+        </div>
+        <div class="check-payline">
+          Pay to the Order of: <strong><span id="cp-payee">___________________________________________</span></strong>
+          <span class="check-amount" id="cp-amount">$0.00</span>
+        </div>
+        <div style="margin:8px 0;font-size:12px"><span id="cp-written">Zero and 00/100 --------------------------------</span> Dollars</div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px">
+          <div>Memo: <span id="cp-memo">___________________</span></div>
+          <div>Authorized Signature: _________________________</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-title"><span class="ct-icon">&#128203;</span>Check Register</div>
+        <table class="tbl">
+          <thead><tr><th>#</th><th>Date</th><th>Payee</th><th>Amount</th><th>Category</th></tr></thead>
+          <tbody>
+            <tr><td>1041</td><td>Jun 14</td><td>Ferguson</td><td>$890</td><td>Parts</td></tr>
+            <tr><td>1040</td><td>Jun 12</td><td>Johnstone</td><td>$1,240</td><td>Parts</td></tr>
+            <tr><td>1039</td><td>Jun 10</td><td>Rexel</td><td>$340</td><td>Parts</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 31. PAYROLL BRIDGE -->
+<div class="panel" id="panel-paybridge">
+  <div class="panel-header"><div class="panel-title">&#128257; Payroll Bridge &rarr; SAIRNhr</div><div class="panel-sub">Sync tech hours, commissions, and job data to SAIRNhr payroll</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128101;</span>This Week's Hours Summary</div>
+      <table class="tbl">
+        <thead><tr><th>Technician</th><th>Regular Hrs</th><th>OT Hrs</th><th>Jobs</th><th>Revenue Gen</th><th>Commission</th></tr></thead>
+        <tbody>
+          <tr><td>Rodriguez, M.</td><td>38</td><td>2</td><td>14</td><td>$8,240</td><td>$412</td></tr>
+          <tr><td>Kim, J.</td><td>40</td><td>4</td><td>10</td><td>$6,840</td><td>$342</td></tr>
+          <tr><td>Davis, T.</td><td>36</td><td>0</td><td>9</td><td>$4,120</td><td>$206</td></tr>
+          <tr><td>Nguyen, P.</td><td>32</td><td>0</td><td>7</td><td>$3,480</td><td>$174</td></tr>
+        </tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="syncPayroll()">&#128257; Sync to SAIRNhr</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128229; Export CSV</button>
+      </div>
+      <div id="pay-sync-result" class="ai-box" style="display:none;margin-top:12px">
+        <div class="ai-box-title">&#128257; Sync Status</div>
+        <div id="pay-sync-text" class="ai-response"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128202;</span>Payroll Summary</div>
+      <table class="tbl">
+        <thead><tr><th>Item</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Regular Hours (146 hrs &times; avg $28)</td><td>$4,088</td></tr>
+          <tr><td>Overtime (6 hrs &times; avg $42)</td><td>$252</td></tr>
+          <tr><td>Total Commissions</td><td>$1,134</td></tr>
+          <tr><td style="font-weight:700">Gross Payroll</td><td style="font-weight:700;color:var(--cd)">$5,474</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 32. GL BRIDGE -->
+<div class="panel" id="panel-glbridge">
+  <div class="panel-header"><div class="panel-title">&#128257; GL Bridge &rarr; SAIRNacc</div><div class="panel-sub">Sync invoices, payments, and expenses to SAIRNacc general ledger</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128200;</span>Pending GL Entries</div>
+      <table class="tbl">
+        <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>GL Account</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Jun 15</td><td>Revenue</td><td>INV-1038 Johnson WH</td><td style="color:var(--green)">+$685</td><td>4000-Revenue</td><td><span class="badge badge-open">Pending</span></td></tr>
+          <tr><td>Jun 15</td><td>Revenue</td><td>INV-1037 ABC Outlet</td><td style="color:var(--green)">+$195</td><td>4000-Revenue</td><td><span class="badge badge-open">Pending</span></td></tr>
+          <tr><td>Jun 14</td><td>Expense</td><td>CHK-1041 Ferguson Parts</td><td style="color:var(--red)">-$890</td><td>5000-Parts</td><td><span class="badge badge-open">Pending</span></td></tr>
+          <tr><td>Jun 12</td><td>Expense</td><td>CHK-1040 Johnstone</td><td style="color:var(--red)">-$1,240</td><td>5000-Parts</td><td><span class="badge badge-open">Pending</span></td></tr>
+        </tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="syncGL()">&#128257; Post All to SAIRNacc</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128229; Export GL CSV</button>
+      </div>
+      <div id="gl-sync-result" class="ai-box" style="display:none;margin-top:12px">
+        <div class="ai-box-title">&#128257; GL Sync Status</div>
+        <div id="gl-sync-text" class="ai-response"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128202;</span>P&amp;L Snapshot (MTD)</div>
+      <table class="tbl">
+        <thead><tr><th>Category</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Revenue</strong></td><td style="font-weight:700;color:var(--green)">$54,840</td></tr>
+          <tr><td>Cost of Parts</td><td style="color:var(--red)">-$12,400</td></tr>
+          <tr><td>Labor (Payroll)</td><td style="color:var(--red)">-$18,200</td></tr>
+          <tr><td>Vehicle &amp; Fuel</td><td style="color:var(--red)">-$2,100</td></tr>
+          <tr><td>Insurance &amp; Overhead</td><td style="color:var(--red)">-$3,800</td></tr>
+          <tr><td style="font-weight:800;border-top:2px solid var(--border)"><strong>Net Profit</strong></td><td style="font-weight:800;color:var(--cd);font-size:16px">$18,340</td></tr>
+          <tr><td>Net Margin</td><td style="font-weight:700;color:var(--c)">33%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 33. REVIEWS -->
+<div class="panel" id="panel-reviews">
+  <div class="panel-header"><div class="panel-title">&#11088; Reviews &amp; Reputation</div><div class="panel-sub">Request reviews post-job, Claude drafts AI responses</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128140;</span>Request Reviews</div>
+      <div class="field" style="margin-bottom:10px"><label>Completed Job</label>
+        <select id="rev-job"><option>WO#1038 &mdash; Johnson (Water Heater)</option><option>WO#1037 &mdash; ABC Office (Outlet)</option></select>
+      </div>
+      <div class="field" style="margin-bottom:10px"><label>Review Platform</label>
+        <select><option>Google Business</option><option>Yelp</option><option>Facebook</option><option>BBB</option><option>Angi</option></select>
+      </div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="requestReview()">&#129302; Generate Request Message</button></div>
+      <div id="rev-request-text" class="ai-box" style="margin-top:12px;display:none">
+        <div class="ai-box-title">&#129302; Review Request Draft</div>
+        <div id="rev-request-output" class="ai-response"></div>
+        <div class="btn-row"><button class="btn btn-primary btn-sm">&#128140; Send via SMS</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#11088;</span>Recent Reviews</div>
+      <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><strong>Rodriguez &mdash; AC Repair</strong><span style="color:var(--yellow)">&#11088;&#11088;&#11088;&#11088;&#11088;</span></div>
+        <div style="font-size:12px;color:var(--sm)">"Fast, professional, fixed our AC same day. Mike was great!"</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="respondReview(this)">&#129302; AI Response</button>
+      </div>
+      <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><strong>Davis &mdash; Drain Clear</strong><span style="color:var(--yellow)">&#11088;&#11088;&#11088;&#11088;</span></div>
+        <div style="font-size:12px;color:var(--sm)">"Good work but a bit pricey. Would still recommend."</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="respondReview(this)">&#129302; AI Response</button>
+      </div>
+      <div id="rev-response-box" style="display:none" class="ai-box">
+        <div class="ai-box-title">&#129302; Claude Response Draft</div>
+        <div id="rev-response-text" class="ai-response"></div>
+        <div class="btn-row"><button class="btn btn-primary btn-sm">Post Response</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 34. CUSTOMER PORTAL -->
+<div class="panel" id="panel-portal">
+  <div class="panel-header"><div class="panel-title">&#127760; Customer Portal</div><div class="panel-sub">Self-service: schedule, view invoices, approve quotes, track tech ETA</div></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title"><span class="ct-icon">&#9881;&#65039;</span>Portal Settings</div>
+    <div class="form-grid">
+      <div class="field"><label>Portal URL</label><input value="https://sairntrade.com/portal/your-company" readonly style="background:#F9FAFB"></div>
+      <div class="field"><label>Customer Login Method</label><select><option>Email + PIN</option><option>Email Link</option><option>Phone SMS Code</option></select></div>
+      <div class="field field-full"><label>Portal Features Enabled</label>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;font-size:13px">
+          <label><input type="checkbox" checked> Schedule Service</label>
+          <label><input type="checkbox" checked> View Invoices</label>
+          <label><input type="checkbox" checked> Pay Online</label>
+          <label><input type="checkbox" checked> Approve Quotes</label>
+          <label><input type="checkbox" checked> Track Tech ETA</label>
+          <label><input type="checkbox"> View Service History</label>
+          <label><input type="checkbox"> Equipment Register</label>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="savePortal()">&#128190; Save Portal Settings</button></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">&#128202;</span>Portal Activity</div>
+    <table class="tbl">
+      <thead><tr><th>Time</th><th>Customer</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>9:42 AM</td><td>Johnson Family</td><td>Paid Invoice INV-1038 ($685) online</td></tr>
+        <tr><td>8:15 AM</td><td>Patel, S.</td><td>Approved quote for annual plumbing service ($480)</td></tr>
+        <tr><td>Yesterday</td><td>Thompson Corp</td><td>Scheduled service for Jul 1 (HVAC quarterly)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 35. ADMIN PANEL -->
+<div class="panel" id="panel-admin">
+  <div class="panel-header"><div class="panel-title">&#9881;&#65039; Admin Panel</div><div class="panel-sub">Formula editor, pricing, user roles, company settings</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128295;</span>Rate &amp; Formula Editor</div>
+      <table class="tbl">
+        <thead><tr><th>Setting</th><th>Current Value</th><th>Edit</th></tr></thead>
+        <tbody id="admin-rates">
+          <tr><td>HVAC Labor Rate</td><td>$<input type="number" value="120" style="width:70px;border:1px solid var(--border);border-radius:4px;padding:2px 6px"></td><td><button class="btn btn-secondary btn-sm" onclick="saveRate(this)">Save</button></td></tr>
+          <tr><td>Plumbing Labor Rate</td><td>$<input type="number" value="110" style="width:70px;border:1px solid var(--border);border-radius:4px;padding:2px 6px"></td><td><button class="btn btn-secondary btn-sm" onclick="saveRate(this)">Save</button></td></tr>
+          <tr><td>Electrical Labor Rate</td><td>$<input type="number" value="125" style="width:70px;border:1px solid var(--border);border-radius:4px;padding:2px 6px"></td><td><button class="btn btn-secondary btn-sm" onclick="saveRate(this)">Save</button></td></tr>
+          <tr><td>Service Call / Trip Fee</td><td>$<input type="number" value="95" style="width:70px;border:1px solid var(--border);border-radius:4px;padding:2px 6px"></td><td><button class="btn btn-secondary btn-sm" onclick="saveRate(this)">Save</button></td></tr>
+          <tr><td>Parts Markup %</td><td><input type="number" value="35" style="width:60px;border:1px solid var(--border);border-radius:4px;padding:2px 6px">%</td><td><button class="btn btn-secondary btn-sm" onclick="saveRate(this)">Save</button></td></tr>
+          <tr><td>Commission Rate %</td><td><input type="number" value="5" style="width:60px;border:1px solid var(--border);border-radius:4px;padding:2px 6px">%</td><td><button class="btn btn-secondary btn-sm" onclick="saveRate(this)">Save</button></td></tr>
+          <tr><td>Emergency Multiplier</td><td><input type="number" value="1.5" step="0.1" style="width:70px;border:1px solid var(--border);border-radius:4px;padding:2px 6px">x</td><td><button class="btn btn-secondary btn-sm" onclick="saveRate(this)">Save</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">&#128101;</span>User Roles &amp; Access</div>
+      <table class="tbl">
+        <thead><tr><th>Role</th><th>PIN</th><th>Access Level</th></tr></thead>
+        <tbody>
+          <tr><td>Technician</td><td>1234</td><td>Jobs, Photos, Parts lookup</td></tr>
+          <tr><td>Office</td><td>5678</td><td>+ CRM, Invoicing, Schedule</td></tr>
+          <tr><td>Manager</td><td>7777</td><td>+ Reporting, Payroll, Pricing</td></tr>
+          <tr><td>Admin</td><td>9999</td><td>Everything including formula editor</td></tr>
+        </tbody>
+      </table>
+      <div class="card-title" style="margin-top:16px"><span class="ct-icon">&#127970;</span>Company Settings</div>
+      <div class="form-grid" style="margin-top:10px">
+        <div class="field"><label>Company Name</label><input value="SAIRNtrade Services LLC"></div>
+        <div class="field"><label>Phone</label><input value="(440) 555-0100"></div>
+        <div class="field"><label>Address</label><input value="123 Commerce Dr, Westlake OH 44145"></div>
+        <div class="field"><label>Service Area Zips</label><input value="44145, 44116, 44126, 44107"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveSettings()">&#128190; Save Settings</button>
+        <button class="btn btn-secondary" onclick="exportCSV()">&#128229; Export All Data CSV</button>
+        <button class="btn btn-secondary" onclick="showP('glbridge')">&#128257; Full Suite Sync</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /panels -->
+</div><!-- /body-wrap -->
+</div><!-- /app -->
+
+<!-- AI STRIP -->
+<div class="ai-strip" id="ai-strip">
+  <input id="ai-strip-input" placeholder="Ask Claude anything about your business, a job, or a trade question..." onkeydown="if(event.key==='Enter')aiStripAsk()">
+  <button onclick="aiStripAsk()">Ask Claude</button>
+  <button onclick="toggleAIStrip()" style="background:transparent;color:#FED7AA;border:none;cursor:pointer;font-size:18px">&#10005;</button>
+</div>
+
+<div id="notif"></div>
+
+<script>
+// == CONSTANTS ==
+var CLAUDE='https://sairn.vercel.app/api/claude';
+var BRIDGE='https://sairn.vercel.app/api/bridge';
+var APP_ID='sairntrade';
+var PINS={tech:'1234',office:'5678',manager:'7777',admin:'9999'};
+// role access levels: tech < office < manager < admin
+var pinBuf='',role='tech',estParts=[],history=[],checkSeq=1042;
+
+// == AUTH ==
+function pin(d){
+  if(pinBuf.length>=4)return;
+  pinBuf+=d;
+  var dots=document.querySelectorAll('.pin-dot');
+  for(var i=0;i<pinBuf.length;i++)dots[i].classList.add('filled');
+  if(pinBuf.length===4)setTimeout(saUnlock,150);
+}
+function pinClear(){
+  pinBuf='';
+  document.querySelectorAll('.pin-dot').forEach(function(d){d.classList.remove('filled');d.style.background='';});
+}
+function saUnlock(){
+  var p=pinBuf; pinBuf='';
+  document.querySelectorAll('.pin-dot').forEach(function(d){d.classList.remove('filled');});
+  var roles={};
+  Object.keys(PINS).forEach(function(k){roles[PINS[k]]=k;});
+  if(roles[p]){
+    role=roles[p];
+    document.getElementById('lock-screen').style.display='none';
+    document.getElementById('app').classList.add('show');
+    var badge=document.getElementById('role-badge');
+    badge.textContent=role.toUpperCase();
+    if(role!=='tech'&&role!=='office')badge.style.background='rgba(234,88,12,.4)';
+    notify('Welcome to SAIRNtrade -- '+role.charAt(0).toUpperCase()+role.slice(1)+' access');
+    boot();
+  } else {
+    var dots=document.querySelectorAll('.pin-dot');
+    dots.forEach(function(d){d.style.background='#EF4444';});
+    setTimeout(function(){pinClear();},700);
+  }
+}
+function saAcceptPrivacy(){
+  localStorage.setItem('sairntrade_priv','1');
+  document.getElementById('sa-privacy-modal').style.display='none';
+}
+function saDeclinePrivacy(){
+  document.getElementById('sa-privacy-modal').style.display='none';
+}
+
+// == BOOT ==
+function boot(){
+  var d=new Date();
+  document.getElementById('header-date').textContent=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  if(!localStorage.getItem('sairntrade_priv')){
+    document.getElementById('sa-privacy-modal').style.display='flex';
+  }
+  loadWeather();
+  setInterval(loadWeather,600000);
+  calcEst();
+  updateCheck();
+  initEstParts();
+}
+
+// == PANELS ==
+var ROLE_GATES={admin:['admin','paybridge','glbridge','reporting','checks'],manager:['reporting','jobcosting','paybridge','glbridge']};
+function showP(id){
+  // Role gate check
+  var adminOnly=['admin','paybridge','glbridge','checks'];
+  var managerPlus=['reporting','jobcosting','pricebook','paybridge','glbridge','checks','admin'];
+  if(adminOnly.includes(id)&&role!=='admin'){notify('Admin access required for this panel');return;}
+  if(managerPlus.includes(id)&&role==='tech'){notify('Manager or higher access required');return;}
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  var el=document.getElementById('panel-'+id);
+  if(el)el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){
+    if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")>=0)n.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+
+// == WEATHER (Pattern 12) ==
+function loadWeather(){
+  var temps=[68,70,72,74,71,69,73,75,77,80];
+  var conds=['Clear','Partly Cloudy','Mostly Sunny','Overcast','Clear'];
+  var t=temps[Math.floor(Math.random()*temps.length)];
+  var c=conds[Math.floor(Math.random()*conds.length)];
+  var wind=Math.floor(Math.random()*20)+3;
+  var precip=Math.floor(Math.random()*30);
+  document.getElementById('wx-temp').textContent=t+'F';
+  document.getElementById('wx-cond').textContent=c;
+  document.getElementById('wx-wind').textContent=wind+' mph';
+  document.getElementById('wx-precip').textContent=precip+'%';
+  var strip=document.getElementById('wx-alerts');
+  var alerts=[];
+  if(t>90)alerts.push('<span class="wx-alert">HEAT ALERT</span>');
+  if(t<32)alerts.push('<span class="wx-alert">FREEZE ALERT</span>');
+  if(wind>35)alerts.push('<span class="wx-alert">HIGH WIND</span>');
+  if(precip>70)alerts.push('<span class="wx-alert">STORM RISK</span>');
+  strip.innerHTML=alerts.join(' ');
+  var wxTemp=document.getElementById('wxc-temp');
+  if(wxTemp){
+    wxTemp.textContent=t+'F';
+    document.getElementById('wxc-cond').textContent=c+' -- Westlake, OH';
+    document.getElementById('wxc-hi').textContent=(t+Math.floor(Math.random()*12)+5)+'F';
+    document.getElementById('wxc-lo').textContent=(t-Math.floor(Math.random()*15)-5)+'F';
+    document.getElementById('wxc-wind').textContent=wind+' mph';
+    document.getElementById('wxc-humid').textContent=(50+Math.floor(Math.random()*30))+'%';
+  }
+}
+
+// == CLAUDE API ==
+async function callClaude(system,user,elId,onDone){
+  var el=elId?document.getElementById(elId):null;
+  if(el){el.innerHTML='<span class="ai-thinking">Claude is thinking...</span>';el.className='ai-response';}
+  try{
+    var res=await fetch(CLAUDE,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        system:system,
+        messages:[{role:'user',content:user}],
+        app_id:APP_ID,
+        is_demo:true
+      })
+    });
+    var data=await res.json();
+    var text='';
+    if(data.content&&data.content[0])text=data.content[0].text||'';
+    else if(data.error)text='[AI Error: '+data.error.message+']';
+    if(el){el.textContent=text;el.className='ai-response';}
+    if(onDone)onDone(text);
+    return text;
+  }catch(e){
+    var msg='[Connection error -- check proxy]';
+    if(el)el.textContent=msg;
+    return msg;
+  }
+}
+
+// == AI DIAGNOSTIC (THE KILL SHOT) ==
+async function runDiagnostic(){
+  var trade=document.getElementById('dx-trade').value;
+  var equip=document.getElementById('dx-equip').value||'unknown equipment';
+  var age=document.getElementById('dx-age').value||'unknown age';
+  var last=document.getElementById('dx-last').value||'unknown';
+  var symptom=document.getElementById('dx-symptom').value;
+  var codes=document.getElementById('dx-codes').value||'none';
+  var budget=document.getElementById('dx-budget').value;
+  if(!symptom){notify('Describe the symptom first');return;}
+  var sys='You are a master '+trade+' diagnostic technician with 30 years of experience. Diagnose the problem, list the 2-3 most likely causes ranked by probability, recommend specific parts with part numbers when possible, estimate labor time, and give a total cost range. Be specific and practical. Format: DIAGNOSIS, LIKELY CAUSES (ranked), RECOMMENDED REPAIR, PARTS NEEDED, LABOR ESTIMATE, TOTAL COST RANGE, ADDITIONAL NOTES.';
+  var user=trade+' Diagnostic Request:\nEquipment: '+equip+'\nAge: '+age+'\nLast serviced: '+last+'\nSymptoms: '+symptom+'\nError codes: '+codes+'\nCustomer budget: '+budget;
+  await callClaude(sys,user,'dx-result',function(text){
+    var totalMatch=text.match(/\$[\d,]+\s*-\s*\$[\d,]+/);
+    if(totalMatch){
+      var parts=totalMatch[0].split('-').map(function(s){return parseInt(s.replace(/[$,]/g,''));});
+      var avg=(parts[0]+parts[1])/2;
+      document.getElementById('dx-total').textContent='$'+avg.toLocaleString();
+      document.getElementById('dx-range-fill').style.width='55%';
+      document.getElementById('dx-range-marker').style.left='55%';
+      document.getElementById('dx-total-row').style.display='block';
+      document.getElementById('dx-action-btns').style.display='flex';
+    }
+    populateDxParts(trade,equip);
+  });
+}
+function populateDxParts(trade,equip){
+  var partsMap={
+    HVAC:[['Capacitor 45+5 MFD','CAP-455','$18-$45','0.5h'],['Contactor 24V Coil','CON-24V','$22-$55','0.5h'],['Refrigerant R-410A (per lb)','R410-LB','$95-$120','0.5h'],['TXV Valve','TXV-2T','$180-$280','2.0h']],
+    Plumbing:[['PVC 90-Elbow 2"','PVC-2-90','$4-$8','0.25h'],['Wax Ring','WAX-STD','$8-$18','1.0h'],['Drain Snake Usage','SVC','$0','0.5h'],['P-Trap 1.5"','PTRAP-15','$12-$22','0.5h']],
+    Electrical:[['15A GFCI Outlet','GFCI-15W','$14-$28','0.5h'],['20A Breaker','BRK-20A','$8-$22','0.5h'],['14/2 Romex (per ft)','ROM-142','$0.80-$1.40','--'],['Junction Box 4"','JBX-4','$4-$9','0.25h']],
+    General:[['Service Diagnostic','SVC-DIAG','$95','1.0h'],['Misc Hardware','MISC','$10-$40','--']]
+  };
+  var items=partsMap[trade]||partsMap.General;
+  var tbody=document.getElementById('dx-parts-body');
+  tbody.innerHTML=items.map(function(i){
+    return '<tr><td>'+i[0]+'</td><td style="font-size:11px;color:var(--muted)">'+i[1]+'</td><td>'+i[2]+'</td><td>'+i[3]+'</td></tr>';
+  }).join('');
+}
+function clearDiag(){
+  ['dx-trade','dx-equip','dx-age','dx-last','dx-symptom','dx-codes'].forEach(function(id){
+    var el=document.getElementById(id); if(el)el.value='';
+  });
+  document.getElementById('dx-result').textContent='Run a diagnostic to see Claude\'s analysis...';
+  document.getElementById('dx-parts-body').innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">Awaiting diagnostic...</td></tr>';
+  document.getElementById('dx-total-row').style.display='none';
+  document.getElementById('dx-action-btns').style.display='none';
+}
+function sendDiagToQuote(){showP('estimate');notify('Diagnostic loaded into Estimate Builder');}
+function orderParts(){notify('Parts order request sent to preferred supplier');}
+
+// == ESTIMATE BUILDER ==
+function initEstParts(){
+  estParts=[{desc:'',qty:1,cost:0}];
+  renderEstParts();
+}
+function renderEstParts(){
+  var html='';
+  estParts.forEach(function(p,i){
+    html+='<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:6px">';
+    html+='<input placeholder="Part / material description" value="'+p.desc+'" oninput="estParts['+i+'].desc=this.value;calcEst()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">';
+    html+='<input type="number" placeholder="Qty" value="'+p.qty+'" min="1" oninput="estParts['+i+'].qty=parseFloat(this.value)||1;calcEst()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">';
+    html+='<input type="number" placeholder="Unit cost" value="'+(p.cost||'')+'" min="0" oninput="estParts['+i+'].cost=parseFloat(this.value)||0;calcEst()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">';
+    html+='<button onclick="removeEstPart('+i+')" style="background:#FEE2E2;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--red)">&#10005;</button>';
+    html+='</div>';
+  });
+  document.getElementById('est-parts-rows').innerHTML=html;
+}
+function addEstPart(){estParts.push({desc:'',qty:1,cost:0});renderEstParts();}
+function removeEstPart(i){estParts.splice(i,1);renderEstParts();calcEst();}
+function calcEst(){
+  var trip=parseFloat(document.getElementById('est-trip').value)||0;
+  var hrs=parseFloat(document.getElementById('est-hrs').value)||0;
+  var rate=parseFloat(document.getElementById('est-rate').value)||0;
+  var mkup=parseFloat(document.getElementById('est-markup').value)||0;
+  var partsCost=estParts.reduce(function(s,p){return s+(p.qty*p.cost);},0);
+  var labor=hrs*rate;
+  var markup=partsCost*(mkup/100);
+  var total=trip+labor+partsCost+markup;
+  document.getElementById('eb-trip').textContent='$'+trip.toFixed(0);
+  document.getElementById('eb-hrs').textContent=hrs;
+  document.getElementById('eb-rate').textContent=rate.toFixed(0);
+  document.getElementById('eb-labor').textContent='$'+labor.toFixed(0);
+  document.getElementById('eb-parts').textContent='$'+partsCost.toFixed(0);
+  document.getElementById('eb-markup').textContent='$'+markup.toFixed(0);
+  document.getElementById('eb-mkpct').textContent=mkup.toFixed(0);
+  document.getElementById('eb-total').textContent='$'+total.toFixed(0);
+  var pct=Math.min(Math.max((total/2000)*100,5),90);
+  document.getElementById('est-range-fill').style.width=pct+'%';
+  document.getElementById('est-range-marker').style.left=pct+'%';
+  var lbl=pct<30?'Below market average':pct>70?'Above market average':'On target for this trade and region';
+  document.getElementById('est-range-label').textContent=lbl;
+}
+async function reviewEstimate(){
+  var total=document.getElementById('eb-total').textContent;
+  var trade=document.getElementById('est-trade').value;
+  var hrs=document.getElementById('est-hrs').value;
+  var desc=document.getElementById('est-desc').value||'not specified';
+  var sys='You are a senior trade business consultant. Review this estimate for fairness, competitiveness, and profitability. Comment on whether the pricing is appropriate for the Midwest market, flag any concerns, and suggest improvements. Be direct and brief.';
+  var user='Estimate review: '+trade+' job. '+hrs+' labor hours. Total: '+total+'. Description: '+desc;
+  await callClaude(sys,user,'est-ai-text');
+}
+function sendEstToQuote(){showP('quotewriter');notify('Estimate loaded into Quote Writer');}
+
+// == QUOTE WRITER ==
+async function writeQuote(){
+  var name=document.getElementById('qw-name').value||'Valued Customer';
+  var trade=document.getElementById('qw-trade').value;
+  var desc=document.getElementById('qw-desc').value;
+  var amount=document.getElementById('qw-amount').value||'0';
+  var tone=document.getElementById('qw-tone').value;
+  var warranty=document.getElementById('qw-warranty').value;
+  if(!desc){notify('Describe the work first');return;}
+  var sys='You are a professional trade contractor writing a customer quote. Write a complete, professional customer-facing quote letter. Tone: '+tone+'. Do NOT include internal cost breakdowns or margins. Include: greeting, clear description of work, what is included, timeline, warranty information, total price, payment terms, and a professional closing. Make it easy for the customer to understand and say yes.';
+  var user='Write a quote for: '+name+'. Trade: '+trade+'. Work: '+desc+'. Total: $'+amount+'. Warranty: '+warranty+'. Company: SAIRNtrade Services LLC.';
+  await callClaude(sys,user,'qw-output',function(){
+    document.getElementById('qw-btns').style.display='flex';
+  });
+}
+function clearQW(){
+  ['qw-name','qw-desc','qw-amount'].forEach(function(id){
+    var el=document.getElementById(id); if(el)el.value='';
+  });
+  document.getElementById('qw-output').textContent='Your professional customer quote will appear here...';
+  document.getElementById('qw-btns').style.display='none';
+}
+function sendQuote(){notify('Quote sent to customer via email');}
+function saveQuoteHistory(){
+  var text=document.getElementById('qw-output').textContent;
+  history.push({type:'quote',text:text,ts:new Date().toLocaleString()});
+  localStorage.setItem('sairntrade_history',JSON.stringify(history));
+  notify('Quote saved to history');
+}
+
+// == JOB INTAKE ==
+function submitIntake(){
+  var fn=document.getElementById('in-fn').value;
+  var symptom=document.getElementById('in-symptom').value;
+  if(!fn||!symptom){notify('Fill in customer name and symptom description');return;}
+  notify('Job created! Running AI diagnostic...');
+  document.getElementById('dx-trade').value=document.getElementById('in-trade').value;
+  document.getElementById('dx-equip').value=document.getElementById('in-equip').value;
+  document.getElementById('dx-age').value=document.getElementById('in-age').value;
+  document.getElementById('dx-symptom').value=symptom;
+  showP('diagnostic');
+  setTimeout(runDiagnostic,500);
+}
+function clearIntake(){
+  ['in-fn','in-ln','in-addr','in-phone','in-email','in-equip','in-age','in-symptom'].forEach(function(id){
+    var el=document.getElementById(id); if(el)el.value='';
+  });
+}
+function updateJobFields(){}
+
+// == CRM ==
+function searchCRM(){
+  var q=document.getElementById('crm-search').value.toLowerCase();
+  var rows=document.querySelectorAll('#crm-table tbody tr');
+  rows.forEach(function(r){r.style.display=!q||r.textContent.toLowerCase().includes(q)?'':'none';});
+}
+function loadCustomer(id){
+  var customers={
+    garcia:{name:'Garcia, Maria',phone:'(440) 555-0192',email:'m.garcia@email.com',addr:'441 Oak St, Westlake',type:'Residential',jobs:8,value:'$4,240',last:'Mar 2026',equip:'Carrier 2-ton AC (2016), Gas furnace (2018)'},
+    thompson:{name:'Thompson Corp',phone:'(440) 555-0344',email:'facilities@thompson.com',addr:'89 Commerce Blvd',type:'Commercial',jobs:12,value:'$9,100',last:'Jun 2026',equip:'3-phase 200A panel, 5-ton RTU'},
+    patel:{name:'Patel, Suresh',phone:'(440) 555-0571',email:'spatel@email.com',addr:'334 Lake Rd, Westlake',type:'Residential',jobs:5,value:'$2,180',last:'Apr 2026',equip:'Kohler toilet, copper plumbing 1970s'},
+    wilson:{name:'Wilson, Thomas',phone:'(440) 555-0823',email:'twilson@email.com',addr:'78 Dover Dr',type:'Residential',jobs:3,value:'$1,240',last:'Jan 2026',equip:'Trane XR15 heat pump (2019)'},
+    johnson:{name:'Johnson Family',phone:'(440) 555-0915',email:'johnsons@email.com',addr:'12 Elm St',type:'Residential',jobs:7,value:'$3,680',last:'Jun 2026',equip:'New Rheem 50gal WH, gas range'}
+  };
+  var c=customers[id];
+  if(!c)return;
+  document.getElementById('crm-detail').innerHTML=
+    '<table class="tbl"><tbody>'+
+    '<tr><td style="color:var(--muted)">Name</td><td><strong>'+c.name+'</strong></td></tr>'+
+    '<tr><td style="color:var(--muted)">Phone</td><td>'+c.phone+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">Email</td><td>'+c.email+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">Address</td><td>'+c.addr+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">Type</td><td>'+c.type+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">Jobs</td><td>'+c.jobs+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">Total Value</td><td><strong style="color:var(--cd)">'+c.value+'</strong></td></tr>'+
+    '<tr><td style="color:var(--muted)">Last Service</td><td>'+c.last+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">Equipment</td><td>'+c.equip+'</td></tr>'+
+    '</tbody></table>';
+  document.getElementById('crm-ai').textContent='Click Get AI Insights for a customer intelligence report...';
+  document.getElementById('crm-ai-btns').style.display='flex';
+  document.getElementById('crm-ai-btns').dataset.customer=JSON.stringify(c);
+}
+async function crmGetInsights(){
+  var c=document.getElementById('crm-ai-btns').dataset.customer;
+  if(!c)return;
+  c=JSON.parse(c);
+  var sys='You are a field service business intelligence advisor. Analyze this customer and provide: upsell opportunities, service interval recommendations, risk of churn, and a suggested next action. Be concise and actionable.';
+  var user='Customer: '+c.name+'. Jobs: '+c.jobs+'. Total value: '+c.value+'. Last service: '+c.last+'. Equipment on file: '+c.equip;
+  await callClaude(sys,user,'crm-ai');
+}
+async function crmSendFollowup(){
+  var c=document.getElementById('crm-ai-btns').dataset.customer;
+  if(!c){notify('Select a customer first');return;}
+  c=JSON.parse(c);
+  var sys='You are a friendly trade service professional writing a customer follow-up. Write a brief, warm email or text message checking in after their recent service, asking about satisfaction, and suggesting their next service. Keep it under 100 words. Be genuine, not salesy.';
+  var user='Write a follow-up for customer: '+c.name+'. Last service: '+c.last+'. Equipment: '+c.equip;
+  await callClaude(sys,user,'crm-ai');
+}
+
+// == WEATHER COMMAND ==
+async function wxAnalysis(){
+  var temp=document.getElementById('wxc-temp').textContent;
+  var cond=document.getElementById('wxc-cond').textContent;
+  var sys='You are a field service operations expert. Analyze today\'s weather and its impact on HVAC, plumbing, and electrical field operations. Give: specific trade impacts, crew safety requirements, demand forecast, and scheduling recommendations. Be brief and actionable.';
+  var user='Today: '+temp+', '+cond+'. High: '+document.getElementById('wxc-hi').textContent+'. Low: '+document.getElementById('wxc-lo').textContent+'. Location: Westlake OH. Trades: HVAC, Plumbing, Electrical.';
+  await callClaude(sys,user,'wx-ai',function(text){
+    var log=document.getElementById('wx-log-table').getElementsByTagName('tbody')[0];
+    var row=log.insertRow(0);
+    row.innerHTML='<td>'+new Date().toLocaleTimeString()+'</td><td>AI weather analysis</td><td>'+text.substring(0,60)+'...</td>';
+  });
+}
+
+// == ROUTE OPTIMIZER ==
+async function optimizeRoute(){
+  var sys='You are a route optimization expert for a field service company. Analyze these jobs and suggest the optimal daily route for each technician to minimize drive time, considering job location, priority, duration, and tech specialty. Format as a clear schedule per tech.';
+  var user='Jobs today in Westlake OH area: 1) 8AM Johnson (12 Elm St 44145, Plumbing, Nguyen) 2) 9:30AM Thompson (89 Commerce 44145, Electric, Kim) 3) 11AM Patel (334 Lake Rd 44116, Plumbing, Davis) 4) 1PM Wilson (78 Dover 44145, HVAC, Rodriguez) 5) 2:30PM Garcia EMERGENCY (441 Oak 44145, Plumbing, unassigned) 6) 4PM Brown (22 Center 44116, Electric, Kim). Optimize and suggest who to assign Garcia emergency job.';
+  await callClaude(sys,user,'route-ai');
+}
+
+// == AFTER-HOURS AI ==
+async function simAfterHours(){
+  var call=document.getElementById('ah-sim').value;
+  if(!call){notify('Describe the customer scenario');return;}
+  var sys='You are SAIRNtrade\'s intelligent after-hours answering assistant. Triage this service request, determine urgency (Emergency/Urgent/Standard), decide if a tech should be dispatched immediately, and compose an appropriate response. If Emergency: dispatch immediately and note who to call. Format: URGENCY LEVEL, REASON, ACTION TAKEN, CUSTOMER RESPONSE MESSAGE.';
+  await callClaude(sys,call,'ah-result');
+}
+function saveAH(){notify('After-hours settings saved');}
+
+// == AI CALLS ==
+async function aiSchedule(){
+  var sys='You are a scheduling optimization AI for a trade service company.';
+  var user='Suggest how to optimize today\'s schedule for max revenue and min drive time given 4 technicians and 7 jobs across Westlake OH area.';
+  var d=document.createElement('div');d.id='temp-ai';
+  showP('schedule');
+  notify('AI optimizing schedule...');
+  await callClaude(sys,user,null,function(text){notify('Schedule optimized: '+text.substring(0,80)+'...');});
+}
+async function techAnalysis(){
+  var sys='You are a field service business coach.';
+  var user='Analyze this tech team performance: Rodriguez $18,240 MTD (14 jobs), Kim $14,880 (10 jobs), Davis $11,200 (9 jobs), Nguyen $9,650 (7 jobs). Avg ticket $559. Give coaching recommendations for each tech and team-level insights.';
+  await callClaude(sys,user,'tech-ai');
+}
+async function jcAnalysis(){
+  var sys='You are a field service profitability consultant.';
+  var user='Analyze job profitability: Martinez HVAC tune-up $149 revenue, 1.5hrs labor vs 1hr estimated (over budget). Nguyen T electric $2,400 revenue, 9hrs actual vs 8 estimated. Thompson electric in progress. Avg margin 58% vs 62% target. Identify issues and recommendations.';
+  await callClaude(sys,user,'jc-ai');
+}
+async function aiPricingScan(){
+  var sys='You are a trade service pricing consultant for the Cleveland OH metro market.';
+  var user='Analyze these service prices and benchmark against 2026 Westlake/Cleveland OH market rates: HVAC tune-up $149, refrigerant $95/lb, capacitor $285, service call $95, drain clean $225, water heater $1,850, outlet $195, panel upgrade $2,400. Flag underpriced items. Provide market range for each.';
+  await callClaude(sys,user,'pb-ai');
+}
+async function aiRenewals(){
+  var sys='You are a service agreement renewal specialist.';
+  var user='Write personalized renewal messages for: 1) Patel S -- basic plumbing contract expiring Jun 30 ($480/yr), residential customer 5 jobs. 2) Wilson T -- HVAC annual expiring Jul 15 ($299/yr), heat pump installed 2019. Keep each under 80 words, friendly and compelling.';
+  await callClaude(sys,user,'agr-ai');
+}
+async function complianceReview(){
+  var sys='You are a trade contractor compliance officer.';
+  var user='Review these credentials: OH Plumbing License EXPIRED, OH Electrical Active until Mar 2027, EPA 608 active, General Liability active until Jan 2027, Workers Comp EXPIRING SOON (Mar 2026). Truck 3 inspection overdue. Create a prioritized action list with urgency.';
+  await callClaude(sys,user,'comp-ai');
+}
+async function generateSOP(){
+  var trade=document.getElementById('sop-trade').value;
+  var proc=document.getElementById('sop-proc').value;
+  var task=document.getElementById('sop-task').value;
+  if(!task){notify('Enter a specific task');return;}
+  var sys='You are a master '+trade+' technician writing a training SOP. Create a detailed, numbered step-by-step procedure that is safe, thorough, and appropriate for the specified tech level. Include safety warnings, required tools, and quality checkpoints.';
+  var user='Write a '+proc+' SOP for: '+task+'. Trade: '+trade;
+  await callClaude(sys,user,'sop-output',function(){document.getElementById('sop-btns').style.display='flex';});
+}
+async function reportAnalysis(){
+  var sys='You are a trade service business growth advisor.';
+  var user='Analyze this business: Revenue $54,840 MTD (+22%), 98 jobs, avg ticket $559, margin 58% (target 62%), HVAC 44%/Plumbing 31%/Electrical 25% split, 4 techs, Westlake OH. Provide: top 3 growth opportunities, margin improvement tactics, and one bold strategic move for Q3.';
+  await callClaude(sys,user,'rpt-ai');
+}
+async function requestReview(){
+  var job=document.getElementById('rev-job').value;
+  var sys='You are a friendly trade service professional. Write a brief, genuine review request text message (under 60 words) thanking the customer for their business and asking for a Google review. Include a link placeholder [REVIEW LINK]. Sound human, not corporate.';
+  await callClaude(sys,'Write review request for: '+job,null,function(text){
+    document.getElementById('rev-request-text').textContent=text;
+    document.getElementById('rev-request-box').style.display='block';
+  });
+}
+async function respondReview(btn){
+  var rev=btn.closest('div').querySelector('div:nth-child(2)').textContent;
+  var sys='You are a professional trade service owner responding to a customer review. Write a brief, genuine, personalized response (under 80 words). Thank them, address any concerns professionally, and sign off warmly as the business owner.';
+  await callClaude(sys,'Respond to this review: "'+rev+'"',null,function(text){
+    document.getElementById('rev-response-text').textContent=text;
+    document.getElementById('rev-response-box').style.display='block';
+  });
+}
+async function aiFollowups(){
+  var sys='You are a trade service sales follow-up specialist.';
+  var user='Write 3 follow-up messages for these leads: 1) Reynolds Family, HVAC quote $3,200, new lead 2hrs old 2) Summit Properties, electric quote $8,400, 1 day old 3) Metro Hospital, HVAC negotiating $24,000, 5 days old. Customize each by urgency and deal size.';
+  await callClaude(sys,user,null,function(text){notify('AI follow-ups ready: '+text.substring(0,60)+'...');});
+}
+async function generateInspReport(){
+  var type=document.getElementById('insp-type').value;
+  var cust=document.getElementById('insp-cust').value||'Customer';
+  var sys='You are a licensed trade inspector writing a professional inspection report. Write a complete, professional inspection report with findings, ratings, and recommendations. Format with clear sections: Executive Summary, Findings (by system), Recommendations (Priority 1/2/3), and Inspector Certification.';
+  var user='Inspection: '+type+'. Customer: '+cust+'. Date: '+new Date().toLocaleDateString()+'. Company: SAIRNtrade Services LLC.';
+  await callClaude(sys,user,'insp-report');
+}
+async function aiForecast(){
+  var sys='You are an inventory management specialist for a trade service company.';
+  var user='Forecast parts demand for next 30 days for HVAC/Plumbing/Electrical contractor in Westlake OH. Current critical low stock: R-410A (1 unit), Contactor 40A (3 units). Current season: summer (high HVAC demand). Recommend reorder quantities and timing.';
+  await callClaude(sys,user,null,function(text){notify('Demand forecast: '+text.substring(0,100)+'...');});
+}
+async function aiNegotiate(){
+  var sys='You are a procurement specialist for a field service company.';
+  var user='Suggest negotiation strategies to improve supplier discounts: Currently: Johnstone (HVAC, 18% discount, $3,200/mo spend), Ferguson (Plumbing, 12% discount, $1,800/mo spend), Rexel (Electrical, 15% discount, $1,400/mo spend). Total monthly parts spend ~$6,400. Goal: improve all by 3-5%.';
+  await callClaude(sys,user,'sup-ai');
+}
+async function aiFleet(){
+  var sys='You are a fleet maintenance expert.';
+  var user='Predict maintenance needs: Truck1 F-150 87,420mi (oil 90k), Truck2 Transit 61,800mi (oil 63k), Truck3 Ranger 112,400mi (inspection OVERDUE, oil 115k), Truck4 Transit 44,200mi (oil 47k). Create prioritized maintenance schedule and cost estimate.';
+  await callClaude(sys,user,'fleet-ai');
+}
+async function aiStripAsk(){
+  var q=document.getElementById('ai-strip-input').value;
+  if(!q)return;
+  document.getElementById('ai-strip-input').value='';
+  var sys='You are an AI assistant for SAIRNtrade, a field service management platform for HVAC, plumbing, and electrical contractors. Answer questions about trade work, business operations, pricing, or platform usage. Be brief and practical.';
+  var text=await callClaude(sys,q);
+  notify('Claude: '+text.substring(0,120)+(text.length>120?'...':''));
+}
+async function aiSafetyReview(){
+  var sys='You are an OSHA-certified safety officer for trade contractors.';
+  var user='Review recent safety events: Heat index advisory today (moderate), near-miss Jun 10 (Davis, low), equipment failure May 28 (Kim, medium). Suggest safety improvements and OSHA compliance actions.';
+  await callClaude(sys,user,'safe-ai');
+}
+
+// == CHECK REGISTER ==
+function numberToWords(n){
+  if(n===0)return 'Zero';
+  var ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  var tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function hw(n){
+    if(n<20)return ones[n];
+    if(n<100)return tens[Math.floor(n/10)]+(n%10?' '+ones[n%10]:'');
+    return ones[Math.floor(n/100)]+' Hundred'+(n%100?' '+hw(n%100):'');
+  }
+  var d=Math.floor(n),c=Math.round((n-d)*100);
+  return hw(d)+' and '+String(c).padStart(2,'0')+'/100';
+}
+function updateCheck(){
+  var payee=document.getElementById('chk-payee').value||'___________';
+  var amount=parseFloat(document.getElementById('chk-amount').value)||0;
+  var date=document.getElementById('chk-date').value;
+  var memo=document.getElementById('chk-memo').value||'___________';
+  var num=document.getElementById('chk-num').value||checkSeq;
+  document.getElementById('cp-payee').textContent=payee;
+  document.getElementById('cp-amount').textContent='$'+amount.toFixed(2);
+  document.getElementById('cp-written').textContent=numberToWords(amount)+' ----------------------';
+  document.getElementById('cp-memo').textContent=memo;
+  document.getElementById('cp-num').textContent=num;
+  document.getElementById('cp-date').textContent=date?new Date(date+'T12:00').toLocaleDateString():'';
+}
+function printCheck(){
+  notify('Opening print dialog for check...');
+  window.print();
+}
+function saveCheck(){
+  checkSeq++;
+  document.getElementById('chk-num').value=checkSeq;
+  notify('Check saved to register and posted to GL');
+}
+
+// == INVOICING ==
+function createInvoice(){showP('invoicing');notify('New invoice created');}
+function generateInvoice(){
+  notify('Invoice generated and sent to customer');
+  document.getElementById('inv-ai-text').textContent='Hi [Customer Name],\n\nThank you for choosing SAIRNtrade Services. Please find attached your invoice for the recent service at your property. Payment is due within 30 days.\n\nIf you have any questions, please don\'t hesitate to reach out.\n\nBest regards,\nSAIRNtrade Services';
+  document.getElementById('inv-ai-btns').style.display='flex';
+}
+function bulkReminder(){notify('Reminder emails sent to all overdue customers');}
+function sendInvoiceEmail(){notify('Invoice email sent to customer');}
+function previewInv(){notify('Invoice preview ready to print');}
+
+// == BRIDGES ==
+async function syncPayroll(){
+  document.getElementById('pay-sync-result').style.display='block';
+  document.getElementById('pay-sync-text').textContent='Syncing to SAIRNhr...';
+  try{
+    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({source_app:APP_ID,target_app:'sairnhr',data_type:'payroll',
+        payload:{week_ending:new Date().toISOString().slice(0,10),total_gross:5474,techs:4}})});
+    document.getElementById('pay-sync-text').textContent='Synced successfully to SAIRNhr! Payroll entries posted: Rodriguez $1,542, Kim $1,380, Davis $988, Nguyen $874. Total gross: $5,474.';
+    notify('Payroll synced to SAIRNhr');
+  }catch(e){document.getElementById('pay-sync-text').textContent='Using offline mode -- data queued for next sync.';}
+}
+async function syncGL(){
+  document.getElementById('gl-sync-result').style.display='block';
+  document.getElementById('gl-sync-text').textContent='Posting to SAIRNacc GL...';
+  try{
+    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({source_app:APP_ID,target_app:'sairnacc',data_type:'gl_entries',
+        payload:{entries:4,revenue:880,expenses:2130,date:new Date().toISOString().slice(0,10)}})});
+    document.getElementById('gl-sync-text').textContent='Posted to SAIRNacc GL! Revenue entries: 2 posted ($880). Expense entries: 2 posted (-$2,130). Net: -$1,250 to P&L.';
+    notify('GL entries posted to SAIRNacc');
+  }catch(e){document.getElementById('gl-sync-text').textContent='Using offline mode -- entries queued for next sync.';}
+}
+async function syncToSAIRNBridge(){
+  notify('Syncing all data to SAIRN Bridge...');
+  try{
+    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({source_app:APP_ID,target_app:'all',data_type:'full_sync',
+        payload:{date:new Date().toISOString().slice(0,10),jobs:7,revenue_today:3840,techs:4}})});
+    notify('All apps synced via SAIRN Bridge');
+  }catch(e){notify('Sync queued -- will complete when connection restores');}
+}
+
+// == MISC ACTIONS ==
+function showSAIRNSuite(){document.getElementById('suite-modal').classList.add('show');}
+function closeSuite(){document.getElementById('suite-modal').classList.remove('show');}
+function toggleAIStrip(){
+  var s=document.getElementById('ai-strip');
+  s.classList.toggle('show');
+  if(s.classList.contains('show'))document.getElementById('ai-strip-input').focus();
+}
+function printD(){window.print();}
+function exportCSV(){
+  var csv='Date,Customer,Trade,Amount,Tech,Status\n2026-06-15,Johnson Family,Plumbing,$685,Nguyen P,Complete\n2026-06-15,ABC Office,Electrical,$195,Kim J,Complete\n2026-06-14,Martinez J,HVAC,$149,Rodriguez M,Complete';
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='sairntrade_export_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  notify('CSV exported');
+}
+function notify(msg){
+  var n=document.getElementById('notif');
+  var t=document.createElement('div');
+  t.className='notif-toast';
+  t.textContent=msg;
+  n.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},3500);
+}
+function autoAssign(){
+  notify('AI assigned Garcia emergency to Nguyen P (available, closest to Oak St)');
+}
+function refreshBoard(){notify('Dispatch board refreshed');}
+function newJob(){showP('intake');}
+function assignJob(){showP('intake');}
+function logSafety(){notify('Safety event logged');}
+function saveRate(btn){notify('Rate updated and saved');}
+function saveSettings(){notify('Company settings saved');}
+function savePortal(){notify('Customer portal settings saved');}
+function addLead(){showP('intake');}
+function addTech(){notify('Add tech form coming -- bridge to SAIRNhr for full HR profile');}
+function addPriceItem(){notify('Price item editor coming soon');}
+function addPart(){notify('Part added to inventory');}
+function addSupplier(){notify('Add supplier form ready');}
+function addVehicle(){notify('Add vehicle form ready');}
+function addWarranty(){notify('Warranty entry added');}
+function addAgreement(){notify('New service agreement created');}
+function reorderAll(){notify('Reorder submitted for all low-stock items to preferred suppliers');}
+function aiWarrantyAlert(){notify('AI warranty alerts sent to customers with expiring coverage');}
+function uploadPhoto(){notify('Photo uploaded -- Claude visual analysis running...');}
+function saveSOP(){notify('SOP saved to training library');}
+function loadChecklist(){
+  var type=document.getElementById('insp-type').value;
+  var items={
+    'HVAC Annual Maintenance':['Filter condition','Coil cleanliness','Refrigerant level','Electrical connections','Thermostat calibration','Blower motor operation','Condensate drain'],
+    'Plumbing Inspection':['Water pressure (40-80 PSI)','Visible pipe condition','Water heater','Shut-offs','Drain speed','Fixture operation','Water quality'],
+    'Electrical Safety':['Panel labeling','GFCI protection','Outlet grounding','Visible wiring','Smoke detectors','Load capacity','Junction boxes'],
+    'Pre-Purchase Home':['Electrical panel','Plumbing main','HVAC system','Water heater age','Visible leaks','Safety devices','Service history']
+  };
+  var list=items[type]||[];
+  document.getElementById('checklist-items').innerHTML=list.map(function(item,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--border)">'+
+      '<input type="checkbox" id="chk'+i+'" style="width:16px;height:16px;accent-color:var(--c)">'+
+      '<label for="chk'+i+'" style="flex:1;font-size:13px">'+item+'</label>'+
+      '<select style="border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:11px">'+
+      '<option>Pass</option><option>Marginal</option><option>Fail</option></select></div>';
+  }).join('');
+}
+</script>
+</body>
+</html>
