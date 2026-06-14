@@ -326,7 +326,7 @@ function saLockScreen() {
   overlay.id = 'sairn-lock-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(30,27,75,.97);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:40px;width:340px;text-align:center">' +
-    '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
+    '<div style="font-size:48px;margin-bottom:12px"></div>' +
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
     '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
     '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
@@ -668,7 +668,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
 // LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
-    if (typeof url === 'string' && url.includes('api.anthropic.com')) {
+    if (typeof url === 'string' && url.includes('sairn.vercel.app/api/claude')) {
       saLog('L22-DIRECT-API', 'Direct Anthropic API call blocked', 'critical');
       return Promise.reject(new Error('SAIRN Security: Direct Anthropic calls not permitted. Use SAIRN proxy.'));
     }
@@ -3038,8 +3038,8 @@ console.log('%c SAIRN Security v3.0 -- 30-Layer Protection Active ', 'background
 
 <script>
 // ==================================================================
-// SAIRNhr™ v2.0 -- World-Class HR Intelligence
-// Built by SAIRN Technologies™ · Michael L. Dibert
+// SAIRNhr v2.0 -- World-Class HR Intelligence
+// Built by SAIRN Technologies  Michael L. Dibert
 // ==================================================================
 
 const SH_RAILWAY='https://fabricor-production.up.railway.app';
@@ -3332,12 +3332,12 @@ function shInitDashboard(){
   var cal=document.getElementById('dash-calendar');
   var today=new Date();
   var items=[
-    {days:0,icon:'📋',text:'Complete I-9 for any new hires today'},
-    {days:3,icon:'⏰',text:'I-9 Section 2 deadline (3 business days from hire)'},
-    {days:7,icon:'📊',text:'Weekly 1:1 check-ins with direct reports'},
-    {days:14,icon:'📝',text:'Bi-weekly payroll processing'},
-    {days:30,icon:'🎓',text:'Monthly pulse survey -- send to all employees'},
-    {days:30,icon:'🛡',text:'Silica training renewal reminder (CA shops -- July 1 deadline)'},
+    {days:0,icon:'',text:'Complete I-9 for any new hires today'},
+    {days:3,icon:'',text:'I-9 Section 2 deadline (3 business days from hire)'},
+    {days:7,icon:'',text:'Weekly 1:1 check-ins with direct reports'},
+    {days:14,icon:'',text:'Bi-weekly payroll processing'},
+    {days:30,icon:'',text:'Monthly pulse survey -- send to all employees'},
+    {days:30,icon:'',text:'Silica training renewal reminder (CA shops -- July 1 deadline)'},
   ];
   cal.innerHTML=items.map(function(i){
     var d=new Date(today);d.setDate(d.getDate()+i.days);
@@ -3405,7 +3405,7 @@ function shRenderEmployees(){
     return true;
   });
   if(!filtered.length){
-    list.innerHTML='<div style="text-align:center;padding:48px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">👥</div><div style="font-size:15px;font-weight:700">No employees yet</div><div style="font-size:13px;margin-top:6px">Click + Add Employee to get started</div></div>';
+    list.innerHTML='<div style="text-align:center;padding:48px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px"></div><div style="font-size:15px;font-weight:700">No employees yet</div><div style="font-size:13px;margin-top:6px">Click + Add Employee to get started</div></div>';
     return;
   }
   list.innerHTML='<table class="sh-table"><thead><tr><th>Name</th><th>Title</th><th>Department</th><th>Hire Date</th><th>Pay</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
@@ -3753,7 +3753,7 @@ function shGenJournal(){
   var fit=gross*0.12;var ss=gross*0.062;var med=gross*0.0145;var suta=gross*0.027;
   var futa=Math.min(gross*0.006,gross);var net=gross-fit-ss-med;
   var out=document.getElementById('journal-output');
-  out.innerHTML='<div class="sh-card"><div class="sh-card-title">📒 Payroll Journal Entry -- '+new Date().toLocaleDateString()+'</div>'+
+  out.innerHTML='<div class="sh-card"><div class="sh-card-title"> Payroll Journal Entry -- '+new Date().toLocaleDateString()+'</div>'+
     '<div style="font-family:monospace;font-size:12px;background:var(--surface-2);border-radius:8px;padding:14px;line-height:2">'+
     '<div style="font-weight:700;color:var(--muted);margin-bottom:8px">PAY PERIOD END ENTRY:</div>'+
     '<div><span style="color:var(--navy)">Dr 6010</span> Wages & Salaries &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $'+gross.toFixed(2)+'</div>'+
@@ -3765,7 +3765,7 @@ function shGenJournal(){
     '<div style="margin-left:40px"><span style="color:var(--green)">Cr 2130</span> FICA Payable -- Employer (SS+Med) &nbsp;&nbsp;&nbsp; $'+(ss+med).toFixed(2)+'</div>'+
     '<div style="margin-left:40px"><span style="color:var(--green)">Cr 2130</span> SUTA Payable &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $'+suta.toFixed(2)+'</div>'+
     '<div style="margin-left:40px"><span style="color:var(--green)">Cr 2130</span> FUTA Payable &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $'+futa.toFixed(2)+'</div>'+
-    '</div><div style="margin-top:12px;padding:10px;background:var(--a-light);border-radius:8px;font-size:12px"><strong>Export to SAIRNacc™:</strong> Copy these entries directly into your General Ledger.</div></div>';
+    '</div><div style="margin-top:12px;padding:10px;background:var(--a-light);border-radius:8px;font-size:12px"><strong>Export to SAIRNacc:</strong> Copy these entries directly into your General Ledger.</div></div>';
 }
 function shRenderPayHistory(){
   var el=document.getElementById('pay-history-list');if(!el)return;
@@ -4066,8 +4066,8 @@ function shRenderPTOList(){
       return '<tr><td>'+escHtml(r.name)+'</td><td>'+escHtml(r.type||'PTO')+'</td><td>'+escHtml(r.start)+'</td><td>'+escHtml(r.end)+'</td><td>'+escHtml(String(r.days||'--'))+'</td>'+
         '<td><span class="badge badge-'+sc+'">'+r.status+'</span></td>'+
         '<td>'+
-        (r.status==='Pending'?'<button onclick="shApprovePTO('+i+')" class="sh-btn-sm" style="font-size:11px">✓ Approve</button> '+
-        '<button onclick="shDenyPTO('+i+')" class="sh-btn-danger" style="font-size:11px;padding:4px 8px">✗ Deny</button>':'--')+
+        (r.status==='Pending'?'<button onclick="shApprovePTO('+i+')" class="sh-btn-sm" style="font-size:11px"> Approve</button> '+
+        '<button onclick="shDenyPTO('+i+')" class="sh-btn-danger" style="font-size:11px;padding:4px 8px"> Deny</button>':'--')+
         '</td></tr>';
     }).join('')+'</tbody></table>';
 }
@@ -7770,8 +7770,8 @@ document.addEventListener('DOMContentLoaded',function(){
 
 // ============================================================
 // SAIRN UNIVERSAL PRICING ENGINE v1.0
-// June 11, 2026 -- Michael L. Dibert · SAIRN Technologies
-// Applied to: SAIRNcode · SAIRNhr · SAIRNaccounting
+// June 11, 2026 -- Michael L. Dibert  SAIRN Technologies
+// Applied to: SAIRNcode  SAIRNhr  SAIRNaccounting
 //
 // Pricing (final -- market-verified June 11 2026):
 //   SAIRNcode:        Free 20q | Pro $59/mo | Enterprise $99/mo
@@ -8560,7 +8560,7 @@ function shRenderDirectory() {
         '<div style="font-weight:700;font-size:14px;margin-bottom:2px">'+escHtml(e.name||'--')+'</div>'+
         '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+escHtml(e.role||'--')+'</div>'+
         '<div style="font-size:11px;background:var(--a-light);color:var(--a);border-radius:8px;padding:2px 8px;display:inline-block;margin-bottom:8px">'+escHtml(e.department||'--')+'</div>'+
-        (e.email?'<div style="font-size:11px;color:var(--muted)">✉ '+escHtml(e.email)+'</div>':'')+'</div>';
+        (e.email?'<div style="font-size:11px;color:var(--muted)"> '+escHtml(e.email)+'</div>':'')+'</div>';
     }).join('');
   }
 }
@@ -8603,7 +8603,7 @@ function shRenderBands() {
   var emps = shGetEmployees();
   tbody.innerHTML = shCompBands.map(function(b,i){
     var inBand = emps.filter(function(e){return (e.role===b.role||e.department===b.role);}).length;
-    var equityFlag = inBand > 0 ? '✅ OK' : '--';
+    var equityFlag = inBand > 0 ? ' OK' : '--';
     var mid = ((b.min+b.max)/2).toFixed(0);
     return '<tr>'+
       '<td><strong>'+escHtml(b.role)+'</strong></td>'+
@@ -8787,7 +8787,7 @@ function shRenderOffboards() {
         '<div><strong>'+escHtml(o.name)+'</strong><span style="font-size:12px;color:var(--muted);margin-left:8px">Last day: '+escHtml(o.lastDay)+'</span></div>'+
         '<div style="display:flex;align-items:center;gap:8px">'+
           '<div style="font-size:12px;font-weight:700;color:'+(pct===100?'var(--green)':pct>50?'var(--amber)':'var(--red)')+'">'+pct+'% complete</div>'+
-          '<button onclick="shOffboardAIForEmp('+oi+')" class="sh-btn-outline" style="font-size:10px;padding:3px 8px">✨ AI</button>'+
+          '<button onclick="shOffboardAIForEmp('+oi+')" class="sh-btn-outline" style="font-size:10px;padding:3px 8px"> AI</button>'+
         '</div></div>'+
       '<div style="background:var(--surface-2);border-radius:6px;height:6px;margin-bottom:12px"><div style="height:6px;border-radius:6px;background:'+(pct===100?'var(--green)':'var(--a)')+';width:'+pct+'%;transition:width .3s"></div></div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'+
@@ -8868,7 +8868,7 @@ async function shGenOfferLetter() {
   var tone=(document.getElementById('ol-tone')||{}).value;
   if(!name||!role||!salary){shNotify('Enter candidate name, role, and salary','');return;}
   var out=document.getElementById('ol-output');
-  if(out) out.innerHTML='<div style="color:var(--a);padding:16px">✨ Generating offer letter...</div>';
+  if(out) out.innerHTML='<div style="color:var(--a);padding:16px"> Generating offer letter...</div>';
   try {
     var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,
@@ -8889,8 +8889,8 @@ async function shGenOfferLetter() {
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
           '<div style="font-weight:700;color:var(--a)">Offer Letter -- '+escHtml(name)+'</div>'+
           '<div style="display:flex;gap:8px">'+
-            '<button onclick="shPrintOfferLetter()" class="sh-btn-primary" style="font-size:11px;padding:5px 12px">🖨 Print</button>'+
-            '<button onclick="shCopyOfferLetter()" class="sh-btn-secondary" style="font-size:11px;padding:5px 12px">📋 Copy</button>'+
+            '<button onclick="shPrintOfferLetter()" class="sh-btn-primary" style="font-size:11px;padding:5px 12px"> Print</button>'+
+            '<button onclick="shCopyOfferLetter()" class="sh-btn-secondary" style="font-size:11px;padding:5px 12px"> Copy</button>'+
           '</div></div>'+
         '<pre style="white-space:pre-wrap;font-family:Georgia,serif;font-size:13px;line-height:1.8;color:var(--text)">'+escHtml(text)+'</pre></div>';
       window._shLastOfferLetter = text;
@@ -9914,11 +9914,11 @@ function shPublishSchedule(){shNotify('Schedule published. Visible in Self-Servi
 function shExportSchedule(){var rows=['Employee,Day,Start,End,Hours,Role'];shShifts.forEach(function(s){rows.push([s.employee,s.day,s.start,s.end,s.hours,s.role].join(','));});var blob=new Blob([rows.join('\r\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='schedule.csv';a.click();}
 
 // 2. RECOGNITION
-var SH_BADGES=[{icon:'🌟',name:'Star Performer',pts:50},{icon:'🚀',name:'Above & Beyond',pts:75},{icon:'💡',name:'Innovator',pts:40},{icon:'🤝',name:'Team Player',pts:30},{icon:'💪',name:'Resilience',pts:35},{icon:'🎯',name:'Goal Crusher',pts:60},{icon:'❤️',name:'Culture Champion',pts:45},{icon:'🏆',name:'Excellence Award',pts:100}];
+var SH_BADGES=[{icon:'',name:'Star Performer',pts:50},{icon:'',name:'Above & Beyond',pts:75},{icon:'',name:'Innovator',pts:40},{icon:'',name:'Team Player',pts:30},{icon:'',name:'Resilience',pts:35},{icon:'',name:'Goal Crusher',pts:60},{icon:'',name:'Culture Champion',pts:45},{icon:'',name:'Excellence Award',pts:100}];
 function shInitRecognition(){shRenderBadgeWall();shRenderRecognitions();shUpdateRecKPIs();}
 function shUpdateRecKPIs(){var now=new Date();var mo=now.getMonth();var yr=now.getFullYear();var d;d=document.getElementById('rec-kpi-total');if(d)d.textContent=shRecognitions.length;d=document.getElementById('rec-kpi-this-month');if(d)d.textContent=shRecognitions.filter(function(r){var dt=new Date(r.date);return dt.getMonth()===mo&&dt.getFullYear()===yr;}).length;d=document.getElementById('rec-kpi-points');if(d)d.textContent=shRecognitions.reduce(function(s,r){return s+(r.points||0);},0);}
 function shRenderBadgeWall(){var wall=document.getElementById('sh-badge-wall');if(!wall)return;var counts={};shRecognitions.forEach(function(r){counts[r.badge]=(counts[r.badge]||0)+1;});wall.innerHTML=SH_BADGES.map(function(b){return '<div style="text-align:center;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px;cursor:pointer" onclick="shRenderRecognitions(\''+b.name+'\')"><div style="font-size:24px">'+b.icon+'</div><div style="font-size:10px;font-weight:700;color:var(--a)">'+b.name+'</div><div style="font-size:11px;color:var(--muted)">'+(counts[b.name]||0)+' awarded</div></div>';}).join('');}
-function shRenderRecognitions(filter){var tbody=document.getElementById('sh-rec-tbody');if(!tbody)return;var list=filter?shRecognitions.filter(function(r){return r.badge===filter;}):shRecognitions;if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No recognitions yet. Click Give Recognition.</td></tr>';return;}var bmap={};SH_BADGES.forEach(function(b){bmap[b.name]=b;});tbody.innerHTML=list.slice(0,30).map(function(r){var b=bmap[r.badge]||{icon:'🏅'};return '<tr><td><strong>'+escHtml(r.from||'Anon')+'</strong></td><td style="color:var(--a);font-weight:700">'+escHtml(r.to||'--')+'</td><td>'+b.icon+' '+escHtml(r.badge||'--')+'</td><td style="font-size:18px;text-align:center">'+b.icon+'</td><td style="font-weight:700;color:var(--amber)">'+escHtml(String(r.points||0))+'</td><td style="font-size:11px;color:var(--muted)">'+escHtml(r.date||'--')+'</td><td style="font-size:12px;font-style:italic">'+escHtml((r.message||'').slice(0,60))+'</td></tr>';}).join('');}
+function shRenderRecognitions(filter){var tbody=document.getElementById('sh-rec-tbody');if(!tbody)return;var list=filter?shRecognitions.filter(function(r){return r.badge===filter;}):shRecognitions;if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No recognitions yet. Click Give Recognition.</td></tr>';return;}var bmap={};SH_BADGES.forEach(function(b){bmap[b.name]=b;});tbody.innerHTML=list.slice(0,30).map(function(r){var b=bmap[r.badge]||{icon:''};return '<tr><td><strong>'+escHtml(r.from||'Anon')+'</strong></td><td style="color:var(--a);font-weight:700">'+escHtml(r.to||'--')+'</td><td>'+b.icon+' '+escHtml(r.badge||'--')+'</td><td style="font-size:18px;text-align:center">'+b.icon+'</td><td style="font-weight:700;color:var(--amber)">'+escHtml(String(r.points||0))+'</td><td style="font-size:11px;color:var(--muted)">'+escHtml(r.date||'--')+'</td><td style="font-size:12px;font-style:italic">'+escHtml((r.message||'').slice(0,60))+'</td></tr>';}).join('');}
 function shGiveRecognition(){var from=prompt('Your name:','Anonymous')||'Anonymous';var emps=shGetEmployees().map(function(e){return e.name;});var to=prompt('Recognize who?\n'+emps.map(function(n,i){return (i+1)+'. '+n;}).join('\n'),'');if(!to)return;var bl=SH_BADGES.map(function(b,i){return (i+1)+'. '+b.icon+' '+b.name+' (+'+b.pts+'pts)';}).join('\n');var bc=parseInt(prompt('Badge:\n'+bl,'1'))||1;var badge=SH_BADGES[bc-1]||SH_BADGES[0];var msg=prompt('Why?','')||'';shRecognitions.unshift({from,to,badge:badge.name,points:badge.pts,message:msg,date:new Date().toLocaleDateString()});shSave2('sh_recognitions',shRecognitions);shRenderBadgeWall();shRenderRecognitions();shUpdateRecKPIs();shNotify(badge.icon+' '+badge.name+' awarded to '+to,'green');}
 function shSpotBonus(){var to=prompt('Employee name:');if(!to)return;var amt=parseFloat(prompt('Amount ($):','100'))||100;var why=prompt('Reason:','')||'Performance';shRecognitions.unshift({from:'HR/Management',to,badge:'Spot Bonus',points:0,message:'$'+amt+' -- '+why,date:new Date().toLocaleDateString(),isBonus:true,bonusAmt:amt});shSave2('sh_recognitions',shRecognitions);shRenderRecognitions();shUpdateRecKPIs();shNotify('Spot bonus of $'+amt+' recorded for '+to,'green');}
 async function shRecAI(){shNotify('AI suggesting recognitions...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:'You are SAIRNhr AI -- employee engagement expert.',messages:[{role:'user',content:'Recognition strategy for '+shGetEmployees().length+' employees, '+shRecognitions.length+' total recognitions given. Employees never recognized: '+shGetEmployees().filter(function(e){return !shRecognitions.find(function(r){return r.to===e.name;});}).map(function(e){return e.name;}).join(', ')+'. Provide 5 specific recognition ideas this week.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
@@ -10009,7 +10009,7 @@ async function shEngagementReport(){shEngagementAI();}
 // 8. ADA ACCOMMODATIONS
 function shInitADA(){shRenderADA();shUpdateADAKPIs();}
 function shUpdateADAKPIs(){var active=shADARequests.filter(function(r){return r.status==='Active'||r.status==='Pending Review';}).length;var approved=shADARequests.filter(function(r){return r.status==='Approved';}).length;var pending=shADARequests.filter(function(r){return r.status==='Pending Review';}).length;var today=new Date();var overdue=shADARequests.filter(function(r){return r.status!=='Approved'&&r.status!=='Denied'&&(today-new Date(r.submitted||today))/(86400000)>10;}).length;var d;d=document.getElementById('ada-kpi-active');if(d)d.textContent=active;d=document.getElementById('ada-kpi-approved');if(d)d.textContent=approved;d=document.getElementById('ada-kpi-pending');if(d)d.textContent=pending;d=document.getElementById('ada-kpi-overdue');if(d)d.textContent=overdue;}
-function shRenderADA(){var tbody=document.getElementById('sh-ada-tbody');if(!tbody)return;if(!shADARequests.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No accommodation requests. Click + New Accommodation Request.</td></tr>';return;}var today=new Date();tbody.innerHTML=shADARequests.map(function(r,i){var sub=new Date(r.submitted||Date.now());var due=new Date(sub.getTime()+10*86400000);var over=(today-sub)/(86400000)>10&&r.status!=='Approved'&&r.status!=='Denied';return '<tr><td><strong>'+escHtml(r.empName||'--')+'</strong></td><td style="font-size:11px">'+escHtml(r.law||'ADA')+'</td><td style="font-size:11px">'+escHtml(r.requestType||'--')+'</td><td style="font-size:11px">'+escHtml(r.submitted||'--')+'</td><td style="font-size:11px;color:'+(over?'var(--red)':'inherit')+'">'+due.toLocaleDateString()+(over?' ⚠':'')+'</td><td style="font-size:11px">'+escHtml(r.accommodation||'Under review')+'</td><td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(r.status==='Approved'?'rgba(22,163,74,.12)':r.status==='Denied'?'rgba(220,38,38,.1)':'rgba(249,115,22,.12)')+';color:'+(r.status==='Approved'?'var(--green)':r.status==='Denied'?'var(--red)':'var(--orange)')+'">'+escHtml(r.status||'Pending')+'</span></td><td><button onclick="shUpdateADA('+i+')" class="sh-btn-secondary" style="font-size:10px;padding:3px 6px">Update</button></td></tr>';}).join('');}
+function shRenderADA(){var tbody=document.getElementById('sh-ada-tbody');if(!tbody)return;if(!shADARequests.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No accommodation requests. Click + New Accommodation Request.</td></tr>';return;}var today=new Date();tbody.innerHTML=shADARequests.map(function(r,i){var sub=new Date(r.submitted||Date.now());var due=new Date(sub.getTime()+10*86400000);var over=(today-sub)/(86400000)>10&&r.status!=='Approved'&&r.status!=='Denied';return '<tr><td><strong>'+escHtml(r.empName||'--')+'</strong></td><td style="font-size:11px">'+escHtml(r.law||'ADA')+'</td><td style="font-size:11px">'+escHtml(r.requestType||'--')+'</td><td style="font-size:11px">'+escHtml(r.submitted||'--')+'</td><td style="font-size:11px;color:'+(over?'var(--red)':'inherit')+'">'+due.toLocaleDateString()+(over?' ':'')+'</td><td style="font-size:11px">'+escHtml(r.accommodation||'Under review')+'</td><td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(r.status==='Approved'?'rgba(22,163,74,.12)':r.status==='Denied'?'rgba(220,38,38,.1)':'rgba(249,115,22,.12)')+';color:'+(r.status==='Approved'?'var(--green)':r.status==='Denied'?'var(--red)':'var(--orange)')+'">'+escHtml(r.status||'Pending')+'</span></td><td><button onclick="shUpdateADA('+i+')" class="sh-btn-secondary" style="font-size:10px;padding:3px 6px">Update</button></td></tr>';}).join('');}
 function shNewADARequest(){var emp=prompt('Employee name:');if(!emp)return;var laws=['ADA','PWFA','ADAAA','Rehabilitation Act','State disability law'];var lc=parseInt(prompt('Law:\n'+laws.map(function(l,i){return (i+1)+'. '+l;}).join('\n'),'1'))||1;var type=prompt('Accommodation type:','Modified schedule')||'Modified schedule';shADARequests.push({empName:emp,law:laws[lc-1]||laws[0],requestType:type,accommodation:'',status:'Pending Review',submitted:new Date().toISOString().slice(0,10)});shSave2('sh_ada',shADARequests);shRenderADA();shUpdateADAKPIs();shNotify('ADA request logged for '+emp+' -- respond within 5-10 business days','green');}
 function shUpdateADA(i){var r=shADARequests[i];var acc=prompt('Accommodation provided:',r.accommodation||'')||'';var status=prompt('Status (Approved/Denied/Pending Review):',r.status)||r.status;shADARequests[i]={...r,accommodation:acc,status};shSave2('sh_ada',shADARequests);shRenderADA();shUpdateADAKPIs();shNotify('ADA updated for '+r.empName,'green');}
 async function shADAAI(){shNotify('AI providing ADA guidance...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,system:'You are SAIRNhr AI -- ADA compliance expert.',messages:[{role:'user',content:'ADA + PWFA 2026 guide. Provide: 1) Interactive process step-by-step, 2) Common accommodations by disability, 3) Undue hardship definition, 4) Documentation requirements, 5) PWFA 2026 specific requirements, 6) Common employer mistakes. HR best practice -- consult counsel.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
@@ -10544,9 +10544,9 @@ function shCheckComplianceAlerts(){
     return diff>=0&&diff<=7&&d.status!=='Complete'&&(d.priority==='critical'||d.priority==='high');
   });
   if(overdue.length){
-    shNotify('🚨 '+overdue.length+' CRITICAL deadline(s) OVERDUE: '+overdue.map(function(d){return d.name;}).join(', '),'');
+    shNotify(' '+overdue.length+' CRITICAL deadline(s) OVERDUE: '+overdue.map(function(d){return d.name;}).join(', '),'');
   } else if(dueSoon.length){
-    shNotify('⚡ '+dueSoon.length+' deadline(s) due within 7 days: '+dueSoon.map(function(d){return d.name;}).join(', '),'');
+    shNotify(' '+dueSoon.length+' deadline(s) due within 7 days: '+dueSoon.map(function(d){return d.name;}).join(', '),'');
   }
 }
 
@@ -10646,7 +10646,7 @@ function shEnhanceAttrition(){
           var note=document.createElement('div');
           note.id='sh-attr-burnout-note';
           note.style.cssText='background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:10px;margin:0 0 12px;font-size:12px';
-          note.innerHTML='🔥 <strong>Burnout Signal:</strong> '+high+' employee(s) currently flagged as High burnout risk -- these employees are 2.6x more likely to leave within 90 days. <a href="#" onclick="shPanel(\'burnout\',document.querySelector(\'.sh-nav-btn\'))" style="color:var(--a);font-weight:700">View Burnout Risk Panel →</a>';
+          note.innerHTML=' <strong>Burnout Signal:</strong> '+high+' employee(s) currently flagged as High burnout risk -- these employees are 2.6x more likely to leave within 90 days. <a href="#" onclick="shPanel(\'burnout\',document.querySelector(\'.sh-nav-btn\'))" style="color:var(--a);font-weight:700">View Burnout Risk Panel </a>';
           var firstCard=attrPanel.querySelector('.sh-card')||attrPanel.querySelector('.sh-section-title');
           if(firstCard)firstCard.parentNode.insertBefore(note,firstCard.nextSibling);
         }
@@ -10663,8 +10663,8 @@ function shEnhanceInvestigation(){
       var wbBanner=document.createElement('div');
       wbBanner.id='sh-inv-wb-link';
       wbBanner.style.cssText='background:rgba(217,119,6,.08);border:1px solid var(--a-border);border-radius:8px;padding:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between';
-      wbBanner.innerHTML='<span style="font-size:12px;font-weight:600">🔒 Anonymous reports are received via the Whistleblower Hotline</span>'+
-        '<button class="sh-btn-outline" style="font-size:11px;padding:4px 10px" onclick="shPanel(\'whistleblower\',document.querySelectorAll(\'.sh-nav-btn\')[0])">Open Hotline →</button>';
+      wbBanner.innerHTML='<span style="font-size:12px;font-weight:600"> Anonymous reports are received via the Whistleblower Hotline</span>'+
+        '<button class="sh-btn-outline" style="font-size:11px;padding:4px 10px" onclick="shPanel(\'whistleblower\',document.querySelectorAll(\'.sh-nav-btn\')[0])">Open Hotline </button>';
       var firstEl=invPanel.querySelector('.sh-card,.sh-grid');
       if(firstEl)invPanel.insertBefore(wbBanner,firstEl);
     }
@@ -10682,8 +10682,8 @@ function shEnhanceOnboarding(){
         var widget=document.createElement('div');
         widget.id='sh-onb-bg-widget';
         widget.style.cssText='background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px';
-        widget.innerHTML='🔍 <strong>Background Checks:</strong> '+pending+' pending | <span style="color:var(--red)">'+(flagged>0?flagged+' flagged':'0 flagged')+'</span> &nbsp;&nbsp;'+
-          '<button class="sh-btn-outline" style="font-size:10px;padding:3px 8px" onclick="shPanel(\'bgcheck\',document.querySelectorAll(\'.sh-nav-btn\')[0])">View Tracker →</button>';
+        widget.innerHTML=' <strong>Background Checks:</strong> '+pending+' pending | <span style="color:var(--red)">'+(flagged>0?flagged+' flagged':'0 flagged')+'</span> &nbsp;&nbsp;'+
+          '<button class="sh-btn-outline" style="font-size:10px;padding:3px 8px" onclick="shPanel(\'bgcheck\',document.querySelectorAll(\'.sh-nav-btn\')[0])">View Tracker </button>';
         var firstEl=onbPanel.querySelector('.sh-card,.sh-grid');
         if(firstEl)onbPanel.insertBefore(widget,firstEl);
       }
@@ -10728,14 +10728,14 @@ function shAddEWAToPaycalc(){
       widget.id='sh-ewa-calc-widget';
       widget.className='sh-card';
       widget.style.cssText='margin-top:12px';
-      widget.innerHTML='<div style="font-weight:700;color:var(--a);margin-bottom:10px">💳 Earned Wage Access Calculator</div>'+
+      widget.innerHTML='<div style="font-weight:700;color:var(--a);margin-bottom:10px"> Earned Wage Access Calculator</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+
           '<div class="sh-fg" style="margin:0"><label style="font-size:11px;font-weight:600;color:var(--muted)">Days Worked This Period</label>'+
           '<input type="number" id="ewa-days-worked" value="10" min="1" max="31" oninput="shCalcEWAAmount()" style="width:100px;padding:6px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>'+
           '<div class="sh-fg" style="margin:0"><label style="font-size:11px;font-weight:600;color:var(--muted)">Pay Period Days Total</label>'+
           '<input type="number" id="ewa-period-days" value="14" min="1" max="31" oninput="shCalcEWAAmount()" style="width:100px;padding:6px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Outfit,sans-serif"></div>'+
           '<div id="ewa-calc-result" style="font-size:14px;font-weight:700;color:var(--green);padding:6px 12px;background:rgba(22,163,74,.08);border-radius:8px">Max EWA: $0</div>'+
-          '<button class="sh-btn-secondary" onclick="shPanel(\'ewa\',document.querySelectorAll(\'.sh-nav-btn\')[0])" style="font-size:11px;padding:6px 12px">Log EWA Request →</button>'+
+          '<button class="sh-btn-secondary" onclick="shPanel(\'ewa\',document.querySelectorAll(\'.sh-nav-btn\')[0])" style="font-size:11px;padding:6px 12px">Log EWA Request </button>'+
         '</div>'+
         '<div style="font-size:10px;color:var(--muted);margin-top:6px">EWA limit: 50% of wages earned to date in current pay period.</div>';
       paycalcPanel.appendChild(widget);
