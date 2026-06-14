@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
-:root{--bg:#060810;--card:#1A1C32;--a:#8B5CF6;--a2:#7C3AED;--grad:linear-gradient(135deg,#8B5CF6,#7C3AED);--ar:rgba(139,92,246,0.15);--ab:rgba(139,92,246,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+:root{--bg:#F8FAFC;--card:#FFFFFF;--a:#8B5CF6;--a2:#7C3AED;--grad:linear-gradient(135deg,#8B5CF6,#7C3AED);--ar:rgba(139,92,246,0.15);--ab:rgba(139,92,246,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
 html{scroll-behavior:smooth;background:var(--bg)}
 body{color:var(--w);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
 #particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
@@ -108,6 +108,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 .footer-link{font-size:12px;color:var(--d);text-decoration:none;transition:color 0.2s}
 .footer-link:hover{color:var(--a)}
 </style>
+<style>*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}@media print{.no-print,.sidebar,.topbar,button{display:none!important;}body{background:#fff!important;}}</style>
 </head>
 <body>
 <div id="particles"></div>
@@ -245,13 +246,13 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 </div>
 
 <script>
-const SYSTEM = "You are SAIRNfuneral, an AI-powered platform for funeral homes and cremation services powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve funeral directors and funeral home staff at independent funeral homes, cremation services, and multi-location memorial businesses across the United States.\n\nYOUR MISSION:\nTo handle the administrative burden of funeral service so funeral professionals can devote their full attention and compassion to the families they serve.\n\nYOUR EXPERTISE:\n- Obituary writing: transforming intake information into meaningful, dignified tributes\n- Family communication: compassionate, clear communication at every stage of service\n- Documentation: death certificates, authorizations, merchandise agreements, preneed contracts\n- Vendor coordination: cemetery, florist, clergy, musicians, caterers, newspapers\n- Aftercare: follow-up programs, grief resources, anniversary remembrance\n- Compliance: FTC Funeral Rule requirements, state-specific regulations, price list compliance\n- Preneed: contract documentation, trust requirements, transfer procedures\n\nCRITICAL GUIDELINES:\n- Every word you write may be read by a grieving family — choose words with extraordinary care\n- Never use clinical or cold language with families — warmth and compassion in every communication\n- You are supporting funeral professionals, not replacing their judgment or relationship with families\n- Death certificates and legal documents must be reviewed by a licensed funeral director before submission\n- FTC Funeral Rule compliance is non-negotiable — always flag potential compliance issues\n- Respect all religious, cultural, and personal traditions equally\n\nOBITUARY CRAFT:\n- Lead with the person s name and what made them remarkable — not just when they died\n- Include family survivors in traditional order: spouse, children, grandchildren, siblings, parents\n- Capture one specific memory or characteristic that makes this person real, not generic\n- Match the family's tone: some want dignified and formal, others want warm and personal\n- Avoid clichés: \"passed peacefully,\" \"gone too soon,\" \"in lieu of flowers\" — find fresh language\n- Always include service details if provided: visitation, service, burial/cremation, reception\n\nCOMMUNICATION PRINCIPLES:\n- First call follow-up: acknowledge their loss, confirm arrangements, set clear next steps\n- When families are overwhelmed: simplify everything, give them one clear next action\n- Difficult situations: financial constraints, family conflict, unexpected death — always lead with empathy\n- Never rush a family. Patience is a professional obligation in this work.";
+const SYSTEM = "You are SAIRNfuneral, an AI-powered platform for funeral homes and cremation services powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve funeral directors and funeral home staff at independent funeral homes, cremation services, and multi-location memorial businesses across the United States.\n\nYOUR MISSION:\nTo handle the administrative burden of funeral service so funeral professionals can devote their full attention and compassion to the families they serve.\n\nYOUR EXPERTISE:\n- Obituary writing: transforming intake information into meaningful, dignified tributes\n- Family communication: compassionate, clear communication at every stage of service\n- Documentation: death certificates, authorizations, merchandise agreements, preneed contracts\n- Vendor coordination: cemetery, florist, clergy, musicians, caterers, newspapers\n- Aftercare: follow-up programs, grief resources, anniversary remembrance\n- Compliance: FTC Funeral Rule requirements, state-specific regulations, price list compliance\n- Preneed: contract documentation, trust requirements, transfer procedures\n\nCRITICAL GUIDELINES:\n- Every word you write may be read by a grieving family -- choose words with extraordinary care\n- Never use clinical or cold language with families -- warmth and compassion in every communication\n- You are supporting funeral professionals, not replacing their judgment or relationship with families\n- Death certificates and legal documents must be reviewed by a licensed funeral director before submission\n- FTC Funeral Rule compliance is non-negotiable -- always flag potential compliance issues\n- Respect all religious, cultural, and personal traditions equally\n\nOBITUARY CRAFT:\n- Lead with the person s name and what made them remarkable -- not just when they died\n- Include family survivors in traditional order: spouse, children, grandchildren, siblings, parents\n- Capture one specific memory or characteristic that makes this person real, not generic\n- Match the family's tone: some want dignified and formal, others want warm and personal\n- Avoid clichés: \"passed peacefully,\" \"gone too soon,\" \"in lieu of flowers\" -- find fresh language\n- Always include service details if provided: visitation, service, burial/cremation, reception\n\nCOMMUNICATION PRINCIPLES:\n- First call follow-up: acknowledge their loss, confirm arrangements, set clear next steps\n- When families are overwhelmed: simplify everything, give them one clear next action\n- Difficult situations: financial constraints, family conflict, unexpected death -- always lead with empathy\n- Never rush a family. Patience is a professional obligation in this work.";
 const APP_NAME = "SAIRNfuneral";
 const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnfuneral';
 const APP_ICON = '🕊️';
 let messages = [], isLoading = false, lastResponse = '';
-const GUIDED_FLOWS = [{id:"obituary",emoji:"✍️",label:"Write an Obituary",intro:"Let us write a beautiful obituary. Tell me the person s full name and age, and when and where they passed.",steps:["Tell me about their life — family, career, passions, community involvement, faith, and what made them unique.","What tone does the family want — traditional and dignified, warm and personal, or celebratory of life?","Any specific wishes from the family — phrases to include, things to avoid, service details to mention?"],finish:"Here is the complete obituary. Please review with the family and let me know any adjustments."},{id:"communication",emoji:"💌",label:"Communicate With a Family",intro:"Let us handle this communication with care. What do you need to communicate — first call follow-up, service details, paperwork request, or something else?",steps:["What is the family s current emotional state and how have communications gone so far?","Is there anything sensitive or specific I should know before writing this message?"],finish:"Here is a compassionate, clear message for this family. Adjust as you feel appropriate."},{id:"documentation",emoji:"📋",label:"Complete Documentation",intro:"Let us work through this documentation together. What document needs to be completed — death certificate, authorization form, merchandise agreement, or something else?",steps:["What information do you have so far, and what is missing or unclear?","Are there any unusual circumstances or complications with this case?"],finish:"Here is the completed documentation with all required fields addressed and any gaps flagged for follow-up."}];
+const GUIDED_FLOWS = [{id:"obituary",emoji:"✍️",label:"Write an Obituary",intro:"Let us write a beautiful obituary. Tell me the person s full name and age, and when and where they passed.",steps:["Tell me about their life -- family, career, passions, community involvement, faith, and what made them unique.","What tone does the family want -- traditional and dignified, warm and personal, or celebratory of life?","Any specific wishes from the family -- phrases to include, things to avoid, service details to mention?"],finish:"Here is the complete obituary. Please review with the family and let me know any adjustments."},{id:"communication",emoji:"💌",label:"Communicate With a Family",intro:"Let us handle this communication with care. What do you need to communicate -- first call follow-up, service details, paperwork request, or something else?",steps:["What is the family s current emotional state and how have communications gone so far?","Is there anything sensitive or specific I should know before writing this message?"],finish:"Here is a compassionate, clear message for this family. Adjust as you feel appropriate."},{id:"documentation",emoji:"📋",label:"Complete Documentation",intro:"Let us work through this documentation together. What document needs to be completed -- death certificate, authorization form, merchandise agreement, or something else?",steps:["What information do you have so far, and what is missing or unclear?","Are there any unusual circumstances or complications with this case?"],finish:"Here is the completed documentation with all required fields addressed and any gaps flagged for follow-up."}];
 let activeFlow = null, flowStep = 0;
 
 (function() {
@@ -447,7 +448,7 @@ async function loadFirstMessage() {
       div.style.transform = 'translateY(0)';
     });
   } catch(e) {
-    // Silently fail — app works fine without the greeting
+    // Silently fail -- app works fine without the greeting
   }
 }
 function showSaveBar(content) {
@@ -459,7 +460,7 @@ function showSaveBar(content) {
   bar.innerHTML = `
     <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>
     <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>
-    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#60A5FA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔗 Share</button>
+    <button onclick="shareResponse()" style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:6px 12px;color:#6B7280;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔗 Share</button>
     <button onclick="document.getElementById('sairn-save-bar').remove()" style="background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px">×</button>`;
   document.body.appendChild(bar);
   setTimeout(() => { if(document.getElementById('sairn-save-bar')) document.getElementById('sairn-save-bar').remove(); }, 8000);
@@ -476,11 +477,11 @@ window.addEventListener('beforeunload', () => {
 // Cloud Memory · Voice Mode · Outcome Tracking · White Label
 // ============================================================
 
-// White label config — enterprise clients override these
+// White label config -- enterprise clients override these
 const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || 'SAIRN';
 const SAIRN_BRAND_COLOR = window.SAIRN_BRAND_COLOR || null;
 
-// User identity — persistent across sessions
+// User identity -- persistent across sessions
 function getSAIRNUserId() {
   let uid = localStorage.getItem('sairn_uid');
   if(!uid) {
@@ -494,7 +495,7 @@ const SAIRN_USER_ID = getSAIRNUserId();
 // Outcome tracking
 let sessionOutcomes = {queries: 0, saved: 0, startTime: Date.now()};
 
-// ── CLOUD MEMORY ────────────────────────────────────────────
+// ---- CLOUD MEMORY ----------------------------------------------------------------------------------------
 async function cloudSaveMemory(content) {
   if(!content || content.length < 20) return;
   // Save locally first (instant, no latency)
@@ -517,7 +518,7 @@ async function cloudSaveMemory(content) {
     });
     sessionOutcomes.saved++;
   } catch(e) {
-    // Cloud save failed — local backup is enough
+    // Cloud save failed -- local backup is enough
   }
 }
 
@@ -541,7 +542,7 @@ async function cloudLoadMemory() {
   return '';
 }
 
-// ── VOICE MODE ──────────────────────────────────────────────
+// ---- VOICE MODE --------------------------------------------------------------------------------------------
 let isListening = false;
 let voiceRecognition = null;
 
@@ -610,7 +611,7 @@ function addVoiceButton() {
   document.head.appendChild(style);
 }
 
-// ── OUTCOME TRACKING ─────────────────────────────────────────
+// ---- OUTCOME TRACKING ----------------------------------------------------------------------------------
 function trackOutcome() {
   sessionOutcomes.queries++;
   updateOutcomeDisplay();
@@ -640,7 +641,7 @@ function addOutcomeBar() {
   header.after(bar);
 }
 
-// ── ENHANCED SAVE BAR ────────────────────────────────────────
+// ---- ENHANCED SAVE BAR --------------------------------------------------------------------------------
 function showSaveBar() {
   // Auto-save to cloud silently
   cloudSaveMemory(lastResponse);
@@ -663,7 +664,7 @@ function showSaveBar() {
   setTimeout(function() { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 6000);
 }
 
-// ── INIT ──────────────────────────────────────────────────────
+// ---- INIT ------------------------------------------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', function() {
   // Add voice button and outcome bar after app page loads
   const observer = new MutationObserver(function() {
@@ -808,6 +809,96 @@ setTimeout(function() { showOILBadge(); }, 1500);
   });
   console.log('SAIRNbiz Connector active in SAIRNfuneral');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNfuneral -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#6B7280;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Service Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Service Summary</button><button onclick="sbq('Family Comms')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Family Comms</button><button onclick="sbq('Revenue Report')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Revenue Report</button><button onclick="sbq('Staff Schedule')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Staff Schedule</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#6B7280;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#6B7280;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNfuneral AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#6B7280;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNfuneral'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnfuneral',is_demo:true,
+        system:'You are the AI for SAIRNfuneral, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 </html>
