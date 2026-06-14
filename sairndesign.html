@@ -243,7 +243,21 @@ input:focus,select:focus,textarea:focus{border-color:#6366F1;}textarea{resize:ve
 <div class="fg"><label>Purchasing Markup %</label><input type="number" value="35"></div>
 <div class="fg"><label>Trade Discount (avg %)</label><input type="number" value="40"></div>
 <div class="fg"><label>Minimum Project Fee ($)</label><input type="number" value="5000"></div>
-</div><div style="margin-top:14px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairndesign');toast('Rates saved')">Save Rates</button></div></div></div></div>
+</div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:var(--cd);margin-bottom:10px;">License Key</div>
+      <div class="fgrid">
+        <div class="fg">
+          <label>Your SAIRN License Key</label>
+          <input type="text" id="license-key-input" placeholder="SAIRN-SD01-2025-XXXXX" style="font-family:monospace;font-weight:600;">
+        </div>
+        <div class="fg" style="justify-content:flex-end;padding-top:18px;">
+          <button class="btn btn-c" onclick="saveLicenseKey()">Activate Key</button>
+        </div>
+      </div>
+      <div id="license-status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+    </div>
+    <div style="margin-top:14px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairndesign');toast('Rates saved')">Save Rates</button></div></div></div></div>
 
 <div class="page" id="pg-csv"><div class="pt">CSV Tools</div>
 <div class="two-col"><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:8px;">
@@ -302,7 +316,7 @@ var _aih=[];
 function toggleAI(){document.getElementById('aip').classList.toggle('open');}
 function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}
 function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairndesign',is_demo:true,system:"You are the AI for SAIRNdesign, an interior design practice management platform. You know about design phases, FF&E specification, client management, fee proposals, purchasing markup, and project scheduling. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairndesign',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairndesign',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairndesign')||''),system:"You are the AI for SAIRNdesign, an interior design practice management platform. You know about design phases, FF&E specification, client management, fee proposals, purchasing markup, and project scheduling. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairndesign',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
 function initAI(){var prompts=[["Project Status", "Give me a status update on all active projects"], ["FF&E Lead Times", "Flag any FF&E items that may delay projects"], ["AR Collections", "Which invoices are overdue? Draft reminders."], ["Revenue Forecast", "Forecast my fee income for the next 30 days"], ["Profitability", "Which project types are most profitable?"], ["Client Follow-Up", "Which proposals need follow-up this week?"]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}}); 
 </script>
