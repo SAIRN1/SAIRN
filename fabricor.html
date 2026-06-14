@@ -1093,6 +1093,32 @@ var SAIRNstore = (function() {
   };
 })();
 
+
+// === LICENSE KEY ===
+function saveLicenseKey() {
+  var key = (document.getElementById('license-key-input') || {}).value || '';
+  key = key.trim().toUpperCase();
+  if (!key) { toast('Enter a license key'); return; }
+  if (!key.startsWith('SAIRN-')) { toast('Invalid key format'); return; }
+  localStorage.setItem('sairn_license_key_stonedesk', key);
+  document.getElementById('license-status').innerHTML = '<span style="color:var(--green)">&#x2713; Key saved. AI is now unlocked for unlimited use.</span>';
+  toast('License key activated!');
+}
+function loadLicenseKeyDisplay() {
+  var saved = localStorage.getItem('sairn_license_key_stonedesk') || '';
+  var inp = document.getElementById('license-key-input');
+  var status = document.getElementById('license-status');
+  if (inp) inp.value = saved;
+  if (status && saved) {
+    status.innerHTML = '<span style="color:var(--green)">&#x2713; Licensed: ' + saved + '</span>';
+  }
+}
+// Load key display when formula page is visited
+var _origNav = nav;
+function nav(p) {
+  _origNav(p);
+  if (p === 'formula') { setTimeout(loadLicenseKeyDisplay, 50); }
+}
 </script>
 </body>
 </html>
