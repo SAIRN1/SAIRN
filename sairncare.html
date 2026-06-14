@@ -3381,6 +3381,25 @@ window.generateCensusReport = async function() {
 
 </script>
 
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcare
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#14B8A6');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncare', 'app_loaded', {
+    app: 'SAIRNcare',
+    color: '#14B8A6',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcare');
+})();
+</script>
 </body></html>');
   w.document.close();
   w.onload=function(){ w.print(); };
@@ -4052,7 +4071,26 @@ function showFamilyPortalView(){var modal=document.getElementById("sc-family-mod
   if (hasData) return; // Real data exists — do not seed
 // SAIRN DEMO DATA SEED — Session 19
 // Injects realistic demo data into all 10 apps via localStorage
-// Run this in browser console on any SAIRN app page, OR inject before </body>
+// Run this in browser console on any SAIRN app page, OR inject before 
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcare
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#14B8A6');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncare', 'app_loaded', {
+    app: 'SAIRNcare',
+    color: '#14B8A6',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcare');
+})();
+</script>
+</body>
 // Resets all apps to a rich, impressive demo state
 // Michael L. Dibert — SAIRN Technologies
 
@@ -4332,6 +4370,25 @@ window.saDebounce = function(func, wait) {
     timeout = setTimeout(function() { func.apply(context, args); }, wait || 300);
   };
 };
+</script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcare
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#14B8A6');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncare', 'app_loaded', {
+    app: 'SAIRNcare',
+    color: '#14B8A6',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcare');
+})();
 </script>
 </body>
 </html>
