@@ -335,7 +335,7 @@ function saLockScreen() {
   overlay.id = 'sairn-lock-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(30,27,75,.97);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:40px;width:340px;text-align:center">' +
-    '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
+    '<div style="font-size:48px;margin-bottom:12px"></div>' +
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
     '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
     '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
@@ -673,7 +673,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
 // LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
-    if (typeof url === 'string' && url.includes('api.anthropic.com')) {
+    if (typeof url === 'string' && url.includes('sairn.vercel.app/api/claude')) {
       saLog('L22-DIRECT-API', 'Direct Anthropic API call blocked', 'critical');
       return Promise.reject(new Error('SAIRN Security: Direct Anthropic calls not permitted. Use SAIRN proxy.'));
     }
@@ -3227,7 +3227,7 @@ function sbDRVoice() {
     sbNotify('Voice input not supported in this browser', 'amber'); return;
   }
   var btn = document.getElementById('dr-voice-btn');
-  if (sbVoiceRec) { sbVoiceRec.stop(); sbVoiceRec = null; if (btn) btn.textContent = '🎙️ Voice Input'; return; }
+  if (sbVoiceRec) { sbVoiceRec.stop(); sbVoiceRec = null; if (btn) btn.textContent = ' Voice Input'; return; }
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   sbVoiceRec = new SR();
   sbVoiceRec.continuous = true;
@@ -3238,10 +3238,10 @@ function sbDRVoice() {
     var notes = document.getElementById('dr-notes');
     if (notes) notes.value += txt;
   };
-  sbVoiceRec.onerror = function() { sbVoiceRec = null; if (btn) btn.textContent = '🎙️ Voice Input'; };
-  sbVoiceRec.onend = function() { sbVoiceRec = null; if (btn) btn.textContent = '🎙️ Voice Input'; };
+  sbVoiceRec.onerror = function() { sbVoiceRec = null; if (btn) btn.textContent = ' Voice Input'; };
+  sbVoiceRec.onend = function() { sbVoiceRec = null; if (btn) btn.textContent = ' Voice Input'; };
   sbVoiceRec.start();
-  if (btn) btn.textContent = '⏹ Stop Voice';
+  if (btn) btn.textContent = ' Stop Voice';
 }
 
 function sbSaveDailyReport() {
@@ -3305,7 +3305,7 @@ function sbInitPhotos() {
   if (!sbPhotos.length) { grid.innerHTML = ''; return; }
   grid.innerHTML = sbPhotos.slice(0, 50).map(function(p) {
     return '<div style="border-radius:10px;overflow:hidden;background:var(--sand);aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:40px;cursor:pointer" onclick="sbViewPhoto(\'' + p.id + '\')">' +
-      (p.data ? '<img src="' + p.data + '" style="width:100%;height:100%;object-fit:cover">' : '📸') +
+      (p.data ? '<img src="' + p.data + '" style="width:100%;height:100%;object-fit:cover">' : '') +
       '</div>';
   }).join('');
 }
@@ -3364,7 +3364,7 @@ function sbInitPunch() {
       '<td><span class="badge ' + (prioColors[p.priority] || 'badge-gray') + '">' + esc(p.priority || 'medium') + '</span></td>' +
       '<td><span class="badge badge-' + (p.status === 'complete' ? 'green' : 'amber') + '">' + esc(p.status || 'open') + '</span></td>' +
       '<td>' +
-        (p.status !== 'complete' ? '<button onclick="sbCompletePunch(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--green)">✓ Complete</button> ' : '') +
+        (p.status !== 'complete' ? '<button onclick="sbCompletePunch(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--green)"> Complete</button> ' : '') +
         '<button onclick="sbDeletePunch(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--red)">Delete</button>' +
       '</td></tr>';
   }).join('');
@@ -3665,16 +3665,16 @@ function sbEstCalc() {
     var marginText = margin >= 20 ? 'Strong' : margin >= 12 ? 'Typical' : 'Below Average';
     bm.innerHTML = sbRangeBar('Gross Margin ' + sbPct(margin), margin, 12, 22) +
       '<div style="margin-top:6px"><span class="' + marginLabel + '">' + marginText + '</span></div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-top:8px">Residential GC benchmark: 15-25% gross margin · Commercial: 12-20%</div>';
+      '<div style="font-size:11px;color:var(--muted);margin-top:8px">Residential GC benchmark: 15-25% gross margin  Commercial: 12-20%</div>';
   }
 
   // Flags
   var flags = document.getElementById('sb-est-flags');
   if (flags) {
     var flagsHTML = '';
-    if (margin < 10 && sellPrice > 0) flagsHTML += '<div class="sb-flag danger">⚠️ Margin below 10% -- this job may not cover overhead. Consider increasing markup.</div>';
-    if (margin >= 10 && margin < 15 && sellPrice > 0) flagsHTML += '<div class="sb-flag warn">⚡ Margin under 15% -- thin. Any overruns will erode profit quickly.</div>';
-    if (margin >= 20) flagsHTML += '<div class="sb-flag ok">✓ Solid margin. You have buffer for overruns.</div>';
+    if (margin < 10 && sellPrice > 0) flagsHTML += '<div class="sb-flag danger"> Margin below 10% -- this job may not cover overhead. Consider increasing markup.</div>';
+    if (margin >= 10 && margin < 15 && sellPrice > 0) flagsHTML += '<div class="sb-flag warn"> Margin under 15% -- thin. Any overruns will erode profit quickly.</div>';
+    if (margin >= 20) flagsHTML += '<div class="sb-flag ok"> Solid margin. You have buffer for overruns.</div>';
     flags.innerHTML = flagsHTML;
   }
 }
@@ -3699,7 +3699,7 @@ function sbAddEstLine() {
     '<td><input class="est-cost" type="number" value="0" oninput="sbEstLineCalc(' + n + ')" style="width:80px;border:none;background:none;font-size:12px;font-family:inherit;text-align:right;padding:2px 4px;outline:none"></td>' +
     '<td><input class="est-labor" type="number" value="0" oninput="sbEstLineCalc(' + n + ')" style="width:80px;border:none;background:none;font-size:12px;font-family:inherit;text-align:right;padding:2px 4px;outline:none"></td>' +
     '<td class="est-line-total" style="font-weight:700;text-align:right;color:var(--sky2)">$0</td>' +
-    '<td><button onclick="sbRemoveEstLine(' + n + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button></td>';
+    '<td><button onclick="sbRemoveEstLine(' + n + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px"></button></td>';
   tbody.appendChild(tr);
   sbEstCalc();
 }
@@ -3741,7 +3741,7 @@ function sbPrintEstimate() {
   var html = '<!DOCTYPE html><html><head><title>Proposal</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:12px;max-width:750px;margin:0 auto}@media print{button{display:none}}.header{border-bottom:3px solid #F59E0B;padding-bottom:16px;margin-bottom:24px}.total{font-size:28px;font-weight:900;color:#F59E0B;margin-top:16px}</style></head><body>' +
     '<button onclick="window.print()" style="padding:8px 16px;background:#F59E0B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print / Save PDF</button>' +
     '<div class="header"><h1 style="margin:0;font-size:22px">' + esc(company) + '</h1>' +
-    '<div>' + esc(sbSettings.address || '') + '</div><div>' + esc(sbSettings.phone || '') + ' · ' + esc(sbSettings.email || '') + '</div>' +
+    '<div>' + esc(sbSettings.address || '') + '</div><div>' + esc(sbSettings.phone || '') + '  ' + esc(sbSettings.email || '') + '</div>' +
     '<div style="margin-top:12px"><strong>To:</strong> ' + esc(client) + '</div>' +
     '<div><strong>Project:</strong> ' + esc(name) + '</div>' +
     '<div><strong>Date:</strong> ' + new Date().toLocaleDateString() + '</div></div>' +
@@ -4364,7 +4364,7 @@ function sbInitSubs() {
     flags.innerHTML = expiring.map(function(s) {
       var d = new Date(s.glExpiry);
       var days = Math.round((d - today)/(1000*60*60*24));
-      return '<div class="sb-flag ' + (days < 0 ? 'danger' : 'warn') + '">⚠️ ' + esc(s.company) + ': GL insurance ' + (days < 0 ? 'EXPIRED' : 'expires in ' + days + ' days') + ' -- request updated COI immediately</div>';
+      return '<div class="sb-flag ' + (days < 0 ? 'danger' : 'warn') + '"> ' + esc(s.company) + ': GL insurance ' + (days < 0 ? 'EXPIRED' : 'expires in ' + days + ' days') + ' -- request updated COI immediately</div>';
     }).join('');
   }
 
@@ -4580,7 +4580,7 @@ function sbInitLienWaiver() {
       '<td>' + sbDateFmt(l.date) + '</td>' +
       '<td><span class="badge badge-' + (l.status === 'signed' ? 'green' : 'amber') + '">' + esc(l.status) + '</span></td>' +
       '<td><button onclick="sbPrintLienWaiverById(\'' + l.id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--sky)">Print</button> ' +
-      '<button onclick="sbMarkLienSigned(\'' + l.id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--green)">✓ Signed</button></td></tr>';
+      '<button onclick="sbMarkLienSigned(\'' + l.id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--green)"> Signed</button></td></tr>';
   }).join('');
 }
 
@@ -4807,7 +4807,7 @@ function sbInitRFI() {
       '<td><span class="badge ' + (prioColors[r.priority] || 'badge-sky') + '">' + esc(r.priority || 'normal') + '</span></td>' +
       '<td><span class="badge badge-' + (r.status === 'closed' ? 'green' : isOverdue ? 'red' : 'amber') + '">' + esc(r.status) + '</span></td>' +
       '<td>' +
-        (r.status === 'open' ? '<button onclick="sbCloseRFI(\'' + r.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--green)">✓ Close</button> ' : '') +
+        (r.status === 'open' ? '<button onclick="sbCloseRFI(\'' + r.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--green)"> Close</button> ' : '') +
         '<button onclick="sbDeleteRFI(\'' + r.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--red)">Delete</button>' +
       '</td></tr>';
   }).join('');
@@ -4878,7 +4878,7 @@ function sbInitSubmittals() {
       '<td>' + sbDateFmt(s.submitted) + '</td>' +
       '<td>' + sbDateFmt(s.required) + '</td>' +
       '<td><span class="badge ' + (sColors[s.status] || 'badge-gray') + '">' + esc(s.status) + '</span></td>' +
-      '<td><button onclick="sbApproveSubmittal(\'' + s.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--green)">✓ Approve</button> ' +
+      '<td><button onclick="sbApproveSubmittal(\'' + s.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--green)"> Approve</button> ' +
       '<button onclick="sbDeleteSubmittal(\'' + s.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--red)">Delete</button></td></tr>';
   }).join('');
 }
@@ -4969,7 +4969,7 @@ function sbRunRiskScan() {
   var out = document.getElementById('risk-output');
   if (out) {
     if (!risks.length) {
-      out.innerHTML = '<div class="sb-flag ok">✓ No critical risks identified across all projects.</div>';
+      out.innerHTML = '<div class="sb-flag ok"> No critical risks identified across all projects.</div>';
     } else {
       out.innerHTML = risks.map(function(r) {
         return '<div class="sb-flag ' + (r.level === 'critical' ? 'danger' : r.level === 'high' ? 'danger' : 'warn') + '">' + esc(r.text) + '</div>';
@@ -5137,7 +5137,7 @@ function sbDeletePortal(id) {
 function sbInitComp() {
   if (!sbIsAdmin) {
     var el = document.getElementById('panel-compensation');
-    if (el) el.innerHTML = '<div class="sb-card"><div style="font-size:14px;font-weight:700;margin-bottom:8px">🔒 Admin Access Required</div><div style="font-size:13px;color:var(--muted)">Sign in with Admin PIN to access compensation settings.</div></div>';
+    if (el) el.innerHTML = '<div class="sb-card"><div style="font-size:14px;font-weight:700;margin-bottom:8px"> Admin Access Required</div><div style="font-size:13px;color:var(--muted)">Sign in with Admin PIN to access compensation settings.</div></div>';
     return;
   }
   sbSet('comp-reps', sbCompStructures.length);
@@ -5171,7 +5171,7 @@ function sbRenderCompPeriods() {
       '<td>' + sbFmt(p.bonus||0) + '</td><td style="font-weight:800;color:var(--sky)">' + sbFmt(p.totalPay||0) + '</td>' +
       '<td><span class="badge badge-' + (p.status==='paid'?'green':p.status==='disputed'?'red':'amber') + '">' + esc(p.status||'pending') + '</span></td>' +
       '<td>' +
-        (p.status==='pending' ? '<button onclick="sbApproveComp(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--green)">✓ Approve</button> ' : '') +
+        (p.status==='pending' ? '<button onclick="sbApproveComp(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--green)"> Approve</button> ' : '') +
         '<button onclick="sbMarkCompPaid(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--sky)">Mark Paid</button>' +
       '</td></tr>';
   }).join('');
