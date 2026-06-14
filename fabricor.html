@@ -1503,30 +1503,31 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <div class="auth-logo">StoneDesk™</div>
   <div class="auth-tag">Stone Fabrication Intelligence Platform</div>
   <div class="auth-box">
-    <div class="role-pills">
-      <div class="role-pill active" onclick="selectAuthTab('login',this)">Sign In</div>
-      <div class="role-pill" onclick="selectAuthTab('register',this)">Register</div>
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:13px;color:#888;margin-bottom:16px">Enter your PIN to continue</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px" id="pin-dots">
+        <div style="width:14px;height:14px;border-radius:50%;background:#E5E7EB;transition:.2s" id="pd0"></div>
+        <div style="width:14px;height:14px;border-radius:50%;background:#E5E7EB;transition:.2s" id="pd1"></div>
+        <div style="width:14px;height:14px;border-radius:50%;background:#E5E7EB;transition:.2s" id="pd2"></div>
+        <div style="width:14px;height:14px;border-radius:50%;background:#E5E7EB;transition:.2s" id="pd3"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto">
+        <button onclick="sdPin(1)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">1</button>
+        <button onclick="sdPin(2)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">2</button>
+        <button onclick="sdPin(3)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">3</button>
+        <button onclick="sdPin(4)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">4</button>
+        <button onclick="sdPin(5)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">5</button>
+        <button onclick="sdPin(6)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">6</button>
+        <button onclick="sdPin(7)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">7</button>
+        <button onclick="sdPin(8)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">8</button>
+        <button onclick="sdPin(9)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">9</button>
+        <button onclick="sdPinClear()" style="padding:14px;font-size:12px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">CLR</button>
+        <button onclick="sdPin(0)" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;cursor:pointer">0</button>
+        <button onclick="sdPinUnlock()" style="padding:14px;font-size:18px;font-weight:700;border:1px solid #E5E7EB;border-radius:10px;background:#16C762;color:#fff;cursor:pointer">&#10003;</button>
+      </div>
+      <div style="margin-top:16px;font-size:11px;color:#aaa">Admin: 9999 &nbsp;|&nbsp; Sales: 1234 &nbsp;|&nbsp; Viewer: 5678</div>
     </div>
-    <div id="auth-login-form">
-      <label>Email</label>
-      <input type="email" id="auth-email" placeholder="you@yourshop.com" style="width:100%;margin-bottom:8px" onkeydown="if(event.key==='Enter')doLogin()">
-      <label>Password</label>
-      <input type="password" id="auth-password" placeholder="••••••••" style="width:100%" onkeydown="if(event.key==='Enter')doLogin()">
-      <div class="auth-error" id="auth-error"></div>
-      <button class="auth-btn" onclick="doLogin()">Sign In to StoneDesk™</button>
-    </div>
-    <div id="auth-register-form" style="display:none">
-      <label>Shop Name</label>
-      <input type="text" id="auth-shopname" placeholder="Your Fabrication Shop" style="width:100%;margin-bottom:8px">
-      <label>Your Name</label>
-      <input type="text" id="auth-name" placeholder="John Smith" style="width:100%;margin-bottom:8px">
-      <label>Email</label>
-      <input type="email" id="auth-reg-email" placeholder="you@yourshop.com" style="width:100%;margin-bottom:8px">
-      <label>Password</label>
-      <input type="password" id="auth-reg-password" placeholder="Min 8 characters" style="width:100%" onkeydown="if(event.key==='Enter')doRegister()">
-      <div class="auth-error" id="auth-reg-error"></div>
-      <button class="auth-btn" onclick="doRegister()">Create Free Account</button>
-    </div>
+    <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
 
@@ -11030,6 +11031,83 @@ window.saDebounce = function(func, wait) {
 
 
 // ================================================================
+
+// == STONEDESK PIN AUTH (replaces Railway auth) ==
+var SD_PIN_BUF = '';
+var SD_PINS = { '9999': 'admin', '1234': 'sales', '5678': 'viewer', '7777': 'manager' };
+
+function sdPin(d) {
+  if (SD_PIN_BUF.length >= 4) return;
+  SD_PIN_BUF += d;
+  for (var i = 0; i < SD_PIN_BUF.length; i++) {
+    var dot = document.getElementById('pd' + i);
+    if (dot) dot.style.background = '#16C762';
+  }
+  if (SD_PIN_BUF.length === 4) setTimeout(sdPinUnlock, 150);
+}
+
+function sdPinClear() {
+  SD_PIN_BUF = '';
+  for (var i = 0; i < 4; i++) {
+    var dot = document.getElementById('pd' + i);
+    if (dot) dot.style.background = '#E5E7EB';
+  }
+}
+
+function sdPinUnlock() {
+  var role = SD_PINS[SD_PIN_BUF];
+  var errEl = document.getElementById('auth-error');
+  if (!role) {
+    if (errEl) errEl.textContent = 'Incorrect PIN';
+    for (var i = 0; i < 4; i++) {
+      var dot = document.getElementById('pd' + i);
+      if (dot) dot.style.background = '#EF4444';
+    }
+    setTimeout(sdPinClear, 700);
+    return;
+  }
+  // Set user and role
+  currentUser = { name: 'StoneDesk User', role: role, email: localStorage.getItem('fab_shop_email') || 'mikied68@gmail.com' };
+  loginRole = role === 'admin' ? 'admin' : 'sales';
+  shopName = localStorage.getItem('fab_shop_name') || 'My Stone Shop';
+
+  // Hide auth, show app
+  var authEl = document.getElementById('auth-screen');
+  if (authEl) authEl.style.display = 'none';
+  var appEl = document.getElementById('app');
+  if (appEl) { appEl.classList.add('visible'); appEl.style.display = ''; }
+  var topbarShop = document.getElementById('topbar-shop');
+  if (topbarShop) topbarShop.textContent = shopName;
+
+  // Apply role
+  if (typeof applyExecRole === 'function') applyExecRole(currentUser);
+
+  // Load data
+  if (typeof loadSD3Data === 'function') loadSD3Data();
+  if (typeof loadSD4Data === 'function') loadSD4Data();
+  if (typeof loadSD5Data === 'function') loadSD5Data();
+  if (typeof renderSchedule === 'function') setTimeout(renderSchedule, 300);
+  if (typeof renderCustomers === 'function') setTimeout(renderCustomers, 300);
+  if (typeof renderInventory === 'function') setTimeout(renderInventory, 300);
+  if (typeof renderRemakes === 'function') setTimeout(renderRemakes, 300);
+  if (typeof renderComms === 'function') setTimeout(renderComms, 300);
+  if (typeof runAlertScan === 'function') setTimeout(runAlertScan, 500);
+  if (typeof quoteHistory !== 'undefined' && typeof renderHistory === 'function') setTimeout(renderHistory, 300);
+
+  notify('Welcome to StoneDesk — ' + role.charAt(0).toUpperCase() + role.slice(1));
+
+  // Boot Supabase backend
+  setTimeout(async function() {
+    await sdInitBackend();
+    await sdLoadFromSupabase();
+  }, 1500);
+}
+
+// Also fix doLogin to use PIN system as fallback
+function doLogin() { sdPinUnlock(); }
+function doRegister() { sdPinUnlock(); }
+
+
 // STONEDESK SUPABASE BACKEND PATCH
 // Inject this block right before </script> closing tag
 // Adds persistent storage to all StoneDesk data functions
