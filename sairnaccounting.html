@@ -222,7 +222,7 @@ function saLockScreen() {
   overlay.id = 'sairn-lock-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(30,27,75,.97);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:40px;width:340px;text-align:center">' +
-    '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
+    '<div style="font-size:48px;margin-bottom:12px"></div>' +
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
     '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
     '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
@@ -560,7 +560,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
 // LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
-    if (typeof url === 'string' && url.includes('api.anthropic.com')) {
+    if (typeof url === 'string' && url.includes('sairn.vercel.app/api/claude')) {
       saLog('L22-DIRECT-API', 'Direct Anthropic API call blocked', 'critical');
       return Promise.reject(new Error('SAIRN Security: Direct Anthropic calls not permitted. Use SAIRN proxy.'));
     }
@@ -5075,8 +5075,8 @@ document.addEventListener('DOMContentLoaded',function(){
 
 // ============================================================
 // SAIRN UNIVERSAL PRICING ENGINE v1.0
-// June 11, 2026 -- Michael L. Dibert · SAIRN Technologies
-// Applied to: SAIRNcode · SAIRNhr · SAIRNaccounting
+// June 11, 2026 -- Michael L. Dibert  SAIRN Technologies
+// Applied to: SAIRNcode  SAIRNhr  SAIRNaccounting
 //
 // Pricing (final -- market-verified June 11 2026):
 //   SAIRNcode:        Free 20q | Pro $59/mo | Enterprise $99/mo
