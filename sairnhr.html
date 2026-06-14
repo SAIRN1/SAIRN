@@ -3101,25 +3101,34 @@ function shReloadStores(){
 
 
 function shSyncAllApps(){
-  var payload={
-    source:'sairnhr',
-    timestamp:new Date().toISOString(),
-    org:shCurrentUser?shCurrentUser.shopName||shCurrentUser.id:'unknown',
-    data:{
-      employees:employees.length,
-      payrollRegister:payrollRegister,
-      payrollHistory:payrollHistory.slice(0,10),
-      ptoRequests:ptoRequests,
-      timeEntries:timeEntries.slice(0,50),
-      benefitPlans:benefitPlans,
-      summary:{
-        totalEmployees:employees.length,
-        activeEmployees:employees.filter(function(e){return e.status==='Active';}).length,
-        totalPayroll:payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0);},0),
-        pendingPTO:ptoRequests.filter(function(r){return r.status==='Pending';}).length
+  // Write HR payload to shared localStorage for SAIRNacc to read directly (same-device)
+  var payload = {
+    source: 'sairnhr',
+    timestamp: new Date().toISOString(),
+    org: shCurrentUser ? shCurrentUser.shopName||shCurrentUser.id : 'unknown',
+    data: {
+      payrollRegister: payrollRegister,
+      payrollHistory: payrollHistory.slice(0,10),
+      ptoRequests: ptoRequests,
+      employees: employees,
+      timeEntries: timeEntries.slice(0,50),
+      benefitPlans: benefitPlans,
+      summary: {
+        totalEmployees: employees.length,
+        activeEmployees: employees.filter(function(e){return e.status==='Active';}).length,
+        totalPayroll: payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0);},0),
+        pendingPTO: ptoRequests.filter(function(r){return r.status==='Pending';}).length,
+        ptoLiabilityHours: ptoRequests.filter(function(r){return r.status==='Approved';})
+          .reduce(function(s,r){return s+(parseFloat(r.days||r.hours)||0);},0)
       }
     }
   };
+  // Cache for SAIRNacc same-device read
+  localStorage.setItem('sairn_bridge_hr_payload', JSON.stringify(payload));
+
+  // Also write individual keys acc reads directly
+  localStorage.setItem('sh_payroll', JSON.stringify(payrollRegister));
+  localStorage.setItem('sh_employees', JSON.stringify(employees));
   fetch('https://sairn.vercel.app/api/bridge',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -3132,6 +3141,28 @@ function shSyncAllApps(){
   });
   // Also push Claude a learning summary
   shFeedClaudeLearning();
+}
+
+
+function shCheckPayrollPaidConfirmations(){
+  // Check if SAIRNacc has confirmed any payroll runs as paid
+  try {
+    var confirms = JSON.parse(localStorage.getItem('sa_payroll_paid_confirmation')||'[]');
+    if(!confirms.length) return;
+    var newConfirms = confirms.filter(function(c){
+      return !payrollHistory.find(function(h){ return h.date===c.paidDate && h.markedPaid; });
+    });
+    if(newConfirms.length) {
+      newConfirms.forEach(function(c){
+        var match = payrollHistory.find(function(h){ 
+          return h.date===c.period||h.gross===c.gross; 
+        });
+        if(match) match.markedPaid = true;
+      });
+      shSave('sh_pay_history', payrollHistory);
+      shNotify('SAIRNacc confirmed '+newConfirms.length+' payroll run(s) as paid','green');
+    }
+  } catch(e){}
 }
 
 function shFeedClaudeLearning(){
