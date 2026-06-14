@@ -149,7 +149,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--c);} textarea{resize:
 <div class="ni" onclick="nav('csv')" data-p="csv"><span class="nicon">&#x1F4C1;</span> CSV Tools</div>
 <div class="ni" onclick="nav('sairnbiz')" data-p="sairnbiz"><span class="nicon">&#x1F517;</span> SAIRNbiz</div>
 </div>
-    <div class="mn" id="mn"><div class="page active" id="pg-dash"><div class="pt">SAIRNlaw Dashboard</div><div class="ps">Legal practice intelligence -- powered by Claude AI</div><div class="kg"><div class="kc"><span class="ki">&#x1F4C2;</span><div class="kl">Active Matters</div><div class="kv">42</div><div class="kd up">+4 this month</div></div><div class="kc"><span class="ki">&#x23F1;&#xFE0F;</span><div class="kl">Hours This Month</div><div class="kv">284</div><div class="kd">Billable: 241</div></div><div class="kc"><span class="ki">&#x1F9FE;</span><div class="kl">Outstanding AR</div><div class="kv">$184K</div><div class="kd dn">14 invoices open</div></div><div class="kc"><span class="ki">&#x1F3E6;</span><div class="kl">Trust Balance</div><div class="kv">$94K</div><div class="kd">Across 8 clients</div></div><div class="kc"><span class="ki">&#x1F4B0;</span><div class="kl">Monthly Revenue</div><div class="kv">$124K</div><div class="kd up">+8% vs last month</div></div><div class="kc"><span class="ki">&#x23F1;&#xFE0F;</span><div class="kl">Realization Rate</div><div class="kv">84%</div><div class="kd">Industry avg: 80%</div></div></div><div class="flag fw">&#x26A0;&#xFE0F; 3 matters have statute of limitations deadlines in the next 30 days. Review immediately.</div><div class="flag fi">&#x1F916; AI found 18 hours unbilled across 4 matters this month. <a href="#" style="color:var(--cd);font-weight:700;" onclick="askAI('Which matters have unbilled time and what should I bill?')">Review Now</a></div><div class="two-col" style="margin-top:16px;"><div class="card"><div class="ch"><div class="ct">Active Matters</div><button class="btn btn-sm btn-c" onclick="nav('matters')">View All</button></div><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Matter</th><th>Client</th><th>Type</th><th>Status</th></tr></thead><tbody><tr><td><strong>Smith v. Corp</strong></td><td>John Smith</td><td>Litigation</td><td><span class="badge ba">Discovery</span></td></tr><tr><td><strong>Rivera Estate</strong></td><td>Maria Rivera</td><td>Probate</td><td><span class="badge bc">Active</span></td></tr><tr><td><strong>TechCo Acquisition</strong></td><td>TechCo LLC</td><td>M&A</td><td><span class="badge bg">Closing</span></td></tr><tr><td><strong>Park Ave Closing</strong></td><td>J. Park</td><td>Real Estate</td><td><span class="badge bc">In Progress</span></td></tr></tbody></table></div></div><div class="card"><div class="ch"><div class="ct">Billable Hour Targets</div></div><div class="cb"><div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Partner - M. Dibert</span><span style="color:var(--green)">94%</span></div><div class="rbt"><div class="rbf" style="width:94%"></div></div></div><div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Associate - J. Lee</span><span style="color:var(--amber)">78%</span></div><div class="rbt"><div class="rbf" style="width:78%;background:var(--amber)"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Associate - S. Kim</span><span style="color:var(--red)">62%</span></div><div class="rbt"><div class="rbf" style="width:62%;background:var(--red)"></div></div></div></div></div></div></div><div class="page" id="pg-matters"><div class="pt">All Matters</div><div class="ps">Full matter portfolio with AI status tracking</div><div class="toolbar"><input type="text" class="sbox" placeholder="Search matters..." oninput="ft(this,'mat-tbl')"><button class="btn btn-c" onclick="openM('m-new-matter')">+ New Matter</button><button class="btn btn-o" onclick="exportCSV('mat-tbl','sairnlaw-matters')">Export CSV</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt" id="mat-tbl"><thead><tr><th>Matter #</th><th>Name</th><th>Client</th><th>Type</th><th>Attorney</th><th>Open Date</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>M-2041</td><td><strong>Smith v. Corp</strong></td><td>John Smith</td><td>Litigation</td><td>M. Dibert</td><td>Jan 15, 2025</td><td><span class="badge ba">Discovery</span></td><td><button class="btn btn-sm btn-c" onclick="askAI('Give me a full status update on matter Smith v. Corp including next steps and deadline risks.')">AI Update</button></td></tr><tr><td>M-2042</td><td><strong>Rivera Estate</strong></td><td>Maria Rivera</td><td>Probate</td><td>J. Lee</td><td>Mar 1, 2025</td><td><span class="badge bc">Active</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td>M-2043</td><td><strong>TechCo Acquisition</strong></td><td>TechCo LLC</td><td>M&A</td><td>M. Dibert</td><td>Feb 10, 2025</td><td><span class="badge bg">Closing</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td>M-2044</td><td><strong>Park Ave Closing</strong></td><td>J. Park</td><td>Real Estate</td><td>S. Kim</td><td>Jun 1, 2025</td><td><span class="badge bc">In Progress</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr></tbody></table></div></div></div><div class="page" id="pg-calendar"><div class="pt">Docket & Calendar</div><div class="ps">Deadlines, hearings, and critical dates</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-add-deadline')">+ Add Deadline</button><button class="btn btn-o" onclick="askAI('Review all upcoming deadlines. Which are most critical in the next 30 days?')">AI Deadline Alert</button></div><div class="flag fe">&#x1F6A8; SOL deadline for Smith v. Corp -- <strong>July 14, 2025</strong> -- 30 days away. Action required.</div><div class="card" style="margin-top:14px;"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Date</th><th>Matter</th><th>Event</th><th>Type</th><th>Attorney</th><th>Status</th></tr></thead><tbody><tr><td><strong style="color:var(--red)">Jun 20</strong></td><td>Smith v. Corp</td><td>Discovery Responses Due</td><td>Deadline</td><td>M. Dibert</td><td><span class="badge br">Urgent</span></td></tr><tr><td>Jun 24</td><td>TechCo Acquisition</td><td>Due Diligence Complete</td><td>Milestone</td><td>M. Dibert</td><td><span class="badge ba">In Progress</span></td></tr><tr><td>Jun 28</td><td>Rivera Estate</td><td>Probate Hearing</td><td>Court Date</td><td>J. Lee</td><td><span class="badge bc">Confirmed</span></td></tr><tr><td>Jul 5</td><td>Park Ave Closing</td><td>Closing Date</td><td>Milestone</td><td>S. Kim</td><td><span class="badge bc">Scheduled</span></td></tr><tr><td>Jul 14</td><td>Smith v. Corp</td><td>Statute of Limitations</td><td>SOL</td><td>M. Dibert</td><td><span class="badge br">Critical</span></td></tr></tbody></table></div></div></div><div class="page" id="pg-tasks"><div class="pt">Tasks</div><div class="ps">All open action items across matters</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-add-task')">+ New Task</button><button class="btn btn-o" onclick="askAI('What tasks should I prioritize today based on deadlines and matter urgency?')">AI Prioritize</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Task</th><th>Matter</th><th>Assigned To</th><th>Due</th><th>Priority</th><th>Status</th></tr></thead><tbody><tr><td>Draft discovery responses</td><td>Smith v. Corp</td><td>M. Dibert</td><td><strong style="color:var(--red)">Jun 20</strong></td><td><span class="badge br">High</span></td><td><span class="badge ba">In Progress</span></td></tr><tr><td>Review purchase agreement</td><td>TechCo Acquisition</td><td>J. Lee</td><td>Jun 22</td><td><span class="badge ba">High</span></td><td><span class="badge bc">Not Started</span></td></tr><tr><td>Prepare probate inventory</td><td>Rivera Estate</td><td>S. Kim</td><td>Jun 25</td><td><span class="badge bc">Medium</span></td><td><span class="badge bc">In Progress</span></td></tr></tbody></table></div></div></div><div class="page" id="pg-documents"><div class="pt">Documents</div><div class="ps">Matter documents with AI analysis</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-upload-doc')">+ Upload Document</button><button class="btn btn-o" onclick="askAI('Review all documents for matter Smith v. Corp and summarize the key issues.')">AI Document Review</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Document</th><th>Matter</th><th>Type</th><th>Uploaded</th><th>By</th><th>Action</th></tr></thead><tbody><tr><td>Complaint_Smith_v_Corp.pdf</td><td>Smith v. Corp</td><td>Pleading</td><td>Jan 15, 2025</td><td>M. Dibert</td><td><button class="btn btn-sm btn-o" onclick="askAI('Summarize the complaint in Smith v. Corp and identify the key legal claims.')">AI Review</button></td></tr><tr><td>Rivera_Will_Final.pdf</td><td>Rivera Estate</td><td>Estate Doc</td><td>Mar 2, 2025</td><td>J. Lee</td><td><button class="btn btn-sm btn-o" onclick="askAI('Review the Rivera will and identify any ambiguities or potential disputes.')">AI Review</button></td></tr><tr><td>TechCo_LOI.pdf</td><td>TechCo Acquisition</td><td>M&A</td><td>Feb 12, 2025</td><td>M. Dibert</td><td><button class="btn btn-sm btn-o" onclick="askAI('Review the TechCo LOI and flag any concerning terms.')">AI Review</button></td></tr></tbody></table></div></div></div><div class="page" id="pg-timekeeping"><div class="pt">Time Keeping</div><div class="ps">Log billable hours -- AI detects missing time</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-log-time')">+ Log Time</button><button class="btn btn-o" onclick="askAI('Find any unbilled time entries this month and suggest which matters to bill them to.')">AI Find Unbilled</button><button class="btn btn-o" onclick="exportCSV('time-tbl','sairnlaw-time')">Export CSV</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt" id="time-tbl"><thead><tr><th>Date</th><th>Attorney</th><th>Matter</th><th>Hours</th><th>Rate</th><th>Amount</th><th>Description</th><th>Status</th></tr></thead><tbody><tr><td>Jun 14</td><td>M. Dibert</td><td>Smith v. Corp</td><td>2.5</td><td>$450</td><td>$1,125</td><td>Review discovery responses</td><td><span class="badge bc">Unbilled</span></td></tr><tr><td>Jun 14</td><td>J. Lee</td><td>TechCo Acquisition</td><td>3.0</td><td>$325</td><td>$975</td><td>Due diligence review</td><td><span class="badge bc">Unbilled</span></td></tr><tr><td>Jun 13</td><td>S. Kim</td><td>Rivera Estate</td><td>1.5</td><td>$300</td><td>$450</td><td>Client communication</td><td><span class="badge bg">Billed</span></td></tr><tr><td>Jun 13</td><td>M. Dibert</td><td>TechCo Acquisition</td><td>4.0</td><td>$450</td><td>$1,800</td><td>Contract negotiation</td><td><span class="badge bg">Billed</span></td></tr><tr class="ttr"><td colspan="4"><strong>Today Total</strong></td><td></td><td><strong>$4,350</strong></td><td></td><td></td></tr></tbody></table></div></div></div><div class="page" id="pg-invoices"><div class="pt">Invoices</div><div class="ps">Client billing with trust accounting</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-invoice')">+ New Invoice</button><button class="btn btn-o" onclick="askAI('Which invoices are overdue? Draft professional collection letters for each client.')">AI Collections</button><button class="btn btn-o" onclick="exportCSV('inv-tbl','sairnlaw-invoices')">Export CSV</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt" id="inv-tbl"><thead><tr><th>Invoice #</th><th>Client</th><th>Matter</th><th>Amount</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>INV-0841</td><td>TechCo LLC</td><td>Acquisition</td><td>$18,400</td><td>Jun 30</td><td><span class="badge bc">Sent</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td>INV-0840</td><td>John Smith</td><td>Smith v. Corp</td><td>$8,200</td><td>Jun 14</td><td><span class="badge br">Overdue</span></td><td><button class="btn btn-sm btn-r" onclick="askAI('Draft a professional but firm collection letter to John Smith for overdue invoice INV-0840 for $8,200.')">AI Collect</button></td></tr><tr><td>INV-0839</td><td>Maria Rivera</td><td>Estate</td><td>$4,800</td><td>Jun 25</td><td><span class="badge ba">Pending</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr></tbody></table></div></div></div><div class="page" id="pg-trust"><div class="pt">Trust Accounts</div><div class="ps">IOLTA compliant trust accounting</div><div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Client</th><th>Matter</th><th>Trust Balance</th><th>Last Activity</th><th>Status</th></tr></thead><tbody><tr><td>John Smith</td><td>Smith v. Corp</td><td>$18,000</td><td>Jun 1</td><td><span class="badge bg">Active</span></td></tr><tr><td>TechCo LLC</td><td>Acquisition</td><td>$50,000</td><td>Jun 8</td><td><span class="badge bg">Active</span></td></tr><tr><td>Maria Rivera</td><td>Rivera Estate</td><td>$26,000</td><td>May 28</td><td><span class="badge bg">Active</span></td></tr><tr class="ttr"><td colspan="2"><strong>Total Trust</strong></td><td><strong>$94,000</strong></td><td></td><td></td></tr></tbody></table></div></div></div><div class="page" id="pg-ar"><div class="pt">AR Aging</div><div class="ps">Accounts receivable by age</div><div class="card"><div class="cb"><div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Current (0-30 days)</span><span style="color:var(--green)">$98K</span></div><div class="rbt"><div class="rbf" style="width:53%"></div></div></div><div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>31-60 days</span><span style="color:var(--amber)">$56K</span></div><div class="rbt"><div class="rbf" style="width:30%;background:var(--amber)"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>61+ days</span><span style="color:var(--red)">$30K</span></div><div class="rbt"><div class="rbf" style="width:17%;background:var(--red)"></div></div></div><div style="margin-top:16px;"><button class="btn btn-o" onclick="askAI('Analyze my AR aging and recommend a collection strategy for the 61+ day bucket.')">AI Collection Strategy</button></div></div></div></div><div class="page" id="pg-clients"><div class="pt">Clients</div><div class="ps">Full client database</div><div class="toolbar"><input type="text" class="sbox" placeholder="Search clients..." oninput="ft(this,'cl-tbl')"><button class="btn btn-c" onclick="openM('m-new-client')">+ New Client</button><button class="btn btn-o" onclick="exportCSV('cl-tbl','sairnlaw-clients')">Export CSV</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt" id="cl-tbl"><thead><tr><th>Client</th><th>Type</th><th>Phone</th><th>Open Matters</th><th>YTD Billed</th><th>Action</th></tr></thead><tbody><tr><td><strong>TechCo LLC</strong></td><td>Corporate</td><td>(440) 555-2001</td><td>1</td><td>$48,400</td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td><strong>John Smith</strong></td><td>Individual</td><td>(216) 555-2002</td><td>1</td><td>$18,200</td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td><strong>Maria Rivera</strong></td><td>Individual</td><td>(440) 555-2003</td><td>1</td><td>$12,800</td><td><button class="btn btn-sm btn-o">View</button></td></tr></tbody></table></div></div></div><div class="page" id="pg-intake"><div class="pt">New Client Intake</div><div class="ps">Capture new matter details and run conflict check</div><div class="toolbar"><button class="btn btn-o" onclick="askAI('Run a conflict check for the prospective client information I am about to enter.')">AI Conflict Check</button></div><div class="card"><div class="ch"><div class="ct">Intake Form</div></div><div class="cb"><div class="fgrid"><div class="fg"><label>Client Name</label><input type="text" placeholder="Full legal name"></div><div class="fg"><label>Client Type</label><select><option>Individual</option><option>Corporate</option><option>Government</option></select></div><div class="fg"><label>Phone</label><input type="tel" placeholder="(555) 000-0000"></div><div class="fg"><label>Email</label><input type="email" placeholder="email@domain.com"></div><div class="fg"><label>Matter Type</label><select><option>Litigation</option><option>Real Estate</option><option>Corporate/M&A</option><option>Estate Planning</option><option>Criminal</option><option>Family Law</option></select></div><div class="fg"><label>Opposing Parties</label><input type="text" placeholder="For conflict check"></div><div class="fg"><label>Retainer Amount</label><input type="number" placeholder="$0"></div><div class="fg"><label>Assigned Attorney</label><select><option>M. Dibert</option><option>J. Lee</option><option>S. Kim</option></select></div><div class="fg full"><label>Matter Description</label><textarea placeholder="Brief description of legal matter..."></textarea></div></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-c" onclick="toast('Client intake saved. Conflict check passed.')">Save Intake</button><button class="btn btn-o" onclick="askAI('Draft a retainer agreement for this new client matter.')">AI Draft Retainer</button></div></div></div></div><div class="page" id="pg-conflicts"><div class="pt">Conflict Check</div><div class="ps">AI-powered conflict of interest detection</div><div class="toolbar"><button class="btn btn-c" onclick="askAI('Run a full conflict check for all current and prospective clients. Flag any potential conflicts.')">Run AI Conflict Check</button></div><div class="flag fi">&#x1F916; AI scans all current and former clients, matters, and opposing parties against new intake data.</div><div class="card" style="margin-top:14px;"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Check Date</th><th>New Client</th><th>Against</th><th>Result</th></tr></thead><tbody><tr><td>Jun 14</td><td>TechCo LLC</td><td>All matters</td><td><span class="badge bg">Clear</span></td></tr><tr><td>Jun 10</td><td>Park Ave Partners</td><td>All matters</td><td><span class="badge bg">Clear</span></td></tr><tr><td>Jun 5</td><td>Rival Corp</td><td>All matters</td><td><span class="badge br">Conflict Found -- Smith v. Corp</span></td></tr></tbody></table></div></div></div><div class="page" id="pg-formula"><div class="pt">Formula Editor</div><div class="ps">Admin: set billing rates and fee structures</div><div class="card"><div class="cb"><div class="fgrid"><div class="fg"><label>Partner Rate ($/hr)</label><input type="number" value="450"></div><div class="fg"><label>Senior Associate Rate ($/hr)</label><input type="number" value="325"></div><div class="fg"><label>Associate Rate ($/hr)</label><input type="number" value="275"></div><div class="fg"><label>Paralegal Rate ($/hr)</label><input type="number" value="175"></div><div class="fg"><label>Retainer Minimum ($)</label><input type="number" value="2500"></div><div class="fg"><label>Late Fee % (monthly)</label><input type="number" value="1.5"></div></div><div style="margin-top:16px;"><button class="btn btn-c" onclick="toast('Rates saved')">Save Rates</button></div></div></div></div><div class="page" id="pg-csv"><div class="pt">CSV Tools</div><div class="ps">Import and export matter, time, and billing data</div><div class="two-col"><div class="card"><div class="ch"><div class="ct">Import</div></div><div class="cb"><div class="fg" style="margin-bottom:12px;"><label>Type</label><select><option>Matters</option><option>Clients</option><option>Time Entries</option></select></div><div style="border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;" onclick="document.getElementById('csv-up').click()"><div style="font-size:26px;">&#x1F4C2;</div><div style="font-size:13px;color:var(--muted);margin-top:6px;">Drop CSV or click to upload</div></div><input type="file" id="csv-up" accept=".csv" style="display:none;"></div></div><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:9px;"><button class="btn btn-o" onclick="exportCSV('mat-tbl','sairnlaw-matters')">Export Matters CSV</button><button class="btn btn-o" onclick="exportCSV('time-tbl','sairnlaw-time')">Export Time Entries CSV</button><button class="btn btn-o" onclick="exportCSV('inv-tbl','sairnlaw-invoices')">Export Invoices CSV</button><button class="btn btn-o" onclick="exportCSV('cl-tbl','sairnlaw-clients')">Export Clients CSV</button></div></div></div></div><div class="page" id="pg-sairnbiz"><div class="pt">SAIRNbiz</div><div class="ps">HR + Accounting -- included free with SAIRNlaw</div><div id="sbiz-container" style="margin-bottom:16px;"></div><div class="flag fi">SAIRNbiz manages attorney payroll, benefits, GL entries, and trust accounting reconciliation.</div><div style="margin-top:14px;display:flex;gap:10px;"><button class="btn btn-c" onclick="SAIRNbiz.openHub()">Open SAIRNbiz</button><button class="btn btn-o" onclick="SAIRNbiz.sendEvent('sairnlaw','sync',{ts:new Date().toISOString()});toast('Synced to SAIRNbiz')">Sync to SAIRNbiz</button></div></div></div>
+    <div class="mn" id="mn"><div class="page active" id="pg-dash"><div class="pt">SAIRNlaw Dashboard</div><div class="ps">Legal practice intelligence -- powered by Claude AI</div><div class="kg"><div class="kc"><span class="ki">&#x1F4C2;</span><div class="kl">Active Matters</div><div class="kv">42</div><div class="kd up">+4 this month</div></div><div class="kc"><span class="ki">&#x23F1;&#xFE0F;</span><div class="kl">Hours This Month</div><div class="kv">284</div><div class="kd">Billable: 241</div></div><div class="kc"><span class="ki">&#x1F9FE;</span><div class="kl">Outstanding AR</div><div class="kv">$184K</div><div class="kd dn">14 invoices open</div></div><div class="kc"><span class="ki">&#x1F3E6;</span><div class="kl">Trust Balance</div><div class="kv">$94K</div><div class="kd">Across 8 clients</div></div><div class="kc"><span class="ki">&#x1F4B0;</span><div class="kl">Monthly Revenue</div><div class="kv">$124K</div><div class="kd up">+8% vs last month</div></div><div class="kc"><span class="ki">&#x23F1;&#xFE0F;</span><div class="kl">Realization Rate</div><div class="kv">84%</div><div class="kd">Industry avg: 80%</div></div></div><div class="flag fw">&#x26A0;&#xFE0F; 3 matters have statute of limitations deadlines in the next 30 days. Review immediately.</div><div class="flag fi">&#x1F916; AI found 18 hours unbilled across 4 matters this month. <a href="#" style="color:var(--cd);font-weight:700;" onclick="askAI('Which matters have unbilled time and what should I bill?')">Review Now</a></div><div class="two-col" style="margin-top:16px;"><div class="card"><div class="ch"><div class="ct">Active Matters</div><button class="btn btn-sm btn-c" onclick="nav('matters')">View All</button></div><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Matter</th><th>Client</th><th>Type</th><th>Status</th></tr></thead><tbody><tr><td><strong>Smith v. Corp</strong></td><td>John Smith</td><td>Litigation</td><td><span class="badge ba">Discovery</span></td></tr><tr><td><strong>Rivera Estate</strong></td><td>Maria Rivera</td><td>Probate</td><td><span class="badge bc">Active</span></td></tr><tr><td><strong>TechCo Acquisition</strong></td><td>TechCo LLC</td><td>M&A</td><td><span class="badge bg">Closing</span></td></tr><tr><td><strong>Park Ave Closing</strong></td><td>J. Park</td><td>Real Estate</td><td><span class="badge bc">In Progress</span></td></tr></tbody></table></div></div><div class="card"><div class="ch"><div class="ct">Billable Hour Targets</div></div><div class="cb"><div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Partner - M. Dibert</span><span style="color:var(--green)">94%</span></div><div class="rbt"><div class="rbf" style="width:94%"></div></div></div><div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Associate - J. Lee</span><span style="color:var(--amber)">78%</span></div><div class="rbt"><div class="rbf" style="width:78%;background:var(--amber)"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Associate - S. Kim</span><span style="color:var(--red)">62%</span></div><div class="rbt"><div class="rbf" style="width:62%;background:var(--red)"></div></div></div></div></div></div></div><div class="page" id="pg-matters"><div class="pt">All Matters</div><div class="ps">Full matter portfolio with AI status tracking</div><div class="toolbar"><input type="text" class="sbox" placeholder="Search matters..." oninput="ft(this,'mat-tbl')"><button class="btn btn-c" onclick="openM('m-new-matter')">+ New Matter</button><button class="btn btn-o" onclick="exportCSV('mat-tbl','sairnlaw-matters')">Export CSV</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt" id="mat-tbl"><thead><tr><th>Matter #</th><th>Name</th><th>Client</th><th>Type</th><th>Attorney</th><th>Open Date</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>M-2041</td><td><strong>Smith v. Corp</strong></td><td>John Smith</td><td>Litigation</td><td>M. Dibert</td><td>Jan 15, 2025</td><td><span class="badge ba">Discovery</span></td><td><button class="btn btn-sm btn-c" onclick="askAI('Give me a full status update on matter Smith v. Corp including next steps and deadline risks.')">AI Update</button></td></tr><tr><td>M-2042</td><td><strong>Rivera Estate</strong></td><td>Maria Rivera</td><td>Probate</td><td>J. Lee</td><td>Mar 1, 2025</td><td><span class="badge bc">Active</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td>M-2043</td><td><strong>TechCo Acquisition</strong></td><td>TechCo LLC</td><td>M&A</td><td>M. Dibert</td><td>Feb 10, 2025</td><td><span class="badge bg">Closing</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td>M-2044</td><td><strong>Park Ave Closing</strong></td><td>J. Park</td><td>Real Estate</td><td>S. Kim</td><td>Jun 1, 2025</td><td><span class="badge bc">In Progress</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr></tbody></table></div></div></div><div class="page" id="pg-calendar"><div class="pt">Docket & Calendar</div><div class="ps">Deadlines, hearings, and critical dates</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-add-deadline')">+ Add Deadline</button><button class="btn btn-o" onclick="askAI('Review all upcoming deadlines. Which are most critical in the next 30 days?')">AI Deadline Alert</button></div><div class="flag fe">&#x1F6A8; SOL deadline for Smith v. Corp -- <strong>July 14, 2025</strong> -- 30 days away. Action required.</div><div class="card" style="margin-top:14px;"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Date</th><th>Matter</th><th>Event</th><th>Type</th><th>Attorney</th><th>Status</th></tr></thead><tbody><tr><td><strong style="color:var(--red)">Jun 20</strong></td><td>Smith v. Corp</td><td>Discovery Responses Due</td><td>Deadline</td><td>M. Dibert</td><td><span class="badge br">Urgent</span></td></tr><tr><td>Jun 24</td><td>TechCo Acquisition</td><td>Due Diligence Complete</td><td>Milestone</td><td>M. Dibert</td><td><span class="badge ba">In Progress</span></td></tr><tr><td>Jun 28</td><td>Rivera Estate</td><td>Probate Hearing</td><td>Court Date</td><td>J. Lee</td><td><span class="badge bc">Confirmed</span></td></tr><tr><td>Jul 5</td><td>Park Ave Closing</td><td>Closing Date</td><td>Milestone</td><td>S. Kim</td><td><span class="badge bc">Scheduled</span></td></tr><tr><td>Jul 14</td><td>Smith v. Corp</td><td>Statute of Limitations</td><td>SOL</td><td>M. Dibert</td><td><span class="badge br">Critical</span></td></tr></tbody></table></div></div></div><div class="page" id="pg-tasks"><div class="pt">Tasks</div><div class="ps">All open action items across matters</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-add-task')">+ New Task</button><button class="btn btn-o" onclick="askAI('What tasks should I prioritize today based on deadlines and matter urgency?')">AI Prioritize</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Task</th><th>Matter</th><th>Assigned To</th><th>Due</th><th>Priority</th><th>Status</th></tr></thead><tbody><tr><td>Draft discovery responses</td><td>Smith v. Corp</td><td>M. Dibert</td><td><strong style="color:var(--red)">Jun 20</strong></td><td><span class="badge br">High</span></td><td><span class="badge ba">In Progress</span></td></tr><tr><td>Review purchase agreement</td><td>TechCo Acquisition</td><td>J. Lee</td><td>Jun 22</td><td><span class="badge ba">High</span></td><td><span class="badge bc">Not Started</span></td></tr><tr><td>Prepare probate inventory</td><td>Rivera Estate</td><td>S. Kim</td><td>Jun 25</td><td><span class="badge bc">Medium</span></td><td><span class="badge bc">In Progress</span></td></tr></tbody></table></div></div></div><div class="page" id="pg-documents"><div class="pt">Documents</div><div class="ps">Matter documents with AI analysis</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-upload-doc')">+ Upload Document</button><button class="btn btn-o" onclick="askAI('Review all documents for matter Smith v. Corp and summarize the key issues.')">AI Document Review</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Document</th><th>Matter</th><th>Type</th><th>Uploaded</th><th>By</th><th>Action</th></tr></thead><tbody><tr><td>Complaint_Smith_v_Corp.pdf</td><td>Smith v. Corp</td><td>Pleading</td><td>Jan 15, 2025</td><td>M. Dibert</td><td><button class="btn btn-sm btn-o" onclick="askAI('Summarize the complaint in Smith v. Corp and identify the key legal claims.')">AI Review</button></td></tr><tr><td>Rivera_Will_Final.pdf</td><td>Rivera Estate</td><td>Estate Doc</td><td>Mar 2, 2025</td><td>J. Lee</td><td><button class="btn btn-sm btn-o" onclick="askAI('Review the Rivera will and identify any ambiguities or potential disputes.')">AI Review</button></td></tr><tr><td>TechCo_LOI.pdf</td><td>TechCo Acquisition</td><td>M&A</td><td>Feb 12, 2025</td><td>M. Dibert</td><td><button class="btn btn-sm btn-o" onclick="askAI('Review the TechCo LOI and flag any concerning terms.')">AI Review</button></td></tr></tbody></table></div></div></div><div class="page" id="pg-timekeeping"><div class="pt">Time Keeping</div><div class="ps">Log billable hours -- AI detects missing time</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-log-time')">+ Log Time</button><button class="btn btn-o" onclick="askAI('Find any unbilled time entries this month and suggest which matters to bill them to.')">AI Find Unbilled</button><button class="btn btn-o" onclick="exportCSV('time-tbl','sairnlaw-time')">Export CSV</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt" id="time-tbl"><thead><tr><th>Date</th><th>Attorney</th><th>Matter</th><th>Hours</th><th>Rate</th><th>Amount</th><th>Description</th><th>Status</th></tr></thead><tbody><tr><td>Jun 14</td><td>M. Dibert</td><td>Smith v. Corp</td><td>2.5</td><td>$450</td><td>$1,125</td><td>Review discovery responses</td><td><span class="badge bc">Unbilled</span></td></tr><tr><td>Jun 14</td><td>J. Lee</td><td>TechCo Acquisition</td><td>3.0</td><td>$325</td><td>$975</td><td>Due diligence review</td><td><span class="badge bc">Unbilled</span></td></tr><tr><td>Jun 13</td><td>S. Kim</td><td>Rivera Estate</td><td>1.5</td><td>$300</td><td>$450</td><td>Client communication</td><td><span class="badge bg">Billed</span></td></tr><tr><td>Jun 13</td><td>M. Dibert</td><td>TechCo Acquisition</td><td>4.0</td><td>$450</td><td>$1,800</td><td>Contract negotiation</td><td><span class="badge bg">Billed</span></td></tr><tr class="ttr"><td colspan="4"><strong>Today Total</strong></td><td></td><td><strong>$4,350</strong></td><td></td><td></td></tr></tbody></table></div></div></div><div class="page" id="pg-invoices"><div class="pt">Invoices</div><div class="ps">Client billing with trust accounting</div><div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-invoice')">+ New Invoice</button><button class="btn btn-o" onclick="askAI('Which invoices are overdue? Draft professional collection letters for each client.')">AI Collections</button><button class="btn btn-o" onclick="exportCSV('inv-tbl','sairnlaw-invoices')">Export CSV</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt" id="inv-tbl"><thead><tr><th>Invoice #</th><th>Client</th><th>Matter</th><th>Amount</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>INV-0841</td><td>TechCo LLC</td><td>Acquisition</td><td>$18,400</td><td>Jun 30</td><td><span class="badge bc">Sent</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td>INV-0840</td><td>John Smith</td><td>Smith v. Corp</td><td>$8,200</td><td>Jun 14</td><td><span class="badge br">Overdue</span></td><td><button class="btn btn-sm btn-r" onclick="askAI('Draft a professional but firm collection letter to John Smith for overdue invoice INV-0840 for $8,200.')">AI Collect</button></td></tr><tr><td>INV-0839</td><td>Maria Rivera</td><td>Estate</td><td>$4,800</td><td>Jun 25</td><td><span class="badge ba">Pending</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr></tbody></table></div></div></div><div class="page" id="pg-trust"><div class="pt">Trust Accounts</div><div class="ps">IOLTA compliant trust accounting</div><div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Client</th><th>Matter</th><th>Trust Balance</th><th>Last Activity</th><th>Status</th></tr></thead><tbody><tr><td>John Smith</td><td>Smith v. Corp</td><td>$18,000</td><td>Jun 1</td><td><span class="badge bg">Active</span></td></tr><tr><td>TechCo LLC</td><td>Acquisition</td><td>$50,000</td><td>Jun 8</td><td><span class="badge bg">Active</span></td></tr><tr><td>Maria Rivera</td><td>Rivera Estate</td><td>$26,000</td><td>May 28</td><td><span class="badge bg">Active</span></td></tr><tr class="ttr"><td colspan="2"><strong>Total Trust</strong></td><td><strong>$94,000</strong></td><td></td><td></td></tr></tbody></table></div></div></div><div class="page" id="pg-ar"><div class="pt">AR Aging</div><div class="ps">Accounts receivable by age</div><div class="card"><div class="cb"><div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Current (0-30 days)</span><span style="color:var(--green)">$98K</span></div><div class="rbt"><div class="rbf" style="width:53%"></div></div></div><div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>31-60 days</span><span style="color:var(--amber)">$56K</span></div><div class="rbt"><div class="rbf" style="width:30%;background:var(--amber)"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>61+ days</span><span style="color:var(--red)">$30K</span></div><div class="rbt"><div class="rbf" style="width:17%;background:var(--red)"></div></div></div><div style="margin-top:16px;"><button class="btn btn-o" onclick="askAI('Analyze my AR aging and recommend a collection strategy for the 61+ day bucket.')">AI Collection Strategy</button></div></div></div></div><div class="page" id="pg-clients"><div class="pt">Clients</div><div class="ps">Full client database</div><div class="toolbar"><input type="text" class="sbox" placeholder="Search clients..." oninput="ft(this,'cl-tbl')"><button class="btn btn-c" onclick="openM('m-new-client')">+ New Client</button><button class="btn btn-o" onclick="exportCSV('cl-tbl','sairnlaw-clients')">Export CSV</button></div><div class="card"><div class="cb" style="padding:0;"><table class="dt" id="cl-tbl"><thead><tr><th>Client</th><th>Type</th><th>Phone</th><th>Open Matters</th><th>YTD Billed</th><th>Action</th></tr></thead><tbody><tr><td><strong>TechCo LLC</strong></td><td>Corporate</td><td>(440) 555-2001</td><td>1</td><td>$48,400</td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td><strong>John Smith</strong></td><td>Individual</td><td>(216) 555-2002</td><td>1</td><td>$18,200</td><td><button class="btn btn-sm btn-o">View</button></td></tr><tr><td><strong>Maria Rivera</strong></td><td>Individual</td><td>(440) 555-2003</td><td>1</td><td>$12,800</td><td><button class="btn btn-sm btn-o">View</button></td></tr></tbody></table></div></div></div><div class="page" id="pg-intake"><div class="pt">New Client Intake</div><div class="ps">Capture new matter details and run conflict check</div><div class="toolbar"><button class="btn btn-o" onclick="askAI('Run a conflict check for the prospective client information I am about to enter.')">AI Conflict Check</button></div><div class="card"><div class="ch"><div class="ct">Intake Form</div></div><div class="cb"><div class="fgrid"><div class="fg"><label>Client Name</label><input type="text" placeholder="Full legal name"></div><div class="fg"><label>Client Type</label><select><option>Individual</option><option>Corporate</option><option>Government</option></select></div><div class="fg"><label>Phone</label><input type="tel" placeholder="(555) 000-0000"></div><div class="fg"><label>Email</label><input type="email" placeholder="email@domain.com"></div><div class="fg"><label>Matter Type</label><select><option>Litigation</option><option>Real Estate</option><option>Corporate/M&A</option><option>Estate Planning</option><option>Criminal</option><option>Family Law</option></select></div><div class="fg"><label>Opposing Parties</label><input type="text" placeholder="For conflict check"></div><div class="fg"><label>Retainer Amount</label><input type="number" placeholder="$0"></div><div class="fg"><label>Assigned Attorney</label><select><option>M. Dibert</option><option>J. Lee</option><option>S. Kim</option></select></div><div class="fg full"><label>Matter Description</label><textarea placeholder="Brief description of legal matter..."></textarea></div></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-c" onclick="toast('Client intake saved. Conflict check passed.')">Save Intake</button><button class="btn btn-o" onclick="askAI('Draft a retainer agreement for this new client matter.')">AI Draft Retainer</button></div></div></div></div><div class="page" id="pg-conflicts"><div class="pt">Conflict Check</div><div class="ps">AI-powered conflict of interest detection</div><div class="toolbar"><button class="btn btn-c" onclick="askAI('Run a full conflict check for all current and prospective clients. Flag any potential conflicts.')">Run AI Conflict Check</button></div><div class="flag fi">&#x1F916; AI scans all current and former clients, matters, and opposing parties against new intake data.</div><div class="card" style="margin-top:14px;"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Check Date</th><th>New Client</th><th>Against</th><th>Result</th></tr></thead><tbody><tr><td>Jun 14</td><td>TechCo LLC</td><td>All matters</td><td><span class="badge bg">Clear</span></td></tr><tr><td>Jun 10</td><td>Park Ave Partners</td><td>All matters</td><td><span class="badge bg">Clear</span></td></tr><tr><td>Jun 5</td><td>Rival Corp</td><td>All matters</td><td><span class="badge br">Conflict Found -- Smith v. Corp</span></td></tr></tbody></table></div></div></div><div class="page" id="pg-formula"><div class="pt">Formula Editor</div><div class="ps">Admin: set billing rates and fee structures</div><div class="card"><div class="cb"><div class="fgrid"><div class="fg"><label>Partner Rate ($/hr)</label><input type="number" value="450"></div><div class="fg"><label>Senior Associate Rate ($/hr)</label><input type="number" value="325"></div><div class="fg"><label>Associate Rate ($/hr)</label><input type="number" value="275"></div><div class="fg"><label>Paralegal Rate ($/hr)</label><input type="number" value="175"></div><div class="fg"><label>Retainer Minimum ($)</label><input type="number" value="2500"></div><div class="fg"><label>Late Fee % (monthly)</label><input type="number" value="1.5"></div></div><div style="margin-top:16px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairnlaw');toast('Rates saved')">Save Rates</button></div></div></div></div><div class="page" id="pg-csv"><div class="pt">CSV Tools</div><div class="ps">Import and export matter, time, and billing data</div><div class="two-col"><div class="card"><div class="ch"><div class="ct">Import</div></div><div class="cb"><div class="fg" style="margin-bottom:12px;"><label>Type</label><select><option>Matters</option><option>Clients</option><option>Time Entries</option></select></div><div style="border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;" onclick="document.getElementById('csv-up').click()"><div style="font-size:26px;">&#x1F4C2;</div><div style="font-size:13px;color:var(--muted);margin-top:6px;">Drop CSV or click to upload</div></div><input type="file" id="csv-up" accept=".csv" style="display:none;"></div></div><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:9px;"><button class="btn btn-o" onclick="exportCSV('mat-tbl','sairnlaw-matters')">Export Matters CSV</button><button class="btn btn-o" onclick="exportCSV('time-tbl','sairnlaw-time')">Export Time Entries CSV</button><button class="btn btn-o" onclick="exportCSV('inv-tbl','sairnlaw-invoices')">Export Invoices CSV</button><button class="btn btn-o" onclick="exportCSV('cl-tbl','sairnlaw-clients')">Export Clients CSV</button></div></div></div></div><div class="page" id="pg-sairnbiz"><div class="pt">SAIRNbiz</div><div class="ps">HR + Accounting -- included free with SAIRNlaw</div><div id="sbiz-container" style="margin-bottom:16px;"></div><div class="flag fi">SAIRNbiz manages attorney payroll, benefits, GL entries, and trust accounting reconciliation.</div><div style="margin-top:14px;display:flex;gap:10px;"><button class="btn btn-c" onclick="SAIRNbiz.openHub()">Open SAIRNbiz</button><button class="btn btn-o" onclick="SAIRNbiz.sendEvent('sairnlaw','sync',{ts:new Date().toISOString()});toast('Synced to SAIRNbiz')">Sync to SAIRNbiz</button></div></div></div>
   </div>
 </div>
 <div id="aip">
@@ -175,6 +175,15 @@ function doLogin(){
     document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);
     SAIRNbiz.sendEvent('sairnlaw','app_loaded',{role:curRole,ts:new Date().toISOString()});
     initAI();toast('Welcome back!');
+    SAIRNstore.watchTable('sairnlaw', 'mat-tbl');
+    SAIRNstore.watchTable('sairnlaw', 'time-tbl');
+    SAIRNstore.watchTable('sairnlaw', 'inv-tbl');
+    SAIRNstore.watchTable('sairnlaw', 'cl-tbl');
+    SAIRNstore.loadFormulas('sairnlaw');
+
+    // Restore AI conversation history
+    _aih = SAIRNstore.loadAIHistory('sairnlaw') || [];
+
   }else{
     document.getElementById('le').textContent='Incorrect PIN.';
     ['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value='';});
@@ -193,9 +202,258 @@ var _aih=[];
 function toggleAI(){document.getElementById('aip').classList.toggle('open');}
 function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}
 function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnlaw',is_demo:true,system:"You are the AI for SAIRNlaw, a law firm practice management platform. You know about matter management, billable hours, IOLTA trust accounting, conflict checks, docket management, ABA billing guidelines, and legal practice operations. Be specific, data-driven, and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnlaw',is_demo:true,system:"You are the AI for SAIRNlaw, a law firm practice management platform. You know about matter management, billable hours, IOLTA trust accounting, conflict checks, docket management, ABA billing guidelines, and legal practice operations. Be specific, data-driven, and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnlaw',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
 function initAI(){var prompts=[["Deadline Alert", "Which matters have deadlines in the next 30 days?"], ["Unbilled Time", "Find all unbilled time entries and suggest invoices."], ["AR Collections", "Which invoices are overdue? Draft collection letters."], ["Matter Status", "Give me a status update on all active matters."], ["Conflict Check", "Run a conflict check for all current matters."], ["Revenue Forecast", "Forecast my revenue for next 30 days based on pipeline."]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
+
+</script>
+
+<!-- SAIRNstore: localStorage persistence -->
+<script>
+// SAIRNstore.js -- Persistent localStorage layer for all SAIRN B2B apps
+// Injected into every app. Auto-saves and auto-loads all data tables.
+// Michael L. Dibert -- SAIRN Technologies, LLC
+
+var SAIRNstore = (function() {
+
+  // ── CORE STORE ──────────────────────────────────────────────
+  function getKey(appId, table) {
+    return 'sairn:' + appId + ':' + table;
+  }
+
+  function save(appId, table, rows) {
+    try {
+      localStorage.setItem(getKey(appId, table), JSON.stringify({
+        rows: rows,
+        ts: Date.now()
+      }));
+      return true;
+    } catch(e) {
+      console.warn('SAIRNstore save error:', e);
+      return false;
+    }
+  }
+
+  function load(appId, table) {
+    try {
+      var raw = localStorage.getItem(getKey(appId, table));
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return parsed.rows || null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function clear(appId, table) {
+    try {
+      localStorage.removeItem(getKey(appId, table));
+    } catch(e) {}
+  }
+
+  function clearAll(appId) {
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) keys.push(k);
+      }
+      keys.forEach(function(k) { localStorage.removeItem(k); });
+    } catch(e) {}
+  }
+
+  // ── TABLE SERIALIZER ────────────────────────────────────────
+  // Reads a <tbody> and converts it to an array of row-data objects
+  function tableToRows(tbody) {
+    var rows = [];
+    if (!tbody) return rows;
+    tbody.querySelectorAll('tr').forEach(function(tr) {
+      var cells = [];
+      tr.querySelectorAll('td').forEach(function(td) {
+        cells.push(td.innerHTML);
+      });
+      if (cells.length > 0) rows.push(cells);
+    });
+    return rows;
+  }
+
+  // Restores rows into a <tbody>
+  function rowsToTable(tbody, rows) {
+    if (!tbody || !rows || rows.length === 0) return;
+    // Keep header row if it's a th-only row
+    var existingRows = tbody.querySelectorAll('tr');
+    // Clear non-header rows
+    existingRows.forEach(function(tr) {
+      if (!tr.querySelector('th')) tr.remove();
+    });
+    rows.forEach(function(cells) {
+      var tr = document.createElement('tr');
+      cells.forEach(function(html) {
+        var td = document.createElement('td');
+        td.innerHTML = html;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── AUTO-WATCH: patch all buttons that add rows ─────────────
+  function watchTable(appId, tableId) {
+    var tbl = document.getElementById(tableId);
+    if (!tbl) return;
+    var tbody = tbl.querySelector('tbody');
+    if (!tbody) return;
+
+    // Load saved data
+    var saved = load(appId, tableId);
+    if (saved) rowsToTable(tbody, saved);
+
+    // Observe changes and auto-save
+    var observer = new MutationObserver(function() {
+      var rows = tableToRows(tbody);
+      if (rows.length > 0) save(appId, tableId, rows);
+    });
+    observer.observe(tbody, { childList: true, subtree: true, characterData: true });
+  }
+
+  // ── FORM PERSISTENCE ────────────────────────────────────────
+  function saveForm(formId, appId) {
+    var form = document.getElementById(formId);
+    if (!form) return;
+    var data = {};
+    form.querySelectorAll('input, select, textarea').forEach(function(el) {
+      if (el.name || el.id) data[el.id || el.name] = el.value;
+    });
+    save(appId, 'form:' + formId, [data]);
+  }
+
+  function loadForm(formId, appId) {
+    var saved = load(appId, 'form:' + formId);
+    if (!saved || !saved[0]) return;
+    var data = saved[0];
+    var form = document.getElementById(formId);
+    if (!form) return;
+    Object.keys(data).forEach(function(id) {
+      var el = form.querySelector('#' + id) || form.querySelector('[name="' + id + '"]');
+      if (el) el.value = data[id];
+    });
+  }
+
+  // ── FORMULA EDITOR PERSISTENCE ──────────────────────────────
+  function saveFormulas(appId) {
+    var formulas = {};
+    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
+      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
+      var key = lbl ? lbl.textContent.trim() : inp.id || Math.random();
+      formulas[key] = inp.value;
+    });
+    save(appId, 'formulas', [formulas]);
+    return formulas;
+  }
+
+  function loadFormulas(appId) {
+    var saved = load(appId, 'formulas');
+    if (!saved || !saved[0]) return;
+    var formulas = saved[0];
+    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
+      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
+      var key = lbl ? lbl.textContent.trim() : null;
+      if (key && formulas[key] !== undefined) inp.value = formulas[key];
+    });
+  }
+
+  // ── MODAL FORM → TABLE INJECTION ────────────────────────────
+  // When a modal save button is clicked, harvest its form fields
+  // and inject a new row into the target table
+  function hookModalSave(btnSelector, targetTableId, appId, rowBuilder) {
+    document.querySelectorAll(btnSelector).forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var modal = btn.closest('.modal');
+        if (!modal) return;
+        var inputs = {};
+        modal.querySelectorAll('input, select, textarea').forEach(function(el) {
+          var lbl = el.closest('.fg') ? el.closest('.fg').querySelector('label') : null;
+          var key = lbl ? lbl.textContent.trim() : el.id || el.name;
+          inputs[key] = el.value;
+        });
+        var tbl = document.getElementById(targetTableId);
+        if (!tbl) return;
+        var tbody = tbl.querySelector('tbody');
+        if (!tbody) return;
+        var row = rowBuilder(inputs);
+        if (row) {
+          var tr = document.createElement('tr');
+          row.forEach(function(cell) {
+            var td = document.createElement('td');
+            td.innerHTML = cell;
+            tr.appendChild(td);
+          });
+          tbody.insertBefore(tr, tbody.firstChild);
+          var rows = tableToRows(tbody);
+          save(appId, targetTableId, rows);
+        }
+      });
+    });
+  }
+
+  // ── EXPORT ALL ──────────────────────────────────────────────
+  function exportAll(appId) {
+    var all = {};
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) {
+          all[k.replace(prefix, '')] = JSON.parse(localStorage.getItem(k));
+        }
+      }
+    } catch(e) {}
+    return all;
+  }
+
+  // ── STORAGE STATS ───────────────────────────────────────────
+  function stats(appId) {
+    var count = 0, bytes = 0;
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) {
+          count++;
+          bytes += (localStorage.getItem(k) || '').length;
+        }
+      }
+    } catch(e) {}
+    return { tables: count, bytes: bytes, kb: (bytes / 1024).toFixed(1) };
+  }
+
+  // ── AI CONVERSATION HISTORY ─────────────────────────────────
+  function saveAIHistory(appId, history) {
+    save(appId, '_ai_history', history.slice(-20));
+  }
+
+  function loadAIHistory(appId) {
+    return load(appId, '_ai_history') || [];
+  }
+
+  return {
+    save: save,
+    load: load,
+    clear: clear,
+    clearAll: clearAll,
+    watchTable: watchTable,
+    saveForm: saveForm,
+    loadForm: loadForm,
+    saveFormulas: saveFormulas,
+    loadFormulas: loadFormulas,
+    hookModalSave: hookModalSave,
+    exportAll: exportAll,
+    stats: stats,
+    saveAIHistory: saveAIHistory,
+    loadAIHistory: loadAIHistory
+  };
+})();
 
 </script>
 </body>
