@@ -270,7 +270,7 @@ function saLockScreen() {
   overlay.id = 'sairn-lock-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(30,27,75,.97);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:40px;width:340px;text-align:center">' +
-    '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
+    '<div style="font-size:48px;margin-bottom:12px"></div>' +
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
     '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
     '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
@@ -608,7 +608,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
 // LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
-    if (typeof url === 'string' && url.includes('api.anthropic.com')) {
+    if (typeof url === 'string' && url.includes('sairn.vercel.app/api/claude')) {
       saLog('L22-DIRECT-API', 'Direct Anthropic API call blocked', 'critical');
       return Promise.reject(new Error('SAIRN Security: Direct Anthropic calls not permitted. Use SAIRN proxy.'));
     }
@@ -1151,7 +1151,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
 // SAIRN UNIVERSAL AI FOLLOW-UP QUESTIONS MODULE
 // Feature 2 -- after every Claude response, 3 smart follow-up chips
 // appear. One tap sends the question instantly.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -1181,7 +1181,7 @@ style.textContent =
   '.sairn-followup-row{display:flex;gap:7px;flex-wrap:wrap;padding:10px 16px 4px;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px}' +
   '.sairn-fu-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.3);margin-bottom:6px;width:100%}' +
   '.sairn-fu-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:100px;font-size:11px;color:rgba(240,240,255,0.65);cursor:pointer;transition:all .15s;line-height:1.3;text-align:left}' +
-  '.sairn-fu-chip::before{content:"→";color:' + APP_COLOR + ';font-size:11px;flex-shrink:0}' +
+  '.sairn-fu-chip::before{content:"";color:' + APP_COLOR + ';font-size:11px;flex-shrink:0}' +
   '.sairn-fu-chip:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.2);color:#F0F0FF}' +
   '.sairn-fu-chip.loading{opacity:0.5;pointer-events:none}' +
   '.sairn-fu-generating{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:11px;color:rgba(240,240,255,0.3)}';
@@ -1342,7 +1342,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // After every 3rd AI response, Claude summarizes the session.
 // That summary is injected into all future prompts as context.
 // The AI stops forgetting what it told you 2 questions ago.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -1391,7 +1391,7 @@ memPanel.style.cssText = 'position:fixed;top:100px;right:16px;z-index:800;backgr
 memPanel.innerHTML =
   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#475569">Session Memory</div>' +
-  '<button onclick="document.getElementById(\'sairn-memory-panel\').style.display=\'none\'" style="background:none;border:none;color:rgba(240,240,255,0.4);font-size:18px;cursor:pointer;line-height:1">×</button>' +
+  '<button onclick="document.getElementById(\'sairn-memory-panel\').style.display=\'none\'" style="background:none;border:none;color:rgba(240,240,255,0.4);font-size:18px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div id="sairn-memory-content" style="font-size:12px;color:rgba(240,240,255,0.6);line-height:1.65;max-height:200px;overflow-y:auto">No memory built yet. Keep chatting and I\'ll start remembering what matters.</div>' +
   '<button onclick="clearSessionMemory()" style="margin-top:12px;width:100%;padding:7px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:7px;color:#EF4444;font-size:11px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif">Clear Memory</button>';
@@ -1528,7 +1528,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // User sets preferred response style once -- stored in localStorage
 // Injected into every system prompt automatically
 // Options: Simple / Detailed / Formal / Casual / Expert
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -1552,11 +1552,11 @@ var APP_COLOR = (function(){
 var TONE_KEY = 'sairn_tone_prefs';
 
 var PRESETS = [
-  { id:'simple',   label:'Simple',   icon:'🌱', desc:'Plain language, short sentences, no jargon. Best for everyday use.' },
-  { id:'detailed', label:'Detailed', icon:'📖', desc:'Thorough explanations with context. Best when you want to learn.' },
-  { id:'formal',   label:'Formal',   icon:'🎩', desc:'Professional tone, structured output. Best for work or legal matters.' },
-  { id:'casual',   label:'Casual',   icon:'💬', desc:'Friendly and conversational. Best for everyday questions.' },
-  { id:'expert',   label:'Expert',   icon:'🎓', desc:'Technical depth, assumes knowledge. Best for professionals.' },
+  { id:'simple',   label:'Simple',   icon:'', desc:'Plain language, short sentences, no jargon. Best for everyday use.' },
+  { id:'detailed', label:'Detailed', icon:'', desc:'Thorough explanations with context. Best when you want to learn.' },
+  { id:'formal',   label:'Formal',   icon:'', desc:'Professional tone, structured output. Best for work or legal matters.' },
+  { id:'casual',   label:'Casual',   icon:'', desc:'Friendly and conversational. Best for everyday questions.' },
+  { id:'expert',   label:'Expert',   icon:'', desc:'Technical depth, assumes knowledge. Best for professionals.' },
 ];
 
 var TONE_PROMPTS = {
@@ -1665,7 +1665,7 @@ setTimeout(buildToneBar, 700);
 // When Claude produces a numbered list, auto-render it as an
 // interactive checklist. Progress saved to localStorage.
 // Returns to living action list the user works through over time.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -1768,7 +1768,7 @@ function buildChecklist(steps, planId, existingState) {
 
   wrap.innerHTML =
     '<div class="sap-header">' +
-    '<span class="sap-title">✅ Action Plan</span>' +
+    '<span class="sap-title"> Action Plan</span>' +
     '<span class="sap-progress" id="sap-prog-' + planId + '">' + done + ' of ' + steps.length + ' complete</span>' +
     '</div>' +
     '<div class="sap-progress-bar"><div class="sap-progress-fill" id="sap-fill-' + planId + '" style="width:' + pct + '%"></div></div>';
@@ -1779,7 +1779,7 @@ function buildChecklist(steps, planId, existingState) {
     item.className = 'sap-item' + (isDone ? ' done' : '');
     item.dataset.idx = i;
     item.innerHTML =
-      '<div class="sap-checkbox"><span class="sap-checkmark">✓</span></div>' +
+      '<div class="sap-checkbox"><span class="sap-checkmark"></span></div>' +
       '<div class="sap-text">' + step + '</div>';
     item.onclick = function() { toggleStep(planId, i, steps.length, item); };
     wrap.appendChild(item);
@@ -1787,14 +1787,14 @@ function buildChecklist(steps, planId, existingState) {
 
   var saveBtn = document.createElement('button');
   saveBtn.className = 'sap-save-btn';
-  saveBtn.innerHTML = '💾 Save This Action Plan';
+  saveBtn.innerHTML = ' Save This Action Plan';
   saveBtn.onclick = function() {
     var plans = loadPlans();
     if (!plans[planId]) plans[planId] = { steps: steps, state: existingState };
     savePlans(plans);
-    saveBtn.textContent = '✓ Saved';
+    saveBtn.textContent = ' Saved';
     saveBtn.style.color = '#4ADE80';
-    setTimeout(function(){ saveBtn.innerHTML = '💾 Save This Action Plan'; saveBtn.style.color = ''; }, 2000);
+    setTimeout(function(){ saveBtn.innerHTML = ' Save This Action Plan'; saveBtn.style.color = ''; }, 2000);
   };
   wrap.appendChild(saveBtn);
   return wrap;
@@ -1881,7 +1881,7 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installActi
 //   "Simplify" -- rewrite in plain language, short sentences
 //   "Go Deeper" -- expand with more detail and examples
 // One tap -- instant. No typing required.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -1953,7 +1953,7 @@ function buildResponseActions(aiContent) {
   // Simplify button
   var simplifyBtn = document.createElement('button');
   simplifyBtn.className = 'sra-btn';
-  simplifyBtn.innerHTML = '🌱 Simplify';
+  simplifyBtn.innerHTML = ' Simplify';
   simplifyBtn.onclick = function() {
     requestRewrite(
       'Please rewrite your previous response in much simpler language. Use very short sentences. No jargon or technical terms. Explain as if talking to someone who is completely new to this topic. Keep it brief and clear.',
@@ -1964,7 +1964,7 @@ function buildResponseActions(aiContent) {
   // Go Deeper button
   var deeperBtn = document.createElement('button');
   deeperBtn.className = 'sra-btn';
-  deeperBtn.innerHTML = '📖 Go Deeper';
+  deeperBtn.innerHTML = ' Go Deeper';
   deeperBtn.onclick = function() {
     requestRewrite(
       'Please expand on your previous response with much more detail. Add examples, explain the reasoning behind each point, cover edge cases, and give me a more comprehensive understanding of the topic.',
@@ -1975,7 +1975,7 @@ function buildResponseActions(aiContent) {
   // Bullet Points button (bonus -- high value)
   var bulletBtn = document.createElement('button');
   bulletBtn.className = 'sra-btn';
-  bulletBtn.innerHTML = '📋 As Bullets';
+  bulletBtn.innerHTML = ' As Bullets';
   bulletBtn.onclick = function() {
     requestRewrite(
       'Please reformat your previous response as a clean bullet-point list. Group related items together. Use sub-bullets where helpful. Make each point concise and scannable.',
@@ -1986,7 +1986,7 @@ function buildResponseActions(aiContent) {
   // Give me an example button
   var exampleBtn = document.createElement('button');
   exampleBtn.className = 'sra-btn';
-  exampleBtn.innerHTML = '💡 Example';
+  exampleBtn.innerHTML = ' Example';
   exampleBtn.onclick = function() {
     requestRewrite(
       'Give me a concrete, real-world example that illustrates your previous response. Make it specific and practical -- something I could actually relate to or use.',
@@ -2048,9 +2048,9 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installSimp
 // ================================================================
 // SAIRN FEATURE 7 -- VOICE INPUT (Web Speech API)
 // Microphone button next to the send button.
-// Speech → text → fills the input → sends to Claude.
+// Speech  text  fills the input  sends to Claude.
 // Works in Chrome, Edge, Safari. Falls back gracefully.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -2088,7 +2088,7 @@ document.head.appendChild(st);
 
 var statusEl = document.createElement('div');
 statusEl.id = 'sairn-voice-status';
-statusEl.textContent = '🎙️ Listening...';
+statusEl.textContent = ' Listening...';
 document.body.appendChild(statusEl);
 
 var recognition = null;
@@ -2139,10 +2139,10 @@ function startVoice() {
     if (btn) btn.classList.remove('listening');
     statusEl.classList.remove('show');
     if (e.error !== 'no-speech') {
-      statusEl.textContent = '⚠️ Microphone access denied';
+      statusEl.textContent = ' Microphone access denied';
       statusEl.style.color = '#F59E0B';
       statusEl.classList.add('show');
-      setTimeout(function(){ statusEl.classList.remove('show'); statusEl.textContent = '🎙️ Listening...'; statusEl.style.color = ''; }, 2500);
+      setTimeout(function(){ statusEl.classList.remove('show'); statusEl.textContent = ' Listening...'; statusEl.style.color = ''; }, 2500);
     }
   };
 
@@ -2161,7 +2161,7 @@ function injectVoiceButton() {
   var btn = document.createElement('button');
   btn.id = 'sairn-voice-btn';
   btn.title = 'Voice input';
-  btn.innerHTML = '🎙️';
+  btn.innerHTML = '';
   btn.onclick = startVoice;
   sendBtn.parentNode.insertBefore(btn, sendBtn);
 }
@@ -2179,7 +2179,7 @@ setTimeout(injectVoiceButton, 700);
 // When NEXUS routes you to a cell, your intake context travels with you.
 // The destination app opens pre-loaded with your situation.
 // Also: "Continue in [App]" button after any Claude response.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -2208,7 +2208,7 @@ function checkIncomingHandoff() {
   // Show a context banner
   var banner = document.createElement('div');
   banner.style.cssText = 'background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:10px 14px;margin:8px 16px;font-size:12px;color:rgba(240,240,255,0.65);line-height:1.5;display:flex;align-items:flex-start;gap:10px';
-  banner.innerHTML = '<span style="font-size:16px;flex-shrink:0">↩️</span><div><strong style="color:#475569">Context from SAIRN NEXUS:</strong> ' + ctx.situation.slice(0, 200) + (ctx.situation.length > 200 ? '...' : '') + '</div>';
+  banner.innerHTML = '<span style="font-size:16px;flex-shrink:0"></span><div><strong style="color:#475569">Context from SAIRN NEXUS:</strong> ' + ctx.situation.slice(0, 200) + (ctx.situation.length > 200 ? '...' : '') + '</div>';
 
   var chatArea = document.getElementById('chatArea') || document.getElementById('messages');
   if (chatArea) chatArea.insertBefore(banner, chatArea.firstChild);
@@ -2227,16 +2227,16 @@ function checkIncomingHandoff() {
 
 //  SENDER: "Continue in [App]" buttons after AI responses 
 var CELL_MAP = [
-  { name:'SAIRNtype',    file:'/index.html',   icon:'⌨️', keywords:['write','draft','email','letter','post','document','essay','cover'] },
-  { name:'SAIRNhealth',  file:'/health.html',  icon:'❤️', keywords:['symptom','medication','health','doctor','pain','medical','diagnosis'] },
-  { name:'SAIRNmoney',   file:'/money.html',   icon:'💰', keywords:['budget','debt','money','invest','saving','credit','financial'] },
-  { name:'SAIRNlaw',     file:'/legal.html',   icon:'⚖️', keywords:['legal','rights','lawyer','lease','contract','tenant','lawsuit'] },
-  { name:'SAIRNstudy',   file:'/study.html',   icon:'📚', keywords:['study','learn','exam','homework','tutor','course','school'] },
-  { name:'SAIRNlingual', file:'/lingual.html', icon:'🌍', keywords:['language','spanish','french','chinese','translate','speak','fluent'] },
-  { name:'SAIRNsenior',  file:'/senior.html',  icon:'🌟', keywords:['medicare','social security','senior','retirement','benefit','medication'] },
-  { name:'SAIRNhome',    file:'/home.html',    icon:'🏠', keywords:['home','mortgage','rent','landlord','buy','sell','property','house'] },
-  { name:'SAIRNroam',    file:'/roam.html',    icon:'✈️', keywords:['travel','trip','hotel','flight','vacation','visit','destination'] },
-  { name:'StoneDesk',    file:'/fabricor',     icon:'🪨', keywords:['stone','granite','marble','quartz','countertop','fabrication','slab','installation','kitchen counter'] },
+  { name:'SAIRNtype',    file:'/index.html',   icon:'', keywords:['write','draft','email','letter','post','document','essay','cover'] },
+  { name:'SAIRNhealth',  file:'/health.html',  icon:'', keywords:['symptom','medication','health','doctor','pain','medical','diagnosis'] },
+  { name:'SAIRNmoney',   file:'/money.html',   icon:'', keywords:['budget','debt','money','invest','saving','credit','financial'] },
+  { name:'SAIRNlaw',     file:'/legal.html',   icon:'', keywords:['legal','rights','lawyer','lease','contract','tenant','lawsuit'] },
+  { name:'SAIRNstudy',   file:'/study.html',   icon:'', keywords:['study','learn','exam','homework','tutor','course','school'] },
+  { name:'SAIRNlingual', file:'/lingual.html', icon:'', keywords:['language','spanish','french','chinese','translate','speak','fluent'] },
+  { name:'SAIRNsenior',  file:'/senior.html',  icon:'', keywords:['medicare','social security','senior','retirement','benefit','medication'] },
+  { name:'SAIRNhome',    file:'/home.html',    icon:'', keywords:['home','mortgage','rent','landlord','buy','sell','property','house'] },
+  { name:'SAIRNroam',    file:'/roam.html',    icon:'', keywords:['travel','trip','hotel','flight','vacation','visit','destination'] },
+  { name:'StoneDesk',    file:'/fabricor',     icon:'', keywords:['stone','granite','marble','quartz','countertop','fabrication','slab','installation','kitchen counter'] },
 ];
 
 var st = document.createElement('style');
@@ -2333,7 +2333,7 @@ else {
 // Run two scenarios side by side.
 // Two mortgage options, two debt payoff plans, two lease terms.
 // Claude analyzes both and recommends.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -2388,9 +2388,9 @@ var modal = document.createElement('div');
 modal.id = 'sairn-compare-modal';
 modal.innerHTML =
   '<div class="scm-hdr">' +
-  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">⚖️ Compare Two Options</div>' +
+  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF"> Compare Two Options</div>' +
   '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Describe both options -- Claude analyzes and recommends</div></div>' +
-  '<button onclick="closeCompare()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
+  '<button onclick="closeCompare()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div class="scm-body">' +
   '<div class="scm-grid">' +
@@ -2409,7 +2409,7 @@ modal.innerHTML =
   '</div>' +
   '<div class="scm-field" style="margin-bottom:14px"><label>What matters most to you?</label>' +
   '<input type="text" id="scm-priority" placeholder="e.g. lowest monthly payment, least risk, fastest payoff, best location..."></div>' +
-  '<button class="scm-compare-btn" style="background:' + APP_COLOR + ';color:#fff" onclick="runComparison()">⚖️ Claude -- Analyze Both and Recommend →</button>' +
+  '<button class="scm-compare-btn" style="background:' + APP_COLOR + ';color:#fff" onclick="runComparison()"> Claude -- Analyze Both and Recommend </button>' +
   '<div id="scm-result" class="scm-result"></div>' +
   '</div>';
 document.body.appendChild(modal);
@@ -2477,7 +2477,7 @@ function injectCompareButton() {
   var btn = document.createElement('button');
   btn.id = 'sairn-compare-trigger';
   btn.style.cssText = 'padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(240,240,255,0.5);font-size:10px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;transition:all .15s;letter-spacing:.3px';
-  btn.textContent = '⚖️ Compare';
+  btn.textContent = ' Compare';
   btn.onclick = window.openCompare;
   btn.onmouseenter = function(){ this.style.color='rgba(240,240,255,0.9)'; this.style.borderColor='rgba(255,255,255,0.2)'; };
   btn.onmouseleave = function(){ this.style.color='rgba(240,240,255,0.5)'; this.style.borderColor='rgba(255,255,255,0.1)'; };
@@ -2497,7 +2497,7 @@ setTimeout(injectCompareButton, 800);
 // THE MOAT. Cross-cell persistent context.
 // User fills out once -- every app gets smarter forever.
 // Health, money, legal, home, senior -- all share context.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -2559,7 +2559,7 @@ document.head.appendChild(st);
 // Profile button
 var profBtn = document.createElement('div');
 profBtn.id = 'sairn-profile-btn';
-profBtn.innerHTML = '<span class="spb-dot ' + (profile.completed ? 'complete' : 'incomplete') + '"></span><span id="spb-label">' + (profile.completed ? '✓ Your Profile' : 'Set Up Profile') + '</span>';
+profBtn.innerHTML = '<span class="spb-dot ' + (profile.completed ? 'complete' : 'incomplete') + '"></span><span id="spb-label">' + (profile.completed ? ' Your Profile' : 'Set Up Profile') + '</span>';
 document.body.appendChild(profBtn);
 
 function sel(id, label, opts, val) {
@@ -2575,13 +2575,13 @@ var modal = document.createElement('div');
 modal.id = 'sairn-profile-modal';
 modal.innerHTML =
   '<div class="spm-hdr">' +
-  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">🧠 SAIRN Intelligence Profile</div>' +
+  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF"> SAIRN Intelligence Profile</div>' +
   '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Fill in once -- every SAIRN app gets smarter for you, forever</div></div>' +
-  '<button onclick="closeProfileModal()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
+  '<button onclick="closeProfileModal()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div class="spm-body">' +
 
-  '<div class="spm-section"><div class="spm-section-title">👤 About You</div>' +
+  '<div class="spm-section"><div class="spm-section-title"> About You</div>' +
   '<div class="spm-grid">' +
   inp('name', 'First Name (optional)', 'e.g. Michael', profile.name) +
   inp('age', 'Age', 'e.g. 58', profile.age) +
@@ -2591,7 +2591,7 @@ modal.innerHTML =
   sel('employment', 'Employment', ['-- Select --','Full-time employed','Part-time employed','Self-employed','Business owner','Retired','Student','Unemployed / searching','Stay at home'], profile.employment) +
   '</div></div>' +
 
-  '<div class="spm-section"><div class="spm-section-title">💰 Financial Context</div>' +
+  '<div class="spm-section"><div class="spm-section-title"> Financial Context</div>' +
   '<div class="spm-grid">' +
   sel('income_range', 'Annual Household Income', ['-- Select --','Under $30,000','$30,000-$50,000','$50,000-$75,000','$75,000-$100,000','$100,000-$150,000','$150,000-$250,000','Over $250,000','Prefer not to say'], profile.income_range) +
   sel('debt_situation', 'Debt Situation', ['-- Select --','Debt-free','Minimal debt -- under $10K','Moderate debt -- $10K-$50K','Significant debt -- $50K-$100K','High debt -- over $100K','In process of paying off'], profile.debt_situation) +
@@ -2599,7 +2599,7 @@ modal.innerHTML =
   inp('financial_goals', 'Top Financial Goal', 'e.g. pay off debt, buy a home, retire early', profile.financial_goals) +
   '</div></div>' +
 
-  '<div class="spm-section"><div class="spm-section-title">❤️ Health Context</div>' +
+  '<div class="spm-section"><div class="spm-section-title"> Health Context</div>' +
   '<div class="spm-grid">' +
   inp('health_conditions', 'Known Health Conditions (if any)', 'e.g. diabetes, hypertension -- or none', profile.health_conditions) +
   inp('medications', 'Current Medications (if any)', 'e.g. metformin, lisinopril -- or none', profile.medications) +
@@ -2607,7 +2607,7 @@ modal.innerHTML =
   sel('homeowner', 'Housing', ['-- Select --','Own my home -- paid off','Own my home -- with mortgage','Renting','Living with family','Other'], profile.homeowner) +
   '</div></div>' +
 
-  '<div class="spm-section"><div class="spm-section-title">📚 Learning & Language</div>' +
+  '<div class="spm-section"><div class="spm-section-title"> Learning & Language</div>' +
   '<div class="spm-grid">' +
   sel('education_level', 'Education Level', ['-- Select --','High school diploma/GED','Some college','Associate degree','Bachelor\'s degree','Graduate degree','Professional degree (JD/MD)','Doctorate'], profile.education_level) +
   sel('learning_style', 'Learning Style', ['-- Select --','Visual -- diagrams and examples','Detailed -- thorough explanations','Simple -- plain language please','Practical -- just tell me what to do','Expert -- I have professional knowledge'], profile.learning_style) +
@@ -2615,7 +2615,7 @@ modal.innerHTML =
   inp('language_goals', 'Languages I\'m Learning', 'e.g. French (beginner)', profile.language_goals) +
   '</div></div>' +
 
-  '<button class="spm-save-btn" onclick="saveProfileData()">🧠 Save My Profile -- Make Every App Smarter →</button>' +
+  '<button class="spm-save-btn" onclick="saveProfileData()"> Save My Profile -- Make Every App Smarter </button>' +
   '<div class="spm-status">Your profile is stored locally on your device only. It is never sent to SAIRN servers. It is only used to personalize your Claude AI responses.</div>' +
   '</div>';
 document.body.appendChild(modal);
@@ -2638,14 +2638,14 @@ window.saveProfileData = function() {
   var dot = profBtn.querySelector('.spb-dot');
   var lbl = document.getElementById('spb-label');
   if (dot) { dot.classList.remove('incomplete'); dot.classList.add('complete'); }
-  if (lbl) lbl.textContent = '✓ Your Profile';
+  if (lbl) lbl.textContent = ' Your Profile';
 
   closeProfileModal();
 
   // Flash confirmation
   var flag = document.createElement('div');
   flag.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:#4ADE80;z-index:9999';
-  flag.textContent = '✓ Profile saved -- all SAIRN apps are now personalized to you';
+  flag.textContent = ' Profile saved -- all SAIRN apps are now personalized to you';
   document.body.appendChild(flag);
   setTimeout(function(){ flag.remove(); }, 3500);
 };
@@ -2672,7 +2672,7 @@ if (!window._saircProfileFetchPatched) {
           if (profile.learning_style)  ctx.push('Learning style: ' + profile.learning_style);
           if (profile.languages)       ctx.push('Languages: ' + profile.languages);
           if (ctx.length > 0) {
-            body.system = 'USER PROFILE (use this to personalize every response):\n' + ctx.join(' · ') + '\n\nTailor your response to this specific person based on their profile.\n\n---\n\n' + body.system;
+            body.system = 'USER PROFILE (use this to personalize every response):\n' + ctx.join('  ') + '\n\nTailor your response to this specific person based on their profile.\n\n---\n\n' + body.system;
             opts = Object.assign({}, opts, { body: JSON.stringify(body) });
           }
         }
@@ -2687,7 +2687,7 @@ if (!profile.completed) {
   setTimeout(function() {
     var tip = document.createElement('div');
     tip.style.cssText = 'position:fixed;bottom:90px;left:16px;z-index:900;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:12px 16px;max-width:280px;cursor:pointer';
-    tip.innerHTML = '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">🧠 Set up your profile</div><div style="font-size:11px;color:rgba(240,240,255,0.5);line-height:1.5">Fill in once and every SAIRN app personalizes to you automatically.</div>';
+    tip.innerHTML = '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px"> Set up your profile</div><div style="font-size:11px;color:rgba(240,240,255,0.5);line-height:1.5">Fill in once and every SAIRN app personalizes to you automatically.</div>';
     tip.onclick = function(){ tip.remove(); openProfileModal(); };
     document.body.appendChild(tip);
     setTimeout(function(){ if (tip.parentNode) tip.remove(); }, 12000);
@@ -2705,7 +2705,7 @@ if (!profile.completed) {
 // Words appear as Claude generates them -- instant, alive, real.
 // Patches the sendMessage function to use SSE streaming.
 // Falls back to standard fetch if streaming unavailable.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -2822,7 +2822,7 @@ function installStreamingHook() {
               if (prof.income_range) ctx.push('Income: ' + prof.income_range);
               if (prof.health_conditions) ctx.push('Health: ' + prof.health_conditions);
               if (prof.learning_style) ctx.push('Learning style: ' + prof.learning_style);
-              if (ctx.length) patches.push('USER PROFILE: ' + ctx.join(' · '));
+              if (ctx.length) patches.push('USER PROFILE: ' + ctx.join('  '));
             }
           } catch(e) {}
 
@@ -2901,7 +2901,7 @@ function installStreamingHook() {
     } catch(err) {
       cursor.remove();
       // Show error state
-      aiEl.innerHTML = '<span style="color:rgba(239,68,68,0.8);font-size:13px">⚠️ ' + (err.message || 'Connection error') + ' -- <button onclick="sendMessage()" style="background:none;border:none;color:#475569;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px;text-decoration:underline">Retry</button></span>';
+      aiEl.innerHTML = '<span style="color:rgba(239,68,68,0.8);font-size:13px"> ' + (err.message || 'Connection error') + ' -- <button onclick="sendMessage()" style="background:none;border:none;color:#475569;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px;text-decoration:underline">Retry</button></span>';
       // Restore user message to input for retry
       if (inp) inp.value = userText;
     }
@@ -2930,7 +2930,7 @@ setTimeout(tryInstall, 1000);
 // Claude returns beautiful markdown. Apps display raw symbols.
 // This fixes that -- **bold**, headers, bullets, code, tables
 // all render properly across every SAIRN app.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -2943,7 +2943,7 @@ window.renderMarkdown = function(text) {
   var s = text;
 
   // Escape HTML first (except we want to allow our own tags)
-  // Actually we process markdown → HTML so we need to be careful
+  // Actually we process markdown  HTML so we need to be careful
   // Process in order: code blocks first, then inline
 
   // Fenced code blocks ```lang\n...\n```
@@ -3071,7 +3071,7 @@ else {
 // Current facts injected into every app's system prompt.
 // 2026 rates, guidelines, statutes -- Claude knows them cold.
 // No extra API calls. Just smarter system prompts.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -3154,11 +3154,11 @@ var DOMAIN_KNOWLEDGE = {
     '-- Sepsis Hour-1 Bundle: lactate, blood cultures, broad-spectrum antibiotics, 30mL/kg crystalloid, vasopressors if MAP <65',
     '-- AHA/ACC 2026 PE guidelines: Wells score + PERC standard pathway; CTA-PE for intermediate probability',
     '-- AHA 2025 Stroke guidelines: tPA window 4.5 hours from LKW; thrombectomy up to 24 hours select patients',
-    '-- HEART score ≥4: admit for serial troponins; ≥7: high risk, cardiology consult',
+    '-- HEART score 4: admit for serial troponins; 7: high risk, cardiology consult',
     '-- ESI Level 1: immediate life threat; Level 2: high risk/severe pain; Level 3: 2+ resources',
-    '-- CURB-65 ≥2: consider hospitalization; ≥3: ICU consideration',
-    '-- GCS ≤8: consider airway management',
-    '-- NEWS2 ≥5: escalate care; ≥7: consider ICU',
+    '-- CURB-65 2: consider hospitalization; 3: ICU consideration',
+    '-- GCS 8: consider airway management',
+    '-- NEWS2 5: escalate care; 7: consider ICU',
     '-- CDC 2024 Antibiotic guidance: de-escalate based on cultures; avoid unnecessary broad-spectrum',
   ],
   study: [
@@ -3178,7 +3178,7 @@ var DOMAIN_KNOWLEDGE = {
     '-- Japanese/Chinese/Arabic: 2,200+ hours for English speakers to reach B2',
     '-- Comprehensible input at i+1 level (Krashen): most effective for acquisition',
     '-- Vocabulary thresholds: 3,000-4,000 words for B2 conversational fluency',
-    '-- CEFR levels: A1 (beginner) → A2 → B1 (intermediate) → B2 (upper-intermediate) → C1 → C2',
+    '-- CEFR levels: A1 (beginner)  A2  B1 (intermediate)  B2 (upper-intermediate)  C1  C2',
     '-- Spaced repetition software (Anki) reduces vocab learning time by 60-70%',
     '-- Speaking from day one (Benny Lewis method) builds confidence faster',
     '-- Native content immersion effective at B1+ level',
@@ -3192,7 +3192,7 @@ var DOMAIN_KNOWLEDGE = {
     '-- Mid-range travel: $150-300/person/day',
     '-- Travel insurance recommendation: 5-10% of trip cost; medical evacuation coverage critical',
     '-- CDC travel health notices current (2026): check cdc.gov/travel before international trips',
-    '-- ETIAS (Europe): required for US visitors starting 2025; apply online, €7, valid 3 years',
+    '-- ETIAS (Europe): required for US visitors starting 2025; apply online, 7, valid 3 years',
     '-- Popular destinations value ranking (2026): Southeast Asia, Mexico, Eastern Europe best value',
   ],
 };
@@ -3248,7 +3248,7 @@ if (!window._saircKnowledgeFetchPatched) {
 // Musk: strip to the bone, ship fast, question every word
 // Optimum Potential: built to outlast, not just to answer
 // Applied to every app's SYSTEM constant at runtime
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -3256,7 +3256,7 @@ if (window._saircPromptsInstalled) return;
 window._saircPromptsInstalled = true;
 
 // Triad Council + Optimum Potential rewritten system prompts
-// Each was run through: Jobs (UX/focus) · Gates (precision/edge cases) · Musk (simplify/ship)
+// Each was run through: Jobs (UX/focus)  Gates (precision/edge cases)  Musk (simplify/ship)
 // Standard: built to outlast, not just to answer
 
 var OPTIMIZED_SYSTEMS = {
@@ -3461,7 +3461,7 @@ if (newSystem && !window._saircPromptFetchPatched) {
 // SAIRN GAP 5 -- CONFIDENCE + CITATION INDICATORS
 // When Claude gives data, numbers, or recommendations --
 // a confidence badge appears. Users know what to verify.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -3532,9 +3532,9 @@ function addConfidenceBar(element, text) {
   var bar = document.createElement('div');
   bar.className = 'sairn-conf-bar';
 
-  var label = analysis.level === 'high' ? '✓ High confidence'
-            : analysis.level === 'med'  ? '⚠ Verify figures'
-            :                             '⚡ Expert review advised';
+  var label = analysis.level === 'high' ? ' High confidence'
+            : analysis.level === 'med'  ? ' Verify figures'
+            :                             ' Expert review advised';
   var cls   = 'conf-' + analysis.level;
 
   bar.innerHTML = '<span class="sairn-conf-badge ' + cls + '">' + label + '</span>';
@@ -3542,7 +3542,7 @@ function addConfidenceBar(element, text) {
   if (analysis.issues.length > 0) {
     var note = document.createElement('span');
     note.className = 'sairn-verify-note';
-    note.textContent = analysis.issues.join(' · ');
+    note.textContent = analysis.issues.join('  ');
     bar.appendChild(note);
   }
 
@@ -3595,7 +3595,7 @@ else {
 // "Claude is thinking harder" message on slow responses.
 // Cached last response fallback.
 // No more cold generic errors.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -3729,7 +3729,7 @@ function showRetryIndicator(attempt, delay, status) {
                            : 'Connection issue -- retrying... (attempt ' + attempt + '/' + MAX_RETRIES + ')';
   var el = document.createElement('div');
   el.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);border-radius:100px;padding:8px 20px;font-size:12px;font-weight:600;color:#FBBF24;z-index:901;white-space:nowrap';
-  el.textContent = '⚡ ' + msg;
+  el.textContent = ' ' + msg;
   document.body.appendChild(el);
   setTimeout(function(){ el.remove(); }, delay + 200);
 }
@@ -3757,7 +3757,7 @@ else {
 // Injects it into every subsequent Claude API call.
 // Falls back to cached static knowledge if fetch fails.
 // Updates every hour -- always current.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -3793,7 +3793,7 @@ function showKnowledgeIndicator(fresh) {
   var el = document.createElement('div');
   el.id = 'sairn-knowledge-indicator';
   el.style.cssText = 'position:fixed;top:68px;right:160px;z-index:799;display:flex;align-items:center;gap:5px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:100px;padding:4px 10px;font-size:10px;font-weight:600;color:rgba(16,185,129,0.9);letter-spacing:.3px;cursor:pointer';
-  el.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10B981;' + (fresh ? 'animation:livePulse 2s ease-in-out infinite' : '') + '"></span>' + (fresh ? '⚡ Live data' : '📦 Cached data');
+  el.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10B981;' + (fresh ? 'animation:livePulse 2s ease-in-out infinite' : '') + '"></span>' + (fresh ? ' Live data' : ' Cached data');
   el.title = fresh ? 'Live data fetched just now from Federal Reserve and public APIs' : 'Using cached data -- refreshes every hour';
 
   if (!document.getElementById('live-pulse-style')) {
@@ -3917,7 +3917,7 @@ setInterval(function() {
 // Tracks: question patterns, preferred response style, topics,
 // expertise signals, communication preferences.
 // Gets smarter with every interaction automatically.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -4162,8 +4162,8 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installLear
 // SAIRN MULTI-MODAL INPUT
 // Camera capture -- photo your document, your bill, your condition.
 // Claude sees the image and analyzes it in context.
-// Photo → base64 → Claude vision API → instant analysis.
-// Built by Michael L. Dibert · SAIRN Technologies
+// Photo  base64  Claude vision API  instant analysis.
+// Built by Michael L. Dibert  SAIRN Technologies
 // ================================================================
 (function() {
 'use strict';
@@ -4204,15 +4204,15 @@ var APP_COLOR = (function(){
 
 // App-specific camera prompts
 var CAM_CONFIG = {
-  health:   { label:'📷 Photo', prompts:['Analyze this medical document or image','What does this prescription say?','Identify this medication','Analyze this medical bill','Describe what you see -- any health concerns?'] },
-  money:    { label:'📷 Photo', prompts:['Analyze this financial document','Read this bill or statement','What does this receipt show?','Analyze this check or money order','Read this loan or credit document'] },
-  law:      { label:'📷 Photo', prompts:['Read this legal document','Analyze this notice or letter','What does this contract say?','Read this court document','Analyze this lease or agreement'] },
-  home:     { label:'📷 Photo', prompts:['Analyze this home document','What do you see -- any damage or issues?','Read this inspection report','Analyze this HOA notice','What type of home issue is this?'] },
-  fabricor: { label:'📷 Stone', prompts:['Identify this stone material and grade','Estimate this countertop project','What edge profile is this?','Analyze this stone for pricing','Identify veining and quality'] },
-  clinical: { label:'📷 Clinical', prompts:['Analyze this clinical document','Read this patient chart or record','What does this lab result show?','Analyze this medical image description','Read this clinical form'] },
-  senior:   { label:'📷 Photo', prompts:['Read this Medicare document','Analyze this medical bill','What does this letter from SSA say?','Read this prescription label','Analyze this insurance document'] },
-  roam:     { label:'📷 Photo', prompts:['Identify this location or landmark','Translate this text or sign','Read this travel document','What does this menu or sign say?','Identify this food or dish'] },
-  default:  { label:'📷 Photo', prompts:['Analyze this image','What do you see in this photo?','Read the text in this image','Describe what this shows'] },
+  health:   { label:' Photo', prompts:['Analyze this medical document or image','What does this prescription say?','Identify this medication','Analyze this medical bill','Describe what you see -- any health concerns?'] },
+  money:    { label:' Photo', prompts:['Analyze this financial document','Read this bill or statement','What does this receipt show?','Analyze this check or money order','Read this loan or credit document'] },
+  law:      { label:' Photo', prompts:['Read this legal document','Analyze this notice or letter','What does this contract say?','Read this court document','Analyze this lease or agreement'] },
+  home:     { label:' Photo', prompts:['Analyze this home document','What do you see -- any damage or issues?','Read this inspection report','Analyze this HOA notice','What type of home issue is this?'] },
+  fabricor: { label:' Stone', prompts:['Identify this stone material and grade','Estimate this countertop project','What edge profile is this?','Analyze this stone for pricing','Identify veining and quality'] },
+  clinical: { label:' Clinical', prompts:['Analyze this clinical document','Read this patient chart or record','What does this lab result show?','Analyze this medical image description','Read this clinical form'] },
+  senior:   { label:' Photo', prompts:['Read this Medicare document','Analyze this medical bill','What does this letter from SSA say?','Read this prescription label','Analyze this insurance document'] },
+  roam:     { label:' Photo', prompts:['Identify this location or landmark','Translate this text or sign','Read this travel document','What does this menu or sign say?','Identify this food or dish'] },
+  default:  { label:' Photo', prompts:['Analyze this image','What do you see in this photo?','Read the text in this image','Describe what this shows'] },
 };
 
 var cfg = CAM_CONFIG[APP_ID] || CAM_CONFIG.default;
@@ -4260,26 +4260,26 @@ modal.innerHTML =
   '<div class="scam-hdr">' +
   '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">' + cfg.label + ' -- Show Claude What You See</div>' +
   '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Take a photo or upload an image -- Claude analyzes it instantly</div></div>' +
-  '<button onclick="closeCamera()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
+  '<button onclick="closeCamera()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1"></button>' +
   '</div>' +
   '<div class="scam-body">' +
   '<div class="scam-tab-row">' +
-  '<button class="scam-tab active" id="scam-tab-camera" onclick="switchCamTab(\'camera\')">📷 Camera</button>' +
-  '<button class="scam-tab" id="scam-tab-upload" onclick="switchCamTab(\'upload\')">🖼️ Upload Image</button>' +
+  '<button class="scam-tab active" id="scam-tab-camera" onclick="switchCamTab(\'camera\')"> Camera</button>' +
+  '<button class="scam-tab" id="scam-tab-upload" onclick="switchCamTab(\'upload\')"> Upload Image</button>' +
   '</div>' +
   '<div id="scam-camera-section">' +
   '<div id="scam-viewfinder"><video id="scam-video" autoplay playsinline muted></video></div>' +
   '<canvas id="scam-canvas"></canvas>' +
   '<img id="scam-preview" alt="Captured image">' +
   '<div class="scam-controls">' +
-  '<button class="scam-btn scam-capture" id="scam-capture-btn" onclick="capturePhoto()">📷 Take Photo</button>' +
-  '<button class="scam-btn scam-retake" id="scam-retake-btn" onclick="retakePhoto()" style="display:none">↩ Retake</button>' +
+  '<button class="scam-btn scam-capture" id="scam-capture-btn" onclick="capturePhoto()"> Take Photo</button>' +
+  '<button class="scam-btn scam-retake" id="scam-retake-btn" onclick="retakePhoto()" style="display:none"> Retake</button>' +
   '</div>' +
   '</div>' +
   '<div id="scam-upload-section" style="display:none;text-align:center;padding:20px 0">' +
   '<input type="file" id="scam-file-input" accept="image/*">' +
   '<div style="border:2px dashed rgba(255,255,255,0.15);border-radius:14px;padding:40px 24px;cursor:pointer;margin-bottom:14px" onclick="document.getElementById(\'scam-file-input\').click()">' +
-  '<div style="font-size:40px;margin-bottom:12px">🖼️</div>' +
+  '<div style="font-size:40px;margin-bottom:12px"></div>' +
   '<div style="font-size:14px;font-weight:600;color:#F0F0FF;margin-bottom:6px">Tap to select an image</div>' +
   '<div style="font-size:12px;color:rgba(240,240,255,0.4)">JPG, PNG, GIF, WebP -- max 10MB</div>' +
   '</div>' +
@@ -4291,8 +4291,8 @@ modal.innerHTML =
   cfg.prompts.map(function(p,i){ return '<span class="scam-chip" onclick="selectCamPrompt(this,'+i+')">'+p+'</span>'; }).join('') +
   '</div>' +
   '<input class="scam-custom" id="scam-custom-q" placeholder="Or type your own question...">' +
-  '<button class="scam-analyze" id="scam-analyze-btn" onclick="analyzeImage()">🧠 Claude -- Analyze This →</button>' +
-  '<div style="font-size:11px;color:rgba(240,240,255,0.25);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI · Not stored on SAIRN servers</div>' +
+  '<button class="scam-analyze" id="scam-analyze-btn" onclick="analyzeImage()"> Claude -- Analyze This </button>' +
+  '<div style="font-size:11px;color:rgba(240,240,255,0.25);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI  Not stored on SAIRN servers</div>' +
   '</div>' +
   '</div>';
 document.body.appendChild(modal);
@@ -4420,7 +4420,7 @@ window.analyzeImage = async function() {
   var cq = document.getElementById('scam-custom-q');
   var question = _selectedQ || (cq && cq.value.trim()) || 'Please analyze this image.';
   var btn = document.getElementById('scam-analyze-btn');
-  if (btn) { btn.textContent = '⚙️ Analyzing...'; btn.classList.remove('ready'); }
+  if (btn) { btn.textContent = ' Analyzing...'; btn.classList.remove('ready'); }
 
   try {
     var res = await fetch('https://sairn.vercel.app/api/claude', {
@@ -4446,9 +4446,9 @@ window.analyzeImage = async function() {
 
     closeCamera();
 
-    if (typeof addMsg === 'function') addMsg('user', '📷 ' + question);
+    if (typeof addMsg === 'function') addMsg('user', ' ' + question);
     if (typeof messages !== 'undefined') {
-      messages.push({ role:'user', content: '📷 [Image captured] ' + question });
+      messages.push({ role:'user', content: ' [Image captured] ' + question });
       messages.push({ role:'assistant', content: reply });
     }
     if (typeof addMsg === 'function') addMsg('ai', reply);
@@ -4456,7 +4456,7 @@ window.analyzeImage = async function() {
     var chatArea = document.getElementById('chatArea') || document.getElementById('messages');
     if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
   } catch(e) {
-    if (btn) { btn.textContent = '🧠 Claude -- Analyze This →'; btn.classList.add('ready'); }
+    if (btn) { btn.textContent = ' Claude -- Analyze This '; btn.classList.add('ready'); }
     alert('Analysis failed -- please try again.');
   }
 };
@@ -4495,12 +4495,12 @@ setTimeout(injectCameraButton, 800);
 //  2. NCCI Edit Checker                                                
 //  3. MUE Validator                                                    
 //  4. Modifier Advisor (25 modifiers explained)                        
-//  5. Code Crosswalk (ICD-10 → ICD-11, CPT ↔ HCPCS)                  
+//  5. Code Crosswalk (ICD-10  ICD-11, CPT  HCPCS)                  
 //  6. Pre-Bill Claim Scrubber                                          
 //  7. Denial Appeal Letter Generator                                   
 //  8. Encoder / Code Lookup (CPT / ICD-10 / HCPCS search)             
 //  9. Specialty Billing Worksheets (12 specialties)                    
-//  10. RAF Score Calculator (HCC → Risk Adjustment Factor)             
+//  10. RAF Score Calculator (HCC  Risk Adjustment Factor)             
 //  11. Global Surgery Period Calculator                                
 //  12. Place of Service (POS) Guide                                    
 //  13. Diagnosis Pointer Validator (Box 24E)                           
@@ -4560,17 +4560,17 @@ function scInjectToolButtons() {
   var insertParent = lastDivider.parentElement;
   if (!insertParent || document.getElementById('sc-new-tools-injected')) return;
   var toolsHtml = '<div class="mode-divider" style="margin:8px 0"></div>' +
-    '<span class="mode-guided-label" style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;padding:4px 8px;display:block">⚡ Revenue Tools</span>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'rvu\')" title="2026 CMS RVU Calculator"><span>💵</span><span class="mode-label">RVU Calc</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'ncci\')" title="NCCI Bundling Checker"><span>🔗</span><span class="mode-label">NCCI Edits</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'mue\')" title="MUE Unit Validator"><span>🔢</span><span class="mode-label">MUE Check</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'modifier\')" title="Modifier Advisor"><span>📌</span><span class="mode-label">Modifiers</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'encoder\')" title="Code Encoder / Lookup"><span>🔍</span><span class="mode-label">Encoder</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'scrubber\')" title="Pre-Bill Claim Scrubber"><span>🧹</span><span class="mode-label">Pre-Bill Scrub</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'appeal\')" title="Denial Appeal Generator"><span>✉️</span><span class="mode-label">Denial Appeal</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'raf\')" title="HCC RAF Score Calculator"><span>🎯</span><span class="mode-label">RAF Score</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'global\')" title="Global Surgery Period"><span>📅</span><span class="mode-label">Global Period</span></button>' +
-    '<button class="mode-btn new-feature" onclick="scShowTool(\'specialist\')" title="Specialty Worksheets"><span>📋</span><span class="mode-label">Worksheets</span></button>';
+    '<span class="mode-guided-label" style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;padding:4px 8px;display:block"> Revenue Tools</span>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'rvu\')" title="2026 CMS RVU Calculator"><span></span><span class="mode-label">RVU Calc</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'ncci\')" title="NCCI Bundling Checker"><span></span><span class="mode-label">NCCI Edits</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'mue\')" title="MUE Unit Validator"><span></span><span class="mode-label">MUE Check</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'modifier\')" title="Modifier Advisor"><span></span><span class="mode-label">Modifiers</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'encoder\')" title="Code Encoder / Lookup"><span></span><span class="mode-label">Encoder</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'scrubber\')" title="Pre-Bill Claim Scrubber"><span></span><span class="mode-label">Pre-Bill Scrub</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'appeal\')" title="Denial Appeal Generator"><span></span><span class="mode-label">Denial Appeal</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'raf\')" title="HCC RAF Score Calculator"><span></span><span class="mode-label">RAF Score</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'global\')" title="Global Surgery Period"><span></span><span class="mode-label">Global Period</span></button>' +
+    '<button class="mode-btn new-feature" onclick="scShowTool(\'specialist\')" title="Specialty Worksheets"><span></span><span class="mode-label">Worksheets</span></button>';
   var wrapper = document.createElement('div');
   wrapper.id = 'sc-new-tools-injected';
   wrapper.innerHTML = toolsHtml;
@@ -4748,7 +4748,7 @@ var SC_RVU_TABLE = {
 };
 
 function scRVUPanel() {
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">💵 RVU Calculator -- 2026 CMS Data (CF: $' + SC_CF_2026 + '/RVU)</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> RVU Calculator -- 2026 CMS Data (CF: $' + SC_CF_2026 + '/RVU)</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
     '<input type="text" id="sc-rvu-code" placeholder="CPT code (e.g. 99214)" style="flex:1;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif" onkeydown="if(event.key===\'Enter\')scCalcRVU()">' +
     '<input type="number" id="sc-rvu-units" value="1" min="1" max="99" style="width:70px;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;text-align:center">' +
@@ -4801,7 +4801,7 @@ var SC_NCCI_BUNDLES = {
 };
 
 function scNCCIPanel() {
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">🔗 NCCI Edit Checker -- CMS Bundling Rules</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> NCCI Edit Checker -- CMS Bundling Rules</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
     '<input type="text" id="sc-ncci-1" placeholder="Primary CPT (e.g. 99213)" style="flex:1;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
     '<span style="padding:8px;color:rgba(255,255,255,0.4);align-self:center">+</span>' +
@@ -4851,7 +4851,7 @@ var SC_MUE = {
 };
 
 function scMUEPanel() {
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">🔢 MUE Validator -- Medically Unlikely Edits</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> MUE Validator -- Medically Unlikely Edits</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
     '<input type="text" id="sc-mue-code" placeholder="CPT code (e.g. 99285)" style="flex:1;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
     '<input type="number" id="sc-mue-units" placeholder="Units billed" style="width:100px;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff">' +
@@ -4870,10 +4870,10 @@ function scCheckMUE() {
     var ok = units <= mue.limit;
     var color = ok ? '#16a34a' : '#dc2626';
     out.innerHTML = '<div style="background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:8px;padding:12px">' +
-      '<div style="font-weight:700;color:' + color + ';margin-bottom:6px">' + (ok ? '✅ WITHIN MUE LIMIT' : '❌ EXCEEDS MUE LIMIT') + '</div>' +
+      '<div style="font-weight:700;color:' + color + ';margin-bottom:6px">' + (ok ? ' WITHIN MUE LIMIT' : ' EXCEEDS MUE LIMIT') + '</div>' +
       '<div style="color:rgba(255,255,255,0.8);font-size:13px">CPT ' + code + ' | MUE limit: <strong>' + mue.limit + '</strong> | Units billed: <strong>' + units + '</strong></div>' +
       '<div style="color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px">' + mue.rationale + '</div>' +
-      (!ok ? '<div style="color:#f97316;font-size:12px;margin-top:6px">⚠️ This will likely trigger an automatic denial. Reduce units to ' + mue.limit + ' or add documentation justifying medical necessity for additional units and consider Line Item Denial appeal.</div>' : '') +
+      (!ok ? '<div style="color:#f97316;font-size:12px;margin-top:6px"> This will likely trigger an automatic denial. Reduce units to ' + mue.limit + ' or add documentation justifying medical necessity for additional units and consider Line Item Denial appeal.</div>' : '') +
       '</div>';
   } else {
     out.innerHTML = '<div style="color:rgba(255,255,255,0.6)">MUE not in quick table. Asking AI...</div>';
@@ -4908,7 +4908,7 @@ function scModifierPanel() {
   var modOpts = Object.keys(SC_MODIFIERS).map(function(k) {
     return '<option value="' + k + '">-' + k + ' -- ' + SC_MODIFIERS[k].name + '</option>';
   }).join('');
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">📌 Modifier Advisor -- 2026 Complete Guide</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> Modifier Advisor -- 2026 Complete Guide</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
     '<select id="sc-mod-sel" style="flex:1;padding:8px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
     '<option value="">Select modifier...</option>' + modOpts + '</select>' +
@@ -4925,8 +4925,8 @@ function scShowModifier() {
   if (m) {
     out.innerHTML = '<div style="background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:8px;padding:12px">' +
       '<div style="font-weight:700;color:#0EA5E9;margin-bottom:8px">Modifier -' + sel + ': ' + m.name + '</div>' +
-      '<div style="margin-bottom:8px"><span style="color:#16a34a;font-weight:700">✓ When to use: </span><span style="color:rgba(255,255,255,0.8)">' + m.use + '</span></div>' +
-      '<div><span style="color:#dc2626;font-weight:700">✗ Avoid: </span><span style="color:rgba(255,255,255,0.8)">' + m.avoid + '</span></div>' +
+      '<div style="margin-bottom:8px"><span style="color:#16a34a;font-weight:700"> When to use: </span><span style="color:rgba(255,255,255,0.8)">' + m.use + '</span></div>' +
+      '<div><span style="color:#dc2626;font-weight:700"> Avoid: </span><span style="color:rgba(255,255,255,0.8)">' + m.avoid + '</span></div>' +
       '</div>';
     scSendToChat('Provide detailed 2026 guidance on modifier -' + sel + ' (' + m.name + '). Include: top 3 clinical scenarios where it applies, common audit triggers, payer-specific variations (Medicare vs commercial), and documentation requirements to support the modifier.');
   }
@@ -4936,7 +4936,7 @@ function scShowModifier() {
 // 5. CODE ENCODER / LOOKUP
 // ============================================================
 function scEncoderPanel() {
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">🔍 Code Encoder -- CPT / ICD-10 / HCPCS Lookup</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> Code Encoder -- CPT / ICD-10 / HCPCS Lookup</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
     '<input type="text" id="sc-enc-query" placeholder="Search: code, keyword, or description (e.g. \'chest pain\' or \'99213\' or \'colonoscopy\')" style="flex:1;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif" onkeydown="if(event.key===\'Enter\')scRunEncoder()">' +
     '<select id="sc-enc-type" style="width:110px;padding:8px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
@@ -4955,7 +4955,7 @@ function scRunEncoder() {
   var type = document.getElementById('sc-enc-type').value;
   var out = document.getElementById('sc-enc-result');
   if (!q) { out.textContent = 'Enter a code or keyword.'; return; }
-  out.innerHTML = '<div style="color:#0EA5E9">🔍 Searching...</div>';
+  out.innerHTML = '<div style="color:#0EA5E9"> Searching...</div>';
   // Check if it's a known CPT
   var cpt = SC_RVU_TABLE[q.toUpperCase()];
   if (cpt) {
@@ -4974,9 +4974,9 @@ function scRunEncoder() {
 // 6. PRE-BILL CLAIM SCRUBBER
 // ============================================================
 function scScrubberPanel() {
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">🧹 Pre-Bill Claim Scrubber -- Catch Errors Before Submission</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> Pre-Bill Claim Scrubber -- Catch Errors Before Submission</div>' +
     '<textarea id="sc-scrub-claim" rows="5" placeholder="Paste claim details:\nPatient: Medicare, 72yo female\nCPT: 99214, 93000\nICD-10: Z00.00, I10\nModifiers: none\nPOS: 11 (office)\nProvider: Internal Medicine" style="width:100%;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif;font-size:12px;margin-bottom:8px;resize:vertical"></textarea>' +
-    '<button onclick="scRunScrubber()" style="padding:8px 20px;background:linear-gradient(135deg,#0EA5E9,#0284C7);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;width:100%">🔍 Scrub Claim</button>' +
+    '<button onclick="scRunScrubber()" style="padding:8px 20px;background:linear-gradient(135deg,#0EA5E9,#0284C7);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;width:100%"> Scrub Claim</button>' +
     '<div id="sc-scrub-result" style="font-size:13px;color:rgba(255,255,255,0.7);margin-top:8px"></div>';
 }
 
@@ -4984,20 +4984,20 @@ function scRunScrubber() {
   var claim = (document.getElementById('sc-scrub-claim').value || '').trim();
   var out = document.getElementById('sc-scrub-result');
   if (!claim) { out.textContent = 'Paste your claim details above.'; return; }
-  out.innerHTML = '<div style="color:#0EA5E9">🧹 Scrubbing claim...</div>';
+  out.innerHTML = '<div style="color:#0EA5E9"> Scrubbing claim...</div>';
   // Quick local checks
   var warnings = [];
   var upper = claim.toUpperCase();
   // Check for common NCCI issues
   if (upper.includes('99213') || upper.includes('99214') || upper.includes('99215')) {
-    if (upper.includes('93000')) warnings.push('⚠️ E&M + EKG (93000): NCCI bundle -- append modifier -25 to E&M code if separately identifiable');
+    if (upper.includes('93000')) warnings.push(' E&M + EKG (93000): NCCI bundle -- append modifier -25 to E&M code if separately identifiable');
     if (!upper.includes('-25') && !upper.includes('MOD 25') && upper.includes('CPT') && upper.includes('MODIFIER')) {
-      warnings.push('⚠️ E&M with procedure same day: verify modifier -25 is present on E&M');
+      warnings.push(' E&M with procedure same day: verify modifier -25 is present on E&M');
     }
   }
-  if (upper.includes('45380') && upper.includes('45378')) warnings.push('❌ 45378+45380: Cannot bill both. 45380 (with biopsy) includes 45378. Remove 45378.');
+  if (upper.includes('45380') && upper.includes('45378')) warnings.push(' 45378+45380: Cannot bill both. 45380 (with biopsy) includes 45378. Remove 45378.');
   if (upper.includes('MEDICARE') || upper.includes('65') || upper.includes('70') || upper.includes('72') || upper.includes('75')) {
-    if (upper.includes('G0008') || upper.includes('G0009')) warnings.push('✅ Vaccine admin codes (G0008/G0009) are appropriate for Medicare beneficiaries.');
+    if (upper.includes('G0008') || upper.includes('G0009')) warnings.push(' Vaccine admin codes (G0008/G0009) are appropriate for Medicare beneficiaries.');
   }
   // Show quick warnings then send to AI
   var warnHTML = warnings.length > 0 ?
@@ -5013,13 +5013,13 @@ function scRunScrubber() {
 // 7. DENIAL APPEAL LETTER GENERATOR
 // ============================================================
 function scAppealPanel() {
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">✉️ Denial Appeal Generator -- AI-Powered</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> Denial Appeal Generator -- AI-Powered</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
     '<input type="text" id="sc-appeal-cpt" placeholder="CPT code denied (e.g. 99285)" style="padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
     '<input type="text" id="sc-appeal-denial" placeholder="Denial reason code (e.g. CO-97, PR-96)" style="padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
     '</div>' +
     '<textarea id="sc-appeal-context" rows="3" placeholder="Additional context: patient diagnosis, why procedure was medically necessary, what documentation exists..." style="width:100%;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif;font-size:12px;margin-bottom:8px;resize:vertical"></textarea>' +
-    '<button onclick="scGenAppeal()" style="padding:8px 20px;background:linear-gradient(135deg,#0EA5E9,#0284C7);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;width:100%">✉️ Generate Appeal Letter</button>' +
+    '<button onclick="scGenAppeal()" style="padding:8px 20px;background:linear-gradient(135deg,#0EA5E9,#0284C7);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;width:100%"> Generate Appeal Letter</button>' +
     '<div id="sc-appeal-result" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:8px"></div>';
 }
 
@@ -5029,12 +5029,12 @@ function scGenAppeal() {
   var context = (document.getElementById('sc-appeal-context').value || '').trim();
   var out = document.getElementById('sc-appeal-result');
   if (!cpt || !denial) { out.textContent = 'Enter CPT code and denial reason code.'; return; }
-  out.innerHTML = '<div style="color:#0EA5E9">✉️ Generating appeal letter...</div>';
+  out.innerHTML = '<div style="color:#0EA5E9"> Generating appeal letter...</div>';
   scSendToChat('Generate a professional Medicare/insurance denial appeal letter for:\n\nCPT Code Denied: ' + cpt + '\nDenial Reason Code: ' + denial + '\nContext: ' + (context || 'No additional context provided') + '\n\nThe letter should:\n1. Reference the denial reason code and explain why it was incorrectly applied\n2. Cite specific CMS guidelines, LCD/NCD policies, or coding guidelines that support coverage\n3. Request reconsideration within the required timeframe\n4. Include a checklist of supporting documentation to attach\n5. Be formatted professionally, ready to send to the payer\n\nFormat as a complete letter with date fields, signature lines, and enclosure list.');
 }
 
 // ============================================================
-// 8. RAF SCORE CALCULATOR (HCC → Risk Adjustment Factor)
+// 8. RAF SCORE CALCULATOR (HCC  Risk Adjustment Factor)
 // ============================================================
 // HCC V28 coefficients (community model, non-dual, aged)
 var SC_HCC_V28 = {
@@ -5067,7 +5067,7 @@ function scRAFPanel() {
   var hccOpts = Object.keys(SC_HCC_V28).map(function(k) {
     return '<option value="' + k + '">' + k + ' -- ' + SC_HCC_V28[k].name + ' (coeff: ' + SC_HCC_V28[k].coeff + ')</option>';
   }).join('');
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">🎯 RAF Score Calculator -- HCC V28 (2026 CMS)</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> RAF Score Calculator -- HCC V28 (2026 CMS)</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
     '<select id="sc-raf-age" style="padding:8px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
     '<option value="0.421">Age 65-69</option><option value="0.378">Age 70-74</option><option value="0.421">Age 75-79</option><option value="0.484">Age 80-84</option><option value="0.529">Age 85+</option>' +
@@ -5099,7 +5099,7 @@ function scCalcRAF() {
   out.innerHTML = '<div style="background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:8px;padding:12px">' +
     '<div style="font-weight:700;color:#0EA5E9;font-size:18px;margin-bottom:8px">RAF Score: ' + totalRAF.toFixed(3) + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">' +
-    '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:#16a34a">$' + Math.round(estPayment).toLocaleString() + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">Est. Annual PMPM × 12</div></div>' +
+    '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:#16a34a">$' + Math.round(estPayment).toLocaleString() + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">Est. Annual PMPM  12</div></div>' +
     '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:#0EA5E9">' + hccDetails.length + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">HCCs Applied</div></div>' +
     '</div>' +
     '<div style="font-size:11px;color:rgba(255,255,255,0.6)">' +
@@ -5130,7 +5130,7 @@ var SC_GLOBAL_PERIODS = {
 };
 
 function scGlobalPanel() {
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">📅 Global Surgery Period Calculator</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> Global Surgery Period Calculator</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
     '<input type="text" id="sc-global-cpt" placeholder="Surgery CPT code (e.g. 27447)" style="flex:1;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
     '<input type="date" id="sc-global-date" style="flex:1;padding:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
@@ -5169,19 +5169,19 @@ function scCalcGlobal() {
 // 10. SPECIALTY BILLING WORKSHEETS
 // ============================================================
 var SC_SPECIALTIES = {
-  'cardiology': { name: 'Cardiology', icon: '❤️', topCodes: ['93000 -- EKG', '93306 -- Echo complete', '93015 -- Stress test', '93458 -- Cardiac cath', '93454 -- Cath without PCI', '99213 -- Office visit'], tips: 'Bundle 93306 TC+26 for hospital. Modifier -26 for interpretation only. Cath codes include contrast -- do not separately bill.' },
-  'orthopedic': { name: 'Orthopedic Surgery', icon: '🦴', topCodes: ['27447 -- Total knee', '27130 -- Total hip', '29827 -- Rotator cuff', '29881 -- Knee scope/meniscectomy', '29826 -- Shoulder arthroscopy', '20610 -- Joint aspiration'], tips: '90-day global for major joint replacements. Bilateral modifier -50 or RT/LT. Arthroscopy codes include 1-2 portals -- do not add portal codes separately.' },
-  'gastro': { name: 'Gastroenterology', icon: '🔭', topCodes: ['45378 -- Colonoscopy diagnostic', '45380 -- Colonoscopy with biopsy', '45385 -- Colonoscopy with polypectomy', '43239 -- EGD with biopsy', '43235 -- EGD diagnostic', '43245 -- EGD with dilation'], tips: 'Cannot bill 45378 with 45380 (bundle). Anesthesia during colonoscopy: MAC codes 00810/00840. Add -53 if incomplete due to bowel prep.' },
-  'radiology': { name: 'Radiology', icon: '🩻', topCodes: ['71046 -- Chest X-ray 2 view', '70553 -- MRI brain w/wo', '74177 -- CT abdomen/pelvis w/ contrast', '72148 -- MRI lumbar spine', '77067 -- Bilateral screening mammography', '93306 -- Echocardiogram'], tips: 'Always split TC/26 in hospital setting. Add -LT/-RT for bilateral anatomy. Contrast vs no-contrast are different codes.' },
-  'emerg': { name: 'Emergency Medicine', icon: '🚨', topCodes: ['99283 -- ED moderate', '99284 -- ED high', '99285 -- ED highest severity', '99291 -- Critical care 1st hr', '99292 -- Critical care add 30 min', '43753 -- Gastric intubation'], tips: '2021 E&M guideline applies -- use medical decision making OR time. Facility vs professional billing differ. Add -25 to E&M when procedure performed same visit.' },
-  'primarycare': { name: 'Primary Care / Internal Medicine', icon: '🏥', topCodes: ['99213 -- Office estab level 3', '99214 -- Office estab level 4', '99395/99396 -- Annual wellness', 'G0101 -- Cervical/vaginal cancer screening', 'G0444 -- Depression screening', 'G0446 -- Intensive behavioral therapy-CVD'], tips: 'Annual Wellness Visit (G0438/G0439) is different from preventive (99395-99397). Cannot bill E&M same day as AWV unless -25 modifier and separate documented issue.' },
+  'cardiology': { name: 'Cardiology', icon: '', topCodes: ['93000 -- EKG', '93306 -- Echo complete', '93015 -- Stress test', '93458 -- Cardiac cath', '93454 -- Cath without PCI', '99213 -- Office visit'], tips: 'Bundle 93306 TC+26 for hospital. Modifier -26 for interpretation only. Cath codes include contrast -- do not separately bill.' },
+  'orthopedic': { name: 'Orthopedic Surgery', icon: '', topCodes: ['27447 -- Total knee', '27130 -- Total hip', '29827 -- Rotator cuff', '29881 -- Knee scope/meniscectomy', '29826 -- Shoulder arthroscopy', '20610 -- Joint aspiration'], tips: '90-day global for major joint replacements. Bilateral modifier -50 or RT/LT. Arthroscopy codes include 1-2 portals -- do not add portal codes separately.' },
+  'gastro': { name: 'Gastroenterology', icon: '', topCodes: ['45378 -- Colonoscopy diagnostic', '45380 -- Colonoscopy with biopsy', '45385 -- Colonoscopy with polypectomy', '43239 -- EGD with biopsy', '43235 -- EGD diagnostic', '43245 -- EGD with dilation'], tips: 'Cannot bill 45378 with 45380 (bundle). Anesthesia during colonoscopy: MAC codes 00810/00840. Add -53 if incomplete due to bowel prep.' },
+  'radiology': { name: 'Radiology', icon: '', topCodes: ['71046 -- Chest X-ray 2 view', '70553 -- MRI brain w/wo', '74177 -- CT abdomen/pelvis w/ contrast', '72148 -- MRI lumbar spine', '77067 -- Bilateral screening mammography', '93306 -- Echocardiogram'], tips: 'Always split TC/26 in hospital setting. Add -LT/-RT for bilateral anatomy. Contrast vs no-contrast are different codes.' },
+  'emerg': { name: 'Emergency Medicine', icon: '', topCodes: ['99283 -- ED moderate', '99284 -- ED high', '99285 -- ED highest severity', '99291 -- Critical care 1st hr', '99292 -- Critical care add 30 min', '43753 -- Gastric intubation'], tips: '2021 E&M guideline applies -- use medical decision making OR time. Facility vs professional billing differ. Add -25 to E&M when procedure performed same visit.' },
+  'primarycare': { name: 'Primary Care / Internal Medicine', icon: '', topCodes: ['99213 -- Office estab level 3', '99214 -- Office estab level 4', '99395/99396 -- Annual wellness', 'G0101 -- Cervical/vaginal cancer screening', 'G0444 -- Depression screening', 'G0446 -- Intensive behavioral therapy-CVD'], tips: 'Annual Wellness Visit (G0438/G0439) is different from preventive (99395-99397). Cannot bill E&M same day as AWV unless -25 modifier and separate documented issue.' },
 };
 
 function scSpecialistPanel() {
   var specOpts = Object.keys(SC_SPECIALTIES).map(function(k) {
     return '<option value="' + k + '">' + SC_SPECIALTIES[k].icon + ' ' + SC_SPECIALTIES[k].name + '</option>';
   }).join('');
-  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px">📋 Specialty Billing Worksheets</div>' +
+  return '<div style="font-weight:700;color:#0EA5E9;margin-bottom:10px"> Specialty Billing Worksheets</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
     '<select id="sc-spec-sel" style="flex:1;padding:8px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif">' +
     '<option value="">Select specialty...</option>' + specOpts + '</select>' +
@@ -5208,7 +5208,7 @@ function scShowSpecialty() {
       }).join('') +
       '</div>' +
       '<div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.2);border-radius:6px;padding:8px;font-size:12px;color:rgba(255,255,255,0.8)">' +
-      '<span style="color:#f97316;font-weight:700">⚡ Key Rules: </span>' + spec.tips +
+      '<span style="color:#f97316;font-weight:700"> Key Rules: </span>' + spec.tips +
       '</div>' +
       '</div>';
     scSendToChat('I need comprehensive ' + spec.name + ' billing guidance for 2026. Provide: 1) Top 10 most frequently billed CPT codes with full descriptors and 2026 RVUs, 2) Most common denial reasons for this specialty, 3) Payer-specific rules (Medicare vs commercial vs Medicaid), 4) Documentation requirements for high-value procedures, 5) Common NCCI edit conflicts in this specialty. Include any 2026 CMS changes affecting this specialty.');
@@ -5312,8 +5312,8 @@ console.log('SAIRNcode v2.0 -- 15 new features loaded: RVU Calculator, NCCI Chec
 
 // ============================================================
 // SAIRN UNIVERSAL PRICING ENGINE v1.0
-// June 11, 2026 -- Michael L. Dibert · SAIRN Technologies
-// Applied to: SAIRNcode · SAIRNhr · SAIRNaccounting
+// June 11, 2026 -- Michael L. Dibert  SAIRN Technologies
+// Applied to: SAIRNcode  SAIRNhr  SAIRNaccounting
 //
 // Pricing (final -- market-verified June 11 2026):
 //   SAIRNcode:        Free 20q | Pro $59/mo | Enterprise $99/mo
@@ -6679,7 +6679,7 @@ async function scCalcDRG(){
     '<div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:12px">DRG '+drgData.drg+' -- '+scEsc(drgData.name)+'</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
     '<div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--m);font-weight:700;margin-bottom:4px">RELATIVE WEIGHT</div><div style="font-size:22px;font-weight:900;color:var(--a)">'+weight+'</div><div style="font-size:11px;color:var(--m)">Base: '+drgData.weight+' | CC/MCC uplift: +'+uplift.toFixed(4)+'</div></div>'+
-    '<div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--m);font-weight:700;margin-bottom:4px">EST. MEDICARE PAYMENT</div><div style="font-size:22px;font-weight:900;color:var(--green)">'+scFmtDol(payment)+'</div><div style="font-size:11px;color:var(--m)">Base rate $6,800 × '+weight+'</div></div></div>'+
+    '<div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--m);font-weight:700;margin-bottom:4px">EST. MEDICARE PAYMENT</div><div style="font-size:22px;font-weight:900;color:var(--green)">'+scFmtDol(payment)+'</div><div style="font-size:11px;color:var(--m)">Base rate $6,800  '+weight+'</div></div></div>'+
     (ccFound.length?'<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px;font-size:12px;margin-bottom:10px"><strong>CC/MCC captured:</strong> '+ccFound.join(' | ')+'</div>':'<div style="background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.2);border-radius:8px;padding:10px;font-size:12px;margin-bottom:10px">No CC/MCC detected. Click AI CC/MCC Optimizer to find opportunities.</div>')+
     '<div style="font-size:11px;color:var(--m)">Estimate only. Use official CMS grouper for final DRG assignment.</div></div>';
 }
@@ -6734,7 +6734,7 @@ function scCalcEM(){
     '<div><div style="font-size:32px;font-weight:900;color:var(--a)">'+code+'</div>'+
     '<div style="font-size:14px;font-weight:700;color:var(--text)">'+SC_MDM_NAMES[finalLevel]+' Complexity</div></div>'+
     '<div style="text-align:right"><div style="font-size:22px;font-weight:900;color:var(--green)">'+scFmtDol(payment)+'</div>'+
-    '<div style="font-size:11px;color:var(--m)">2026 Medicare ('+rvu+' wRVU × $'+SC_CF+')</div></div></div>'+
+    '<div style="font-size:11px;color:var(--m)">2026 Medicare ('+rvu+' wRVU  $'+SC_CF+')</div></div></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'+
     [['Problems',SC_MDM_NAMES[Math.min(problems,4)]],['Data',SC_MDM_NAMES[Math.min(dataVal,4)]],['Risk',SC_MDM_NAMES[Math.min(risk,4)]]].map(function(item){
       return '<div style="background:var(--surface2);border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase">'+item[0]+'</div><div style="font-size:13px;font-weight:800;color:var(--text)">'+item[1]+'</div></div>';
@@ -6834,7 +6834,7 @@ window.setMode = function(label, placeholder) {
   window._currentPlaceholder = placeholder || '';
   // Show mode name in chat if addMsg exists
   if (typeof addMsg === 'function') {
-    addMsg('system-notice', '🔄 Mode: ' + label);
+    addMsg('system-notice', ' Mode: ' + label);
   } else {
     var chat = document.getElementById('chatArea');
     if (chat) {
