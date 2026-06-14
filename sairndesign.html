@@ -334,7 +334,7 @@ function saLockScreen() {
   overlay.id = 'sairn-lock-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(30,27,75,.97);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:40px;width:340px;text-align:center">' +
-    '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
+    '<div style="font-size:48px;margin-bottom:12px"></div>' +
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
     '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
     '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
@@ -672,7 +672,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
 // LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
-    if (typeof url === 'string' && url.includes('api.anthropic.com')) {
+    if (typeof url === 'string' && url.includes('sairn.vercel.app/api/claude')) {
       saLog('L22-DIRECT-API', 'Direct Anthropic API call blocked', 'critical');
       return Promise.reject(new Error('SAIRN Security: Direct Anthropic calls not permitted. Use SAIRN proxy.'));
     }
@@ -2455,7 +2455,7 @@ var SUPPLIERS = {
         locations: '1,300+ locations nationwide',
         web: 'ferguson.com', order: 'ferguson.com/stores',
         phone: '800-984-9573',
-        brands: 'Kohler · Moen · Delta · Toto · American Standard · Rheem · Bradford White · Viega · Uponor · Watts · Grohe · Hansgrohe',
+        brands: 'Kohler  Moen  Delta  Toto  American Standard  Rheem  Bradford White  Viega  Uponor  Watts  Grohe  Hansgrohe',
         account: 'Open contractor account online or in-branch. Net 30 available. Pro pricing with account.',
         tip: 'Ask for a dedicated sales rep -- Ferguson reps can pull job-specific pricing and stock reservations.'
       },
@@ -2465,7 +2465,7 @@ var SUPPLIERS = {
         locations: '700+ branches in all 50 states',
         web: 'winsupply.com', order: 'winsupply.com/locations',
         phone: '937-294-5331',
-        brands: 'Rheem · Kohler · Bradford White · American Standard · Sloan · Chicago Faucets',
+        brands: 'Rheem  Kohler  Bradford White  American Standard  Sloan  Chicago Faucets',
         account: 'Account setup through local branch. Each branch sets own pricing -- negotiate directly.',
         tip: 'Because each branch is locally owned, you can often negotiate better pricing here than at corporate chains.'
       },
@@ -2475,7 +2475,7 @@ var SUPPLIERS = {
         locations: '400+ locations, 40+ states',
         web: 'hajoca.com', order: 'hajoca.com/locations',
         phone: '610-265-3000',
-        brands: 'Kohler · Moen · Delta · Viega · Uponor · Rinnai · Weil-McLain · Taco · Peerless',
+        brands: 'Kohler  Moen  Delta  Viega  Uponor  Rinnai  Weil-McLain  Taco  Peerless',
         account: 'In-branch account setup. Excellent Net 30 terms for established contractors.',
         tip: 'Hajoca showrooms are top-tier for spec work -- bring clients for fixture selection appointments.'
       },
@@ -2485,7 +2485,7 @@ var SUPPLIERS = {
         locations: '2,300+ retail stores + online',
         web: 'homedepot.com', order: 'homedepot.com/b/Plumbing',
         phone: '800-466-3337',
-        brands: 'Kohler · Moen · American Standard · Delta · Pfister · Rheem · A.O. Smith',
+        brands: 'Kohler  Moen  American Standard  Delta  Pfister  Rheem  A.O. Smith',
         account: 'Home Depot Pro account online. Volume pricing tiers. Dedicated Pro desk at most locations.',
         tip: 'Pro Xtra members get up to 20% off. Apply online -- instant approval for businesses.'
       },
@@ -2495,7 +2495,7 @@ var SUPPLIERS = {
         locations: '330+ stores in 14 Midwest states',
         web: 'menards.com', order: 'menards.com/main/plumbing',
         phone: '715-876-5911',
-        brands: 'Moen · American Standard · Gerber · SharkBite · Watts · NIBCO',
+        brands: 'Moen  American Standard  Gerber  SharkBite  Watts  NIBCO',
         account: 'Business Credit Account available in-store.',
         tip: 'Menards 11% rebate promotions can be significant on large orders -- stack with contractor account.'
       }
@@ -2558,7 +2558,7 @@ var SUPPLIERS = {
         locations: '300+ US branches',
         web: 'graybar.com', order: 'graybar.com/store/find-a-branch',
         phone: '800-825-5517',
-        brands: 'Square D · Eaton · ABB · Leviton · Lutron · Hubbell · Southwire · Belden · Legrand · Cooper',
+        brands: 'Square D  Eaton  ABB  Leviton  Lutron  Hubbell  Southwire  Belden  Legrand  Cooper',
         account: 'Account setup at branch. Net 30 standard. Volume pricing tiers. Graybar eCommerce for 24/7 ordering.',
         tip: 'Graybar employee ownership means reps stay longer. Relationship investment pays off.'
       },
@@ -2568,7 +2568,7 @@ var SUPPLIERS = {
         locations: '800+ US branches',
         web: 'wesco.com', order: 'wesco.com/en-us/locations',
         phone: '800-509-3726',
-        brands: 'Eaton · GE · Hubbell · Belden · Panduit · Legrand · Schneider Electric · Honeywell · Molex',
+        brands: 'Eaton  GE  Hubbell  Belden  Panduit  Legrand  Schneider Electric  Honeywell  Molex',
         account: 'Online account or in-branch. Credit terms for established accounts. Digital procurement portal.',
         tip: 'WESCO is strongest for commercial/industrial. For residential, CED or Graybar often have better service.'
       },
@@ -2578,7 +2578,7 @@ var SUPPLIERS = {
         locations: '800+ locations all 50 states',
         web: 'cedgroupusa.com', order: 'cedgroupusa.com/locations',
         phone: '972-647-0555',
-        brands: 'Square D · Eaton · ABB · Legrand · Lutron · Leviton · Cooper · Hubbell · GE',
+        brands: 'Square D  Eaton  ABB  Legrand  Lutron  Leviton  Cooper  Hubbell  GE',
         account: 'Branch account setup. Each CED branch semi-autonomous -- pricing flexibility.',
         tip: 'CED branches operate independently -- if one branch price seems high, ask another nearby branch.'
       },
@@ -2588,7 +2588,7 @@ var SUPPLIERS = {
         locations: '400+ US locations',
         web: 'rexelusa.com', order: 'rexelusa.com/locations',
         phone: '800-739-3521',
-        brands: 'ABB · Schneider Electric · Eaton · Hubbell · Legrand · Southwire · Panduit',
+        brands: 'ABB  Schneider Electric  Eaton  Hubbell  Legrand  Southwire  Panduit',
         account: 'Online account or branch. Rexel.com digital portal for 24/7 ordering and tracking.',
         tip: 'Rexels digital platform is one of the best in the industry -- good for project managers tracking orders.'
       },
@@ -2598,7 +2598,7 @@ var SUPPLIERS = {
         locations: '2,300+ stores',
         web: 'homedepot.com', order: 'homedepot.com/b/Electrical',
         phone: '800-466-3337',
-        brands: 'Leviton · Lutron · Square D · Eaton · Hubbell · Southwire · Klein Tools',
+        brands: 'Leviton  Lutron  Square D  Eaton  Hubbell  Southwire  Klein Tools',
         account: 'Pro Xtra online. Instant approval. Volume tiers.',
         tip: 'Good for quick fill-ins but pricing is typically 15-25% higher than electrical distributors for large orders.'
       }
@@ -2661,7 +2661,7 @@ var SUPPLIERS = {
         locations: '4,853 US stores',
         web: 'sherwin-williams.com', order: 'paint.sherwin-williams.com/find-sherwin-williams-nearest-location',
         phone: '800-474-3794',
-        brands: 'Sherwin-Williams · Valspar · Dutch Boy · Krylon · Minwax · Purdy · Thompsons WaterSeal · Pratt & Lambert',
+        brands: 'Sherwin-Williams  Valspar  Dutch Boy  Krylon  Minwax  Purdy  Thompsons WaterSeal  Pratt & Lambert',
         account: 'Contractor accounts available. Typical 20-40% contractor discount. Dedicated sales rep assigned.',
         tip: 'SW contractor accounts typically start at 20% off. After $5K annual spend, ask for a pricing review -- you can often get to 35-40% off.'
       },
@@ -2671,7 +2671,7 @@ var SUPPLIERS = {
         locations: '5,000+ independent dealers',
         web: 'benjaminmoore.com', order: 'benjaminmoore.com/en-us/store-locator',
         phone: '855-724-6802',
-        brands: 'Benjamin Moore · Aura · Regal Select · ben · ADVANCE · Natura · Ultra Spec',
+        brands: 'Benjamin Moore  Aura  Regal Select  ben  ADVANCE  Natura  Ultra Spec',
         account: 'Contractor accounts through local dealers. Each dealer sets pricing -- shop multiple dealers.',
         tip: 'BM dealers are independent -- prices vary. Call 3 local dealers, get quotes, and use the lowest as leverage.'
       },
@@ -2681,7 +2681,7 @@ var SUPPLIERS = {
         locations: '700+ company stores + independent dealers',
         web: 'ppgpaints.com', order: 'ppgpaints.com/store-locator',
         phone: '888-774-1010',
-        brands: 'PPG · Pittsburgh Paints · Olympic · Glidden · Timeless · ProMaster · Break-Through',
+        brands: 'PPG  Pittsburgh Paints  Olympic  Glidden  Timeless  ProMaster  Break-Through',
         account: 'Pro account at PPG stores. Contractor program with volume discounts.',
         tip: 'PPGs ProMaster line is highly regarded for interior -- often 15% less than SW/BM for comparable quality.'
       },
@@ -2691,7 +2691,7 @@ var SUPPLIERS = {
         locations: '2,300+ Home Depot stores',
         web: 'behr.com', order: 'homedepot.com/b/Paint/Behr',
         phone: '800-854-0133',
-        brands: 'Behr Marquee · Behr Premium Plus · Behr Process',
+        brands: 'Behr Marquee  Behr Premium Plus  Behr Process',
         account: 'No contractor account. Home Depot Pro program for volume.',
         tip: 'Behr Marquee is solid quality for rental properties and flips. For premium client work, SW or BM is preferred.'
       },
@@ -2701,7 +2701,7 @@ var SUPPLIERS = {
         locations: '150+ stores (CA, TX, CO, NV, OR)',
         web: 'kellymoore.com', order: 'kellymoore.com/store-locator',
         phone: '888-835-5299',
-        brands: 'Kelly-Moore · Envy · Acri-Shield · Enviro Kote',
+        brands: 'Kelly-Moore  Envy  Acri-Shield  Enviro Kote',
         account: 'Pro account with volume discounts. Strong loyalty to local pros.',
         tip: 'Kelly-Moore gives some of the best contractor pricing in the West -- often better than Sherwin on volume.'
       }
@@ -2755,11 +2755,11 @@ var SUPPLIERS = {
     icon: '&#10052;',
     color: '#0EA5E9',
     national: [
-      {name:'Winsupply HVAC',tier:'National',desc:'700+ locally owned branches. Full HVAC supply. Carrier, Trane, Lennox, Rheem distributed.',web:'winsupply.com',order:'winsupply.com/locations',phone:'937-294-5331',brands:'Carrier · Trane · Lennox · Rheem · Daikin · York · Goodman',account:'In-branch account. Local pricing.',tip:'Each branch is locally owned -- pricing is negotiable.'},
-      {name:'Ferguson HVAC',tier:'National',desc:'1,300+ locations. Full HVAC equipment and supplies. Same network as plumbing.',web:'ferguson.com',order:'ferguson.com/stores',phone:'800-984-9573',brands:'Carrier · Trane · Mitsubishi · Daikin · Rheem · A.O. Smith',account:'Contractor account at any branch.',tip:'Ferguson HVAC and plumbing share accounts -- one relationship covers both.'},
-      {name:'Johnstone Supply',tier:'National',desc:'450+ locations. HVAC and refrigeration specialist. Contractor-only supply house. Excellent technical support.',web:'johnstonesupply.com',order:'johnstonesupply.com/branch-locator',phone:'800-556-4678',brands:'Copeland · Emerson · Honeywell · White-Rodgers · ICM · A.O. Smith',account:'Contractor-only. HVAC license typically required.',tip:'Johnstone is contractor only with excellent technical support staff -- great for complex installs.'},
-      {name:'Lennox Stores (LII)',tier:'National',desc:'Lennox International owned. Equipment and parts. Residential and light commercial.',web:'lennox.com',order:'lennox.com/dealer',phone:'800-953-6669',brands:'Lennox · Ducane · Allied Air',account:'Dealer account required. Apply at lennox.com.',tip:'Lennox dealer programs include co-op advertising and financing -- worth the dealer application.'},
-      {name:'Home Depot / Lowes HVAC',tier:'National Retail',desc:'Window units, mini-splits, water heaters, baseboard. Limited selection but immediate availability.',web:'homedepot.com',order:'homedepot.com/b/Heating-Venting-Cooling',phone:'800-466-3337',brands:'LG · Midea · Friedrich · Rheem · A.O. Smith',account:'Pro Xtra program.',tip:'Good for emergency window units and water heater replacements. Not for full system installs.'}
+      {name:'Winsupply HVAC',tier:'National',desc:'700+ locally owned branches. Full HVAC supply. Carrier, Trane, Lennox, Rheem distributed.',web:'winsupply.com',order:'winsupply.com/locations',phone:'937-294-5331',brands:'Carrier  Trane  Lennox  Rheem  Daikin  York  Goodman',account:'In-branch account. Local pricing.',tip:'Each branch is locally owned -- pricing is negotiable.'},
+      {name:'Ferguson HVAC',tier:'National',desc:'1,300+ locations. Full HVAC equipment and supplies. Same network as plumbing.',web:'ferguson.com',order:'ferguson.com/stores',phone:'800-984-9573',brands:'Carrier  Trane  Mitsubishi  Daikin  Rheem  A.O. Smith',account:'Contractor account at any branch.',tip:'Ferguson HVAC and plumbing share accounts -- one relationship covers both.'},
+      {name:'Johnstone Supply',tier:'National',desc:'450+ locations. HVAC and refrigeration specialist. Contractor-only supply house. Excellent technical support.',web:'johnstonesupply.com',order:'johnstonesupply.com/branch-locator',phone:'800-556-4678',brands:'Copeland  Emerson  Honeywell  White-Rodgers  ICM  A.O. Smith',account:'Contractor-only. HVAC license typically required.',tip:'Johnstone is contractor only with excellent technical support staff -- great for complex installs.'},
+      {name:'Lennox Stores (LII)',tier:'National',desc:'Lennox International owned. Equipment and parts. Residential and light commercial.',web:'lennox.com',order:'lennox.com/dealer',phone:'800-953-6669',brands:'Lennox  Ducane  Allied Air',account:'Dealer account required. Apply at lennox.com.',tip:'Lennox dealer programs include co-op advertising and financing -- worth the dealer application.'},
+      {name:'Home Depot / Lowes HVAC',tier:'National Retail',desc:'Window units, mini-splits, water heaters, baseboard. Limited selection but immediate availability.',web:'homedepot.com',order:'homedepot.com/b/Heating-Venting-Cooling',phone:'800-466-3337',brands:'LG  Midea  Friedrich  Rheem  A.O. Smith',account:'Pro Xtra program.',tip:'Good for emergency window units and water heater replacements. Not for full system installs.'}
     ],
     regional: {
       northeast:[{name:'N.H. Bragg & Sons',desc:'ME-based HVAC and plumbing.',web:'nhbragg.com',phone:'(207) 947-8611',states:'ME, NH, VT'}],
@@ -2778,9 +2778,9 @@ var SUPPLIERS = {
     icon: '&#127968;',
     color: '#DC2626',
     national: [
-      {name:'ABC Supply',tier:'National #1',desc:'Largest US roofing distributor. 900+ locations. Shingles, metal, flat, underlayment, gutters. Next-day delivery standard. Beacon competitor.',web:'abcsupply.com',order:'abcsupply.com/locations',phone:'800-786-7601',brands:'GAF · Owens Corning · CertainTeed · IKO · Tamko · Atlas · James Hardie',account:'Contractor account required. Roofing license typically needed.',tip:'ABC Supplys delivery tracking is industry-leading -- foremen get texts when truck leaves the branch.'},
-      {name:'Beacon Building Products',tier:'National',desc:'2nd largest US roofing distributor. 500+ locations. Beacon Pro+ digital platform. Strong in exterior products.',web:'beaconbuildingproducts.com',order:'beaconbuildingproducts.com/locations',phone:'844-698-2788',brands:'GAF · Owens Corning · CertainTeed · Metal Sales · Boral · ATAS International',account:'Beacon Pro+ contractor account. Digital ordering with delivery tracking.',tip:'Beacon Pro+ app is excellent for tracking orders and managing invoices on the go.'},
-      {name:'SRS Distribution (Home Depot)',tier:'National',desc:'Acquired by Home Depot 2024. 700+ locations. Roof Hub app for order/delivery visibility. Fast next-day delivery.',web:'srs-distribution.com',order:'srs-distribution.com/locations',phone:'877-777-4447',brands:'GAF · Owens Corning · Atlas · IKO · CertainTeed · Tamko',account:'SRS contractor account. Roof Hub app for account management.',tip:'SRS + Home Depot combination means deep inventory and aggressive pricing for high-volume contractors.'}
+      {name:'ABC Supply',tier:'National #1',desc:'Largest US roofing distributor. 900+ locations. Shingles, metal, flat, underlayment, gutters. Next-day delivery standard. Beacon competitor.',web:'abcsupply.com',order:'abcsupply.com/locations',phone:'800-786-7601',brands:'GAF  Owens Corning  CertainTeed  IKO  Tamko  Atlas  James Hardie',account:'Contractor account required. Roofing license typically needed.',tip:'ABC Supplys delivery tracking is industry-leading -- foremen get texts when truck leaves the branch.'},
+      {name:'Beacon Building Products',tier:'National',desc:'2nd largest US roofing distributor. 500+ locations. Beacon Pro+ digital platform. Strong in exterior products.',web:'beaconbuildingproducts.com',order:'beaconbuildingproducts.com/locations',phone:'844-698-2788',brands:'GAF  Owens Corning  CertainTeed  Metal Sales  Boral  ATAS International',account:'Beacon Pro+ contractor account. Digital ordering with delivery tracking.',tip:'Beacon Pro+ app is excellent for tracking orders and managing invoices on the go.'},
+      {name:'SRS Distribution (Home Depot)',tier:'National',desc:'Acquired by Home Depot 2024. 700+ locations. Roof Hub app for order/delivery visibility. Fast next-day delivery.',web:'srs-distribution.com',order:'srs-distribution.com/locations',phone:'877-777-4447',brands:'GAF  Owens Corning  Atlas  IKO  CertainTeed  Tamko',account:'SRS contractor account. Roof Hub app for account management.',tip:'SRS + Home Depot combination means deep inventory and aggressive pricing for high-volume contractors.'}
     ],
     regional: {
       northeast:[{name:'Northeast Building Products',desc:'NE roofing and siding specialty.',web:'nbpinc.com',phone:'(215) 632-2000',states:'PA, NJ, NY, DE, MD'}],
@@ -2799,9 +2799,9 @@ var SUPPLIERS = {
     icon: '&#129683;',
     color: '#92400E',
     national: [
-      {name:'Builders FirstSource',tier:'National #1',desc:'Largest US structural supplier. 550+ locations. Lumber, trusses, wall panels, EWP, windows, doors. Millwork.',web:'buildersfirstsource.com',order:'buildersfirstsource.com/locations',phone:'214-880-3500',brands:'LP · Weyerhaeuser · Louisiana-Pacific · JELD-WEN · Andersen · PlyGem',account:'Contractor account in-branch. Volume pricing for builders.',tip:'BFS component manufacturing (trusses, wall panels) often cheaper than stick-framing -- get the quote.'},
-      {name:'84 Lumber',tier:'National',desc:'300+ locations. Full LBM, millwork, doors/windows. Components and design services. Strong in residential.',web:'84lumber.com',order:'84lumber.com/stores',phone:'724-228-8820',brands:'LP · Weyerhaeuser · Huber · James Hardie · JELD-WEN · Pella',account:'Account at local store. Builder programs available.',tip:'84 Lumbers designer services are free with purchase -- useful for window and door specs.'},
-      {name:'Home Depot / Lowes Pro Lumber',tier:'National Retail',desc:'Nationwide retail. Good for small orders and specialty items. Delivery available. Pro discount programs.',web:'homedepot.com',order:'homedepot.com/b/Lumber-Composites',phone:'800-466-3337',brands:'WeatherShield · YellaWood · LP SmartSide · LVL · TimberTech',account:'Pro Xtra / Lowes Pro account.',tip:'Home Depot and Lowes are convenient but typically 10-20% more than specialty lumber yards for large orders.'}
+      {name:'Builders FirstSource',tier:'National #1',desc:'Largest US structural supplier. 550+ locations. Lumber, trusses, wall panels, EWP, windows, doors. Millwork.',web:'buildersfirstsource.com',order:'buildersfirstsource.com/locations',phone:'214-880-3500',brands:'LP  Weyerhaeuser  Louisiana-Pacific  JELD-WEN  Andersen  PlyGem',account:'Contractor account in-branch. Volume pricing for builders.',tip:'BFS component manufacturing (trusses, wall panels) often cheaper than stick-framing -- get the quote.'},
+      {name:'84 Lumber',tier:'National',desc:'300+ locations. Full LBM, millwork, doors/windows. Components and design services. Strong in residential.',web:'84lumber.com',order:'84lumber.com/stores',phone:'724-228-8820',brands:'LP  Weyerhaeuser  Huber  James Hardie  JELD-WEN  Pella',account:'Account at local store. Builder programs available.',tip:'84 Lumbers designer services are free with purchase -- useful for window and door specs.'},
+      {name:'Home Depot / Lowes Pro Lumber',tier:'National Retail',desc:'Nationwide retail. Good for small orders and specialty items. Delivery available. Pro discount programs.',web:'homedepot.com',order:'homedepot.com/b/Lumber-Composites',phone:'800-466-3337',brands:'WeatherShield  YellaWood  LP SmartSide  LVL  TimberTech',account:'Pro Xtra / Lowes Pro account.',tip:'Home Depot and Lowes are convenient but typically 10-20% more than specialty lumber yards for large orders.'}
     ],
     regional: {
       northeast:[{name:'Sievert Larsen & Associates',desc:'NE lumber and millwork.',web:'sievertlarsen.com',phone:'(800) 421-7741',states:'MA, NH, ME, VT'}],
@@ -2820,8 +2820,8 @@ var SUPPLIERS = {
     icon: '&#129704;',
     color: '#16a34a',
     national: [
-      {name:'MSI Surfaces',tier:'National #1',desc:'#1 US tile importer and distributor. 50+ distribution centers. Tile, quartz, marble, granite, LVT. Available at Home Depot nationwide.',web:'msisurfaces.com',order:'msisurfaces.com/locations',phone:'800-323-8e30',brands:'MSI Quartz · Carrara · Bianco Perla · Everlife LVT',account:'Contractor account at MSI. Trade pricing available.',tip:'MSI trade accounts get 10-20% below retail. Apply at msisurfaces.com/trade.'},
-      {name:'Daltile',tier:'National #1 Domestic',desc:'#1 US tile manufacturer. 80% made in USA. 250+ showrooms. Ceramic, porcelain, natural stone, glass. Available at Ferguson and Home Depot.',web:'daltile.com',order:'daltile.com/store-locator',phone:'800-933-8453',brands:'Daltile · American Olean · Ragno',account:'Contractor account at showrooms. Volume discounts.',tip:'Daltile American Olean line is same factory at lower price -- great for spec commercial work.'},
+      {name:'MSI Surfaces',tier:'National #1',desc:'#1 US tile importer and distributor. 50+ distribution centers. Tile, quartz, marble, granite, LVT. Available at Home Depot nationwide.',web:'msisurfaces.com',order:'msisurfaces.com/locations',phone:'800-323-8e30',brands:'MSI Quartz  Carrara  Bianco Perla  Everlife LVT',account:'Contractor account at MSI. Trade pricing available.',tip:'MSI trade accounts get 10-20% below retail. Apply at msisurfaces.com/trade.'},
+      {name:'Daltile',tier:'National #1 Domestic',desc:'#1 US tile manufacturer. 80% made in USA. 250+ showrooms. Ceramic, porcelain, natural stone, glass. Available at Ferguson and Home Depot.',web:'daltile.com',order:'daltile.com/store-locator',phone:'800-933-8453',brands:'Daltile  American Olean  Ragno',account:'Contractor account at showrooms. Volume discounts.',tip:'Daltile American Olean line is same factory at lower price -- great for spec commercial work.'},
       {name:'Floor & Decor',tier:'National Retail',desc:'Warehouse-style tile, stone, flooring. 200+ stores. Designer Studio. Good pricing on large quantities. Pro account with discounts.',web:'flooranddecor.com',order:'flooranddecor.com/store-finder',phone:'877-675-0002',brands:'Mix of imports and domestic brands',account:'Pro account with 5-8% discount plus free design services.',tip:'Floor & Decor Pro account is free. 5% instant discount + free same-day delivery over $2,500 orders.'},
       {name:'BuildDirect',tier:'National Online',desc:'Online wholesale. Ships direct to jobsite. Flooring, tile, decking, siding. Best for large quantity orders.',web:'builddirect.com',order:'builddirect.com',phone:'877-631-2845',brands:'Various direct import brands',account:'Trade program for contractors. Volume pricing.',tip:'BuildDirect is best for large residential flooring orders -- not for small fill orders.'}
     ],
