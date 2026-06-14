@@ -1,7 +1,8 @@
 // ================================================================
-// SAIRN Claude Proxy -- api/claude.js (v5 -- License Key Paywall)
-// Demo: 50 calls/day per IP (B2B), 15/day (consumer)
-// Licensed: unlimited calls with valid SAIRN-XXXX-XXXX-XXXX key
+// SAIRN Claude Proxy -- api/claude.js (v6)
+// License keys stored in SAIRN_KEYS env var (Vercel-safe, no hyphens)
+// Format: "KEY1:app:shop:plan|KEY2:app:shop:plan"
+// Example: "SD01_2025_ALPHA:stonedesk:Granite Works:founding"
 // Michael L. Dibert -- SAIRN Technologies -- 2026
 // ================================================================
 
@@ -12,50 +13,53 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const HAIKU  = 'claude-haiku-4-5-20251001';
 const SONNET = 'claude-sonnet-4-6';
 
-// B2B apps get Sonnet (full Claude power)
 const B2B_APPS = new Set([
   'stonedesk','fabricor','sairnbuild','sairnscape','sairnlaw',
   'sairncode','sairndesign','sairnvet','sairnvetglobal','sairncare',
   'sairnfuneral','sairnmechanical','sairntrade','sairnhr','sairnacc'
 ]);
 
-// ── LICENSE KEY STORE ────────────────────────────────────────
-// Keys are stored in SAIRN_LICENSE_KEYS env var as JSON:
-// { "SAIRN-SD01-2025-ALPHA": { "app":"stonedesk", "shop":"Granite Works", "active":true } }
-// Add new keys via Vercel dashboard -> Environment Variables -> SAIRN_LICENSE_KEYS
-function getLicenseStore() {
-  try {
-    return JSON.parse(process.env.SAIRN_LICENSE_KEYS || '{}');
-  } catch(e) {
-    return {};
-  }
+// ── LICENSE STORE ────────────────────────────────────────────
+// Env var: SAIRN_KEYS (letters, digits, underscores only -- Vercel safe)
+// Value format: "KEY:app:shop:plan|KEY2:app:shop:plan"
+// Key format:   "SD01_2025_ALPHA" (underscores, no hyphens)
+// To add a customer: append "|SD02_2025_BETA:stonedesk:Bay Stone:founding"
+function getLicenses() {
+  const raw = process.env.SAIRN_KEYS || '';
+  const map = new Map();
+  if (!raw.trim()) return map;
+  raw.split('|').forEach(entry => {
+    const parts = entry.trim().split(':');
+    if (parts.length >= 2) {
+      // parts: [key, app, shop, plan]
+      map.set(parts[0].toUpperCase(), {
+        app:  parts[1] || 'all',
+        shop: parts[2] || 'Licensed Shop',
+        plan: parts[3] || 'standard'
+      });
+    }
+  });
+  return map;
 }
 
 function validateLicense(key, appId) {
-  if (!key) return { valid: false };
-  const store = getLicenseStore();
-  const entry = store[key.toUpperCase()];
-  if (!entry) return { valid: false, reason: 'key_not_found' };
-  if (!entry.active) return { valid: false, reason: 'key_inactive' };
-  // Key is valid for any SAIRN app (or check specific app if entry.app is set)
-  if (entry.app && entry.app !== appId && entry.app !== 'all') {
-    return { valid: false, reason: 'wrong_app' };
-  }
-  return { valid: true, shop: entry.shop, plan: entry.plan || 'standard' };
+  if (!key || key.length < 4) return { valid: false };
+  const store = getLicenses();
+  const k = key.toUpperCase().replace(/-/g, '_'); // accept hyphens too, normalize
+  const entry = store.get(k);
+  if (!entry) return { valid: false };
+  if (entry.app !== 'all' && entry.app !== appId) return { valid: false };
+  return { valid: true, shop: entry.shop, plan: entry.plan };
 }
 
-// ── RATE LIMITING (demo users only) ─────────────────────────
+// ── RATE LIMITING (demo only) ────────────────────────────────
 const calls = new Map();
-
-function getKey(req, appId) {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-  const today = new Date().toISOString().slice(0, 10);
-  return `${ip}_${appId}_${today}`;
+function getRLKey(req, appId) {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  return ip + '_' + appId + '_' + new Date().toISOString().slice(0, 10);
 }
-
 const DEMO_LIMITS = { b2b: 50, consumer: 15 };
 
-// ── KNOWN APPS ───────────────────────────────────────────────
 const KNOWN_APPS = new Set([
   'sairntype','lingual','health','money','legal','study','roam','senior',
   'stonedesk','fabricor','sairnbuild','sairnscape','sairnlaw','sairncode',
@@ -65,79 +69,58 @@ const KNOWN_APPS = new Set([
 ]);
 
 export default async function handler(req, res) {
-  const origin = req.headers.origin || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const {
-    max_tokens, system, messages, app_id, is_demo,
-    model: requestedModel, license_key
-  } = req.body || {};
-
+  const { max_tokens, system, messages, app_id, is_demo, license_key } = req.body || {};
   if (!messages?.length) return res.status(400).json({ error: 'Messages required' });
 
-  const appIdValid = !app_id || KNOWN_APPS.has(app_id) || app_id?.startsWith('sairn') || app_id === 'fabricor';
-  if (!appIdValid) return res.status(400).json({ error: 'Invalid app_id' });
+  const appOk = !app_id || KNOWN_APPS.has(app_id) || app_id?.startsWith('sairn') || app_id === 'fabricor';
+  if (!appOk) return res.status(400).json({ error: 'Invalid app_id' });
 
   const isB2B = B2B_APPS.has(app_id);
+  const license = validateLicense(license_key, app_id);
 
-  // ── LICENSE CHECK ────────────────────────────────────────
-  const licenseResult = validateLicense(license_key, app_id);
-  const isLicensed = licenseResult.valid;
-
-  if (!isLicensed) {
-    // Demo mode: apply rate limit
+  if (!license.valid) {
+    // Demo: rate-limited
     const limit = isB2B ? DEMO_LIMITS.b2b : DEMO_LIMITS.consumer;
-    const key   = getKey(req, app_id || 'unknown');
-    const count = calls.get(key) || 0;
-
+    const rlKey = getRLKey(req, app_id || 'unknown');
+    const count = calls.get(rlKey) || 0;
     if (count >= limit) {
       return res.status(429).json({
         error: 'demo_limit',
-        message: isB2B
-          ? `You have used ${limit} free AI calls today. Enter your StoneDesk license key to unlock unlimited access. Email michael@sairn.com to get your key.`
-          : 'Daily free limit reached. Sign up at sairn.vercel.app for unlimited access.',
-        upgrade: true,
-        limit,
-        used: count,
-        get_key: 'michael@sairn.com'
+        message: `Free demo limit reached (${limit} calls/day). Enter your SAIRN license key in Formula Editor to unlock unlimited access. Email michael@sairn.com to get your key.`,
+        upgrade: true, limit, used: count
       });
     }
-    calls.set(key, count + 1);
+    calls.set(rlKey, count + 1);
   }
 
-  // ── MODEL SELECTION ──────────────────────────────────────
   const model = isB2B ? SONNET : HAIKU;
-
-  // Licensed users get higher token limits
-  const maxTok = isLicensed
+  const maxTok = license.valid
     ? Math.min(max_tokens || 2000, 8000)
     : Math.min(max_tokens || 1000, isB2B ? 2000 : 1000);
 
-  const params = {
-    model,
-    max_tokens: maxTok,
-    messages: messages.slice(-20)
-  };
+  const params = { model, max_tokens: maxTok, messages: messages.slice(-20) };
   if (system) params.system = system.slice(0, 8000);
 
   try {
-    const response = await anthropic.messages.create(params);
-    const remaining = isLicensed ? 'unlimited' : (
-      (isB2B ? DEMO_LIMITS.b2b : DEMO_LIMITS.consumer) - (calls.get(getKey(req, app_id || 'unknown')) || 0)
-    );
+    const r = await anthropic.messages.create(params);
+    const rlKey = getRLKey(req, app_id || 'unknown');
+    const remaining = license.valid ? 'unlimited' :
+      Math.max(0, (isB2B ? DEMO_LIMITS.b2b : DEMO_LIMITS.consumer) - (calls.get(rlKey) || 0));
     return res.status(200).json({
-      ...response,
+      ...r,
       _model: model,
-      _licensed: isLicensed,
-      _shop: licenseResult.shop || null,
+      _licensed: license.valid,
+      _shop: license.shop || null,
       _remaining: remaining
     });
   } catch (err) {
-    console.error('[Claude Proxy Error]', err.message);
+    console.error('[Proxy Error]', err.message);
     return res.status(err.status || 500).json({ error: { message: err.message } });
   }
 }
