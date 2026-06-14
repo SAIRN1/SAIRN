@@ -23,7 +23,7 @@
   --red:    #DC2626;
   --amber:  #D97706;
   --green:  #16a34a;
-  --blue:   #2563EB;
+  --blue:   #14B8A6;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;font-family:'Inter',sans-serif;background:var(--white);color:var(--tx);}
@@ -172,17 +172,17 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--white);col
 
 <script>
 
-// ╔══════════════════════════════════════════════════════════╗
-// ║   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  ║
-// ║   30-Layer Protection Framework                          ║
-// ║   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance ║
-// ║   Built by SAIRN Technologies - Michael L. Dibert       ║
-// ╚══════════════════════════════════════════════════════════╝
+// ------------------------------------------------------------------------------------------------------------------------
+// --   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  --
+// --   30-Layer Protection Framework                          --
+// --   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance --
+// --   Built by SAIRN Technologies - Michael L. Dibert       --
+// ------------------------------------------------------------------------------------------------------------------------
 
 (function() {
 'use strict';
 
-// ── CONFIGURATION ──────────────────────────────────────────
+// ---- CONFIGURATION ------------------------------------------------------------------------------------
 var SAIRN_SEC = {
   version: '3.0',
   appName: document.title || 'SAIRN App',
@@ -207,11 +207,11 @@ var SAIRN_SEC = {
   loginAttempts: parseInt(sessionStorage.getItem('s_attempts') || '0')
 };
 
-// ═══════════════════════════════════════════════════════════
-// WALL 1 — BROWSER LAYER (Layers 1-18)
-// ═══════════════════════════════════════════════════════════
+// ----------------------------------------------------------------------------------------------------------------------
+// WALL 1 -- BROWSER LAYER (Layers 1-18)
+// ----------------------------------------------------------------------------------------------------------------------
 
-// LAYER 1 — Domain Allowlist Fetch Interceptor
+// LAYER 1 -- Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
 window.fetch = function(url, opts) {
   try {
@@ -236,7 +236,7 @@ window.fetch = function(url, opts) {
   return _origFetch.apply(this, arguments);
 };
 
-// LAYER 2 — XSS Output Sanitizer
+// LAYER 2 -- XSS Output Sanitizer
 window.safeHTML = function(str) {
   if (typeof str !== 'string') return str;
   return str
@@ -251,7 +251,7 @@ window.safeHTML = function(str) {
     .replace(/data:text\/html/gi, '');
 };
 
-// LAYER 3 — Input Sanitization on All Form Fields
+// LAYER 3 -- Input Sanitization on All Form Fields
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('input[type=text], input[type=email], textarea').forEach(function(el) {
     el.addEventListener('input', function() {
@@ -265,14 +265,14 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 4 — Clickjacking Protection (Frame-Busting)
+// LAYER 4 -- Clickjacking Protection (Frame-Busting)
 if (window !== window.top) {
   window.top.location = window.location;
   document.body.innerHTML = '<h2 style="padding:40px;font-family:sans-serif">SAIRN Security: Embedded framing not permitted.</h2>';
   saLog('L4-FRAME', 'Clickjacking attempt detected', 'critical');
 }
 
-// LAYER 5 — Session Timeout & Auto-Lock
+// LAYER 5 -- Session Timeout & Auto-Lock
 function saResetTimer() {
   SAIRN_SEC.lastActivity = Date.now();
   if (SAIRN_SEC.sessionLocked) {
@@ -328,7 +328,7 @@ window.saUnlock = function() {
   }
 };
 
-// LAYER 6 — Brute-Force Protection on PIN
+// LAYER 6 -- Brute-Force Protection on PIN
 window.saTrackLoginAttempt = function(success) {
   if (success) {
     SAIRN_SEC.loginAttempts = 0;
@@ -338,14 +338,14 @@ window.saTrackLoginAttempt = function(success) {
   SAIRN_SEC.loginAttempts++;
   sessionStorage.setItem('s_attempts', String(SAIRN_SEC.loginAttempts));
   if (SAIRN_SEC.loginAttempts >= SAIRN_SEC.maxLoginAttempts) {
-    saLog('L6-BRUTE', 'Max login attempts exceeded — lockout triggered', 'critical');
+    saLog('L6-BRUTE', 'Max login attempts exceeded -- lockout triggered', 'critical');
     document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:sans-serif"><h2 style="color:#DC2626">Too Many Failed Attempts</h2><p>Access temporarily locked. Please try again in 15 minutes.</p></div>';
     setTimeout(function() { sessionStorage.setItem('s_attempts','0'); }, 15 * 60 * 1000);
   }
   return false;
 };
 
-// LAYER 7 — Prompt Injection Detection (Claude-specific)
+// LAYER 7 -- Prompt Injection Detection (Claude-specific)
 window.saCleanPrompt = function(text) {
   if (!text) return text;
   var injectionPatterns = [
@@ -368,7 +368,7 @@ window.saCleanPrompt = function(text) {
   return text;
 };
 
-// LAYER 8 — PII Scrubbing (24 patterns)
+// LAYER 8 -- PII Scrubbing (24 patterns)
 window.saScrubPII = function(text) {
   if (!text || typeof text !== 'string') return text;
   var patterns = [
@@ -401,7 +401,7 @@ window.saScrubPII = function(text) {
   return text;
 };
 
-// LAYER 9 — Data Exfiltration Monitor
+// LAYER 9 -- Data Exfiltration Monitor
 var _origXHR = window.XMLHttpRequest;
 window.XMLHttpRequest = function() {
   var xhr = new _origXHR();
@@ -424,7 +424,7 @@ window.XMLHttpRequest = function() {
   return xhr;
 };
 
-// LAYER 10 — Content Security Policy (Meta tag)
+// LAYER 10 -- Content Security Policy (Meta tag)
 (function() {
   var csp = document.createElement('meta');
   csp.httpEquiv = 'Content-Security-Policy';
@@ -437,7 +437,7 @@ window.XMLHttpRequest = function() {
   }
 })();
 
-// LAYER 11 — localStorage Encryption (AES-like obfuscation)
+// LAYER 11 -- localStorage Encryption (AES-like obfuscation)
 window.saStore = {
   _key: SAIRN_SEC.dataEncryptKey,
   _encode: function(data) {
@@ -483,7 +483,7 @@ window.saStore = {
   }
 };
 
-// LAYER 12 — Subresource Integrity Check
+// LAYER 12 -- Subresource Integrity Check
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('script[src], link[rel=stylesheet]').forEach(function(el) {
     var src = el.src || el.href;
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 13 — DevTools Detection (Production Mode Alert)
+// LAYER 13 -- DevTools Detection (Production Mode Alert)
 var devToolsOpen = false;
 setInterval(function() {
   var threshold = 160;
@@ -511,7 +511,7 @@ setInterval(function() {
   }
 }, 5000);
 
-// LAYER 14 — Right-Click Protection on Sensitive Areas
+// LAYER 14 -- Right-Click Protection on Sensitive Areas
 document.addEventListener('contextmenu', function(e) {
   var el = e.target;
   if (el && (el.dataset.sensitive || el.closest('[data-sensitive]'))) {
@@ -520,7 +520,7 @@ document.addEventListener('contextmenu', function(e) {
   }
 });
 
-// LAYER 15 — Clipboard Protection
+// LAYER 15 -- Clipboard Protection
 document.addEventListener('copy', function(e) {
   var sel = window.getSelection ? window.getSelection().toString() : '';
   var piiPatterns = [/\b\d{3}[-.\s]?\d{2}[-.\s]?\d{4}\b/, /\b4[0-9]{12,15}\b/];
@@ -530,7 +530,7 @@ document.addEventListener('copy', function(e) {
   }
 });
 
-// LAYER 16 — Rate Limiting (API calls per minute)
+// LAYER 16 -- Rate Limiting (API calls per minute)
 var apiCallLog = [];
 window.saCheckRateLimit = function(appId) {
   var now = Date.now();
@@ -544,7 +544,7 @@ window.saCheckRateLimit = function(appId) {
   return true;
 };
 
-// LAYER 17 — Response Sanitization (Claude output scrubbing)
+// LAYER 17 -- Response Sanitization (Claude output scrubbing)
 window.saSanitizeResponse = function(text) {
   if (!text) return text;
   // Strip any accidentally echoed credentials
@@ -557,7 +557,7 @@ window.saSanitizeResponse = function(text) {
   return text;
 };
 
-// LAYER 18 — Auto Data Purge (90-day expiry on localStorage)
+// LAYER 18 -- Auto Data Purge (90-day expiry on localStorage)
 (function saAutoPurge() {
   try {
     var ageKey = 'sairn_created';
@@ -580,11 +580,11 @@ window.saSanitizeResponse = function(text) {
   } catch(e) {}
 })();
 
-// ═══════════════════════════════════════════════════════════
-// WALL 2 — API PROXY LAYER (Layers 19-23)
-// ═══════════════════════════════════════════════════════════
+// ----------------------------------------------------------------------------------------------------------------------
+// WALL 2 -- API PROXY LAYER (Layers 19-23)
+// ----------------------------------------------------------------------------------------------------------------------
 
-// LAYER 19 — Request Signing (HMAC-style app_id validation)
+// LAYER 19 -- Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
   if (!payload.app_id) {
     saLog('L19-SIGN', 'Request missing app_id', 'high');
@@ -597,7 +597,7 @@ window.saSignRequest = function(payload) {
   return payload;
 };
 
-// LAYER 20 — Prompt Injection on Every Claude Call
+// LAYER 20 -- Prompt Injection on Every Claude Call
 var _origSAIRNFetch = null;
 window.saSecureClaudeCall = function(url, opts) {
   if (opts && opts.body) {
@@ -620,7 +620,7 @@ window.saSecureClaudeCall = function(url, opts) {
   return window.fetch(url, opts);
 };
 
-// LAYER 21 — Anomaly Detection (unusual patterns)
+// LAYER 21 -- Anomaly Detection (unusual patterns)
 var requestPatterns = {};
 window.saDetectAnomaly = function(appId, endpoint) {
   var key = appId + ':' + endpoint;
@@ -635,7 +635,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
   return false;
 };
 
-// LAYER 22 — Direct API Call Blocker
+// LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
     if (typeof url === 'string' && url.includes('api.anthropic.com')) {
@@ -646,16 +646,16 @@ window.fetch = (function(originalFetch) {
   };
 })(window.fetch);
 
-// LAYER 23 — SSL/HTTPS Enforcement
+// LAYER 23 -- SSL/HTTPS Enforcement
 if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
-// ═══════════════════════════════════════════════════════════
-// WALL 3 — DATA LAYER (Layers 24-27)
-// ═══════════════════════════════════════════════════════════
+// ----------------------------------------------------------------------------------------------------------------------
+// WALL 3 -- DATA LAYER (Layers 24-27)
+// ----------------------------------------------------------------------------------------------------------------------
 
-// LAYER 24 — Data Minimization Checker
+// LAYER 24 -- Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
   var sensitiveFields = ['ssn','password','creditCard','bankAccount','routingNumber','medicalRecord','biometric'];
   var found = [];
@@ -669,14 +669,14 @@ window.saCheckDataMinimization = function(data) {
   return found.length === 0;
 };
 
-// LAYER 25 — Session Storage Isolation
+// LAYER 25 -- Session Storage Isolation
 window.saSessionStore = {
   set: function(key, val) { try { sessionStorage.setItem('sairn_' + key, JSON.stringify(val)); } catch(e) {} },
   get: function(key) { try { var v=sessionStorage.getItem('sairn_'+key); return v?JSON.parse(v):null; } catch(e) { return null; } },
   clear: function() { Object.keys(sessionStorage).filter(function(k){return k.startsWith('sairn_');}).forEach(function(k){sessionStorage.removeItem(k);}); }
 };
 
-// LAYER 26 — Credential Storage Prevention
+// LAYER 26 -- Credential Storage Prevention
 window.addEventListener('beforeunload', function() {
   ['password','passwd','pwd','pin','secret','token'].forEach(function(field) {
     var els = document.querySelectorAll('input[name*="' + field + '"], input[id*="' + field + '"]');
@@ -684,7 +684,7 @@ window.addEventListener('beforeunload', function() {
   });
 });
 
-// LAYER 27 — Right to Delete (One-click data wipe)
+// LAYER 27 -- Right to Delete (One-click data wipe)
 window.saWipeAllData = function() {
   if (!confirm('PERMANENT: Delete all SAIRN data from this device? This cannot be undone.')) return;
   localStorage.clear();
@@ -699,11 +699,11 @@ window.saWipeAllData = function() {
   location.reload();
 };
 
-// ═══════════════════════════════════════════════════════════
-// WALL 4 — COMPLIANCE LAYER (Layers 28-30)
-// ═══════════════════════════════════════════════════════════
+// ----------------------------------------------------------------------------------------------------------------------
+// WALL 4 -- COMPLIANCE LAYER (Layers 28-30)
+// ----------------------------------------------------------------------------------------------------------------------
 
-// LAYER 28 — CCPA/Privacy Consent Notice
+// LAYER 28 -- CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
   if (localStorage.getItem('sairn_privacy_accepted')) return;
   var notice = document.createElement('div');
@@ -740,7 +740,7 @@ window.saDeclinePrivacy = function() {
   alert('SAIRN requires localStorage consent to function. Some features may not work.');
 };
 
-// LAYER 29 — Security Audit Log
+// LAYER 29 -- Security Audit Log
 function saLog(layer, message, severity) {
   var entry = { ts: new Date().toISOString(), layer: layer, msg: message, sev: severity, url: location.href };
   SAIRN_SEC.auditLog.push(entry);
@@ -758,7 +758,7 @@ function saLog(layer, message, severity) {
   } catch(e) {}
 }
 
-// LAYER 30 — Security Status Dashboard (Admin only)
+// LAYER 30 -- Security Status Dashboard (Admin only)
 window.saShowSecurityStatus = function() {
   var logs = JSON.parse(sessionStorage.getItem('sairn_audit') || '[]');
   var critical = logs.filter(function(l) { return l.sev === 'critical'; }).length;
@@ -777,9 +777,9 @@ window.saShowSecurityStatus = function() {
   alert(report);
 };
 
-// ── INITIALIZATION MESSAGE ─────────────────────────────────
-saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
-console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
+// ---- INITIALIZATION MESSAGE ------------------------------------------------------------------
+saLog('INIT', 'SAIRN Security System v3.0 initialized -- 30 layers active', 'info');
+console.log('%c SAIRN Security v3.0 -- 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
 
 })(); // End SAIRN Security IIFE
 
@@ -3339,7 +3339,7 @@ function printFacilityCheck() {
     '<div class="micr">'+( document.getElementById('ck-rt-op').value||'000000000')+':'+( document.getElementById('ck-ac-op').value||'00000000')+'</div>'+
     '</div>
 <script>
-// SAIRN PATCH — missing function fixes
+// SAIRN PATCH -- missing function fixes
 
 window.generateCensusReport = async function() {
   var btn = document.querySelector('[onclick*="generateCensusReport"]');
@@ -3371,7 +3371,7 @@ window.generateCensusReport = async function() {
     } else {
       var modal = document.createElement('div');
       modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
-      modal.innerHTML = '<div style="background:#fff;border-radius:12px;padding:28px;width:680px;max-width:95vw;max-height:85vh;overflow-y:auto"><div style="font-weight:700;font-size:16px;margin-bottom:16px;color:#E11D48">Census Report — ' + new Date().toLocaleDateString() + '</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#374151">' + report.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div><div style="margin-top:20px;text-align:right"><button onclick="this.closest('[style*=fixed]').remove()" style="background:#E11D48;color:#fff;border:none;padding:8px 20px;border-radius:7px;cursor:pointer">Close</button> <button onclick="window.print()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:8px 16px;border-radius:7px;cursor:pointer">Print</button></div></div>';
+      modal.innerHTML = '<div style="background:#fff;border-radius:12px;padding:28px;width:680px;max-width:95vw;max-height:85vh;overflow-y:auto"><div style="font-weight:700;font-size:16px;margin-bottom:16px;color:#E11D48">Census Report -- ' + new Date().toLocaleDateString() + '</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#374151">' + report.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div><div style="margin-top:20px;text-align:right"><button onclick="this.closest('[style*=fixed]').remove()" style="background:#E11D48;color:#fff;border:none;padding:8px 20px;border-radius:7px;cursor:pointer">Close</button> <button onclick="window.print()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:8px 16px;border-radius:7px;cursor:pointer">Print</button></div></div>';
       modal.addEventListener('click', function(e) { if(e.target===modal) modal.remove(); });
       document.body.appendChild(modal);
     }
@@ -3399,6 +3399,96 @@ window.generateCensusReport = async function() {
   });
   console.log('SAIRNbiz Connector active in SAIRNcare');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNcare -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#14B8A6;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Patient Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Patient Summary</button><button onclick="sbq('Staff Schedule')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Staff Schedule</button><button onclick="sbq('Compliance Check')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Compliance Check</button><button onclick="sbq('Care Plan')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Care Plan</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#14B8A6;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNcare AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#14B8A6;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNcare'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairncare',is_demo:true,
+        system:'You are the AI for SAIRNcare, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body></html>');
   w.document.close();
@@ -4058,7 +4148,7 @@ function checkCare_SmartFlags(){var f=[];try{var _v=(window.sc_residents&&sc_res
 setTimeout(function(){if(typeof checkCare_SmartFlags==="function")checkCare_SmartFlags();},2000);
 </script>
 <script>
-function showFamilyPortalView(){var modal=document.getElementById("sc-family-modal");if(!modal){modal=document.createElement("div");modal.id="sc-family-modal";modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,.3)";var title=document.createElement("h3");title.textContent="Family Update Report";title.style.cssText="font-size:18px;font-weight:900;color:#881337;margin-bottom:16px";var hero=document.createElement("div");hero.style.cssText="background:#FFF1F2;border-radius:10px;padding:16px;margin-bottom:14px";var rname=document.createElement("div");rname.id="sc-fam-name";rname.textContent="Resident";rname.style.cssText="font-size:20px;font-weight:900;color:#881337";var rroom=document.createElement("div");rroom.id="sc-fam-room";rroom.textContent="Room: --";rroom.style.cssText="font-size:12px;color:#6B7280;margin-top:2px";hero.appendChild(rname);hero.appendChild(rroom);var grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px";[["Wellness","sc-fam-well","Good","#16a34a"],["Meals","sc-fam-meals","3/3","#d97706"],["Activities","sc-fam-act","--","#3B82F6"],["Incidents","sc-fam-inc","0","#E11D48"]].forEach(function(d){var c=document.createElement("div");c.style.cssText="border:1px solid #E5E7EB;border-radius:8px;padding:12px;text-align:center";var v=document.createElement("div");v.id=d[1];v.textContent=d[2];v.style.cssText="font-size:20px;font-weight:900;color:"+d[3];var l=document.createElement("div");l.textContent=d[0];l.style.cssText="font-size:10px;color:#6B7280;text-transform:uppercase";c.appendChild(v);c.appendChild(l);grid.appendChild(c);});var note=document.createElement("div");note.textContent="Clinical records not shown for privacy compliance.";note.style.cssText="font-size:11px;color:#6B7280;text-align:center;margin-bottom:14px";var printBtn=document.createElement("button");printBtn.textContent="Print for Family";printBtn.style.cssText="display:block;margin:0 auto;padding:10px 20px;background:#E11D48;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer";printBtn.onclick=function(){window.print();};inner.appendChild(title);inner.appendChild(hero);inner.appendChild(grid);inner.appendChild(note);inner.appendChild(printBtn);modal.appendChild(inner);document.body.appendChild(modal);}var residents=window.sc_residents||[];if(residents.length){document.getElementById("sc-fam-name").textContent=(residents[0].firstName||residents[0].name||"Resident")+" "+(residents[0].lastName||"");document.getElementById("sc-fam-room").textContent="Room: "+(residents[0].room||"--");}modal.style.display="flex";}
+function showFamilyPortalView(){var modal=document.getElementById("sc-family-modal");if(!modal){modal=document.createElement("div");modal.id="sc-family-modal";modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,.3)";var title=document.createElement("h3");title.textContent="Family Update Report";title.style.cssText="font-size:18px;font-weight:900;color:#881337;margin-bottom:16px";var hero=document.createElement("div");hero.style.cssText="background:#FFF1F2;border-radius:10px;padding:16px;margin-bottom:14px";var rname=document.createElement("div");rname.id="sc-fam-name";rname.textContent="Resident";rname.style.cssText="font-size:20px;font-weight:900;color:#881337";var rroom=document.createElement("div");rroom.id="sc-fam-room";rroom.textContent="Room: --";rroom.style.cssText="font-size:12px;color:#6B7280;margin-top:2px";hero.appendChild(rname);hero.appendChild(rroom);var grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px";[["Wellness","sc-fam-well","Good","#16a34a"],["Meals","sc-fam-meals","3/3","#d97706"],["Activities","sc-fam-act","--","#14B8A6"],["Incidents","sc-fam-inc","0","#E11D48"]].forEach(function(d){var c=document.createElement("div");c.style.cssText="border:1px solid #E5E7EB;border-radius:8px;padding:12px;text-align:center";var v=document.createElement("div");v.id=d[1];v.textContent=d[2];v.style.cssText="font-size:20px;font-weight:900;color:"+d[3];var l=document.createElement("div");l.textContent=d[0];l.style.cssText="font-size:10px;color:#6B7280;text-transform:uppercase";c.appendChild(v);c.appendChild(l);grid.appendChild(c);});var note=document.createElement("div");note.textContent="Clinical records not shown for privacy compliance.";note.style.cssText="font-size:11px;color:#6B7280;text-align:center;margin-bottom:14px";var printBtn=document.createElement("button");printBtn.textContent="Print for Family";printBtn.style.cssText="display:block;margin:0 auto;padding:10px 20px;background:#E11D48;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer";printBtn.onclick=function(){window.print();};inner.appendChild(title);inner.appendChild(hero);inner.appendChild(grid);inner.appendChild(note);inner.appendChild(printBtn);modal.appendChild(inner);document.body.appendChild(modal);}var residents=window.sc_residents||[];if(residents.length){document.getElementById("sc-fam-name").textContent=(residents[0].firstName||residents[0].name||"Resident")+" "+(residents[0].lastName||"");document.getElementById("sc-fam-room").textContent="Room: "+(residents[0].room||"--");}modal.style.display="flex";}
 </script>
 
 <script>
@@ -4068,8 +4158,8 @@ function showFamilyPortalView(){var modal=document.getElementById("sc-family-mod
   var hasData = localStorage.getItem('sh_employees') || localStorage.getItem('sd_jobs') || 
                 localStorage.getItem('sl_matters') || localStorage.getItem('sb_projects') ||
                 localStorage.getItem('sc_residents') || localStorage.getItem('sa_invoices');
-  if (hasData) return; // Real data exists — do not seed
-// SAIRN DEMO DATA SEED — Session 19
+  if (hasData) return; // Real data exists -- do not seed
+// SAIRN DEMO DATA SEED -- Session 19
 // Injects realistic demo data into all 10 apps via localStorage
 // Run this in browser console on any SAIRN app page, OR inject before 
 <!-- SAIRNbiz Connector v1.0 -->
@@ -4089,6 +4179,96 @@ function showFamilyPortalView(){var modal=document.getElementById("sc-family-mod
   });
   console.log('SAIRNbiz Connector active in SAIRNcare');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNcare -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#14B8A6;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Patient Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Patient Summary</button><button onclick="sbq('Staff Schedule')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Staff Schedule</button><button onclick="sbq('Compliance Check')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Compliance Check</button><button onclick="sbq('Care Plan')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Care Plan</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#14B8A6;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNcare AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#14B8A6;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNcare'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairncare',is_demo:true,
+        system:'You are the AI for SAIRNcare, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 // Resets all apps to a rich, impressive demo state
@@ -4305,12 +4485,12 @@ function showFamilyPortalView(){var modal=document.getElementById("sc-family-mod
 </script>
 
 <script>
-// SAIRN Client Clean View — P9 Universal Pattern
+// SAIRN Client Clean View -- P9 Universal Pattern
 function showClientView() {
   var content = document.querySelector('.ai-result, #result-output, .claude-output, [id*="result"]');
   var clientText = content ? content.innerText : 'No report generated yet. Please complete the intake form first.';
   var w = window.open('', '_blank', 'width=800,height=600');
-  w.document.write('<' + 'html><head><title>SAIRNcare — Client Report</title>'
+  w.document.write('<' + 'html><head><title>SAIRNcare -- Client Report</title>'
     + '<style>body{font-family:system-ui,sans-serif;padding:40px;max-width:700px;margin:0 auto;color:#1f2937;}'
     + 'h1{color:#E11D48;border-bottom:2px solid #E11D48;padding-bottom:12px;}'
     + '.meta{font-size:13px;color:#6b7280;margin-bottom:24px;}'
@@ -4334,7 +4514,7 @@ function showClientView() {
 </script>
 
 <script>
-// SAIRN Admin Formula Editor — P10 Universal Pattern
+// SAIRN Admin Formula Editor -- P10 Universal Pattern
 function showAdminFormulaEditor() {
   var pin = prompt('Admin PIN required:');
   if (pin !== '9999' && pin !== '1234') { alert('Invalid PIN.'); return; }
@@ -4361,7 +4541,7 @@ function saveAdminRates_sairncare() {
 </script>
 
 <script>
-// SAIRN Debounce Utility — prevents Claude call hammering on rapid input
+// SAIRN Debounce Utility -- prevents Claude call hammering on rapid input
 window.saDebounce = function(func, wait) {
   var timeout;
   return function() {
@@ -4389,6 +4569,96 @@ window.saDebounce = function(func, wait) {
   });
   console.log('SAIRNbiz Connector active in SAIRNcare');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNcare -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#14B8A6;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Patient Summary')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Patient Summary</button><button onclick="sbq('Staff Schedule')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Staff Schedule</button><button onclick="sbq('Compliance Check')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Compliance Check</button><button onclick="sbq('Care Plan')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Care Plan</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#14B8A6;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNcare AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#14B8A6;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNcare'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairncare',is_demo:true,
+        system:'You are the AI for SAIRNcare, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 </html>
