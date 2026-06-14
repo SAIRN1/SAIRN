@@ -1138,5 +1138,24 @@ document.querySelectorAll('.modal-bg').forEach(bg => {
   bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('open'); });
 });
 </script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcomm
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#14B8A6');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncomm', 'app_loaded', {
+    app: 'SAIRNcomm',
+    color: '#14B8A6',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcomm');
+})();
+</script>
 </body>
 </html>
