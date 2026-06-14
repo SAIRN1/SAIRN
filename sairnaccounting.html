@@ -2857,6 +2857,25 @@ window.saExportInventory = function() {
   // These are written by saConfirmPayrollPaid and read by SAIRNhr
 })();
 
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
+</script>
 </body></html>');
   w.document.close();
 }
@@ -3243,7 +3262,26 @@ function saStatementContact(i){
     html2+='<div class="row"><span>'+escHtml(inv.num)+' — '+escHtml(inv.date)+'</span><span style="color:'+(overdue?'#dc2626':inv.status==='Paid'?'#16a34a':'#d97706')+'">'+escHtml(inv.status)+' — $'+amt.toFixed(2)+'</span></div>';
   });
   html2+='<div class="row total"><span>TOTAL OUTSTANDING</span><span>$'+open.toFixed(2)+'</span></div>';
-  html2+='</body></html>';
+  html2+='
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
+</script>
+</body></html>';
   w.document.write(html2);w.document.close();
 }
 function saSendStatements(){
@@ -3729,7 +3767,26 @@ function saMileageReport(){
   });
   html2+='<tr style="font-weight:900;border-top:2px solid #0D2418"><td colspan="4">TOTAL</td><td>'+totalMiles.toFixed(1)+'</td><td>$'+(totalMiles*IRS_RATE).toFixed(2)+'</td></tr>';
   html2+='</table><p style="margin-top:24px;font-size:11px;color:#666">Per IRS Publication 463 — Keep records for 3 years. Substantiation required: date, destination, business purpose, miles driven.</p>';
-  html2+='</body></html>';
+  html2+='
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
+</script>
+</body></html>';
   w.document.write(html2);w.document.close();
   saNotify('IRS mileage report generated','green');
 }
@@ -3946,7 +4003,26 @@ async function saProjectPL(){
   });
   var totProfit=totRev-totCost;
   html2+='<tr style="font-weight:900;border-top:2px solid #0D2418"><td colspan="2">TOTAL</td><td>$'+totBud.toFixed(2)+'</td><td>$'+totRev.toFixed(2)+'</td><td>$'+totCost.toFixed(2)+'</td><td style="color:'+(totProfit>=0?'#16a34a':'#dc2626')+'">$'+totProfit.toFixed(2)+'</td><td>'+Math.round(totRev>0?(totProfit/totRev)*100:0)+'%</td><td></td></tr>';
-  html2+='</table></body></html>';
+  html2+='</table>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
+</script>
+</body></html>';
   w.document.write(html2);w.document.close();
 }
 async function saProjectAI(){
@@ -5723,7 +5799,26 @@ function saQTPrint(){
   });
   w.document.write('</table></div>');
   w.document.write('<div style="margin-top:36px;padding-top:16px;border-top:2px solid #eee"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">Prepared By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">Reviewed By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px;color:#666">CFO / Date</div></div></div>');
-  w.document.write('</body></html>');w.document.close();
+  w.document.write('
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
+</script>
+</body></html>');w.document.close();
 }
 
 // ============================================================
@@ -5975,7 +6070,26 @@ function saPrintPO(i){
   w.document.write('<p><strong>Vendor:</strong> '+escHtml(po.vendor)+'<br><strong>Date:</strong> '+escHtml(po.date)+'<br><strong>Status:</strong> '+escHtml(po.status)+'</p>');
   w.document.write('<hr><p><strong>Items:</strong> '+escHtml(po.items)+'</p><p><strong>Total Amount: '+saFmtN(po.amount)+'</strong></p>');
   w.document.write('<div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:32px"><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Ordered By / Date</div><div style="border-top:1px solid #999;padding-top:8px;font-size:11px">Approved By / Date</div></div>');
-  w.document.write('</body></html>');w.document.close();
+  w.document.write('
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
+</script>
+</body></html>');w.document.close();
 }
 async function saPOAI(){
   var totalCommitted=saFmtN(saPoList.reduce(function(s,p){return s+(p.status==='Open'?p.amount||0:0);},0));
@@ -6545,7 +6659,26 @@ function chkPrintPreview() {
     `);
   }
 
-  w.document.write(`</div></body></html>`);
+  w.document.write(`</div>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
+</script>
+</body></html>`);
   w.document.close();
 
   chkRenderRegister();
@@ -6712,7 +6845,26 @@ function syncAllApps(){
   if (hasData) return; // Real data exists — do not seed
 // SAIRN DEMO DATA SEED — Session 19
 // Injects realistic demo data into all 10 apps via localStorage
-// Run this in browser console on any SAIRN app page, OR inject before </body>
+// Run this in browser console on any SAIRN app page, OR inject before 
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
+</script>
+</body>
 // Resets all apps to a rich, impressive demo state
 // Michael L. Dibert — SAIRN Technologies
 
@@ -6936,6 +7088,25 @@ window.saDebounce = function(func, wait) {
     timeout = setTimeout(function() { func.apply(context, args); }, wait || 300);
   };
 };
+</script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNacc
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#0D9488');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnaccounting', 'app_loaded', {
+    app: 'SAIRNacc',
+    color: '#0D9488',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNacc');
+})();
 </script>
 </body>
 </html>
