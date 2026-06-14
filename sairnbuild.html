@@ -466,7 +466,7 @@ function saveLicenseKey() {
   var key = (document.getElementById('license-key-input') || {}).value || '';
   key = key.trim().toUpperCase();
   if (!key) { toast('Enter a license key'); return; }
-  if (!key.startsWith('SAIRN-')) { toast('Invalid key format'); return; }
+  if (key.length < 8) { toast('Invalid key -- too short'); return; }
   localStorage.setItem('sairn_license_key_sairnbuild', key);
   document.getElementById('license-status').innerHTML = '<span style="color:var(--green)">&#x2713; Key saved. AI is now unlocked for unlimited use.</span>';
   toast('License key activated!');
