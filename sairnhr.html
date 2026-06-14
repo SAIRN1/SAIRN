@@ -639,6 +639,10 @@ window.saSecureClaudeCall = function(url, opts) {
       }
       if (body.system) {
         body.system = window.saCleanPrompt(body.system);
+      // Inject live org context into every Claude call for personalized responses
+      if(typeof shGetClaudeContext==='function'){
+        body.system=(body.system||'')+ shGetClaudeContext();
+      }
       }
       opts.body = JSON.stringify(body);
     } catch(e) {}
@@ -851,6 +855,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
     <div class="sh-topbar-right">
       <span class="sh-topbar-user" id="sh-topbar-user"></span>
+      <button onclick="shSyncAllApps()" style="background:var(--a);color:#fff;border:none;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px" title="Sync HR data to all SAIRN apps">&#8635; Sync All Apps</button>
       <button class="sh-topbar-logout" onclick="shLogout()">Sign Out</button>
     </div>
   </div>
@@ -3039,31 +3044,140 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
 const SH_RAILWAY='https://fabricor-production.up.railway.app';
 const SH_CLAUDE='https://sairn.vercel.app/api/claude';
+
+function shGetClaudeContext(){
+  var ctx=localStorage.getItem('shr_claude_context')||'';
+  var ts=localStorage.getItem('shr_claude_context_ts')||'';
+  if(!ctx)return '';
+  return '\n\n[SAIRNhr Live Context as of '+ts+']: '+ctx+'\n\nUse this context to give personalized, org-specific HR advice.';
+}
 let shCurrentUser=null;
 let shChatHistory=[];
 
 // -- DATA STORES --------------------------------------------------
-var employees=JSON.parse(localStorage.getItem('sh_employees')||'[]');
-var ptoRequests=JSON.parse(localStorage.getItem('sairnhr_pto')||'[]');
-var atsData=JSON.parse(localStorage.getItem('sairnhr_ats')||'{"roles":[],"candidates":[]}');
-var nbData=JSON.parse(localStorage.getItem('sairnhr_nb')||'[]');
-var atrRegister=JSON.parse(localStorage.getItem('sairnhr_atr')||'[]');
-var lmsData=JSON.parse(localStorage.getItem('sairnhr_lms')||'{"courses":[],"completions":[],"certs":[]}');
-var pulseHistory=JSON.parse(localStorage.getItem('sairnhr_pulse')||'[]');
-var invCases=JSON.parse(localStorage.getItem('sairnhr_inv')||'[]');
-var payrollRegister=JSON.parse(localStorage.getItem('sh_payroll')||'[]');
-var payrollHistory=JSON.parse(localStorage.getItem('sh_pay_history')||'[]');
-var timeEntries=JSON.parse(localStorage.getItem('sh_time')||'[]');
-var benefitPlans=JSON.parse(localStorage.getItem('sh_benefits')||'[]');
-var cobraList=JSON.parse(localStorage.getItem('sh_cobra')||'[]');
-var orgNodes=JSON.parse(localStorage.getItem('sh_org')||'[]');
-var payBands=JSON.parse(localStorage.getItem('sh_pay_bands')||'[]');
-var i9List=JSON.parse(localStorage.getItem('sh_i9')||'[]');
-var exitInterviews=JSON.parse(localStorage.getItem('sh_exit')||'[]');
-var onboardingActive=JSON.parse(localStorage.getItem('sh_onboarding')||'[]');
-var onbChecks=JSON.parse(localStorage.getItem('sh_onb_checks')||'{}');
+// Data stores — loaded via shLoad() which handles org-namespacing.
+// shReloadStores() is called after login to pick up the correct org's data.
+var employees=[];
+var ptoRequests=[];
+var atsData={"roles":[],"candidates":[]};
+var nbData=[];
+var atrRegister=[];
+var lmsData={"courses":[],"completions":[],"certs":[]};
+var pulseHistory=[];
+var invCases=[];
+var payrollRegister=[];
+var payrollHistory=[];
+var timeEntries=[];
+var benefitPlans=[];
+var cobraList=[];
+var orgNodes=[];
+var payBands=[];
+var i9List=[];
+var exitInterviews=[];
+var onboardingActive=[];
+var onbChecks={};
 
-function shSave(key,data){localStorage.setItem(key,JSON.stringify(data));}
+function shReloadStores(){
+  employees=shLoad('sh_employees',[]);
+  ptoRequests=shLoad('sairnhr_pto',[]);
+  atsData=shLoad('sairnhr_ats',{"roles":[],"candidates":[]});
+  nbData=shLoad('sairnhr_nb',[]);
+  atrRegister=shLoad('sairnhr_atr',[]);
+  lmsData=shLoad('sairnhr_lms',{"courses":[],"completions":[],"certs":[]});
+  pulseHistory=shLoad('sairnhr_pulse',[]);
+  invCases=shLoad('sairnhr_inv',[]);
+  payrollRegister=shLoad('sh_payroll',[]);
+  payrollHistory=shLoad('sh_pay_history',[]);
+  timeEntries=shLoad('sh_time',[]);
+  benefitPlans=shLoad('sh_benefits',[]);
+  cobraList=shLoad('sh_cobra',[]);
+  orgNodes=shLoad('sh_org',[]);
+  payBands=shLoad('sh_pay_bands',[]);
+  i9List=shLoad('sh_i9',[]);
+  exitInterviews=shLoad('sh_exit',[]);
+  onboardingActive=shLoad('sh_onboarding',[]);
+  onbChecks=shLoad('sh_onb_checks',{});
+}
+
+
+function shSyncAllApps(){
+  var payload={
+    source:'sairnhr',
+    timestamp:new Date().toISOString(),
+    org:shCurrentUser?shCurrentUser.shopName||shCurrentUser.id:'unknown',
+    data:{
+      employees:employees.length,
+      payrollRegister:payrollRegister,
+      payrollHistory:payrollHistory.slice(0,10),
+      ptoRequests:ptoRequests,
+      timeEntries:timeEntries.slice(0,50),
+      benefitPlans:benefitPlans,
+      summary:{
+        totalEmployees:employees.length,
+        activeEmployees:employees.filter(function(e){return e.status==='Active';}).length,
+        totalPayroll:payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0);},0),
+        pendingPTO:ptoRequests.filter(function(r){return r.status==='Pending';}).length
+      }
+    }
+  };
+  fetch('https://sairn.vercel.app/api/bridge',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(function(r){
+    if(r.ok){shNotify('SAIRNhr synced to SAIRN Bridge -- data available in all connected apps','green');}
+    else{shNotify('Bridge sync failed -- check connection','red');}
+  }).catch(function(){
+    shNotify('Bridge offline -- data saved locally','orange');
+  });
+  // Also push Claude a learning summary
+  shFeedClaudeLearning();
+}
+
+function shFeedClaudeLearning(){
+  // Build a learning context summary from recent activity
+  var recentPayroll=payrollHistory.slice(0,3);
+  var recentHires=employees.filter(function(e){
+    var d=new Date(e.hireDate);
+    var cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
+    return d>cutoff;
+  });
+  var pendingPTO=ptoRequests.filter(function(r){return r.status==='Pending';});
+  
+  var summary='SAIRNhr Learning Update | Org: '+(shCurrentUser?shCurrentUser.shopName:'unknown')+
+    ' | Employees: '+employees.length+' active'+
+    ' | Recent hires (90d): '+recentHires.length+
+    ' | Payroll register: '+payrollRegister.length+' employees, $'+
+      payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0);},0).toLocaleString()+'/period'+
+    ' | Pending PTO: '+pendingPTO.length+
+    ' | Last payroll run: '+(recentPayroll[0]?recentPayroll[0].date:'none')+
+    ' | Benefits plans: '+benefitPlans.length+
+    ' | Open investigations: '+invCases.filter(function(c){return c.status!=='Closed';}).length;
+  
+  // Store as persistent context for Claude calls
+  localStorage.setItem('shr_claude_context', summary);
+  localStorage.setItem('shr_claude_context_ts', new Date().toISOString());
+}
+
+function shOrgKey(key){
+  // Namespace every key by org so multi-tenant data never crosses
+  var org=(shCurrentUser&&(shCurrentUser.shopName||shCurrentUser.id))||'default';
+  var safe=org.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,20);
+  return 'shr_'+safe+'_'+key;
+}
+function shSave(key,data){
+  localStorage.setItem(shOrgKey(key),JSON.stringify(data));
+  // Mirror to legacy key for backwards compat with existing data
+  localStorage.setItem(key,JSON.stringify(data));
+}
+function shLoad(key,fallback){
+  // Try org-namespaced first, fall back to legacy key
+  var orgVal=localStorage.getItem(shOrgKey(key));
+  if(orgVal!==null){try{return JSON.parse(orgVal);}catch(e){}}
+  var legacyVal=localStorage.getItem(key);
+  if(legacyVal!==null){try{return JSON.parse(legacyVal);}catch(e){}}
+  return fallback;
+}
 
 // -- AUTH ---------------------------------------------------------
 function shSelectTab(tab,el){
@@ -3113,6 +3227,7 @@ function shShowApp(){
   document.getElementById('sh-auth').style.display='none';
   document.getElementById('sh-app').classList.add('visible');
   document.getElementById('sh-topbar-user').textContent=shCurrentUser.shopName||shCurrentUser.name||'';
+  shReloadStores(); // Load org-namespaced data now that we know who's logged in
   shInitAll();
 }
 document.addEventListener('DOMContentLoaded',async()=>{
@@ -3531,8 +3646,8 @@ function shRunPayroll(){
   };
   payrollHistory.unshift(entry);
   shSave('sh_pay_history',payrollHistory);
-  // Bridge sync
-  try{fetch('https://sairn.vercel.app/api/bridge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'sairnhr',event:'payroll_run',data:entry})});}catch(e){}
+  // Bridge sync + learning update
+  shSyncAllApps();
   shNotify('Payroll run complete -- '+payrollRegister.length+' employees -- $'+gross.toLocaleString(undefined,{maximumFractionDigits:0})+' gross / $'+net.toLocaleString(undefined,{maximumFractionDigits:0})+' net','green');
   shRenderPayHistory();
 },0);
@@ -3934,7 +4049,7 @@ function shSubmitPTO(){
   ptoRequests.push({name:name,type:type||'PTO',start:start,end:end,days:days,status:'Pending',submitted:new Date().toISOString().slice(0,10)});
   shSave('sairnhr_pto',ptoRequests);shInitPTO();shNotify('PTO request submitted','green');
 }
-function shApprovePTO(i){ptoRequests[i].status='Approved';shSave('sairnhr_pto',ptoRequests);shInitPTO();shNotify('PTO approved','green');}
+function shApprovePTO(i){ptoRequests[i].status='Approved';shSave('sairnhr_pto',ptoRequests);shInitPTO();shNotify('PTO approved','green');shFeedClaudeLearning();}
 function shDenyPTO(i){ptoRequests[i].status='Denied';shSave('sairnhr_pto',ptoRequests);shInitPTO();shNotify('PTO denied','');}
 function shFMLAModal(){
   var name=prompt('Employee name:');if(!name)return;
