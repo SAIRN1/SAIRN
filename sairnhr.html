@@ -4119,7 +4119,26 @@ async function shFMLAAI(){
     w.document.write("<!DOCTYPE html><html><head><title>"+docType+"</title><style>body{font-family:Arial,sans-serif;padding:40px;max-width:700px;margin:auto;line-height:1.7;font-size:13px}@media print{button{display:none}}</style></head><body>");
     w.document.write("<button onclick='window.print()' style='padding:8px 16px;background:#1B3A6B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px'>Print Document</button>");
     w.document.write("<pre style='white-space:pre-wrap;font-family:Arial,sans-serif;font-size:13px;line-height:1.7'>"+escHtml(text)+"</pre>");
-    w.document.write("</body></html>");w.document.close();
+    w.document.write("
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>");w.document.close();
     shNotify(docType+" ready — review before providing to employee","green");
   }catch(e){shNotify("Error generating FMLA document","");}
 }
@@ -4160,7 +4179,26 @@ function shPrintReview(){
   var content=document.getElementById('rev-output').innerHTML;
   if(!content){shNotify('Generate a review first','red');return;}
   var w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Performance Review</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:13px;line-height:1.8}@media print{body{padding:20px}}</style></head><body>'+content+'</body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Performance Review</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:13px;line-height:1.8}@media print{body{padding:20px}}</style></head><body>'+content+'
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');
   w.document.close();
 }
 
@@ -4202,7 +4240,26 @@ function shPrintPIP(){
   w.document.write('<div style="border-top:1px solid #999;padding-top:6px;font-size:11px">Manager Signature & Date</div>');
   w.document.write('<div style="border-top:1px solid #999;padding-top:6px;font-size:11px">HR Signature & Date</div>');
   w.document.write('</div>');
-  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
+  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');
   w.document.close();
 }
 
@@ -4840,7 +4897,26 @@ async function shGenTermLetter(){
     w.document.write("<button onclick='window.print()' style='font-family:Arial;padding:8px 16px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px'>Print Termination Letter</button>");
     w.document.write("<div style='font-family:Arial;font-size:11px;color:#dc2626;padding:8px;border:1px solid #dc2626;border-radius:4px;margin-bottom:16px'>⚠️ Review with legal counsel before delivery. Retain a signed copy in the employee file.</div>");
     w.document.write("<pre style='white-space:pre-wrap;font-family:Georgia,serif;font-size:13px;line-height:1.8'>"+escHtml(text)+"</pre>");
-    w.document.write("</body></html>");w.document.close();
+    w.document.write("
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>");w.document.close();
     shNotify("Termination letter drafted — review with counsel","green");
   }catch(e){shNotify("Error generating termination letter","");}
 }
@@ -4961,7 +5037,26 @@ function shPrintHandbook(){
   var content=document.getElementById('hb-output').innerHTML;
   if(!content){shNotify('Generate handbook first','red');return;}
   var w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Employee Handbook</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:13px;line-height:1.8;max-width:800px;margin:0 auto}h1,h2{color:#D97706}@media print{body{padding:20px}}</style></head><body>'+content+'</body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Employee Handbook</title><style>body{font-family:Arial,sans-serif;padding:40px;font-size:13px;line-height:1.8;max-width:800px;margin:0 auto}h1,h2{color:#D97706}@media print{body{padding:20px}}</style></head><body>'+content+'
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');
   w.document.close();
 }
 
@@ -5039,7 +5134,26 @@ function shPrintJD(){
   w.document.write('<!DOCTYPE html><html><head><title>'+title+'</title><style>body{font-family:Arial,sans-serif;padding:32px;font-size:13px;line-height:1.8}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#999;text-align:center}@media print{body{padding:16px}}</style></head><body>');
   w.document.write('<div style="white-space:pre-wrap">'+content+'</div>');
   w.document.write('<div class="footer">SAIRNhr™ by SAIRN Technologies™</div>');
-  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
+  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');
   w.document.close();
 }
 
@@ -5062,7 +5176,26 @@ async function shGenOfferLetter(){
     w.document.write("<!DOCTYPE html><html><head><title>Offer Letter — "+escHtml(candidate)+"</title><style>body{font-family:Georgia,serif;padding:48px;max-width:700px;margin:auto;line-height:1.8;font-size:13px}@media print{button{display:none}}</style></head><body>");
     w.document.write("<button onclick='window.print()' style='font-family:Arial;padding:8px 16px;background:#1B3A6B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px'>Print Offer Letter</button>");
     w.document.write("<pre style='white-space:pre-wrap;font-family:Georgia,serif;font-size:13px;line-height:1.8'>"+escHtml(text)+"</pre>");
-    w.document.write("</body></html>");w.document.close();
+    w.document.write("
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>");w.document.close();
     shNotify("Offer letter drafted for "+candidate,"green");
   }catch(e){shNotify("Error generating offer letter","");}
 }
@@ -5120,7 +5253,26 @@ function shPrintOnboarding(){
   w.document.write('</ul>');
   w.document.write('<div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:40px"><div style="border-top:1px solid #999;padding-top:6px;font-size:11px">Employee Signature & Date</div><div style="border-top:1px solid #999;padding-top:6px;font-size:11px">HR Signature & Date</div></div>');
   w.document.write('<div class="footer">SAIRNhr™ by SAIRN Technologies™</div>');
-  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
+  w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');
   w.document.close();
 }
 
@@ -5373,7 +5525,26 @@ function shAutoPopulateOrg(){
 function shPrintOrg(){
   var content=document.getElementById('org-chart-wrap').innerHTML;
   var w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Org Chart</title><style>body{font-family:Arial,sans-serif;padding:32px}.org-node{display:inline-flex;flex-direction:column;align-items:center;margin:0 8px}.org-box{background:#fff;border:2px solid #E8DDD0;border-radius:10px;padding:10px 14px;text-align:center;min-width:120px}.org-children{display:flex;margin-top:8px}@media print{body{padding:16px}}</style></head><body>'+content+'</body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Org Chart</title><style>body{font-family:Arial,sans-serif;padding:32px}.org-node{display:inline-flex;flex-direction:column;align-items:center;margin:0 8px}.org-box{background:#fff;border:2px solid #E8DDD0;border-radius:10px;padding:10px 14px;text-align:center;min-width:120px}.org-children{display:flex;margin-top:8px}@media print{body{padding:16px}}</style></head><body>'+content+'
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');
   w.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>');
   w.document.close();
 }
@@ -5702,7 +5873,26 @@ async function shPredictivePerformance(){
     w.document.write("<p style='color:#666;font-size:12px;margin-bottom:20px'>"+new Date().toLocaleDateString()+" · "+recentHires.length+" recent hire(s) analyzed · Based on onboarding signals</p>");
     w.document.write("<button onclick='window.print()' style='padding:8px 16px;background:#1B3A6B;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px'>Print Report</button>");
     w.document.write("<pre style='white-space:pre-wrap;font-family:Arial,sans-serif;font-size:13px;line-height:1.7'>"+escHtml(text)+"</pre>");
-    w.document.write("</body></html>");w.document.close();
+    w.document.write("
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>");w.document.close();
     shNotify("Performance predictions ready for "+recentHires.length+" employee(s)","green");
   }catch(e){shNotify("Error running predictive model","");}
 }
@@ -7812,7 +8002,26 @@ function shPrintOfferLetter(){
   var w=window.open('','_blank');
   w.document.write('<!DOCTYPE html><html><head><title>Offer Letter</title><style>body{font-family:Georgia,serif;padding:60px;max-width:700px;margin:auto;font-size:14px;line-height:1.8}@media print{button{display:none}}</style></head><body>'+
     '<button onclick="window.print()" style="padding:8px 16px;background:#D97706;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:24px">Print Offer Letter</button>'+
-    '<pre style="white-space:pre-wrap;font-family:Georgia,serif">'+escHtml(window._shLastOfferLetter||'')+'</pre></body></html>');
+    '<pre style="white-space:pre-wrap;font-family:Georgia,serif">'+escHtml(window._shLastOfferLetter||'')+'</pre>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');
   w.document.close();
 }
 function shCopyOfferLetter(){
@@ -7973,7 +8182,26 @@ function shPrintTotalRewards(emp){
     '<div class="row"><span>PTO Value (est.)</span><span>~$'+Math.round(sal/52*2).toLocaleString()+'/yr</span></div>'+
     '<div class="row total"><span>TOTAL COMPENSATION</span><span style="color:#16a34a">$'+Math.round(totalComp).toLocaleString()+'</span></div>'+
     '<div style="margin-top:20px;font-size:11px;color:#4A7A5A">Your total compensation includes direct pay plus the value of all employer-paid benefits. This statement is for informational purposes only.</div>'+
-    '</body></html>';
+    '
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>';
   w.document.write(html);w.document.close();
 }
 function shBulkTotalRewards(){shGenTotalRewards();}
@@ -8132,7 +8360,26 @@ function shGeneratePayStubHTML(name,empId,period,date,gross,fed,state,ss,med,hea
       '<div class="row"><span><strong>Total Deductions</strong></span><span><strong>-'+shFmt(fed+state+ss+med+health+ret)+'</strong></span></div></div>'+
     '<div class="total"><span>NET PAY</span><span style="color:#D97706">'+shFmt(net)+'</span></div>'+
     '<p style="font-size:10px;color:#888;margin-top:16px;text-align:center">Generated by SAIRNhr™ · For informational purposes</p>'+
-    '</body></html>';
+    '
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>';
   w.document.write(html);w.document.close();
 }
 
@@ -8620,8 +8867,46 @@ function shUpdateOSHAKPIs(){var rec=shOSHALog.filter(function(i){return i.record
 function shRenderOSHA(){var tbody=document.getElementById('sh-osha-tbody');if(!tbody)return;if(!shOSHALog.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No incidents logged. Click + Log Incident.</td></tr>';return;}tbody.innerHTML=shOSHALog.map(function(inc,i){return '<tr><td style="font-size:11px">'+escHtml(inc.date||'—')+'</td><td><strong>'+escHtml(inc.empName||'—')+'</strong></td><td style="font-size:11px">'+escHtml(inc.injuryType||'—')+'</td><td style="font-size:11px">'+escHtml(inc.bodyPart||'—')+'</td><td style="font-weight:700;color:'+(parseInt(inc.daysAway||0)>0?'var(--red)':'var(--muted)')+'">'+escHtml(String(inc.daysAway||0))+'</td><td style="font-size:11px">'+escHtml(String(inc.daysRestricted||0))+'</td><td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(inc.recordable?'rgba(220,38,38,.12)':'rgba(22,163,74,.12)')+';color:'+(inc.recordable?'var(--red)':'var(--green)')+'">'+( inc.recordable?'Recordable':'Not')+'</span></td><td style="font-size:11px">'+escHtml(inc.classification||'—')+'</td><td><button onclick="shDeleteOSHA('+i+')" class="sh-btn-secondary" style="font-size:10px;padding:2px 6px">Del</button></td></tr>';}).join('');}
 function shNewOSHAIncident(){var emp=prompt('Employee name:');if(!emp)return;var date=prompt('Date:',new Date().toISOString().slice(0,10))||'';var injuryType=prompt('Injury type (Strain/Laceration/Fracture/Burn/Other):','Strain')||'Strain';var bodyPart=prompt('Body part (Back/Hand/Wrist/Knee/Eye):','Back')||'Back';var daysAway=parseInt(prompt('Days away from work (0 if none):','0'))||0;var daysRestricted=parseInt(prompt('Days restricted duty:','0'))||0;var recordable=daysAway>0||daysRestricted>0||confirm('Recordable? (required medical treatment beyond first aid)');var classification=prompt('Classification (Recordable Injury/Near Miss/First Aid Only):','Recordable Injury')||'Recordable Injury';shOSHALog.push({empName:emp,date,injuryType,bodyPart,daysAway,daysRestricted,recordable,classification});shSave2('sh_osha',shOSHALog);shRenderOSHA();shUpdateOSHAKPIs();if(daysAway>0)shNotify('Recordable incident logged. Fatal/amputation: call 1-800-321-OSHA within 8h','');else shNotify('Incident logged — case #'+shOSHALog.length,'green');}
 function shDeleteOSHA(i){shOSHALog.splice(i,1);shSave2('sh_osha',shOSHALog);shRenderOSHA();shUpdateOSHAKPIs();}
-function shPrintOSHA300(){var w=window.open('','_blank');var rows=shOSHALog.filter(function(i){return i.recordable;});w.document.write('<!DOCTYPE html><html><head><title>OSHA 300</title><style>body{font-family:Arial;font-size:10px;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #000;padding:3px 4px;font-size:9px}th{background:#f0f0f0}@media print{button{display:none}}</style></head><body><button onclick="window.print()" style="padding:6px 14px;background:#333;color:#fff;border:none;cursor:pointer;margin-bottom:16px">Print OSHA 300</button><h2 style="font-size:14px;text-align:center">OSHA Form 300 — Log of Work-Related Injuries and Illnesses ('+new Date().getFullYear()+')</h2><table><thead><tr><th>#</th><th>Employee</th><th>Date</th><th>Description</th><th>Body Part</th><th>Days Away</th><th>Days Restricted</th></tr></thead><tbody>'+rows.map(function(r,i){return '<tr><td>'+(i+1)+'</td><td>'+escHtml(r.empName)+'</td><td>'+escHtml(r.date)+'</td><td>'+escHtml(r.injuryType)+'</td><td>'+escHtml(r.bodyPart)+'</td><td>'+r.daysAway+'</td><td>'+r.daysRestricted+'</td></tr>';}).join('')+'</tbody></table></body></html>');w.document.close();}
-function shPrintOSHA300A(){var rec=shOSHALog.filter(function(i){return i.recordable;}).length;var days=shOSHALog.reduce(function(s,i){return s+(parseInt(i.daysAway)||0);},0);var w=window.open('','_blank');w.document.write('<!DOCTYPE html><html><head><title>OSHA 300A</title></head><body style="font-family:Arial;padding:40px;max-width:700px;margin:auto"><button onclick="window.print()" style="padding:8px 16px;background:#333;color:#fff;border:none;cursor:pointer;margin-bottom:24px">Print</button><h2 style="text-align:center">OSHA Form 300A — Summary ('+new Date().getFullYear()+')</h2><p style="text-align:center;color:#666">Post February 1 through April 30</p><table style="width:100%;border-collapse:collapse;margin:20px 0"><tr style="background:#f0f0f0"><th style="padding:8px;border:1px solid #ccc;text-align:left">Total deaths</th><td style="padding:8px;border:1px solid #ccc">0</td></tr><tr><th style="padding:8px;border:1px solid #ccc;text-align:left">Cases with days away from work</th><td style="padding:8px;border:1px solid #ccc">'+shOSHALog.filter(function(i){return (i.daysAway||0)>0;}).length+'</td></tr><tr style="background:#f0f0f0"><th style="padding:8px;border:1px solid #ccc;text-align:left">Total days away</th><td style="padding:8px;border:1px solid #ccc">'+days+'</td></tr><tr><th style="padding:8px;border:1px solid #ccc;text-align:left">Total recordable cases</th><td style="padding:8px;border:1px solid #ccc">'+rec+'</td></tr></table></body></html>');w.document.close();}
+function shPrintOSHA300(){var w=window.open('','_blank');var rows=shOSHALog.filter(function(i){return i.recordable;});w.document.write('<!DOCTYPE html><html><head><title>OSHA 300</title><style>body{font-family:Arial;font-size:10px;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #000;padding:3px 4px;font-size:9px}th{background:#f0f0f0}@media print{button{display:none}}</style></head><body><button onclick="window.print()" style="padding:6px 14px;background:#333;color:#fff;border:none;cursor:pointer;margin-bottom:16px">Print OSHA 300</button><h2 style="font-size:14px;text-align:center">OSHA Form 300 — Log of Work-Related Injuries and Illnesses ('+new Date().getFullYear()+')</h2><table><thead><tr><th>#</th><th>Employee</th><th>Date</th><th>Description</th><th>Body Part</th><th>Days Away</th><th>Days Restricted</th></tr></thead><tbody>'+rows.map(function(r,i){return '<tr><td>'+(i+1)+'</td><td>'+escHtml(r.empName)+'</td><td>'+escHtml(r.date)+'</td><td>'+escHtml(r.injuryType)+'</td><td>'+escHtml(r.bodyPart)+'</td><td>'+r.daysAway+'</td><td>'+r.daysRestricted+'</td></tr>';}).join('')+'</tbody></table>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');w.document.close();}
+function shPrintOSHA300A(){var rec=shOSHALog.filter(function(i){return i.recordable;}).length;var days=shOSHALog.reduce(function(s,i){return s+(parseInt(i.daysAway)||0);},0);var w=window.open('','_blank');w.document.write('<!DOCTYPE html><html><head><title>OSHA 300A</title></head><body style="font-family:Arial;padding:40px;max-width:700px;margin:auto"><button onclick="window.print()" style="padding:8px 16px;background:#333;color:#fff;border:none;cursor:pointer;margin-bottom:24px">Print</button><h2 style="text-align:center">OSHA Form 300A — Summary ('+new Date().getFullYear()+')</h2><p style="text-align:center;color:#666">Post February 1 through April 30</p><table style="width:100%;border-collapse:collapse;margin:20px 0"><tr style="background:#f0f0f0"><th style="padding:8px;border:1px solid #ccc;text-align:left">Total deaths</th><td style="padding:8px;border:1px solid #ccc">0</td></tr><tr><th style="padding:8px;border:1px solid #ccc;text-align:left">Cases with days away from work</th><td style="padding:8px;border:1px solid #ccc">'+shOSHALog.filter(function(i){return (i.daysAway||0)>0;}).length+'</td></tr><tr style="background:#f0f0f0"><th style="padding:8px;border:1px solid #ccc;text-align:left">Total days away</th><td style="padding:8px;border:1px solid #ccc">'+days+'</td></tr><tr><th style="padding:8px;border:1px solid #ccc;text-align:left">Total recordable cases</th><td style="padding:8px;border:1px solid #ccc">'+rec+'</td></tr></table>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body></html>');w.document.close();}
 async function shOSHAAI(){shNotify('AI safety analysis...','');try{var res=await fetch(SH_CLAUDE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:'You are SAIRNhr AI -- OSHA compliance expert.',messages:[{role:'user',content:'Safety analysis: '+shOSHALog.length+' incidents. Types: '+JSON.stringify(shOSHALog.map(function(i){return i.injuryType;})).slice(0,200)+'. Provide: 1) Root cause patterns, 2) Prevention strategies, 3) OSHA reporting obligations, 4) DART rate benchmark, 5) Inspection preparation.'}]})});var data=await res.json();alert(data.content&&data.content[0]?data.content[0].text:'');}catch(e){}}
 
 // 12-20: EEO-1, BG Check, Pay Transparency, JD Bias, EWA, Career, Alumni, Manager Score, Culture
@@ -9197,7 +9482,26 @@ function dlCSV(rows, filename) {
   if (hasData) return; // Real data exists — do not seed
 // SAIRN DEMO DATA SEED — Session 19
 // Injects realistic demo data into all 10 apps via localStorage
-// Run this in browser console on any SAIRN app page, OR inject before </body>
+// Run this in browser console on any SAIRN app page, OR inject before 
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
+</script>
+</body>
 // Resets all apps to a rich, impressive demo state
 // Michael L. Dibert — SAIRN Technologies
 
@@ -9473,6 +9777,25 @@ function showClientView() {
     + '<\/body><\/html>');
   w.document.close();
 }
+</script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNhr
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#7C3AED');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnhr', 'app_loaded', {
+    app: 'SAIRNhr',
+    color: '#7C3AED',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNhr');
+})();
 </script>
 </body>
 </html>
