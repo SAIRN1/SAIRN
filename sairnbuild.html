@@ -176,6 +176,19 @@ function doLogin(){
     document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);
     SAIRNbiz.sendEvent('sairnbuild','app_loaded',{role:curRole,ts:new Date().toISOString()});
     initAI();toast('Welcome back!');
+    SAIRNstore.watchTable('sairnbuild', 'proj-tbl');
+    SAIRNstore.watchTable('sairnbuild', 'rfi-tbl');
+    SAIRNstore.watchTable('sairnbuild', 'budget-tbl');
+    SAIRNstore.watchTable('sairnbuild', 'inv-tbl');
+    SAIRNstore.watchTable('sairnbuild', 'cost-tbl');
+    SAIRNstore.watchTable('sairnbuild', 'sub-tbl');
+    SAIRNstore.watchTable('sairnbuild', 'punch-tbl');
+    SAIRNstore.watchTable('sairnbuild', 'log-tbl');
+    SAIRNstore.loadFormulas('sairnbuild');
+
+    // Restore AI conversation history
+    _aih = SAIRNstore.loadAIHistory('sairnbuild') || [];
+
   }else{
     document.getElementById('le').textContent='Incorrect PIN.';
     ['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value='';});
@@ -194,9 +207,258 @@ var _aih=[];
 function toggleAI(){document.getElementById('aip').classList.toggle('open');}
 function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}
 function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnbuild',is_demo:true,system:"You are the AI for SAIRNbuild, a construction project management platform. You know about project scheduling, RFIs, change orders, punch lists, AIA billing, subcontractor management, OSHA compliance, and construction cost control. Be specific, data-driven, and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnbuild',is_demo:true,system:"You are the AI for SAIRNbuild, a construction project management platform. You know about project scheduling, RFIs, change orders, punch lists, AIA billing, subcontractor management, OSHA compliance, and construction cost control. Be specific, data-driven, and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnbuild',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
 function initAI(){var prompts=[["Project Risk", "Which projects are at risk of delay or budget overrun?"], ["RFI Alert", "Which RFIs are overdue and what should I do?"], ["Budget Analysis", "Where are we over budget and why?"], ["Sub Performance", "Rate my subcontractor performance this month."], ["Change Orders", "Summarize all pending change orders and their impact."], ["Cash Flow", "Forecast my cash flow for the next 30 days."]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
+
+</script>
+
+<!-- SAIRNstore: localStorage persistence -->
+<script>
+// SAIRNstore.js -- Persistent localStorage layer for all SAIRN B2B apps
+// Injected into every app. Auto-saves and auto-loads all data tables.
+// Michael L. Dibert -- SAIRN Technologies, LLC
+
+var SAIRNstore = (function() {
+
+  // ── CORE STORE ──────────────────────────────────────────────
+  function getKey(appId, table) {
+    return 'sairn:' + appId + ':' + table;
+  }
+
+  function save(appId, table, rows) {
+    try {
+      localStorage.setItem(getKey(appId, table), JSON.stringify({
+        rows: rows,
+        ts: Date.now()
+      }));
+      return true;
+    } catch(e) {
+      console.warn('SAIRNstore save error:', e);
+      return false;
+    }
+  }
+
+  function load(appId, table) {
+    try {
+      var raw = localStorage.getItem(getKey(appId, table));
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return parsed.rows || null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function clear(appId, table) {
+    try {
+      localStorage.removeItem(getKey(appId, table));
+    } catch(e) {}
+  }
+
+  function clearAll(appId) {
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) keys.push(k);
+      }
+      keys.forEach(function(k) { localStorage.removeItem(k); });
+    } catch(e) {}
+  }
+
+  // ── TABLE SERIALIZER ────────────────────────────────────────
+  // Reads a <tbody> and converts it to an array of row-data objects
+  function tableToRows(tbody) {
+    var rows = [];
+    if (!tbody) return rows;
+    tbody.querySelectorAll('tr').forEach(function(tr) {
+      var cells = [];
+      tr.querySelectorAll('td').forEach(function(td) {
+        cells.push(td.innerHTML);
+      });
+      if (cells.length > 0) rows.push(cells);
+    });
+    return rows;
+  }
+
+  // Restores rows into a <tbody>
+  function rowsToTable(tbody, rows) {
+    if (!tbody || !rows || rows.length === 0) return;
+    // Keep header row if it's a th-only row
+    var existingRows = tbody.querySelectorAll('tr');
+    // Clear non-header rows
+    existingRows.forEach(function(tr) {
+      if (!tr.querySelector('th')) tr.remove();
+    });
+    rows.forEach(function(cells) {
+      var tr = document.createElement('tr');
+      cells.forEach(function(html) {
+        var td = document.createElement('td');
+        td.innerHTML = html;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── AUTO-WATCH: patch all buttons that add rows ─────────────
+  function watchTable(appId, tableId) {
+    var tbl = document.getElementById(tableId);
+    if (!tbl) return;
+    var tbody = tbl.querySelector('tbody');
+    if (!tbody) return;
+
+    // Load saved data
+    var saved = load(appId, tableId);
+    if (saved) rowsToTable(tbody, saved);
+
+    // Observe changes and auto-save
+    var observer = new MutationObserver(function() {
+      var rows = tableToRows(tbody);
+      if (rows.length > 0) save(appId, tableId, rows);
+    });
+    observer.observe(tbody, { childList: true, subtree: true, characterData: true });
+  }
+
+  // ── FORM PERSISTENCE ────────────────────────────────────────
+  function saveForm(formId, appId) {
+    var form = document.getElementById(formId);
+    if (!form) return;
+    var data = {};
+    form.querySelectorAll('input, select, textarea').forEach(function(el) {
+      if (el.name || el.id) data[el.id || el.name] = el.value;
+    });
+    save(appId, 'form:' + formId, [data]);
+  }
+
+  function loadForm(formId, appId) {
+    var saved = load(appId, 'form:' + formId);
+    if (!saved || !saved[0]) return;
+    var data = saved[0];
+    var form = document.getElementById(formId);
+    if (!form) return;
+    Object.keys(data).forEach(function(id) {
+      var el = form.querySelector('#' + id) || form.querySelector('[name="' + id + '"]');
+      if (el) el.value = data[id];
+    });
+  }
+
+  // ── FORMULA EDITOR PERSISTENCE ──────────────────────────────
+  function saveFormulas(appId) {
+    var formulas = {};
+    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
+      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
+      var key = lbl ? lbl.textContent.trim() : inp.id || Math.random();
+      formulas[key] = inp.value;
+    });
+    save(appId, 'formulas', [formulas]);
+    return formulas;
+  }
+
+  function loadFormulas(appId) {
+    var saved = load(appId, 'formulas');
+    if (!saved || !saved[0]) return;
+    var formulas = saved[0];
+    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
+      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
+      var key = lbl ? lbl.textContent.trim() : null;
+      if (key && formulas[key] !== undefined) inp.value = formulas[key];
+    });
+  }
+
+  // ── MODAL FORM → TABLE INJECTION ────────────────────────────
+  // When a modal save button is clicked, harvest its form fields
+  // and inject a new row into the target table
+  function hookModalSave(btnSelector, targetTableId, appId, rowBuilder) {
+    document.querySelectorAll(btnSelector).forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var modal = btn.closest('.modal');
+        if (!modal) return;
+        var inputs = {};
+        modal.querySelectorAll('input, select, textarea').forEach(function(el) {
+          var lbl = el.closest('.fg') ? el.closest('.fg').querySelector('label') : null;
+          var key = lbl ? lbl.textContent.trim() : el.id || el.name;
+          inputs[key] = el.value;
+        });
+        var tbl = document.getElementById(targetTableId);
+        if (!tbl) return;
+        var tbody = tbl.querySelector('tbody');
+        if (!tbody) return;
+        var row = rowBuilder(inputs);
+        if (row) {
+          var tr = document.createElement('tr');
+          row.forEach(function(cell) {
+            var td = document.createElement('td');
+            td.innerHTML = cell;
+            tr.appendChild(td);
+          });
+          tbody.insertBefore(tr, tbody.firstChild);
+          var rows = tableToRows(tbody);
+          save(appId, targetTableId, rows);
+        }
+      });
+    });
+  }
+
+  // ── EXPORT ALL ──────────────────────────────────────────────
+  function exportAll(appId) {
+    var all = {};
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) {
+          all[k.replace(prefix, '')] = JSON.parse(localStorage.getItem(k));
+        }
+      }
+    } catch(e) {}
+    return all;
+  }
+
+  // ── STORAGE STATS ───────────────────────────────────────────
+  function stats(appId) {
+    var count = 0, bytes = 0;
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) {
+          count++;
+          bytes += (localStorage.getItem(k) || '').length;
+        }
+      }
+    } catch(e) {}
+    return { tables: count, bytes: bytes, kb: (bytes / 1024).toFixed(1) };
+  }
+
+  // ── AI CONVERSATION HISTORY ─────────────────────────────────
+  function saveAIHistory(appId, history) {
+    save(appId, '_ai_history', history.slice(-20));
+  }
+
+  function loadAIHistory(appId) {
+    return load(appId, '_ai_history') || [];
+  }
+
+  return {
+    save: save,
+    load: load,
+    clear: clear,
+    clearAll: clearAll,
+    watchTable: watchTable,
+    saveForm: saveForm,
+    loadForm: loadForm,
+    saveFormulas: saveFormulas,
+    loadFormulas: loadFormulas,
+    hookModalSave: hookModalSave,
+    exportAll: exportAll,
+    stats: stats,
+    saveAIHistory: saveAIHistory,
+    loadAIHistory: loadAIHistory
+  };
+})();
 
 </script>
 </body>
