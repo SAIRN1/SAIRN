@@ -91,20 +91,20 @@ body{font-family:Outfit,sans-serif;background:var(--bg);color:var(--text);min-he
 <body>
 <script>
 
-// ╔══════════════════════════════════════════════════════════╗
+// +==========================================================+
 
 function showClientFinancialSummary(){var modal=document.getElementById("sacc-client-modal");if(!modal){modal=document.createElement("div");modal.id="sacc-client-modal";modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:520px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,.3)";var title=document.createElement("h3");title.textContent="Financial Summary";title.style.cssText="font-size:18px;font-weight:900;color:#134E4A;margin-bottom:8px";var dt=document.createElement("div");dt.id="sacc-cr-dt";dt.style.cssText="font-size:11px;color:#6B7280;margin-bottom:16px";var grid=document.createElement("div");grid.style.cssText="background:#F0FDFA;border-radius:10px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px";["Revenue:sacc-cr-rev:#16a34a","Expenses:sacc-cr-exp:#dc2626","Net:sacc-cr-net:#16a34a","AR:sacc-cr-ar:#d97706"].forEach(function(s){var p=s.split(":");var c=document.createElement("div");c.style.cssText="text-align:center";var v=document.createElement("div");v.id=p[1];v.textContent="$0";v.style.cssText="font-size:22px;font-weight:900;color:"+p[2];var l=document.createElement("div");l.textContent=p[0];l.style.cssText="font-size:10px;color:#6B7280;text-transform:uppercase";c.appendChild(v);c.appendChild(l);grid.appendChild(c);});var note=document.createElement("div");note.textContent="Internal GL and chart of accounts not shown.";note.style.cssText="font-size:11px;color:#6B7280;text-align:center;margin-bottom:14px";var printBtn=document.createElement("button");printBtn.textContent="Print / PDF";printBtn.style.cssText="display:block;margin:0 auto;padding:10px 20px;background:#0D9488;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer";printBtn.onclick=function(){window.print();};inner.appendChild(title);inner.appendChild(dt);inner.appendChild(grid);inner.appendChild(note);inner.appendChild(printBtn);modal.appendChild(inner);document.body.appendChild(modal);}document.getElementById("sacc-cr-dt").textContent=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});var inv=window.acc_invoices||window.sacc_invoices||[];var exp=window.acc_expenses||window.sacc_expenses||[];var rev=inv.reduce(function(s,i){return s+parseFloat(i.amount||0);},0);var expt=exp.reduce(function(s,e){return s+parseFloat(e.amount||0);},0);var ar=inv.filter(function(i){return i.status==="Unpaid";}).reduce(function(s,i){return s+parseFloat(i.amount||0);},0);document.getElementById("sacc-cr-rev").textContent="$"+rev.toLocaleString();document.getElementById("sacc-cr-exp").textContent="$"+expt.toLocaleString();document.getElementById("sacc-cr-net").textContent="$"+(rev-expt).toLocaleString();document.getElementById("sacc-cr-ar").textContent="$"+ar.toLocaleString();modal.style.display="flex";}
 
-// ║   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  ║
-// ║   30-Layer Protection Framework                          ║
-// ║   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance ║
-// ║   Built by SAIRN Technologies - Michael L. Dibert       ║
-// ╚══════════════════════════════════════════════════════════╝
+// |   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  |
+// |   30-Layer Protection Framework                          |
+// |   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance |
+// |   Built by SAIRN Technologies - Michael L. Dibert       |
+// +==========================================================+
 
 (function() {
 'use strict';
 
-// ── CONFIGURATION ──────────────────────────────────────────
+// -- CONFIGURATION ------------------------------------------
 var SAIRN_SEC = {
   version: '3.0',
   appName: document.title || 'SAIRN App',
@@ -129,9 +129,9 @@ var SAIRN_SEC = {
   loginAttempts: parseInt(sessionStorage.getItem('s_attempts') || '0')
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 1 — BROWSER LAYER (Layers 1-18)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 1 — Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
@@ -502,9 +502,9 @@ window.saSanitizeResponse = function(text) {
   } catch(e) {}
 })();
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 2 — API PROXY LAYER (Layers 19-23)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 19 — Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
@@ -573,9 +573,9 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 3 — DATA LAYER (Layers 24-27)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 24 — Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
@@ -621,9 +621,9 @@ window.saWipeAllData = function() {
   location.reload();
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 4 — COMPLIANCE LAYER (Layers 28-30)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 28 — CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
@@ -699,7 +699,7 @@ window.saShowSecurityStatus = function() {
   alert(report);
 };
 
-// ── INITIALIZATION MESSAGE ─────────────────────────────────
+// -- INITIALIZATION MESSAGE ---------------------------------
 saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
 console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#0D9488;font-weight:bold;padding:4px 8px;border-radius:4px');
 
@@ -1657,6 +1657,40 @@ function saNotify(msg,color){
   n.textContent=msg;n.classList.add('show');
   setTimeout(function(){n.classList.remove('show');},3200);
 }
+
+function saSyncAllApps(){
+  var empCount = saGetHRHeadcount();
+  var laborCost = saGetHRLaborCost();
+  var payload = {
+    source: 'sairnacc',
+    timestamp: new Date().toISOString(),
+    data: {
+      gl: glEntries ? glEntries.slice(0,50) : [],
+      invoices: invoices ? invoices.slice(0,50) : [],
+      payrollRuns: payrollRuns ? payrollRuns.slice(0,12) : [],
+      hrHeadcount: empCount,
+      hrLaborCost: laborCost,
+      summary: {
+        totalInvoiced: (invoices||[]).reduce(function(s,i){return s+(parseFloat(i.amount)||0);},0),
+        totalBilled: (bills||[]).reduce(function(s,b){return s+(parseFloat(b.amount)||0);},0),
+        payrollRuns: (payrollRuns||[]).length,
+        headcount: empCount,
+        laborCostPerPeriod: laborCost
+      }
+    }
+  };
+  // Cache bridge payload for HR to read
+  localStorage.setItem('sairn_bridge_acc_payload', JSON.stringify(payload));
+  fetch('https://sairn.vercel.app/api/bridge', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).then(function(r){
+    if(r.ok) saNotify('SAIRNacc synced to SAIRN Bridge -- all connected apps updated','green');
+    else saNotify('Bridge sync failed','red');
+  }).catch(function(){ saNotify('Bridge offline -- data saved locally','orange'); });
+}
+
 function saSave(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
 function saLoad(key,def){try{var r=localStorage.getItem(key);return r?JSON.parse(r):def;}catch(e){return def;}}
 function escHtml(s){if(s===null||s===undefined)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1690,6 +1724,15 @@ function saInitAll(){
 // DASHBOARD
 // ============================================================
 function saInitDashboard(){
+  // Pull live HR data for dashboard
+  var hrEmpCount = saGetHRHeadcount();
+  var hrLaborCost = saGetHRLaborCost();
+  // Update any headcount/labor displays
+  var hcEl = document.getElementById('sa-dash-headcount');
+  if(hcEl) hcEl.textContent = hrEmpCount || '--';
+  var lcEl = document.getElementById('sa-dash-labor-cost');
+  if(lcEl) lcEl.textContent = hrLaborCost ? '$'+hrLaborCost.toLocaleString(undefined,{maximumFractionDigits:0}) : '--';
+
   var cash=saAccountBalance(1010);
   var ar=Math.abs(saAccountBalance(1100));
   var ap=Math.abs(saAccountBalance(2010));
@@ -2291,7 +2334,146 @@ function saPostPayrollJE(i){
   saRenderPayrollJrnl();saUpdatePJKPIs();saInitDashboard();
   saNotify('Payroll journal entries posted to GL','green');
 }
-function saImportFromHR(){saNotify('SAIRNpro bridge -- run payroll in SAIRNhr and journal entries auto-appear here','');}
+function saImportFromHR(){
+  // Read HR payroll data from shared localStorage (same-device) or bridge
+  var hrPayroll = [];
+  var hrEmployees = [];
+  
+  // Try direct localStorage first (same-device, fastest)
+  try {
+    var raw = localStorage.getItem('sh_payroll');
+    if(raw) hrPayroll = JSON.parse(raw);
+    var rawEmp = localStorage.getItem('sh_employees');
+    if(rawEmp) hrEmployees = JSON.parse(rawEmp);
+  } catch(e) {}
+
+  // Also check bridge-pushed data (cross-device)
+  try {
+    var bridgeRaw = localStorage.getItem('sairn_bridge_hr_payload');
+    if(bridgeRaw) {
+      var bridgeData = JSON.parse(bridgeRaw);
+      if(bridgeData.data && bridgeData.data.payrollRegister && !hrPayroll.length) {
+        hrPayroll = bridgeData.data.payrollRegister;
+      }
+      if(bridgeData.data && bridgeData.data.employees && !hrEmployees.length) {
+        hrEmployees = bridgeData.data.employees;
+      }
+    }
+  } catch(e) {}
+
+  if(!hrPayroll.length) {
+    saNotify('No payroll data found -- run payroll in SAIRNhr first, then click Sync All Apps there','orange');
+    return;
+  }
+
+  // Build a payroll journal entry from the HR data
+  var gross = hrPayroll.reduce(function(s,e){ return s+(parseFloat(e.gross)||0); },0);
+  var empCount = hrPayroll.length;
+  var fit = gross * 0.12;
+  var state = gross * 0.03;
+  var fica = gross * 0.0765;
+  var erFica = gross * 0.0765;
+  var net = gross - fit - state - fica;
+  var today = new Date().toISOString().slice(0,10);
+  var period = new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  // Check if this period already imported
+  var alreadyIn = payrollRuns.find(function(r){ return r.period===period && r.source==='SAIRNhr'; });
+  if(alreadyIn) {
+    saNotify('Payroll for '+period+' already imported from SAIRNhr','orange');
+    return;
+  }
+
+  var run = {
+    period: period,
+    payDate: today,
+    employees: empCount,
+    gross: gross,
+    fed: fit,
+    state: state,
+    fica: fica,
+    erFica: erFica,
+    net: net,
+    posted: false,
+    source: 'SAIRNhr',
+    hrDetail: hrPayroll.map(function(e){ return {name:e.name, gross:e.gross, type:e.type}; })
+  };
+
+  payrollRuns.unshift(run);
+  saSave('sa_payroll_runs', payrollRuns);
+  saRenderPayrollJrnl();
+  saUpdatePJKPIs();
+
+  // Also update HR headcount in acc's dashboard context
+  localStorage.setItem('sa_hr_headcount', empCount);
+  localStorage.setItem('sa_hr_labor_cost', gross);
+  localStorage.setItem('sa_hr_employees', JSON.stringify(hrEmployees));
+
+  saNotify('Imported from SAIRNhr: '+empCount+' employees, $'+gross.toLocaleString(undefined,{maximumFractionDigits:0})+' gross payroll -- click Post to GL when ready','green');
+}
+
+function saConfirmPayrollPaid(idx) {
+  // Mark payroll as paid in acc AND send confirmation back to HR via bridge
+  var run = payrollRuns[idx];
+  if(!run) return;
+  run.paid = true;
+  run.paidDate = new Date().toISOString().slice(0,10);
+  saSave('sa_payroll_runs', payrollRuns);
+  saRenderPayrollJrnl();
+
+  // Write confirmation to localStorage for HR to pick up
+  var confirmKey = 'sa_payroll_paid_confirmation';
+  var existing = [];
+  try { existing = JSON.parse(localStorage.getItem(confirmKey)||'[]'); } catch(e) {}
+  existing.unshift({
+    period: run.period,
+    gross: run.gross,
+    net: run.net,
+    paidDate: run.paidDate,
+    employees: run.employees
+  });
+  localStorage.setItem(confirmKey, JSON.stringify(existing.slice(0,12)));
+
+  // Push to bridge so HR can pick it up cross-device
+  try {
+    fetch('https://sairn.vercel.app/api/bridge', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        source: 'sairnacc',
+        event: 'payroll_paid_confirmation',
+        target: 'sairnhr',
+        data: { period: run.period, gross: run.gross, net: run.net, paidDate: run.paidDate, employees: run.employees }
+      })
+    });
+  } catch(e) {}
+
+  saNotify('Payroll marked paid -- SAIRNhr notified via bridge','green');
+}
+
+function saGetHRHeadcount() {
+  // Returns live headcount from HR data for dashboard and budgeting
+  try {
+    var raw = localStorage.getItem('sa_hr_employees') || localStorage.getItem('sh_employees');
+    if(raw) {
+      var emps = JSON.parse(raw);
+      return emps.filter(function(e){ return e.status==='Active'; }).length;
+    }
+  } catch(e) {}
+  return 0;
+}
+
+function saGetHRLaborCost() {
+  // Returns current period labor cost from HR for budget vs actual
+  try {
+    var raw = localStorage.getItem('sh_payroll');
+    if(raw) {
+      var reg = JSON.parse(raw);
+      return reg.reduce(function(s,e){ return s+(parseFloat(e.gross)||0); },0);
+    }
+  } catch(e) {}
+  return parseFloat(localStorage.getItem('sa_hr_labor_cost')||'0');
+}
 function saPayrollTaxCalc(){
   var gross=parseFloat(prompt('Gross wages ($):'));if(!gross)return;
   var fed=gross*0.12;var state=gross*0.03;var ss=gross*0.062;var med=gross*0.0145;
@@ -2659,6 +2841,21 @@ window.saExportInventory = function() {
 };
 
 </script>
+
+
+// On load: cache any bridge payloads from SAIRNhr for local access
+(function() {
+  // Write acc context for HR to read
+  var accPayload = {
+    source: 'sairnacc',
+    timestamp: new Date().toISOString(),
+    data: { available: true }
+  };
+  localStorage.setItem('sairn_bridge_acc_available', 'true');
+  
+  // Check for payroll paid confirmations from acc (for HR to read)
+  // These are written by saConfirmPayrollPaid and read by SAIRNhr
+})();
 
 </body></html>');
   w.document.close();
@@ -5249,11 +5446,11 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 
 <div id="panel-checks" class="sa-panel">
-<!-- ══════════════════════════════════════════════════════════ -->
+<!-- ========================================================== -->
 <!-- SAIRN CHECK REGISTER & PRINTING PANEL                     -->
 <!-- Shared across StoneDesk, SAIRNacc, SAIRNhr, SAIRNbuild    -->
 <!-- Client supplies 3-per-page blank check stock              -->
-<!-- ══════════════════════════════════════════════════════════ -->
+<!-- ========================================================== -->
 <style>
 .chk-panel-wrap { padding: 28px 32px; max-width: 1000px; }
 .chk-section-title { font-size: 22px; font-weight: 800; color: #111827; margin-bottom: 4px; letter-spacing: -.3px; }
@@ -6424,7 +6621,7 @@ function chkSwitchTab(tab) {
 }
 
 function chkNotify(msg, color) {
-  const colors = { green:'#059669', red:'#dc2626', amber:'#d97706', blue:'#2563eb' };
+  const colors = { green:'#059669', red:'#dc2626', amber:'#d97706', blue:'#0D9488' };
   const existing = document.getElementById('chk-notif');
   const n = existing || document.createElement('div');
   if (!existing) { n.id = 'chk-notif'; document.body.appendChild(n); }
@@ -6459,7 +6656,7 @@ function saInitChecks() {
 }
 
 
-// ── CSV EXPORT ────────────────────────────────────────────────────────────
+// -- CSV EXPORT ------------------------------------------------------------
 function dlCSV(rows, filename) {
   var csv = rows.map(function(r) {
     return r.map(function(v) {
