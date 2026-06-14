@@ -11027,5 +11027,356 @@ window.saDebounce = function(func, wait) {
     timeout = setTimeout(function() { func.apply(context, args); }, wait || 300);
   };
 };
+
+
+// ================================================================
+// STONEDESK SUPABASE BACKEND PATCH
+// Inject this block right before </script> closing tag
+// Adds persistent storage to all StoneDesk data functions
+// Michael L. Dibert · SAIRN Technologies · 2026
+// ================================================================
+
+// == SUPABASE SETUP ==
+var SD_API = 'https://sairn.vercel.app/api/db';
+var SD_SHOP_ID = localStorage.getItem('sairn_shop_stonedesk') || null;
+var SD_SYNCING = false;
+
+// Create shop on first run, or retrieve existing shop_id
+async function sdInitBackend() {
+  if (SD_SHOP_ID) return SD_SHOP_ID;
+
+  // Check if we have a shop_id stored from a previous session
+  var stored = localStorage.getItem('sairn_shop_stonedesk');
+  if (stored) { SD_SHOP_ID = stored; return SD_SHOP_ID; }
+
+  // Create new shop in Supabase
+  try {
+    var shopName = localStorage.getItem('fab_shop_name') ||
+                   (shopName || 'My Stone Shop');
+    var email    = (currentUser && currentUser.email) ||
+                   localStorage.getItem('fab_shop_email') ||
+                   'mikied68@gmail.com';
+
+    var r = await fetch(SD_API + '?action=create_shop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id:     'stonedesk',
+        shop_name:  shopName,
+        owner_email: email,
+        plan:       'starter'
+      })
+    });
+    var d = await r.json();
+    if (d.ok && d.shop && d.shop.id) {
+      SD_SHOP_ID = d.shop.id;
+      localStorage.setItem('sairn_shop_stonedesk', SD_SHOP_ID);
+      console.log('[StoneDesk] Shop created in Supabase:', SD_SHOP_ID);
+      return SD_SHOP_ID;
+    }
+  } catch(e) {
+    console.warn('[StoneDesk] Could not connect to Supabase:', e.message);
+  }
+  return null;
+}
+
+// Generic save to Supabase with localStorage fallback
+async function sdSupaSave(action, data) {
+  var shopId = SD_SHOP_ID || await sdInitBackend();
+  if (!shopId) return; // offline — data already in localStorage
+
+  try {
+    var r = await fetch(SD_API + '?action=' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Shop-Id': shopId },
+      body: JSON.stringify({ shop_id: shopId, app_id: 'stonedesk', ...data })
+    });
+    var d = await r.json();
+    if (!d.ok) console.warn('[StoneDesk] Save warning:', d.error);
+  } catch(e) {
+    console.warn('[StoneDesk] Offline - data saved to localStorage only');
+  }
+}
+
+// Generic load from Supabase with localStorage fallback
+async function sdSupaLoad(action, params) {
+  var shopId = SD_SHOP_ID || await sdInitBackend();
+  if (!shopId) return null;
+
+  try {
+    var qs = Object.entries(params || {}).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
+    var r = await fetch(SD_API + '?action=' + action + '&shop_id=' + shopId + (qs ? '&' + qs : ''), {
+      headers: { 'X-Shop-Id': shopId }
+    });
+    var d = await r.json();
+    return d.ok ? d : null;
+  } catch(e) {
+    console.warn('[StoneDesk] Offline - using localStorage');
+    return null;
+  }
+}
+
+// ================================================================
+// PATCH: saveSD4 — Jobs, Inventory, Cart → Supabase
+// ================================================================
+var _orig_saveSD4 = typeof saveSD4 === 'function' ? saveSD4 : null;
+saveSD4 = async function() {
+  // Always save to localStorage first (instant, offline-safe)
+  localStorage.setItem('sd_jobs',      JSON.stringify(sdJobs));
+  localStorage.setItem('sd_inventory', JSON.stringify(sdInventory));
+  localStorage.setItem('sd_cart',      JSON.stringify(sdCart));
+
+  // Then mirror to Supabase
+  if (SD_SYNCING) return;
+  SD_SYNCING = true;
+  try {
+    // Save all jobs
+    for (var i = 0; i < sdJobs.length; i++) {
+      var job = sdJobs[i];
+      await sdSupaSave('save_job', {
+        id:                 job.supabase_id || undefined,
+        job_number:         job.jobNum || job.id || ('SD-' + Date.now()),
+        title:              job.customer || job.title || 'Stone Job',
+        description:        job.notes || '',
+        trade:              'StoneDesk',
+        service_type:       job.templateId || 'fabrication',
+        status:             job.stage || 'scheduled',
+        scheduled_date:     job.targetDate || job.installDate || null,
+        address:            job.address || '',
+        notes:              job.notes || '',
+        estimated_revenue:  parseFloat(job.estRevenue || job.quote || 0) || 0,
+        actual_revenue:     parseFloat(job.actualRevenue || 0) || 0,
+        equipment:          { stone_type: job.stone, sqft: job.sqft, edge: job.edge },
+        internal_notes:     JSON.stringify(job)
+      });
+    }
+    // Save inventory as parts
+    for (var j = 0; j < sdInventory.length; j++) {
+      var inv = sdInventory[j];
+      await sdSupaSave('save_part', {
+        id:        inv.supabase_id || undefined,
+        name:      inv.name || 'Part',
+        category:  inv.cat || 'general',
+        quantity:  parseInt(inv.qty) || 0,
+        reorder_at: parseInt(inv.min) || 0,
+        unit_cost:  parseFloat(inv.cost) || 0,
+        supplier:  inv.vendor || ''
+      });
+    }
+  } catch(e) {
+    console.warn('[StoneDesk] Supabase sync error:', e.message);
+  } finally {
+    SD_SYNCING = false;
+  }
+};
+
+// ================================================================
+// PATCH: saveSD3Data — Customers, Photos, Warranties → Supabase
+// ================================================================
+var _orig_saveSD3 = null;
+var _sd3_save_timeout = null;
+
+function sdPatchSaveCustomers() {
+  // Debounced customer save — fires 1 second after last change
+  clearTimeout(_sd3_save_timeout);
+  _sd3_save_timeout = setTimeout(async function() {
+    localStorage.setItem('sd_customers',  JSON.stringify(sdCustomers));
+    localStorage.setItem('sd_photos',     JSON.stringify(sdPhotos || []));
+    localStorage.setItem('sd_warranties', JSON.stringify(sdWarranties || []));
+
+    // Mirror customers to Supabase
+    for (var i = 0; i < sdCustomers.length; i++) {
+      var c = sdCustomers[i];
+      await sdSupaSave('save_customer', {
+        id:            c.supabase_id || undefined,
+        first_name:    (c.name || '').split(' ')[0] || c.name,
+        last_name:     (c.name || '').split(' ').slice(1).join(' ') || '',
+        company_name:  c.company || '',
+        phone:         c.phone || '',
+        email:         c.email || '',
+        address:       c.address || '',
+        customer_type: 'residential',
+        notes:         c.notes || '',
+        total_revenue: parseFloat(c.quote || c.totalSpent || 0) || 0,
+        tags:          JSON.stringify([c.project || ''])
+      });
+    }
+  }, 1000);
+}
+
+// ================================================================
+// PATCH: saveQuote — Quote History → Supabase as Invoices
+// ================================================================
+var _orig_saveQuote_db = typeof dbSaveQuoteHistory === 'function' ? dbSaveQuoteHistory : null;
+dbSaveQuoteHistory = async function() {
+  // Keep Railway save working if it exists
+  if (_orig_saveQuote_db) {
+    try { await _orig_saveQuote_db(); } catch(e) {}
+  }
+  // Mirror to Supabase as invoices
+  if (!quoteHistory || !quoteHistory.length) return;
+  var latest = quoteHistory[0];
+  if (!latest) return;
+
+  await sdSupaSave('create_invoice', {
+    invoice_number: 'Q-' + (latest.num || Date.now()),
+    subtotal:       parseFloat(latest.total) || 0,
+    total:          parseFloat(latest.total) || 0,
+    status:         'draft',
+    notes:          latest.material + ' | ' + latest.project,
+    line_items:     JSON.stringify([{
+      description: latest.project + ' — ' + latest.material,
+      qty: 1,
+      unit_price: parseFloat(latest.total) || 0
+    }])
+  });
+};
+
+// ================================================================
+// PATCH: schedSave — Schedule/Jobs → Supabase
+// ================================================================
+var _orig_schedSave = typeof schedSave === 'function' ? schedSave : null;
+schedSave = async function() {
+  // Run original first
+  if (_orig_schedSave) _orig_schedSave.call(this);
+  // Mirror latest job to Supabase
+  var job = sdJobs[0];
+  if (!job) return;
+  await sdSupaSave('save_job', {
+    job_number:    job.jobNum || ('SD-' + Date.now()),
+    title:         job.customer || 'Stone Job',
+    scheduled_date: job.targetDate || null,
+    status:        job.stage || 'scheduled',
+    estimated_revenue: parseFloat(job.estRevenue || 0) || 0,
+    notes:         job.notes || '',
+    equipment:     { template: job.templateId, sqft: job.sqft }
+  });
+};
+
+// ================================================================
+// LOAD: Pull data from Supabase on boot (fills gaps in localStorage)
+// ================================================================
+async function sdLoadFromSupabase() {
+  var shopId = await sdInitBackend();
+  if (!shopId) return;
+
+  try {
+    // Load jobs
+    var jobsData = await sdSupaLoad('get_jobs', { limit: 200 });
+    if (jobsData && jobsData.jobs && jobsData.jobs.length) {
+      // Merge with localStorage — Supabase wins on conflicts
+      var supaJobs = jobsData.jobs.map(function(j) {
+        var existing = {};
+        try { existing = JSON.parse(j.internal_notes || '{}'); } catch(e) {}
+        return {
+          ...existing,
+          supabase_id:   j.id,
+          jobNum:        j.job_number,
+          customer:      j.title,
+          stage:         j.status,
+          targetDate:    j.scheduled_date,
+          estRevenue:    j.estimated_revenue,
+          actualRevenue: j.actual_revenue,
+          notes:         j.notes
+        };
+      });
+      if (supaJobs.length > sdJobs.length) {
+        sdJobs = supaJobs;
+        localStorage.setItem('sd_jobs', JSON.stringify(sdJobs));
+        if (typeof renderSchedule === 'function') renderSchedule();
+        console.log('[StoneDesk] Loaded ' + sdJobs.length + ' jobs from Supabase');
+      }
+    }
+
+    // Load customers
+    var custsData = await sdSupaLoad('get_customers', { limit: 200 });
+    if (custsData && custsData.customers && custsData.customers.length) {
+      var supaCusts = custsData.customers.map(function(c) {
+        return {
+          supabase_id: c.id,
+          id:          c.id,
+          name:        ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || c.company_name,
+          phone:       c.phone || '',
+          email:       c.email || '',
+          address:     c.address || '',
+          notes:       c.notes || '',
+          quote:       c.total_revenue || 0
+        };
+      });
+      if (supaCusts.length > sdCustomers.length) {
+        sdCustomers = supaCusts;
+        localStorage.setItem('sd_customers', JSON.stringify(sdCustomers));
+        if (typeof renderCustomers === 'function') renderCustomers();
+        console.log('[StoneDesk] Loaded ' + sdCustomers.length + ' customers from Supabase');
+      }
+    }
+
+    // Load parts/inventory
+    var partsData = await sdSupaLoad('get_parts', {});
+    if (partsData && partsData.parts && partsData.parts.length) {
+      var supaParts = partsData.parts.map(function(p) {
+        return {
+          supabase_id: p.id,
+          id:    p.id,
+          name:  p.name,
+          cat:   p.category || 'general',
+          qty:   p.quantity || 0,
+          min:   p.reorder_at || 0,
+          cost:  p.unit_cost || 0,
+          vendor: p.supplier || ''
+        };
+      });
+      if (supaParts.length > sdInventory.length) {
+        sdInventory = supaParts;
+        localStorage.setItem('sd_inventory', JSON.stringify(sdInventory));
+        if (typeof renderInventory === 'function') renderInventory();
+        console.log('[StoneDesk] Loaded ' + sdInventory.length + ' inventory items from Supabase');
+      }
+    }
+
+    notify('StoneDesk synced with cloud');
+  } catch(e) {
+    console.warn('[StoneDesk] Supabase load error:', e.message);
+  }
+}
+
+// ================================================================
+// PATCH: custSave — intercept to trigger Supabase sync
+// ================================================================
+var _orig_custSave = typeof custSave === 'function' ? custSave : null;
+custSave = function() {
+  if (_orig_custSave) _orig_custSave.call(this);
+  // Trigger debounced Supabase sync
+  setTimeout(sdPatchSaveCustomers, 100);
+};
+
+// ================================================================
+// BOOT: Initialize backend when app loads
+// ================================================================
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(async function() {
+    await sdInitBackend();
+    await sdLoadFromSupabase();
+  }, 2000); // 2 second delay so app renders first
+});
+
+// ================================================================
+// DASHBOARD: Add sync button and show backend status
+// ================================================================
+function sdSyncNow() {
+  notify('Syncing to cloud...');
+  sdLoadFromSupabase().then(function() {
+    saveSD4();
+    sdPatchSaveCustomers();
+    notify('All data synced to Supabase');
+  });
+}
+
+// Expose for console debugging
+window.sdSyncNow   = sdSyncNow;
+window.sdShopId    = function() { return SD_SHOP_ID; };
+window.sdAPI       = SD_API;
+
+
 </script>
 </body></html>
