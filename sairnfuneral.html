@@ -156,7 +156,21 @@
   <div class="fg"><label>Merchandise Markup %</label><input type="number" value="135"></div>
   <div class="fg"><label>Death Certificate Fee</label><input type="number" value="25"></div>
   <div class="fg"><label>Obituary Placement Fee</label><input type="number" value="150"></div>
-</div><div style="margin-top:14px;"><button class="btn btn-c" onclick="toast('Pricing saved')">Save Pricing</button></div></div></div></div>
+</div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:var(--cd);margin-bottom:10px;">License Key</div>
+      <div class="fgrid">
+        <div class="fg">
+          <label>Your SAIRN License Key</label>
+          <input type="text" id="license-key-input" placeholder="SAIRN-SD01-2025-XXXXX" style="font-family:monospace;font-weight:600;">
+        </div>
+        <div class="fg" style="justify-content:flex-end;padding-top:18px;">
+          <button class="btn btn-c" onclick="saveLicenseKey()">Activate Key</button>
+        </div>
+      </div>
+      <div id="license-status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+    </div>
+    <div style="margin-top:14px;"><button class="btn btn-c" onclick="toast('Pricing saved')">Save Pricing</button></div></div></div></div>
 
 <div class="page" id="pg-csv"><div class="pt">CSV Tools</div>
 <div class="two-col"><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:8px;">
@@ -193,7 +207,7 @@ function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.c
 function ft(inp,tid){var q=inp.value.toLowerCase();document.getElementById(tid).querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});}
 function exportCSV(tid,fname){var t=document.getElementById(tid);if(!t){toast('No data');return;}var csv=Array.from(t.querySelectorAll('tr')).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(fname||'export')+'.csv';a.click();toast('Exported');}
 var _aih=[];function toggleAI(){document.getElementById('aip').classList.toggle('open');}function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnfuneral',is_demo:true,system:"You are the AI for SAIRNfuneral, a funeral home management platform. You know about funeral arrangements, pre-need contracts, cremation, merchandise, death certificates, insurance assignments, grief aftercare programs, and funeral home operations. Be compassionate, professional, and specific.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnfuneral',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnfuneral',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairnfuneral')||''),system:"You are the AI for SAIRNfuneral, a funeral home management platform. You know about funeral arrangements, pre-need contracts, cremation, merchandise, death certificates, insurance assignments, grief aftercare programs, and funeral home operations. Be compassionate, professional, and specific.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnfuneral',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
 function initAI(){var prompts=[["Aftercare Follow-Up", "Draft compassionate 30-day aftercare messages for families"], ["Pre-Need Review", "Which pre-need contracts need follow-up or are partially funded?"], ["Revenue Report", "Generate revenue by service type this month"], ["Arrangements Checklist", "What arrangements still need to be confirmed for active cases?"], ["Insurance Claims", "Which insurance claims are pending? What is the status?"], ["Inventory Check", "Which casket and urn models are running low?"]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
 </script>
