@@ -25,7 +25,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* ── AUTH ── */
+/* -- AUTH -- */
 #sh-auth{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a0a00 0%,#3d1f00 50%,#1a0a00 100%);position:fixed;inset:0;z-index:1000}
 .auth-card{background:#fff;border-radius:20px;padding:40px;width:400px;box-shadow:0 24px 80px rgba(0,0,0,0.4)}
 .auth-brand{text-align:center;margin-bottom:28px}
@@ -41,11 +41,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .sh-btn{width:100%;padding:12px;background:var(--grad);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif}
 .auth-err{color:var(--red);font-size:12px;margin-top:6px;min-height:18px}
 
-/* ── APP SHELL ── */
+/* -- APP SHELL -- */
 #sh-app{display:none;flex-direction:column;height:100vh}
 #sh-app.visible{display:flex}
 
-/* ── TOPBAR ── */
+/* -- TOPBAR -- */
 .sh-topbar{background:linear-gradient(135deg,#1a0a00,#3d1f00);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;flex-shrink:0}
 .sh-topbar-brand{display:flex;align-items:center;gap:10px}
 .sh-topbar-logo{width:32px;height:32px;border-radius:8px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:16px}
@@ -55,7 +55,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .sh-topbar-user{font-size:12px;color:rgba(255,255,255,.7)}
 .sh-topbar-logout{padding:5px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif}
 
-/* ── NAV ── */
+/* -- NAV -- */
 .sh-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;display:flex;gap:2px;overflow-x:auto;flex-shrink:0}
 .sh-nav::-webkit-scrollbar{height:3px}
 .sh-nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -64,36 +64,36 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .sh-nav-btn.active{color:var(--a);border-bottom-color:var(--a)}
 .sh-nav-section{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--subtle);padding:16px 14px 4px;margin-top:4px;opacity:0.7}
 
-/* ── CONTENT ── */
+/* -- CONTENT -- */
 .sh-content{flex:1;overflow-y:auto;padding:20px}
 .sh-panel{display:none;max-width:1100px;margin:0 auto}
 .sh-panel.active{display:block}
 
-/* ── CARDS ── */
+/* -- CARDS -- */
 .sh-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
 .sh-card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .sh-section-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid var(--border)}
 
-/* ── KPI GRID ── */
+/* -- KPI GRID -- */
 .sh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
 .sh-kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;box-shadow:var(--shadow)}
 .sh-kpi-val{font-size:28px;font-weight:900;color:var(--a);line-height:1}
 .sh-kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:5px}
 
-/* ── BUTTONS ── */
+/* -- BUTTONS -- */
 .sh-btn-primary{padding:9px 18px;background:var(--grad);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif}
 .sh-btn-secondary{padding:9px 18px;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--muted);font-family:'Outfit',sans-serif}
 .sh-btn-sm{padding:6px 12px;background:var(--grad);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif}
 .sh-btn-outline{padding:6px 12px;background:transparent;border:1.5px solid var(--a);border-radius:6px;font-size:12px;font-weight:600;color:var(--a);cursor:pointer;font-family:'Outfit',sans-serif}
 .sh-btn-danger{padding:6px 12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;font-size:12px;font-weight:600;color:#dc2626;cursor:pointer;font-family:'Outfit',sans-serif}
 
-/* ── TABLE ── */
+/* -- TABLE -- */
 .sh-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .sh-table th{background:var(--surface-2);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
 .sh-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
 .sh-table tr:hover td{background:var(--surface-2)}
 
-/* ── BADGES ── */
+/* -- BADGES -- */
 .badge{display:inline-block;padding:2px 10px;border-radius:100px;font-size:11px;font-weight:700}
 .badge-green{background:rgba(22,163,74,.1);color:#16a34a}
 .badge-red{background:rgba(220,38,38,.1);color:#dc2626}
@@ -102,16 +102,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .badge-amber{background:rgba(217,119,6,.1);color:#D97706}
 .badge-gray{background:rgba(107,114,128,.1);color:#6b7280}
 
-/* ── TABS ── */
+/* -- TABS -- */
 .sh-tabs{display:flex;gap:0;border-bottom:1.5px solid var(--border);margin-bottom:16px}
 .sh-tab-inner{padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1.5px;font-family:'Outfit',sans-serif}
 .sh-tab-inner.active{color:var(--a);border-bottom-color:var(--a)}
 
-/* ── PROGRESS ── */
+/* -- PROGRESS -- */
 .sh-progress{background:var(--border);border-radius:100px;height:8px;overflow:hidden}
 .sh-progress-bar{height:100%;border-radius:100px;background:var(--grad);transition:width .4s}
 
-/* ── ATS KANBAN ── */
+/* -- ATS KANBAN -- */
 .ats-board{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
 .ats-col{background:var(--surface-2);border-radius:10px;padding:12px;min-width:160px;flex-shrink:0}
 .ats-col-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
@@ -120,34 +120,34 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .ats-card-name{font-size:13px;font-weight:700;color:var(--text)}
 .ats-card-role{font-size:11px;color:var(--muted);margin-top:2px}
 
-/* ── 9-BOX ── */
+/* -- 9-BOX -- */
 .ninebox-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:480px}
 .nb-cell{padding:12px 8px;border-radius:8px;text-align:center;cursor:pointer;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
 .nb-label{font-size:10px;font-weight:700;color:rgba(0,0,0,.6);margin-bottom:4px}
 
-/* ── PAYROLL ── */
+/* -- PAYROLL -- */
 .payroll-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12.5px}
 .payroll-row:hover{background:var(--surface-2)}
 .payroll-header{background:var(--surface-2);font-weight:700;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-radius:8px 8px 0 0}
 
-/* ── CHECKLIST ── */
+/* -- CHECKLIST -- */
 .check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
 .check-item:last-child{border:none}
 .check-item input[type=checkbox]{width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:var(--a)}
 .check-item.done label{text-decoration:line-through;color:var(--muted)}
 
-/* ── MODAL ── */
+/* -- MODAL -- */
 .sh-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center}
 .sh-modal.open{display:flex}
 .sh-modal-box{background:#fff;border-radius:16px;padding:28px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.3)}
 .sh-modal-title{font-size:17px;font-weight:800;color:var(--text);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
 .sh-modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
 
-/* ── NOTIF ── */
+/* -- NOTIF -- */
 .sh-notif{position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;max-width:320px}
 .sh-notif.show{opacity:1;transform:translateY(0)}
 
-/* ── AI CHAT ── */
+/* -- AI CHAT -- */
 .sh-chat-messages{height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-2);margin-bottom:12px}
 .sh-msg{margin-bottom:12px}
 .sh-msg-user{text-align:right}
@@ -158,7 +158,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .sh-chip{padding:5px 12px;background:var(--a-light);border:1px solid rgba(217,119,6,.3);border-radius:100px;font-size:11px;font-weight:600;color:var(--a);cursor:pointer}
 .sh-chip:hover{background:var(--a);color:#fff}
 
-/* ── ORG CHART ── */
+/* -- ORG CHART -- */
 .org-node{display:inline-flex;flex-direction:column;align-items:center;margin:0 8px}
 .org-box{background:#fff;border:2px solid var(--border);border-radius:10px;padding:10px 14px;text-align:center;min-width:120px;cursor:pointer}
 .org-box:hover{border-color:var(--a)}
@@ -168,24 +168,24 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .org-children{display:flex;margin-top:8px;position:relative}
 .org-children::before{content:'';position:absolute;top:0;left:50%;width:1px;height:8px;background:var(--border)}
 
-/* ── TIME & ATTENDANCE ── */
+/* -- TIME & ATTENDANCE -- */
 .time-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 80px;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12.5px}
 .time-header{background:var(--surface-2);font-weight:700;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 
-/* ── BENEFITS ── */
+/* -- BENEFITS -- */
 .benefit-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
 .benefit-card.enrolled{border-color:rgba(22,163,74,.3);background:rgba(22,163,74,.02)}
 .benefit-title{font-size:14px;font-weight:700;margin-bottom:6px}
 .benefit-detail{font-size:12px;color:var(--muted);margin-bottom:10px}
 
-/* ── RESPONSIVE ── */
+/* -- RESPONSIVE -- */
 @media(max-width:768px){
   .sh-content{padding:12px}
   .payroll-row{grid-template-columns:2fr 1fr 1fr 80px}
   .time-row{grid-template-columns:2fr 1fr 1fr 80px}
 }
 
-/* ── PWA BANNER ── */
+/* -- PWA BANNER -- */
 .pwa-banner{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 18px;border-radius:12px;display:flex;align-items:center;gap:12px;z-index:999;opacity:0;pointer-events:none;transition:all .3s;white-space:nowrap}
 .pwa-banner.show{opacity:1;pointer-events:all}
 .pwa-install{padding:6px 14px;background:var(--grad);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer}
@@ -195,20 +195,20 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 <body>
 <script>
 
-// ╔══════════════════════════════════════════════════════════╗
+// +==========================================================+
 
 function showEmployeeSelfService(){var modal=document.getElementById("shr-ess-modal");if(!modal){modal=document.createElement("div");modal.id="shr-ess-modal";modal.style.cssText="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center";var inner=document.createElement("div");inner.style.cssText="background:#fff;border-radius:16px;padding:32px;max-width:500px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,.3)";var title=document.createElement("h3");title.textContent="Employee Self-Service";title.style.cssText="font-size:18px;font-weight:900;color:#4C1D95;margin-bottom:20px";var payDiv=document.createElement("div");payDiv.style.cssText="background:#F5F3FF;border-radius:10px;padding:16px;margin-bottom:14px";var payLabel=document.createElement("div");payLabel.textContent="Your Most Recent Pay";payLabel.style.cssText="font-size:11px;font-weight:800;color:#4C1D95;text-transform:uppercase;margin-bottom:6px";var payVal=document.createElement("div");payVal.id="ess-pay";payVal.textContent="--";payVal.style.cssText="font-size:28px;font-weight:900;color:#7C3AED";var payPeriod=document.createElement("div");payPeriod.id="ess-period";payPeriod.style.cssText="font-size:11px;color:#6B7280";payDiv.appendChild(payLabel);payDiv.appendChild(payVal);payDiv.appendChild(payPeriod);var stubsDiv=document.createElement("div");stubsDiv.id="ess-stubs";stubsDiv.style.cssText="font-size:12px;color:#6B7280;margin-bottom:14px";var printBtn=document.createElement("button");printBtn.textContent="Print Pay Stub";printBtn.style.cssText="display:block;margin:0 auto;padding:10px 20px;background:#7C3AED;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer";printBtn.onclick=function(){window.print();};inner.appendChild(title);inner.appendChild(payDiv);inner.appendChild(stubsDiv);inner.appendChild(printBtn);modal.appendChild(inner);document.body.appendChild(modal);}var checks=window.shr_checks||window.hr_payroll||[];if(checks.length){document.getElementById("ess-pay").textContent="$"+parseFloat(checks[0].amount||0).toFixed(2);document.getElementById("ess-period").textContent=checks[0].period||checks[0].date||"";}document.getElementById("ess-stubs").innerHTML=checks.length?checks.slice(0,4).map(function(c){return "<div style=\'display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F3F4F6\'><span>"+(c.period||c.date||"--")+"</span><span style=\'font-weight:700;color:#7C3AED\'>$"+parseFloat(c.amount||0).toFixed(2)+"</span></div>";}).join(""):"No pay records.";modal.style.display="flex";}
 
-// ║   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  ║
-// ║   30-Layer Protection Framework                          ║
-// ║   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance ║
-// ║   Built by SAIRN Technologies - Michael L. Dibert       ║
-// ╚══════════════════════════════════════════════════════════╝
+// |   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  |
+// |   30-Layer Protection Framework                          |
+// |   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance |
+// |   Built by SAIRN Technologies - Michael L. Dibert       |
+// +==========================================================+
 
 (function() {
 'use strict';
 
-// ── CONFIGURATION ──────────────────────────────────────────
+// -- CONFIGURATION ------------------------------------------
 var SAIRN_SEC = {
   version: '3.0',
   appName: document.title || 'SAIRN App',
@@ -233,9 +233,9 @@ var SAIRN_SEC = {
   loginAttempts: parseInt(sessionStorage.getItem('s_attempts') || '0')
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 1 — BROWSER LAYER (Layers 1-18)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 1 — Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
@@ -606,9 +606,9 @@ window.saSanitizeResponse = function(text) {
   } catch(e) {}
 })();
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 2 — API PROXY LAYER (Layers 19-23)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 19 — Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
@@ -677,9 +677,9 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 3 — DATA LAYER (Layers 24-27)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 24 — Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
@@ -725,9 +725,9 @@ window.saWipeAllData = function() {
   location.reload();
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 4 — COMPLIANCE LAYER (Layers 28-30)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 28 — CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
@@ -803,7 +803,7 @@ window.saShowSecurityStatus = function() {
   alert(report);
 };
 
-// ── INITIALIZATION MESSAGE ─────────────────────────────────
+// -- INITIALIZATION MESSAGE ---------------------------------
 saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
 console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#7C3AED;font-weight:bold;padding:4px 8px;border-radius:4px');
 
@@ -812,7 +812,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 </script>
 
 
-<!-- ══════════════════════════════════════════════════════ AUTH ══ -->
+<!-- ====================================================== AUTH == -->
 <div id="sh-auth">
   <div class="auth-card">
     <div class="auth-brand">
@@ -840,7 +840,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════ APP ══ -->
+<!-- ====================================================== APP == -->
 <div id="sh-app">
 
   <!-- TOPBAR -->
@@ -923,7 +923,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <!-- CONTENT -->
   <div class="sh-content">
 
-    <!-- ── DASHBOARD ── -->
+    <!-- -- DASHBOARD -- -->
     <div id="panel-dashboard" class="sh-panel active">
       <div class="sh-section-title">📊 HR Command Center</div>
       <div class="sh-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
@@ -963,7 +963,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
       </div>
     </div>
-        <!-- ── HR AI ── -->
+        <!-- -- HR AI -- -->
     <div id="panel-ai" class="sh-panel">
       <div class="sh-section-title">🤖 HR AI — CHRO + Labor Attorney + Coach</div>
       <div style="display:grid;grid-template-columns:1fr 300px;gap:14px">
@@ -1015,7 +1015,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
       </div>
     </div>
-        <!-- ── EMPLOYEES ── -->
+        <!-- -- EMPLOYEES -- -->
     <div id="panel-employees" class="sh-panel">
       <div class="sh-section-title">👥 Employee Directory</div>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
@@ -1040,7 +1040,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
       <div id="emp-list"></div>
     </div>
-        <!-- ── PAYROLL ── -->
+        <!-- -- PAYROLL -- -->
     <div id="panel-payroll" class="sh-panel">
       <div class="sh-section-title">💰 Payroll Management</div>
       <div class="sh-grid">
@@ -1133,7 +1133,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
 
-    <!-- ── TIME & ATTENDANCE ── -->
+    <!-- -- TIME & ATTENDANCE -- -->
     <div id="panel-time" class="sh-panel">
       <div class="sh-section-title">⏱ Time & Attendance</div>
       <div class="sh-grid">
@@ -1169,7 +1169,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
       </div>
     </div>
-        <!-- ── BENEFITS ── -->
+        <!-- -- BENEFITS -- -->
     <div id="panel-benefits" class="sh-panel">
       <div class="sh-section-title">🏥 Benefits Administration</div>
       <div class="sh-grid">
@@ -1205,7 +1205,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
 
-    <!-- ── ONBOARDING ── -->
+    <!-- -- ONBOARDING -- -->
     <div id="panel-onboarding" class="sh-panel">
       <div class="sh-section-title">✅ Onboarding Manager</div>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
@@ -1236,7 +1236,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <div id="onb-checklist"></div>
       </div>
     </div>
-        <!-- ── PTO & LEAVE ── -->
+        <!-- -- PTO & LEAVE -- -->
     <div id="panel-pto" class="sh-panel">
       <div class="sh-section-title">🌴 PTO & Leave Management</div>
       <div class="sh-grid">
@@ -1269,7 +1269,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div id="pto-tab-balances" style="display:none"><div class="sh-card"><div id="pto-balances-list"></div></div></div>
       <div id="pto-tab-calendar" style="display:none"><div class="sh-card"><div id="pto-calendar-grid"></div></div></div>
     </div>
-        <!-- ── PERFORMANCE ── -->
+        <!-- -- PERFORMANCE -- -->
     <div id="panel-performance" class="sh-panel">
       <div class="sh-section-title">⭐ Performance Reviews</div>
       <div style="display:flex;gap:10px;margin-bottom:14px">
@@ -1308,7 +1308,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div id="rev-output"></div>
     </div>
 
-    <!-- ── PIP ── -->
+    <!-- -- PIP -- -->
     <div id="panel-pip" class="sh-panel">
       <div class="sh-section-title">📋 Performance Improvement Plans</div>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
@@ -1350,7 +1350,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <div id="pip-history-content"></div>
       </div>
     </div>
-        <!-- ── COMPLIANCE ── -->
+        <!-- -- COMPLIANCE -- -->
     <div id="panel-compliance" class="sh-panel">
       <div class="sh-section-title">⚖️ Compliance Center</div>
       <div class="sh-tabs">
@@ -1394,7 +1394,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
 
-    <!-- ── RECRUITING / ATS ── -->
+    <!-- -- RECRUITING / ATS -- -->
     <div id="panel-ats" class="sh-panel">
       <div class="sh-section-title">🎯 Applicant Tracking System</div>
       <div class="sh-grid">
@@ -1419,7 +1419,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <div id="ats-roles-list"></div>
       </div>
     </div>
-        <!-- ── OFFER LETTERS ── -->
+        <!-- -- OFFER LETTERS -- -->
     <div id="panel-offers" class="sh-panel">
       <div class="sh-section-title">📄 Offer Letter Generator</div>
       <div class="sh-card">
@@ -1453,7 +1453,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div id="offer-output"></div>
     </div>
 
-    <!-- ── COMPENSATION ── -->
+    <!-- -- COMPENSATION -- -->
     <div id="panel-compensation" class="sh-panel">
       <div class="sh-section-title">📈 Compensation & FLSA</div>
       <div class="sh-tabs">
@@ -1504,7 +1504,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
 
-    <!-- ── ORG CHART ── -->
+    <!-- -- ORG CHART -- -->
     <div id="panel-org" class="sh-panel">
       <div class="sh-section-title">🏢 Org Chart & Structure</div>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
@@ -1527,7 +1527,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <div id="org-roster"></div>
       </div>
     </div>
-        <!-- ── 9-BOX ── -->
+        <!-- -- 9-BOX -- -->
     <div id="panel-ninebox" class="sh-panel">
       <div class="sh-section-title">📊 9-Box Talent Grid</div>
       <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start">
@@ -1570,7 +1570,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
       </div>
     </div>
-        <!-- ── PULSE ── -->
+        <!-- -- PULSE -- -->
     <div id="panel-pulse" class="sh-panel">
       <div class="sh-section-title">💬 Pulse Survey & Engagement</div>
       <div class="sh-grid">
@@ -1607,7 +1607,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <div id="pulse-history"></div>
       </div>
     </div>
-        <!-- ── LMS / TRAINING ── -->
+        <!-- -- LMS / TRAINING -- -->
     <div id="panel-lms" class="sh-panel">
       <div class="sh-section-title">🎓 Learning & Training Management</div>
       <div class="sh-grid">
@@ -1639,7 +1639,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
       </div>
     </div>
-        <!-- ── RETENTION / ATTRITION ── -->
+        <!-- -- RETENTION / ATTRITION -- -->
     <div id="panel-attrition" class="sh-panel">
       <div class="sh-section-title">📉 Retention & Attrition Intelligence</div>
       <div class="sh-grid">
@@ -1669,7 +1669,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <div id="atr-playbook"></div>
       </div>
     </div>
-        <!-- ── TERMINATION / OFFBOARDING ── -->
+        <!-- -- TERMINATION / OFFBOARDING -- -->
     <div id="panel-termination" class="sh-panel">
       <div class="sh-section-title">🚫 Offboarding & Termination</div>
       <div class="sh-card" style="background:rgba(220,38,38,.03);border-color:rgba(220,38,38,.2)">
@@ -1745,7 +1745,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
 
-    <!-- ── HANDBOOK ── -->
+    <!-- -- HANDBOOK -- -->
     <div id="panel-handbook" class="sh-panel">
       <div class="sh-section-title">📖 Employee Handbook Builder</div>
       <div class="sh-card">
@@ -1795,7 +1795,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div id="hb-output"></div>
     </div>
 
-    <!-- ── INVESTIGATIONS ── -->
+    <!-- -- INVESTIGATIONS -- -->
     <div id="panel-investigation" class="sh-panel">
       <div class="sh-section-title">🔍 Workplace Investigation Manager</div>
       <div class="sh-grid">
@@ -1810,7 +1810,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
       <div id="inv-cases-list"></div>
     </div>
-        <!-- ── JOB BUILDER ── -->
+        <!-- -- JOB BUILDER -- -->
     <div id="panel-jobs" class="sh-panel">
       <div class="sh-section-title">🛠 AI Job Description Builder</div>
       <div class="sh-card">
@@ -1846,7 +1846,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
 
 
-    <!-- ── SKILLS MATRIX ── -->
+    <!-- -- SKILLS MATRIX -- -->
     <div id="panel-skills" class="sh-panel">
       <div class="sh-section-title">🧠 Skills Matrix</div>
       <div class="sh-grid">
@@ -1868,7 +1868,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div class="sh-card" style="margin-top:14px" id="skills-ai-output" style="display:none"></div>
     </div>
 
-    <!-- ── CONTRACTORS / 1099 ── -->
+    <!-- -- CONTRACTORS / 1099 -- -->
     <div id="panel-contractors" class="sh-panel">
       <div class="sh-section-title">📎 Contractors & 1099 Management</div>
       <div class="sh-grid">
@@ -1894,7 +1894,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
 
-    <!-- ── SUCCESSION PLANNING ── -->
+    <!-- -- SUCCESSION PLANNING -- -->
     <div id="panel-succession" class="sh-panel">
       <div class="sh-section-title">🏆 Succession Planning</div>
       <div class="sh-grid">
@@ -1911,7 +1911,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <div class="sh-card" style="margin-top:14px" id="succ-ai-output" style="display:none"></div>
     </div>
 
-    <!-- ── HEADCOUNT BUDGET ── -->
+    <!-- -- HEADCOUNT BUDGET -- -->
     <div id="panel-headcount" class="sh-panel">
       <div class="sh-section-title">📊 Headcount & Budget Planning</div>
       <div class="sh-grid">
@@ -1946,7 +1946,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
 
-    <!-- ── WORKERS COMP ── -->
+    <!-- -- WORKERS COMP -- -->
     <div id="panel-workercomp" class="sh-panel">
       <div class="sh-section-title">🦺 Workers' Compensation</div>
       <div class="sh-grid">
@@ -1981,7 +1981,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
 
-    <!-- ── EMPLOYEE SELF-SERVICE ── -->
+    <!-- -- EMPLOYEE SELF-SERVICE -- -->
     <div id="panel-selfservice" class="sh-panel">
       <div class="sh-section-title">👤 Employee Self-Service Portal</div>
       <div style="background:linear-gradient(135deg,var(--a-light),rgba(217,119,6,.05));border:1px solid rgba(217,119,6,.3);border-radius:12px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
@@ -2025,7 +2025,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
     </div>
   
-    <!-- ── GARNISHMENTS ── -->
+    <!-- -- GARNISHMENTS -- -->
     <div id="panel-garnishments" class="sh-panel">
       <div class="sh-section-title">🔒 Wage Garnishments</div>
 
@@ -2975,7 +2975,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div><!-- /sh-content -->
 </div><!-- /sh-app -->
 
-<!-- ── MODALS ── -->
+<!-- -- MODALS -- -->
 <div id="sh-employee-modal" class="sh-modal">
   <div class="sh-modal-box">
     <div class="sh-modal-title">
@@ -3032,17 +3032,17 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 // SAIRNhr™ v2.0 — World-Class HR Intelligence
 // Built by SAIRN Technologies™ · Michael L. Dibert
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 
 const SH_RAILWAY='https://fabricor-production.up.railway.app';
 const SH_CLAUDE='https://sairn.vercel.app/api/claude';
 let shCurrentUser=null;
 let shChatHistory=[];
 
-// ── DATA STORES ──────────────────────────────────────────────────
+// -- DATA STORES --------------------------------------------------
 var employees=JSON.parse(localStorage.getItem('sh_employees')||'[]');
 var ptoRequests=JSON.parse(localStorage.getItem('sairnhr_pto')||'[]');
 var atsData=JSON.parse(localStorage.getItem('sairnhr_ats')||'{"roles":[],"candidates":[]}');
@@ -3065,7 +3065,7 @@ var onbChecks=JSON.parse(localStorage.getItem('sh_onb_checks')||'{}');
 
 function shSave(key,data){localStorage.setItem(key,JSON.stringify(data));}
 
-// ── AUTH ─────────────────────────────────────────────────────────
+// -- AUTH ---------------------------------------------------------
 function shSelectTab(tab,el){
   document.querySelectorAll('.sh-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
@@ -3123,7 +3123,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
 
 });
 
-// ── NAVIGATION ───────────────────────────────────────────────────
+// -- NAVIGATION ---------------------------------------------------
 function shPanel(id,btn){
   document.querySelectorAll('.sh-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sh-nav-btn').forEach(b=>b.classList.remove('active'));
@@ -3139,7 +3139,7 @@ function shPanel(id,btn){
   if(inits[id]) setTimeout(inits[id],50);
 }
 
-// ── NOTIFICATION ─────────────────────────────────────────────────
+// -- NOTIFICATION -------------------------------------------------
 function shNotify(msg,color){
   var n=document.getElementById('sh-notif-el');
   n.style.background=color==='red'?'#dc2626':color==='green'?'#16a34a':'#2C1810';
@@ -3147,7 +3147,7 @@ function shNotify(msg,color){
   setTimeout(()=>n.classList.remove('show'),3000);
 }
 
-// ── INIT ALL ─────────────────────────────────────────────────────
+// -- INIT ALL -----------------------------------------------------
 function shInitAll(){
   shInitDashboard();
   shInitOnboarding();
@@ -3165,7 +3165,7 @@ function shInitAll(){
   shInitBenefits();
 }
 
-// ══ DASHBOARD ═══════════════════════════════════════════════════
+// == DASHBOARD ===================================================
 function shInitDashboard(){
   var active=employees.filter(e=>e.status==='Active'||!e.status).length;
   var onb=onboardingActive.filter(o=>o.status==='Active').length;
@@ -3246,7 +3246,7 @@ function shInitDashboard(){
   }).join('');
 }
 
-// ══ EMPLOYEES ═══════════════════════════════════════════════════
+// == EMPLOYEES ===================================================
 function shRenderEmployees(){
   var search=(document.getElementById('emp-search')?document.getElementById('emp-search').value||'':'').toLowerCase();
   var deptF=document.getElementById('emp-dept-filter')?document.getElementById('emp-dept-filter').value:'';
@@ -3332,7 +3332,7 @@ function shSaveEmployee(){
   shNotify('Employee saved — '+fn+' '+ln,'green');
 }
 
-// ══ PAYROLL ══════════════════════════════════════════════════════
+// == PAYROLL ======================================================
 var payCurrentTab='register';
 function shInitPayroll(){
   shPayTab('register',document.querySelector('#pay-tab-register')&&document.querySelector('.sh-tab-inner.active')||{classList:{add:function(){},remove:function(){}}});
@@ -3384,11 +3384,12 @@ function shRenderPayrollRows(){
 }
 function shAddPayEmployee(){
   // Build roster-linked enrollment modal
-  var enrolled=payrollRegister.map(function(e){return e.name;});
+  // Normalize names on both sides to prevent blank-list bug
+  var enrolled=payrollRegister.map(function(e){return (e.name||'').replace(/\s+/g,' ').trim().toLowerCase();});
   var roster=JSON.parse(localStorage.getItem('sh_employees')||'[]');
   var available=roster.filter(function(e){
-    var full=(e.firstName||'')+' '+(e.lastName||'');
-    return !enrolled.includes(full.trim());
+    var full=((e.firstName||'')+' '+(e.lastName||'')).replace(/\s+/g,' ').trim();
+    return full.length>0 && !enrolled.includes(full.toLowerCase());
   });
 
   // Remove existing modal if present
@@ -3485,13 +3486,19 @@ function shEnrollSelectedPayEmployees(){
   if(!checks.length){shNotify('Select at least one employee to enroll','red');return;}
   var enrolled=0;
   checks.forEach(function(chk){
-    var name=chk.dataset.name;
-    var typeEl=document.querySelector('.sh-enroll-type[data-name="'+name.replace(/"/g,'\\"')+'"]');
-    var grossEl=document.querySelector('.sh-enroll-gross[data-name="'+name.replace(/"/g,'\\"')+'"]');
+    var name=(chk.dataset.name||'').replace(/\s+/g,' ').trim();
+    if(!name)return;
+    // Use closest row to find sibling inputs — avoids fragile attribute selector escaping
+    var row=chk.closest('tr');
+    var typeEl=row?row.querySelector('.sh-enroll-type'):null;
+    var grossEl=row?row.querySelector('.sh-enroll-gross'):null;
     var type=typeEl?typeEl.value:'FT';
     var gross=grossEl?parseFloat(grossEl.value)||0:0;
     if(!gross){shNotify('Enter gross pay for '+name,'red');return;}
-    if(!payrollRegister.find(function(e){return e.name===name;})){
+    var alreadyIn=payrollRegister.find(function(e){
+      return (e.name||'').replace(/\s+/g,' ').trim().toLowerCase()===name.toLowerCase();
+    });
+    if(!alreadyIn){
       payrollRegister.push({name:name,gross:gross,type:type,deductions:0});
       enrolled++;
     }
@@ -3512,6 +3519,23 @@ function shEscAttr(s){if(!s)return '';return String(s).replace(/"/g,'&quot;').re
 function shRemovePayEmp(i){payrollRegister.splice(i,1);shSave('sh_payroll',payrollRegister);shRenderPayrollRows();}
 function shRunPayroll(){
   var gross=payrollRegister.reduce(function(s,e){return s+(parseFloat(e.gross)||0);},0);
+  if(!payrollRegister.length){shNotify('No employees in payroll register. Click + Add Employee first.','red');return;}
+  if(!gross){shNotify('All employees have $0 gross pay. Set gross amounts before running payroll.','red');return;}
+  var net=gross*(1-(0.22+0.0765+0.04));
+  var entry={
+    date:new Date().toISOString().slice(0,10),
+    gross:gross,
+    net:net,
+    employees:payrollRegister.length,
+    detail:payrollRegister.map(function(e){return {name:e.name,gross:e.gross,type:e.type};})
+  };
+  payrollHistory.unshift(entry);
+  shSave('sh_pay_history',payrollHistory);
+  // Bridge sync
+  try{fetch('https://sairn.vercel.app/api/bridge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'sairnhr',event:'payroll_run',data:entry})});}catch(e){}
+  shNotify('Payroll run complete -- '+payrollRegister.length+' employees -- $'+gross.toLocaleString(undefined,{maximumFractionDigits:0})+' gross / $'+net.toLocaleString(undefined,{maximumFractionDigits:0})+' net','green');
+  shRenderPayHistory();
+},0);
   if(!gross){shNotify('No employees in payroll register','red');return;}
   var entry={date:new Date().toISOString().slice(0,10),gross:gross,net:gross*.8,employees:payrollRegister.length};
   payrollHistory.unshift(entry);
@@ -3658,7 +3682,7 @@ function shGenW2(){
   shNotify("W-2s generated for "+rows.length+" employee(s) — "+yr,"green");
 }
 
-// ══ TIME & ATTENDANCE ════════════════════════════════════════════
+// == TIME & ATTENDANCE ============================================
 function shInitTime(){
   shRenderTime();
   shRenderClockLog();
@@ -3712,7 +3736,7 @@ function shAddTimeEntry(){
 }
 function shExportTimesheet(){shNotify('Timesheet export — coming soon (CSV download)','');}
 
-// ══ BENEFITS ════════════════════════════════════════════════════
+// == BENEFITS ====================================================
 function shInitBenefits(){shBenTab('plans',{classList:{add:function(){},remove:function(){}}});shRenderBenPlans();}
 function shBenTab(tab,el){
   ['plans','enrollment','cobra'].forEach(function(t){
@@ -3785,7 +3809,7 @@ function shAddCobra(){
   shSave('sh_cobra',cobraList);shRenderCobra();shNotify('COBRA event added — notice due within 14 days','orange');
 }
 
-// ══ ONBOARDING ═══════════════════════════════════════════════════
+// == ONBOARDING ===================================================
 var shOnbCurrentTab='preboard';
 var onbChecklists={
   preboard:[
@@ -3876,7 +3900,7 @@ function shStartOnboarding(){
 }
 function shRemoveOnb(i){onboardingActive.splice(i,1);shSave('sh_onboarding',onboardingActive);shRenderOnboardingActive();}
 
-// ══ PTO ══════════════════════════════════════════════════════════
+// == PTO ==========================================================
 var fmlaList=JSON.parse(localStorage.getItem('sh_fmla')||'[]');
 function shInitPTO(){
   var pending=ptoRequests.filter(function(r){return r.status==='Pending';}).length;
@@ -3954,7 +3978,7 @@ async function shFMLAAI(){
   }catch(e){shNotify("Error generating FMLA document","");}
 }
 
-// ══ PERFORMANCE ══════════════════════════════════════════════════
+// == PERFORMANCE ==================================================
 async function shGenerateReview(){
   var name=document.getElementById('rev-emp').value.trim();
   if(!name){shNotify('Enter employee name first','red');return;}
@@ -3994,7 +4018,7 @@ function shPrintReview(){
   w.document.close();
 }
 
-// ══ PIP ═══════════════════════════════════════════════════════════
+// == PIP ===========================================================
 async function shGeneratePIP(){
   var name=document.getElementById('pip-name').value.trim();
   if(!name){shNotify('Enter employee name first','red');return;}
@@ -4036,7 +4060,7 @@ function shPrintPIP(){
   w.document.close();
 }
 
-// ══ COMPLIANCE ═══════════════════════════════════════════════════
+// == COMPLIANCE ===================================================
 function shInitCompliance(){
   shCompTab('federal',{classList:{add:function(){},remove:function(){}}});
 }
@@ -4162,7 +4186,7 @@ function shRenderEEO(){
     }).join('')+'</div>';
 }
 
-// ══ ATS ══════════════════════════════════════════════════════════
+// == ATS ==========================================================
 var atsStages=['Applied','Phone Screen','Interview','Assessment','Offer','Hired','Rejected'];
 function shInitATS(){
   var sel=document.getElementById('ats-role-filter');
@@ -4214,7 +4238,7 @@ function shMoveCandidateUI(idx){
   }
 }
 
-// ══ OFFER LETTERS ════════════════════════════════════════════════
+// == OFFER LETTERS ================================================
 async function shGenerateOffer(){
   var name=document.getElementById('offer-name').value.trim();
   if(!name){shNotify('Enter candidate name','red');return;}
@@ -4244,7 +4268,7 @@ async function shGenerateOffer(){
   }catch(e){out.innerHTML='<div class="sh-card" style="color:var(--red)">Error generating offer letter.</div>';}
 }
 
-// ══ COMPENSATION ═════════════════════════════════════════════════
+// == COMPENSATION =================================================
 function shCompensationTab(tab,el){
   ['flsa','bands','equity'].forEach(function(t){
     var el2=document.getElementById('comp-tab-'+t);if(el2)el2.style.display=t===tab?'block':'none';
@@ -4313,7 +4337,7 @@ async function shRunEquityAnalysis(){
   }catch(e){out.innerHTML='<div style="color:var(--red)">Error running analysis.</div>';}
 }
 
-// ══ ORG CHART ════════════════════════════════════════════════════
+// == ORG CHART ====================================================
 function shRenderOrg(){
   var wrap=document.getElementById('org-chart-wrap');
   var roster=document.getElementById('org-roster');
@@ -4347,7 +4371,7 @@ function shAddOrgNode(){
   shSave('sh_org',orgNodes);shRenderOrg();shNotify(name+' added to org chart','green');
 }
 
-// ══ 9-BOX ════════════════════════════════════════════════════════
+// == 9-BOX ========================================================
 var nbColors={
   '3-3':'rgba(22,163,74,0.15)','3-2':'rgba(22,163,74,0.10)','3-1':'rgba(59,130,246,0.12)',
   '2-3':'rgba(22,163,74,0.08)','2-2':'rgba(217,119,6,0.12)','2-1':'rgba(249,115,22,0.12)',
@@ -4393,7 +4417,7 @@ function shPlaceEmployee(){
 }
 function shNBRemove(i){nbData.splice(i,1);shSave('sairnhr_nb',nbData);shInitNineBox();}
 
-// ══ PULSE ════════════════════════════════════════════════════════
+// == PULSE ========================================================
 var pulseQuestions=[
   {id:'q1',text:'Overall, I would recommend this company as a great place to work.'},
   {id:'q2',text:'I have the tools and resources I need to do my job well.'},
@@ -4449,7 +4473,7 @@ function shRenderPulseHistory(){
   }).join('');
 }
 
-// ══ LMS ══════════════════════════════════════════════════════════
+// == LMS ==========================================================
 function shInitLMS(){
   if(!lmsData.courses.length){
     lmsData.courses=[
@@ -4526,7 +4550,7 @@ function shAddCert(){
   shSave('sairnhr_lms',lmsData);shInitLMS();shNotify('Certification added','green');
 }
 
-// ══ ATTRITION ════════════════════════════════════════════════════
+// == ATTRITION ====================================================
 function shRenderAttrition(){
   var tb=document.getElementById('atr-register');if(!tb)return;
   var high=atrRegister.filter(function(r){return r.risk==='Critical'||r.risk==='High';}).length;
@@ -4583,7 +4607,7 @@ async function shRunRetentionAI(){
   }catch(e){shNotify('Error generating strategy','red');}
 }
 
-// ══ TERMINATION / OFFBOARDING ════════════════════════════════════
+// == TERMINATION / OFFBOARDING ====================================
 function shInitTermination(){shTermTab('checklist',{classList:{add:function(){},remove:function(){}}});}
 function shTermTab(tab,el){
   ['checklist','calculator','letter','exit'].forEach(function(t){
@@ -4747,7 +4771,7 @@ async function shAIExitAnalysis(){
   }catch(e){out.innerHTML='<div style="color:var(--red)">Error running analysis.</div>';}
 }
 
-// ══ HANDBOOK ═════════════════════════════════════════════════════
+// == HANDBOOK =====================================================
 async function shGenerateHandbook(){
   var company=document.getElementById('hb-company').value||'Your Company';
   var industry=document.getElementById('hb-industry').value;
@@ -4795,7 +4819,7 @@ function shPrintHandbook(){
   w.document.close();
 }
 
-// ══ INVESTIGATIONS ════════════════════════════════════════════════
+// == INVESTIGATIONS ================================================
 function shRenderInvCases(){
   var el=document.getElementById('inv-cases-list');if(!el)return;
   var open=invCases.filter(function(c){return c.stage==='Intake'||c.stage==='Assigned';}).length;
@@ -4840,7 +4864,7 @@ function shCaseAdvance(i){
 }
 function shCaseDelete(i){if(!confirm('Delete case?'))return;invCases.splice(i,1);shSave('sairnhr_inv',invCases);shRenderInvCases();}
 
-// ══ JOB BUILDER ═══════════════════════════════════════════════════
+// == JOB BUILDER ===================================================
 async function shGenerateJD(){
   var title=document.getElementById('jb-title').value.trim();
   if(!title){shNotify('Enter job title','red');return;}
@@ -4897,7 +4921,7 @@ async function shGenOfferLetter(){
   }catch(e){shNotify("Error generating offer letter","");}
 }
 
-// ══ HR AI CHAT ═══════════════════════════════════════════════════
+// == HR AI CHAT ===================================================
 var SH_HR_SYSTEM='You are SAIRNhr™ AI — the world\'s most sophisticated HR intelligence, combining CHRO expertise, labor attorney knowledge, and compensation consultant capabilities. SAIRN Technologies™. Current year: 2026. You know all federal and state employment laws including FLSA, FMLA, ADA, Title VII, ADEA, NLRA, COBRA, ERISA, WARN Act. You know 2026 payroll tax rates (SS 6.2%, Medicare 1.45%, FUTA 0.6%). Lead with direct answer then legal framework. Always note state law variations. Specific timeframes (not "a few days" but "3 business days"). Flag when real attorney is essential. End legal responses with: "This is HR best practice guidance — consult employment counsel for your specific situation."';
 async function shSendHR(){
   var input=document.getElementById('sh-chat-input');
@@ -4930,7 +4954,7 @@ function shAddMsg(text,role){
   msgs.scrollTop=msgs.scrollHeight;
 }
 
-// ══ UTILS ═════════════════════════════════════════════════════════
+// == UTILS =========================================================
 function escHtml(str){
   if(!str)return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -4954,7 +4978,7 @@ function shPrintOnboarding(){
   w.document.close();
 }
 
-// ══ PWA ═══════════════════════════════════════════════════════════
+// == PWA ===========================================================
 var shDeferredPrompt=null;
 window.addEventListener('beforeinstallprompt',function(e){
   e.preventDefault();shDeferredPrompt=e;
@@ -4977,7 +5001,7 @@ function shDismissPWA(){
 }
 
 
-// ══ DASHBOARD UPGRADES ══════════════════════════════════════════
+// == DASHBOARD UPGRADES ==========================================
 // Override shInitDashboard with full-depth version
 function shInitDashboard(){
   var active=employees.filter(function(e){return e.status==='Active'||!e.status;}).length;
@@ -5113,7 +5137,7 @@ function shInitDashboard(){
   }
 }
 
-// ══ EMPLOYEE KPIs ════════════════════════════════════════════════
+// == EMPLOYEE KPIs ================================================
 function shUpdateEmpKPIs(){
   var total=employees.length;
   var active=employees.filter(function(e){return e.status==='Active'||!e.status;}).length;
@@ -5153,7 +5177,7 @@ function shExportEmployees(){
   shNotify('Employee CSV exported','green');
 }
 
-// ══ ATS ROLES LIST ═══════════════════════════════════════════════
+// == ATS ROLES LIST ===============================================
 function shRenderRolesList(){
   var el=document.getElementById("ats-roles-list");if(!el)return;
   if(!atsData.roles.length){el.innerHTML="No open roles.";return;}
@@ -5182,7 +5206,7 @@ function shOpenReqModal(){
 var _origInitATS=shInitATS;
 shInitATS=function(){_origInitATS();shRenderRolesList();};
 
-// ══ ORG CHART UPGRADES ═══════════════════════════════════════════
+// == ORG CHART UPGRADES ===========================================
 function shUpdateOrgKPIs(){
   var d=document.getElementById('org-kpi-positions');if(d)d.textContent=orgNodes.length;
   var vacant=orgNodes.filter(function(n){return n.vacant;}).length;
@@ -5210,7 +5234,7 @@ function shPrintOrg(){
 var _origRenderOrg=shRenderOrg;
 shRenderOrg=function(){_origRenderOrg();shUpdateOrgKPIs();};
 
-// ══ 9-BOX AI SUGGESTIONS ════════════════════════════════════════
+// == 9-BOX AI SUGGESTIONS ========================================
 async function shNBSuggest(){
   if(!employees.length){shNotify('Add employees first','');return;}
   var out=document.getElementById('nb-ai-output');if(!out)return;
@@ -5236,7 +5260,7 @@ shPlaceEmployee=function(){
   if(c)c.textContent='('+nbData.length+' employees)';
 };
 
-// ══ PULSE UPGRADES ═══════════════════════════════════════════════
+// == PULSE UPGRADES ===============================================
 function shRenderPulseTrend(){
   var chart=document.getElementById('pulse-trend-chart');if(!chart)return;
   if(!pulseHistory.length){chart.innerHTML='<div style="color:var(--muted);font-size:12px">No history yet.</div>';return;}
@@ -5291,7 +5315,7 @@ shSubmitPulse=function(){
 var _origInitPulse=shInitPulse;
 shInitPulse=function(){_origInitPulse();shRenderPulseTrend();shRenderPulseBreakdown();};
 
-// ══ LMS UPGRADES ════════════════════════════════════════════════
+// == LMS UPGRADES ================================================
 function shLMSTab(tab,el){
   ['courses','assignments','certs','compliance'].forEach(function(t){
     var el2=document.getElementById('lms-tab-'+t);if(el2)el2.style.display=t===tab?'block':'none';
@@ -5360,7 +5384,7 @@ function shUpdateLMSRate(){
 var _origInitLMS=shInitLMS;
 shInitLMS=function(){_origInitLMS();shUpdateLMSRate();};
 
-// ══ ATTRITION PRESCRIPTIVE ═══════════════════════════════════════
+// == ATTRITION PRESCRIPTIVE =======================================
 async function shPrescriptiveAI(){
   var out=document.getElementById('atr-prescriptive-output');
   if(!out)return;
@@ -5411,7 +5435,7 @@ function shRenderPlaybook(){
 var _origRenderAttrition=shRenderAttrition;
 shRenderAttrition=function(){_origRenderAttrition();shRenderPlaybook();};
 
-// ══ INVESTIGATION UPGRADE ════════════════════════════════════════
+// == INVESTIGATION UPGRADE ========================================
 async function shInvAIGuide(){
   var type=prompt('Investigation type (Harassment/Discrimination/Theft/Policy Violation/Safety):','Harassment');
   if(!type)return;
@@ -5429,7 +5453,7 @@ async function shInvAIGuide(){
   }catch(e){out.innerHTML='<div style="color:var(--red)">Error.</div>';}
 }
 
-// ══ PTO UPGRADES ═════════════════════════════════════════════════
+// == PTO UPGRADES =================================================
 function shPTOTab(tab,el){
   ['requests','fmla','balances','calendar'].forEach(function(t){
     var el2=document.getElementById('pto-tab-'+t);if(el2)el2.style.display=t===tab?'block':'none';
@@ -5484,7 +5508,7 @@ function shCalcPTOLiability(){
 var _origInitPTO=shInitPTO;
 shInitPTO=function(){_origInitPTO();shCalcPTOLiability();};
 
-// ══ ONBOARDING PROGRESS BAR ══════════════════════════════════════
+// == ONBOARDING PROGRESS BAR ======================================
 function shUpdateOnbProgress(){
   var tab=document.querySelector('#panel-onboarding .sh-tab-inner.active');
   var tabName=tab?tab.textContent.toLowerCase().replace(' ',''):'preboard';
@@ -5541,7 +5565,7 @@ shOnbCheck=function(key,el){_origOnbCheck(key,el);shUpdateOnbProgress();};
 var _origOnbTab=shOnbTab;
 shOnbTab=function(tab,el){_origOnbTab(tab,el);shUpdateOnbProgress();};
 
-// ══ TIME & ATTENDANCE UPGRADES ═══════════════════════════════════
+// == TIME & ATTENDANCE UPGRADES ===================================
 function shTimeApprove(){shNotify('All timesheets approved','green');}
 function shRenderOTAlerts(){
   var el=document.getElementById('time-ot-alerts');if(!el)return;
@@ -5559,7 +5583,7 @@ function shRenderOTAlerts(){
 var _origInitTime=shInitTime;
 shInitTime=function(){_origInitTime();shRenderOTAlerts();};
 
-// ══ SKILLS MATRIX ═════════════════════════════════════════════════
+// == SKILLS MATRIX =================================================
 var skillsData=JSON.parse(localStorage.getItem('sh_skills')||'[]');
 var skillsList=JSON.parse(localStorage.getItem('sh_skills_list')||'["Communication","Leadership","Technical Skills","Problem Solving","Teamwork","Attention to Detail","Time Management","Customer Service"]');
 function shInitSkills(){
@@ -5664,7 +5688,7 @@ function shSkillsToLMS(){
   shSave('sh_lms_assignments',lmsAssignments);shNotify('Training assigned for all skills gaps','green');
 }
 
-// ══ CONTRACTORS / 1099 ═══════════════════════════════════════════
+// == CONTRACTORS / 1099 ===========================================
 var contractors=JSON.parse(localStorage.getItem('sh_contractors')||'[]');
 function shInitContractors(){
   shUpdateContractorKPIs();shRenderContractors();
@@ -5725,7 +5749,7 @@ function shGen1099Report(){
 }
 function shLogPayment1099(i){shLog1099Payment(i);}
 
-// ══ SUCCESSION PLANNING ══════════════════════════════════════════
+// == SUCCESSION PLANNING ==========================================
 var successionPlans=JSON.parse(localStorage.getItem('sh_succession')||'[]');
 function shInitSuccession(){shUpdateSuccKPIs();shRenderSuccRoles();}
 function shUpdateSuccKPIs(){
@@ -5796,7 +5820,7 @@ async function shSuccAI(){
   }catch(e){out.innerHTML='<div style="color:var(--red)">Error.</div>';}
 }
 
-// ══ HEADCOUNT BUDGET ════════════════════════════════════════════
+// == HEADCOUNT BUDGET ============================================
 var hcPlans=JSON.parse(localStorage.getItem('sh_hc_plans')||'[]');
 function shInitHeadcount(){shUpdateHCKPIs();shRenderHCRows();shCalcHireCost();}
 function shUpdateHCKPIs(){
@@ -5873,7 +5897,7 @@ async function shHCAI(){
 }
 function shExportHCReport(){shNotify('Headcount report — export to SAIRNacc coming in SAIRNpro integration','');}
 
-// ══ WORKERS COMP ════════════════════════════════════════════════
+// == WORKERS COMP ================================================
 var wcClaims=JSON.parse(localStorage.getItem('sh_wc_claims')||'[]');
 function shInitWorkersComp(){shUpdateWCKPIs();shRenderWCClaims();}
 function shUpdateWCKPIs(){
@@ -5931,7 +5955,7 @@ async function shWCAI(){
   alert(data.content?.[0]?.text||'No strategy generated.');
 }
 
-// ══ EMPLOYEE SELF-SERVICE ════════════════════════════════════════
+// == EMPLOYEE SELF-SERVICE ========================================
 function shInitSelfService(){
   if(!shCurrentUser)return;
   var name=shCurrentUser.name||shCurrentUser.shopName||'Employee';
@@ -5989,7 +6013,7 @@ function shESSBenefits(){shPanel('benefits',document.querySelector('.sh-nav-btn'
 function shESSTraining(){shPanel('lms',document.querySelector('.sh-nav-btn'));}
 function shESSPerformance(){shPanel('performance',document.querySelector('.sh-nav-btn'));}
 
-// ══ INIT ALL UPGRADE ════════════════════════════════════════════
+// == INIT ALL UPGRADE ============================================
 // Extend the existing shInitAll
 var _origInitAll=shInitAll;
 shInitAll=function(){
@@ -6024,14 +6048,14 @@ shPanel=function(id,btn){
 };
 
 
-// ── SAIRNhr INTELLIGENCE UPGRADE ──────────────────────────
+// -- SAIRNhr INTELLIGENCE UPGRADE --------------------------
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  SAIRN UNIVERSAL AI INTELLIGENCE BLOCK v1.0                 ║
-// ║  Matches StoneDesk capabilities for HR and Accounting        ║
-// ║  Features: Streaming · Voice · Memory · Tone · Actions       ║
-// ║  Handoff · Comparison · Follow-up Chips · Retry · PII        ║
-// ╚══════════════════════════════════════════════════════════════╝
+// +==============================================================+
+// |  SAIRN UNIVERSAL AI INTELLIGENCE BLOCK v1.0                 |
+// |  Matches StoneDesk capabilities for HR and Accounting        |
+// |  Features: Streaming · Voice · Memory · Tone · Actions       |
+// |  Handoff · Comparison · Follow-up Chips · Retry · PII        |
+// +==============================================================+
 
 // Call sairiInstall(config) once, passing app-specific config:
 // config = {
@@ -6045,7 +6069,7 @@ shPanel=function(id,btn){
 //   cellMapEntries: [...],
 // }
 
-// ── CELL MAP (cross-app navigation) ────────────────────────────
+// -- CELL MAP (cross-app navigation) ----------------------------
 var SAIRI_CELL_MAP=[
   {name:'StoneDesk',   file:'/fabricor',      icon:'🪨', keywords:['stone','fabricat','countertop','quartz','granite','slab','template','cnc']},
   {name:'SAIRNhr',     file:'/sairnhr',       icon:'👥', keywords:['employee','payroll','hr','hire','onboard','pto','performance','termination','compliance']},
@@ -6056,7 +6080,7 @@ var SAIRI_CELL_MAP=[
   {name:'SAIRNhealth', file:'/health',        icon:'❤️', keywords:['symptom','medication','health','doctor','wellness','fitness','nutrition']},
 ];
 
-// ── UNIVERSAL AI INTELLIGENCE ENGINE ───────────────────────────
+// -- UNIVERSAL AI INTELLIGENCE ENGINE ---------------------------
 function sairiInstall(cfg){
   if(window['_sairi_'+cfg.appId])return;
   window['_sairi_'+cfg.appId]=true;
@@ -6079,7 +6103,7 @@ function sairiInstall(cfg){
   sairiPatchSend(cfg);
 }
 
-// ── TONE BAR ────────────────────────────────────────────────────
+// -- TONE BAR ----------------------------------------------------
 function sairiInjectToneBar(cfg){
   var inputEl=document.getElementById(cfg.inputId);
   if(!inputEl||document.getElementById('sairi-tone-'+cfg.appId))return;
@@ -6104,7 +6128,7 @@ function sairiSetTone(tone,appId){
   });
 }
 
-// ── VOICE INPUT ─────────────────────────────────────────────────
+// -- VOICE INPUT -------------------------------------------------
 function sairiInjectVoiceButton(cfg){
   var inputEl=document.getElementById(cfg.inputId);
   if(!inputEl||document.getElementById('sairi-voice-'+cfg.appId))return;
@@ -6160,7 +6184,7 @@ function sairiStopVoice(cfg){
   if(btn){btn.innerHTML='🎤';btn.style.background='var(--a-light)';}
 }
 
-// ── RESPONSE ACTION BUTTONS (Simplify / Deeper / Bullets / Example) ──
+// -- RESPONSE ACTION BUTTONS (Simplify / Deeper / Bullets / Example) --
 function sairiInjectResponseActions(cfg){
   var msgsEl=document.getElementById(cfg.msgsId);
   if(!msgsEl)return;
@@ -6205,7 +6229,7 @@ function sairiAddActionButtons(msgEl,cfg){
   msgEl.appendChild(bar);
 }
 
-// ── SESSION MEMORY (summarize every 3rd exchange) ────────────────
+// -- SESSION MEMORY (summarize every 3rd exchange) ----------------
 function sairiUpdateMemory(cfg,userMsg,aiReply){
   cfg.messageCount=(cfg.messageCount||0)+1;
   cfg.memory=cfg.memory||[];
@@ -6234,7 +6258,7 @@ function sairiInjectMemoryIndicator(cfg){
   msgsEl.parentNode.insertBefore(ind,msgsEl);
 }
 
-// ── FOLLOW-UP CHIPS (3 after each AI response) ────────────────────
+// -- FOLLOW-UP CHIPS (3 after each AI response) --------------------
 function sairiInjectFollowUpChips(cfg,aiReply,msgsEl){
   // Remove old chips
   var old=document.getElementById('sairi-chips-'+cfg.appId);
@@ -6286,7 +6310,7 @@ function sairiGenerateChips(cfg,reply){
   return chips.slice(0,3);
 }
 
-// ── CROSS-APP HANDOFF ────────────────────────────────────────────
+// -- CROSS-APP HANDOFF --------------------------------------------
 function sairiCheckHandoff(cfg){
   try{
     var h=sessionStorage.getItem('sairn_handoff');
@@ -6340,7 +6364,7 @@ function sairiInjectHandoffButtons(cfg,reply,msgEl){
   });
 }
 
-// ── SMART RETRY (3x with backoff) ────────────────────────────────
+// -- SMART RETRY (3x with backoff) --------------------------------
 async function sairiCallClaude(cfg,messages,extraSystemNote){
   var toneNote='Respond in a '+cfg.currentTone+' tone. ';
   var memNote='';
@@ -6362,7 +6386,7 @@ async function sairiCallClaude(cfg,messages,extraSystemNote){
   return 'Error after '+cfg.maxRetries+' attempts: '+lastErr;
 }
 
-// ── CONFIDENCE BADGE ─────────────────────────────────────────────
+// -- CONFIDENCE BADGE ---------------------------------------------
 function sairiConfidenceBadge(reply){
   var r=reply.toLowerCase();
   var color,label;
@@ -6376,7 +6400,7 @@ function sairiConfidenceBadge(reply){
   return '<span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;background:'+color+'22;color:'+color+';margin-top:6px;display:inline-block">'+label+'</span>';
 }
 
-// ── PII REDACTION (for HR — never send real SSNs/DOBs) ───────────
+// -- PII REDACTION (for HR — never send real SSNs/DOBs) -----------
 function sairiRedactPII(text){
   return text
     .replace(/\b\d{3}-\d{2}-\d{4}\b/g,'[SSN REDACTED]')
@@ -6385,7 +6409,7 @@ function sairiRedactPII(text){
     .replace(/\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/g,'[PHONE REDACTED]');
 }
 
-// ── UNIVERSAL SEND PATCHER ────────────────────────────────────────
+// -- UNIVERSAL SEND PATCHER ----------------------------------------
 function sairiPatchSend(cfg){
   // Inject memory indicator
   sairiInjectMemoryIndicator(cfg);
@@ -6393,14 +6417,14 @@ function sairiPatchSend(cfg){
   window['_sairiCfg_'+cfg.appId]=cfg;
 }
 
-// ── NOTIFICATION HELPER ──────────────────────────────────────────
+// -- NOTIFICATION HELPER ------------------------------------------
 function sairiNotify(cfg,msg,color){
   // Use app-specific notify if available
   if(typeof saNotify==='function')saNotify(msg,color);
   else if(typeof shNotify==='function')shNotify(msg,color);
 }
 
-// ── DOCUMENT UPLOAD FOR ACCOUNTING AI ───────────────────────────
+// -- DOCUMENT UPLOAD FOR ACCOUNTING AI ---------------------------
 function sairiInitDocUpload(cfg){
   // Add file upload button to AI chat
   var inputParent=document.getElementById(cfg.inputId)&&document.getElementById(cfg.inputId).parentElement;
@@ -8140,7 +8164,7 @@ console.log('SAIRNhr v5.0 loaded — 12 new features: Payroll Calculator, Employ
 
 
 
-// ── MISSING FUNCTION STUBS (Triad Council audit fix) ──────────
+// -- MISSING FUNCTION STUBS (Triad Council audit fix) ----------
 function shPIPHistory(){
   var pips=JSON.parse(localStorage.getItem('sh_pips')||'[]');
   if(!pips.length){shNotify('No PIP history recorded yet','');return;}
@@ -8987,7 +9011,7 @@ console.log('Eightfold, iCIMS, Leapsome, HR Acuity, Gallup tools.');
 
 
 
-// ── SAIRN BRIDGE SYNC ─────────────────────────────────────────────────────
+// -- SAIRN BRIDGE SYNC -----------------------------------------------------
 async function syncToSAIRNBridge() {
   try {
     await fetch('https://sairn.vercel.app/api/bridge', {
@@ -9002,7 +9026,7 @@ async function syncToSAIRNBridge() {
 
 
 
-// ── CSV EXPORT ────────────────────────────────────────────────────────────
+// -- CSV EXPORT ------------------------------------------------------------
 function dlCSV(rows, filename) {
   var csv = rows.map(function(r) {
     return r.map(function(v) {
@@ -9254,7 +9278,7 @@ function showSAIRNSuite() {
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
     + '<a href="https://sairn.vercel.app/sairnhr" target="_blank" style="display:block;padding:14px;background:#F5F3FF;border:1px solid #7C3AED;border-radius:10px;text-decoration:none;color:#4C1D95;font-weight:600;text-align:center;">SAIRNhr<br><span style=\'font-size:11px;font-weight:400;\'>HR &amp; People</span></a>'
     + '<a href="https://sairn.vercel.app/sairnaccounting" target="_blank" style="display:block;padding:14px;background:#F0FDFA;border:1px solid #0D9488;border-radius:10px;text-decoration:none;color:#0F766E;font-weight:600;text-align:center;">SAIRNacc<br><span style=\'font-size:11px;font-weight:400;\'>Accounting</span></a>'
-    + '<a href="https://sairn.vercel.app/sairndesign" target="_blank" style="display:block;padding:14px;background:#EEF2FF;border:1px solid #6366F1;border-radius:10px;text-decoration:none;color:#3730A3;font-weight:600;text-align:center;">SAIRNdesign<br><span style=\'font-size:11px;font-weight:400;\'>Design</span></a>'
+    + '<a href="https://sairn.vercel.app/sairndesign" target="_blank" style="display:block;padding:14px;background:#EEF2FF;border:1px solid #6366F1;border-radius:10px;text-decoration:none;color:#7C3AED;font-weight:600;text-align:center;">SAIRNdesign<br><span style=\'font-size:11px;font-weight:400;\'>Design</span></a>'
     + '<a href="https://sairn.vercel.app/fabricor" target="_blank" style="display:block;padding:14px;background:#F0FEF6;border:1px solid #16C762;border-radius:10px;text-decoration:none;color:#0A3D1F;font-weight:600;text-align:center;">StoneDesk<br><span style=\'font-size:11px;font-weight:400;\'>Stone Fabrication</span></a>'
     + '</div>'
     + '<button onclick="document.getElementById(\'sairn-suite-modal\').style.display=\'none\'" style="margin-top:20px;width:100%;padding:10px;background:#f3f4f6;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Close</button>'
