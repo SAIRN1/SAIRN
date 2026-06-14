@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
-:root{--bg:#060810;--card:#1A1C32;--a:#22C55E;--a2:#16A34A;--grad:linear-gradient(135deg,#22C55E,#16A34A);--ar:rgba(34,197,94,0.15);--ab:rgba(34,197,94,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
+:root{--bg:#F8FAFC;--card:#FFFFFF;--a:#22C55E;--a2:#16A34A;--grad:linear-gradient(135deg,#22C55E,#16A34A);--ar:rgba(34,197,94,0.15);--ab:rgba(34,197,94,0.3);--w:#F0F0FF;--m:#9090B0;--d:#404060}
 html{scroll-behavior:smooth;background:var(--bg)}
 body{color:var(--w);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
 #particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
@@ -121,6 +121,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 .footer-link{font-size:12px;color:var(--d);text-decoration:none;transition:color 0.2s}
 .footer-link:hover{color:var(--a)}
 </style>
+<style>*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}@media print{.no-print,.sidebar,.topbar,button{display:none!important;}body{background:#fff!important;}}</style>
 </head>
 <body>
 <div id="particles"></div>
@@ -261,13 +262,13 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
 </div>
 
 <script>
-const SYSTEM = "You are SAIRNscape, an AI business management platform for landscaping companies powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve landscaping business owners with 1-50 employees — lawn care, landscape maintenance, design/build, and property services.\n\nYOUR EXPERTISE:\n- Job estimating: accurate pricing for mowing, mulching, cleanups, planting, design/build, irrigation, snow removal\n- Crew scheduling: route optimization, time management, labor allocation\n- Job costing: true profitability analysis, overhead allocation, margin calculation\n- Client communication: proposals, follow-ups, complaints, upsells, renewals\n- Business analysis: revenue per crew hour, customer lifetime value, seasonal planning\n- Pricing strategy: competitive rates, when to raise prices, how to price new services\n\nINDUSTRY KNOWLEDGE:\n- Typical crew rates: $45-80/hr per crew member loaded cost\n- Standard markup: materials + 25-35%\n- Target gross margin: 45-55% for maintenance, 35-45% for design/build\n- Revenue per crew hour target: $150-200/hr for healthy landscaping business\n- Mowing pricing: $35-75 residential, $100-500+ commercial\n- Mulching: $75-100/yard installed\n- Seasonal cleanup: $200-800 residential depending on property size\n- Red flag: if a job takes more than 40% of its revenue to complete in labor alone, it needs repricing\n\nYOUR STYLE:\n- Talk like someone who has run a landscaping business and knows the grind\n- Be specific with numbers — landscapers make decisions in the field, not in spreadsheets\n- Always think about crew efficiency — time is the only resource they cannot get back\n- Flag underpriced accounts immediately — most landscapers undercharge their oldest customers";
+const SYSTEM = "You are SAIRNscape, an AI business management platform for landscaping companies powered by Claude AI, built by Michael L. Dibert of SAIRN Technologies.\n\nYou serve landscaping business owners with 1-50 employees -- lawn care, landscape maintenance, design/build, and property services.\n\nYOUR EXPERTISE:\n- Job estimating: accurate pricing for mowing, mulching, cleanups, planting, design/build, irrigation, snow removal\n- Crew scheduling: route optimization, time management, labor allocation\n- Job costing: true profitability analysis, overhead allocation, margin calculation\n- Client communication: proposals, follow-ups, complaints, upsells, renewals\n- Business analysis: revenue per crew hour, customer lifetime value, seasonal planning\n- Pricing strategy: competitive rates, when to raise prices, how to price new services\n\nINDUSTRY KNOWLEDGE:\n- Typical crew rates: $45-80/hr per crew member loaded cost\n- Standard markup: materials + 25-35%\n- Target gross margin: 45-55% for maintenance, 35-45% for design/build\n- Revenue per crew hour target: $150-200/hr for healthy landscaping business\n- Mowing pricing: $35-75 residential, $100-500+ commercial\n- Mulching: $75-100/yard installed\n- Seasonal cleanup: $200-800 residential depending on property size\n- Red flag: if a job takes more than 40% of its revenue to complete in labor alone, it needs repricing\n\nYOUR STYLE:\n- Talk like someone who has run a landscaping business and knows the grind\n- Be specific with numbers -- landscapers make decisions in the field, not in spreadsheets\n- Always think about crew efficiency -- time is the only resource they cannot get back\n- Flag underpriced accounts immediately -- most landscapers undercharge their oldest customers";
 const APP_NAME = "SAIRNscape";
 const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'sairnscape';
 const APP_ICON = '🌿';
 let messages = [], isLoading = false, lastResponse = '';
-const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Property",intro:"Let us build your estimate. Tell me about the property — size, services needed, and anything special about it.",steps:["What services are they asking for — mowing, mulching, cleanup, planting, design?","How many crew members would you send and how many hours?","Any materials — mulch, plants, seed, equipment rental?"],finish:"Here is your complete estimate with labor, materials, overhead, profit margin, and recommended price. I will also flag anything that could affect your margin."},{id:"schedule",emoji:"🗓️",label:"Build My Week Schedule",intro:"Let us optimize your crew schedule. How many crew members do you have available this week?",steps:["How many jobs are on your list for this week — give me the locations or neighborhoods.","Any time constraints — specific days clients need service, or jobs that must go first?"],finish:"Here is your optimized weekly schedule with route grouping to minimize drive time and maximize billable hours."},{id:"costing",emoji:"💰",label:"Analyze a Job s Profitability",intro:"Let us see if this job is actually making you money. What is the account — residential or commercial, and what do you charge them?",steps:["How many crew hours does it take each visit, and how often do you service them?","What are your direct costs — labor rate, fuel, materials per visit?"],finish:"Here is the true profitability of this account — and whether you should reprice, keep, or let it go."}];
+const GUIDED_FLOWS = [{id:"estimate",emoji:"📸",label:"Estimate This Property",intro:"Let us build your estimate. Tell me about the property -- size, services needed, and anything special about it.",steps:["What services are they asking for -- mowing, mulching, cleanup, planting, design?","How many crew members would you send and how many hours?","Any materials -- mulch, plants, seed, equipment rental?"],finish:"Here is your complete estimate with labor, materials, overhead, profit margin, and recommended price. I will also flag anything that could affect your margin."},{id:"schedule",emoji:"🗓️",label:"Build My Week Schedule",intro:"Let us optimize your crew schedule. How many crew members do you have available this week?",steps:["How many jobs are on your list for this week -- give me the locations or neighborhoods.","Any time constraints -- specific days clients need service, or jobs that must go first?"],finish:"Here is your optimized weekly schedule with route grouping to minimize drive time and maximize billable hours."},{id:"costing",emoji:"💰",label:"Analyze a Job s Profitability",intro:"Let us see if this job is actually making you money. What is the account -- residential or commercial, and what do you charge them?",steps:["How many crew hours does it take each visit, and how often do you service them?","What are your direct costs -- labor rate, fuel, materials per visit?"],finish:"Here is the true profitability of this account -- and whether you should reprice, keep, or let it go."}];
 let activeFlow = null, flowStep = 0;
 
 (function() {
@@ -447,7 +448,7 @@ async function loadFirstMessage() {
       div.style.transform = 'translateY(0)';
     });
   } catch(e) {
-    // Silently fail — app works fine without the greeting
+    // Silently fail -- app works fine without the greeting
   }
 }
 function showSaveBar(content) {
@@ -474,11 +475,11 @@ window.addEventListener('beforeunload',()=>{
 // Cloud Memory · Voice Mode · Outcome Tracking · White Label
 // ============================================================
 
-// White label config — enterprise clients override these
+// White label config -- enterprise clients override these
 const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || 'SAIRN';
 const SAIRN_BRAND_COLOR = window.SAIRN_BRAND_COLOR || null;
 
-// User identity — persistent across sessions
+// User identity -- persistent across sessions
 function getSAIRNUserId() {
   let uid = localStorage.getItem('sairn_uid');
   if(!uid) {
@@ -515,7 +516,7 @@ async function cloudSaveMemory(content) {
     });
     sessionOutcomes.saved++;
   } catch(e) {
-    // Cloud save failed — local backup is enough
+    // Cloud save failed -- local backup is enough
   }
 }
 
@@ -845,6 +846,96 @@ function ssSyncBridge(){
   });
   console.log('SAIRNbiz Connector active in SAIRNscape');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNscape -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#22C55E;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Route Optimize')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Route Optimize</button><button onclick="sbq('Weather Impact')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Weather Impact</button><button onclick="sbq('Crew Schedule')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Crew Schedule</button><button onclick="sbq('Job Profit')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Job Profit</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#22C55E;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#22C55E;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNscape AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#22C55E;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNscape'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairnscape',is_demo:true,
+        system:'You are the AI for SAIRNscape, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 </html>
