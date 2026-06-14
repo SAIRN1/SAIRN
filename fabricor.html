@@ -46,12 +46,12 @@
 
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
 
-/* ── SCROLLBAR ── */
+/* -- SCROLLBAR -- */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(201,112,8,0.4);border-radius:3px}
 
-/* ── AUTH ── */
+/* -- AUTH -- */
 #auth-screen{
   position:fixed;inset:0;
   background:linear-gradient(135deg,#1B3A6B 0%,#2a5298 50%,#1B3A6B 100%);
@@ -120,11 +120,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .auth-btn:hover{opacity:.9}
 .auth-error{color:#f87171;font-size:11px;text-align:center;margin-top:8px;min-height:16px}
 
-/* ── APP SHELL ── */
+/* -- APP SHELL -- */
 #app{display:none;min-height:100vh;flex-direction:column}
 #app.visible{display:flex}
 
-/* ── TOPBAR ── */
+/* -- TOPBAR -- */
 .topbar{
   background:#1A1410;border-bottom:1px solid rgba(232,133,10,0.3);
   padding:0 20px;display:flex;align-items:center;
@@ -173,7 +173,7 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
 }
 .topbar-logout:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
 
-/* ── MODE BAR ── */
+/* -- MODE BAR -- */
 .mode-bar{
   display:flex;gap:6px;padding:12px 16px;
   overflow-x:auto;flex-shrink:0;
@@ -192,11 +192,11 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
 .mode-icon{font-size:16px}
 .mode-label{letter-spacing:.3px}
 
-/* ── PANELS ── */
+/* -- PANELS -- */
 .panel{display:none;flex:1;overflow:hidden}
 .panel.active{display:flex;flex-direction:column}
 
-/* ── CHAT PANEL ── */
+/* -- CHAT PANEL -- */
 .chat-container{
   display:flex;flex-direction:column;flex:1;overflow:hidden;
 }
@@ -278,7 +278,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .send-btn:hover{opacity:.9}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
 
-/* ── QUOTE PANEL (from original design, adapted) ── */
+/* -- QUOTE PANEL (from original design, adapted) -- */
 #panel-quote{overflow-y:auto}
 .quote-container{
   display:grid;grid-template-columns:1.1fr 0.9fr;
@@ -363,7 +363,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 /* flags */
 .flag{display:flex;gap:8px;padding:8px 12px;border-radius:6px;font-size:11px;margin-bottom:6px}
 .flag.warn{background:rgba(251,191,36,0.08);color:#FBBF24;border-left:2px solid #FBBF24}
-.flag.info{background:rgba(59,130,246,0.08);color:#60A5FA;border-left:2px solid #60A5FA}
+.flag.info{background:rgba(59,130,246,0.08);color:#16C762;border-left:2px solid #16C762}
 .flag.danger{background:rgba(239,68,68,0.08);color:#EF4444;border-left:2px solid #EF4444}
 .flag.success{background:rgba(22,163,74,0.08);color:#4ADE80;border-left:2px solid #4ADE80}
 
@@ -413,9 +413,9 @@ textarea#userInput::placeholder{color:var(--muted)}
 }
 .badge.ok{background:rgba(22,163,74,0.15);color:#4ADE80}
 .badge.warn{background:rgba(251,191,36,0.15);color:#FBBF24}
-.badge.info{background:rgba(59,130,246,0.15);color:#60A5FA}
+.badge.info{background:rgba(59,130,246,0.15);color:#16C762}
 
-/* ── CANVAS / DRAWING TOOL ── */
+/* -- CANVAS / DRAWING TOOL -- */
 #kt-canvas{
   border:1px solid var(--border);border-radius:8px;
   background:#060810;cursor:crosshair;display:block;width:100%;
@@ -442,7 +442,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 }
 .edge-swatch{width:20px;height:4px;border-radius:2px}
 
-/* ── HISTORY PANEL ── */
+/* -- HISTORY PANEL -- */
 #panel-history{overflow-y:auto}
 .hist-container{max-width:1000px;margin:0 auto;padding:20px}
 .hist-title{
@@ -460,7 +460,7 @@ textarea#userInput::placeholder{color:var(--muted)}
   color:var(--muted);font-weight:600;border-bottom:1px solid var(--border-a);
 }
 
-/* ── ADMIN PANEL ── */
+/* -- ADMIN PANEL -- */
 #panel-admin{overflow-y:auto}
 .admin-container{max-width:1100px;margin:0 auto;padding:20px}
 .admin-title{
@@ -509,7 +509,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 }
 .upload-zone:hover{border-color:var(--ab);background:var(--ar)}
 
-/* ── CLIENT ESTIMATE PANEL ── */
+/* -- CLIENT ESTIMATE PANEL -- */
 #panel-client{overflow-y:auto;background:#0D0E12}
 .client-container{max-width:720px;margin:0 auto;padding:20px}
 .estimate-page{
@@ -549,7 +549,7 @@ textarea#userInput::placeholder{color:var(--muted)}
   border-top:1px solid rgba(0,0,0,0.06);
 }
 
-/* ── DRAW MODAL (for full-screen drawing tool) ── */
+/* -- DRAW MODAL (for full-screen drawing tool) -- */
 .draw-modal{
   position:fixed;inset:0;background:rgba(0,0,0,0.95);
   z-index:9999;display:flex;flex-direction:column;overflow:hidden;
@@ -650,7 +650,7 @@ textarea#userInput::placeholder{color:var(--muted)}
   z-index:9999;display:flex;flex-direction:column;overflow:hidden;
 }
 
-/* ── MISC ── */
+/* -- MISC -- */
 .sticky-right{position:sticky;top:16px}
 .spacer{height:16px}
 .divider{height:1px;background:var(--border);margin:16px 0}
@@ -661,7 +661,7 @@ textarea#userInput::placeholder{color:var(--muted)}
   .estimate-page{box-shadow:none;border-radius:0;max-width:100%}
 }
 
-/* ── BUSINESS INTELLIGENCE MODULE ── */
+/* -- BUSINESS INTELLIGENCE MODULE -- */
 .biz-kpi{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
 .biz-kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px}
 .biz-kpi-val{font-size:26px;font-weight:800;color:var(--a);line-height:1}
@@ -687,7 +687,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .fin-neg-bg{background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:6px;padding:2px 8px}
 .fin-warn-bg{background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:6px;padding:2px 8px}
 
-/* ══ ALERT SYSTEM ══════════════════════════════════════════════ */
+/* == ALERT SYSTEM ============================================== */
 .alert-bar{position:fixed;top:58px;left:0;right:0;z-index:8000;pointer-events:none}
 .alert-pill{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:12px;font-weight:600;pointer-events:all;cursor:pointer;border-bottom:1px solid rgba(0,0,0,0.1)}
 .alert-pill.red{background:rgba(220,38,38,0.95);color:#fff;animation:pulse-red 2s infinite}
@@ -744,7 +744,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .qbo-dot.off{background:#dc2626}
 
 
-/* ══ INSTALL TRACKER / INVENTORY / VENDORS ═══════════════════ */
+/* == INSTALL TRACKER / INVENTORY / VENDORS =================== */
 .job-row{display:flex;align-items:center;gap:10px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;border-left:4px solid var(--border)}
 .job-row.red{border-left-color:#dc2626}
 .job-row.yellow{border-left-color:#ca8a04}
@@ -775,7 +775,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .reorder-dot.green{background:#16a34a}
 
 
-/* ══ EXEC SUITE & COMMS ══════════════════════════════════════ */
+/* == EXEC SUITE & COMMS ====================================== */
 .exec-only{display:none}
 body.is-exec .exec-only{display:inline-block}
 body.is-exec .nav-btn.exec-only{display:inline-block}
@@ -826,7 +826,7 @@ body.is-exec .exec-only-block{display:block}
 .emp-chip-dot{width:7px;height:7px;border-radius:50%;background:#16a34a}
 
 
-/* ══ EXEC AI ASSISTANTS ══════════════════════════════════════ */
+/* == EXEC AI ASSISTANTS ====================================== */
 .exec-ai-tab{padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;border-radius:10px 10px 0 0;background:transparent;border:1px solid var(--border);border-bottom:none;color:var(--muted);transition:all .15s;margin-right:3px}
 .exec-ai-tab.active{color:#fff;border-color:transparent}
 .exec-ai-tab.ceo.active{background:linear-gradient(135deg,#7f1d1d,#dc2626)}
@@ -880,17 +880,17 @@ body.is-exec .exec-only-block{display:block}
 <body>
 <script>
 
-// ╔══════════════════════════════════════════════════════════╗
-// ║   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  ║
-// ║   30-Layer Protection Framework                          ║
-// ║   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance ║
-// ║   Built by SAIRN Technologies - Michael L. Dibert       ║
-// ╚══════════════════════════════════════════════════════════╝
+// +==========================================================+
+// |   SAIRN UNIVERSAL SECURITY SYSTEM v3.0                  |
+// |   30-Layer Protection Framework                          |
+// |   Wall 1: Browser  Wall 2: API  Wall 3: Data  Wall 4: Compliance |
+// |   Built by SAIRN Technologies - Michael L. Dibert       |
+// +==========================================================+
 
 (function() {
 'use strict';
 
-// ── CONFIGURATION ──────────────────────────────────────────
+// -- CONFIGURATION ------------------------------------------
 var SAIRN_SEC = {
   version: '3.0',
   appName: document.title || 'SAIRN App',
@@ -915,9 +915,9 @@ var SAIRN_SEC = {
   loginAttempts: parseInt(sessionStorage.getItem('s_attempts') || '0')
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 1 — BROWSER LAYER (Layers 1-18)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 1 — Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
@@ -1288,9 +1288,9 @@ window.saSanitizeResponse = function(text) {
   } catch(e) {}
 })();
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 2 — API PROXY LAYER (Layers 19-23)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 19 — Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
@@ -1359,9 +1359,9 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 3 — DATA LAYER (Layers 24-27)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 24 — Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
@@ -1407,9 +1407,9 @@ window.saWipeAllData = function() {
   location.reload();
 };
 
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 // WALL 4 — COMPLIANCE LAYER (Layers 28-30)
-// ═══════════════════════════════════════════════════════════
+// ===========================================================
 
 // LAYER 28 — CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
@@ -1485,19 +1485,58 @@ window.saShowSecurityStatus = function() {
   alert(report);
 };
 
-// ── INITIALIZATION MESSAGE ─────────────────────────────────
+// -- INITIALIZATION MESSAGE ---------------------------------
 saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
 console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#16C76299;font-weight:bold;padding:4px 8px;border-radius:4px');
 
 })(); // End SAIRN Security IIFE
 
+
+function readHRFromBridge(){
+  // StoneDesk reads: employee names + pay rates for job costing
+  // READ ONLY -- never writes back to HR or ACC
+  var result = { employees: [], laborRates: {} };
+  try {
+    // Try direct localStorage first (same device)
+    var raw = localStorage.getItem('sh_employees');
+    if(raw) result.employees = JSON.parse(raw);
+    
+    // Try bridge cache
+    if(!result.employees.length) {
+      var bridgeRaw = localStorage.getItem('sairn_bridge_hr_payload');
+      if(bridgeRaw) {
+        var bd = JSON.parse(bridgeRaw);
+        if(bd.data && bd.data.employees) result.employees = bd.data.employees;
+      }
+    }
+    
+    // Build labor rate lookup for job costing
+    result.employees.forEach(function(e){
+      var name = ((e.firstName||'')+' '+(e.lastName||'')).trim();
+      var payVal = parseFloat((e.pay||'0').replace(/[^0-9.]/g,''))||0;
+      // Convert annual to hourly (assume 2080 hrs/yr)
+      result.laborRates[name] = payVal > 5000 ? (payVal/2080).toFixed(2) : payVal;
+    });
+    
+    // Cache for local job costing use
+    localStorage.setItem('sd_hr_employees', JSON.stringify(result.employees));
+    localStorage.setItem('sd_hr_labor_rates', JSON.stringify(result.laborRates));
+    
+    if(result.employees.length) {
+      notify('HR data loaded: '+result.employees.length+' employees available for job costing', 'success');
+    } else {
+      notify('No HR data found -- sync SAIRNhr first', 'info');
+    }
+  } catch(e) { notify('HR bridge read failed: '+e.message, 'red'); }
+  return result;
+}
 </script>
 
 <!-- SAIRN AUTH GATE -->
 
 
 
-<!-- ══ AUTH ══ -->
+<!-- == AUTH == -->
 <div id="auth-screen">
   <div class="auth-glow"></div>
   <div class="auth-logo">StoneDesk™</div>
@@ -1531,7 +1570,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 </div>
 
-<!-- ══ APP ══ -->
+<!-- == APP == -->
 <div id="app">
   <div class="topbar">
     <div class="topbar-brand">
@@ -1581,9 +1620,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ AI PANEL (full Fabricor AI chat) ══ -->
+  <!-- == AI PANEL (full Fabricor AI chat) == -->
   
-<!-- ══ GLOBAL ALERT BAR ══ -->
+<!-- == GLOBAL ALERT BAR == -->
 <div class="alert-bar" id="alert-bar"></div>
 
   <div class="panel active" id="panel-ai">
@@ -1614,7 +1653,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ QUOTE BUILDER PANEL ══ -->
+  <!-- == QUOTE BUILDER PANEL == -->
   <div class="panel" id="panel-quote">
     <div class="quote-container">
       <!-- LEFT: INPUTS -->
@@ -1919,7 +1958,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div><!-- end quote-container -->
   </div><!-- end panel-quote -->
 
-  <!-- ══ DRAWING TOOL PANEL (full page) ══ -->
+  <!-- == DRAWING TOOL PANEL (full page) == -->
   <div class="panel" id="panel-draw">
     <div style="padding:20px;flex:1;overflow-y:auto;display:flex;gap:20px;min-height:0">
       <div style="width:270px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
@@ -1956,7 +1995,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
           <div id="edge-assignment-area"></div>
           <div class="edge-legend" id="edge-legend">
             <div class="edge-key"><div class="edge-swatch" style="background:#4ADE80"></div>Polished exposed</div>
-            <div class="edge-key"><div class="edge-swatch" style="background:#60A5FA"></div>Wall / cabinet</div>
+            <div class="edge-key"><div class="edge-swatch" style="background:#16C762"></div>Wall / cabinet</div>
             <div class="edge-key"><div class="edge-swatch" style="background:#FBBF24"></div>Appliance / range</div>
             <div class="edge-key"><div class="edge-swatch" style="background:#F87171"></div>Waterfall</div>
             <div class="edge-key"><div class="edge-swatch" style="background:#A78BFA"></div>Splash attach</div>
@@ -2070,7 +2109,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div><!-- end panel-draw -->
 
-  <!-- ══ HISTORY PANEL ══ -->
+  <!-- == HISTORY PANEL == -->
   <div class="panel" id="panel-history">
     <div class="hist-container">
       <div class="hist-title">Quote History</div>
@@ -2087,7 +2126,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ ADMIN PANEL ══ -->
+  <!-- == ADMIN PANEL == -->
   <div class="panel" id="panel-admin">
     <div class="admin-container">
       <div class="admin-title">Admin — Formula and Settings</div>
@@ -2167,7 +2206,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 
 
-  <!-- ══ BUSINESS INTELLIGENCE PANEL ══ -->
+  <!-- == BUSINESS INTELLIGENCE PANEL == -->
   <div class="panel" id="panel-business">
     <div style="max-width:1100px;margin:0 auto;padding:20px 16px">
 
@@ -2212,7 +2251,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <button class="q-tab" onclick="showBizTab('hr',this)">👥 HR & Labor</button>
       </div>
 
-      <!-- ── OPERATING COSTS TAB ── -->
+      <!-- -- OPERATING COSTS TAB -- -->
       <div class="q-tab-panel active" id="biztab-operating">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
@@ -2285,7 +2324,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
       </div>
 
-      <!-- ── MACHINERY TAB ── -->
+      <!-- -- MACHINERY TAB -- -->
       <div class="q-tab-panel" id="biztab-machinery">
         <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -2306,7 +2345,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
       </div>
 
-      <!-- ── MARKETING TAB ── -->
+      <!-- -- MARKETING TAB -- -->
       <div class="q-tab-panel" id="biztab-marketing">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
 
@@ -2345,7 +2384,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
       </div>
 
-      <!-- ── HR TAB ── -->
+      <!-- -- HR TAB -- -->
       <div class="q-tab-panel" id="biztab-hr">
         <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -2380,7 +2419,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ CLIENT ESTIMATE PANEL ══ -->
+  <!-- == CLIENT ESTIMATE PANEL == -->
   <div class="panel" id="panel-client">
     <div class="client-container">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -2419,7 +2458,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 
 
-  <!-- ══ CUSTOMERS PANEL ══ -->
+  <!-- == CUSTOMERS PANEL == -->
   <div class="panel" id="panel-customers">
     <div style="padding:20px;max-width:1000px;margin:0 auto">
       <div id="cust-alerts-zone"></div>
@@ -2467,7 +2506,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ PHOTOS PANEL ══ -->
+  <!-- == PHOTOS PANEL == -->
   <div class="panel" id="panel-photos">
     <div style="padding:20px;max-width:1000px;margin:0 auto">
       <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:18px">📷 Job Photos</h2>
@@ -2512,7 +2551,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ WARRANTY PANEL ══ -->
+  <!-- == WARRANTY PANEL == -->
   <div class="panel" id="panel-warranty">
     <div style="padding:20px;max-width:900px;margin:0 auto">
       <div id="warr-alerts-zone"></div>
@@ -2574,7 +2613,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ INTEGRATIONS PANEL (admin only) ══ -->
+  <!-- == INTEGRATIONS PANEL (admin only) == -->
   <div class="panel" id="panel-integrations">
     <div style="padding:20px;max-width:900px;margin:0 auto">
       <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:20px">🔗 Integrations & Alerts</h2>
@@ -2650,7 +2689,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 
 
-  <!-- ══ SCHEDULE / INSTALL TRACKER ══ -->
+  <!-- == SCHEDULE / INSTALL TRACKER == -->
   <div class="panel" id="panel-schedule">
     <div style="padding:20px;max-width:1100px;margin:0 auto">
       <div id="sched-alerts-zone"></div>
@@ -2725,7 +2764,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ INVENTORY PANEL ══ -->
+  <!-- == INVENTORY PANEL == -->
   <div class="panel" id="panel-inventory">
     <div style="padding:20px;max-width:1100px;margin:0 auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -2780,7 +2819,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ VENDORS PANEL ══ -->
+  <!-- == VENDORS PANEL == -->
   <div class="panel" id="panel-vendors">
     <div style="padding:20px;max-width:1100px;margin:0 auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -2851,7 +2890,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   </div>
 
 
-  <!-- ══ REMAKES / SHOWER TRACKER ══ -->
+  <!-- == REMAKES / SHOWER TRACKER == -->
   <div class="panel" id="panel-remakes">
     <div style="padding:20px;max-width:1100px;margin:0 auto">
       <div id="remake-alerts-zone"></div>
@@ -2935,7 +2974,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ EXECUTIVE SUITE ══ -->
+  <!-- == EXECUTIVE SUITE == -->
   <div class="panel" id="panel-executive">
     <div style="padding:20px;max-width:1200px;margin:0 auto">
       <!-- Access gate for non-exec -->
@@ -3098,7 +3137,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- ══ COMMUNICATIONS ══ -->
+  <!-- == COMMUNICATIONS == -->
   <div class="panel" id="panel-comms">
     <div style="padding:20px;max-width:1000px;margin:0 auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -3288,11 +3327,11 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
 <script>
 
-// ════════════════════════════════════════════════════════════════
+// ================================================================
 // TEMPLATE MANAGER — Digital Template Upload & Tracking
 // Supports: LT-2D3D, Prodim Proliner, Flexijet 3D, Leica, Manual
 // Formats: DXF, DWG, PDF, PNG/JPG (site photos), ZIP
-// ════════════════════════════════════════════════════════════════
+// ================================================================
 var tmRecords=[];
 var tmPendingFiles=[];
 var TM_KEY='sd_templates';
@@ -3518,19 +3557,19 @@ function showPanel(id){
 }
 
 
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 // FABRICOR — STONE SHOP INTELLIGENCE PLATFORM
 // Merged: Original pricing engine + AI chat + Drawing tool
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 
-// ── API ─────────────────────────────────────────────────────────
+// -- API ---------------------------------------------------------
 const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 const APP_ID = 'fabricor';
 
-// ── SYSTEM PROMPT ──────────────────────────────────────────────
+// -- SYSTEM PROMPT ----------------------------------------------
 const SYSTEM = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
 
-// ── STATE ──────────────────────────────────────────────────────
+// -- STATE ------------------------------------------------------
 let CODES = { sales: '1234', admin: '9999' };
 const RAILWAY='https://fabricor-production.up.railway.app';
 let currentUser=null;
@@ -3592,7 +3631,7 @@ function openProfileModal(){console.log('Profile modal not yet built');}
 var quoteCounter = parseInt(localStorage.getItem('quoteCounter')||'0');
 var edgeAssignments = {};
 
-// ── RAILWAY DB SYNC ───────────────────────────────────────────
+// -- RAILWAY DB SYNC -------------------------------------------
 async function dbSaveQuoteHistory(){
   if(!currentUser) return;
   try{ await fetch(RAILWAY+'/api/quote-history',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({history:quoteHistory})}); }catch(e){}
@@ -3662,7 +3701,7 @@ function showWelcome() {
   addMessage('assistant', 'Welcome to **Fabricor** — your AI stone shop intelligence platform. I know granite, quartz, quartzite, and marble the way your best fabricator does. Ask me anything about running ' + shopName + ' — capacity planning, pricing, waste reduction, job costing, scheduling, or stone-specific questions. What can I help you with today?');
 }
 
-// ── PANEL NAV ─────────────────────────────────────────────────
+// -- PANEL NAV -------------------------------------------------
 function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -3675,7 +3714,7 @@ function showPanel(id) {
   if (id === 'quote') initKTCanvas();
 }
 
-// ── MODE ──────────────────────────────────────────────────────
+// -- MODE ------------------------------------------------------
 const MODE_PROMPTS = {
   general:   'You are in general AI Shop mode. Answer any stone shop question with full expertise.',
   thh:       'You are in THH Capacity Planning mode. Focus on Total Hand Work Hours calculations, material benchmarks, daily and weekly capacity, and scheduling optimization. Granite: 4hr/50sqft. Quartz: 3.5hr/50sqft. Quartzite: 4.6hr/50sqft. Marble: 4.2hr/50sqft.',
@@ -3720,7 +3759,7 @@ function getModeIntro(mode) {
   return intros[mode] || 'How can I help your shop today?';
 }
 
-// ── CHAT ──────────────────────────────────────────────────────
+// -- CHAT ------------------------------------------------------
 function addMessage(role, content) {
   const msgs = document.getElementById('messages');
   const div = document.createElement('div');
@@ -3844,14 +3883,14 @@ function toggleVoice() {
   document.getElementById('voiceBtn').classList.add('listening');
 }
 
-// ── COUNTERS ──────────────────────────────────────────────────
+// -- COUNTERS --------------------------------------------------
 function adj(k, d) {
   COUNTERS[k] = Math.max(0, COUNTERS[k] + d);
   document.getElementById(k + '-count').textContent = COUNTERS[k];
   calc();
 }
 
-// ── TIER ──────────────────────────────────────────────────────
+// -- TIER ------------------------------------------------------
 function setTier(t, el) {
   currentTier = t;
   document.querySelectorAll('.tier-pill').forEach(p => p.classList.remove('active'));
@@ -3860,7 +3899,7 @@ function setTier(t, el) {
   calc();
 }
 
-// ── DIM TABS ─────────────────────────────────────────────────
+// -- DIM TABS -------------------------------------------------
 function switchDimTab(id, el) {
   document.querySelectorAll('#panel-quote .q-tabs .q-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('dim-manual').classList.remove('active');
@@ -3870,7 +3909,7 @@ function switchDimTab(id, el) {
   if (id === 'draw') initKTCanvas();
 }
 
-// ── ADMIN TABS ─────────────────────────────────────────────────
+// -- ADMIN TABS -------------------------------------------------
 function switchAdminTab(id, el) {
   document.querySelectorAll('#panel-admin .q-tabs .q-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('#panel-admin .q-tab-panel').forEach(t => t.classList.remove('active'));
@@ -3878,7 +3917,7 @@ function switchAdminTab(id, el) {
   document.getElementById('admin-' + id).classList.add('active');
 }
 
-// ── MAIN CALC ─────────────────────────────────────────────────
+// -- MAIN CALC -------------------------------------------------
 function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
 
 function getLF() {
@@ -3982,7 +4021,7 @@ function calc() {
   document.getElementById('flags').innerHTML = flags.map(f => '<div class="flag ' + f.type + '">' + f.msg + '</div>').join('');
 }
 
-// ── SAVE QUOTE ────────────────────────────────────────────────
+// -- SAVE QUOTE ------------------------------------------------
 function saveQuote() {
   if (!lastCalc.total) return alert('Build a quote first.');
   const q = {
@@ -4023,7 +4062,7 @@ function renderHistory() {
   ).join('');
 }
 
-// ── CLIENT ESTIMATE ───────────────────────────────────────────
+// -- CLIENT ESTIMATE -------------------------------------------
 function buildEstimate() {
   if (!lastCalc.total) { document.getElementById('est-total').textContent = '—'; return; }
   const c = lastCalc;
@@ -4075,7 +4114,7 @@ function printEstimate() {
   setTimeout(() => window.print(), 300);
 }
 
-// ── AI QUOTE ADVICE ───────────────────────────────────────────
+// -- AI QUOTE ADVICE -------------------------------------------
 async function getAIQuoteAdvice() {
   if (!lastCalc.total) { alert('Build a quote first.'); return; }
   const c = lastCalc;
@@ -4086,7 +4125,7 @@ async function getAIQuoteAdvice() {
   await sendMessage();
 }
 
-// ── KITCHEN DRAWING TOOL (in Quote Builder) ───────────────────
+// -- KITCHEN DRAWING TOOL (in Quote Builder) -------------------
 function initKTCanvas() {
   ktCanvas = document.getElementById('kt-canvas');
   if (!ktCanvas) return;
@@ -4182,7 +4221,7 @@ function clearKTCanvas() {
   calc();
 }
 
-// ── DRAW PANEL ────────────────────────────────────────────────
+// -- DRAW PANEL ------------------------------------------------
 function initDrawPanel() {
   selectDrawShape('straight');
   buildEdgeAssignmentArea();
@@ -4604,7 +4643,7 @@ function printDrawCutSheet() {
   win.document.close();
 }
 
-// ── SOPS ─────────────────────────────────────────────────────
+// -- SOPS -----------------------------------------------------
 function showSOPs() {
   const ex=document.getElementById('sop-modal');
   if(ex){ex.remove();return;}
@@ -4692,7 +4731,7 @@ function printAllSOPs(positions, shopName) {
   win.document.close();
 }
 
-// ── ADMIN FORMULA ────────────────────────────────────────────
+// -- ADMIN FORMULA --------------------------------------------
 function initAdminFormula() {
   const matEl = document.getElementById('mat-formula-rows');
   if (!matEl) return;
@@ -4723,7 +4762,7 @@ function saveFormula() {
   setTimeout(()=>{btn.textContent=orig;btn.style.color='';},2000);
 }
 
-// ── STRESS TEST ───────────────────────────────────────────────
+// -- STRESS TEST -----------------------------------------------
 function loadCSV(input) {
   const file=input.files[0]; if(!file) return;
   const reader=new FileReader();
@@ -4776,7 +4815,7 @@ function parseAndStress(csvText) {
   document.getElementById('stress-table').innerHTML=thdr+tbody;
 }
 
-// ── USERS ─────────────────────────────────────────────────────
+// -- USERS -----------------------------------------------------
 function saveCodes() {
   const s=document.getElementById('sales-code-input').value.trim();
   const a=document.getElementById('admin-code-input').value.trim();
@@ -4787,7 +4826,7 @@ function saveCodes() {
   setTimeout(()=>{btn.textContent='Update Access Codes';btn.style.color='';},2000);
 }
 
-// ── SHOP SETTINGS ─────────────────────────────────────────────
+// -- SHOP SETTINGS ---------------------------------------------
 function saveShopSettings() {
   const name=document.getElementById('admin-shop-name').value.trim();
   const addr=document.getElementById('admin-shop-addr').value.trim();
@@ -4813,7 +4852,7 @@ function loadShopSettings() {
   if(email && document.getElementById('admin-shop-email')) document.getElementById('admin-shop-email').value=email;
 }
 
-// ── DRAG/DROP UPLOAD ──────────────────────────────────────────
+// -- DRAG/DROP UPLOAD ------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   const zone=document.getElementById('upload-zone');
   if(zone){
@@ -4847,7 +4886,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 if (document.getElementById('sairn-doc-upload-style')) return;
 
-// ── APP DETECTION ─────────────────────────────────────────────
+// -- APP DETECTION ---------------------------------------------
 var APP = (function() {
   var p = window.location.pathname;
   if (p.includes('legal'))  return 'law';
@@ -4860,7 +4899,7 @@ var APP = (function() {
   return 'general';
 })();
 
-// ── APP-SPECIFIC CONFIG ───────────────────────────────────────
+// -- APP-SPECIFIC CONFIG ---------------------------------------
 var DOC_CONFIG = {
   law: {
     color: '#7C3AED',
@@ -4946,7 +4985,7 @@ DOC_CONFIG.study = DOC_CONFIG.general;
 
 var cfg = DOC_CONFIG[APP] || DOC_CONFIG.general;
 
-// ── INJECT CSS ────────────────────────────────────────────────
+// -- INJECT CSS ------------------------------------------------
 var styleEl = document.createElement('style');
 styleEl.id = 'sairn-doc-upload-style';
 styleEl.textContent =
@@ -4986,7 +5025,7 @@ function hexToRgb(hex) {
   return r + ',' + g + ',' + b;
 }
 
-// ── BUILD MODAL ───────────────────────────────────────────────
+// -- BUILD MODAL -----------------------------------------------
 var modal = document.createElement('div');
 modal.id = 'sairn-doc-modal';
 modal.innerHTML =
@@ -5035,13 +5074,13 @@ modal.innerHTML =
 
 document.body.appendChild(modal);
 
-// ── STATE ─────────────────────────────────────────────────────
+// -- STATE -----------------------------------------------------
 var _docFile      = null;
 var _docBase64    = null;
 var _docMime      = null;
 var _selectedPrompt = null;
 
-// ── OPEN / CLOSE ──────────────────────────────────────────────
+// -- OPEN / CLOSE ----------------------------------------------
 window.openDocModal = function() {
   var m = document.getElementById('sairn-doc-modal');
   if (m) m.classList.add('open');
@@ -5051,7 +5090,7 @@ window.closeDocModal = function() {
   if (m) m.classList.remove('open');
 };
 
-// ── FILE SELECTION ────────────────────────────────────────────
+// -- FILE SELECTION --------------------------------------------
 var fileInput = document.getElementById('sdm-file-input');
 if (fileInput) {
   fileInput.addEventListener('change', function() {
@@ -5162,7 +5201,7 @@ function updateAnalyzeBtn() {
   }
 }
 
-// ── ANALYZE ───────────────────────────────────────────────────
+// -- ANALYZE ---------------------------------------------------
 window.analyzeDocument = async function() {
   if (!_docBase64 || !_docMime) return;
 
@@ -5239,7 +5278,7 @@ window.analyzeDocument = async function() {
   }
 };
 
-// ── INJECT TRIGGER BUTTON ─────────────────────────────────────
+// -- INJECT TRIGGER BUTTON -------------------------------------
 function injectDocButton() {
   if (document.getElementById('sairn-doc-trigger')) return;
 
@@ -5300,7 +5339,7 @@ var APP_COLOR = (function() {
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#3B82F6';
+  if (p.includes('study'))   return '#16C762';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
@@ -5501,7 +5540,7 @@ var _aiResponseCount = 0;
 var _sessionSummary  = '';
 var _summaryInjected = false;
 
-// ── MEMORY INDICATOR ─────────────────────────────────────────
+// -- MEMORY INDICATOR -----------------------------------------
 var style = document.createElement('style');
 style.textContent =
   '#sairn-memory-indicator{position:fixed;top:68px;right:16px;z-index:799;display:none;align-items:center;gap:6px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:100px;padding:5px 12px;font-size:10px;font-weight:600;color:rgba(99,102,241,0.9);cursor:pointer;transition:all .2s}' +
@@ -5517,7 +5556,7 @@ memIndicator.innerHTML = '<span class="smi-dot"></span><span>Memory active</span
 memIndicator.onclick = showMemoryPanel;
 document.body.appendChild(memIndicator);
 
-// ── MEMORY PANEL ─────────────────────────────────────────────
+// -- MEMORY PANEL ---------------------------------------------
 var memPanel = document.createElement('div');
 memPanel.id = 'sairn-memory-panel';
 memPanel.style.cssText = 'position:fixed;top:100px;right:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:300px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)';
@@ -5549,7 +5588,7 @@ window.clearSessionMemory = function() {
   if (content) content.textContent = 'Memory cleared.';
 };
 
-// ── RESTORE MEMORY FROM PRIOR SESSION ────────────────────────
+// -- RESTORE MEMORY FROM PRIOR SESSION ------------------------
 var savedMemory = localStorage.getItem(APP_KEY);
 if (savedMemory) {
   _sessionSummary = savedMemory;
@@ -5563,7 +5602,7 @@ function updateMemoryIndicator() {
   }
 }
 
-// ── INJECT MEMORY INTO SYSTEM PROMPT ─────────────────────────
+// -- INJECT MEMORY INTO SYSTEM PROMPT -------------------------
 // We do this by patching the fetch call to the SAIRN API
 var _origFetch = window.fetch;
 window.fetch = async function(url, opts) {
@@ -5579,7 +5618,7 @@ window.fetch = async function(url, opts) {
   return _origFetch.apply(this, arguments);
 };
 
-// ── COUNT AI RESPONSES AND BUILD MEMORY ──────────────────────
+// -- COUNT AI RESPONSES AND BUILD MEMORY ----------------------
 function installMemoryHook() {
   if (window._saircMemHooked) return;
   if (typeof window.addMsg !== 'function') return;
@@ -5675,7 +5714,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#16C762';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -5812,7 +5851,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#16C762';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -6028,7 +6067,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#16C762';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -6197,7 +6236,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#16C762';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -6321,7 +6360,7 @@ window._saircHandoffInstalled = true;
 
 var HANDOFF_KEY = 'sairn_handoff_context';
 
-// ── RECEIVER: check if we arrived with context ─────────────────
+// -- RECEIVER: check if we arrived with context -----------------
 function checkIncomingHandoff() {
   var ctx = null;
   try { ctx = JSON.parse(sessionStorage.getItem(HANDOFF_KEY)); } catch(e) {}
@@ -6358,7 +6397,7 @@ function checkIncomingHandoff() {
   }
 }
 
-// ── SENDER: "Continue in [App]" buttons after AI responses ──────
+// -- SENDER: "Continue in [App]" buttons after AI responses ------
 var CELL_MAP = [
   { name:'SAIRNtype',    file:'/index.html',   icon:'⌨️', keywords:['write','draft','email','letter','post','document','essay','cover'] },
   { name:'SAIRNhealth',  file:'/health.html',  icon:'❤️', keywords:['symptom','medication','health','doctor','pain','medical','diagnosis'] },
@@ -6479,7 +6518,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#16C762';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -7607,7 +7646,7 @@ var APP_COLOR = (function(){
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#3B82F6';
+  if (p.includes('study'))   return '#16C762';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
@@ -8079,7 +8118,7 @@ var LEARN_KEY    = 'sairn_learned_' + APP_ID;
 var GLOBAL_KEY   = 'sairn_learned_global';
 var SESSION_KEY  = 'sairn_session_data_' + APP_ID;
 
-// ── LEARNING DATA STRUCTURE ──────────────────────────────────
+// -- LEARNING DATA STRUCTURE ----------------------------------
 function loadLearned() {
   try { return JSON.parse(localStorage.getItem(LEARN_KEY) || '{}'); } catch(e) { return {}; }
 }
@@ -8121,7 +8160,7 @@ if (!global_l.appsUsed.includes(APP_ID)) global_l.appsUsed.push(APP_ID);
 saveLearned(learned);
 saveGlobal(global_l);
 
-// ── ANALYZE USER MESSAGE FOR SIGNALS ────────────────────────
+// -- ANALYZE USER MESSAGE FOR SIGNALS ------------------------
 function analyzeUserMessage(text) {
   var lower = text.toLowerCase();
   var words = text.split(/\s+/).length;
@@ -8157,7 +8196,7 @@ function analyzeUserMessage(text) {
   saveLearned(learned);
 }
 
-// ── BUILD PERSONALIZATION CONTEXT FOR SYSTEM PROMPT ─────────
+// -- BUILD PERSONALIZATION CONTEXT FOR SYSTEM PROMPT ---------
 function buildPersonalizationContext() {
   var lines = ['LEARNED USER PREFERENCES (from ' + learned.sessions + ' sessions, ' + learned.totalQuestions + ' questions):'];
 
@@ -8207,7 +8246,7 @@ function buildPersonalizationContext() {
   return lines.join('\n');
 }
 
-// ── INJECT PERSONALIZATION INTO FETCH ────────────────────────
+// -- INJECT PERSONALIZATION INTO FETCH ------------------------
 if (!window._saircPersExFetchPatched) {
   window._saircPersExFetchPatched = true;
   var _orig = window.fetch;
@@ -8228,7 +8267,7 @@ if (!window._saircPersExFetchPatched) {
   };
 }
 
-// ── TRACK EVENTS ─────────────────────────────────────────────
+// -- TRACK EVENTS ---------------------------------------------
 // Watch for user messages
 function installLearningHook() {
   if (window._saircPersHooked) return;
@@ -8264,7 +8303,7 @@ document.addEventListener('click', function(e) {
   }
 }, true);
 
-// ── PERSONALIZATION PANEL ──────────────────────────────────
+// -- PERSONALIZATION PANEL ----------------------------------
 var st = document.createElement('style');
 st.textContent =
   '#sairn-pers-panel{position:fixed;top:100px;left:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:280px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}' +
@@ -8328,7 +8367,7 @@ var APP_COLOR = (function(){
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#3B82F6';
+  if (p.includes('study'))   return '#16C762';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
@@ -8622,9 +8661,9 @@ setTimeout(injectCameraButton, 800);
 
 
 
-// ═══════════════════════════════════════════════
+// ===============================================
 // BUSINESS INTELLIGENCE MODULE
-// ═══════════════════════════════════════════════
+// ===============================================
 
 function showBizTab(id, el) {
   document.querySelectorAll('#panel-business .q-tab').forEach(t => t.classList.remove('active'));
@@ -8633,7 +8672,7 @@ function showBizTab(id, el) {
   document.getElementById('biztab-' + id).classList.add('active');
 }
 
-// ── MACHINES ──
+// -- MACHINES --
 let machines = [];
 function addMachine() {
   machines.push({ name: '', value: 0, life: 120 });
@@ -8666,7 +8705,7 @@ function renderMachines() {
   calcBiz();
 }
 
-// ── EMPLOYEES ──
+// -- EMPLOYEES --
 let employees = [];
 function addEmployee() {
   employees.push({ name: '', role: 'fabricator', hourlyRate: 22, hoursWeek: 40 });
@@ -8706,7 +8745,7 @@ function renderEmployees() {
   calcBiz();
 }
 
-// ── MAIN CALC ──
+// -- MAIN CALC --
 function calcBiz() {
   const v = id => parseFloat(document.getElementById(id)?.value) || 0;
 
@@ -8809,11 +8848,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 // STONEDESK TIER 3 — CUSTOMERS, PHOTOS, WARRANTY, INTEGRATIONS, ALERTS
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 
-// ── DATA STORES ───────────────────────────────────────────────
+// -- DATA STORES -----------------------------------------------
 var sdCustomers = [];
 var sdPhotos = [];
 var sdWarranties = [];
@@ -8834,7 +8873,7 @@ function saveSD3Data() {
   localStorage.setItem('sd_warranties', JSON.stringify(sdWarranties));
 }
 
-// ── ALERT SYSTEM ──────────────────────────────────────────────
+// -- ALERT SYSTEM ----------------------------------------------
 function getUrgencyLevel(hoursElapsed, thresholdRed, thresholdYellow) {
   if (hoursElapsed >= thresholdRed) return 'red';
   if (hoursElapsed >= thresholdYellow) return 'yellow';
@@ -8932,7 +8971,7 @@ function updateCustomerKPIs() {
   set('cust-overdue', overdue);
 }
 
-// ── CUSTOMERS ─────────────────────────────────────────────────
+// -- CUSTOMERS -------------------------------------------------
 function custAddNew() {
   document.getElementById('cust-form-wrap').style.display = 'block';
   ['cn-name','cn-phone','cn-email','cn-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
@@ -9027,7 +9066,7 @@ function renderCustomers() {
   }).join('');
 }
 
-// ── PHOTO UPLOAD ──────────────────────────────────────────────
+// -- PHOTO UPLOAD ----------------------------------------------
 function photoZoneDrag(e, over) {
   e.preventDefault();
   document.getElementById('photo-drop-zone').classList.toggle('drag-over', over);
@@ -9114,7 +9153,7 @@ function photoLightbox(id) {
   document.body.appendChild(overlay);
 }
 
-// ── WARRANTIES ────────────────────────────────────────────────
+// -- WARRANTIES ------------------------------------------------
 var _warrPkgPrice = 0; var _warrPkgYears = 0; var _warrPkgName = '';
 
 function addWarrantyToJob(name, price, years) {
@@ -9187,7 +9226,7 @@ function renderWarranties() {
   }).join('');
 }
 
-// ── QUICKBOOKS INTEGRATION ─────────────────────────────────────
+// -- QUICKBOOKS INTEGRATION -------------------------------------
 function qboConnect() {
   const clientId = document.getElementById('qbo-client-id').value.trim();
   const secret = document.getElementById('qbo-client-secret').value.trim();
@@ -9233,7 +9272,7 @@ function qboLog(msg) {
   if (el) el.textContent = msg;
 }
 
-// ── ALERT & NOTIFICATION SETTINGS ─────────────────────────────
+// -- ALERT & NOTIFICATION SETTINGS -----------------------------
 function saveAlertSettings() {
   sdAlertSettings = {
     email: document.getElementById('alert-email').value.trim(),
@@ -9304,7 +9343,7 @@ function testAlertSMS() {
   if (el) { el.textContent = '📱 Test SMS sent to ' + phone; el.style.color = '#16a34a'; }
 }
 
-// ── INIT ─────────────────────────────────────────────────────
+// -- INIT -----------------------------------------------------
 function escHtml(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -9330,11 +9369,11 @@ function escHtml(s) {
 })();
 
 
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 // STONEDESK TIER 4 — SCHEDULE TRACKER, INVENTORY, VENDOR ORDERING
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 
-// ── DATA ─────────────────────────────────────────────────────
+// -- DATA -----------------------------------------------------
 var sdJobs=[];var sdInventory=[];var sdCart={};var sdVendorTab='gmr';var sdInvCat='all';var sdVCat='all';
 
 function loadSD4Data(){
@@ -9348,7 +9387,7 @@ function saveSD4(){
   localStorage.setItem('sd_cart',JSON.stringify(sdCart));
 }
 
-// ── VENDOR CATALOG ────────────────────────────────────────────
+// -- VENDOR CATALOG --------------------------------------------
 var VENDORS={
   gmr:{
     name:'GMR Stone',logo:'🏔️',
@@ -9458,7 +9497,7 @@ var VENDORS={
 
 var _activeVendor='gmr';
 
-// ── SCHEDULE / INSTALL TRACKER ────────────────────────────────
+// -- SCHEDULE / INSTALL TRACKER --------------------------------
 function schedAddJob(){
   document.getElementById('sched-form').style.display='block';
   document.getElementById('sj-template').value=new Date().toISOString().split('T')[0];
@@ -9602,7 +9641,7 @@ function runSchedAlerts(){
   }
 }
 
-// ── INVENTORY ─────────────────────────────────────────────────
+// -- INVENTORY -------------------------------------------------
 var DEFAULT_INVENTORY=[
   {id:'inv001',name:'14" Diamond Blade — Turbo',cat:'blades',vendor:'gmr',qty:3,min:2,unit:'each',cost:89.99,reorderQty:4,sku:'GMR-BL-14T'},
   {id:'inv002',name:'Polishing Pad Set 50-3000',cat:'abrasives',vendor:'gmr',qty:2,min:2,unit:'set',cost:59.99,reorderQty:3,sku:'GMR-PP-7PC'},
@@ -9715,7 +9754,7 @@ function renderInventory(){
   sv('inv-low',low);sv('inv-warn',warn);sv('inv-ok',ok);
 }
 
-// ── VENDOR ORDERING ───────────────────────────────────────────
+// -- VENDOR ORDERING -------------------------------------------
 function vendorSetTab(vKey,btn){
   _activeVendor=vKey;sdVCat='all';
   document.querySelectorAll('#vendor-tabs .vendor-tab').forEach(b=>b.classList.remove('active'));
@@ -9872,7 +9911,7 @@ function vendorPlaceOrder(){
   sdCart={};saveSD4();renderCart();renderVendor();
 }
 
-// ── INIT SD4 ─────────────────────────────────────────────────
+// -- INIT SD4 -------------------------------------------------
 (function initSD4(){
   loadSD4Data();
   // Seed default inventory if empty
@@ -9885,11 +9924,11 @@ function vendorPlaceOrder(){
 })();
 
 
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 // STONEDESK TIER 5 — REMAKES, EXECUTIVE SUITE, COMMUNICATIONS
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 
-// ── DATA ─────────────────────────────────────────────────────
+// -- DATA -----------------------------------------------------
 var sdRemakes=[]; var sdCommsThreads=[]; var sdExecMsgs=[]; var sdExecRole='';
 var SD_EXEC_ROLES=['ceo','cfo','cto']; // These map to admin user logins
 
@@ -9905,7 +9944,7 @@ function saveSD5(){
   localStorage.setItem('sd_exec_msgs',JSON.stringify(sdExecMsgs));
 }
 
-// ── ROLE SYSTEM ───────────────────────────────────────────────
+// -- ROLE SYSTEM -----------------------------------------------
 function applyExecRole(user){
   // Exec roles are set by email domain or stored preference
   // Admin user can select their exec title once logged in
@@ -9957,7 +9996,7 @@ function setRoleBadge(role){
   el.textContent=role.toUpperCase();
 }
 
-// ── REMAKE TRACKER ────────────────────────────────────────────
+// -- REMAKE TRACKER --------------------------------------------
 var REMAKE_LIMITS={remake:24, shower_min:48, shower_max:72, repair:48, rework:48};
 
 function remakeHoursLimit(type){
@@ -10110,7 +10149,7 @@ function runRemakeAlerts(){
   else zone.innerHTML='';
 }
 
-// ── EXECUTIVE SUITE ───────────────────────────────────────────
+// -- EXECUTIVE SUITE -------------------------------------------
 function renderExecContent(){
   var isExec=document.body.classList.contains('is-exec');
   var denied=document.getElementById('exec-access-denied');
@@ -10212,7 +10251,7 @@ function renderExecRemakes(){
   }).join('');
 }
 
-// ── EXEC PRIVATE CHAT ─────────────────────────────────────────
+// -- EXEC PRIVATE CHAT -----------------------------------------
 function renderExecChat(){
   var el=document.getElementById('exec-msgs');if(!el) return;
   if(!sdExecMsgs.length){
@@ -10246,7 +10285,7 @@ function execSend(){
   renderExecChat();
 }
 
-// ── COMMUNICATIONS ────────────────────────────────────────────
+// -- COMMUNICATIONS --------------------------------------------
 var _commsCurrentUser='';
 
 function commsNewMessage(){
@@ -10378,7 +10417,7 @@ function toggleThread(id){
   if(bodyEl) bodyEl.className='comms-body'+(t._open?' open':'');
 }
 
-// ── INIT SD5 ─────────────────────────────────────────────────
+// -- INIT SD5 -------------------------------------------------
 (function initSD5(){
   loadSD5Data();
   document.addEventListener('DOMContentLoaded',function(){
@@ -10406,9 +10445,9 @@ function toggleThread(id){
 })();
 
 
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 // EXEC AI ASSISTANTS — CEO / CFO / CTO + EMAIL TRIAGE
-// ══════════════════════════════════════════════════════════════════
+// ==================================================================
 
 var EAI_HISTORY={ceo:[],cfo:[],cto:[]};
 var EAI_ACTIVE_TAB='ceo';
@@ -10545,7 +10584,7 @@ function execAiClear(role){
   execAiWelcome(role);
 }
 
-// ── EMAIL TRIAGE ───────────────────────────────────────────────
+// -- EMAIL TRIAGE -----------------------------------------------
 async function runEmailTriage(){
   var raw=document.getElementById('email-paste-input').value.trim();
   if(!raw){alert('Paste at least one email first');return;}
@@ -10657,7 +10696,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
 
-// ── SAIRN BRIDGE SYNC ─────────────────────────────────────────────────────
+// -- SAIRN BRIDGE SYNC -----------------------------------------------------
 async function syncToSAIRNBridge() {
   try {
     await fetch('https://sairn.vercel.app/api/bridge', {
@@ -10672,7 +10711,7 @@ async function syncToSAIRNBridge() {
 
 
 
-// ── CSV EXPORT ────────────────────────────────────────────────────────────
+// -- CSV EXPORT ------------------------------------------------------------
 function dlCSV(rows, filename) {
   var csv = rows.map(function(r) {
     return r.map(function(v) {
@@ -11006,7 +11045,7 @@ function showSAIRNSuite() {
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
     + '<a href="https://sairn.vercel.app/sairnhr" target="_blank" style="display:block;padding:14px;background:#F5F3FF;border:1px solid #7C3AED;border-radius:10px;text-decoration:none;color:#4C1D95;font-weight:600;text-align:center;">SAIRNhr<br><span style=\'font-size:11px;font-weight:400;\'>HR &amp; People</span></a>'
     + '<a href="https://sairn.vercel.app/sairnaccounting" target="_blank" style="display:block;padding:14px;background:#F0FDFA;border:1px solid #0D9488;border-radius:10px;text-decoration:none;color:#0F766E;font-weight:600;text-align:center;">SAIRNacc<br><span style=\'font-size:11px;font-weight:400;\'>Accounting</span></a>'
-    + '<a href="https://sairn.vercel.app/sairndesign" target="_blank" style="display:block;padding:14px;background:#EEF2FF;border:1px solid #6366F1;border-radius:10px;text-decoration:none;color:#3730A3;font-weight:600;text-align:center;">SAIRNdesign<br><span style=\'font-size:11px;font-weight:400;\'>Design</span></a>'
+    + '<a href="https://sairn.vercel.app/sairndesign" target="_blank" style="display:block;padding:14px;background:#EEF2FF;border:1px solid #6366F1;border-radius:10px;text-decoration:none;color:#16C762;font-weight:600;text-align:center;">SAIRNdesign<br><span style=\'font-size:11px;font-weight:400;\'>Design</span></a>'
     + '<a href="https://sairn.vercel.app/fabricor" target="_blank" style="display:block;padding:14px;background:#F0FEF6;border:1px solid #16C762;border-radius:10px;text-decoration:none;color:#0A3D1F;font-weight:600;text-align:center;">StoneDesk<br><span style=\'font-size:11px;font-weight:400;\'>Stone Fabrication</span></a>'
     + '</div>'
     + '<button onclick="document.getElementById(\'sairn-suite-modal\').style.display=\'none\'" style="margin-top:20px;width:100%;padding:10px;background:#f3f4f6;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Close</button>'
