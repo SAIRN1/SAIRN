@@ -790,5 +790,24 @@ setTimeout(function() { showOILBadge(); }, 1500);
 // =======================================================================
 
 </script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNfuneral
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#14B8A6');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnfuneral', 'app_loaded', {
+    app: 'SAIRNfuneral',
+    color: '#14B8A6',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNfuneral');
+})();
+</script>
 </body>
 </html>
