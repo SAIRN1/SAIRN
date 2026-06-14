@@ -6920,6 +6920,25 @@ window.showQueryTemplates = function() {
 };
 </script>
 
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcode
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
+    app: 'SAIRNcode',
+    color: '#475569',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcode');
+})();
+</script>
 </body></html>');
   w.document.close();
 }
@@ -6972,7 +6991,26 @@ function scGenerateSuperbill(){
     '<table><thead><tr><th>CPT Code</th><th>Diagnosis (ICD-10)</th><th>Units</th><th>Fee</th></tr></thead><tbody>'+
     scChargeLines.map(function(l){return '<tr><td style="font-weight:bold">'+l.cpt+'</td><td>'+l.icd+'</td><td>'+l.units+'</td><td>$'+l.fee.toFixed(2)+'</td></tr>';}).join('')+
     '<tr style="font-weight:bold"><td colspan="3">TOTAL</td><td>$'+total.toFixed(2)+'</td></tr>'+
-    '</tbody></table><p style="margin-top:20px;border-top:1px solid #ccc;padding-top:12px">Patient Signature: _____________________ &nbsp; Copay Collected: $_________</p></body></html>');
+    '</tbody></table><p style="margin-top:20px;border-top:1px solid #ccc;padding-top:12px">Patient Signature: _____________________ &nbsp; Copay Collected: $_________</p>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcode
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
+    app: 'SAIRNcode',
+    color: '#475569',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcode');
+})();
+</script>
+</body></html>');
   w.document.close();
 }
 async function scChargeAI(){
@@ -7521,7 +7559,26 @@ function scPrintCompliancePlan(){
     '<p>Practice: _________________________ | Date: '+new Date().toLocaleDateString()+'</p>'+
     '<table><thead><tr><th>#</th><th>Element</th><th>Status</th></tr></thead><tbody>'+
     SC_OIG7.map(function(el){return '<tr><td>'+el.num+'</td><td><strong>'+el.title+'</strong><br><small>'+el.desc+'</small></td><td style="color:'+(saved[el.key]?'green':'orange')+'">'+(saved[el.key]?'Complete':'In Progress')+'</td></tr>';}).join('')+
-    '</tbody></table></body></html>');
+    '</tbody></table>
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcode
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
+    app: 'SAIRNcode',
+    color: '#475569',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcode');
+})();
+</script>
+</body></html>');
   w.document.close();
 }
 
@@ -7706,7 +7763,26 @@ console.log('ForeSee Medical, Verisys, Waystar, nThrive CRISP — all at $59/mo.
   if (hasData) return; // Real data exists — do not seed
 // SAIRN DEMO DATA SEED — Session 19
 // Injects realistic demo data into all 10 apps via localStorage
-// Run this in browser console on any SAIRN app page, OR inject before </body>
+// Run this in browser console on any SAIRN app page, OR inject before 
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcode
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
+    app: 'SAIRNcode',
+    color: '#475569',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcode');
+})();
+</script>
+</body>
 // Resets all apps to a rich, impressive demo state
 // Michael L. Dibert — SAIRN Technologies
 
@@ -7953,6 +8029,25 @@ window.saDebounce = function(func, wait) {
     timeout = setTimeout(function() { func.apply(context, args); }, wait || 300);
   };
 };
+</script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNcode
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#475569');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairncode', 'app_loaded', {
+    app: 'SAIRNcode',
+    color: '#475569',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNcode');
+})();
 </script>
 </body>
 
