@@ -242,10 +242,10 @@ var SAIRN_SEC = {
 };
 
 // ===========================================================
-// WALL 1 — BROWSER LAYER (Layers 1-18)
+// WALL 1 -- BROWSER LAYER (Layers 1-18)
 // ===========================================================
 
-// LAYER 1 — Domain Allowlist Fetch Interceptor
+// LAYER 1 -- Domain Allowlist Fetch Interceptor
 var _origFetch = window.fetch;
 window.fetch = function(url, opts) {
   try {
@@ -270,7 +270,7 @@ window.fetch = function(url, opts) {
   return _origFetch.apply(this, arguments);
 };
 
-// LAYER 2 — XSS Output Sanitizer
+// LAYER 2 -- XSS Output Sanitizer
 window.safeHTML = function(str) {
   if (typeof str !== 'string') return str;
   return str
@@ -285,7 +285,7 @@ window.safeHTML = function(str) {
     .replace(/data:text\/html/gi, '');
 };
 
-// LAYER 3 — Input Sanitization on All Form Fields
+// LAYER 3 -- Input Sanitization on All Form Fields
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('input[type=text], input[type=email], textarea').forEach(function(el) {
     el.addEventListener('input', function() {
@@ -299,14 +299,14 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 4 — Clickjacking Protection (Frame-Busting)
+// LAYER 4 -- Clickjacking Protection (Frame-Busting)
 if (window !== window.top) {
   window.top.location = window.location;
   document.body.innerHTML = '<h2 style="padding:40px;font-family:sans-serif">SAIRN Security: Embedded framing not permitted.</h2>';
   saLog('L4-FRAME', 'Clickjacking attempt detected', 'critical');
 }
 
-// LAYER 5 — Session Timeout & Auto-Lock
+// LAYER 5 -- Session Timeout & Auto-Lock
 function saResetTimer() {
   SAIRN_SEC.lastActivity = Date.now();
   if (SAIRN_SEC.sessionLocked) {
@@ -362,7 +362,7 @@ window.saUnlock = function() {
   }
 };
 
-// LAYER 6 — Brute-Force Protection on PIN
+// LAYER 6 -- Brute-Force Protection on PIN
 window.saTrackLoginAttempt = function(success) {
   if (success) {
     SAIRN_SEC.loginAttempts = 0;
@@ -372,14 +372,14 @@ window.saTrackLoginAttempt = function(success) {
   SAIRN_SEC.loginAttempts++;
   sessionStorage.setItem('s_attempts', String(SAIRN_SEC.loginAttempts));
   if (SAIRN_SEC.loginAttempts >= SAIRN_SEC.maxLoginAttempts) {
-    saLog('L6-BRUTE', 'Max login attempts exceeded — lockout triggered', 'critical');
+    saLog('L6-BRUTE', 'Max login attempts exceeded -- lockout triggered', 'critical');
     document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:sans-serif"><h2 style="color:#DC2626">Too Many Failed Attempts</h2><p>Access temporarily locked. Please try again in 15 minutes.</p></div>';
     setTimeout(function() { sessionStorage.setItem('s_attempts','0'); }, 15 * 60 * 1000);
   }
   return false;
 };
 
-// LAYER 7 — Prompt Injection Detection (Claude-specific)
+// LAYER 7 -- Prompt Injection Detection (Claude-specific)
 window.saCleanPrompt = function(text) {
   if (!text) return text;
   var injectionPatterns = [
@@ -402,7 +402,7 @@ window.saCleanPrompt = function(text) {
   return text;
 };
 
-// LAYER 8 — PII Scrubbing (24 patterns)
+// LAYER 8 -- PII Scrubbing (24 patterns)
 window.saScrubPII = function(text) {
   if (!text || typeof text !== 'string') return text;
   var patterns = [
@@ -435,7 +435,7 @@ window.saScrubPII = function(text) {
   return text;
 };
 
-// LAYER 9 — Data Exfiltration Monitor
+// LAYER 9 -- Data Exfiltration Monitor
 var _origXHR = window.XMLHttpRequest;
 window.XMLHttpRequest = function() {
   var xhr = new _origXHR();
@@ -458,7 +458,7 @@ window.XMLHttpRequest = function() {
   return xhr;
 };
 
-// LAYER 10 — Content Security Policy (Meta tag)
+// LAYER 10 -- Content Security Policy (Meta tag)
 (function() {
   var csp = document.createElement('meta');
   csp.httpEquiv = 'Content-Security-Policy';
@@ -471,7 +471,7 @@ window.XMLHttpRequest = function() {
   }
 })();
 
-// LAYER 11 — localStorage Encryption (AES-like obfuscation)
+// LAYER 11 -- localStorage Encryption (AES-like obfuscation)
 window.saStore = {
   _key: SAIRN_SEC.dataEncryptKey,
   _encode: function(data) {
@@ -517,7 +517,7 @@ window.saStore = {
   }
 };
 
-// LAYER 12 — Subresource Integrity Check
+// LAYER 12 -- Subresource Integrity Check
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('script[src], link[rel=stylesheet]').forEach(function(el) {
     var src = el.src || el.href;
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 13 — DevTools Detection (Production Mode Alert)
+// LAYER 13 -- DevTools Detection (Production Mode Alert)
 var devToolsOpen = false;
 setInterval(function() {
   var threshold = 160;
@@ -545,7 +545,7 @@ setInterval(function() {
   }
 }, 5000);
 
-// LAYER 14 — Right-Click Protection on Sensitive Areas
+// LAYER 14 -- Right-Click Protection on Sensitive Areas
 document.addEventListener('contextmenu', function(e) {
   var el = e.target;
   if (el && (el.dataset.sensitive || el.closest('[data-sensitive]'))) {
@@ -554,7 +554,7 @@ document.addEventListener('contextmenu', function(e) {
   }
 });
 
-// LAYER 15 — Clipboard Protection
+// LAYER 15 -- Clipboard Protection
 document.addEventListener('copy', function(e) {
   var sel = window.getSelection ? window.getSelection().toString() : '';
   var piiPatterns = [/\b\d{3}[-.\s]?\d{2}[-.\s]?\d{4}\b/, /\b4[0-9]{12,15}\b/];
@@ -564,7 +564,7 @@ document.addEventListener('copy', function(e) {
   }
 });
 
-// LAYER 16 — Rate Limiting (API calls per minute)
+// LAYER 16 -- Rate Limiting (API calls per minute)
 var apiCallLog = [];
 window.saCheckRateLimit = function(appId) {
   var now = Date.now();
@@ -578,7 +578,7 @@ window.saCheckRateLimit = function(appId) {
   return true;
 };
 
-// LAYER 17 — Response Sanitization (Claude output scrubbing)
+// LAYER 17 -- Response Sanitization (Claude output scrubbing)
 window.saSanitizeResponse = function(text) {
   if (!text) return text;
   // Strip any accidentally echoed credentials
@@ -591,7 +591,7 @@ window.saSanitizeResponse = function(text) {
   return text;
 };
 
-// LAYER 18 — Auto Data Purge (90-day expiry on localStorage)
+// LAYER 18 -- Auto Data Purge (90-day expiry on localStorage)
 (function saAutoPurge() {
   try {
     var ageKey = 'sairn_created';
@@ -615,10 +615,10 @@ window.saSanitizeResponse = function(text) {
 })();
 
 // ===========================================================
-// WALL 2 — API PROXY LAYER (Layers 19-23)
+// WALL 2 -- API PROXY LAYER (Layers 19-23)
 // ===========================================================
 
-// LAYER 19 — Request Signing (HMAC-style app_id validation)
+// LAYER 19 -- Request Signing (HMAC-style app_id validation)
 window.saSignRequest = function(payload) {
   if (!payload.app_id) {
     saLog('L19-SIGN', 'Request missing app_id', 'high');
@@ -631,7 +631,7 @@ window.saSignRequest = function(payload) {
   return payload;
 };
 
-// LAYER 20 — Prompt Injection on Every Claude Call
+// LAYER 20 -- Prompt Injection on Every Claude Call
 var _origSAIRNFetch = null;
 window.saSecureClaudeCall = function(url, opts) {
   if (opts && opts.body) {
@@ -654,7 +654,7 @@ window.saSecureClaudeCall = function(url, opts) {
   return window.fetch(url, opts);
 };
 
-// LAYER 21 — Anomaly Detection (unusual patterns)
+// LAYER 21 -- Anomaly Detection (unusual patterns)
 var requestPatterns = {};
 window.saDetectAnomaly = function(appId, endpoint) {
   var key = appId + ':' + endpoint;
@@ -669,7 +669,7 @@ window.saDetectAnomaly = function(appId, endpoint) {
   return false;
 };
 
-// LAYER 22 — Direct API Call Blocker
+// LAYER 22 -- Direct API Call Blocker
 window.fetch = (function(originalFetch) {
   return function(url, opts) {
     if (typeof url === 'string' && url.includes('api.anthropic.com')) {
@@ -680,16 +680,16 @@ window.fetch = (function(originalFetch) {
   };
 })(window.fetch);
 
-// LAYER 23 — SSL/HTTPS Enforcement
+// LAYER 23 -- SSL/HTTPS Enforcement
 if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
   saLog('L23-HTTP', 'Insecure HTTP connection detected', 'high');
 }
 
 // ===========================================================
-// WALL 3 — DATA LAYER (Layers 24-27)
+// WALL 3 -- DATA LAYER (Layers 24-27)
 // ===========================================================
 
-// LAYER 24 — Data Minimization Checker
+// LAYER 24 -- Data Minimization Checker
 window.saCheckDataMinimization = function(data) {
   var sensitiveFields = ['ssn','password','creditCard','bankAccount','routingNumber','medicalRecord','biometric'];
   var found = [];
@@ -703,14 +703,14 @@ window.saCheckDataMinimization = function(data) {
   return found.length === 0;
 };
 
-// LAYER 25 — Session Storage Isolation
+// LAYER 25 -- Session Storage Isolation
 window.saSessionStore = {
   set: function(key, val) { try { sessionStorage.setItem('sairn_' + key, JSON.stringify(val)); } catch(e) {} },
   get: function(key) { try { var v=sessionStorage.getItem('sairn_'+key); return v?JSON.parse(v):null; } catch(e) { return null; } },
   clear: function() { Object.keys(sessionStorage).filter(function(k){return k.startsWith('sairn_');}).forEach(function(k){sessionStorage.removeItem(k);}); }
 };
 
-// LAYER 26 — Credential Storage Prevention
+// LAYER 26 -- Credential Storage Prevention
 window.addEventListener('beforeunload', function() {
   ['password','passwd','pwd','pin','secret','token'].forEach(function(field) {
     var els = document.querySelectorAll('input[name*="' + field + '"], input[id*="' + field + '"]');
@@ -718,7 +718,7 @@ window.addEventListener('beforeunload', function() {
   });
 });
 
-// LAYER 27 — Right to Delete (One-click data wipe)
+// LAYER 27 -- Right to Delete (One-click data wipe)
 window.saWipeAllData = function() {
   if (!confirm('PERMANENT: Delete all SAIRN data from this device? This cannot be undone.')) return;
   localStorage.clear();
@@ -734,10 +734,10 @@ window.saWipeAllData = function() {
 };
 
 // ===========================================================
-// WALL 4 — COMPLIANCE LAYER (Layers 28-30)
+// WALL 4 -- COMPLIANCE LAYER (Layers 28-30)
 // ===========================================================
 
-// LAYER 28 — CCPA/Privacy Consent Notice
+// LAYER 28 -- CCPA/Privacy Consent Notice
 (function saPrivacyNotice() {
   if (localStorage.getItem('sairn_privacy_accepted')) return;
   var notice = document.createElement('div');
@@ -774,7 +774,7 @@ window.saDeclinePrivacy = function() {
   alert('SAIRN requires localStorage consent to function. Some features may not work.');
 };
 
-// LAYER 29 — Security Audit Log
+// LAYER 29 -- Security Audit Log
 function saLog(layer, message, severity) {
   var entry = { ts: new Date().toISOString(), layer: layer, msg: message, sev: severity, url: location.href };
   SAIRN_SEC.auditLog.push(entry);
@@ -792,7 +792,7 @@ function saLog(layer, message, severity) {
   } catch(e) {}
 }
 
-// LAYER 30 — Security Status Dashboard (Admin only)
+// LAYER 30 -- Security Status Dashboard (Admin only)
 window.saShowSecurityStatus = function() {
   var logs = JSON.parse(sessionStorage.getItem('sairn_audit') || '[]');
   var critical = logs.filter(function(l) { return l.sev === 'critical'; }).length;
@@ -812,8 +812,8 @@ window.saShowSecurityStatus = function() {
 };
 
 // -- INITIALIZATION MESSAGE ---------------------------------
-saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
-console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
+saLog('INIT', 'SAIRN Security System v3.0 initialized -- 30 layers active', 'info');
+console.log('%c SAIRN Security v3.0 -- 30-Layer Protection Active ', 'background:#1E1B4B;color:#A5B4FC;font-weight:bold;padding:4px 8px;border-radius:4px');
 
 })(); // End SAIRN Security IIFE
 
@@ -1277,7 +1277,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
 <script>
 // =======================================================
-//  SAIRNdesign v1.0 — World's Most Powerful Design Tool
+//  SAIRNdesign v1.0 -- World's Most Powerful Design Tool
 //  Built by SAIRN Technologies for Michael L. Dibert
 //  All apps: SAIRNbuild, StoneDesk, SAIRNdesign
 //  Proxy: sairn.vercel.app/api/claude
@@ -1512,7 +1512,7 @@ function pp(k){
   if(pinBuf.length===4){
     if(pinBuf===PINS.admin){role='admin';boot();}
     else if(pinBuf===PINS.user){role='user';boot();}
-    else{err.textContent='Incorrect PIN — try again';pinBuf='';for(let i=0;i<4;i++)document.getElementById('d'+i).classList.remove('on');}
+    else{err.textContent='Incorrect PIN -- try again';pinBuf='';for(let i=0;i<4;i++)document.getElementById('d'+i).classList.remove('on');}
   }
 }
 
@@ -1773,7 +1773,7 @@ function drawWorkTriangle(rx,ry,sc){
   const sink=placed.find(c=>c.id==='B-SB'||c.id==='B-TRSH');
   const range=placed.find(c=>c.id==='B-MICRO');
   if(!sink||!range) return;
-  // Simple triangle visualization — would be enhanced with actual appliance positions
+  // Simple triangle visualization -- would be enhanced with actual appliance positions
 }
 
 function getCvXY(e){
@@ -1943,7 +1943,7 @@ async function askAI(prompt){
   const cabSum=placed.length>0?placed.map(c=>c.n+' '+c.w+'" '+c.finish+' '+c.door).join('; '):'No cabinets placed yet';
   const tot=document.getElementById('qtotal').textContent;
   const mat=MATS.find(m=>m.id===selMat)||MATS[0];
-  const sys=`You are SAIRNdesign AI, the world's most advanced kitchen and space design intelligence, created by SAIRN Technologies. You are a world-class kitchen designer, NKBA-certified specialist, and construction expert combined. You know every cabinet manufacturer in the USA — KraftMaid, Merillat, Aristokraft, Fabuwood, Omega, Diamond, Wellborn, Thomasville, Wood-Mode, Decora, StarMark, J&K, Forevermark and all others. You know standard cabinet dimensions, NKBA guidelines, countertop materials, appliance clearances, and construction code. You help designers and contractors create stunning, functional, code-compliant kitchens that close sales. The NKBA work triangle rule: the sum of the three legs (sink to range, range to fridge, fridge to sink) must be between 12 and 26 feet. No single leg under 4 feet or over 9 feet. Always be specific, cite real dimensions, flag real violations. Recommend real brands and finishes. Be bold, precise, and visually evocative.`;
+  const sys=`You are SAIRNdesign AI, the world's most advanced kitchen and space design intelligence, created by SAIRN Technologies. You are a world-class kitchen designer, NKBA-certified specialist, and construction expert combined. You know every cabinet manufacturer in the USA -- KraftMaid, Merillat, Aristokraft, Fabuwood, Omega, Diamond, Wellborn, Thomasville, Wood-Mode, Decora, StarMark, J&K, Forevermark and all others. You know standard cabinet dimensions, NKBA guidelines, countertop materials, appliance clearances, and construction code. You help designers and contractors create stunning, functional, code-compliant kitchens that close sales. The NKBA work triangle rule: the sum of the three legs (sink to range, range to fridge, fridge to sink) must be between 12 and 26 feet. No single leg under 4 feet or over 9 feet. Always be specific, cite real dimensions, flag real violations. Recommend real brands and finishes. Be bold, precise, and visually evocative.`;
   const msg=`Current kitchen design:
 Room: ${w}ft x ${d}ft | Ceiling: ${ceil}ft | Layout: ${layout}
 Base cabinet run: ${baseLF.toFixed(1)} LF
@@ -1957,7 +1957,7 @@ Designer request: ${prompt}`;
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,app_id:'sairndesign',is_demo:true,system:sys,messages:[{role:'user',content:msg}]})});
     const data=await res.json();
     area.textContent=data.content?.[0]?.text||'Unable to get response.';
-  }catch(err){area.textContent='Connection error — check network and try again.';}
+  }catch(err){area.textContent='Connection error -- check network and try again.';}
 }
 
 // ===================================
@@ -2226,7 +2226,7 @@ function gen3D(mode){
   c.strokeStyle='rgba(0,0,0,.1)';c.lineWidth=1;c.stroke();
   // Label
   c.fillStyle='rgba(255,255,255,.85)';c.font='bold 14px Inter,sans-serif';c.textAlign='center';
-  c.fillText('3D Preview — '+placed.length+' Cabinets',W/2,H-50);
+  c.fillText('3D Preview -- '+placed.length+' Cabinets',W/2,H-50);
   c.fillStyle='rgba(165,180,252,.7)';c.font='12px Inter,sans-serif';
   c.fillText(mat.n+' countertop &middot; '+document.getElementById('qtotal').textContent+' estimated',W/2,H-28);
   notify('3D render generated. Full WebGL Three.js render available in SAIRNdesign Pro.','grn');
@@ -2457,16 +2457,16 @@ var SUPPLIERS = {
         phone: '800-984-9573',
         brands: 'Kohler · Moen · Delta · Toto · American Standard · Rheem · Bradford White · Viega · Uponor · Watts · Grohe · Hansgrohe',
         account: 'Open contractor account online or in-branch. Net 30 available. Pro pricing with account.',
-        tip: 'Ask for a dedicated sales rep — Ferguson reps can pull job-specific pricing and stock reservations.'
+        tip: 'Ask for a dedicated sales rep -- Ferguson reps can pull job-specific pricing and stock reservations.'
       },
       {
         name: 'Winsupply', tier: 'National',
-        desc: '700+ locally owned locations. Each branch independently operated — better relationships and flex pricing. Hughes Supply, LCR, and regional brands. Full plumbing + HVAC.',
+        desc: '700+ locally owned locations. Each branch independently operated -- better relationships and flex pricing. Hughes Supply, LCR, and regional brands. Full plumbing + HVAC.',
         locations: '700+ branches in all 50 states',
         web: 'winsupply.com', order: 'winsupply.com/locations',
         phone: '937-294-5331',
         brands: 'Rheem · Kohler · Bradford White · American Standard · Sloan · Chicago Faucets',
-        account: 'Account setup through local branch. Each branch sets own pricing — negotiate directly.',
+        account: 'Account setup through local branch. Each branch sets own pricing -- negotiate directly.',
         tip: 'Because each branch is locally owned, you can often negotiate better pricing here than at corporate chains.'
       },
       {
@@ -2477,7 +2477,7 @@ var SUPPLIERS = {
         phone: '610-265-3000',
         brands: 'Kohler · Moen · Delta · Viega · Uponor · Rinnai · Weil-McLain · Taco · Peerless',
         account: 'In-branch account setup. Excellent Net 30 terms for established contractors.',
-        tip: 'Hajoca showrooms are top-tier for spec work — bring clients for fixture selection appointments.'
+        tip: 'Hajoca showrooms are top-tier for spec work -- bring clients for fixture selection appointments.'
       },
       {
         name: 'Home Depot Pro / Build.com', tier: 'National Retail',
@@ -2487,7 +2487,7 @@ var SUPPLIERS = {
         phone: '800-466-3337',
         brands: 'Kohler · Moen · American Standard · Delta · Pfister · Rheem · A.O. Smith',
         account: 'Home Depot Pro account online. Volume pricing tiers. Dedicated Pro desk at most locations.',
-        tip: 'Pro Xtra members get up to 20% off. Apply online — instant approval for businesses.'
+        tip: 'Pro Xtra members get up to 20% off. Apply online -- instant approval for businesses.'
       },
       {
         name: 'Menards Pro', tier: 'National (Midwest-heavy)',
@@ -2497,7 +2497,7 @@ var SUPPLIERS = {
         phone: '715-876-5911',
         brands: 'Moen · American Standard · Gerber · SharkBite · Watts · NIBCO',
         account: 'Business Credit Account available in-store.',
-        tip: 'Menards 11% rebate promotions can be significant on large orders — stack with contractor account.'
+        tip: 'Menards 11% rebate promotions can be significant on large orders -- stack with contractor account.'
       }
     ],
     regional: {
@@ -2579,8 +2579,8 @@ var SUPPLIERS = {
         web: 'cedgroupusa.com', order: 'cedgroupusa.com/locations',
         phone: '972-647-0555',
         brands: 'Square D · Eaton · ABB · Legrand · Lutron · Leviton · Cooper · Hubbell · GE',
-        account: 'Branch account setup. Each CED branch semi-autonomous — pricing flexibility.',
-        tip: 'CED branches operate independently — if one branch price seems high, ask another nearby branch.'
+        account: 'Branch account setup. Each CED branch semi-autonomous -- pricing flexibility.',
+        tip: 'CED branches operate independently -- if one branch price seems high, ask another nearby branch.'
       },
       {
         name: 'Rexel USA', tier: 'National',
@@ -2590,7 +2590,7 @@ var SUPPLIERS = {
         phone: '800-739-3521',
         brands: 'ABB · Schneider Electric · Eaton · Hubbell · Legrand · Southwire · Panduit',
         account: 'Online account or branch. Rexel.com digital portal for 24/7 ordering and tracking.',
-        tip: 'Rexels digital platform is one of the best in the industry — good for project managers tracking orders.'
+        tip: 'Rexels digital platform is one of the best in the industry -- good for project managers tracking orders.'
       },
       {
         name: 'Home Depot Pro Electrical', tier: 'National Retail',
@@ -2663,17 +2663,17 @@ var SUPPLIERS = {
         phone: '800-474-3794',
         brands: 'Sherwin-Williams · Valspar · Dutch Boy · Krylon · Minwax · Purdy · Thompsons WaterSeal · Pratt & Lambert',
         account: 'Contractor accounts available. Typical 20-40% contractor discount. Dedicated sales rep assigned.',
-        tip: 'SW contractor accounts typically start at 20% off. After $5K annual spend, ask for a pricing review — you can often get to 35-40% off.'
+        tip: 'SW contractor accounts typically start at 20% off. After $5K annual spend, ask for a pricing review -- you can often get to 35-40% off.'
       },
       {
         name: 'Benjamin Moore', tier: 'National Premium',
-        desc: 'Premium independent dealer network. 5,000+ independently owned stores. Superior quality reputation — Regal Select, Aura. Color accuracy and consistency unmatched. No big-box.',
+        desc: 'Premium independent dealer network. 5,000+ independently owned stores. Superior quality reputation -- Regal Select, Aura. Color accuracy and consistency unmatched. No big-box.',
         locations: '5,000+ independent dealers',
         web: 'benjaminmoore.com', order: 'benjaminmoore.com/en-us/store-locator',
         phone: '855-724-6802',
         brands: 'Benjamin Moore · Aura · Regal Select · ben · ADVANCE · Natura · Ultra Spec',
-        account: 'Contractor accounts through local dealers. Each dealer sets pricing — shop multiple dealers.',
-        tip: 'BM dealers are independent — prices vary. Call 3 local dealers, get quotes, and use the lowest as leverage.'
+        account: 'Contractor accounts through local dealers. Each dealer sets pricing -- shop multiple dealers.',
+        tip: 'BM dealers are independent -- prices vary. Call 3 local dealers, get quotes, and use the lowest as leverage.'
       },
       {
         name: 'PPG Paints', tier: 'National',
@@ -2683,7 +2683,7 @@ var SUPPLIERS = {
         phone: '888-774-1010',
         brands: 'PPG · Pittsburgh Paints · Olympic · Glidden · Timeless · ProMaster · Break-Through',
         account: 'Pro account at PPG stores. Contractor program with volume discounts.',
-        tip: 'PPGs ProMaster line is highly regarded for interior — often 15% less than SW/BM for comparable quality.'
+        tip: 'PPGs ProMaster line is highly regarded for interior -- often 15% less than SW/BM for comparable quality.'
       },
       {
         name: 'Behr / Home Depot', tier: 'National Retail',
@@ -2703,7 +2703,7 @@ var SUPPLIERS = {
         phone: '888-835-5299',
         brands: 'Kelly-Moore · Envy · Acri-Shield · Enviro Kote',
         account: 'Pro account with volume discounts. Strong loyalty to local pros.',
-        tip: 'Kelly-Moore gives some of the best contractor pricing in the West — often better than Sherwin on volume.'
+        tip: 'Kelly-Moore gives some of the best contractor pricing in the West -- often better than Sherwin on volume.'
       }
     ],
     regional: {
@@ -2755,10 +2755,10 @@ var SUPPLIERS = {
     icon: '&#10052;',
     color: '#0EA5E9',
     national: [
-      {name:'Winsupply HVAC',tier:'National',desc:'700+ locally owned branches. Full HVAC supply. Carrier, Trane, Lennox, Rheem distributed.',web:'winsupply.com',order:'winsupply.com/locations',phone:'937-294-5331',brands:'Carrier · Trane · Lennox · Rheem · Daikin · York · Goodman',account:'In-branch account. Local pricing.',tip:'Each branch is locally owned — pricing is negotiable.'},
-      {name:'Ferguson HVAC',tier:'National',desc:'1,300+ locations. Full HVAC equipment and supplies. Same network as plumbing.',web:'ferguson.com',order:'ferguson.com/stores',phone:'800-984-9573',brands:'Carrier · Trane · Mitsubishi · Daikin · Rheem · A.O. Smith',account:'Contractor account at any branch.',tip:'Ferguson HVAC and plumbing share accounts — one relationship covers both.'},
-      {name:'Johnstone Supply',tier:'National',desc:'450+ locations. HVAC and refrigeration specialist. Contractor-only supply house. Excellent technical support.',web:'johnstonesupply.com',order:'johnstonesupply.com/branch-locator',phone:'800-556-4678',brands:'Copeland · Emerson · Honeywell · White-Rodgers · ICM · A.O. Smith',account:'Contractor-only. HVAC license typically required.',tip:'Johnstone is contractor only with excellent technical support staff — great for complex installs.'},
-      {name:'Lennox Stores (LII)',tier:'National',desc:'Lennox International owned. Equipment and parts. Residential and light commercial.',web:'lennox.com',order:'lennox.com/dealer',phone:'800-953-6669',brands:'Lennox · Ducane · Allied Air',account:'Dealer account required. Apply at lennox.com.',tip:'Lennox dealer programs include co-op advertising and financing — worth the dealer application.'},
+      {name:'Winsupply HVAC',tier:'National',desc:'700+ locally owned branches. Full HVAC supply. Carrier, Trane, Lennox, Rheem distributed.',web:'winsupply.com',order:'winsupply.com/locations',phone:'937-294-5331',brands:'Carrier · Trane · Lennox · Rheem · Daikin · York · Goodman',account:'In-branch account. Local pricing.',tip:'Each branch is locally owned -- pricing is negotiable.'},
+      {name:'Ferguson HVAC',tier:'National',desc:'1,300+ locations. Full HVAC equipment and supplies. Same network as plumbing.',web:'ferguson.com',order:'ferguson.com/stores',phone:'800-984-9573',brands:'Carrier · Trane · Mitsubishi · Daikin · Rheem · A.O. Smith',account:'Contractor account at any branch.',tip:'Ferguson HVAC and plumbing share accounts -- one relationship covers both.'},
+      {name:'Johnstone Supply',tier:'National',desc:'450+ locations. HVAC and refrigeration specialist. Contractor-only supply house. Excellent technical support.',web:'johnstonesupply.com',order:'johnstonesupply.com/branch-locator',phone:'800-556-4678',brands:'Copeland · Emerson · Honeywell · White-Rodgers · ICM · A.O. Smith',account:'Contractor-only. HVAC license typically required.',tip:'Johnstone is contractor only with excellent technical support staff -- great for complex installs.'},
+      {name:'Lennox Stores (LII)',tier:'National',desc:'Lennox International owned. Equipment and parts. Residential and light commercial.',web:'lennox.com',order:'lennox.com/dealer',phone:'800-953-6669',brands:'Lennox · Ducane · Allied Air',account:'Dealer account required. Apply at lennox.com.',tip:'Lennox dealer programs include co-op advertising and financing -- worth the dealer application.'},
       {name:'Home Depot / Lowes HVAC',tier:'National Retail',desc:'Window units, mini-splits, water heaters, baseboard. Limited selection but immediate availability.',web:'homedepot.com',order:'homedepot.com/b/Heating-Venting-Cooling',phone:'800-466-3337',brands:'LG · Midea · Friedrich · Rheem · A.O. Smith',account:'Pro Xtra program.',tip:'Good for emergency window units and water heater replacements. Not for full system installs.'}
     ],
     regional: {
@@ -2778,7 +2778,7 @@ var SUPPLIERS = {
     icon: '&#127968;',
     color: '#DC2626',
     national: [
-      {name:'ABC Supply',tier:'National #1',desc:'Largest US roofing distributor. 900+ locations. Shingles, metal, flat, underlayment, gutters. Next-day delivery standard. Beacon competitor.',web:'abcsupply.com',order:'abcsupply.com/locations',phone:'800-786-7601',brands:'GAF · Owens Corning · CertainTeed · IKO · Tamko · Atlas · James Hardie',account:'Contractor account required. Roofing license typically needed.',tip:'ABC Supplys delivery tracking is industry-leading — foremen get texts when truck leaves the branch.'},
+      {name:'ABC Supply',tier:'National #1',desc:'Largest US roofing distributor. 900+ locations. Shingles, metal, flat, underlayment, gutters. Next-day delivery standard. Beacon competitor.',web:'abcsupply.com',order:'abcsupply.com/locations',phone:'800-786-7601',brands:'GAF · Owens Corning · CertainTeed · IKO · Tamko · Atlas · James Hardie',account:'Contractor account required. Roofing license typically needed.',tip:'ABC Supplys delivery tracking is industry-leading -- foremen get texts when truck leaves the branch.'},
       {name:'Beacon Building Products',tier:'National',desc:'2nd largest US roofing distributor. 500+ locations. Beacon Pro+ digital platform. Strong in exterior products.',web:'beaconbuildingproducts.com',order:'beaconbuildingproducts.com/locations',phone:'844-698-2788',brands:'GAF · Owens Corning · CertainTeed · Metal Sales · Boral · ATAS International',account:'Beacon Pro+ contractor account. Digital ordering with delivery tracking.',tip:'Beacon Pro+ app is excellent for tracking orders and managing invoices on the go.'},
       {name:'SRS Distribution (Home Depot)',tier:'National',desc:'Acquired by Home Depot 2024. 700+ locations. Roof Hub app for order/delivery visibility. Fast next-day delivery.',web:'srs-distribution.com',order:'srs-distribution.com/locations',phone:'877-777-4447',brands:'GAF · Owens Corning · Atlas · IKO · CertainTeed · Tamko',account:'SRS contractor account. Roof Hub app for account management.',tip:'SRS + Home Depot combination means deep inventory and aggressive pricing for high-volume contractors.'}
     ],
@@ -2799,8 +2799,8 @@ var SUPPLIERS = {
     icon: '&#129683;',
     color: '#92400E',
     national: [
-      {name:'Builders FirstSource',tier:'National #1',desc:'Largest US structural supplier. 550+ locations. Lumber, trusses, wall panels, EWP, windows, doors. Millwork.',web:'buildersfirstsource.com',order:'buildersfirstsource.com/locations',phone:'214-880-3500',brands:'LP · Weyerhaeuser · Louisiana-Pacific · JELD-WEN · Andersen · PlyGem',account:'Contractor account in-branch. Volume pricing for builders.',tip:'BFS component manufacturing (trusses, wall panels) often cheaper than stick-framing — get the quote.'},
-      {name:'84 Lumber',tier:'National',desc:'300+ locations. Full LBM, millwork, doors/windows. Components and design services. Strong in residential.',web:'84lumber.com',order:'84lumber.com/stores',phone:'724-228-8820',brands:'LP · Weyerhaeuser · Huber · James Hardie · JELD-WEN · Pella',account:'Account at local store. Builder programs available.',tip:'84 Lumbers designer services are free with purchase — useful for window and door specs.'},
+      {name:'Builders FirstSource',tier:'National #1',desc:'Largest US structural supplier. 550+ locations. Lumber, trusses, wall panels, EWP, windows, doors. Millwork.',web:'buildersfirstsource.com',order:'buildersfirstsource.com/locations',phone:'214-880-3500',brands:'LP · Weyerhaeuser · Louisiana-Pacific · JELD-WEN · Andersen · PlyGem',account:'Contractor account in-branch. Volume pricing for builders.',tip:'BFS component manufacturing (trusses, wall panels) often cheaper than stick-framing -- get the quote.'},
+      {name:'84 Lumber',tier:'National',desc:'300+ locations. Full LBM, millwork, doors/windows. Components and design services. Strong in residential.',web:'84lumber.com',order:'84lumber.com/stores',phone:'724-228-8820',brands:'LP · Weyerhaeuser · Huber · James Hardie · JELD-WEN · Pella',account:'Account at local store. Builder programs available.',tip:'84 Lumbers designer services are free with purchase -- useful for window and door specs.'},
       {name:'Home Depot / Lowes Pro Lumber',tier:'National Retail',desc:'Nationwide retail. Good for small orders and specialty items. Delivery available. Pro discount programs.',web:'homedepot.com',order:'homedepot.com/b/Lumber-Composites',phone:'800-466-3337',brands:'WeatherShield · YellaWood · LP SmartSide · LVL · TimberTech',account:'Pro Xtra / Lowes Pro account.',tip:'Home Depot and Lowes are convenient but typically 10-20% more than specialty lumber yards for large orders.'}
     ],
     regional: {
@@ -2821,9 +2821,9 @@ var SUPPLIERS = {
     color: '#16a34a',
     national: [
       {name:'MSI Surfaces',tier:'National #1',desc:'#1 US tile importer and distributor. 50+ distribution centers. Tile, quartz, marble, granite, LVT. Available at Home Depot nationwide.',web:'msisurfaces.com',order:'msisurfaces.com/locations',phone:'800-323-8e30',brands:'MSI Quartz · Carrara · Bianco Perla · Everlife LVT',account:'Contractor account at MSI. Trade pricing available.',tip:'MSI trade accounts get 10-20% below retail. Apply at msisurfaces.com/trade.'},
-      {name:'Daltile',tier:'National #1 Domestic',desc:'#1 US tile manufacturer. 80% made in USA. 250+ showrooms. Ceramic, porcelain, natural stone, glass. Available at Ferguson and Home Depot.',web:'daltile.com',order:'daltile.com/store-locator',phone:'800-933-8453',brands:'Daltile · American Olean · Ragno',account:'Contractor account at showrooms. Volume discounts.',tip:'Daltile American Olean line is same factory at lower price — great for spec commercial work.'},
+      {name:'Daltile',tier:'National #1 Domestic',desc:'#1 US tile manufacturer. 80% made in USA. 250+ showrooms. Ceramic, porcelain, natural stone, glass. Available at Ferguson and Home Depot.',web:'daltile.com',order:'daltile.com/store-locator',phone:'800-933-8453',brands:'Daltile · American Olean · Ragno',account:'Contractor account at showrooms. Volume discounts.',tip:'Daltile American Olean line is same factory at lower price -- great for spec commercial work.'},
       {name:'Floor & Decor',tier:'National Retail',desc:'Warehouse-style tile, stone, flooring. 200+ stores. Designer Studio. Good pricing on large quantities. Pro account with discounts.',web:'flooranddecor.com',order:'flooranddecor.com/store-finder',phone:'877-675-0002',brands:'Mix of imports and domestic brands',account:'Pro account with 5-8% discount plus free design services.',tip:'Floor & Decor Pro account is free. 5% instant discount + free same-day delivery over $2,500 orders.'},
-      {name:'BuildDirect',tier:'National Online',desc:'Online wholesale. Ships direct to jobsite. Flooring, tile, decking, siding. Best for large quantity orders.',web:'builddirect.com',order:'builddirect.com',phone:'877-631-2845',brands:'Various direct import brands',account:'Trade program for contractors. Volume pricing.',tip:'BuildDirect is best for large residential flooring orders — not for small fill orders.'}
+      {name:'BuildDirect',tier:'National Online',desc:'Online wholesale. Ships direct to jobsite. Flooring, tile, decking, siding. Best for large quantity orders.',web:'builddirect.com',order:'builddirect.com',phone:'877-631-2845',brands:'Various direct import brands',account:'Trade program for contractors. Volume pricing.',tip:'BuildDirect is best for large residential flooring orders -- not for small fill orders.'}
     ],
     regional: {
       northeast:[{name:'Tile America',desc:'New England tile and stone. CT, MA, RI, NH.',web:'tileamerica.com',phone:'(860) 233-3800',states:'CT, MA, RI, NH'}],
@@ -2858,11 +2858,11 @@ function findSuppliers() {
   // Show region badge
   var badge = document.getElementById('sup-region-badge');
   badge.style.display = 'block';
-  badge.textContent = info.city + ' (' + info.state + ') — ' + info.region.charAt(0).toUpperCase()+info.region.slice(1).replace('-',' ');
+  badge.textContent = info.city + ' (' + info.state + ') -- ' + info.region.charAt(0).toUpperCase()+info.region.slice(1).replace('-',' ');
   renderSuppliers(info);
   // Trigger AI procurement tip
   document.getElementById('sup-ai-strip').style.display = 'block';
-  supAsk('I am a contractor in ZIP code '+zip+' ('+info.city+', '+info.state+'). Give me the top 3 procurement tips for this market — best deals, local relationships to build, and seasonal pricing strategies for plumbing, electrical, and paint suppliers in this region.');
+  supAsk('I am a contractor in ZIP code '+zip+' ('+info.city+', '+info.state+'). Give me the top 3 procurement tips for this market -- best deals, local relationships to build, and seasonal pricing strategies for plumbing, electrical, and paint suppliers in this region.');
 }
 
 function renderSuppliers(info) {
@@ -2888,7 +2888,7 @@ function renderSuppliers(info) {
     html2 += '</div>';
 
     // National suppliers
-    html2 += '<div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">National Distributors — Available in '+info.city+'</div>';
+    html2 += '<div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">National Distributors -- Available in '+info.city+'</div>';
     html2 += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:14px">';
 
     tradeData.national.forEach(function(sup) {
@@ -2911,7 +2911,7 @@ function renderSuppliers(info) {
 
     // Regional suppliers
     if(regional.length > 0) {
-      html2 += '<div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Regional Suppliers — '+info.region.charAt(0).toUpperCase()+info.region.slice(1).replace('-',' ')+'</div>';
+      html2 += '<div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Regional Suppliers -- '+info.region.charAt(0).toUpperCase()+info.region.slice(1).replace('-',' ')+'</div>';
       html2 += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-bottom:8px">';
       regional.forEach(function(reg) {
         html2 += '<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:10px">';
@@ -2996,7 +2996,7 @@ inner.appendChild(hdr);inner.appendChild(hero);inner.appendChild(phaseDiv);inner
 modal.appendChild(inner);document.body.appendChild(modal);}
 var projects=window.sdes_projects||[];var p=projects[0]||{};
 document.getElementById("dp-client-name").textContent=p.client||p.clientName||"Client Name";
-document.getElementById("dp-project-name").textContent=(p.name||p.title||"Interior Design Project")+" — "+(p.type||p.room||"Full Design");
+document.getElementById("dp-project-name").textContent=(p.name||p.title||"Interior Design Project")+" -- "+(p.type||p.room||"Full Design");
 var phases=p.phases||[{name:"Concept & Mood Board",status:"Complete"},{name:"Space Planning & Layout",status:"In Progress"},{name:"Material & Finish Selection",status:"Pending"},{name:"Final Drawings & FF&E Schedule",status:"Pending"},{name:"Installation Coordination",status:"Pending"}];
 var phaseDiv=document.getElementById("dp-phases");
 phaseDiv.innerHTML="<div style='font-size:11px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:8px'>Project Phases</div>";
@@ -3004,7 +3004,7 @@ phases.forEach(function(ph){var row=document.createElement("div");row.style.cssT
 var budget=parseFloat(p.budget||p.total||5000);var avg=8500;
 var pct=Math.min(budget/15000*100,100);var color=budget<=avg?"#16a34a":budget<=12000?"#d97706":"#dc2626";
 var bDiv=document.getElementById("dp-budget-bar");
-bDiv.innerHTML="<div style='font-size:11px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:6px'>Project Investment vs Market</div><div style='background:#F3F4F6;border-radius:6px;height:10px;position:relative;overflow:hidden;margin-bottom:4px'><div style='background:"+color+";height:10px;border-radius:6px;width:"+pct+"%;transition:width .4s'></div><div style='position:absolute;top:0;left:"+(avg/15000*100)+"%;width:2px;height:10px;background:#64748b'></div></div><div style='display:flex;justify-content:space-between;font-size:9px;color:#6B7280'><span>$2,500 entry</span><span>Avg $8,500</span><span>$15,000+ premium</span></div><div style='font-size:12px;font-weight:700;color:"+color+";margin-top:4px'>Project total $"+budget.toLocaleString()+" — "+(budget<avg?"Value positioning":"Premium positioning")+"</div>";
+bDiv.innerHTML="<div style='font-size:11px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:6px'>Project Investment vs Market</div><div style='background:#F3F4F6;border-radius:6px;height:10px;position:relative;overflow:hidden;margin-bottom:4px'><div style='background:"+color+";height:10px;border-radius:6px;width:"+pct+"%;transition:width .4s'></div><div style='position:absolute;top:0;left:"+(avg/15000*100)+"%;width:2px;height:10px;background:#64748b'></div></div><div style='display:flex;justify-content:space-between;font-size:9px;color:#6B7280'><span>$2,500 entry</span><span>Avg $8,500</span><span>$15,000+ premium</span></div><div style='font-size:12px;font-weight:700;color:"+color+";margin-top:4px'>Project total $"+budget.toLocaleString()+" -- "+(budget<avg?"Value positioning":"Premium positioning")+"</div>";
 modal.style.display="flex";}
 </script>
 <script>
@@ -3015,7 +3015,7 @@ var color=budget<=r.avg?"#16a34a":budget<=r.high?"#d97706":"#dc2626";
 var lbl=budget<r.low?"Below typical":budget<=r.avg?"Standard scope":budget<=r.high?"Premium scope":"Ultra-premium";
 var el=document.getElementById("sdes-budget-bar");if(!el)return;
 el.innerHTML="";var d=document.createElement("div");d.style.cssText="background:#F3F4F6;border-radius:10px;padding:12px;margin-top:10px";
-d.innerHTML="<div style='font-size:10px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:6px'>Budget vs "+type+" Market Range</div><div style='background:#E5E7EB;border-radius:6px;height:10px;position:relative;overflow:hidden;margin-bottom:4px'><div style='background:"+color+";height:10px;border-radius:6px;width:"+pct+"%;transition:width .4s'></div><div style='position:absolute;top:0;left:"+(r.avg/r.high*100)+"%;width:2px;height:10px;background:#64748b'></div></div><div style='display:flex;justify-content:space-between;font-size:9px;color:#6B7280;margin-bottom:4px'><span>$"+r.low.toLocaleString()+"</span><span>Avg $"+r.avg.toLocaleString()+"</span><span>$"+r.high.toLocaleString()+"</span></div><div style='font-size:11px;font-weight:700;color:"+color+'">'+"$"+budget.toLocaleString()+" — "+lbl+"</div>";
+d.innerHTML="<div style='font-size:10px;font-weight:800;color:#6B7280;text-transform:uppercase;margin-bottom:6px'>Budget vs "+type+" Market Range</div><div style='background:#E5E7EB;border-radius:6px;height:10px;position:relative;overflow:hidden;margin-bottom:4px'><div style='background:"+color+";height:10px;border-radius:6px;width:"+pct+"%;transition:width .4s'></div><div style='position:absolute;top:0;left:"+(r.avg/r.high*100)+"%;width:2px;height:10px;background:#64748b'></div></div><div style='display:flex;justify-content:space-between;font-size:9px;color:#6B7280;margin-bottom:4px'><span>$"+r.low.toLocaleString()+"</span><span>Avg $"+r.avg.toLocaleString()+"</span><span>$"+r.high.toLocaleString()+"</span></div><div style='font-size:11px;font-weight:700;color:"+color+'">'+"$"+budget.toLocaleString()+" -- "+lbl+"</div>";
 el.appendChild(d);}
 </script>
 <script>
@@ -3029,8 +3029,8 @@ setTimeout(function(){if(typeof checkDesign_SmartFlags==="function")checkDesign_
   var hasData = localStorage.getItem('sh_employees') || localStorage.getItem('sd_jobs') || 
                 localStorage.getItem('sl_matters') || localStorage.getItem('sb_projects') ||
                 localStorage.getItem('sc_residents') || localStorage.getItem('sa_invoices');
-  if (hasData) return; // Real data exists — do not seed
-// SAIRN DEMO DATA SEED — Session 19
+  if (hasData) return; // Real data exists -- do not seed
+// SAIRN DEMO DATA SEED -- Session 19
 // Injects realistic demo data into all 10 apps via localStorage
 // Run this in browser console on any SAIRN app page, OR inject before 
 <!-- SAIRNbiz Connector v1.0 -->
@@ -3050,6 +3050,96 @@ setTimeout(function(){if(typeof checkDesign_SmartFlags==="function")checkDesign_
   });
   console.log('SAIRNbiz Connector active in SAIRNdesign');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNdesign -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#6366F1;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Project Timeline')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Project Timeline</button><button onclick="sbq('Client Presentation')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Client Presentation</button><button onclick="sbq('Material Costs')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Material Costs</button><button onclick="sbq('Revisions')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Revisions</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#6366F1;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#6366F1;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNdesign AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#6366F1;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNdesign'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairndesign',is_demo:true,
+        system:'You are the AI for SAIRNdesign, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 // Resets all apps to a rich, impressive demo state
@@ -3289,7 +3379,7 @@ function showSAIRNSuite() {
 </script>
 
 <script>
-// SAIRN Admin Formula Editor — P10 Universal Pattern
+// SAIRN Admin Formula Editor -- P10 Universal Pattern
 function showAdminFormulaEditor() {
   var pin = prompt('Admin PIN required:');
   if (pin !== '9999' && pin !== '1234') { alert('Invalid PIN.'); return; }
@@ -3344,7 +3434,7 @@ function saveAdminRates_sairndesign() {
 </script>
 
 <script>
-// SAIRN Debounce Utility — prevents Claude call hammering on rapid input
+// SAIRN Debounce Utility -- prevents Claude call hammering on rapid input
 window.saDebounce = function(func, wait) {
   var timeout;
   return function() {
@@ -3413,6 +3503,96 @@ function saDeclinePrivacy() {
   });
   console.log('SAIRNbiz Connector active in SAIRNdesign');
 })();
+</script>
+
+<!-- SAIRN AI Panel: SAIRNdesign -->
+<div id="sbai-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:360px;background:#fff;border-left:1px solid #E2E8F0;box-shadow:-4px 0 16px rgba(0,0,0,.08);flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;">
+  <div style="background:#6366F1;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:14px;font-weight:700;">AI Assistant</div>
+    <button onclick="document.getElementById('sbai-panel').style.display='none'" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;">X</button>
+  </div>
+  <div id="sbai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;"><button onclick="sbq('Project Timeline')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Project Timeline</button><button onclick="sbq('Client Presentation')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Client Presentation</button><button onclick="sbq('Material Costs')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Material Costs</button><button onclick="sbq('Revisions')" style="background:#F0FDFA;border:1px solid #CCFBF1;color:#0F766E;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">Revisions</button></div>
+  <div style="padding:12px 14px;border-top:1px solid #E2E8F0;display:flex;gap:8px;">
+    <input type="text" id="sbai-input" placeholder="Ask AI anything..." style="flex:1;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sbais()">
+    <button onclick="sbais()" style="background:#6366F1;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  if(document.getElementById('sbai-fab')) return;
+  var fab=document.createElement('button');
+  fab.id='sbai-fab';
+  fab.innerHTML='AI';
+  fab.style.cssText='position:fixed;bottom:24px;right:24px;background:#6366F1;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,.2);-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  fab.onclick=function(){
+    var p=document.getElementById('sbai-panel');
+    var open=p.style.display==='flex';
+    p.style.display=open?'none':'flex';
+    p.style.flexDirection='column';
+    if(!open&&document.getElementById('sbai-msgs').children.length===0){
+      sbai_add('Hi! I am your SAIRNdesign AI. Ask me anything.','bot');
+    }
+  };
+  document.body.appendChild(fab);
+})();
+window._sbh=[];
+function sbai_add(t,c){
+  var msgs=document.getElementById('sbai-msgs');
+  var el=document.createElement('div');
+  el.style.cssText=c==='user'?'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#6366F1;color:#fff;align-self:flex-end;white-space:pre-wrap;':'padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;background:#F0FDFA;color:#1E293B;align-self:flex-start;border:1px solid #CCFBF1;white-space:pre-wrap;';
+  el.textContent=t; msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight; return el;
+}
+function sbq(p){ document.getElementById('sbai-input').value='Give me a '+p+' for SAIRNdesign'; sbais(); }
+async function sbais(){
+  var inp=document.getElementById('sbai-input');
+  var msg=inp.value.trim(); if(!msg) return; inp.value='';
+  sbai_add(msg,'user');
+  var th=sbai_add('Thinking...','bot'); th.style.fontStyle='italic'; th.style.color='#94A3B8';
+  window._sbh.push({role:'user',content:msg});
+  if(window._sbh.length>12) window._sbh=window._sbh.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'sairndesign',is_demo:true,
+        system:'You are the AI for SAIRNdesign, a SAIRN vertical SaaS. Be specific, data-driven, actionable.',
+        messages:window._sbh,max_tokens:600})
+    });
+    var d=await res.json();
+    var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    window._sbh.push({role:'assistant',content:r});
+    th.style.fontStyle='normal'; th.style.color='#1E293B'; th.textContent=r;
+  }catch(e){ th.textContent='Connection error.'; }
+}
+</script>
+
+<!-- SAIRN Pattern Completeness -->
+<style>
+.sairn-rb-track{height:6px;background:#E2E8F0;border-radius:3px;position:relative;margin:4px 0;}
+.sairn-rb-fill{height:6px;border-radius:3px;position:absolute;left:0;top:0;transition:width .4s;}
+.sairn-sig{margin-top:40px;border-top:1px solid #000;width:260px;padding-top:4px;font-size:11px;color:#64748B;}
+@media print{.sairn-print-only{display:block!important;}}
+</style>
+<script>
+function sairnExportCSV(tableId,fname){
+  var tbl=tableId?document.getElementById(tableId):document.querySelector('table');
+  if(!tbl){return;}
+  var rows=tbl.querySelectorAll('tr');
+  var csv=Array.from(rows).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'sairn-export')+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function sairnSetBar(id,pct,color){
+  var el=document.getElementById(id);
+  if(el){el.style.width=pct+'%';el.style.background=color||'#14B8A6';}
+}
+function sairnCalc(vals,op){
+  if(op==='sum') return vals.reduce(function(a,b){return a+b;},0);
+  if(op==='avg') return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  return vals[0];
+}
 </script>
 </body>
 </html>
