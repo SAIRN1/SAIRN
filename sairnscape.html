@@ -827,5 +827,24 @@ function ssSyncBridge(){
   }catch(e){}
 }
 </script>
+
+<!-- SAIRNbiz Connector v1.0 -->
+<script src="sairnbiz-connector.js"></script>
+<script>
+// SAIRNbiz Connector init for SAIRNscape
+(function() {
+  // Render backbone panel if container exists
+  if (document.getElementById('sairnbiz-panel')) {
+    SAIRNbiz.renderPanel('sairnbiz-panel', '#22C55E');
+  }
+  // Register this app with the bridge on load
+  SAIRNbiz.sendEvent('sairnscape', 'app_loaded', {
+    app: 'SAIRNscape',
+    color: '#22C55E',
+    ts: new Date().toISOString()
+  });
+  console.log('SAIRNbiz Connector active in SAIRNscape');
+})();
+</script>
 </body>
 </html>
