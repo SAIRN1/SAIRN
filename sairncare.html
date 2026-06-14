@@ -128,7 +128,7 @@
 <div class="fg"><label>Overnight Rate ($/hr)</label><input type="number" value="15"></div>
 <div class="fg"><label>Medicare Billing Rate ($/hr)</label><input type="number" value="24"></div>
 <div class="fg"><label>Minimum Visit (hrs)</label><input type="number" value="2"></div>
-</div><div style="margin-top:14px;"><button class="btn btn-c" onclick="toast('Rates saved')">Save Rates</button></div></div></div></div>
+</div><div style="margin-top:14px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairncare');toast('Rates saved')">Save Rates</button></div></div></div></div>
 <div class="page" id="pg-csv"><div class="pt">CSV Tools</div><div class="two-col"><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:8px;">
 <button class="btn btn-o" onclick="exportCSV('cl-tbl','sairncare-clients')">Export Clients</button>
 <button class="btn btn-o" onclick="exportCSV('cg-tbl','sairncare-caregivers')">Export Caregivers</button>
@@ -145,7 +145,16 @@ function selRole(r){curRole=r;document.querySelectorAll('.rb').forEach(function(
 function pi(i){var v=document.getElementById('p'+i).value;if(v&&i<3)document.getElementById('p'+(i+1)).focus();}
 function pk(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();if(e.key==='Enter')doLogin();}
 function getPin(){return ['p0','p1','p2','p3'].map(function(id){return document.getElementById(id).value;}).join('');}
-function doLogin(){if(!curRole){document.getElementById('le').textContent='Select a role.';return;}if(getPin()===PINS[curRole]){document.getElementById('ls').style.display='none';document.getElementById('app').style.display='block';document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);SAIRNbiz.sendEvent('sairncare','app_loaded',{role:curRole,ts:new Date().toISOString()});initAI();toast('Welcome back!');}else{document.getElementById('le').textContent='Incorrect PIN.';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.getElementById('p0').focus();}}
+function doLogin(){if(!curRole){document.getElementById('le').textContent='Select a role.';return;}if(getPin()===PINS[curRole]){document.getElementById('ls').style.display='none';document.getElementById('app').style.display='block';document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);SAIRNbiz.sendEvent('sairncare','app_loaded',{role:curRole,ts:new Date().toISOString()});initAI();toast('Welcome back!');
+    SAIRNstore.watchTable('sairncare', 'cl-tbl');
+    SAIRNstore.watchTable('sairncare', 'cg-tbl');
+    SAIRNstore.watchTable('sairncare', 'vl-tbl');
+    SAIRNstore.watchTable('sairncare', 'inv-tbl');
+    SAIRNstore.loadFormulas('sairncare');
+
+    // Restore AI conversation history
+    _aih = SAIRNstore.loadAIHistory('sairncare') || [];
+}else{document.getElementById('le').textContent='Incorrect PIN.';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.getElementById('p0').focus();}}
 function doLogout(){document.getElementById('ls').style.display='flex';document.getElementById('app').style.display='none';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});curRole='';}
 function nav(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.ni').forEach(function(x){x.classList.remove('active');});var pg=document.getElementById('pg-'+p);if(pg)pg.classList.add('active');var ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('active');document.getElementById('mn').scrollTop=0;if(p==='sairnbiz'){SAIRNbiz.renderPanel('sbiz-container','#0D9488');}}
 function openM(id){document.getElementById(id).classList.add('open');}function closeM(id){document.getElementById(id).classList.remove('open');}
@@ -154,7 +163,256 @@ function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.c
 function ft(inp,tid){var q=inp.value.toLowerCase();document.getElementById(tid).querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});}
 function exportCSV(tid,fname){var t=document.getElementById(tid);if(!t){toast('No data');return;}var csv=Array.from(t.querySelectorAll('tr')).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(fname||'export')+'.csv';a.click();toast('Exported');}
 var _aih=[];function toggleAI(){document.getElementById('aip').classList.toggle('open');}function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncare',is_demo:true,system:"You are the AI for SAIRNcare, a home care agency management platform. You know about caregiver scheduling, EVV compliance, care plans, medication management, Medicare and Medicaid billing for home care, incident reporting, and caregiver retention. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncare',is_demo:true,system:"You are the AI for SAIRNcare, a home care agency management platform. You know about caregiver scheduling, EVV compliance, care plans, medication management, Medicare and Medicaid billing for home care, incident reporting, and caregiver retention. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairncare',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
 function initAI(){var prompts=[["Schedule Gap", "Find any open shifts or coverage gaps this week"], ["Caregiver Match", "Who is the best caregiver match for a new client?"], ["Missed Medications", "Which clients have missed medication confirmations?"], ["Revenue by Payer", "Break down revenue by payer type this month"], ["Incident Review", "Analyze incident reports for patterns"], ["Caregiver Pay", "Calculate payroll for this pay period"]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
-</script></body></html>
+</script>
+<!-- SAIRNstore: localStorage persistence -->
+<script>
+// SAIRNstore.js -- Persistent localStorage layer for all SAIRN B2B apps
+// Injected into every app. Auto-saves and auto-loads all data tables.
+// Michael L. Dibert -- SAIRN Technologies, LLC
+
+var SAIRNstore = (function() {
+
+  // ── CORE STORE ──────────────────────────────────────────────
+  function getKey(appId, table) {
+    return 'sairn:' + appId + ':' + table;
+  }
+
+  function save(appId, table, rows) {
+    try {
+      localStorage.setItem(getKey(appId, table), JSON.stringify({
+        rows: rows,
+        ts: Date.now()
+      }));
+      return true;
+    } catch(e) {
+      console.warn('SAIRNstore save error:', e);
+      return false;
+    }
+  }
+
+  function load(appId, table) {
+    try {
+      var raw = localStorage.getItem(getKey(appId, table));
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return parsed.rows || null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function clear(appId, table) {
+    try {
+      localStorage.removeItem(getKey(appId, table));
+    } catch(e) {}
+  }
+
+  function clearAll(appId) {
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) keys.push(k);
+      }
+      keys.forEach(function(k) { localStorage.removeItem(k); });
+    } catch(e) {}
+  }
+
+  // ── TABLE SERIALIZER ────────────────────────────────────────
+  // Reads a <tbody> and converts it to an array of row-data objects
+  function tableToRows(tbody) {
+    var rows = [];
+    if (!tbody) return rows;
+    tbody.querySelectorAll('tr').forEach(function(tr) {
+      var cells = [];
+      tr.querySelectorAll('td').forEach(function(td) {
+        cells.push(td.innerHTML);
+      });
+      if (cells.length > 0) rows.push(cells);
+    });
+    return rows;
+  }
+
+  // Restores rows into a <tbody>
+  function rowsToTable(tbody, rows) {
+    if (!tbody || !rows || rows.length === 0) return;
+    // Keep header row if it's a th-only row
+    var existingRows = tbody.querySelectorAll('tr');
+    // Clear non-header rows
+    existingRows.forEach(function(tr) {
+      if (!tr.querySelector('th')) tr.remove();
+    });
+    rows.forEach(function(cells) {
+      var tr = document.createElement('tr');
+      cells.forEach(function(html) {
+        var td = document.createElement('td');
+        td.innerHTML = html;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── AUTO-WATCH: patch all buttons that add rows ─────────────
+  function watchTable(appId, tableId) {
+    var tbl = document.getElementById(tableId);
+    if (!tbl) return;
+    var tbody = tbl.querySelector('tbody');
+    if (!tbody) return;
+
+    // Load saved data
+    var saved = load(appId, tableId);
+    if (saved) rowsToTable(tbody, saved);
+
+    // Observe changes and auto-save
+    var observer = new MutationObserver(function() {
+      var rows = tableToRows(tbody);
+      if (rows.length > 0) save(appId, tableId, rows);
+    });
+    observer.observe(tbody, { childList: true, subtree: true, characterData: true });
+  }
+
+  // ── FORM PERSISTENCE ────────────────────────────────────────
+  function saveForm(formId, appId) {
+    var form = document.getElementById(formId);
+    if (!form) return;
+    var data = {};
+    form.querySelectorAll('input, select, textarea').forEach(function(el) {
+      if (el.name || el.id) data[el.id || el.name] = el.value;
+    });
+    save(appId, 'form:' + formId, [data]);
+  }
+
+  function loadForm(formId, appId) {
+    var saved = load(appId, 'form:' + formId);
+    if (!saved || !saved[0]) return;
+    var data = saved[0];
+    var form = document.getElementById(formId);
+    if (!form) return;
+    Object.keys(data).forEach(function(id) {
+      var el = form.querySelector('#' + id) || form.querySelector('[name="' + id + '"]');
+      if (el) el.value = data[id];
+    });
+  }
+
+  // ── FORMULA EDITOR PERSISTENCE ──────────────────────────────
+  function saveFormulas(appId) {
+    var formulas = {};
+    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
+      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
+      var key = lbl ? lbl.textContent.trim() : inp.id || Math.random();
+      formulas[key] = inp.value;
+    });
+    save(appId, 'formulas', [formulas]);
+    return formulas;
+  }
+
+  function loadFormulas(appId) {
+    var saved = load(appId, 'formulas');
+    if (!saved || !saved[0]) return;
+    var formulas = saved[0];
+    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
+      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
+      var key = lbl ? lbl.textContent.trim() : null;
+      if (key && formulas[key] !== undefined) inp.value = formulas[key];
+    });
+  }
+
+  // ── MODAL FORM → TABLE INJECTION ────────────────────────────
+  // When a modal save button is clicked, harvest its form fields
+  // and inject a new row into the target table
+  function hookModalSave(btnSelector, targetTableId, appId, rowBuilder) {
+    document.querySelectorAll(btnSelector).forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var modal = btn.closest('.modal');
+        if (!modal) return;
+        var inputs = {};
+        modal.querySelectorAll('input, select, textarea').forEach(function(el) {
+          var lbl = el.closest('.fg') ? el.closest('.fg').querySelector('label') : null;
+          var key = lbl ? lbl.textContent.trim() : el.id || el.name;
+          inputs[key] = el.value;
+        });
+        var tbl = document.getElementById(targetTableId);
+        if (!tbl) return;
+        var tbody = tbl.querySelector('tbody');
+        if (!tbody) return;
+        var row = rowBuilder(inputs);
+        if (row) {
+          var tr = document.createElement('tr');
+          row.forEach(function(cell) {
+            var td = document.createElement('td');
+            td.innerHTML = cell;
+            tr.appendChild(td);
+          });
+          tbody.insertBefore(tr, tbody.firstChild);
+          var rows = tableToRows(tbody);
+          save(appId, targetTableId, rows);
+        }
+      });
+    });
+  }
+
+  // ── EXPORT ALL ──────────────────────────────────────────────
+  function exportAll(appId) {
+    var all = {};
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) {
+          all[k.replace(prefix, '')] = JSON.parse(localStorage.getItem(k));
+        }
+      }
+    } catch(e) {}
+    return all;
+  }
+
+  // ── STORAGE STATS ───────────────────────────────────────────
+  function stats(appId) {
+    var count = 0, bytes = 0;
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) {
+          count++;
+          bytes += (localStorage.getItem(k) || '').length;
+        }
+      }
+    } catch(e) {}
+    return { tables: count, bytes: bytes, kb: (bytes / 1024).toFixed(1) };
+  }
+
+  // ── AI CONVERSATION HISTORY ─────────────────────────────────
+  function saveAIHistory(appId, history) {
+    save(appId, '_ai_history', history.slice(-20));
+  }
+
+  function loadAIHistory(appId) {
+    return load(appId, '_ai_history') || [];
+  }
+
+  return {
+    save: save,
+    load: load,
+    clear: clear,
+    clearAll: clearAll,
+    watchTable: watchTable,
+    saveForm: saveForm,
+    loadForm: loadForm,
+    saveFormulas: saveFormulas,
+    loadFormulas: loadFormulas,
+    hookModalSave: hookModalSave,
+    exportAll: exportAll,
+    stats: stats,
+    saveAIHistory: saveAIHistory,
+    loadAIHistory: loadAIHistory
+  };
+})();
+
+</script>
+</body></html>
