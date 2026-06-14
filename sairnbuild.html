@@ -207,7 +207,7 @@ var _aih=[];
 function toggleAI(){document.getElementById('aip').classList.toggle('open');}
 function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}
 function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnbuild',is_demo:true,system:"You are the AI for SAIRNbuild, a construction project management platform. You know about project scheduling, RFIs, change orders, punch lists, AIA billing, subcontractor management, OSHA compliance, and construction cost control. Be specific, data-driven, and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnbuild',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnbuild',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairnbuild')||''),system:"You are the AI for SAIRNbuild, a construction project management platform. You know about project scheduling, RFIs, change orders, punch lists, AIA billing, subcontractor management, OSHA compliance, and construction cost control. Be specific, data-driven, and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnbuild',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
 function initAI(){var prompts=[["Project Risk", "Which projects are at risk of delay or budget overrun?"], ["RFI Alert", "Which RFIs are overdue and what should I do?"], ["Budget Analysis", "Where are we over budget and why?"], ["Sub Performance", "Rate my subcontractor performance this month."], ["Change Orders", "Summarize all pending change orders and their impact."], ["Cash Flow", "Forecast my cash flow for the next 30 days."]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
 
@@ -460,6 +460,32 @@ var SAIRNstore = (function() {
   };
 })();
 
+
+// === LICENSE KEY ===
+function saveLicenseKey() {
+  var key = (document.getElementById('license-key-input') || {}).value || '';
+  key = key.trim().toUpperCase();
+  if (!key) { toast('Enter a license key'); return; }
+  if (!key.startsWith('SAIRN-')) { toast('Invalid key format'); return; }
+  localStorage.setItem('sairn_license_key_sairnbuild', key);
+  document.getElementById('license-status').innerHTML = '<span style="color:var(--green)">&#x2713; Key saved. AI is now unlocked for unlimited use.</span>';
+  toast('License key activated!');
+}
+function loadLicenseKeyDisplay() {
+  var saved = localStorage.getItem('sairn_license_key_sairnbuild') || '';
+  var inp = document.getElementById('license-key-input');
+  var status = document.getElementById('license-status');
+  if (inp) inp.value = saved;
+  if (status && saved) {
+    status.innerHTML = '<span style="color:var(--green)">&#x2713; Licensed: ' + saved + '</span>';
+  }
+}
+// Load key display when formula page is visited
+var _origNav = nav;
+function nav(p) {
+  _origNav(p);
+  if (p === 'formula') { setTimeout(loadLicenseKeyDisplay, 50); }
+}
 </script>
 </body>
 </html>
