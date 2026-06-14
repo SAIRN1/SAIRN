@@ -2617,9 +2617,7 @@ function addAccountQuick(name,trade){
   notify(name+' added to your accounts -- fill in account # and rep details');
   showP('suppliers');
 }
-  var sys='You are a procurement specialist for a field service company.';
-  var user='Suggest negotiation strategies to improve supplier discounts: Currently: Johnstone (HVAC, 18% discount, $3,200/mo spend), Ferguson (Plumbing, 12% discount, $1,800/mo spend), Rexel (Electrical, 15% discount, $1,400/mo spend). Total monthly parts spend ~$6,400. Goal: improve all by 3-5%.';
-  await callClaude(sys,user,'sup-ai');
+// (aiNegotiate now handled by injected function)
 }
 async function aiFleet(){
   var sys='You are a fleet maintenance expert.';
@@ -2784,6 +2782,638 @@ function loadChecklist(){
       '<option>Pass</option><option>Marginal</option><option>Fail</option></select></div>';
   }).join('');
 }
+
+// === INJECTED MISSING FUNCTIONS ===
+// ============================================================
+// SAIRNTRADE MISSING FUNCTIONS -- ALL 46 FUNCTIONS BELOW
+// ============================================================
+
+// == LOCK SCREEN LANGUAGE ==
+function setLangLock(code){
+  CURRENT_LANG=code;
+  localStorage.setItem('st_lang',code);
+  document.querySelectorAll('.lang-lock-btn').forEach(function(b){
+    b.style.background='#F9FAFB';b.style.borderColor='#E5E7EB';b.style.fontWeight='600';
+  });
+  var active=document.getElementById('ll-'+code);
+  if(active){active.style.background=getComputedStyle(document.documentElement).getPropertyValue('--cl').trim()||'#FFF7ED';active.style.borderColor='#EA580C';}
+  notify((LANGS[code]||LANGS.en).name+' selected');
+}
+
+// == DISPATCH ==
+async function claudeDispatchAdvice(){
+  var sys='You are a field service dispatch AI. Give a brief, real-time dispatch recommendation in 1-2 sentences. Be specific with tech names and job names.';
+  var user='4 techs: Rodriguez (en route, 8min to finish), Kim (on site Thompson panel), Davis (on site Patel drain), Nguyen (available, at depot). Unassigned: Garcia burst pipe EMERGENCY (441 Oak St, 0.8mi from Nguyen), Reynolds AC (88 Dover Dr). What should dispatch do right now?';
+  var el=document.getElementById('dispatch-claude-tip');
+  if(el)el.textContent='Claude thinking...';
+  var text=await callClaude(sys,user);
+  if(el)el.textContent=text;
+}
+async function aiAutoDispatch(){
+  notify('AI Auto-Dispatch running...');
+  await claudeDispatchAdvice();
+  setTimeout(function(){notify('All unassigned jobs auto-dispatched by Claude AI');},1200);
+}
+function completeJob(jobId){
+  notify('Job marked complete -- invoice auto-generated');
+  var cards={'thompson':'Thompson panel job marked complete. Invoice INV-1041 created.','patel':'Patel drain job marked complete. Invoice INV-1043 created.'};
+  if(cards[jobId])notify(cards[jobId]);
+}
+function assignJobModal(jobId){
+  var jobs={garcia:'Garcia -- Burst Pipe EMERGENCY',reynolds:'Reynolds -- AC Not Cooling'};
+  var name=jobs[jobId]||jobId;
+  var tech=prompt('Assign "'+name+'" to which tech?\n\n1. Rodriguez, M.\n2. Kim, J.\n3. Davis, T.\n4. Nguyen, P.\n\nType tech name:','Nguyen, P.');
+  if(tech){
+    notify(name+' assigned to '+tech);
+    if(jobId==='garcia'){
+      var jc=document.getElementById('jc-garcia');
+      if(jc){
+        var tip=jc.querySelector('div[style*="FEF3C7"]');
+        if(tip){tip.style.background='#D1FAE5';tip.style.color='#065F46';tip.textContent='Assigned to '+tech+' -- ETA text sent to customer';}
+      }
+    }
+  }
+}
+function sendETA(jobId){
+  var msgs={garcia:'ETA text sent to Garcia: "Your technician is on the way and will arrive in approximately 15 minutes."',martinez:'ETA text sent to Martinez: "Your technician Rodriguez is en route, ETA 11:12 AM."'};
+  notify(msgs[jobId]||'ETA message sent to customer');
+  var el=document.getElementById('customer-eta-'+1);
+  if(el)el.style.display='block';
+}
+
+// == ESTIMATE / FINANCING ==
+function selectFinTerm(months,apr){
+  ['fin-3','fin-12','fin-60'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.classList.remove('selected');
+  });
+  var el=document.getElementById('fin-'+months);
+  if(el)el.classList.add('selected');
+  var total=parseFloat(document.getElementById('eb-total').textContent.replace(/[$,]/g,''))||335;
+  var mo;
+  if(apr===0){mo=total/months;}
+  else{var r=apr/100/12;mo=total*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1);}
+  var pitch=document.getElementById('fin-pitch');
+  if(pitch)pitch.textContent='"Your total is $'+total.toFixed(0)+' -- or just $'+mo.toFixed(0)+'/month for '+months+' months'+(apr===0?' at 0% APR':' at '+apr+'% APR')+'."';
+}
+function calcFinancing(){
+  var total=parseFloat(document.getElementById('fc-total').value)||4800;
+  [[3,0,'fc-mo-3'],[12,8.9,'fc-mo-12'],[24,9.9,'fc-mo-24'],[60,12.9,'fc-mo-60']].forEach(function(opt){
+    var months=opt[0],apr=opt[1],elId=opt[2];
+    var mo;
+    if(apr===0){mo=total/months;}
+    else{var r=apr/100/12;mo=total*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1);}
+    var el=document.getElementById(elId);
+    if(el)el.textContent='$'+Math.round(mo);
+  });
+}
+async function aiFinPitch(){
+  var total=document.getElementById('fc-total').value||'4800';
+  var credit=document.getElementById('fc-credit').value||'Good';
+  var sys='You are a trade service sales closer. Write a brief, natural financing pitch a tech would say face-to-face to a customer. Under 60 words. Make it conversational, not salesy.';
+  await callClaude(sys,'Write a financing pitch for a $'+total+' job. Customer credit: '+credit+'. Options: 0% for 3 months, or as low as $109/mo for 60 months.','fc-pitch');
+}
+function sendFinToQuote(){notify('Financing options added to quote');showP('quotewriter');}
+
+// == PROPOSALS ==
+function calcProps(){
+  var good=parseFloat(document.getElementById('prop-good-price').value)||3200;
+  var better=parseFloat(document.getElementById('prop-better-price').value)||4800;
+  var best=parseFloat(document.getElementById('prop-best-price').value)||6400;
+  function moPayment(total,months,apr){
+    if(apr===0)return (total/months).toFixed(0);
+    var r=apr/100/12;return (total*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1)).toFixed(0);
+  }
+  var gc=document.getElementById('prop-cards');
+  if(gc){
+    gc.children[0].querySelector('.proposal-tier-price').textContent='$'+good.toLocaleString();
+    gc.children[0].querySelector('.proposal-tier-mo').textContent='or $'+moPayment(good,12,0)+'/mo • 12 mo • 0% APR';
+    gc.children[1].querySelector('.proposal-tier-price').textContent='$'+better.toLocaleString();
+    gc.children[1].querySelector('.proposal-tier-mo').textContent='or $'+moPayment(better,12,0)+'/mo • 12 mo • 0% APR';
+    gc.children[2].querySelector('.proposal-tier-price').textContent='$'+best.toLocaleString();
+    gc.children[2].querySelector('.proposal-tier-mo').textContent='or $'+moPayment(best,60,12.9)+'/mo • 60 mo • 12.9% APR';
+  }
+}
+async function generateProposals(){
+  calcProps();
+  var cust=document.getElementById('prop-cust').value||'Valued Customer';
+  var trade=document.getElementById('prop-trade').value;
+  var job=document.getElementById('prop-job').value||'service';
+  var age=document.getElementById('prop-age').value||'unknown age';
+  var gp=document.getElementById('prop-good-price').value;
+  var bp=document.getElementById('prop-better-price').value;
+  var xp=document.getElementById('prop-best-price').value;
+  var gd=document.getElementById('prop-good-desc').value;
+  var bd=document.getElementById('prop-better-desc').value;
+  var xd=document.getElementById('prop-best-desc').value;
+  var sys='You are a trade service sales expert. Write compelling but honest one-sentence selling copy for each tier of a Good/Better/Best proposal. Each sentence should explain the VALUE not just the features. Keep each under 15 words.';
+  var user='Customer: '+cust+'. Job: '+trade+' '+job+'. Equipment age: '+age+'.\nGood ($'+gp+'): '+gd+'\nBetter ($'+bp+'): '+bd+'\nBest ($'+xp+'): '+xd+'\nWrite 3 one-sentence value statements, one per tier, labeled GOOD:, BETTER:, BEST:';
+  var text=await callClaude(sys,user);
+  var lines=text.split('\n').filter(function(l){return l.trim();});
+  lines.forEach(function(line){
+    var m=line.match(/^(GOOD|BETTER|BEST):\s*(.+)/i);
+    if(m){
+      var map={GOOD:'prop-good-copy',BETTER:'prop-better-copy',BEST:'prop-best-copy'};
+      var el=document.getElementById(map[m[1].toUpperCase()]);
+      if(el)el.textContent=m[2];
+    }
+  });
+  notify('Proposal copy generated');
+}
+function sendProposal(){notify('Good/Better/Best proposal sent to customer via email');}
+
+// == TECH SCORECARD ==
+async function scorecardCoach(){
+  var sys='You are an elite field service performance coach. Give specific, actionable coaching for each technician based on their metrics. Focus on the biggest improvement lever per person. Keep each coaching note to 2 sentences.';
+  var user='Tech performance MTD:\nRodriguez: 42 jobs, $23,400, 84% close rate, 78% upsell, 93% 1st-fix, rating 4.9 -- Grade A\nKim: 35 jobs, $18,200, 79% close rate, 52% upsell, 91% 1st-fix, rating 4.7 -- Grade B+\nDavis: 28 jobs, $14,100, 71% close rate, 22% upsell, 82% 1st-fix, 4 callbacks, rating 4.5 -- Grade B-\nNguyen: 22 jobs, $11,500, 75% close rate, 41% upsell, 86% 1st-fix, rating 4.6 -- Grade B\nTeam close rate target 80%, upsell target 70%.';
+  await callClaude(sys,user,'sc-ai');
+}
+
+// == FIRST-TIME FIX ==
+async function firstFixAnalysis(){
+  var sys='You are a field service quality expert. Analyze callback patterns and give specific prevention recommendations. Identify root causes and training needs.';
+  var user='Callbacks this month (11 total, 89% 1st-fix rate vs 78% industry avg):\n- Davis: 2 callbacks (AC still not cooling -- missed low refrigerant; drain slow again -- incomplete clean)\n- Kim: 1 callback (GFCI tripping again)\n- Rodriguez: 1 callback (ignitor fault returned)\nBy trade: HVAC 91%, Electrical 88%, Plumbing 79%. Davis has highest callback rate.';
+  await callClaude(sys,user,'ff-ai');
+}
+
+// == MEMBERSHIP ENGINE ==
+async function generateMembershipPitch(){
+  var job=document.getElementById('mem-job').value;
+  var type=document.getElementById('mem-type').value;
+  var sys='You are a trade service membership sales specialist. Write a compelling 60-second post-job membership pitch a technician would say face-to-face. Make it feel natural and customer-focused, not like a script. Emphasize peace of mind, priority service, and savings.';
+  await callClaude(sys,'Write a membership pitch after completing: '+job+'. Customer type: '+type+'. Membership options: Basic ($19/mo -- annual tune-up + 10% off parts), Plus ($39/mo -- semi-annual + priority dispatch + 15% off), Premium ($79/mo -- quarterly + 24/7 emergency + 20% off all services).','mem-pitch-text',function(){
+    document.getElementById('mem-pitch').style.display='block';
+  });
+}
+function sendMemberPitch(){notify('Membership offer sent to customer via text/email');}
+
+// == EQUIPMENT REGISTRY ==
+async function aiEquipmentScan(){
+  var sys='You are a predictive maintenance AI for HVAC, plumbing, and electrical equipment. Analyze equipment age, service history, and known failure patterns to predict failures and identify upsell opportunities. Be specific about timelines and dollar values.';
+  var user='Equipment registry:\n1. Wilson -- Trane XR15 heat pump, 7 yrs, contactor/capacitor flagged, last service Jun 2025\n2. Thompson -- Square D 200A panel, 3 yrs, no issues\n3. Johnson -- Rheem 50gal WH, brand new Jun 2026\n4. Garcia -- Carrier 2-ton AC, 10 yrs, all warranties expired, last service Mar 2026\nIdentify which need attention and estimated replacement revenue.';
+  await callClaude(sys,user,'eq-ai');
+}
+function addEquipment(){notify('Equipment form ready -- scan equipment tag or enter manually');}
+
+// == CERTIFICATION HUB ==
+async function certPathAdvice(){
+  var sys='You are a trade career development advisor. Give specific next-step advice for a HVAC technician\'s career path. Be encouraging and practical about timelines and ROI.';
+  var user='Rodriguez, M. Current certs: EPA 608 Universal (no expiry), NATE AC Service (expires Aug 2027). Missing: NATE Heat Pump (recommended next), OSHA-10 (missing -- needed for commercial sites), OH Master License (requires 2 more years journeyman exp). Career goal: Lead Install Technician. Market: Westlake OH.';
+  await callClaude(sys,user,'cert-ai');
+}
+
+// == LEARNING CENTER / MODULES ==
+var MODULE_DATA = {
+  epa608:{
+    title:'EPA Section 608 -- Universal Certification',
+    questions:[
+      {q:'What is the maximum allowable leak rate for commercial refrigeration equipment under EPA 608 regulations?',opts:['10%','15%','20%','30%'],ans:1,exp:'EPA Section 608 sets the leak rate for commercial refrigeration at 15% of the charge per year. Exceeding this requires repair within 30 days (or 120 days for industrial).'},
+      {q:'Which refrigerant is classified as an A2L (mildly flammable) and is replacing R-410A in new residential equipment?',opts:['R-22','R-134a','R-454B (Puron Advance)','R-32 only'],ans:2,exp:'R-454B (marketed as Puron Advance by Carrier) is the primary A2L replacement for R-410A in US residential equipment. It has 78% lower GWP than R-410A.'},
+      {q:'Under EPA 608, technicians must recover refrigerant to what level before opening a system with a compressor that is NOT working?',opts:['0 psig','4 in Hg vacuum','10 psig','Atmospheric pressure'],ans:1,exp:'For systems with non-working compressors, technicians must recover to 4 inches of mercury vacuum (for systems with more than 200 lbs) or 0 psig (systems under 200 lbs) per EPA recovery requirements.'},
+      {q:'What does "superheat" measure in an HVAC system?',opts:['Temperature above the boiling point of the refrigerant at a given pressure','The temperature of the discharge line','Subcooling at the condenser outlet','The temperature differential across the evaporator coil'],ans:0,exp:'Superheat is the temperature of the refrigerant ABOVE its boiling/saturation temperature at a given pressure. Proper superheat (typically 10-15F at the evaporator outlet) ensures no liquid refrigerant enters the compressor.'},
+      {q:'Which recovery method is fastest for a large system with a working compressor?',opts:['Vapor recovery only','Liquid recovery','Push-pull recovery','System-dependent recovery'],ans:2,exp:'Push-pull recovery uses both the recovery machine and the system compressor simultaneously, making it the fastest method for large charges. It pushes refrigerant as liquid while pulling vapor.'},
+      {q:'R-410A operates at roughly what high-side pressure on a 95F outdoor day?',opts:['150 psig','250 psig','400 psig','550 psig'],ans:2,exp:'R-410A has a saturation pressure of approximately 400 psig at 105F condensing temperature (typical on a 95F day with 10F approach). This is why R-410A requires higher-rated equipment than R-22.'},
+      {q:'What is subcooling?',opts:['Refrigerant temperature below its condensing point at a given pressure','Temperature at the evaporator inlet','Superheat measured at the suction line','Outdoor ambient minus indoor return air temperature'],ans:0,exp:'Subcooling is the temperature of liquid refrigerant BELOW its condensing (saturation) temperature at a given pressure. Proper subcooling (typically 10-15F) ensures full liquid refrigerant arrives at the TXV/metering device.'},
+      {q:'EPA 608 requires that refrigerant recovery equipment manufactured after November 15, 1993 must be certified by:',opts:['EPA directly','An EPA-approved equipment testing organization (e.g., UL, AHRI)','The refrigerant manufacturer','ASHRAE'],ans:1,exp:'Recovery equipment must be certified by an EPA-approved equipment testing organization such as UL or AHRI. The EPA approves the testing organizations but does not certify equipment directly.'},
+      {q:'The Clean Air Act Section 608 prohibits the knowing venting of which refrigerants?',opts:['Only CFCs (R-12, R-11)','Only HFCs','All refrigerants including CO2 and ammonia','CFCs, HCFCs, and HFCs (not natural refrigerants in certain situations)'],ans:3,exp:'Section 608 prohibits venting of CFCs, HCFCs, and HFCs. Natural refrigerants like CO2 and ammonia are currently exempt from venting prohibition, though EPA has authority to add them.'},
+      {q:'What is the correct superheat for a fixed-orifice (non-TXV) residential system at ARI standard conditions (95F outdoor, 80F/67F indoor)?',opts:['0-5F','10-15F','25-35F','40-50F'],ans:1,exp:'At ARI standard conditions, a properly charged fixed-orifice system should show 10-15F of superheat at the evaporator outlet. Higher superheat = undercharged. Lower = overcharged or metering device issue.'}
+    ]
+  },
+  nate_ac:{
+    title:'NATE -- Air Conditioning Service',
+    questions:[
+      {q:'A split AC system shows low suction pressure, high superheat, and normal subcooling. The MOST likely cause is:',opts:['Low refrigerant charge','Restriction in liquid line','Dirty evaporator coil','Faulty TXV (starving)'],ans:3,exp:'High superheat + low suction + normal subcooling points to a starving TXV. Low charge would also show low subcooling. A dirty evaporator gives high superheat but also HIGH suction pressure.'},
+      {q:'What is the primary function of the reversing valve in a heat pump?',opts:['Controls refrigerant flow rate','Reverses refrigerant flow direction for heating/cooling modes','Controls defrost cycle','Bypasses the compressor'],ans:1,exp:'The reversing valve (4-way valve) changes the direction of refrigerant flow, allowing the heat pump to switch between heating and cooling modes by swapping the roles of the indoor and outdoor coils.'},
+      {q:'A customer reports their AC blows cool but not cold air. Suction pressure is 95 psig (R-410A), discharge is 250 psig. Outdoor temp is 90F. The MOST likely issue is:',opts:['Overcharged system','Restricted condenser airflow or dirty condenser coil','Low refrigerant charge','Faulty compressor'],ans:1,exp:'Low discharge pressure (250 psig) on R-410A with 90F outdoor suggests the condenser is not rejecting heat properly -- usually dirty condenser coil or restricted airflow. This gives low head pressure and poor efficiency.'},
+      {q:'What causes "flood back" in a compressor?',opts:['Excessive superheat at suction','Liquid refrigerant entering the compressor','Oil logging in evaporator','High discharge temperature'],ans:1,exp:'Flood back occurs when liquid refrigerant returns to the compressor through the suction line. This dilutes compressor oil and can cause catastrophic compressor damage via hydraulic lock or oil washing.'},
+      {q:'The temperature split across an evaporator coil on a properly operating AC system should be approximately:',opts:['5-8F','10-15F','16-22F','25-30F'],ans:2,exp:'A properly operating evaporator should produce 16-22F of temperature drop between return air entering and supply air leaving the coil. Lower split = possible airflow, charge, or capacity issue.'},
+      {q:'Which component in a TXV system is responsible for maintaining proper superheat?',opts:['Liquid line filter-drier','Thermostatic expansion valve (TXV)','Distributor','Suction accumulator'],ans:1,exp:'The TXV senses bulb temperature and modulates refrigerant flow to maintain constant superheat at the evaporator outlet, typically 8-12F. It automatically adjusts for varying load conditions.'},
+      {q:'A two-speed or variable-capacity compressor improves efficiency primarily by:',opts:['Using less refrigerant','Running at part load to match actual cooling demand','Eliminating the condenser fan','Increasing discharge pressure'],ans:1,exp:'Variable-capacity compressors (inverter-driven) modulate their output to match actual load, avoiding the efficiency losses of cycling on/off. This is why 2-stage and variable systems achieve much higher SEER ratings.'},
+      {q:'High discharge temperature on a compressor (above 225F) is MOST commonly caused by:',opts:['Low outdoor ambient temperature','High superheat at suction (low charge, restriction, or airflow)','Low suction pressure alone','Oversized metering device'],ans:1,exp:'High suction superheat causes the compressor to work harder, generating excessive heat. The primary causes are low refrigerant charge, suction line restriction, or insufficient evaporator airflow -- all causing refrigerant to arrive at the compressor as superheated vapor.'},
+      {q:'What is the purpose of the suction line accumulator?',opts:['Stores extra refrigerant charge','Prevents liquid refrigerant from entering compressor','Subcools liquid refrigerant','Filters oil from refrigerant'],ans:1,exp:'The suction line accumulator catches any liquid refrigerant or oil that might otherwise flood the compressor. Common on heat pumps and systems prone to flood back. It allows vapor through while holding liquid temporarily.'},
+      {q:'When charging R-410A, you should ALWAYS charge as:',opts:['Vapor only, from the high side','Liquid from the cylinder, through the low side (with a flow restrictor)','Vapor from the low side only','Either vapor or liquid -- method does not matter for R-410A'],ans:1,exp:'R-410A is a near-azeotropic blend (R-32/R-125). It MUST be charged as a liquid to maintain proper composition. Use a liquid metering device or manifold gauge to throttle to vapor when charging the low side to protect the compressor.'}
+    ]
+  },
+  osha10:{
+    title:'OSHA-10 Construction Safety',
+    questions:[
+      {q:'Under OSHA standards, what is the maximum distance a worker can be from a ladder when working on a roof?',opts:['6 feet','10 feet','14 feet','There is no distance requirement -- fall protection is what matters'],ans:3,exp:'OSHA does not set a distance from ladders for roof work. What matters is fall protection: any worker on a roof 6 feet or higher above the ground level must have fall protection (guardrails, safety nets, or personal fall arrest systems).'},
+      {q:'OSHA 29 CFR 1926.501 requires fall protection for construction workers at what height?',opts:['4 feet','6 feet','8 feet','10 feet'],ans:1,exp:'Construction workers must have fall protection at 6 feet above the lower level per OSHA 1926.501. Note: General industry standard (1910) requires fall protection at 4 feet.'},
+      {q:'Lockout/Tagout (LOTO) under OSHA 1910.147 requires that energy be controlled before:',opts:['Any maintenance or service where unexpected energization could cause injury','Only electrical work over 480V','Only when working on rotating equipment','Whenever the supervisor decides it is necessary'],ans:0,exp:'LOTO applies to ANY service or maintenance activity where unexpected energization, startup, or release of stored energy could harm workers -- including electrical, pneumatic, hydraulic, mechanical, thermal, and chemical energy.'},
+      {q:'What is the OSHA permissible exposure limit (PEL) for lead in construction?',opts:['50 micrograms per cubic meter (8-hr TWA)','100 micrograms per cubic meter','200 micrograms per cubic meter','No federal PEL exists for construction'],ans:0,exp:'OSHA sets the PEL for lead in construction at 50 mcg/m3 as an 8-hour TWA (29 CFR 1926.62). The action level is 30 mcg/m3, at which point monitoring and medical surveillance begin.'},
+      {q:'When is a safety harness (personal fall arrest system) considered defective and must be removed from service?',opts:['After any fall, even if it looks undamaged','After 5 years of use','When the label is missing','Only if visibly torn or broken'],ans:0,exp:'A personal fall arrest system must be removed from service immediately after a fall event, even if it appears undamaged. The forces involved in arresting a fall can stress the system in ways not visible to the eye. It must be inspected by a competent person before returning to service.'},
+      {q:'What is the minimum head clearance required under OSHA for a stairway?',opts:['6 feet 6 inches','6 feet 8 inches','7 feet','8 feet'],ans:1,exp:'OSHA 1926.1052 requires a minimum headroom clearance of 6 feet 8 inches (measured vertically from the stair nosing) for all stairways used during construction.'},
+      {q:'Under OSHA heat illness prevention guidance, at what heat index should "mandatory rest breaks" be considered for outdoor workers?',opts:['Over 80F','Over 91F','Over 103F','Over 115F'],ans:2,exp:'OSHA\'s heat illness prevention guidance recommends mandatory rest breaks, shade, and close monitoring at heat index above 103F (Very High risk). Above 91F is "High risk" requiring planning. Above 115F is "Extreme risk."'},
+      {q:'The "hierarchy of controls" for hazard elimination lists controls in what order (most to least effective)?',opts:['PPE, Engineering, Substitution, Elimination, Administrative','Elimination, Substitution, Engineering, Administrative, PPE','Administrative, Engineering, PPE, Substitution, Elimination','Engineering, PPE, Administrative, Elimination, Substitution'],ans:1,exp:'The hierarchy from most to least effective: 1) Elimination (remove the hazard), 2) Substitution (replace with something safer), 3) Engineering controls (guards, ventilation), 4) Administrative controls (procedures, schedules), 5) PPE (last resort).'},
+      {q:'How often must fire extinguishers be inspected on a construction site?',opts:['Daily','Monthly','Annually','Quarterly'],ans:1,exp:'OSHA requires fire extinguishers to be inspected monthly (visual check) and annually (maintenance inspection by a trained person). The monthly inspection checks that extinguishers are present, accessible, charged, and undamaged.'},
+      {q:'When is a trench classified as requiring a protective system (shoring, sloping, or shielding)?',opts:['5 feet deep or more','4 feet deep or more','6 feet deep or more, or when unstable soil is present','Any trench over 2 feet deep'],ans:0,exp:'OSHA 1926.652 requires a protective system for any trench 5 feet deep or more. For trenches in Type C soil (loose, sandy, or wet) or with surcharge loads, a protective system may be required at any depth.'}
+    ]
+  },
+  nate_hp:{
+    title:'NATE -- Heat Pump Service',
+    questions:[
+      {q:'In heating mode, which coil acts as the evaporator on a heat pump?',opts:['Indoor coil (air handler)','Outdoor coil','Both simultaneously','Neither -- heat pumps do not use evaporators'],ans:1,exp:'In heating mode, the outdoor coil acts as the evaporator (absorbing heat from outdoor air) and the indoor coil acts as the condenser (releasing heat indoors). The reversing valve switches the refrigerant flow direction.'},
+      {q:'A heat pump\'s balance point is defined as:',opts:['The outdoor temperature at which the heat pump efficiency peaks','The outdoor temperature at which heat pump capacity equals building heat loss','The temperature at which auxiliary heat activates','The midpoint between heating and cooling setpoints'],ans:1,exp:'The balance point is the outdoor temperature at which the heat pump\'s heating capacity exactly matches the building\'s heat loss. Below this temperature, supplemental heat is needed. Typically 30-40F for most installations.'},
+      {q:'What is the purpose of the defrost cycle on a heat pump?',opts:['To cool the compressor when overheating','To remove frost buildup from the outdoor coil in heating mode','To prevent ice formation in the refrigerant lines','To cool the indoor coil in summer'],ans:1,exp:'In heating mode at low outdoor temperatures (below ~45F), moisture from the air freezes on the outdoor coil. The defrost cycle temporarily reverses the heat pump to cooling mode to melt this ice, ensuring proper airflow and heat absorption.'},
+      {q:'A heat pump shows high suction pressure and low superheat in heating mode. The MOST likely cause is:',opts:['Low refrigerant charge','Overcharged system or restriction in vapor line','Faulty reversing valve','Dirty indoor coil'],ans:1,exp:'High suction pressure with low superheat in heating mode indicates excess refrigerant flow -- either overcharge or a restriction causing liquid backup. A dirty indoor coil would reduce airflow and typically raise suction pressure with high superheat.'},
+      {q:'What does COP (Coefficient of Performance) measure for a heat pump?',opts:['Cooling capacity to electrical input ratio','Ratio of heating output to electrical energy input','Annual fuel utilization efficiency','Seasonal Energy Efficiency Rating'],ans:1,exp:'COP is heating output (BTU or watts) divided by electrical energy input (watts). A COP of 3.0 means the heat pump delivers 3 watts of heat for every 1 watt of electricity consumed -- 300% efficiency, far better than resistance heat.'}
+    ]
+  },
+  journeyman_plumb:{
+    title:'Journeyman Plumber Exam Prep',
+    questions:[
+      {q:'According to the IPC, what is the minimum slope for a 3-inch horizontal drain pipe?',opts:['1/16 inch per foot','1/8 inch per foot','1/4 inch per foot','1/2 inch per foot'],ans:1,exp:'IPC 704.1 requires 3-inch and 4-inch pipes to slope at minimum 1/8 inch per foot (1%). Pipes 2.5 inches and smaller require 1/4 inch per foot. Larger pipes (8 inch+) may slope at 1/16 inch per foot.'},
+      {q:'What is the purpose of a P-trap in a plumbing system?',opts:['Prevent backflow','Maintain a water seal to block sewer gases','Filter debris','Reduce water hammer'],ans:1,exp:'The P-trap maintains a water seal that blocks sewer gases (hydrogen sulfide, methane) from entering the building. The trap must always hold water; dry traps allow gas infiltration and create health/safety hazards.'},
+      {q:'What is the maximum length of a trap arm for a 1.5-inch lavatory drain per IPC?',opts:['24 inches','36 inches','48 inches','72 inches'],ans:1,exp:'IPC Table 909.1 allows a maximum trap arm of 42 inches for 1.5-inch pipe. The 36-inch is a common exam answer for 1.25-inch. Always reference the local adopted code, as UPC differs slightly from IPC.'},
+      {q:'Which pipe material is approved for underground water service in most jurisdictions?',opts:['CPVC','Galvanized steel','Type K copper or HDPE (PE 4710)','ABS'],ans:2,exp:'Type K copper and HDPE (PE 4710) are the most commonly approved materials for underground water service. Type K copper is heavier wall than Type L or M. HDPE is increasingly common for its corrosion resistance and flexibility.'},
+      {q:'What is the minimum water pressure required at the most remote outlet in a building per IPC?',opts:['15 psi','20 psi','30 psi','40 psi'],ans:1,exp:'IPC 604.1 requires a minimum of 15 psi at the most remote or highest outlet. However, most fixtures require 20 psi minimum for proper function, and flush valve water closets require 25 psi.'}
+    ]
+  },
+  journeyman_elec:{
+    title:'Journeyman Electrician Exam Prep (NEC)',
+    questions:[
+      {q:'Per NEC 210.52, how many 20-amp small appliance branch circuits are required in a kitchen?',opts:['One','Two','Three','As many as outlets require'],ans:1,exp:'NEC 210.52(B) requires a minimum of two 20-ampere small appliance branch circuits for kitchen receptacles. These circuits must be GFCI protected and serve only the kitchen, dining area, pantry, and similar areas.'},
+      {q:'What is the maximum voltage drop allowed for branch circuits and feeders combined per NEC recommendations?',opts:['2% branch, 3% feeder','3% branch, 5% total','5% total combined','No NEC requirement -- voltage drop is informational only'],ans:1,exp:'NEC 210.19(A) Informational Note recommends maximum 3% voltage drop on branch circuits and 2% on feeders, for a combined maximum of 5%. Note that these are recommendations, not mandatory code requirements, but are widely used as design standards.'},
+      {q:'A 240V single-phase load of 4,800 watts on a 20-amp circuit is drawing what current?',opts:['10 amps','20 amps','24 amps','48 amps'],ans:1,exp:'I = P/V = 4,800W / 240V = 20 amps. This is exactly at the circuit capacity. Per NEC 210.20, continuous loads (3+ hours) must not exceed 80% of circuit rating, so this 4,800W continuous load should be on a 25A circuit.'},
+      {q:'GFCI protection is required by NEC 210.8 in all of the following locations EXCEPT:',opts:['Kitchen countertop receptacles','Bathroom receptacles','Receptacles in a finished basement','Receptacles in a bedroom'],ans:3,exp:'NEC 210.8 requires GFCI protection in bathrooms, garages, outdoors, crawl spaces, unfinished basements, kitchens (within 6 feet of sink), boathouses, and other wet/damp locations. Standard bedroom receptacles do NOT require GFCI per the NEC.'},
+      {q:'What is the minimum burial depth for 120/240V PVC conduit under a residential driveway?',opts:['6 inches','12 inches','18 inches','24 inches'],ans:3,exp:'NEC Table 300.5 requires PVC conduit under a driveway (subject to vehicle traffic) to be buried a minimum of 24 inches. Under a residential driveway for one- or two-family dwellings only, the minimum is 18 inches.'}
+    ]
+  }
+};
+
+var currentModule=null,currentQ=0,moduleScore=0,moduleAnswered=0;
+
+function startModule(id){
+  var mod=MODULE_DATA[id];
+  if(!mod){notify('Module not available yet -- coming soon');return;}
+  currentModule=id;currentQ=0;moduleScore=0;moduleAnswered=0;
+  document.getElementById('study-home').style.display='none';
+  document.getElementById('study-module').style.display='block';
+  document.getElementById('module-title').textContent=mod.title;
+  renderQuestion();
+}
+function exitModule(){
+  document.getElementById('study-home').style.display='block';
+  document.getElementById('study-module').style.display='none';
+  currentModule=null;
+}
+function renderQuestion(){
+  var mod=MODULE_DATA[currentModule];
+  var q=mod.questions[currentQ];
+  var total=mod.questions.length;
+  var pct=Math.round((currentQ/total)*100);
+  document.getElementById('mod-prog-fill').style.width=pct+'%';
+  document.getElementById('mod-q-label').textContent='Question '+(currentQ+1)+' of '+total;
+  document.getElementById('mod-score-label').textContent='Score: '+moduleScore+'/'+moduleAnswered;
+  document.getElementById('mod-kpi-score').textContent=moduleAnswered>0?Math.round(moduleScore/moduleAnswered*100)+'%':'--';
+  document.getElementById('mod-kpi-done').textContent=moduleAnswered+'/'+total;
+  document.getElementById('mod-question').textContent=q.q;
+  document.getElementById('mod-explanation').style.display='none';
+  document.getElementById('mod-next-btn').style.display='none';
+  var html=q.opts.map(function(opt,i){
+    return '<button class="quiz-option" onclick="answerQ('+i+')">'+String.fromCharCode(65+i)+'. '+opt+'</button>';
+  }).join('');
+  document.getElementById('mod-options').innerHTML=html;
+}
+function answerQ(idx){
+  var mod=MODULE_DATA[currentModule];
+  var q=mod.questions[currentQ];
+  var btns=document.querySelectorAll('.quiz-option');
+  btns.forEach(function(b,i){
+    b.disabled=true;
+    if(i===q.ans)b.classList.add('correct');
+    else if(i===idx&&idx!==q.ans)b.classList.add('wrong');
+  });
+  moduleAnswered++;
+  if(idx===q.ans)moduleScore++;
+  document.getElementById('mod-exp-text').textContent=q.exp;
+  document.getElementById('mod-explanation').style.display='block';
+  document.getElementById('mod-kpi-score').textContent=Math.round(moduleScore/moduleAnswered*100)+'%';
+  document.getElementById('mod-kpi-done').textContent=moduleAnswered+'/'+mod.questions.length;
+  var nextBtn=document.getElementById('mod-next-btn');
+  nextBtn.style.display='inline-flex';
+  if(currentQ+1>=mod.questions.length)nextBtn.textContent='View Results';
+  else nextBtn.textContent='Next Question \u2192';
+}
+function nextQuestion(){
+  var mod=MODULE_DATA[currentModule];
+  currentQ++;
+  if(currentQ>=mod.questions.length){
+    var pct=Math.round(moduleScore/mod.questions.length*100);
+    var pass=pct>=70;
+    document.getElementById('mod-question').innerHTML='<div class="quiz-score">'+(pass?'<span class="quiz-pass">':'<span class="quiz-fail">')+pct+'%</span></div><div style="text-align:center;font-size:14px;margin-top:8px">'+(pass?'PASSED -- Well done!':'NEEDS WORK -- Review and retry')+'</div>';
+    document.getElementById('mod-options').innerHTML='<div class="btn-row" style="justify-content:center;margin-top:14px"><button class="btn btn-primary" onclick="startModule(currentModule)">Retry Module</button><button class="btn btn-secondary" onclick="exitModule()">Back to Learning Center</button></div>';
+    document.getElementById('mod-explanation').style.display='none';
+    document.getElementById('mod-next-btn').style.display='none';
+    document.getElementById('mod-prog-fill').style.width='100%';
+    document.getElementById('mod-q-label').textContent='Complete!';
+    return;
+  }
+  renderQuestion();
+}
+async function askTutor(){
+  var q=document.getElementById('tutor-q').value;
+  if(!q){notify('Enter a question first');return;}
+  var sys='You are an expert trade certification tutor covering EPA Section 608, NATE (AC Service, Heat Pump Service), OSHA-10 Construction Safety, and state Journeyman/Master license exams for HVAC, Plumbing, and Electrical. Give clear, accurate, teaching-focused answers. Use analogies and real-world examples. Reference specific code sections when relevant.';
+  await callClaude(sys+'\n\nCurrent language: respond in '+((LANGS[CURRENT_LANG]||LANGS.en).name),q,'tutor-answer');
+}
+async function askModuleTutor(){
+  var q=document.getElementById('mod-tutor-q').value;
+  if(!q)return;
+  var mod=MODULE_DATA[currentModule];
+  var sys='You are an expert trade certification tutor. The student is studying: '+(mod?mod.title:'trade certifications')+'. Answer their question clearly and accurately. Keep it under 150 words.';
+  await callClaude(sys,q,'mod-tutor-ans');
+}
+async function askTutorModule(){
+  var mod=MODULE_DATA[currentModule];
+  if(!mod)return;
+  var q=mod.questions[currentQ];
+  var sys='You are a trade exam tutor. Explain this question concept in detail: "'+q.q+'". Give real-world context and memory tips. Keep it to 150 words.';
+  await callClaude(sys,'Explain the concept behind this exam question for a student studying '+mod.title+'.','mod-tutor-ans');
+}
+async function tutorPractice(){
+  var sys='You are a trade exam question writer. Generate 3 multiple-choice practice questions in this format:\nQ: [question]\nA) [option] B) [option] C) [option] D) [option]\nAnswer: [letter]\nExplanation: [brief explanation]\n\nMake questions realistic exam level.';
+  var subject=document.getElementById('tutor-q').value||'EPA Section 608 refrigerant handling';
+  await callClaude(sys,'Generate 3 practice exam questions on: '+subject,'tutor-answer');
+}
+
+// == SOP LIBRARY ==
+var SOP_CONTENT = {
+  arrival:'CUSTOMER ARRIVAL & INTRODUCTION SOP (SOP-F01)\n\nPURPOSE: Establish a professional, trustworthy first impression.\n\nSTEPS:\n1. Park vehicle away from driveway -- do not block customer\'s car.\n2. Put on clean uniform and shoe covers before entering home.\n3. Knock, step back 2 feet from door.\n4. Introduction: "Hi, I\'m [NAME] from SAIRNtrade. I\'m here for your [TRADE] service today."\n5. Present ID card if asked.\n6. Ask customer to show you the equipment location.\n7. Protect work area with drop cloth before starting work.\n8. Do NOT use customer\'s restroom without asking.\n9. Do NOT bring food or drinks into customer home.\n10. Do NOT use phone for personal calls while in customer\'s presence.\n\nCOMPLETION:\n- Walk customer through any findings BEFORE presenting price.\n- Present written quote before starting any repair work.\n- Get signed work authorization for any work over $200.\n\nDocument: Technician initials confirm steps followed. Supervisor review quarterly.',
+  hvac_diag:'HVAC DIAGNOSTIC PROCEDURE (SOP-F02)\n\nREQUIRED TOOLS: Manifold gauges, clamp meter, thermometer, leak detector, capacitor tester.\n\nSAFETY: Disconnect power before opening electrical panels. Wear safety glasses. Never short across capacitor terminals.\n\nSTEPS:\n1. Confirm customer complaint and symptoms in detail.\n2. Inspect air filter -- replace if dirty.\n3. Check thermostat settings and operation.\n4. Measure supply and return air temperature (record both).\n5. Check electrical: voltage at disconnect, amp draw on compressor and fan motors.\n6. Test capacitors with meter (within 10% of rating = OK).\n7. Connect manifold gauges -- record suction and discharge pressures.\n8. Calculate superheat and subcooling.\n9. Check refrigerant charge against manufacturer specifications.\n10. Inspect coils for dirt, damage, or icing.\n11. Check condensate drain -- pour water to test.\n12. Listen for abnormal compressor or motor sounds.\n13. Check contractor contacts for pitting or burning.\n\nDOCUMENT: Record all measurements on work order. Present findings to customer before any repair.',
+  loto:'LOCKOUT/TAGOUT PROCEDURE (SOP-S01) -- OSHA 1910.147 REQUIRED\n\n**WARNING: VIOLATION OF THIS SOP CAN RESULT IN DEATH. NON-NEGOTIABLE.**\n\nAPPLIES TO: All maintenance and service on equipment with electrical, pneumatic, hydraulic, or stored mechanical energy.\n\nSTEPS:\n1. NOTIFY all affected employees that equipment will be shut down for service.\n2. Identify ALL energy sources (electrical, pneumatic, hydraulic, gravity, spring).\n3. SHUT DOWN equipment using normal stopping procedure.\n4. ISOLATE energy source: Open main disconnect, close supply valves.\n5. APPLY LOCKOUT DEVICE: Apply your personal padlock to each energy isolation point.\n6. APPLY TAGOUT: Attach danger tag with your name, date, and reason.\n7. RELEASE STORED ENERGY: Bleed pneumatic/hydraulic lines. Block gravity loads. Discharge capacitors.\n8. VERIFY ZERO ENERGY: Attempt to start equipment. Confirm no movement or energization.\n9. WORK SAFELY on de-energized equipment.\n\nRESTORATION:\n10. Remove all tools and restore guards.\n11. Notify all personnel to stand clear.\n12. Remove YOUR lock and tag ONLY.\n13. Restore energy and test operation.\n\nNEVER remove another person\'s lock. Each technician applies their own lock.'
+};
+
+async function generateSopFull(){
+  var cat=document.getElementById('sop-cat').value;
+  var trade=document.getElementById('sop-gen-trade').value;
+  var name=document.getElementById('sop-gen-name').value;
+  var detail=document.getElementById('sop-detail').value;
+  var safety=document.getElementById('sop-safety').value;
+  if(!name){notify('Enter a procedure name');return;}
+  var sys='You are a licensed trade professional and safety officer writing a formal Standard Operating Procedure (SOP). Write a complete, professional SOP that can be printed and signed. Include: PURPOSE, SCOPE, REQUIRED TOOLS/MATERIALS, SAFETY WARNINGS (if applicable with OSHA/EPA references), NUMBERED STEP-BY-STEP PROCEDURE, QUALITY CHECKPOINTS, and DOCUMENTATION REQUIREMENTS. Use clear, direct language appropriate for field technicians.';
+  var user='Write a '+detail+' SOP for: '+name+'. Category: '+cat+'. Trade: '+trade+'. Safety notes: '+safety+'. Format for printing with signature lines.';
+  document.getElementById('sop-gen-date').textContent=new Date().toLocaleDateString();
+  document.getElementById('sop-gen-num').textContent='SOP-'+Math.floor(Math.random()*900+100);
+  await callClaude(sys,user,'sop-gen-content',function(){
+    document.getElementById('sop-full-output').style.display='block';
+  });
+}
+function filterSOPs(cat){
+  var allCards=document.querySelectorAll('.sop-card');
+  allCards.forEach(function(card){card.style.display=cat==='all'?'flex':'none';});
+  if(cat!=='all'){
+    var catMap={field:['SOP-F'],install:['SOP-I'],maint:['SOP-M'],safety:['SOP-S'],office:['SOP-O'],onboard:['SOP-ON']};
+    var prefixes=catMap[cat]||[];
+    allCards.forEach(function(card){
+      var catEl=card.querySelector('.sop-cat');
+      if(catEl&&prefixes.some(function(p){return catEl.textContent.includes(p);}))card.style.display='flex';
+    });
+  }
+}
+function loadSOP(id){
+  var content=SOP_CONTENT[id];
+  if(!content){viewSOP(id);return;}
+  document.getElementById('sop-gen-content').textContent=content;
+  document.getElementById('sop-full-output').style.display='block';
+  document.getElementById('sop-gen-date').textContent=new Date().toLocaleDateString();
+  document.getElementById('sop-gen-num').textContent='SOP-'+id.toUpperCase();
+  showP('soplibrary');
+}
+async function viewSOP(id){
+  var names={arrival:'Customer Arrival Script',hvac_diag:'HVAC Diagnostic Procedure',plumb_diag:'Plumbing Diagnostic Procedure',elec_diag:'Electrical Diagnostic Procedure',loto:'Lockout/Tagout Procedure',refrigerant:'Refrigerant Handling & Recovery',call_script:'Inbound Call Script',day1:'New Tech Day 1 Checklist'};
+  var sys='You are a master trade technician and safety officer. Write a complete, professional SOP that is ready to print and sign.';
+  document.getElementById('sop-gen-content').textContent='Generating SOP...';
+  document.getElementById('sop-full-output').style.display='block';
+  document.getElementById('sop-gen-date').textContent=new Date().toLocaleDateString();
+  document.getElementById('sop-gen-num').textContent='SOP-'+id.toUpperCase();
+  await callClaude(sys,'Write a complete SOP for: '+(names[id]||id)+'. Include: PURPOSE, TOOLS NEEDED, SAFETY WARNINGS, NUMBERED STEPS (at least 10), and QUALITY CHECKPOINTS. Make it professional and field-ready.','sop-gen-content');
+}
+function saveSopToLibrary(){notify('SOP saved to library -- available offline and in print queue');}
+function printOnboardingPacket(){
+  notify('Printing full onboarding packet with all SOP sign-off pages...');
+  window.print();
+}
+
+// == ONBOARDING HUB ==
+async function generateOnboardingPlan(){
+  var name=document.getElementById('ob-name').value||'New Hire';
+  var trade=document.getElementById('ob-trade').value;
+  var start=document.getElementById('ob-start').value;
+  document.getElementById('ob-plan-name').textContent=name+' -- '+trade;
+  document.getElementById('ob-plan').style.display='block';
+  var sys='You are a field service HR professional. Customize this 90-day onboarding plan for a new hire. Add 3-4 specific recommendations based on their trade specialty. Keep it brief and actionable.';
+  await callClaude(sys,'Customize onboarding for: '+name+', '+trade+'. Start date: '+start+'. Add trade-specific certification milestones and first-job readiness criteria.','ob-ai-plan');
+}
+async function aiOnboarding(){
+  var name=document.getElementById('ob-plan-name').textContent;
+  var sys='You are a field service training director. Provide 3 specific improvements to this 90-day onboarding plan based on best practices.';
+  await callClaude(sys,'Improve onboarding plan for: '+name+'. Current plan: Day 1 orientation, Week 1 shadow, Week 2-4 supervised jobs, 30/60/90 day reviews.','ob-ai-plan');
+}
+
+// == COMMERCIAL PROJECT MANAGER ==
+async function aiCommercial(){
+  var sys='You are a commercial construction project manager. Give brief, specific advice on this project situation.';
+  var user='Metro Office HVAC project, $48,000 contract, 50% complete, rough-in phase in progress. Milestone 3 (rough-in) completion needed by Jun 20 to trigger $14,400 progress payment. 2 techs assigned (Rodriguez, Kim). Client has milestone billing structure.';
+  await callClaude(sys,user,'comm-ai');
+}
+async function billMilestone(){
+  notify('Progress billing for Rough-In milestone ($14,400) submitted to Metro Holdings. Invoice INV-COMM-003 created.');
+  var el=document.getElementById('comm-ai');
+  if(el)el.textContent='Milestone billing submitted. Follow up with Metro Holdings project manager to confirm receipt and approval timeline.';
+}
+function addCommProject(){notify('New commercial project form -- enter project details to begin tracking');}
+
+// == GPS / TRACKING ==
+function selectTruck(id){
+  var trucks={1:{tech:'Rodriguez, M.',status:'En Route',speed:'28mph',job:'WO#1041 - Wilson HVAC',eta:'11:12 AM',rev:'$1,240 today'},2:{tech:'Kim, J.',status:'On Site',speed:'0mph',job:'WO#1042 - Thompson Panel',eta:'Est. done 2:30 PM',rev:'$995 today'},3:{tech:'Davis, T.',status:'En Route',speed:'35mph',job:'WO#1043 - Patel Drain',eta:'11:45 AM',rev:'$285 today'},4:{tech:'Nguyen, P.',status:'Available',speed:'0mph',job:'Available for dispatch',eta:'Can depart now',rev:'$685 today'}};
+  var t=trucks[id];if(!t)return;
+  document.getElementById('gps-detail-content').innerHTML=
+    '<table class="tbl"><tbody>'+
+    '<tr><td style="color:var(--muted)">Technician</td><td><strong>'+t.tech+'</strong></td></tr>'+
+    '<tr><td style="color:var(--muted)">Status</td><td><span class="badge badge-progress">'+t.status+'</span></td></tr>'+
+    '<tr><td style="color:var(--muted)">Speed</td><td>'+t.speed+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">Current Job</td><td>'+t.job+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">ETA</td><td>'+t.eta+'</td></tr>'+
+    '<tr><td style="color:var(--muted)">Revenue Today</td><td><strong style="color:var(--c)">'+t.rev+'</strong></td></tr>'+
+    '</tbody></table>'+
+    '<div class="btn-row" style="margin-top:10px">'+
+    '<button class="btn btn-primary btn-sm" onclick="assignJobModal(\'direct\')">Assign Job</button>'+
+    '<button class="btn btn-secondary btn-sm" onclick="sendETA(\'direct\')">Message Tech</button>'+
+    '</div>';
+}
+async function aiRouteAll(){
+  var sys='You are a GPS route optimization AI. Give a brief, specific re-routing recommendation for all 4 techs based on current positions and remaining jobs.';
+  var user='Current: Rodriguez en route Wilson (28mph), Kim on site Thompson, Davis en route Patel (35mph), Nguyen available at depot. Unassigned: Garcia EMERGENCY (Oak St) and Reynolds AC (Dover Dr). Optimize.';
+  var text=await callClaude(sys,user);
+  notify('Route update: '+text.substring(0,120)+'...');
+}
+
+// == CLEARPATH ==
+var CP_WORKFLOWS = {
+  hvac_service:{title:'HVAC Service Call',steps:[
+    {title:'Safety Check & Lockout',note:true,desc:'Verify power disconnected. Test capacitor discharge. Document all hazards.'},
+    {title:'Customer Interview',note:true,desc:'Ask customer: when did problem start, any error codes, any changes to home?'},
+    {title:'Filter & Airflow Inspection',photo:true,desc:'Inspect and replace filter. Measure static pressure. Photo the filter condition.'},
+    {title:'Electrical Measurements',note:true,desc:'Measure voltage at disconnect, amp draw on compressor and blower. Record values.'},
+    {title:'Refrigerant Pressure Check',note:true,desc:'Connect manifold gauges. Record suction and discharge pressures. Calculate superheat and subcooling.'},
+    {title:'Component Testing',note:true,desc:'Test capacitors, contactor, thermostat. Inspect coils for dirt or damage.'},
+    {title:'Customer Presentation',note:false,desc:'Show customer findings in writing before any repair. Get signed authorization.'}
+  ]},
+  plumb_repair:{title:'Plumbing Repair',steps:[
+    {title:'Locate Water Shutoff',note:true,desc:'Find and test main shutoff. Verify it operates completely. Note location for customer.'},
+    {title:'Diagnose Problem',note:true,photo:true,desc:'Inspect problem area thoroughly. Photo before work begins.'},
+    {title:'Drain & Depressurize',note:false,desc:'Open lowest fixture to drain lines. Release any pressure.'},
+    {title:'Make Repair',note:true,desc:'Complete the repair per approved scope. Document materials used.'},
+    {title:'Test & Inspect',note:true,photo:true,desc:'Restore water slowly. Check all connections for leaks. Photo after completion.'},
+    {title:'Customer Walk-Through',note:false,desc:'Show customer the completed work and any recommendations for future service.'}
+  ]},
+  elec_panel:{title:'Panel Upgrade',steps:[
+    {title:'Permit Verification',note:true,desc:'Confirm permit pulled and inspection scheduled. Never start without permit.'},
+    {title:'Utility Notification',note:false,desc:'Contact utility company to schedule meter pull if required.'},
+    {title:'Lockout/Tagout',note:false,desc:'Complete full LOTO per SOP-S01. Verify zero energy state.'},
+    {title:'Old Panel De-wire',note:true,photo:true,desc:'Photo all existing circuits before removal. Label every wire. Record load schedule.'},
+    {title:'New Panel Installation',note:true,photo:true,desc:'Install new panel. Photo rough-in before closing walls.'},
+    {title:'Circuit Connection & Labeling',note:true,desc:'Connect all circuits. Complete accurate circuit directory. Torque to spec.'},
+    {title:'Inspection & Energize',note:true,desc:'Call for inspection. After approval, restore power and test all circuits.'},
+    {title:'Customer Training',note:false,desc:'Walk customer through new panel, circuit directory, and reset procedures.'},
+    {title:'Documentation',note:true,photo:true,desc:'Photo completed panel. Obtain signed completion certificate.'},
+    {title:'Final Sign-Off',note:false,desc:'Customer signs work completion form. Invoice created automatically.'}
+  ]},
+  hvac_install:{title:'HVAC System Installation',steps:[
+    {title:'Pre-Install Site Check',note:true,photo:true,desc:'Confirm equipment matches quote. Photo existing conditions. Verify clearances.'},
+    {title:'Remove Old Equipment',note:false,photo:true,desc:'Recover refrigerant per EPA 608. Photo old equipment serial plate for warranty.'},
+    {title:'Set New Equipment',note:true,photo:true,desc:'Position unit per manufacturer specs. Level condenser. Photo installation.'},
+    {title:'Refrigerant Line Set',note:true,desc:'Install line set per specs. Braze connections with nitrogen purge. Insulate suction line.'},
+    {title:'Electrical Connections',note:true,desc:'Wire condenser, air handler, disconnect, thermostat. Verify voltages.'},
+    {title:'Pressure Test',note:true,desc:'Pressure test system with nitrogen to 400 psig. Hold 30 min. Document.'},
+    {title:'Evacuation',note:true,desc:'Pull vacuum to 300 microns. Hold 15 min. Document micron readings.'},
+    {title:'Charge & Commission',note:true,desc:'Charge to manufacturer specs. Measure superheat, subcooling, temperature split. Document all readings.'},
+    {title:'Customer Training',note:false,desc:'Show customer thermostat operation, filter location, and maintenance requirements.'},
+    {title:'Final Documentation',note:true,photo:true,desc:'Complete start-up sheet, photo nameplate, register warranty, provide homeowner packet.'},
+    {title:'Clean Up',note:false,desc:'Remove all debris. Leave work area cleaner than found. Verify nothing left behind.'},
+    {title:'Sign-Off',note:false,desc:'Customer signs completion form. Photo final installation. Invoice sent automatically.'}
+  ]}
+};
+var cpCurrentJob=null,cpCurrentStep=0,cpNotes={};
+
+function loadClearPath(){
+  var jobId=document.getElementById('cp-job').value;
+  if(!jobId){document.getElementById('cp-select-prompt').style.display='block';document.getElementById('cp-workflow').style.display='none';return;}
+  var wf=CP_WORKFLOWS[jobId];
+  if(!wf){notify('Workflow not found');return;}
+  cpCurrentJob=jobId;cpCurrentStep=0;cpNotes={};
+  document.getElementById('cp-select-prompt').style.display='none';
+  document.getElementById('cp-workflow').style.display='block';
+  document.getElementById('cp-record').innerHTML='<em style="color:var(--muted)">Steps will be logged here as you complete them...</em>';
+  renderCPStep();
+}
+function renderCPStep(){
+  var wf=CP_WORKFLOWS[cpCurrentJob];
+  var steps=wf.steps;
+  var total=steps.length;
+  var pct=Math.round((cpCurrentStep/total)*100);
+  document.getElementById('cp-prog-fill').style.width=pct+'%';
+  document.getElementById('cp-step-label').textContent='Step '+(cpCurrentStep+1)+' of '+total;
+  document.getElementById('cp-pct-label').textContent=pct+'% Complete';
+  var html='';
+  steps.forEach(function(s,i){
+    var cls='cp-step'+(i===cpCurrentStep?' active':i<cpCurrentStep?' done':'');
+    html+='<div class="'+cls+'"><div style="display:flex;align-items:center;gap:10px"><div class="cp-step-num">'+(i<cpCurrentStep?'<span style="color:#fff">&#10003;</span>':(i+1))+'</div><div><div style="font-weight:700;font-size:13px">'+s.title+'</div><div style="font-size:11px;color:var(--muted)">'+s.desc+'</div></div></div></div>';
+  });
+  document.getElementById('cp-steps-container').innerHTML=html;
+  var cur=steps[cpCurrentStep];
+  document.getElementById('cp-note-area').style.display=cur.note?'block':'none';
+  document.getElementById('cp-photo-area').style.display=cur.photo?'block':'none';
+  if(cur.note){
+    var noteEl=document.getElementById('cp-note-input');
+    noteEl.value=cpNotes[cpCurrentStep]||'';
+    noteEl.placeholder='Document what you found for: '+cur.title+'...';
+  }
+  document.getElementById('cp-next-btn').textContent=cpCurrentStep+1>=total?'Complete Job':'Next Step \u2192';
+  document.getElementById('cp-claude-tip').style.display='none';
+}
+function cpNext(){
+  var wf=CP_WORKFLOWS[cpCurrentJob];
+  var cur=wf.steps[cpCurrentStep];
+  if(cur.note){cpNotes[cpCurrentStep]=document.getElementById('cp-note-input').value;}
+  var rec=document.getElementById('cp-record');
+  var note=cpNotes[cpCurrentStep]||'(step complete)';
+  rec.innerHTML+='<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><strong>'+cur.title+':</strong> '+note+'</div>';
+  if(cpCurrentStep+1>=wf.steps.length){
+    notify('Job complete! All steps logged. Invoice being generated...');
+    document.getElementById('cp-pct-label').textContent='100% Complete';
+    document.getElementById('cp-prog-fill').style.width='100%';
+    document.getElementById('cp-next-btn').style.display='none';
+    return;
+  }
+  cpCurrentStep++;
+  renderCPStep();
+}
+function cpPrev(){
+  if(cpCurrentStep>0){cpCurrentStep--;renderCPStep();}
+}
+async function cpClaudeHelp(){
+  var wf=CP_WORKFLOWS[cpCurrentJob];
+  var cur=wf.steps[cpCurrentStep];
+  var sys='You are a master trade technician providing step-specific guidance. Give a brief (3-4 sentence) tip for completing this step correctly and safely.';
+  document.getElementById('cp-claude-tip').style.display='block';
+  await callClaude(sys,'Help me with this step: "'+cur.title+'" -- '+cur.desc+'. Job type: '+wf.title,'cp-claude-text');
+}
+var cpVoiceActive=false;
+function toggleCPVoice(){
+  cpVoiceActive=!cpVoiceActive;
+  var btn=document.getElementById('cp-voice-btn');
+  var status=document.getElementById('cp-voice-status');
+  btn.classList.toggle('listening',cpVoiceActive);
+  status.textContent=cpVoiceActive?'Listening... speak your notes':'Voice Off';
+  if(cpVoiceActive&&window.SpeechRecognition||window.webkitSpeechRecognition){
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    var rec=new SR();rec.continuous=true;rec.lang='en-US';
+    rec.onresult=function(e){
+      var txt=e.results[e.results.length-1][0].transcript;
+      var noteEl=document.getElementById('cp-note-input');
+      if(noteEl)noteEl.value+=(noteEl.value?' ':'')+txt;
+    };
+    rec.start();
+  }else if(cpVoiceActive){notify('Voice mode not supported in this browser');}
+}
+function cpCreateWorkflow(){notify('Custom workflow builder -- Enterprise feature. Contact support to add custom workflows.');}
+
+// == MISC / STUBS ==
+function addCommProject(){notify('New commercial project wizard launching...');}
+function aiNegotiate(){
+  var trade=document.getElementById('neg-trade')?document.getElementById('neg-trade').value:'All Trades';
+  var spend=document.getElementById('neg-spend')?document.getElementById('neg-spend').value:'6400';
+  var sys='You are a procurement expert specializing in trade contractor supplier negotiations. Give specific, actionable negotiation tactics.';
+  var user='Help negotiate better supplier discounts for a '+trade+' contractor in Westlake OH spending $'+spend+'/month. Current: Johnstone 18%, Ferguson 12%, Rexel 15%, Grainger 8%. Goal: '+((document.getElementById('neg-goal')?document.getElementById('neg-goal').value:'')||'push all discounts higher');
+  callClaude(sys,user,'sup-ai');
+}
+function newAgreement(){notify('New service agreement wizard ready -- select customer and plan type');}
+function saveCheck(){checkSeq++;document.getElementById('chk-num').value=checkSeq;notify('Check saved to register -- auto-posted to GL');}
+function showClaudeStrip(panelId){
+  var tips={
+    dashboard:'Dashboard loaded. You have 2 unassigned jobs and 4 overdue invoices. Garcia emergency is highest priority.',
+    dispatch:'2 unassigned jobs. Nguyen available and closest to Garcia. Rodriguez finishing in ~8 minutes.',
+    invoice:'INV-1032 for Brown Office ($980) is now 14 days overdue. Auto-reminder was sent yesterday.',
+    default:'Claude is ready to assist with any questions about this panel.'
+  };
+  var strip=document.querySelector('.claude-strip-text');
+  if(strip)strip.innerHTML='<strong>Claude AI:</strong> '+(tips[panelId]||tips.default);
+}
+function calcCompSavings(){
+  var techs=parseInt(document.getElementById('cc-techs').value)||5;
+  var comp=document.getElementById('cc-comp').value;
+  var costs={ServiceTitan:10000,Jobber:800,['Housecall Pro']:700,Other:600};
+  var basePerTech=costs[comp]||700;
+  var theirCost=(basePerTech*techs)+5000;
+  var ourCost=499*12;
+  var savings=theirCost-ourCost;
+  document.getElementById('cc-savings').textContent='You save $'+savings.toLocaleString()+'/year with SAIRNtrade';
+  document.getElementById('cc-breakdown').textContent=comp+' at '+techs+' techs: ~$'+theirCost.toLocaleString()+'/yr | SAIRNtrade Enterprise: $'+ourCost.toLocaleString()+'/yr';
+}
+function sendMemberPitch(){notify('Membership pitch sent to customer');}
+
 </script>
 </body>
 </html>
