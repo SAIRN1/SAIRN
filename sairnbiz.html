@@ -2729,22 +2729,92 @@ function printPayroll() {
 }
 
 function doPrintStubs() {
-  var co = '';
-  try { co = JSON.parse(localStorage.getItem('sairnbiz:business_profile') || '{}').company_name || 'Your Company'; } catch(e) { co = 'Your Company'; }
+  var co = 'Your Company';
+  try { co = JSON.parse(localStorage.getItem('sairnbiz:business_profile') || '{}').company_name || co; } catch(x) {}
   var checked = Array.from(document.querySelectorAll('.stub-chk:checked')).map(function(c){ return c.value; });
   var stubs = _stubData.filter(function(e){ return checked.indexOf(e.name) >= 0; });
   if (stubs.length === 0) { showToast('Select at least one employee.'); return; }
 
-  // Build stub HTML
-  var html = stubs.map(function(e, idx) {
-    var pb = idx < stubs.length - 1 ? 'margin-bottom:40px;page-break-after:always;' : 'margin-bottom:0;';
-    return '<div class="stub-card" style="' + pb + 'background:#fff;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;">' + buildStubHTML(e, co) + '</div>';
-  }).join('');
+  var css = [
+    '*{box-sizing:border-box;margin:0;padding:0;}',
+    'body{font-family:Arial,sans-serif;font-size:12px;padding:20px;background:#fff;color:#111;}',
+    '.stub{background:#fff;border:1px solid #d1d5db;border-radius:6px;margin-bottom:24px;overflow:hidden;page-break-after:always;page-break-inside:avoid;}',
+    '.stub:last-child{page-break-after:auto;}',
+    '.stub-hdr{background:#14B8A6;color:#fff;padding:11px 16px;display:flex;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;}',
+    '.stub-emp{background:#f9fafb;border-bottom:1px solid #e5e7eb;padding:9px 16px;display:flex;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;}',
+    '.stub-body{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e7eb;}',
+    '.stub-col{padding:12px 16px;font-size:12px;}.stub-col:first-child{border-right:1px solid #e5e7eb;}',
+    '.col-hd{font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:6px;}',
+    '.row{display:flex;justify-content:space-between;padding:3px 0;}',
+    '.row.tot{border-top:1px solid #e5e7eb;margin-top:3px;padding-top:5px;font-weight:700;}',
+    '.net{background:#f0fdfa;border-left:4px solid #14B8A6;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact;}',
+    '.ytd{padding:8px 16px;border-top:1px solid #e5e7eb;font-size:11px;color:#6b7280;display:flex;gap:20px;}',
+    '.ftr{padding:7px 16px;border-top:1px dashed #e5e7eb;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;}',
+    '.no-print{text-align:center;padding:14px;margin-bottom:16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;}',
+    '.no-print button{padding:9px 22px;border-radius:6px;font-size:13px;cursor:pointer;margin:0 5px;font-weight:700;}',
+    '.btn-p{background:#14B8A6;color:#fff;border:none;}',
+    '.btn-c{background:#fff;color:#374151;border:1px solid #d1d5db;}',
+    '@page{size:letter;margin:.5in;}',
+    '@media print{.no-print{display:none!important;}body{padding:0;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}}'
+  ].join('\n');
 
-  // Populate and show the fullscreen overlay
-  document.getElementById('stub-screen-body').innerHTML = html;
-  document.getElementById('stub-screen-title').textContent = co + ' — Pay Stubs — ' + (stubs[0] ? stubs[0].period : '');
-  document.getElementById('stub-fullscreen').style.display = 'block';
+  var ONES=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  var TENS=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function tw(n){if(n===0)return'Zero';if(n<20)return ONES[n];if(n<100)return TENS[Math.floor(n/10)]+(n%10?' '+ONES[n%10]:'');return ONES[Math.floor(n/100)]+' Hundred'+(n%100?' '+tw(n%100):'');}
+  function dw(n){var d=Math.floor(n),c=Math.round((n-d)*100);return tw(d)+' Dollars'+(c>0?' and '+c+'/100':'');}
+  function f(n){return'$'+Number(n).toLocaleString();}
+
+  function mkStub(e) {
+    return '<div class="stub">'+
+      '<div class="stub-hdr">'+
+        '<div><div style="font-size:15px;font-weight:700;">'+co+'</div><div style="font-size:10px;opacity:.8;">EARNINGS STATEMENT</div></div>'+
+        '<div style="text-align:right;font-size:11px;"><div style="opacity:.8;">Pay Period</div><strong>'+e.period+'</strong></div>'+
+      '</div>'+
+      '<div class="stub-emp">'+
+        '<div><div style="font-weight:700;font-size:13px;">'+e.name+'</div><div style="color:#6b7280;font-size:11px;">'+e.title+' — '+e.type+'</div></div>'+
+        '<div style="text-align:right;font-size:11px;color:#6b7280;">Pay Date<br><strong style="color:#111;">Jun 14, 2025</strong></div>'+
+      '</div>'+
+      '<div class="stub-body">'+
+        '<div class="stub-col"><div class="col-hd">Hours &amp; Earnings</div>'+
+          '<div class="row"><span>Regular ('+e.regHrs+' hrs)</span><span>'+f(e.gross-(e.otHrs*(e.gross/(e.regHrs||1))*.5))+'</span></div>'+
+          (e.otHrs>0?'<div class="row"><span>Overtime ('+e.otHrs+' hrs @ 1.5x)</span><span style="color:#F59E0B;">'+f((e.otHrs*(e.gross/(e.regHrs+e.otHrs*1.5))*1.5).toFixed(2))+'</span></div>':'')+
+          '<div class="row tot"><span>Gross Pay</span><span>'+f(e.gross)+'</span></div>'+
+        '</div>'+
+        '<div class="stub-col"><div class="col-hd">Deductions</div>'+
+          '<div class="row"><span>Federal Income Tax</span><span>-'+f(e.federal)+'</span></div>'+
+          '<div class="row"><span>Ohio State Tax (3.5%)</span><span>-'+f(e.state)+'</span></div>'+
+          '<div class="row"><span>FICA Social Security</span><span>-'+f(e.ficaSS)+'</span></div>'+
+          '<div class="row"><span>Medicare</span><span>-'+f(e.medicare)+'</span></div>'+
+          '<div class="row"><span>Health Insurance</span><span>-'+f(e.health)+'</span></div>'+
+          '<div class="row"><span>401(k) Contribution</span><span>-'+f(e.k401)+'</span></div>'+
+          '<div class="row tot"><span>Total Deductions</span><span>-'+f(e.deductions)+'</span></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="net">'+
+        '<div><div style="font-size:10px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:.5px;">Net Pay</div>'+
+        '<div style="font-size:11px;color:#6b7280;">'+dw(e.net)+'</div></div>'+
+        '<div style="font-size:22px;font-weight:700;color:#0f766e;">'+f(e.net)+'</div>'+
+      '</div>'+
+      '<div class="ytd">'+
+        '<span>YTD Gross: <strong style="color:#111;">'+f(e.ytdGross)+'</strong></span>'+
+        '<span>YTD Deductions: <strong style="color:#111;">'+f(e.ytdGross-e.ytdNet)+'</strong></span>'+
+        '<span>YTD Net: <strong style="color:#111;">'+f(e.ytdNet)+'</strong></span>'+
+      '</div>'+
+      '<div class="ftr"><span>Not a negotiable instrument — Retain for your records</span><span>'+co+' — SAIRNbiz Payroll</span></div>'+
+    '</div>';
+  }
+
+  var stubHTML = stubs.map(mkStub).join('');
+  var printBtn = '<div class="no-print"><button class="btn-p" onclick="window.print()">&#x1F5A8; Print / Save as PDF</button><button class="btn-c" onclick="window.close()">Close</button></div>';
+  var full = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pay Stubs — '+co+'</title><style>'+css+'</style></head><body>'+printBtn+stubHTML+'</body></html>';
+
+  var w = window.open('', '_blank', 'width=820,height=900');
+  if (!w) { showToast('Allow pop-ups for this site then try again.'); return; }
+  w.document.open();
+  w.document.write(full);
+  w.document.close();
+  w.onload = function(){ w.focus(); w.print(); };
+  setTimeout(function(){ if (w && !w.closed){ w.focus(); w.print(); } }, 900);
   closeModal('m-pay-stubs');
 }
 
