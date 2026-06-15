@@ -2108,7 +2108,7 @@ async function sendAI() {
       })
     });
     const d = await res.json();
-    const r = (d.content && d.content[0] && d.content[0].text) || d.error || d.message || 'No response.';
+    const r = (d.content && d.content[0] && d.content?.[0]?.text || '') || d.error || d.message || 'No response.';
     _aih.push({role:'assistant', content:r});
     th.className = 'ai-msg bot'; th.textContent = r;
     saveAIHistory(_aih);
@@ -2348,7 +2348,7 @@ window.addEventListener('message', function(e) {
 
           <!-- EMPLOYER TAXES -->
           <tr style="background:#EFF6FF;">
-            <td rowspan="4" style="font-weight:700;color:#1D4ED8;vertical-align:middle;">JE-2504<br><span style="font-size:10px;font-weight:400;">Employer Tax</span></td>
+            <td rowspan="4" style="font-weight:700;color:#374151;vertical-align:middle;">JE-2504<br><span style="font-size:10px;font-weight:400;">Employer Tax</span></td>
             <td>5010</td><td>Payroll Tax Expense — FICA SS</td><td>Employer SS match (6.2%)</td>
             <td style="text-align:right;font-weight:700;">$514.00</td><td></td>
           </tr>
@@ -2367,7 +2367,7 @@ window.addEventListener('message', function(e) {
 
           <!-- EMPLOYER TAX LIABILITY OFFSET -->
           <tr style="background:#EFF6FF;">
-            <td style="font-weight:700;color:#1D4ED8;">JE-2504<br><span style="font-size:10px;font-weight:400;">cont.</span></td>
+            <td style="font-weight:700;color:#374151;">JE-2504<br><span style="font-size:10px;font-weight:400;">cont.</span></td>
             <td>2115</td><td>Employer Taxes Payable</td><td>Employer FICA + FUTA + SUTA liability</td>
             <td></td><td style="text-align:right;font-weight:700;">$917.00</td>
           </tr>
@@ -2432,7 +2432,7 @@ window.addEventListener('message', function(e) {
 <!-- SAIRN AI MEMORY + NETWORK INTELLIGENCE ENGINE                 -->
 <!-- Supabase client (anon key only — no service_role in frontend) -->
 <!-- ============================================================ -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
 // === SUPABASE CONFIG (anon key is safe in frontend) ===
 // IMPORTANT: Replace these with your actual Supabase project URL and anon key
@@ -2644,7 +2644,7 @@ async function writeAIMemory() {
       })
     });
     const d = await res.json();
-    const raw = (d.content && d.content[0] && d.content[0].text) || '';
+    const raw = (d.content && d.content[0] && d.content?.[0]?.text || '') || '';
     let parsed;
     try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()); } catch(e) { parsed = { memory_text: raw, topics: ['general'], importance: 5 }; }
     const mem = {
@@ -2750,7 +2750,7 @@ const _sendAIWithMemory = async function() {
       })
     });
     const d = await res.json();
-    const r = (d.content && d.content[0] && d.content[0].text) || d.error || d.message || 'No response.';
+    const r = (d.content && d.content[0] && d.content?.[0]?.text || '') || d.error || d.message || 'No response.';
     _aih.push({role:'assistant', content:r});
     th.className = 'ai-msg bot'; th.textContent = r;
     saveAIHistory(_aih);
@@ -3033,7 +3033,7 @@ function doPrintStubs() {
              style="display:none" onchange="sairnFQHandleFile(this)">
     </div>
     <div id="sairn-fq-preview" style="display:none;margin-bottom:12px">
-      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB">
+      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB" loading="lazy">
       <div style="font-size:13px;color:#16A34A;font-weight:600;margin-top:6px">✅ Drawing captured</div>
     </div>
     <div style="display:flex;gap:9px">
