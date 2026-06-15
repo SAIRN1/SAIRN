@@ -1051,6 +1051,23 @@ body.is-exec .exec-only-block{display:block}
   * { -webkit-print-color-adjust:exact;print-color-adjust:exact; }
 }
 
+
+/* === P5 Range Benchmarking === */
+.sairn-range-wrap{margin:10px 0;}
+.sairn-range-label{display:flex;justify-content:space-between;font-size:12px;color:#6B7280;margin-bottom:4px;}
+.sairn-range-track{height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;position:relative;}
+.sairn-range-fill{height:100%;border-radius:4px;transition:width .5s ease;}
+.sairn-range-marker{position:absolute;top:-3px;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transform:translateX(-50%);}
+
+
+/* === Empty States === */
+.sairn-empty{text-align:center;padding:40px 20px;color:#9CA3AF;}
+.sairn-empty-icon{font-size:40px;margin-bottom:10px;}
+.sairn-empty-title{font-size:15px;font-weight:700;color:#6B7280;margin-bottom:6px;}
+.sairn-empty-sub{font-size:13px;}
+.sairn-empty-btn{margin-top:14px;display:inline-flex;align-items:center;gap:6px;padding:9px 18px;
+  border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;}
+
 </style>
 </head>
 <body>
@@ -5090,7 +5107,7 @@ console.log('StoneDesk Patch v1.1 loaded — all 18 panels verified and fixed');
   <div class="sairn-suite-tile-desc">Outdoor Surfaces</div>
 </div></div>
     <div class="sairn-suite-btns">
-      <button class="sairn-suite-btn" onclick="sairnSyncAll()">🔄 Sync All Apps</button>
+      <button class="sairn-suite-btn" onclick="sairnSyncAll();sairnUpdateLastSync()">🔄 Sync All Apps</button>
       <button class="sairn-suite-btn out" onclick="sairnExportCSV()">📊 CSV Export</button>
       <span style="font-size:12px;color:#94A3B8;align-self:center" id="sairn-last-sync">Last sync: --</span>
     </div>
@@ -5494,6 +5511,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })(); // end IIFE
 </script>
+
+
+// P5 Range Benchmarking
+function sairnRangeBar(label,value,min,max,color,containerId){
+  var pct=Math.min(100,Math.max(0,Math.round((value-min)/(max-min)*100)));
+  var html='<div class="sairn-range-wrap">'
+    +'<div class="sairn-range-label"><span>'+label+'</span><span>'+value+' / '+max+'</span></div>'
+    +'<div class="sairn-range-track">'
+    +'<div class="sairn-range-fill" style="width:'+pct+'%;background:'+color+'"></div>'
+    +'<div class="sairn-range-marker" style="left:'+pct+'%;background:'+color+'"></div>'
+    +'</div></div>';
+  var el=document.getElementById(containerId);
+  if(el) el.innerHTML+=html;
+}
+
+
+// Empty state renderer
+function sairnEmptyState(icon,title,sub,btnLabel,btnFn,containerId){
+  var btn=btnLabel?'<button class="sairn-empty-btn" style="background:var(--app-color,#16C762);color:#fff" onclick="'+btnFn+'()">'+btnLabel+'</button>':'';
+  var html='<div class="sairn-empty"><div class="sairn-empty-icon">'+icon+'</div>'
+    +'<div class="sairn-empty-title">'+title+'</div>'
+    +'<div class="sairn-empty-sub">'+sub+'</div>'+btn+'</div>';
+  var el=document.getElementById(containerId);
+  if(el) el.innerHTML=html;
+}
+
+
+// Suite last sync tracker
+function sairnUpdateLastSync(){
+  var ts=new Date().toLocaleTimeString();
+  document.querySelectorAll('[id*="last-sync"],[class*="last-sync"]').forEach(function(el){
+    el.textContent='Last sync: '+ts;
+  });
+  var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_last_sync';
+  try{ localStorage.setItem(key,ts); }catch(e){}
+}
+// Restore last sync on load
+document.addEventListener('DOMContentLoaded',function(){
+  var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_last_sync';
+  try{
+    var ts=localStorage.getItem(key);
+    if(ts) document.querySelectorAll('[id*="last-sync"],[class*="last-sync"]').forEach(function(el){
+      el.textContent='Last sync: '+ts;
+    });
+  }catch(e){}
+});
+
+
+<!-- SAIRNscan embedded -->
+<div id="sairnscan-ref" style="display:none" data-sairnscan="true"
+     data-version="1.0" data-sha="dda09816"></div>
 
 </body></html>');
   win.document.close();
