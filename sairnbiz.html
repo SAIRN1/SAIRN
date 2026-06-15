@@ -222,7 +222,8 @@ textarea{resize:vertical;min-height:72px;}
 .card-title{font-size:14px;font-weight:700;}
 .card-body{padding:16px;}
 .card-body.p0{padding:0;}
-.rpt-card:hover{box-shadow:0 4px 12px rgba(20,184,166,.15);transform:translateY(-1px);transition:all .15s;}
+.rpt-card{display:block;background:#fff;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);margin:0!important;cursor:pointer;transition:all .15s;}
+.rpt-card:hover{box-shadow:0 4px 16px rgba(20,184,166,.2);transform:translateY(-2px);border-color:var(--teal);}
 .dt{width:100%;border-collapse:collapse;}
 .dt th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:8px 12px;border-bottom:2px solid var(--border);background:#F8FAFC;}
 .dt td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
@@ -879,14 +880,90 @@ textarea{resize:vertical;min-height:72px;}
 <!-- REPORTS -->
 <div class="page" id="page-reports">
   <div class="page-title">Reports</div>
-  <div class="page-sub">AI-generated financial reports — click any to generate instantly</div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;">
-    <div class="card rpt-card" style="margin:0;cursor:pointer;" onclick="askAI('Generate a full P&L statement for June 2025. Include revenue, COGS, gross margin, operating expenses, and net income.')"><div class="card-body" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:8px;">&#x1F4CA;</div><div style="font-weight:700;">P&L Statement</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">Income & expenses</div></div></div>
-    <div class="card rpt-card" style="margin:0;cursor:pointer;" onclick="askAI('Generate a balance sheet as of June 14, 2025. Include assets, liabilities, and equity.')"><div class="card-body" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:8px;">&#x1F4CB;</div><div style="font-weight:700;">Balance Sheet</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">Assets & liabilities</div></div></div>
-    <div class="card rpt-card" style="margin:0;cursor:pointer;" onclick="askAI('Generate a cash flow statement for June 2025. Operating, investing, and financing activities.')"><div class="card-body" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:8px;">&#x1F4B0;</div><div style="font-weight:700;">Cash Flow</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">Operating + investing</div></div></div>
-    <div class="card rpt-card" style="margin:0;cursor:pointer;" onclick="askAI('Generate an AR aging report. Group overdue invoices by 0-30, 31-60, 61-90, and 90+ days.')"><div class="card-body" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:8px;">&#x1F9FE;</div><div style="font-weight:700;">AR Aging</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">Collections priority</div></div></div>
-    <div class="card rpt-card" style="margin:0;cursor:pointer;" onclick="askAI('Generate a payroll summary report for June 2025 by employee and department.')"><div class="card-body" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:8px;">&#x1F4B5;</div><div style="font-weight:700;">Payroll Summary</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">By employee</div></div></div>
-    <div class="card rpt-card" style="margin:0;cursor:pointer;" onclick="askAI('Generate a budget vs actual report for June 2025. Flag categories over budget and explain why.')"><div class="card-body" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:8px;">&#x1F4B9;</div><div style="font-weight:700;">Budget vs Actual</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">Variance analysis</div></div></div>
+  <div class="page-sub">AI-generated financial reports — click any card to generate instantly</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:4px;">
+
+    <div class="rpt-card" onclick="askAI('Generate a full P&L statement for June 2025. Include revenue, COGS, gross margin, operating expenses, and net income.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x1F4CA;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">P&amp;L Statement</div>
+        <div style="font-size:12px;color:var(--muted);">Revenue, COGS, net income</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
+    <div class="rpt-card" onclick="askAI('Generate a balance sheet as of June 14, 2025. Include all assets, liabilities, and owner equity.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x2696;&#xFE0F;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Balance Sheet</div>
+        <div style="font-size:12px;color:var(--muted);">Assets, liabilities, equity</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
+    <div class="rpt-card" onclick="askAI('Generate a cash flow statement for June 2025. Show operating, investing, and financing activities separately.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x1F4B0;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Cash Flow</div>
+        <div style="font-size:12px;color:var(--muted);">Operating + investing</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
+    <div class="rpt-card" onclick="askAI('Generate an AR aging report. Group all outstanding invoices by 0-30, 31-60, 61-90, and 90+ days. Flag collection priorities.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x1F9FE;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">AR Aging</div>
+        <div style="font-size:12px;color:var(--muted);">Collections priority</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
+    <div class="rpt-card" onclick="askAI('Generate a full payroll summary for June 2025. Show gross, all deductions, net pay, employer taxes, and total cost per employee and department.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x1F4B5;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Payroll Summary</div>
+        <div style="font-size:12px;color:var(--muted);">All deductions by employee</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
+    <div class="rpt-card" onclick="askAI('Generate a budget vs actual report for June 2025. Show budget, actual, variance, and % used for each category. Flag everything over budget.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x1F4B9;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Budget vs Actual</div>
+        <div style="font-size:12px;color:var(--muted);">Variance analysis</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
+    <div class="rpt-card" onclick="askAI('Generate a payroll tax liability report. Show what is owed to IRS, Ohio Department of Taxation, and RITA for the current period with due dates.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x1F3DB;&#xFE0F;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Tax Liability</div>
+        <div style="font-size:12px;color:var(--muted);">IRS, Ohio, RITA due</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
+    <div class="rpt-card" onclick="askAI('Generate a headcount and labor cost report. Show total employees, avg pay rate, total payroll cost, and cost as % of revenue by department.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x1F465;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Headcount &amp; Labor</div>
+        <div style="font-size:12px;color:var(--muted);">Cost per dept</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
+    <div class="rpt-card" onclick="askAI('Generate a benefits cost report. Show total employer cost for health, dental, vision, and 401k match by employee and as a total monthly expense.')">
+      <div style="padding:24px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">&#x1F3E5;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Benefits Cost</div>
+        <div style="font-size:12px;color:var(--muted);">Employer cost by plan</div>
+        <div style="margin-top:12px;background:var(--teal-light);color:var(--teal-dark);border-radius:6px;padding:5px;font-size:12px;font-weight:600;">Click to Generate</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
