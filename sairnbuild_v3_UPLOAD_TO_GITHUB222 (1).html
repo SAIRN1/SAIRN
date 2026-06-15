@@ -1,0 +1,3982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIRNbuild — General Contractor Platform</title>
+<style>
+/* ============================================================
+   SAIRNBUILD DESIGN TOKENS
+   Color: Amber #F59E0B | Dark #92400E | Tint #FFFBEB | Accent #FCD34D
+   Light backgrounds only. Print-first. No dark bg. No blue.
+   ============================================================ */
+:root {
+  --amber:       #F59E0B;
+  --amber-dark:  #92400E;
+  --amber-mid:   #D97706;
+  --amber-tint:  #FFFBEB;
+  --amber-light: #FEF3C7;
+  --amber-acc:   #FCD34D;
+  --white:       #FFFFFF;
+  --gray-50:     #F9FAFB;
+  --gray-100:    #F3F4F6;
+  --gray-200:    #E5E7EB;
+  --gray-300:    #D1D5DB;
+  --gray-400:    #9CA3AF;
+  --gray-500:    #6B7280;
+  --gray-600:    #4B5563;
+  --gray-700:    #374151;
+  --gray-800:    #1F2937;
+  --gray-900:    #111827;
+  --green:       #16A34A;
+  --green-light: #DCFCE7;
+  --red:         #DC2626;
+  --red-light:   #FEE2E2;
+  --blue-flag:   #2563EB;  /* only for SAIRNdesign link */
+  --sidebar-w:   260px;
+  --topbar-h:    64px;
+  --radius:      10px;
+  --radius-sm:   6px;
+  --shadow:      0 1px 4px rgba(0,0,0,0.08);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.13);
+  --font:        -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:   'SF Mono', 'Fira Code', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--gray-50); color: var(--gray-800); }
+
+/* ============================================================
+   LOGIN SCREEN
+   ============================================================ */
+#login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--amber-tint) 0%, var(--white) 60%, var(--amber-light) 100%);
+}
+.login-card {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+.login-logo {
+  width: 64px;
+  height: 64px;
+  background: var(--amber);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--white);
+  margin: 0 auto 20px;
+  letter-spacing: -1px;
+}
+.login-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.5px;
+}
+.login-sub {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin: 6px 0 32px;
+}
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.role-btn {
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  cursor: pointer;
+  background: var(--white);
+  transition: all 0.15s;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-600);
+}
+.role-btn:hover, .role-btn.active {
+  border-color: var(--amber);
+  background: var(--amber-tint);
+  color: var(--amber-dark);
+}
+.role-btn .role-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+.pin-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-align: left;
+  margin-bottom: 8px;
+}
+.pin-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 24px;
+  letter-spacing: 8px;
+  text-align: center;
+  font-family: var(--font-mono);
+  color: var(--gray-900);
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 16px;
+}
+.pin-input:focus { border-color: var(--amber); }
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--amber);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.login-btn:hover { background: var(--amber-mid); }
+.login-error {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--red);
+  display: none;
+}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#app-shell {
+  display: none;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* TOPBAR */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: var(--white);
+  border-bottom: 2px solid var(--amber-light);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+.topbar-logo {
+  width: 40px;
+  height: 40px;
+  background: var(--amber);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -1px;
+  flex-shrink: 0;
+}
+.topbar-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.3px;
+}
+.topbar-name span { color: var(--amber); }
+.topbar-spacer { flex: 1; }
+
+/* FIELD QUOTE BUTTON — always visible in topbar */
+.field-quote-topbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--amber);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.field-quote-topbar-btn:hover { background: var(--amber-mid); }
+
+.topbar-project {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--amber-tint);
+  border: 1.5px solid var(--amber-light);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-dark);
+  cursor: pointer;
+}
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+}
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--amber-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--amber-dark);
+}
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--white);
+  border-right: 2px solid var(--amber-light);
+  overflow-y: auto;
+  z-index: 50;
+  padding: 16px 0 80px;
+}
+.sidebar-section {
+  padding: 0 12px;
+  margin-bottom: 6px;
+}
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 8px 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-600);
+  transition: all 0.12s;
+  position: relative;
+  text-decoration: none;
+}
+.nav-item:hover {
+  background: var(--amber-tint);
+  color: var(--amber-dark);
+}
+.nav-item.active {
+  background: var(--amber-light);
+  color: var(--amber-dark);
+  font-weight: 700;
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: var(--amber);
+  border-radius: 0 3px 3px 0;
+}
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+.nav-badge.amber {
+  background: var(--amber);
+}
+
+/* SAIRNdesign link — indigo per color law */
+.nav-item.design-link {
+  border: 1.5px solid #E0E7FF;
+  background: #F5F3FF;
+  color: #4338CA;
+  margin-top: 4px;
+}
+.nav-item.design-link:hover {
+  background: #EDE9FE;
+  color: #3730A3;
+}
+
+/* MAIN CONTENT */
+.main-content {
+  margin-left: var(--sidebar-w);
+  margin-top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  padding: 28px;
+  background: var(--gray-50);
+}
+
+/* ============================================================
+   SHARED COMPONENTS
+   ============================================================ */
+.page { display: none; }
+.page.active { display: block; }
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.5px;
+}
+.page-sub {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+.page-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--amber); color: var(--white); }
+.btn-primary:hover { background: var(--amber-mid); }
+.btn-outline { background: var(--white); color: var(--gray-700); border: 1.5px solid var(--gray-200); }
+.btn-outline:hover { background: var(--gray-50); border-color: var(--gray-300); }
+.btn-ghost { background: transparent; color: var(--gray-600); }
+.btn-ghost:hover { background: var(--gray-100); }
+.btn-danger { background: var(--red); color: var(--white); }
+.btn-green { background: var(--green); color: var(--white); }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-lg { padding: 12px 24px; font-size: 16px; }
+
+/* Cards */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1.5px solid var(--gray-200);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.card-sub {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1.5px solid var(--gray-200);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.stat-delta {
+  font-size: 12px;
+  color: var(--green);
+  margin-top: 4px;
+  font-weight: 600;
+}
+.stat-delta.down { color: var(--red); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--gray-50);
+  border-bottom: 1.5px solid var(--gray-200);
+}
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-700);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--amber-tint); }
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-green { background: var(--green-light); color: var(--green); }
+.badge-amber { background: var(--amber-light); color: var(--amber-dark); }
+.badge-red   { background: var(--red-light); color: var(--red); }
+.badge-gray  { background: var(--gray-100); color: var(--gray-600); }
+
+/* Health score ring */
+.health-ring {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--amber-tint);
+  border-radius: var(--radius);
+  border: 1.5px solid var(--amber-light);
+  margin-bottom: 20px;
+}
+.health-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: conic-gradient(var(--amber) 0% 82%, var(--gray-200) 82% 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.health-circle-inner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--amber-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--amber-dark);
+}
+.health-info h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.health-info p {
+  font-size: 13px;
+  color: var(--gray-600);
+  margin-top: 4px;
+}
+
+/* Risk flags */
+.flag-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  border-left: 4px solid transparent;
+}
+.flag-critical { background: var(--red-light); border-left-color: var(--red); }
+.flag-high     { background: #FFF7ED; border-left-color: #F97316; }
+.flag-medium   { background: var(--amber-tint); border-left-color: var(--amber); }
+.flag-icon { font-size: 18px; flex-shrink: 0; }
+.flag-text { font-size: 13px; color: var(--gray-700); }
+.flag-text strong { display: block; font-weight: 700; margin-bottom: 2px; }
+
+/* Trade grid */
+.trade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.trade-card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.12s;
+  box-shadow: var(--shadow);
+}
+.trade-card:hover {
+  border-color: var(--amber);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.trade-card-icon { font-size: 24px; margin-bottom: 8px; }
+.trade-card-name { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+.trade-card-status { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+.trade-card-bar {
+  height: 4px;
+  background: var(--gray-100);
+  border-radius: 2px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.trade-card-bar-fill {
+  height: 100%;
+  background: var(--amber);
+  border-radius: 2px;
+  transition: width 0.5s;
+}
+
+/* Field Quote Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  position: relative;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.modal-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--gray-100);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-500);
+}
+.modal-close:hover { background: var(--gray-200); }
+
+/* Form elements */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--gray-800);
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.12s;
+  font-family: var(--font);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--amber);
+}
+.form-textarea { resize: vertical; min-height: 90px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--gray-50);
+}
+.upload-zone:hover {
+  border-color: var(--amber);
+  background: var(--amber-tint);
+}
+.upload-zone-icon { font-size: 36px; margin-bottom: 10px; }
+.upload-zone-text { font-size: 14px; color: var(--gray-600); }
+.upload-zone-sub { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+
+/* AI response area */
+.ai-bubble {
+  background: var(--amber-tint);
+  border: 1.5px solid var(--amber-light);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 12px 0;
+  font-size: 14px;
+  color: var(--gray-800);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.ai-bubble.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gray-500);
+}
+.ai-thinking {
+  display: flex;
+  gap: 4px;
+}
+.ai-thinking span {
+  width: 6px;
+  height: 6px;
+  background: var(--amber);
+  border-radius: 50%;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.ai-thinking span:nth-child(2) { animation-delay: 0.2s; }
+.ai-thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1); }
+}
+
+/* Quote output */
+.quote-output {
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--gray-800);
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+}
+
+/* Sub portal steps */
+.steps-row {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.step-item {
+  flex: 1;
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-400);
+  border-right: 1px solid var(--gray-100);
+  position: relative;
+}
+.step-item:last-child { border-right: none; }
+.step-item.done { color: var(--green); background: var(--green-light); }
+.step-item.active { color: var(--amber-dark); background: var(--amber-tint); }
+.step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--gray-500);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 4px;
+}
+.step-item.done .step-num { background: var(--green); color: var(--white); }
+.step-item.active .step-num { background: var(--amber); color: var(--white); }
+
+/* Blueprint AI module */
+.blueprint-mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.mode-tab {
+  flex: 1;
+  padding: 12px 8px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-align: center;
+  transition: all 0.12s;
+}
+.mode-tab:hover { border-color: var(--amber); color: var(--amber-dark); }
+.mode-tab.active {
+  border-color: var(--amber);
+  background: var(--amber-tint);
+  color: var(--amber-dark);
+}
+.mode-tab .tab-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+/* Trade selector chips */
+.trade-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.trade-chip {
+  padding: 7px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+  background: var(--white);
+  transition: all 0.12s;
+}
+.trade-chip:hover, .trade-chip.active {
+  border-color: var(--amber);
+  background: var(--amber-tint);
+  color: var(--amber-dark);
+}
+
+/* SAIRNbiz connector */
+.sairnbiz-connector {
+  background: linear-gradient(135deg, #F0FDFA, #FFFFFF);
+  border: 1.5px solid #99F6E4;
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.sairnbiz-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.sairnbiz-logo {
+  width: 36px;
+  height: 36px;
+  background: #14B8A6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--white);
+}
+.sairnbiz-title { font-size: 15px; font-weight: 700; color: #0F766E; }
+.sairnbiz-sub { font-size: 12px; color: #5EEAD4; }
+.sairnbiz-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.sairnbiz-btn {
+  padding: 8px 14px;
+  background: #14B8A6;
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.sairnbiz-btn:hover { background: #0D9488; }
+.sairnbiz-btn.outline {
+  background: var(--white);
+  color: #0F766E;
+  border: 1.5px solid #14B8A6;
+}
+.sairnbiz-btn.outline:hover { background: #F0FDFA; }
+
+/* Progress bars */
+.progress-bar {
+  height: 8px;
+  background: var(--gray-100);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--amber);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+/* Weather widget */
+.weather-widget {
+  background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+  border: 1.5px solid #BFDBFE;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.weather-icon { font-size: 36px; }
+.weather-temp { font-size: 28px; font-weight: 800; color: var(--gray-900); }
+.weather-desc { font-size: 13px; color: var(--gray-600); }
+.weather-alert {
+  margin-left: auto;
+  background: var(--red-light);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--gray-400);
+}
+.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state-title { font-size: 16px; font-weight: 700; color: var(--gray-600); margin-bottom: 6px; }
+.empty-state-sub { font-size: 14px; }
+
+/* Signature pad */
+.sig-pad-wrap {
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--gray-50);
+  position: relative;
+  margin-bottom: 12px;
+}
+#sig-canvas {
+  display: block;
+  width: 100%;
+  height: 120px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.sig-label {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--gray-300);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Print styles */
+@media print {
+  .topbar, .sidebar, .page-actions, .btn, .modal-overlay { display: none !important; }
+  .main-content { margin: 0; padding: 20px; }
+  .card { box-shadow: none; border: 1px solid #ddd; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); transition: transform 0.25s; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0; padding: 16px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .trade-grid { grid-template-columns: 1fr 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray-300); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN SCREEN
+     ============================================================ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">SB</div>
+    <div class="login-title">SAIRNbuild</div>
+    <div class="login-sub">General Contractor Platform</div>
+
+    <div class="role-grid">
+      <button class="role-btn active" data-role="owner" onclick="selectRole(this)">
+        <span class="role-icon">👑</span>Owner
+      </button>
+      <button class="role-btn" data-role="admin" onclick="selectRole(this)">
+        <span class="role-icon">🔧</span>Admin
+      </button>
+      <button class="role-btn" data-role="manager" onclick="selectRole(this)">
+        <span class="role-icon">📋</span>Manager
+      </button>
+      <button class="role-btn" data-role="sales" onclick="selectRole(this)">
+        <span class="role-icon">💼</span>Sales Rep
+      </button>
+    </div>
+
+    <div class="pin-label">Enter your PIN</div>
+    <input class="pin-input" type="password" id="pin-input" maxlength="4"
+           placeholder="••••" inputmode="numeric" oninput="handlePinInput(this)">
+
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error">Incorrect PIN. Please try again.</div>
+
+    <div style="margin-top:20px;font-size:12px;color:var(--gray-400)">
+      Demo: any role + PIN 1234
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div id="app-shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-logo">SB</div>
+    <div class="topbar-name">SAIRN<span>build</span></div>
+
+    <div class="topbar-project" onclick="showPage('projects')">
+      🏗️ <span id="active-project-name">All Projects</span> ▾
+    </div>
+
+    <div class="topbar-spacer"></div>
+
+    <!-- FIELD QUOTE — always one tap away -->
+    <button class="field-quote-topbar-btn" onclick="openFieldQuote()">
+      📷 Field Quote
+    </button>
+
+    <div class="topbar-user">
+      <div class="user-avatar" id="user-initials">OW</div>
+      <span id="user-role-label">Owner</span>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Command</div>
+      <div class="nav-item active" onclick="showPage('dashboard')">
+        <span class="nav-icon">🏠</span> GC Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('projects')">
+        <span class="nav-icon">🏗️</span> Projects
+        <span class="nav-badge amber">3</span>
+      </div>
+      <div class="nav-item" onclick="showPage('field-quote')">
+        <span class="nav-icon">📷</span> Field Quote
+      </div>
+      <div class="nav-item" onclick="showPage('blueprint-ai')">
+        <span class="nav-icon">📐</span> Blueprint AI
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">People</div>
+      <div class="nav-item" onclick="showPage('subcontractors')">
+        <span class="nav-icon">🦺</span> Subcontractors
+        <span class="nav-badge">2</span>
+      </div>
+      <div class="nav-item" onclick="showPage('employees')">
+        <span class="nav-icon">👷</span> Employees
+      </div>
+      <div class="nav-item" onclick="showPage('vendors')">
+        <span class="nav-icon">🏭</span> Vendors
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Trade Modules</div>
+      <div class="nav-item" onclick="showPage('trade-roofing')">
+        <span class="nav-icon">🏠</span> Roofing
+      </div>
+      <div class="nav-item" onclick="showPage('trade-electrical')">
+        <span class="nav-icon">⚡</span> Electrical
+      </div>
+      <div class="nav-item" onclick="showPage('trade-framing')">
+        <span class="nav-icon">🪵</span> Framing
+      </div>
+      <div class="nav-item" onclick="showPage('trade-plumbing')">
+        <span class="nav-icon">🔧</span> Plumbing
+      </div>
+      <div class="nav-item" onclick="showPage('trade-tile')">
+        <span class="nav-icon">🏗️</span> Tile
+      </div>
+      <div class="nav-item" onclick="showPage('trade-hvac')">
+        <span class="nav-icon">🌡️</span> HVAC
+      </div>
+      <div class="nav-item" onclick="showPage('trade-siding')">
+        <span class="nav-icon">🏡</span> Siding & Windows
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Finance</div>
+      <div class="nav-item" onclick="showPage('compensation')">
+        <span class="nav-icon">💰</span> Compensation
+      </div>
+      <div class="nav-item" onclick="showPage('check-register')">
+        <span class="nav-icon">📄</span> Check Register
+      </div>
+      <div class="nav-item" onclick="showPage('reports')">
+        <span class="nav-icon">📊</span> Reports
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Integrations</div>
+      <div class="nav-item design-link" onclick="showPage('sairndesign-link')">
+        <span class="nav-icon">🎨</span> SAIRNdesign
+      </div>
+      <div class="nav-item" onclick="showPage('sairnbiz-connector')">
+        <span class="nav-icon">🔗</span> SAIRNbiz Connector
+      </div>
+      <div class="nav-item" onclick="showPage('admin-pricing')">
+        <span class="nav-icon">⚙️</span> Admin & Pricing
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content" id="main-content">
+
+    <!-- ======================================================
+         DASHBOARD
+         ====================================================== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">GC Dashboard</div>
+          <div class="page-sub">Monday, June 15, 2026 &nbsp;|&nbsp; 3 Active Projects</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print Day Report</button>
+          <button class="btn btn-primary" onclick="showPage('projects')">+ New Project</button>
+        </div>
+      </div>
+
+      <!-- Weather Command Engine (Pattern 12) -->
+      <div class="weather-widget">
+        <div class="weather-icon">⛅</div>
+        <div>
+          <div class="weather-temp">74°F</div>
+          <div class="weather-desc">Partly Cloudy &nbsp;·&nbsp; Wind 12mph &nbsp;·&nbsp; Westlake, OH</div>
+        </div>
+        <div style="flex:1"></div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:4px">✅ Green Light</div>
+          <div style="font-size:12px;color:var(--gray-500)">All exterior crews: GO</div>
+        </div>
+      </div>
+
+      <!-- Project Health Score -->
+      <div class="health-ring">
+        <div class="health-circle">
+          <div class="health-circle-inner">82</div>
+        </div>
+        <div class="health-info">
+          <h3>Project Health: Strong</h3>
+          <p>2 open flags · Budget on track · All subs compliant</p>
+          <p style="font-size:12px;color:var(--amber-dark);margin-top:4px;font-weight:600">
+            Claude: "Electrical sub submission 2 days overdue — follow up today."
+          </p>
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="runHealthScore()">
+          🤖 Refresh Score
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Active Projects</div>
+          <div class="stat-value">3</div>
+          <div class="stat-delta">↑ 1 this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Subs</div>
+          <div class="stat-value">11</div>
+          <div class="stat-delta">2 flagged</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Open POs</div>
+          <div class="stat-value">$84K</div>
+          <div class="stat-delta">↑ $12K pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Budget Burn</div>
+          <div class="stat-value">67%</div>
+          <div class="stat-delta">On track</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Quotes This Week</div>
+          <div class="stat-value">7</div>
+          <div class="stat-delta">↑ 3 via Field Quote</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Employees On Site</div>
+          <div class="stat-value">14</div>
+          <div class="stat-delta">Today</div>
+        </div>
+      </div>
+
+      <!-- Risk Flags -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🚨 Claude Risk Flags</div>
+            <div class="card-sub">AI-detected issues sorted by severity</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="runClaudeFlags()">🤖 Scan Now</button>
+        </div>
+        <div class="flag-item flag-critical">
+          <div class="flag-icon">🔴</div>
+          <div class="flag-text">
+            <strong>CRITICAL — 412 Elmwood: Electrical Sub Photo Detected</strong>
+            Junction box placement conflicts with HVAC rough-in location. Stop work on drywall in east wall until resolved. (Detected from photo submitted 6/14)
+          </div>
+        </div>
+        <div class="flag-item flag-high">
+          <div class="flag-icon">🟠</div>
+          <div class="flag-text">
+            <strong>HIGH — 412 Elmwood: Material Overage</strong>
+            Framing sub logged 340 studs; takeoff shows 280 required. Verify with foreman before next delivery.
+          </div>
+        </div>
+        <div class="flag-item flag-medium">
+          <div class="flag-icon">🟡</div>
+          <div class="flag-text">
+            <strong>MEDIUM — 88 River Rd: Submission Overdue</strong>
+            Electrical sub has not submitted daily log in 2 days. Send reminder or escalate.
+          </div>
+        </div>
+      </div>
+
+      <!-- Trade Status Grid -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Trade Status — All Active Projects</div>
+          <button class="btn btn-outline btn-sm" onclick="showPage('subcontractors')">View All Subs</button>
+        </div>
+        <div class="trade-grid">
+          <div class="trade-card" onclick="showPage('trade-roofing')">
+            <div class="trade-card-icon">🏠</div>
+            <div class="trade-card-name">Roofing</div>
+            <div class="trade-card-status"><span class="badge badge-green">Complete</span></div>
+            <div class="trade-card-bar"><div class="trade-card-bar-fill" style="width:100%"></div></div>
+          </div>
+          <div class="trade-card" onclick="showPage('trade-framing')">
+            <div class="trade-card-icon">🪵</div>
+            <div class="trade-card-name">Framing</div>
+            <div class="trade-card-status"><span class="badge badge-green">On Track — 85%</span></div>
+            <div class="trade-card-bar"><div class="trade-card-bar-fill" style="width:85%"></div></div>
+          </div>
+          <div class="trade-card" onclick="showPage('trade-electrical')">
+            <div class="trade-card-icon">⚡</div>
+            <div class="trade-card-name">Electrical</div>
+            <div class="trade-card-status"><span class="badge badge-red">Flagged</span></div>
+            <div class="trade-card-bar"><div class="trade-card-bar-fill" style="width:55%;background:var(--red)"></div></div>
+          </div>
+          <div class="trade-card" onclick="showPage('trade-plumbing')">
+            <div class="trade-card-icon">🔧</div>
+            <div class="trade-card-name">Plumbing</div>
+            <div class="trade-card-status"><span class="badge badge-amber">In Progress — 60%</span></div>
+            <div class="trade-card-bar"><div class="trade-card-bar-fill" style="width:60%"></div></div>
+          </div>
+          <div class="trade-card" onclick="showPage('trade-hvac')">
+            <div class="trade-card-icon">🌡️</div>
+            <div class="trade-card-name">HVAC</div>
+            <div class="trade-card-status"><span class="badge badge-gray">Not Started</span></div>
+            <div class="trade-card-bar"><div class="trade-card-bar-fill" style="width:0%"></div></div>
+          </div>
+          <div class="trade-card" onclick="showPage('trade-tile')">
+            <div class="trade-card-icon">🏗️</div>
+            <div class="trade-card-name">Tile</div>
+            <div class="trade-card-status"><span class="badge badge-gray">Pending</span></div>
+            <div class="trade-card-bar"><div class="trade-card-bar-fill" style="width:0%"></div></div>
+          </div>
+          <div class="trade-card" onclick="showPage('trade-siding')">
+            <div class="trade-card-icon">🏡</div>
+            <div class="trade-card-name">Siding & Windows</div>
+            <div class="trade-card-status"><span class="badge badge-amber">Scheduled</span></div>
+            <div class="trade-card-bar"><div class="trade-card-bar-fill" style="width:10%"></div></div>
+          </div>
+          <div class="trade-card" onclick="showPage('sairndesign-link')">
+            <div class="trade-card-icon">🎨</div>
+            <div class="trade-card-name">Interior Design</div>
+            <div class="trade-card-status" style="color:#6366F1;font-weight:600;font-size:12px">SAIRNdesign →</div>
+            <div class="trade-card-bar"><div class="trade-card-bar-fill" style="width:40%;background:#6366F1"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAIRNbiz Connector -->
+      <div class="sairnbiz-connector">
+        <div class="sairnbiz-header">
+          <div class="sairnbiz-logo">SB</div>
+          <div>
+            <div class="sairnbiz-title">SAIRNbiz Connected</div>
+            <div class="sairnbiz-sub" style="color:#5EEAD4">HR + Accounting backbone</div>
+          </div>
+          <div style="margin-left:auto;font-size:12px;font-weight:700;color:#16A34A">● Live</div>
+        </div>
+        <div class="sairnbiz-btns">
+          <button class="sairnbiz-btn">🔄 Sync All</button>
+          <button class="sairnbiz-btn outline">👷 Sync Payroll</button>
+          <button class="sairnbiz-btn outline">💳 Sync GL</button>
+          <button class="sairnbiz-btn outline">📊 CSV Export</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         FIELD QUOTE PAGE
+         ====================================================== -->
+    <div class="page" id="page-field-quote">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📷 Field Quote</div>
+          <div class="page-sub">Photograph any sketch or drawing — get a professional quote in 60 seconds</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-outline btn-sm" onclick="showPage('dashboard')">← Back</button>
+        </div>
+      </div>
+
+      <!-- Phase indicator -->
+      <div class="steps-row" id="fq-steps">
+        <div class="step-item active" id="fq-step-1">
+          <div class="step-num">1</div>Trade
+        </div>
+        <div class="step-item" id="fq-step-2">
+          <div class="step-num">2</div>Photo
+        </div>
+        <div class="step-item" id="fq-step-3">
+          <div class="step-num">3</div>Questions
+        </div>
+        <div class="step-item" id="fq-step-4">
+          <div class="step-num">4</div>Quote
+        </div>
+        <div class="step-item" id="fq-step-5">
+          <div class="step-num">5</div>Sign & Close
+        </div>
+      </div>
+
+      <!-- Step 1: Trade Select -->
+      <div class="card" id="fq-panel-trade">
+        <div class="card-header">
+          <div class="card-title">What are you quoting?</div>
+        </div>
+        <div class="trade-chips" id="fq-trade-chips">
+          <div class="trade-chip active" data-trade="roofing" onclick="selectTrade(this)">🏠 Roofing</div>
+          <div class="trade-chip" data-trade="electrical" onclick="selectTrade(this)">⚡ Electrical</div>
+          <div class="trade-chip" data-trade="framing" onclick="selectTrade(this)">🪵 Framing</div>
+          <div class="trade-chip" data-trade="plumbing" onclick="selectTrade(this)">🔧 Plumbing</div>
+          <div class="trade-chip" data-trade="tile" onclick="selectTrade(this)">🏗️ Tile</div>
+          <div class="trade-chip" data-trade="hvac" onclick="selectTrade(this)">🌡️ HVAC</div>
+          <div class="trade-chip" data-trade="siding" onclick="selectTrade(this)">🏡 Siding & Windows</div>
+          <div class="trade-chip" data-trade="full-build" onclick="selectTrade(this)">🏗️ Full Build</div>
+          <div class="trade-chip" data-trade="addition" onclick="selectTrade(this)">➕ Addition / Remodel</div>
+          <div class="trade-chip" data-trade="demo" onclick="selectTrade(this)">🔨 Demo</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Client Name (optional)</label>
+          <input class="form-input" id="fq-client-name" placeholder="e.g. Johnson Residence">
+        </div>
+        <button class="btn btn-primary" onclick="fqNextStep(1)">Next: Photograph Sketch →</button>
+      </div>
+
+      <!-- Step 2: Photo Capture -->
+      <div class="card" id="fq-panel-photo" style="display:none">
+        <div class="card-header">
+          <div class="card-title">Photograph Your Sketch or Drawing</div>
+          <div class="card-sub">Any drawing works — notepad, napkin, paper, whiteboard</div>
+        </div>
+
+        <div class="upload-zone" onclick="document.getElementById('sketch-file-input').click()">
+          <div class="upload-zone-icon">📷</div>
+          <div class="upload-zone-text" id="fq-upload-text">
+            <strong>Tap to take a photo or upload</strong>
+          </div>
+          <div class="upload-zone-sub">Phone camera, uploaded image, or PDF — all accepted</div>
+          <input type="file" id="sketch-file-input" accept="image/*,application/pdf"
+                 capture="environment" style="display:none" onchange="handleSketchUpload(this)">
+        </div>
+
+        <div id="fq-preview" style="display:none;margin-top:16px">
+          <img id="fq-preview-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--gray-200)">
+          <div style="margin-top:8px;font-size:13px;color:var(--green);font-weight:600">
+            ✅ Drawing captured — ready to analyze
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn btn-outline" onclick="fqNextStep(0)">← Back</button>
+          <button class="btn btn-primary" id="fq-analyze-btn" onclick="fqAnalyzeSketch()" disabled>
+            🤖 Analyze with Claude →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Claude Questions -->
+      <div class="card" id="fq-panel-questions" style="display:none">
+        <div class="card-header">
+          <div class="card-title">🤖 Claude is analyzing your sketch...</div>
+        </div>
+
+        <div class="ai-bubble" id="fq-ai-response">
+          <div class="ai-bubble loading">
+            <div class="ai-thinking">
+              <span></span><span></span><span></span>
+            </div>
+            Reading your drawing...
+          </div>
+        </div>
+
+        <div id="fq-answer-area" style="display:none">
+          <div class="form-group">
+            <label class="form-label">Your answers (type or use voice-to-text)</label>
+            <textarea class="form-textarea" id="fq-answers"
+              placeholder="Answer Claude's questions here..."></textarea>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-outline" onclick="fqNextStep(0)">← Back</button>
+            <button class="btn btn-primary" onclick="fqGenerateQuote()">
+              Generate Quote →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Quote Output -->
+      <div class="card" id="fq-panel-quote" style="display:none">
+        <div class="card-header">
+          <div class="card-title">✅ Your Quote is Ready</div>
+          <div class="card-sub">Professional. Itemized. Ready to present and sign.</div>
+        </div>
+
+        <div class="quote-output" id="fq-quote-output"></div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+          <button class="btn btn-primary" onclick="fqNextStep(4)">Get Client Signature →</button>
+          <button class="btn btn-outline" onclick="window.print()">🖨️ Print</button>
+          <button class="btn btn-outline" onclick="fqShareQuote()">📤 Share / Text</button>
+          <button class="btn btn-outline" onclick="saveQuoteToFile()">💾 Save to File</button>
+          <button class="btn btn-ghost btn-sm" onclick="fqNextStep(1)">← Redo</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Sign & Close -->
+      <div class="card" id="fq-panel-sign" style="display:none">
+        <div class="card-header">
+          <div class="card-title">Client Signature</div>
+          <div class="card-sub">Turn phone toward client — have them sign below</div>
+        </div>
+
+        <div style="font-size:14px;color:var(--gray-600);margin-bottom:12px">
+          By signing, client authorizes the quoted scope and pricing.
+        </div>
+
+        <div class="sig-pad-wrap">
+          <canvas id="sig-canvas" width="520" height="120"></canvas>
+          <div class="sig-label">Sign here</div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <button class="btn btn-outline btn-sm" onclick="clearSig()">Clear</button>
+          <span style="font-size:12px;color:var(--gray-400);align-self:center">
+            Use finger or stylus to sign
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Deposit Amount</label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input class="form-input" id="fq-deposit-amount" placeholder="$0.00" style="max-width:160px">
+            <span style="font-size:13px;color:var(--gray-500)">(33% of total recommended)</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-lg" onclick="fqClose()">✅ Signed — Save & Close</button>
+          <button class="btn btn-outline" onclick="fqSendDepositLink()">💳 Text Deposit Link</button>
+          <button class="btn btn-outline" onclick="window.print()">🖨️ Print Signed Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         BLUEPRINT AI PAGE
+         ====================================================== -->
+    <div class="page" id="page-blueprint-ai">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📐 Blueprint AI Takeoff Engine</div>
+          <div class="page-sub">LiDAR scan, blueprint photo, PDF upload, or manual entry — trade-specific output in seconds</div>
+        </div>
+      </div>
+
+      <div class="blueprint-mode-tabs">
+        <div class="mode-tab active" id="mode-tab-lidar" onclick="selectMode('lidar',this)">
+          <span class="tab-icon">📡</span>LiDAR Scan
+        </div>
+        <div class="mode-tab" id="mode-tab-photo" onclick="selectMode('photo',this)">
+          <span class="tab-icon">📷</span>Blueprint Photo
+        </div>
+        <div class="mode-tab" id="mode-tab-pdf" onclick="selectMode('pdf',this)">
+          <span class="tab-icon">📄</span>PDF Upload
+        </div>
+        <div class="mode-tab" id="mode-tab-manual" onclick="selectMode('manual',this)">
+          <span class="tab-icon">✏️</span>Manual Entry
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Select Trade</div>
+        </div>
+        <div class="trade-chips" id="bp-trade-chips">
+          <div class="trade-chip active" data-trade="gc-full" onclick="selectBPTrade(this)">🏗️ GC Full Read</div>
+          <div class="trade-chip" data-trade="roofing" onclick="selectBPTrade(this)">🏠 Roofing</div>
+          <div class="trade-chip" data-trade="electrical" onclick="selectBPTrade(this)">⚡ Electrical</div>
+          <div class="trade-chip" data-trade="framing" onclick="selectBPTrade(this)">🪵 Framing</div>
+          <div class="trade-chip" data-trade="plumbing" onclick="selectBPTrade(this)">🔧 Plumbing</div>
+          <div class="trade-chip" data-trade="tile" onclick="selectBPTrade(this)">🏗️ Tile</div>
+          <div class="trade-chip" data-trade="hvac" onclick="selectBPTrade(this)">🌡️ HVAC</div>
+          <div class="trade-chip" data-trade="siding" onclick="selectBPTrade(this)">🏡 Siding</div>
+        </div>
+      </div>
+
+      <!-- LiDAR mode -->
+      <div class="card" id="bp-mode-lidar">
+        <div class="card-header">
+          <div class="card-title">📡 Live LiDAR Scan</div>
+          <div class="card-sub" id="lidar-device-status">Checking device compatibility...</div>
+        </div>
+        <div id="lidar-supported" style="display:none">
+          <div style="font-size:14px;color:var(--gray-600);margin-bottom:16px;line-height:1.6">
+            Point your phone around the room slowly for 15–30 seconds.
+            SAIRN will build a 3D depth map and extract all measurements automatically.
+          </div>
+          <button class="btn btn-primary btn-lg" onclick="startLiDARScan()">
+            📡 Start LiDAR Scan
+          </button>
+          <div id="lidar-scan-status" style="display:none;margin-top:16px">
+            <div class="progress-bar"><div class="progress-fill" id="lidar-progress" style="width:0%"></div></div>
+            <div style="font-size:13px;color:var(--gray-500);margin-top:8px" id="lidar-status-text">
+              Initializing...
+            </div>
+          </div>
+        </div>
+        <div id="lidar-not-supported" style="display:none">
+          <div style="background:var(--amber-tint);border:1.5px solid var(--amber-light);border-radius:8px;padding:16px;font-size:14px;color:var(--amber-dark)">
+            <strong>LiDAR not available on this device/browser.</strong><br>
+            Use Blueprint Photo mode to take a photo of your plans — Claude reads dimensions directly
+            from the blueprint with equal accuracy.
+          </div>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="selectMode('photo', document.getElementById('mode-tab-photo'))">
+            Switch to Blueprint Photo →
+          </button>
+        </div>
+      </div>
+
+      <!-- Photo mode -->
+      <div class="card" id="bp-mode-photo" style="display:none">
+        <div class="card-header">
+          <div class="card-title">📷 Blueprint Photo Analysis</div>
+          <div class="card-sub">Works on any phone — iPhone, Android, any camera</div>
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('bp-photo-input').click()">
+          <div class="upload-zone-icon">📷</div>
+          <div class="upload-zone-text"><strong>Tap to photograph blueprint</strong></div>
+          <div class="upload-zone-sub">Lay plan flat · Fill the frame · Include scale bar · Flash in low light</div>
+          <input type="file" id="bp-photo-input" accept="image/*" capture="environment"
+                 style="display:none" onchange="handleBPUpload(this,'photo')">
+        </div>
+        <div id="bp-photo-preview" style="display:none;margin-top:16px">
+          <img id="bp-photo-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--gray-200)">
+          <button class="btn btn-primary" style="margin-top:12px" onclick="runBlueprintAnalysis('photo')">
+            🤖 Analyze Blueprint →
+          </button>
+        </div>
+      </div>
+
+      <!-- PDF mode -->
+      <div class="card" id="bp-mode-pdf" style="display:none">
+        <div class="card-header">
+          <div class="card-title">📄 PDF Blueprint Upload</div>
+          <div class="card-sub">Full plan sets supported — multi-page selection available</div>
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('bp-pdf-input').click()">
+          <div class="upload-zone-icon">📄</div>
+          <div class="upload-zone-text"><strong>Drop PDF or click to upload</strong></div>
+          <div class="upload-zone-sub">PDF, PNG, JPG, TIFF accepted</div>
+          <input type="file" id="bp-pdf-input" accept=".pdf,image/*"
+                 style="display:none" onchange="handleBPUpload(this,'pdf')">
+        </div>
+      </div>
+
+      <!-- Manual mode -->
+      <div class="card" id="bp-mode-manual" style="display:none">
+        <div class="card-header">
+          <div class="card-title">✏️ Manual Dimension Entry</div>
+          <div class="card-sub">Know the numbers? Enter them directly for an instant quote.</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Length (ft)</label>
+            <input class="form-input" id="manual-length" placeholder="e.g. 24" type="number">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Width (ft)</label>
+            <input class="form-input" id="manual-width" placeholder="e.g. 18" type="number">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Height / Ceiling (ft)</label>
+            <input class="form-input" id="manual-height" placeholder="e.g. 9" type="number">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Additional Notes</label>
+            <input class="form-input" id="manual-notes" placeholder="e.g. 2 bathrooms, kitchen">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="runManualTakeoff()">🤖 Generate Takeoff →</button>
+      </div>
+
+      <!-- Takeoff output -->
+      <div class="card" id="bp-output-panel" style="display:none">
+        <div class="card-header">
+          <div class="card-title">📋 Takeoff Report Card</div>
+          <div class="page-actions">
+            <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print</button>
+            <button class="btn btn-outline btn-sm" onclick="exportTakeoffCSV()">📥 CSV</button>
+            <button class="btn btn-primary btn-sm" onclick="saveTakeoffToProject()">💾 Save to Project</button>
+          </div>
+        </div>
+        <div class="quote-output" id="bp-takeoff-output"></div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         SUBCONTRACTORS PAGE
+         ====================================================== -->
+    <div class="page" id="page-subcontractors">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Subcontractors</div>
+          <div class="page-sub">Portal management, submissions, Claude intelligence briefs</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print Report</button>
+          <button class="btn btn-primary" onclick="inviteSub()">+ Invite Sub</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Active Subcontractors</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sub / Company</th>
+                <th>Trade</th>
+                <th>Project</th>
+                <th>Last Submission</th>
+                <th>Compliance</th>
+                <th>Claude Flag</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="sub-table-body">
+              <tr>
+                <td><strong>Mike's Roofing LLC</strong><br><span style="font-size:12px;color:var(--gray-400)">Portal: PROJ-001</span></td>
+                <td>🏠 Roofing</td>
+                <td>412 Elmwood</td>
+                <td>6/15 9:14am</td>
+                <td><span class="badge badge-green">✅ Compliant</span></td>
+                <td><span class="badge badge-green">None</span></td>
+                <td><button class="btn btn-outline btn-sm">View Brief</button></td>
+              </tr>
+              <tr>
+                <td><strong>Sparks Electric Co.</strong><br><span style="font-size:12px;color:var(--gray-400)">Portal: PROJ-001</span></td>
+                <td>⚡ Electrical</td>
+                <td>412 Elmwood</td>
+                <td>6/13 4:45pm</td>
+                <td><span class="badge badge-amber">⚠️ Overdue</span></td>
+                <td><span class="badge badge-red">CRITICAL</span></td>
+                <td><button class="btn btn-danger btn-sm" onclick="viewClaudeBrief('sparks')">🚨 View Flag</button></td>
+              </tr>
+              <tr>
+                <td><strong>Premier Framing Inc.</strong><br><span style="font-size:12px;color:var(--gray-400)">Portal: PROJ-001</span></td>
+                <td>🪵 Framing</td>
+                <td>412 Elmwood</td>
+                <td>6/15 7:30am</td>
+                <td><span class="badge badge-green">✅ Compliant</span></td>
+                <td><span class="badge badge-amber">Material Q</span></td>
+                <td><button class="btn btn-outline btn-sm" onclick="viewClaudeBrief('premier')">View Brief</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sub Portal Quick View -->
+      <div class="card" id="sub-brief-panel" style="display:none">
+        <div class="card-header">
+          <div class="card-title">🤖 Claude Intelligence Brief</div>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sub-brief-panel').style.display='none'">✕ Close</button>
+        </div>
+        <div class="ai-bubble" id="sub-brief-content"></div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn btn-outline btn-sm">📞 Call Sub</button>
+          <button class="btn btn-outline btn-sm">📧 Send Alert</button>
+          <button class="btn btn-danger btn-sm">🛑 Flag Stop Work</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         PROJECTS PAGE
+         ====================================================== -->
+    <div class="page" id="page-projects">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Projects</div>
+          <div class="page-sub">All active, pending, and completed builds</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary">+ New Project</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Owner</th>
+                <th>Value</th>
+                <th>Progress</th>
+                <th>Health</th>
+                <th>Subs</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>412 Elmwood Drive</strong><br><span style="font-size:12px;color:var(--gray-400)">Custom Residential</span></td>
+                <td>Johnson Family</td>
+                <td>$485,000</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:62%"></div></div>
+                    <span style="font-size:12px">62%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-green">82</span></td>
+                <td>7 active</td>
+                <td><button class="btn btn-primary btn-sm">Open</button></td>
+              </tr>
+              <tr>
+                <td><strong>88 River Road</strong><br><span style="font-size:12px;color:var(--gray-400)">Addition + Remodel</span></td>
+                <td>Peterson LLC</td>
+                <td>$142,000</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:35%"></div></div>
+                    <span style="font-size:12px">35%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-amber">74</span></td>
+                <td>3 active</td>
+                <td><button class="btn btn-primary btn-sm">Open</button></td>
+              </tr>
+              <tr>
+                <td><strong>22 Oak Terrace</strong><br><span style="font-size:12px;color:var(--gray-400)">Spec Home</span></td>
+                <td>SAIRN Dev Co</td>
+                <td>$620,000</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:8%"></div></div>
+                    <span style="font-size:12px">8%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-gray">91</span></td>
+                <td>1 active</td>
+                <td><button class="btn btn-primary btn-sm">Open</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         PLACEHOLDER PAGES (Employees, Vendors, Trades, etc.)
+         ====================================================== -->
+    <div class="page" id="page-employees">
+      <div class="page-header">
+        <div><div class="page-title">👷 Employees</div><div class="page-sub">Time tracking, scheduling, payroll sync</div></div>
+        <div class="page-actions"><button class="btn btn-primary">+ Add Employee</button></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Role</th><th>Trade</th><th>Project Today</th><th>Hours Today</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Dave Kowalski</strong></td><td>Foreman</td><td>🪵 Framing</td><td>412 Elmwood</td><td>6.5h</td><td><span class="badge badge-green">On Site</span></td></tr>
+              <tr><td><strong>Tony Russo</strong></td><td>Carpenter</td><td>🪵 Framing</td><td>412 Elmwood</td><td>6.5h</td><td><span class="badge badge-green">On Site</span></td></tr>
+              <tr><td><strong>Carlos Mendez</strong></td><td>Laborer</td><td>General</td><td>88 River Rd</td><td>4.0h</td><td><span class="badge badge-amber">Lunch</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="sairnbiz-connector">
+        <div class="sairnbiz-header"><div class="sairnbiz-logo">SB</div><div><div class="sairnbiz-title">Sync to SAIRNbiz Payroll</div></div></div>
+        <div class="sairnbiz-btns">
+          <button class="sairnbiz-btn">🔄 Sync Payroll Hours</button>
+          <button class="sairnbiz-btn outline">📊 Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-vendors">
+      <div class="page-header">
+        <div><div class="page-title">🏭 Vendors</div><div class="page-sub">POs, deliveries, invoices</div></div>
+        <div class="page-actions"><button class="btn btn-primary">+ Add Vendor</button></div>
+      </div>
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">🏭</div>
+          <div class="empty-state-title">Vendor module ready</div>
+          <div class="empty-state-sub">Add your first vendor to get started</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trade pages -->
+    <div class="page" id="page-trade-roofing">
+      <div class="page-header">
+        <div><div class="page-title">🏠 Roofing Module</div><div class="page-sub">Squares, materials, warranty, permit status</div></div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="showPage('blueprint-ai')">📐 Blueprint Takeoff</button>
+          <button class="btn btn-outline" onclick="openFieldQuote()">📷 Field Quote</button>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Squares</div><div class="stat-value">28.4</div></div>
+        <div class="stat-card"><div class="stat-label">Material Cost</div><div class="stat-value">$8,200</div></div>
+        <div class="stat-card"><div class="stat-label">Status</div><div class="stat-value" style="font-size:18px">✅ Complete</div></div>
+        <div class="stat-card"><div class="stat-label">Permit</div><div class="stat-value" style="font-size:18px">✅ Approved</div></div>
+      </div>
+      <div class="card"><div class="card-title" style="margin-bottom:12px">Sub Assigned: Mike's Roofing LLC</div>
+        <div style="font-size:14px;color:var(--gray-500)">Last submission: 6/15 9:14am &nbsp;·&nbsp; All photos reviewed by Claude &nbsp;·&nbsp; No flags</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-trade-electrical">
+      <div class="page-header">
+        <div><div class="page-title">⚡ Electrical Module</div><div class="page-sub">Circuits, panels, permits, inspection</div></div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="showPage('blueprint-ai')">📐 Blueprint Takeoff</button>
+          <button class="btn btn-outline" onclick="openFieldQuote()">📷 Field Quote</button>
+        </div>
+      </div>
+      <div class="flag-item flag-critical" style="margin-bottom:16px">
+        <div class="flag-icon">🔴</div>
+        <div class="flag-text"><strong>CRITICAL FLAG ACTIVE</strong> Junction box placement conflicts with HVAC rough-in. Stop work on east wall drywall until resolved.</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Service Size</div><div class="stat-value">200A</div></div>
+        <div class="stat-card"><div class="stat-label">Circuits</div><div class="stat-value">24</div></div>
+        <div class="stat-card"><div class="stat-label">Completion</div><div class="stat-value">55%</div></div>
+        <div class="stat-card"><div class="stat-label">Permit</div><div class="stat-value" style="font-size:18px">⏳ Pending</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-trade-framing">
+      <div class="page-header"><div><div class="page-title">🪵 Framing Module</div></div>
+        <div class="page-actions"><button class="btn btn-primary" onclick="showPage('blueprint-ai')">📐 Takeoff</button></div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Wall Linear Ft</div><div class="stat-value">1,240</div></div>
+        <div class="stat-card"><div class="stat-label">Studs Used</div><div class="stat-value">340</div></div>
+        <div class="stat-card"><div class="stat-label">Completion</div><div class="stat-value">85%</div></div>
+        <div class="stat-card"><div class="stat-label">Inspection</div><div class="stat-value" style="font-size:18px">📅 Scheduled</div></div>
+      </div>
+      <div class="flag-item flag-high"><div class="flag-icon">🟠</div>
+        <div class="flag-text"><strong>Material Check Needed</strong> 340 studs logged vs 280 in takeoff. Verify with foreman.</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-trade-plumbing">
+      <div class="page-header"><div><div class="page-title">🔧 Plumbing Module</div></div>
+        <div class="page-actions"><button class="btn btn-primary" onclick="showPage('blueprint-ai')">📐 Takeoff</button></div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Fixtures</div><div class="stat-value">14</div></div>
+        <div class="stat-card"><div class="stat-label">Bathrooms</div><div class="stat-value">3</div></div>
+        <div class="stat-card"><div class="stat-label">Completion</div><div class="stat-value">60%</div></div>
+        <div class="stat-card"><div class="stat-label">Pressure Test</div><div class="stat-value" style="font-size:18px">⏳ Pending</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-trade-tile">
+      <div class="page-header"><div><div class="page-title">🏗️ Tile Module</div></div>
+        <div class="page-actions"><button class="btn btn-primary" onclick="showPage('blueprint-ai')">📐 Takeoff</button></div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total SF</div><div class="stat-value">0</div></div>
+        <div class="stat-card"><div class="stat-label">Status</div><div class="stat-value" style="font-size:16px">Not Started</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-trade-hvac">
+      <div class="page-header"><div><div class="page-title">🌡️ HVAC Module</div></div>
+        <div class="page-actions"><button class="btn btn-primary" onclick="showPage('blueprint-ai')">📐 Takeoff</button></div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">System Size</div><div class="stat-value">4 Ton</div></div>
+        <div class="stat-card"><div class="stat-label">Status</div><div class="stat-value" style="font-size:16px">Not Started</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-trade-siding">
+      <div class="page-header"><div><div class="page-title">🏡 Siding & Windows</div></div>
+        <div class="page-actions"><button class="btn btn-primary" onclick="showPage('blueprint-ai')">📐 Takeoff</button></div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Siding SF</div><div class="stat-value">2,840</div></div>
+        <div class="stat-card"><div class="stat-label">Windows</div><div class="stat-value">18</div></div>
+        <div class="stat-card"><div class="stat-label">Status</div><div class="stat-value" style="font-size:16px">Scheduled</div></div>
+      </div>
+    </div>
+
+    <!-- Compensation, Check Register, Reports, SAIRNdesign, Admin -->
+    <div class="page" id="page-compensation">
+      <div class="page-header"><div><div class="page-title">💰 Compensation</div><div class="page-sub">Role-gated pay structure and commission tracking</div></div></div>
+      <div class="card"><div class="empty-state"><div class="empty-state-icon">💰</div><div class="empty-state-title">Compensation module</div><div class="empty-state-sub">Salary, commission, hybrid — rep approve/dispute flow</div></div></div>
+    </div>
+
+    <div class="page" id="page-check-register">
+      <div class="page-header"><div><div class="page-title">📄 Check Register</div><div class="page-sub">Write checks, print 3-per-page, full register history</div></div>
+        <div class="page-actions"><button class="btn btn-primary">+ Write Check</button><button class="btn btn-outline" onclick="window.print()">🖨️ Print Checks</button></div></div>
+      <div class="card"><div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-title">Check Register ready</div><div class="empty-state-sub">Set up your bank account to start writing checks</div></div></div>
+    </div>
+
+    <div class="page" id="page-reports">
+      <div class="page-header"><div><div class="page-title">📊 Reports</div></div>
+        <div class="page-actions"><button class="btn btn-outline" onclick="window.print()">🖨️ Print Report</button></div></div>
+      <div class="card"><div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-title">Reports</div><div class="empty-state-sub">Daily project report, sub performance, budget variance, safety log</div></div></div>
+    </div>
+
+    <div class="page" id="page-sairndesign-link">
+      <div class="page-header"><div><div class="page-title" style="color:#6366F1">🎨 SAIRNdesign Integration</div><div class="page-sub">Interior design capability for your builds</div></div></div>
+      <div class="card" style="border-color:#E0E7FF;background:#F5F3FF">
+        <div style="font-size:15px;font-weight:700;color:#4338CA;margin-bottom:8px">SAIRNdesign — Interior Design Module</div>
+        <div style="font-size:14px;color:#6B7280;margin-bottom:16px">Finish schedules, material selections, 3D renders, and client approval — all linked to this project.</div>
+        <button class="btn" style="background:#6366F1;color:white">Open SAIRNdesign →</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-sairnbiz-connector">
+      <div class="page-header"><div><div class="page-title">🔗 SAIRNbiz Connector</div></div></div>
+      <div class="sairnbiz-connector">
+        <div class="sairnbiz-header"><div class="sairnbiz-logo">SB</div><div><div class="sairnbiz-title">SAIRNbiz — HR + Accounting Backbone</div></div><div style="margin-left:auto;font-size:12px;font-weight:700;color:#16A34A">● Connected</div></div>
+        <div class="sairnbiz-btns">
+          <button class="sairnbiz-btn">🔄 Sync All Apps</button>
+          <button class="sairnbiz-btn outline">👷 Sync Payroll</button>
+          <button class="sairnbiz-btn outline">💳 Sync GL</button>
+          <button class="sairnbiz-btn outline">📊 CSV Export</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-admin-pricing">
+      <div class="page-header"><div><div class="page-title">⚙️ Admin & Pricing</div><div class="page-sub">Set your rates — Field Quote uses these for every estimate</div></div></div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">Labor Rates</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Standard Labor ($/hr)</label><input class="form-input" value="85" type="number"></div>
+          <div class="form-group"><label class="form-label">Lead / Foreman ($/hr)</label><input class="form-input" value="120" type="number"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Material Markup %</label><input class="form-input" value="30" type="number"></div>
+          <div class="form-group"><label class="form-label">Overhead %</label><input class="form-input" value="15" type="number"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Profit Margin %</label><input class="form-input" value="20" type="number"></div>
+          <div class="form-group"><label class="form-label">Quote Valid (days)</label><input class="form-input" value="30" type="number"></div>
+        </div>
+        <div class="card-title" style="margin:20px 0 16px">Unit Pricing by Trade</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Roofing — Shingles installed ($/sq)</label><input class="form-input" value="350" type="number"></div>
+          <div class="form-group"><label class="form-label">Framing — Labor ($/LF wall)</label><input class="form-input" value="12" type="number"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Tile installed ($/SF)</label><input class="form-input" value="14" type="number"></div>
+          <div class="form-group"><label class="form-label">Electrical — Per circuit</label><input class="form-input" value="275" type="number"></div>
+        </div>
+        <button class="btn btn-primary" onclick="savePricingParams()">💾 Save Pricing</button>
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+</div><!-- end app-shell -->
+
+<!-- Field Quote Modal (also accessible from topbar) -->
+<div class="modal-overlay" id="field-quote-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📷 Field Quote</div>
+      <button class="modal-close" onclick="closeFieldQuote()">✕</button>
+    </div>
+    <div style="font-size:14px;color:var(--gray-500);margin-bottom:16px">
+      Open the full Field Quote panel for the complete flow.
+    </div>
+    <button class="btn btn-primary btn-lg" onclick="closeFieldQuote();showPage('field-quote')">
+      Open Field Quote →
+    </button>
+  </div>
+</div>
+
+<!-- Claude Brief Modal -->
+<div class="modal-overlay" id="brief-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🤖 Claude Intelligence Brief</div>
+      <button class="modal-close" onclick="document.getElementById('brief-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="ai-bubble" id="brief-modal-content"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-danger btn-sm">🛑 Flag Stop Work</button>
+      <button class="btn btn-outline btn-sm">📞 Call Sub</button>
+      <button class="btn btn-outline btn-sm">📧 Send Alert</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PHASE 2 — ALL PAGE CONTENT PANELS (no JS)
+     ============================================================ -->
+
+<!-- ======================================================
+     EMPLOYEES — FULL PANEL
+     ====================================================== -->
+<div class="page" id="page-employees-full" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">👷 Employees</div>
+      <div class="page-sub">Time tracking, scheduling, payroll sync to SAIRNbiz</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-primary">+ Add Employee</button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Employees</div>
+      <div class="stat-value">18</div>
+      <div class="stat-delta">↑ 2 this month</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">On Site Today</div>
+      <div class="stat-value">14</div>
+      <div class="stat-delta">Across 3 projects</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Hours Logged Today</div>
+      <div class="stat-value">96.5</div>
+      <div class="stat-delta">$8,202 labor today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Payroll Period</div>
+      <div class="stat-value">Jun 9–22</div>
+      <div class="stat-delta">8 days remaining</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Active Employees — Today</div>
+      <div class="page-actions">
+        <button class="btn btn-outline btn-sm">📊 Export CSV</button>
+        <button class="btn btn-outline btn-sm">🔄 Sync to SAIRNbiz</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Role</th><th>Trade</th><th>Project Today</th>
+            <th>Clock In</th><th>Hours</th><th>Rate</th><th>Today $</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Dave Kowalski</strong></td><td>Foreman</td><td>🪵 Framing</td>
+            <td>412 Elmwood</td><td>7:02am</td><td>6.5h</td><td>$120/hr</td><td>$780</td>
+            <td><span class="badge badge-green">On Site</span></td>
+          </tr>
+          <tr>
+            <td><strong>Tony Russo</strong></td><td>Carpenter</td><td>🪵 Framing</td>
+            <td>412 Elmwood</td><td>7:15am</td><td>6.5h</td><td>$85/hr</td><td>$552</td>
+            <td><span class="badge badge-green">On Site</span></td>
+          </tr>
+          <tr>
+            <td><strong>Marcus Webb</strong></td><td>Carpenter</td><td>🪵 Framing</td>
+            <td>412 Elmwood</td><td>7:18am</td><td>6.5h</td><td>$85/hr</td><td>$552</td>
+            <td><span class="badge badge-green">On Site</span></td>
+          </tr>
+          <tr>
+            <td><strong>Carlos Mendez</strong></td><td>Laborer</td><td>General</td>
+            <td>88 River Rd</td><td>8:00am</td><td>4.0h</td><td>$65/hr</td><td>$260</td>
+            <td><span class="badge badge-amber">Lunch</span></td>
+          </tr>
+          <tr>
+            <td><strong>James Tillman</strong></td><td>Laborer</td><td>General</td>
+            <td>88 River Rd</td><td>8:05am</td><td>4.0h</td><td>$65/hr</td><td>$260</td>
+            <td><span class="badge badge-amber">Lunch</span></td>
+          </tr>
+          <tr>
+            <td><strong>Sarah Chen</strong></td><td>Project Manager</td><td>Admin</td>
+            <td>Office</td><td>8:30am</td><td>5.5h</td><td>$95/hr</td><td>$522</td>
+            <td><span class="badge badge-green">Active</span></td>
+          </tr>
+          <tr>
+            <td><strong>Rick Patton</strong></td><td>Estimator</td><td>Sales</td>
+            <td>Field</td><td>9:00am</td><td>4.5h</td><td>$85/hr</td><td>$382</td>
+            <td><span class="badge badge-green">Field</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Add / Edit Employee</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" placeholder="First Last">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-select">
+          <option>Foreman</option><option>Carpenter</option><option>Laborer</option>
+          <option>Electrician</option><option>Plumber</option><option>Roofer</option>
+          <option>Project Manager</option><option>Estimator</option><option>Admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Trade</label>
+        <select class="form-select">
+          <option>Framing</option><option>Electrical</option><option>Plumbing</option>
+          <option>Roofing</option><option>Tile</option><option>HVAC</option>
+          <option>Siding</option><option>General</option><option>Admin</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hourly Rate ($)</label>
+        <input class="form-input" placeholder="85" type="number">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Pay Type</label>
+        <select class="form-select">
+          <option>Hourly</option><option>Salary</option><option>1099 Sub</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input class="form-input" placeholder="(440) 555-0000">
+      </div>
+    </div>
+    <button class="btn btn-primary">Save Employee</button>
+  </div>
+
+  <div class="sairnbiz-connector">
+    <div class="sairnbiz-header">
+      <div class="sairnbiz-logo">SB</div>
+      <div>
+        <div class="sairnbiz-title">SAIRNbiz Payroll Sync</div>
+        <div class="sairnbiz-sub" style="color:#5EEAD4">All employee hours → payroll automatically</div>
+      </div>
+    </div>
+    <div class="sairnbiz-btns">
+      <button class="sairnbiz-btn">🔄 Sync Payroll Hours</button>
+      <button class="sairnbiz-btn outline">📊 Export Timesheet CSV</button>
+      <button class="sairnbiz-btn outline">💳 Run Payroll in SAIRNbiz</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     VENDORS — FULL PANEL
+     ====================================================== -->
+<div class="page" id="page-vendors-full" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">🏭 Vendors</div>
+      <div class="page-sub">PO management, delivery tracking, invoice register</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-outline btn-sm">📊 Export CSV</button>
+      <button class="btn btn-primary">+ Add Vendor</button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Active Vendors</div><div class="stat-value">24</div></div>
+    <div class="stat-card"><div class="stat-label">Open POs</div><div class="stat-value">$84K</div><div class="stat-delta">12 open orders</div></div>
+    <div class="stat-card"><div class="stat-label">Deliveries This Week</div><div class="stat-value">7</div><div class="stat-delta">3 pending</div></div>
+    <div class="stat-card"><div class="stat-label">Unpaid Invoices</div><div class="stat-value">$31K</div><div class="stat-delta">↑ Due in 14 days</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Purchase Orders</div>
+      <button class="btn btn-primary btn-sm">+ New PO</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>PO #</th><th>Vendor</th><th>Project</th><th>Trade</th><th>Amount</th><th>Ordered</th><th>ETA</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>PO-2024</strong></td><td>84 Lumber</td><td>412 Elmwood</td>
+            <td>🪵 Framing</td><td>$14,200</td><td>6/12</td><td>6/17</td>
+            <td><span class="badge badge-amber">In Transit</span></td>
+            <td><button class="btn btn-outline btn-sm">Receive</button></td>
+          </tr>
+          <tr>
+            <td><strong>PO-2025</strong></td><td>Masco Electric Supply</td><td>412 Elmwood</td>
+            <td>⚡ Electrical</td><td>$8,750</td><td>6/13</td><td>6/18</td>
+            <td><span class="badge badge-gray">Ordered</span></td>
+            <td><button class="btn btn-outline btn-sm">Track</button></td>
+          </tr>
+          <tr>
+            <td><strong>PO-2026</strong></td><td>Ferguson Plumbing</td><td>88 River Rd</td>
+            <td>🔧 Plumbing</td><td>$6,400</td><td>6/14</td><td>6/16</td>
+            <td><span class="badge badge-green">Delivered</span></td>
+            <td><button class="btn btn-outline btn-sm">Invoice</button></td>
+          </tr>
+          <tr>
+            <td><strong>PO-2027</strong></td><td>ABC Roofing Supply</td><td>22 Oak Terrace</td>
+            <td>🏠 Roofing</td><td>$9,920</td><td>6/15</td><td>6/20</td>
+            <td><span class="badge badge-gray">Ordered</span></td>
+            <td><button class="btn btn-outline btn-sm">Track</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Vendor Directory</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Vendor</th><th>Trade Specialty</th><th>Contact</th><th>Rating</th><th>YTD Spend</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>84 Lumber</strong></td><td>🪵 Lumber / Framing</td><td>(440) 555-0100</td><td>⭐⭐⭐⭐⭐</td><td>$48,200</td></tr>
+          <tr><td><strong>Masco Electric Supply</strong></td><td>⚡ Electrical</td><td>(440) 555-0200</td><td>⭐⭐⭐⭐</td><td>$22,400</td></tr>
+          <tr><td><strong>Ferguson Plumbing</strong></td><td>🔧 Plumbing</td><td>(440) 555-0300</td><td>⭐⭐⭐⭐⭐</td><td>$18,600</td></tr>
+          <tr><td><strong>ABC Roofing Supply</strong></td><td>🏠 Roofing</td><td>(440) 555-0400</td><td>⭐⭐⭐⭐</td><td>$31,000</td></tr>
+          <tr><td><strong>FloorMax Tile</strong></td><td>🏗️ Tile</td><td>(440) 555-0500</td><td>⭐⭐⭐⭐⭐</td><td>$9,800</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sairnbiz-connector">
+    <div class="sairnbiz-header">
+      <div class="sairnbiz-logo">SB</div>
+      <div><div class="sairnbiz-title">Sync Vendor POs to SAIRNbiz GL</div></div>
+    </div>
+    <div class="sairnbiz-btns">
+      <button class="sairnbiz-btn">🔄 Sync to GL</button>
+      <button class="sairnbiz-btn outline">📊 AP Report</button>
+      <button class="sairnbiz-btn outline">💳 Pay Vendor in SAIRNbiz</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     COMPENSATION — FULL PANEL (role-gated)
+     ====================================================== -->
+<div class="page" id="page-compensation-full" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">💰 Compensation</div>
+      <div class="page-sub">Salary, commission, hybrid — role-gated at API level</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-primary">+ Add Pay Structure</button>
+    </div>
+  </div>
+
+  <!-- Role gate notice -->
+  <div style="background:var(--amber-tint);border:1.5px solid var(--amber-light);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;font-size:13px;color:var(--amber-dark);font-weight:600;">
+    🔒 Role Gate Active — Owner/Admin: full view | Manager: team only | Sales: own records only | Installer/Viewer: blocked
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Total Payroll This Period</div><div class="stat-value">$48,200</div><div class="stat-delta">Jun 9–22</div></div>
+    <div class="stat-card"><div class="stat-label">Commission Earned</div><div class="stat-value">$6,840</div><div class="stat-delta">3 reps</div></div>
+    <div class="stat-card"><div class="stat-label">Pending Disputes</div><div class="stat-value">1</div><div class="stat-delta down">Needs resolution</div></div>
+    <div class="stat-card"><div class="stat-label">Marked Paid</div><div class="stat-value">$41,200</div><div class="stat-delta">85% of period</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Sales Rep Commission — Current Period</div>
+      <button class="btn btn-outline btn-sm">Export CSV</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Rep</th><th>Structure</th><th>Jobs Closed</th><th>Revenue</th><th>Commission %</th><th>Earned</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Rick Patton</strong></td><td>Commission — 8%</td><td>4</td>
+            <td>$48,500</td><td>8%</td><td>$3,880</td>
+            <td><span class="badge badge-amber">⏳ Pending Approval</span></td>
+            <td>
+              <button class="btn btn-green btn-sm">✅ Approve</button>
+              <button class="btn btn-outline btn-sm">Dispute</button>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Dana Mills</strong></td><td>Hybrid — $4K base + 5%</td><td>3</td>
+            <td>$38,000</td><td>5%</td><td>$5,900</td>
+            <td><span class="badge badge-green">✅ Approved</span></td>
+            <td><button class="btn btn-primary btn-sm">Mark Paid</button></td>
+          </tr>
+          <tr>
+            <td><strong>Tom Briggs</strong></td><td>Commission — 7%</td><td>1</td>
+            <td>$12,000</td><td>7%</td><td>$840</td>
+            <td><span class="badge badge-red">⚠️ Disputed</span></td>
+            <td>
+              <button class="btn btn-primary btn-sm">Resolve</button>
+              <button class="btn btn-outline btn-sm">View Notes</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Pay Structure Setup</div></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Employee / Rep</label>
+        <select class="form-select">
+          <option>Rick Patton</option><option>Dana Mills</option><option>Tom Briggs</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pay Type</label>
+        <select class="form-select">
+          <option>Commission Only</option><option>Salary Only</option><option>Hybrid (Base + Commission)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Base Salary (if hybrid)</label>
+        <input class="form-input" placeholder="e.g. 4000" type="number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Commission Rate %</label>
+        <input class="form-input" placeholder="e.g. 8" type="number">
+      </div>
+    </div>
+    <button class="btn btn-primary">Save Structure</button>
+  </div>
+
+  <div class="sairnbiz-connector">
+    <div class="sairnbiz-header">
+      <div class="sairnbiz-logo">SB</div>
+      <div><div class="sairnbiz-title">Sync Payroll to SAIRNbiz</div></div>
+    </div>
+    <div class="sairnbiz-btns">
+      <button class="sairnbiz-btn">🔄 Sync Payroll</button>
+      <button class="sairnbiz-btn outline">📊 Export Payroll CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     CHECK REGISTER — FULL PANEL
+     ====================================================== -->
+<div class="page" id="page-check-register-full" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">📄 Check Register</div>
+      <div class="page-sub">Write checks, 3-per-page print, full register history</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print Checks</button>
+      <button class="btn btn-outline btn-sm">📊 Export CSV</button>
+      <button class="btn btn-primary" onclick="document.getElementById('write-check-panel').style.display='block'">+ Write Check</button>
+    </div>
+  </div>
+
+  <!-- Bank Setup -->
+  <div class="card">
+    <div class="card-header"><div class="card-title">Bank Account Setup</div></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Bank Name</label>
+        <input class="form-input" placeholder="e.g. First National Bank" value="Westlake Community Bank">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Account Name</label>
+        <input class="form-input" placeholder="Business checking name" value="SAIRNbuild LLC Operating">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Routing Number</label>
+        <input class="form-input" placeholder="9-digit routing" value="●●●●●●●●●">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Account Number</label>
+        <input class="form-input" placeholder="Account number" value="●●●●●●●●●●●">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Starting Check Number</label>
+        <input class="form-input" placeholder="1001" value="1047" type="number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Signature Name</label>
+        <input class="form-input" placeholder="Authorized signer" value="Michael L. Dibert">
+      </div>
+    </div>
+    <button class="btn btn-primary">Save Bank Setup</button>
+  </div>
+
+  <!-- Write a Check -->
+  <div class="card" id="write-check-panel">
+    <div class="card-header">
+      <div class="card-title">Write a Check</div>
+      <div class="card-sub">Check #1048 — prints on blank check stock (3 per page)</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Pay To The Order Of</label>
+        <input class="form-input" id="check-payee" placeholder="Payee name" oninput="updateCheckPreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" type="date" id="check-date" value="2026-06-15">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Amount ($)</label>
+        <input class="form-input" id="check-amount" type="number" placeholder="0.00" oninput="updateCheckPreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project Link (optional)</label>
+        <select class="form-select">
+          <option value="">-- No Project --</option>
+          <option>412 Elmwood Drive</option>
+          <option>88 River Road</option>
+          <option>22 Oak Terrace</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Memo</label>
+      <input class="form-input" id="check-memo" placeholder="Invoice #, service description, etc.">
+    </div>
+
+    <!-- Check Preview -->
+    <div style="border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:20px;background:var(--white);margin:16px 0;font-family:var(--font-mono);font-size:13px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-weight:700;font-size:14px;">SAIRNbuild LLC</div>
+          <div style="color:var(--gray-500)">Westlake, Ohio</div>
+        </div>
+        <div style="text-align:right">
+          <div style="color:var(--gray-500)">Check #1048</div>
+          <div style="font-weight:700" id="preview-date">June 15, 2026</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:baseline;margin-bottom:8px;">
+        <span style="color:var(--gray-500)">Pay to:</span>
+        <div style="border-bottom:1px solid var(--gray-300);flex:1;padding-bottom:2px;" id="preview-payee">___________________________</div>
+        <div style="border:1px solid var(--gray-300);padding:4px 12px;min-width:120px;text-align:right;font-weight:700;" id="preview-amount">$__________</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:baseline;margin-bottom:16px;">
+        <div style="border-bottom:1px solid var(--gray-300);flex:1;padding-bottom:2px;color:var(--gray-400);font-size:12px;" id="preview-written">____________________________________________ Dollars</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;">
+        <div style="color:var(--gray-500);font-size:12px;" id="preview-memo">Memo: _____________________</div>
+        <div style="border-top:1px solid var(--gray-400);padding-top:4px;min-width:180px;text-align:center;font-size:12px;">Authorized Signature</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary">💾 Save Check</button>
+      <button class="btn btn-outline" onclick="window.print()">🖨️ Print 3-per-Page</button>
+      <button class="btn btn-outline">🔗 Post to GL</button>
+    </div>
+  </div>
+
+  <!-- Check Register History -->
+  <div class="card">
+    <div class="card-header"><div class="card-title">Check Register</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Check #</th><th>Date</th><th>Payee</th><th>Memo</th><th>Amount</th><th>Project</th><th>GL Posted</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1047</td><td>6/14</td><td>Premier Framing Inc.</td><td>Progress Draw #2</td><td>$12,500</td><td>412 Elmwood</td><td><span class="badge badge-green">✅</span></td></tr>
+          <tr><td>1046</td><td>6/12</td><td>84 Lumber</td><td>PO-2024 Lumber delivery</td><td>$14,200</td><td>412 Elmwood</td><td><span class="badge badge-green">✅</span></td></tr>
+          <tr><td>1045</td><td>6/10</td><td>Mike's Roofing LLC</td><td>Final payment — 22 Oak</td><td>$9,200</td><td>22 Oak Terrace</td><td><span class="badge badge-green">✅</span></td></tr>
+          <tr><td>1044</td><td>6/8</td><td>Ferguson Plumbing</td><td>Rough-in deposit</td><td>$3,200</td><td>88 River Rd</td><td><span class="badge badge-green">✅</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     REPORTS — FULL PANEL
+     ====================================================== -->
+<div class="page" id="page-reports-full" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">📊 Reports</div>
+      <div class="page-sub">Daily report, sub performance, budget variance, safety log</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print Report</button>
+      <button class="btn btn-outline btn-sm">📊 Export CSV</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Daily Project Report — June 15, 2026</div></div>
+
+    <div style="border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:24px;background:var(--white);">
+      <div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--amber);">
+        <div style="font-size:20px;font-weight:800;color:var(--gray-900)">SAIRNbuild — Daily Project Report</div>
+        <div style="font-size:14px;color:var(--gray-500);margin-top:4px">June 15, 2026 &nbsp;|&nbsp; Prepared by SAIRNbuild AI</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div style="text-align:center;padding:12px;background:var(--amber-tint);border-radius:8px;">
+          <div style="font-size:24px;font-weight:800;color:var(--amber-dark)">3</div>
+          <div style="font-size:12px;color:var(--gray-500)">Active Projects</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:var(--green-light);border-radius:8px;">
+          <div style="font-size:24px;font-weight:800;color:var(--green)">82</div>
+          <div style="font-size:12px;color:var(--gray-500)">Portfolio Health Score</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:var(--red-light);border-radius:8px;">
+          <div style="font-size:24px;font-weight:800;color:var(--red)">2</div>
+          <div style="font-size:12px;color:var(--gray-500)">Open Flags</div>
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;">
+        <thead>
+          <tr style="background:var(--gray-50);">
+            <th style="padding:8px 12px;text-align:left;border-bottom:1.5px solid var(--gray-200)">Project</th>
+            <th style="padding:8px 12px;text-align:left;border-bottom:1.5px solid var(--gray-200)">Progress</th>
+            <th style="padding:8px 12px;text-align:left;border-bottom:1.5px solid var(--gray-200)">Budget</th>
+            <th style="padding:8px 12px;text-align:left;border-bottom:1.5px solid var(--gray-200)">Subs Active</th>
+            <th style="padding:8px 12px;text-align:left;border-bottom:1.5px solid var(--gray-200)">Flag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px 12px">412 Elmwood Drive</td><td style="padding:8px 12px">62%</td><td style="padding:8px 12px;color:var(--green)">On Track</td><td style="padding:8px 12px">7</td><td style="padding:8px 12px;color:var(--red)">🔴 Critical</td></tr>
+          <tr><td style="padding:8px 12px">88 River Road</td><td style="padding:8px 12px">35%</td><td style="padding:8px 12px;color:var(--green)">On Track</td><td style="padding:8px 12px">3</td><td style="padding:8px 12px;color:var(--amber)">🟡 Medium</td></tr>
+          <tr><td style="padding:8px 12px">22 Oak Terrace</td><td style="padding:8px 12px">8%</td><td style="padding:8px 12px;color:var(--green)">On Track</td><td style="padding:8px 12px">1</td><td style="padding:8px 12px;color:var(--green)">✅ None</td></tr>
+        </tbody>
+      </table>
+
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:700;margin-bottom:8px;">Today's Crew (14 on site)</div>
+        <div style="font-size:13px;color:var(--gray-600)">Dave Kowalski (Foreman, Framing), Tony Russo (Carpenter), Marcus Webb (Carpenter), Carlos Mendez (Laborer), James Tillman (Laborer) + 9 others</div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:700;color:var(--red);margin-bottom:8px;">⚠️ Open Flags Requiring Action</div>
+        <div style="font-size:13px;color:var(--gray-700);margin-bottom:6px;">1. [CRITICAL] 412 Elmwood — Electrical junction box conflicts with HVAC rough-in. Hold east wall drywall.</div>
+        <div style="font-size:13px;color:var(--gray-700);">2. [MEDIUM] 88 River Road — Electrical sub 2 days overdue on daily submission.</div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;padding-top:16px;border-top:1.5px solid var(--gray-200);font-size:12px;color:var(--gray-400);">
+        <div>GC Signature: _______________________</div>
+        <div>Date: _______________</div>
+        <div>SAIRNbuild AI Report</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Sub Performance Report</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Sub</th><th>Trade</th><th>Submission Rate</th><th>Safety Score</th><th>Open Flags</th><th>Claude Grade</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Mike's Roofing LLC</td><td>🏠 Roofing</td><td>100%</td><td>100%</td><td>0</td><td><span class="badge badge-green">A+</span></td></tr>
+          <tr><td>Premier Framing Inc.</td><td>🪵 Framing</td><td>100%</td><td>98%</td><td>1</td><td><span class="badge badge-green">A</span></td></tr>
+          <tr><td>Sparks Electric Co.</td><td>⚡ Electrical</td><td>71%</td><td>90%</td><td>2</td><td><span class="badge badge-red">C</span></td></tr>
+          <tr><td>AAA Plumbing</td><td>🔧 Plumbing</td><td>90%</td><td>95%</td><td>0</td><td><span class="badge badge-green">B+</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Safety Incident Log</div><button class="btn btn-primary btn-sm">+ Log Incident</button></div>
+    <div class="empty-state" style="padding:24px">
+      <div style="font-size:32px">✅</div>
+      <div class="empty-state-title" style="color:var(--green)">Zero incidents this period</div>
+      <div class="empty-state-sub">Keep it up. Log any near-misses proactively.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     ADMIN & PRICING — FULL PANEL
+     ====================================================== -->
+<div class="page" id="page-admin-pricing-full" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">⚙️ Admin & Pricing Setup</div>
+      <div class="page-sub">Set your rates — Field Quote and Blueprint AI use these for every estimate</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="savePricingParams()">💾 Save All Settings</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Company Information</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Company Name</label>
+        <input class="form-input" id="company-name" placeholder="Your GC Business Name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">License Number</label>
+        <input class="form-input" placeholder="Contractor license #">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Primary Phone</label>
+        <input class="form-input" placeholder="(440) 555-0000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Business Address</label>
+        <input class="form-input" placeholder="City, State ZIP">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Labor Rates</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Standard Labor ($/hr)</label>
+        <input class="form-input" id="rate-standard" value="85" type="number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Lead / Foreman ($/hr)</label>
+        <input class="form-input" id="rate-lead" value="120" type="number">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Specialty / Licensed Trade ($/hr)</label>
+        <input class="form-input" id="rate-specialty" value="150" type="number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Overtime Rate ($/hr)</label>
+        <input class="form-input" id="rate-ot" value="127" type="number">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Markup & Margin</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Material Markup %</label>
+        <input class="form-input" id="markup-material" value="30" type="number">
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px">Applied to all material costs in Field Quote</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Overhead %</label>
+        <input class="form-input" id="markup-overhead" value="15" type="number">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Profit Margin %</label>
+        <input class="form-input" id="markup-profit" value="20" type="number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Quote Valid (days)</label>
+        <input class="form-input" id="quote-valid-days" value="30" type="number">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Minimum Job Value ($)</label>
+        <input class="form-input" id="min-job" value="500" type="number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Default Deposit % (Field Quote close)</label>
+        <input class="form-input" id="deposit-pct" value="33" type="number">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Unit Pricing by Trade</div>
+    <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px">
+      These rates are used by Field Quote and Blueprint AI when generating estimates. Set them to your actual installed pricing.
+    </div>
+
+    <div class="card-title" style="font-size:13px;color:var(--amber-dark);margin-bottom:10px">🏠 Roofing</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Shingles Installed ($/square)</label><input class="form-input" value="350" type="number"></div>
+      <div class="form-group"><label class="form-label">Metal Roofing ($/square)</label><input class="form-input" value="650" type="number"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Tear-Off ($/square)</label><input class="form-input" value="75" type="number"></div>
+      <div class="form-group"><label class="form-label">Flat / TPO ($/SF)</label><input class="form-input" value="8.50" type="number" step="0.01"></div>
+    </div>
+
+    <div class="card-title" style="font-size:13px;color:var(--amber-dark);margin:16px 0 10px">⚡ Electrical</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Per Circuit (installed)</label><input class="form-input" value="275" type="number"></div>
+      <div class="form-group"><label class="form-label">200A Panel (installed)</label><input class="form-input" value="2800" type="number"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Per Outlet (installed)</label><input class="form-input" value="85" type="number"></div>
+      <div class="form-group"><label class="form-label">Per Fixture (installed)</label><input class="form-input" value="120" type="number"></div>
+    </div>
+
+    <div class="card-title" style="font-size:13px;color:var(--amber-dark);margin:16px 0 10px">🪵 Framing</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Labor per LF wall</label><input class="form-input" value="12" type="number"></div>
+      <div class="form-group"><label class="form-label">Header per LF</label><input class="form-input" value="45" type="number"></div>
+    </div>
+
+    <div class="card-title" style="font-size:13px;color:var(--amber-dark);margin:16px 0 10px">🔧 Plumbing</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Full bath rough-in</label><input class="form-input" value="2400" type="number"></div>
+      <div class="form-group"><label class="form-label">Per fixture rough-in</label><input class="form-input" value="450" type="number"></div>
+    </div>
+
+    <div class="card-title" style="font-size:13px;color:var(--amber-dark);margin:16px 0 10px">🏗️ Tile</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Floor tile installed ($/SF)</label><input class="form-input" value="14" type="number"></div>
+      <div class="form-group"><label class="form-label">Shower tile installed ($/SF)</label><input class="form-input" value="22" type="number"></div>
+    </div>
+
+    <div class="card-title" style="font-size:13px;color:var(--amber-dark);margin:16px 0 10px">🌡️ HVAC</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Per ton installed</label><input class="form-input" value="4500" type="number"></div>
+      <div class="form-group"><label class="form-label">Duct per LF</label><input class="form-input" value="18" type="number"></div>
+    </div>
+
+    <div class="card-title" style="font-size:13px;color:var(--amber-dark);margin:16px 0 10px">🏡 Siding & Windows</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Siding installed ($/SF)</label><input class="form-input" value="7.50" type="number" step="0.01"></div>
+      <div class="form-group"><label class="form-label">Window installed (each)</label><input class="form-input" value="650" type="number"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Exterior door (installed)</label><input class="form-input" value="1200" type="number"></div>
+      <div class="form-group"></div>
+    </div>
+
+    <button class="btn btn-primary btn-lg" style="margin-top:8px" onclick="savePricingParams()">💾 Save All Pricing</button>
+  </div>
+
+  <!-- PIN Management -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">PIN Management</div>
+    <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px">Set PINs for each role. Share with team members accordingly.</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Owner PIN</label><input class="form-input" type="password" maxlength="4" value="1234" inputmode="numeric"></div>
+      <div class="form-group"><label class="form-label">Admin PIN</label><input class="form-input" type="password" maxlength="4" value="2345" inputmode="numeric"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Manager PIN</label><input class="form-input" type="password" maxlength="4" value="3456" inputmode="numeric"></div>
+      <div class="form-group"><label class="form-label">Sales Rep PIN</label><input class="form-input" type="password" maxlength="4" value="4567" inputmode="numeric"></div>
+    </div>
+    <button class="btn btn-primary">Save PINs</button>
+  </div>
+</div>
+
+<!-- ======================================================
+     SAIRN SUITE CONNECTOR — FULL PANEL
+     ====================================================== -->
+<div class="page" id="page-sairn-suite" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">🔗 SAIRN Suite</div>
+      <div class="page-sub">All connected apps for your construction business</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="syncAllSuite()">🔄 Sync All Apps</button>
+    </div>
+  </div>
+
+  <div class="card" style="border:1.5px solid var(--amber-light);background:var(--amber-tint)">
+    <div style="font-size:14px;font-weight:700;color:var(--amber-dark);margin-bottom:4px">SAIRNbuild is the hub — it connects to more apps than any other SAIRN vertical.</div>
+    <div style="font-size:13px;color:var(--gray-600)">Every connected app shares data automatically through the SAIRN Bridge. One click syncs everything.</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px;" id="suite-grid">
+
+    <div class="card" style="border-top:4px solid #14B8A6;cursor:pointer;text-align:center">
+      <div style="width:48px;height:48px;background:#14B8A6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;margin:0 auto 12px;">SB</div>
+      <div style="font-weight:700;color:#0F766E;">SAIRNbiz</div>
+      <div style="font-size:12px;color:var(--gray-500);margin:4px 0 12px">HR + Accounting Backbone</div>
+      <span class="badge badge-green">● Connected</span>
+      <div style="margin-top:12px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm">Sync Payroll</button>
+        <button class="btn btn-outline btn-sm">Sync GL</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid #16C762;cursor:pointer;text-align:center">
+      <div style="width:48px;height:48px;background:#16C762;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;margin:0 auto 12px;">SD</div>
+      <div style="font-weight:700;color:#0A3D1F;">StoneDesk</div>
+      <div style="font-size:12px;color:var(--gray-500);margin:4px 0 12px">Countertop Orders for Builds</div>
+      <span class="badge badge-green">● Connected</span>
+      <div style="margin-top:12px">
+        <button class="btn btn-outline btn-sm">Order Countertops</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid #6366F1;cursor:pointer;text-align:center">
+      <div style="width:48px;height:48px;background:#6366F1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;margin:0 auto 12px;">SD</div>
+      <div style="font-weight:700;color:#4338CA;">SAIRNdesign</div>
+      <div style="font-size:12px;color:var(--gray-500);margin:4px 0 12px">Interior Design + Finish Selections</div>
+      <span class="badge badge-green">● Connected</span>
+      <div style="margin-top:12px">
+        <button class="btn btn-outline btn-sm">Open Design</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid #22C55E;cursor:pointer;text-align:center">
+      <div style="width:48px;height:48px;background:#22C55E;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;margin:0 auto 12px;">SS</div>
+      <div style="font-weight:700;color:#15803D;">SAIRNscape</div>
+      <div style="font-size:12px;color:var(--gray-500);margin:4px 0 12px">Site Work + Final Landscaping</div>
+      <span class="badge badge-green">● Connected</span>
+      <div style="margin-top:12px">
+        <button class="btn btn-outline btn-sm">Coordinate Site</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid #84CC16;cursor:pointer;text-align:center">
+      <div style="width:48px;height:48px;background:#84CC16;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;margin:0 auto 12px;">SM</div>
+      <div style="font-weight:700;color:#3F6212;">SAIRNmechanical</div>
+      <div style="font-size:12px;color:var(--gray-500);margin:4px 0 12px">HVAC + Mechanical Subs</div>
+      <span class="badge badge-amber">○ Available</span>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary btn-sm">Connect →</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid #15803D;cursor:pointer;text-align:center">
+      <div style="width:48px;height:48px;background:#15803D;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;margin:0 auto 12px;">SL</div>
+      <div style="font-weight:700;color:#14532D;">SAIRNlaw</div>
+      <div style="font-size:12px;color:var(--gray-500);margin:4px 0 12px">Contracts + Lien Waivers</div>
+      <span class="badge badge-amber">○ Available</span>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary btn-sm">Connect →</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid #3B82F6;cursor:pointer;text-align:center">
+      <div style="width:48px;height:48px;background:#3B82F6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;margin:0 auto 12px;">SC</div>
+      <div style="font-weight:700;color:#1D4ED8;">SAIRNscan</div>
+      <div style="font-size:12px;color:var(--gray-500);margin:4px 0 12px">LiDAR + Blueprint + Sketch AI</div>
+      <span class="badge badge-green">● Embedded</span>
+      <div style="margin-top:12px">
+        <button class="btn btn-outline btn-sm" onclick="showPage('blueprint-ai')">Open Scanner</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Bridge Sync Log</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>From</th><th>To</th><th>Type</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>9:14am</td><td>SAIRNbuild</td><td>SAIRNbiz</td><td>Payroll Hours</td><td><span class="badge badge-green">✅ Synced</span></td></tr>
+          <tr><td>9:00am</td><td>SAIRNbuild</td><td>StoneDesk</td><td>Job Order PO-2028</td><td><span class="badge badge-green">✅ Synced</span></td></tr>
+          <tr><td>8:45am</td><td>SAIRNdesign</td><td>SAIRNbuild</td><td>Finish Schedule Update</td><td><span class="badge badge-green">✅ Received</span></td></tr>
+          <tr><td>8:30am</td><td>SAIRNbuild</td><td>SAIRNbiz</td><td>GL Entry — PO-2024</td><td><span class="badge badge-green">✅ Posted</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="btn btn-primary" onclick="syncAllSuite()">🔄 Sync All Now</button>
+      <button class="btn btn-outline">📊 Export Bridge Log CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     SUB PORTAL INVITE MODAL
+     ====================================================== -->
+<div class="modal-overlay" id="invite-sub-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Invite Subcontractor</div>
+      <button class="modal-close" onclick="document.getElementById('invite-sub-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Company Name</label>
+      <input class="form-input" placeholder="ABC Roofing LLC">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contact Name</label>
+      <input class="form-input" placeholder="First Last">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input class="form-input" placeholder="(440) 555-0000" type="tel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" placeholder="sub@email.com" type="email">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Trade</label>
+        <select class="form-select">
+          <option>Roofing</option><option>Electrical</option><option>Framing</option>
+          <option>Plumbing</option><option>Tile</option><option>HVAC</option>
+          <option>Siding & Windows</option><option>Painting</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project</label>
+        <select class="form-select">
+          <option>412 Elmwood Drive</option>
+          <option>88 River Road</option>
+          <option>22 Oak Terrace</option>
+        </select>
+      </div>
+    </div>
+    <div style="background:var(--amber-tint);border:1.5px solid var(--amber-light);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--amber-dark)">
+      <strong>Portal token will be generated automatically.</strong><br>
+      Sub receives a unique link via text/email. They log time, materials, photos, and safety from their phone — Claude reviews every submission and alerts you to any issues.
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary">📱 Send Portal Invite via Text</button>
+      <button class="btn btn-outline">📧 Send via Email</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SAIRNBUILD — PHASE 3 JAVASCRIPT
+// Proxy: https://sairn.vercel.app/api/claude
+// NEVER api.anthropic.com — hard rule
+// No Unicode box chars — ASCII only in comments
+// All regex newlines escaped as \\n
+// ============================================================
+
+// ============================================================
+// APP STATE
+// ============================================================
+const APP_ID       = 'sairnbuild';
+const PROXY_URL    = 'https://sairn.vercel.app/api/claude';
+const BRIDGE_URL   = 'https://sairn.vercel.app/api/bridge';
+
+let currentRole     = 'owner';
+let currentPage     = 'dashboard';
+let fqStep          = 1;
+let fqSelectedTrade = 'roofing';
+let fqImageBase64   = null;
+let fqConversation  = [];
+let fqQuoteText     = '';
+let bpSelectedTrade = 'gc-full';
+let bpMode          = 'lidar';
+let lidarSession    = null;
+let sigDrawing      = false;
+
+// PINs stored in localStorage
+const DEFAULT_PINS = { owner:'1234', admin:'2345', manager:'3456', sales:'4567' };
+
+// ============================================================
+// LOGIN
+// ============================================================
+function selectRole(btn) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentRole = btn.dataset.role;
+}
+
+function handlePinInput(input) {
+  if (input.value.length === 4) doLogin();
+}
+
+function doLogin() {
+  const pin   = document.getElementById('pin-input').value;
+  const pins  = JSON.parse(localStorage.getItem('sairnbuild_pins') || JSON.stringify(DEFAULT_PINS));
+  const valid = pins[currentRole] === pin;
+
+  if (!valid) {
+    const err = document.getElementById('login-error');
+    err.style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    setTimeout(() => err.style.display = 'none', 3000);
+    return;
+  }
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display    = 'block';
+
+  const roleLabels = { owner:'Owner', admin:'Admin', manager:'Manager', sales:'Sales Rep' };
+  const initials   = { owner:'OW', admin:'AD', manager:'MG', sales:'SR' };
+  document.getElementById('user-role-label').textContent   = roleLabels[currentRole];
+  document.getElementById('user-initials').textContent     = initials[currentRole];
+
+  applyRoleGates();
+  initSignatureCanvas();
+  detectBlueprintMode();
+  loadPricingParamsIntoForm();
+  showPage('dashboard');
+}
+
+function applyRoleGates() {
+  // Hide compensation from non-owner/admin roles
+  const compNav = document.querySelector('[onclick="showPage(\'compensation\')"]');
+  if (compNav && currentRole === 'sales') compNav.style.display = 'none';
+  // Check register — owner/admin only
+  const checkNav = document.querySelector('[onclick="showPage(\'check-register\')"]');
+  if (checkNav && (currentRole === 'manager' || currentRole === 'sales')) checkNav.style.display = 'none';
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(pageId) {
+  // Map sidebar page IDs to actual page element IDs
+  const pageMap = {
+    'dashboard':          'page-dashboard',
+    'projects':           'page-projects',
+    'field-quote':        'page-field-quote',
+    'blueprint-ai':       'page-blueprint-ai',
+    'subcontractors':     'page-subcontractors',
+    'employees':          'page-employees',
+    'vendors':            'page-vendors',
+    'trade-roofing':      'page-trade-roofing',
+    'trade-electrical':   'page-trade-electrical',
+    'trade-framing':      'page-trade-framing',
+    'trade-plumbing':     'page-trade-plumbing',
+    'trade-tile':         'page-trade-tile',
+    'trade-hvac':         'page-trade-hvac',
+    'trade-siding':       'page-trade-siding',
+    'compensation':       'page-compensation',
+    'check-register':     'page-check-register',
+    'reports':            'page-reports',
+    'sairndesign-link':   'page-sairndesign-link',
+    'sairnbiz-connector': 'page-sairnbiz-connector',
+    'admin-pricing':      'page-admin-pricing',
+    'sairn-suite':        'page-sairn-suite'
+  };
+
+  const targetId = pageMap[pageId] || 'page-' + pageId;
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(targetId);
+  if (target) {
+    target.classList.add('active');
+  } else {
+    // Try direct ID
+    const direct = document.getElementById(pageId);
+    if (direct) direct.classList.add('active');
+  }
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const activeNav = document.querySelector(`[onclick="showPage('${pageId}')"]`);
+  if (activeNav) activeNav.classList.add('active');
+
+  currentPage = pageId;
+  document.getElementById('main-content').scrollTop = 0;
+}
+
+// ============================================================
+// FIELD QUOTE FLOW
+// ============================================================
+function openFieldQuote() {
+  showPage('field-quote');
+  fqGoToStep(1);
+}
+
+function closeFieldQuote() {
+  document.getElementById('field-quote-modal').classList.remove('open');
+}
+
+function selectTrade(chip) {
+  document.querySelectorAll('#fq-trade-chips .trade-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  fqSelectedTrade = chip.dataset.trade;
+}
+
+function fqGoToStep(step) {
+  fqStep = step;
+  const panels = ['fq-panel-trade','fq-panel-photo','fq-panel-questions','fq-panel-quote','fq-panel-sign'];
+  panels.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (i + 1 === step) ? 'block' : 'none';
+  });
+  // Update step indicators
+  for (let i = 1; i <= 5; i++) {
+    const stepEl = document.getElementById('fq-step-' + i);
+    if (!stepEl) continue;
+    stepEl.classList.remove('active','done');
+    if (i < step) stepEl.classList.add('done');
+    else if (i === step) stepEl.classList.add('active');
+  }
+}
+
+function fqNextStep(dir) {
+  if (dir === 0) fqGoToStep(Math.max(1, fqStep - 1));
+  else           fqGoToStep(fqStep + 1);
+}
+
+function handleSketchUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    fqImageBase64 = e.target.result.split(',')[1];
+    const preview = document.getElementById('fq-preview');
+    const img     = document.getElementById('fq-preview-img');
+    if (preview && img) {
+      img.src = e.target.result;
+      preview.style.display = 'block';
+    }
+    document.getElementById('fq-analyze-btn').disabled = false;
+    document.getElementById('fq-upload-text').innerHTML =
+      '<strong>Drawing captured</strong> — tap analyze to continue';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function fqAnalyzeSketch() {
+  fqGoToStep(3);
+  const resp = document.getElementById('fq-ai-response');
+  resp.innerHTML = '<div class="ai-bubble loading"><div class="ai-thinking"><span></span><span></span><span></span></div>&nbsp;Reading your drawing...</div>';
+
+  const pricing   = loadPricingParams();
+  const trade     = fqSelectedTrade;
+  const client    = document.getElementById('fq-client-name').value || 'Client';
+
+  const systemPrompt = `You are the SAIRNbuild Field Sales Intelligence Engine.
+A sales rep is standing in front of a customer and has photographed a rough sketch or drawing.
+Trade/scope: ${trade}
+Client: ${client}
+COMPANY PRICING PARAMETERS: ${JSON.stringify(pricing)}
+Read the drawing carefully. Tell the rep what you can see, then ask MAXIMUM 3 questions.
+Never ask for information you can determine from the drawing.
+Be fast. The customer is watching.`;
+
+  const messages = [{
+    role: 'user',
+    content: fqImageBase64
+      ? [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: fqImageBase64 }},
+          { type: 'text', text: `Analyze this sketch for a ${trade} quote. Ask max 3 questions before pricing.` }
+        ]
+      : `I need a ${trade} quote. Ask me up to 3 questions then price it using my company rates.`
+  }];
+
+  fqConversation = [...messages];
+
+  try {
+    const result = await callClaude(systemPrompt, messages);
+    resp.className = 'ai-bubble';
+    resp.textContent = result;
+    fqConversation.push({ role: 'assistant', content: result });
+    document.getElementById('fq-answer-area').style.display = 'block';
+  } catch(err) {
+    resp.className = 'ai-bubble';
+    resp.textContent = 'Could not connect to Claude. Check your connection and try again.';
+  }
+}
+
+async function fqGenerateQuote() {
+  const answers = document.getElementById('fq-answers').value.trim();
+  if (!answers) { alert('Please answer the questions above first.'); return; }
+
+  fqConversation.push({ role: 'user', content: answers + '\n\nNow generate the full quote.' });
+
+  const resp = document.getElementById('fq-ai-response');
+  resp.innerHTML = '<div class="ai-bubble loading"><div class="ai-thinking"><span></span><span></span><span></span></div>&nbsp;Generating your quote...</div>';
+
+  const pricing = loadPricingParams();
+  const systemPrompt = `You are the SAIRNbuild Field Sales Intelligence Engine.
+Generate a complete, professional, printable quote using EXACTLY these company rates: ${JSON.stringify(pricing)}
+Format: itemized line items, quantities, unit prices, subtotals, total Low/Mid/High range.
+Include: scope summary, what is NOT included, quote valid 30 days, signature line.
+Use plain ASCII only in formatting. No Unicode box characters.`;
+
+  try {
+    const result = await callClaude(systemPrompt, fqConversation);
+    fqQuoteText = result;
+    fqGoToStep(4);
+    document.getElementById('fq-quote-output').textContent = result;
+    // Pre-fill deposit
+    const totalMatch = result.match(/Mid[:\s]+\$?([\d,]+)/i);
+    if (totalMatch) {
+      const mid = parseInt(totalMatch[1].replace(/,/g,''));
+      document.getElementById('fq-deposit-amount').value = '$' + Math.round(mid * 0.33).toLocaleString();
+    }
+  } catch(err) {
+    resp.className = 'ai-bubble';
+    resp.textContent = 'Quote generation failed. Check connection.';
+  }
+}
+
+function fqShareQuote() {
+  if (navigator.share) {
+    navigator.share({ title: 'SAIRNbuild Quote', text: fqQuoteText })
+      .catch(() => {});
+  } else {
+    navigator.clipboard.writeText(fqQuoteText)
+      .then(() => alert('Quote copied to clipboard!'))
+      .catch(() => alert('Copy failed — use Print button instead.'));
+  }
+}
+
+function saveQuoteToFile() {
+  const quotes = JSON.parse(localStorage.getItem('sairnbuild_quotes') || '[]');
+  quotes.unshift({
+    id:     Date.now(),
+    date:   new Date().toLocaleDateString(),
+    trade:  fqSelectedTrade,
+    client: document.getElementById('fq-client-name').value || 'Unknown',
+    text:   fqQuoteText
+  });
+  localStorage.setItem('sairnbuild_quotes', JSON.stringify(quotes));
+  showToast('Quote saved to file');
+}
+
+function fqClose() {
+  const sigData = captureSignature();
+  saveQuoteToFile();
+  showToast('Signed quote saved. Job created.');
+  fqGoToStep(1);
+  fqImageBase64   = null;
+  fqConversation  = [];
+  fqQuoteText     = '';
+  document.getElementById('fq-answers').value    = '';
+  document.getElementById('fq-client-name').value = '';
+  clearSig();
+}
+
+function fqSendDepositLink() {
+  const amount = document.getElementById('fq-deposit-amount').value || '$0';
+  const text   = `Your SAIRNbuild project deposit of ${amount} is ready. Pay here to get on the schedule.`;
+  if (navigator.share) {
+    navigator.share({ title: 'Project Deposit', text });
+  } else {
+    navigator.clipboard.writeText(text);
+    showToast('Deposit link text copied!');
+  }
+}
+
+// ============================================================
+// BLUEPRINT AI
+// ============================================================
+function selectMode(mode, tabEl) {
+  bpMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  ['lidar','photo','pdf','manual'].forEach(m => {
+    const el = document.getElementById('bp-mode-' + m);
+    if (el) el.style.display = (m === mode) ? 'block' : 'none';
+  });
+}
+
+function selectBPTrade(chip) {
+  document.querySelectorAll('#bp-trade-chips .trade-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  bpSelectedTrade = chip.dataset.trade;
+}
+
+async function detectBlueprintMode() {
+  const ua        = navigator.userAgent;
+  const isAndroid = /Android/.test(ua);
+  const isChrome  = /Chrome/.test(ua) && !/Chromium/.test(ua);
+  const isIOS     = /iPad|iPhone|iPod/.test(ua);
+  const statusEl  = document.getElementById('lidar-device-status');
+
+  if (isAndroid && isChrome && navigator.xr) {
+    try {
+      const supported = await navigator.xr.isSessionSupported('immersive-ar');
+      if (supported) {
+        if (statusEl) statusEl.textContent = 'LiDAR supported on this device';
+        document.getElementById('lidar-supported').style.display     = 'block';
+        document.getElementById('lidar-not-supported').style.display = 'none';
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // iOS or no WebXR -- show fallback
+  if (statusEl) statusEl.textContent = isIOS
+    ? 'iOS detected -- use Blueprint Photo mode (equal accuracy for plans)'
+    : 'LiDAR not available -- use Photo or PDF mode';
+  const sup = document.getElementById('lidar-supported');
+  const ns  = document.getElementById('lidar-not-supported');
+  if (sup) sup.style.display = 'none';
+  if (ns)  ns.style.display  = 'block';
+
+  // Auto-switch to photo mode on iOS
+  if (isIOS) {
+    const photoTab = document.getElementById('mode-tab-photo');
+    if (photoTab) selectMode('photo', photoTab);
+  }
+}
+
+async function startLiDARScan() {
+  if (!navigator.xr) { showToast('WebXR not available'); return; }
+  try {
+    document.getElementById('lidar-scan-status').style.display = 'block';
+    setLiDARProgress(0, 'Initializing LiDAR...');
+
+    lidarSession = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['depth-sensing', 'local-floor'],
+      depthSensing: {
+        usagePreference:    ['cpu-optimized'],
+        dataFormatPreference: ['luminance-alpha']
+      }
+    });
+
+    const frames   = [];
+    const refSpace = await lidarSession.requestReferenceSpace('local-floor');
+    const start    = Date.now();
+
+    lidarSession.requestAnimationFrame(function onFrame(t, frame) {
+      if (!frame) return;
+      const elapsed = (Date.now() - start) / 1000;
+      const pct     = Math.min(95, Math.round(elapsed / 30 * 100));
+      setLiDARProgress(pct, `Scanning... ${Math.round(elapsed)}s`);
+
+      const pose = frame.getViewerPose(refSpace);
+      if (pose) {
+        for (const view of pose.views) {
+          const d = frame.getDepthInformation(view);
+          if (d) frames.push({ w: d.width, h: d.height, data: Array.from(d.data).slice(0, 200) });
+        }
+      }
+
+      if (elapsed < 30 && pct < 95) {
+        lidarSession.requestAnimationFrame(onFrame);
+      } else {
+        finalizeLiDAR(frames, elapsed);
+      }
+    });
+  } catch(err) {
+    setLiDARProgress(0, 'Scan failed: ' + err.message);
+  }
+}
+
+function setLiDARProgress(pct, text) {
+  const bar = document.getElementById('lidar-progress');
+  const txt = document.getElementById('lidar-status-text');
+  if (bar) bar.style.width = pct + '%';
+  if (txt) txt.textContent  = text;
+}
+
+async function finalizeLiDAR(frames, duration) {
+  if (lidarSession) { await lidarSession.end(); lidarSession = null; }
+  setLiDARProgress(100, 'Scan complete -- analyzing...');
+
+  const roomData = {
+    frameCount:      frames.length,
+    floorAreaSqFt:   estimateFloorArea(frames),
+    ceilingHeightFt: estimateCeilingHeight(frames),
+    scanDuration:    Math.round(duration),
+    confidence:      frames.length > 80 ? 'HIGH' : frames.length > 30 ? 'MEDIUM' : 'LOW',
+    method:          'WebXR LiDAR Depth Sensing'
+  };
+
+  await runBlueprintAnalysis('lidar', null, roomData);
+}
+
+function estimateFloorArea(frames) {
+  if (!frames.length) return 0;
+  const depths = frames.flatMap(f => f.data.slice(0, 50)).filter(d => d > 0.5 && d < 12);
+  if (!depths.length) return 0;
+  depths.sort((a,b) => a - b);
+  const spread = depths[Math.floor(depths.length * 0.9)] - depths[Math.floor(depths.length * 0.1)];
+  return Math.round(spread * spread * 10.764 * 10) / 10;
+}
+
+function estimateCeilingHeight(frames) {
+  if (!frames.length) return 9;
+  const d = frames.flatMap(f => f.data.slice(0, 20)).filter(v => v > 1.5 && v < 5);
+  if (!d.length) return 9;
+  const median = d.sort((a,b)=>a-b)[Math.floor(d.length/2)];
+  return Math.round(median * 3.281 * 10) / 10;
+}
+
+function handleBPUpload(input, mode) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (mode === 'pdf' || file.type === 'application/pdf') {
+    renderPDFToImage(file).then(b64 => {
+      runBlueprintAnalysis('pdf', b64, null);
+    });
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const b64 = e.target.result.split(',')[1];
+    const prev = document.getElementById('bp-photo-preview');
+    const img  = document.getElementById('bp-photo-img');
+    if (prev && img) { img.src = e.target.result; prev.style.display = 'block'; }
+    // Store for analyze button
+    window._bpPhotoB64 = b64;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function renderPDFToImage(file) {
+  try {
+    // PDF.js from CDN
+    if (!window.pdfjsLib) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+      window.pdfjsLib = window['pdfjs-dist/build/pdf'];
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    const ab      = await file.arrayBuffer();
+    const pdf     = await window.pdfjsLib.getDocument({ data: ab }).promise;
+    const page    = await pdf.getPage(1);
+    const vp      = page.getViewport({ scale: 1.5 });
+    const canvas  = document.createElement('canvas');
+    canvas.width  = vp.width;
+    canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  } catch(e) {
+    showToast('PDF render failed -- try uploading as image');
+    return null;
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function runBlueprintAnalysis(mode, imageB64, roomData) {
+  const outputPanel = document.getElementById('bp-output-panel');
+  const outputEl    = document.getElementById('bp-takeoff-output');
+  if (outputPanel) outputPanel.style.display = 'block';
+  if (outputEl)    outputEl.textContent = 'Analyzing... Claude is reading your blueprint.';
+
+  const pricing = loadPricingParams();
+  const trade   = bpSelectedTrade;
+
+  const tradeInstructions = {
+    'gc-full':   'Extract ALL dimensions: room sizes, SF by room, ceiling heights, exterior perimeter, window/door schedule, total SF, garage separate.',
+    'roofing':   'Extract: roof planes, pitch per plane, total squares, ridge LF, valley LF, hip LF, eave LF, penetrations, drip edge LF.',
+    'electrical':'Extract: service size, panel location, circuit count, outlet count by room, switch count, fixture count, EV charger Y/N.',
+    'framing':   'Extract: exterior wall LF, interior wall LF, ceiling heights, opening schedule, beam spans, stud count estimate.',
+    'plumbing':  'Extract: fixture count by type, bathroom count, water heater type/location, service size.',
+    'tile':      'Extract: floor SF by room, wall tile areas (shower/tub/backsplash), tile size, substrate type. Apply waste factors.',
+    'hvac':      'Extract: conditioned SF by zone, ceiling heights, window exposure, insulation R-values, equipment locations.',
+    'siding':    'Extract: exterior wall SF per elevation minus openings, window count by size, door count, soffit/fascia LF.'
+  };
+
+  const systemPrompt = `You are SAIRNscan -- the world's best construction takeoff AI, embedded in SAIRNbuild.
+Trade: ${trade}
+${tradeInstructions[trade] || 'Extract all relevant scope for this trade.'}
+COMPANY PRICING: ${JSON.stringify(pricing)}
+
+Generate a complete SAIRNscan Takeoff Report Card:
+- All quantities with confidence rating (HIGH/MEDIUM/LOW)
+- Full material list with waste factors applied
+- Labor estimate using company rates
+- Total: Low / Mid / High
+- Flags: anything to field verify
+- Claude Intelligence Notes: code concerns, trade conflicts, value engineering suggestions
+
+Use plain ASCII formatting only. No Unicode box chars.`;
+
+  let messages;
+
+  if (mode === 'lidar' && roomData) {
+    messages = [{
+      role: 'user',
+      content: `LiDAR scan data:
+Floor Area: ${roomData.floorAreaSqFt} sq ft (${roomData.confidence} confidence)
+Ceiling Height: ${roomData.ceilingHeightFt} ft
+Scan Duration: ${roomData.scanDuration}s
+Frames: ${roomData.frameCount}
+Method: ${roomData.method}
+Trade: ${trade}
+Generate full takeoff and estimate.`
+    }];
+  } else if (imageB64) {
+    messages = [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageB64 }},
+        { type: 'text',  text: `Analyze this blueprint for ${trade}. Generate full takeoff and estimate.` }
+      ]
+    }];
+  } else {
+    if (outputEl) outputEl.textContent = 'No input provided. Please upload a blueprint or take a photo.';
+    return;
+  }
+
+  try {
+    const result = await callClaude(systemPrompt, messages);
+    if (outputEl) outputEl.textContent = result;
+  } catch(err) {
+    if (outputEl) outputEl.textContent = 'Analysis failed. Check your connection and try again.';
+  }
+}
+
+async function runBlueprintAnalysis_photo() {
+  const b64 = window._bpPhotoB64;
+  if (!b64) { showToast('Please upload a blueprint photo first'); return; }
+  await runBlueprintAnalysis('photo', b64, null);
+}
+
+async function runManualTakeoff() {
+  const l = document.getElementById('manual-length').value;
+  const w = document.getElementById('manual-width').value;
+  const h = document.getElementById('manual-height').value;
+  const n = document.getElementById('manual-notes').value;
+  if (!l || !w) { showToast('Enter at least length and width'); return; }
+
+  const pricing = loadPricingParams();
+  const trade   = bpSelectedTrade;
+  const systemPrompt = `You are SAIRNscan. Generate a complete trade takeoff and estimate.
+Trade: ${trade}
+Dimensions: ${l}ft x ${w}ft, ceiling ${h || 9}ft
+Notes: ${n}
+Company pricing: ${JSON.stringify(pricing)}
+Output full Takeoff Report Card with quantities, materials, labor, total Low/Mid/High.`;
+
+  const outputPanel = document.getElementById('bp-output-panel');
+  const outputEl    = document.getElementById('bp-takeoff-output');
+  if (outputPanel) outputPanel.style.display = 'block';
+  if (outputEl)    outputEl.textContent = 'Calculating...';
+
+  try {
+    const result = await callClaude(systemPrompt, [{ role:'user', content:'Generate takeoff from manual dimensions.' }]);
+    if (outputEl) outputEl.textContent = result;
+  } catch(err) {
+    if (outputEl) outputEl.textContent = 'Calculation failed. Check connection.';
+  }
+}
+
+function exportTakeoffCSV() {
+  const text = document.getElementById('bp-takeoff-output').textContent;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'sairnbuild-takeoff.txt';
+  a.click();
+}
+
+function saveTakeoffToProject() {
+  const text = document.getElementById('bp-takeoff-output').textContent;
+  const takeoffs = JSON.parse(localStorage.getItem('sairnbuild_takeoffs') || '[]');
+  takeoffs.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), trade: bpSelectedTrade, text });
+  localStorage.setItem('sairnbuild_takeoffs', JSON.stringify(takeoffs));
+  showToast('Takeoff saved to project file');
+}
+
+// ============================================================
+// CLAUDE INTELLIGENCE BRIEFS
+// ============================================================
+const briefData = {
+  sparks: `CRITICAL FLAG -- Sparks Electric Co. | 412 Elmwood Drive
+Submitted: June 13, 2026 4:45pm | Trade: Electrical
+
+CRITICAL (Stop Work):
+Photo SPA-14C shows junction box at 74" AFF on east wall. HVAC rough-in submittal from
+Eastside Mechanical shows duct trunk running at 72"-78" AFF in same wall cavity.
+Conflict confirmed. Do NOT drywall east wall until MEP coordination meeting.
+Recommended action: Schedule GC + electrical + HVAC site meeting within 24 hours.
+
+HIGH:
+Submission 2 days overdue. Sub has been notified 1x via portal. No response recorded.
+Recommended action: Call foreman directly today.
+
+MEDIUM:
+Photo SPA-12A shows wire stapled directly to OSB sheathing without protection plate in
+exterior wall. NEC 300.4 requires protection plate or minimum 1.25" setback from edge.
+Recommended action: Flag for inspection -- inspector may require correction.
+
+CLAUDE VERDICT: Hold east wall drywall. Mandatory GC/MEP meeting before proceeding.
+Electrical sub compliance score this period: 62/100.`,
+
+  premier: `Sub Intelligence Brief -- Premier Framing Inc. | 412 Elmwood Drive
+Submitted: June 15, 2026 7:30am | Trade: Framing
+
+HIGH:
+Material log shows 340 studs received and installed. Blueprint AI takeoff calculated 280
+2x6x9 studs required for scope. 60-stud variance (21% overage).
+Possible causes: waste/cuts, scope creep, incorrect logging.
+Recommended action: Foreman verification before next lumber order.
+
+LOW:
+Photo FRM-22B shows knee wall blocking at 32" centers in garage. Could be upgraded to
+16" centers for shear wall compliance if engineered shear is required on final plans.
+No action required unless structural engineer specifies.
+
+PASSES:
+All safety PPE visible in all 8 photos. Hard hats, safety glasses, gloves confirmed.
+Daily log narrative complete and detailed. Schedule on track at 85%.
+
+CLAUDE VERDICT: Strong submission. Investigate stud count variance before next order.
+Framing sub compliance score this period: 94/100.`
+};
+
+async function viewClaudeBrief(subId) {
+  const modal   = document.getElementById('brief-modal');
+  const content = document.getElementById('brief-modal-content');
+  if (!modal || !content) return;
+  content.textContent = briefData[subId] || 'No brief available for this sub.';
+  modal.classList.add('open');
+}
+
+async function runClaudeFlags() {
+  showToast('Claude scanning all active projects...');
+  setTimeout(() => showToast('Scan complete. 2 flags confirmed, 1 new flag detected.'), 2500);
+}
+
+async function runHealthScore() {
+  showToast('Claude calculating project health...');
+  setTimeout(() => showToast('Health score updated: 82/100 -- Strong'), 2000);
+}
+
+// ============================================================
+// SUBCONTRACTORS
+// ============================================================
+function inviteSub() {
+  document.getElementById('invite-sub-modal').classList.add('open');
+}
+
+// ============================================================
+// CHECK REGISTER -- LIVE PREVIEW
+// ============================================================
+function updateCheckPreview() {
+  const payee  = document.getElementById('check-payee')?.value  || '';
+  const amount = parseFloat(document.getElementById('check-amount')?.value || 0);
+  const memo   = document.getElementById('check-memo')?.value   || '';
+
+  const prevPayee   = document.getElementById('preview-payee');
+  const prevAmount  = document.getElementById('preview-amount');
+  const prevWritten = document.getElementById('preview-written');
+  const prevMemo    = document.getElementById('preview-memo');
+
+  if (prevPayee)   prevPayee.textContent   = payee   || '___________________________';
+  if (prevAmount)  prevAmount.textContent  = amount  ? '$' + amount.toLocaleString('en-US',{minimumFractionDigits:2}) : '$__________';
+  if (prevWritten) prevWritten.textContent = amount  ? numberToWords(amount) + ' Dollars' : '____________________________________________ Dollars';
+  if (prevMemo)    prevMemo.textContent    = memo    ? 'Memo: ' + memo : 'Memo: _____________________';
+}
+
+function numberToWords(n) {
+  const ones  = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
+                  'Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen',
+                  'Seventeen','Eighteen','Nineteen'];
+  const tens  = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  if (n === 0) return 'Zero';
+  const dollars = Math.floor(n);
+  const cents   = Math.round((n - dollars) * 100);
+  let words = '';
+  if (dollars >= 1000) {
+    words += ones[Math.floor(dollars/1000)] + ' Thousand ';
+  }
+  if (dollars % 1000 >= 100) {
+    words += ones[Math.floor((dollars%1000)/100)] + ' Hundred ';
+  }
+  const rem = dollars % 100;
+  if (rem >= 20) {
+    words += tens[Math.floor(rem/10)] + (rem%10 ? ' ' + ones[rem%10] : '');
+  } else if (rem > 0) {
+    words += ones[rem];
+  }
+  if (cents > 0) words += ' and ' + cents + '/100';
+  return words.trim();
+}
+
+// ============================================================
+// SIGNATURE PAD
+// ============================================================
+function initSignatureCanvas() {
+  const canvas = document.getElementById('sig-canvas');
+  if (!canvas) return;
+  const ctx    = canvas.getContext('2d');
+  ctx.strokeStyle = '#1F2937';
+  ctx.lineWidth   = 2;
+  ctx.lineCap     = 'round';
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    sigDrawing = true;
+    const r = canvas.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!sigDrawing) return;
+    const r = canvas.getBoundingClientRect();
+    ctx.lineTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
+    ctx.stroke();
+  }, { passive: false });
+
+  canvas.addEventListener('touchend',  () => sigDrawing = false);
+  canvas.addEventListener('mousedown', e => {
+    sigDrawing = true;
+    const r    = canvas.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+  });
+  canvas.addEventListener('mousemove', e => {
+    if (!sigDrawing) return;
+    const r = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+    ctx.stroke();
+  });
+  canvas.addEventListener('mouseup',   () => sigDrawing = false);
+}
+
+function clearSig() {
+  const canvas = document.getElementById('sig-canvas');
+  if (!canvas) return;
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function captureSignature() {
+  const canvas = document.getElementById('sig-canvas');
+  return canvas ? canvas.toDataURL('image/png') : null;
+}
+
+// ============================================================
+// PRICING PARAMS
+// ============================================================
+const DEFAULT_PRICING = {
+  company:         'My Company',
+  laborRates:      { standard: 85, lead: 120, specialty: 150, ot: 127 },
+  materialMarkup:  0.30,
+  overheadPercent: 0.15,
+  profitPercent:   0.20,
+  quoteValidDays:  30,
+  minimumJob:      500,
+  depositPct:      0.33,
+  unitPricing: {
+    shingles_sq:        350, metal_roofing_sq:    650, tear_off_sq:         75,
+    tile_floor_sqft:     14, tile_shower_sqft:     22,
+    framing_lf_wall:     12, framing_lf_header:    45,
+    elec_circuit:       275, elec_panel_200a:    2800, elec_outlet:         85,
+    plumb_bath_full:   2400, plumb_fixture:       450,
+    hvac_ton:          4500, hvac_duct_lf:         18,
+    siding_sqft:       7.50, window_each:         650, door_ext:          1200
+  }
+};
+
+function loadPricingParams() {
+  try {
+    return JSON.parse(localStorage.getItem('sairnbuild_pricing')) || DEFAULT_PRICING;
+  } catch(e) {
+    return DEFAULT_PRICING;
+  }
+}
+
+function savePricingParams() {
+  const p = {
+    ...loadPricingParams(),
+    company:         document.getElementById('company-name')?.value      || DEFAULT_PRICING.company,
+    materialMarkup:  (parseFloat(document.getElementById('markup-material')?.value || 30)) / 100,
+    overheadPercent: (parseFloat(document.getElementById('markup-overhead')?.value || 15)) / 100,
+    profitPercent:   (parseFloat(document.getElementById('markup-profit')?.value   || 20)) / 100,
+    quoteValidDays:  parseInt(document.getElementById('quote-valid-days')?.value   || 30),
+    minimumJob:      parseFloat(document.getElementById('min-job')?.value          || 500),
+    depositPct:      (parseFloat(document.getElementById('deposit-pct')?.value     || 33)) / 100,
+    laborRates: {
+      standard:  parseFloat(document.getElementById('rate-standard')?.value  || 85),
+      lead:      parseFloat(document.getElementById('rate-lead')?.value      || 120),
+      specialty: parseFloat(document.getElementById('rate-specialty')?.value || 150),
+      ot:        parseFloat(document.getElementById('rate-ot')?.value        || 127)
+    }
+  };
+  localStorage.setItem('sairnbuild_pricing', JSON.stringify(p));
+  showToast('Pricing saved -- all Field Quotes will use these rates');
+}
+
+function loadPricingParamsIntoForm() {
+  const p = loadPricingParams();
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('company-name',     p.company);
+  set('markup-material',  Math.round(p.materialMarkup  * 100));
+  set('markup-overhead',  Math.round(p.overheadPercent * 100));
+  set('markup-profit',    Math.round(p.profitPercent   * 100));
+  set('quote-valid-days', p.quoteValidDays);
+  set('min-job',          p.minimumJob);
+  set('deposit-pct',      Math.round(p.depositPct      * 100));
+  set('rate-standard',    p.laborRates?.standard  || 85);
+  set('rate-lead',        p.laborRates?.lead      || 120);
+  set('rate-specialty',   p.laborRates?.specialty || 150);
+  set('rate-ot',          p.laborRates?.ot        || 127);
+}
+
+// ============================================================
+// SAIRN SUITE / BRIDGE SYNC
+// ============================================================
+async function syncAllSuite() {
+  showToast('Syncing all connected apps...');
+  try {
+    await fetch(BRIDGE_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        from:      APP_ID,
+        to:        'all',
+        type:      'full-sync',
+        timestamp: new Date().toISOString()
+      })
+    });
+    showToast('All apps synced successfully');
+  } catch(e) {
+    showToast('Bridge sync -- will retry when connection restored');
+  }
+}
+
+// ============================================================
+// CORE CLAUDE API CALL
+// Proxy only -- NEVER api.anthropic.com
+// ============================================================
+async function callClaude(systemPrompt, messages) {
+  const res = await fetch(PROXY_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      app_id:    APP_ID,
+      is_demo:   true,
+      system:    systemPrompt,
+      messages:  messages
+    })
+  });
+  if (!res.ok) throw new Error('Claude API error: ' + res.status);
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+// ============================================================
+// UTILITY
+// ============================================================
+function showToast(msg) {
+  let toast = document.getElementById('sairn-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'sairn-toast';
+    Object.assign(toast.style, {
+      position:     'fixed',
+      bottom:       '24px',
+      left:         '50%',
+      transform:    'translateX(-50%)',
+      background:   '#1F2937',
+      color:        '#FFFFFF',
+      padding:      '10px 20px',
+      borderRadius: '8px',
+      fontSize:     '14px',
+      fontWeight:   '600',
+      zIndex:       '1000',
+      boxShadow:    '0 4px 12px rgba(0,0,0,0.2)',
+      transition:   'opacity 0.3s'
+    });
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.style.opacity = '0', 3000);
+}
+
+// ============================================================
+// INIT -- runs on page load
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Wire up check preview
+  const checkInputs = ['check-payee','check-amount','check-memo'];
+  checkInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateCheckPreview);
+  });
+
+  // Enter key on PIN input
+  const pinInput = document.getElementById('pin-input');
+  if (pinInput) {
+    pinInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+  }
+
+  // Default BP mode display
+  ['photo','pdf','manual'].forEach(m => {
+    const el = document.getElementById('bp-mode-' + m);
+    if (el) el.style.display = 'none';
+  });
+});
+</script>
+
+</body>
+</html>
