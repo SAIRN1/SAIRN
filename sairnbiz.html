@@ -519,14 +519,50 @@ textarea{resize:vertical;min-height:72px;}
     <button class="btn btn-outline" onclick="exportCSV('pay-tbl','sairnbiz-payroll')">Export CSV</button>
   </div>
   <div class="card"><div class="card-header"><div class="card-title">Current Pay Period — Jun 1–14, 2025</div><div style="font-size:13px;color:var(--muted);">Run by: Jun 20</div></div><div class="card-body p0">
-    <table class="dt" id="pay-tbl"><thead><tr><th>Employee</th><th>Type</th><th>Reg Hours</th><th>OT Hours</th><th>Rate</th><th>Gross Pay</th><th>Deductions</th><th>Net Pay</th></tr></thead><tbody>
-      <tr><td>Maria Santos</td><td>Hourly</td><td>80</td><td>4</td><td>$22/hr</td><td>$1,892</td><td>$378</td><td>$1,514</td></tr>
-      <tr><td>Dave Kim</td><td>Hourly</td><td>80</td><td>0</td><td>$28/hr</td><td>$2,240</td><td>$448</td><td>$1,792</td></tr>
-      <tr><td>Sarah Thompson</td><td>Salary</td><td>80</td><td>0</td><td>$52K/yr</td><td>$2,167</td><td>$433</td><td>$1,734</td></tr>
-      <tr><td>Bob Evans</td><td>Salary</td><td>80</td><td>0</td><td>$48K/yr</td><td>$2,000</td><td>$400</td><td>$1,600</td></tr>
-      <tr><td>Carlos Rivera</td><td>Hourly</td><td>0</td><td>0</td><td>$32/hr</td><td>$0</td><td>$0</td><td>$0 (On Leave)</td></tr>
-      <tr class="ttr"><td colspan="5"><strong>Totals</strong></td><td><strong>$8,299</strong></td><td><strong>$1,659</strong></td><td><strong>$6,640</strong></td></tr>
-    </tbody></table>
+    <table class="dt" id="pay-tbl"><thead><tr>
+  <th>Employee</th><th>Type</th><th>Reg Hrs</th><th>OT Hrs</th><th>Gross Pay</th>
+  <th>Federal</th><th>State</th><th>FICA SS</th><th>Medicare</th><th>Health Ins</th><th>401k</th>
+  <th>Total Deductions</th><th>Net Pay</th>
+</tr></thead><tbody>
+  <tr>
+    <td><strong>Maria Santos</strong></td><td>Hourly $22</td><td>80</td><td>4</td><td>$1,892</td>
+    <td>$340</td><td>$66</td><td>$117</td><td>$27</td><td>$90</td><td>$57</td>
+    <td>$697</td><td><strong>$1,195</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Dave Kim</strong></td><td>Hourly $28</td><td>80</td><td>0</td><td>$2,240</td>
+    <td>$403</td><td>$78</td><td>$139</td><td>$32</td><td>$90</td><td>$67</td>
+    <td>$809</td><td><strong>$1,431</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Sarah Thompson</strong></td><td>Salary $52K</td><td>80</td><td>0</td><td>$2,167</td>
+    <td>$390</td><td>$76</td><td>$134</td><td>$31</td><td>$90</td><td>$65</td>
+    <td>$786</td><td><strong>$1,381</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Bob Evans</strong></td><td>Salary $48K</td><td>80</td><td>0</td><td>$2,000</td>
+    <td>$360</td><td>$70</td><td>$124</td><td>$29</td><td>$90</td><td>$60</td>
+    <td>$733</td><td><strong>$1,267</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Carlos Rivera</strong></td><td>Hourly $32</td><td>0</td><td>0</td><td>$0</td>
+    <td>$0</td><td>$0</td><td>$0</td><td>$0</td><td>$0</td><td>$0</td>
+    <td>$0</td><td><strong style="color:var(--muted)">On Leave</strong></td>
+  </tr>
+  <tr class="ttr">
+    <td colspan="4"><strong>Period Totals</strong></td><td><strong>$8,299</strong></td>
+    <td><strong>$1,493</strong></td><td><strong>$290</strong></td><td><strong>$514</strong></td><td><strong>$119</strong></td><td><strong>$270</strong></td><td><strong>$249</strong></td>
+    <td><strong>$3,025</strong></td><td><strong>$5,274</strong></td>
+  </tr>
+</tbody></table>
+<div style="margin-top:12px;background:#F8FAFC;border-radius:8px;padding:12px 16px;font-size:12px;color:var(--muted);display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;">
+  <div><strong style="color:var(--text);">Federal (18%)</strong><br>Based on W-4 withholding</div>
+  <div><strong style="color:var(--text);">Ohio State (3.5%)</strong><br>State income tax</div>
+  <div><strong style="color:var(--text);">FICA SS (6.2%)</strong><br>Social Security up to $168,600</div>
+  <div><strong style="color:var(--text);">Medicare (1.45%)</strong><br>No wage base limit</div>
+  <div><strong style="color:var(--text);">Health Insurance</strong><br>$90/pay period employee share</div>
+  <div><strong style="color:var(--text);">401k (3%)</strong><br>Employee elective deferral</div>
+</div>
   </div></div>
   <div style="margin-top:14px;display:flex;gap:10px;">
     <button class="btn btn-teal" onclick="runPayroll()">Approve & Post to GL</button>
