@@ -4680,11 +4680,11 @@ document.addEventListener('keydown', function(e) {
 console.log('SAIRNbuild v2.0 loaded — SAIRN Technologies — Sky Blue #F59E0B — 25+ panels — AI at the core');
 
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 //  SAIRNbuild v3.0 — 20 New Feature Functions
-// ═══════════════════════════════════════════════════════
+// =======================================================
 
-// ── DRAWING / PLAN VIEWER ────────────────────────────
+// -- DRAWING / PLAN VIEWER ----------------------------
 var drawCtx = null, drawCanvas = null, drawImg = null;
 var drawingTool = 'pen', drawColor = '#DC2626', isDrawing = false;
 var drawStartX = 0, drawStartY = 0;
@@ -4748,7 +4748,7 @@ function downloadMarkup() {
   sbNotify('Markup saved', 'ok');
 }
 
-// ── SAFETY LOG ──────────────────────────────────────
+// -- SAFETY LOG --------------------------------------
 var safetyLogs = JSON.parse(localStorage.getItem('sb_safety') || '[]');
 
 function newSafetyIncident(type) {
@@ -4811,7 +4811,7 @@ async function aiSafetyReview() {
 
 function generateOSHAReport() { sbNotify('OSHA 300 Log generated — print from browser', 'ok'); window.print(); }
 
-// ── EQUIPMENT TRACKER ────────────────────────────────
+// -- EQUIPMENT TRACKER --------------------------------
 var equipment = JSON.parse(localStorage.getItem('sb_equipment') || '[]');
 
 function showEquipForm() { document.getElementById('equip-form').style.display = 'block'; }
@@ -4882,7 +4882,7 @@ function exportEquipCSV() {
   var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'SAIRNbuild-Equipment.csv'; a.click();
 }
 
-// ── MATERIAL DELIVERY ────────────────────────────────
+// -- MATERIAL DELIVERY --------------------------------
 var materials_sb = JSON.parse(localStorage.getItem('sb_materials') || '[]');
 
 function showMatForm() { document.getElementById('mat-form').style.display = 'block'; document.getElementById('mat-exp-date').value = new Date().toISOString().split('T')[0]; }
@@ -4933,7 +4933,7 @@ function renderMaterialList() {
   }).join('');
 }
 
-// ── WEATHER ──────────────────────────────────────────
+// -- WEATHER ------------------------------------------
 var weatherDelays = JSON.parse(localStorage.getItem('sb_wxdelays') || '[]');
 
 async function fetchWeather() {
@@ -5001,7 +5001,7 @@ function renderWxDelayLog() {
   }).join('');
 }
 
-// ── PERMITS ──────────────────────────────────────────
+// -- PERMITS ------------------------------------------
 var permits_sb = JSON.parse(localStorage.getItem('sb_permits') || '[]');
 
 function showPermitForm() { document.getElementById('permit-form').style.display = 'block'; document.getElementById('perm-app-date').value = new Date().toISOString().split('T')[0]; }
@@ -5062,7 +5062,7 @@ async function aiPermitReview() {
   sbNotify(res.substring(0,100) + '...', 'info');
 }
 
-// ── PHOTO MARKUP ─────────────────────────────────────
+// -- PHOTO MARKUP -------------------------------------
 var markupCanvas2 = null, markupCtx2 = null, markupImgData = null;
 var markupPhotos = JSON.parse(localStorage.getItem('sb_markups') || '[]');
 
@@ -5136,7 +5136,7 @@ async function aiPhotoAnalysis() {
   sbNotify('AI photo analysis requires Pro plan photo processing', 'info');
 }
 
-// ── SELECTIONS ───────────────────────────────────────
+// -- SELECTIONS ---------------------------------------
 var selections = JSON.parse(localStorage.getItem('sb_selections') || '[]');
 
 function showSelForm() { document.getElementById('sel-form').style.display = 'block'; }
@@ -5196,7 +5196,7 @@ function renderSelectionList() {
   }).join('');
 }
 
-// ── ALLOWANCES ───────────────────────────────────────
+// -- ALLOWANCES ---------------------------------------
 var allowances = JSON.parse(localStorage.getItem('sb_allowances') || '[]');
 
 function showAlwForm() { document.getElementById('alw-form').style.display = 'block'; }
@@ -5247,7 +5247,7 @@ function renderAllowanceList() {
   }).join('');
 }
 
-// ── WARRANTIES ───────────────────────────────────────
+// -- WARRANTIES ---------------------------------------
 var warranties = JSON.parse(localStorage.getItem('sb_warranties2') || '[]');
 
 function showWarrForm() { document.getElementById('warr-form').style.display = 'block'; }
@@ -5294,7 +5294,7 @@ function renderWarrantyList() {
   }).join('');
 }
 
-// ── OWNER REPORT ─────────────────────────────────────
+// -- OWNER REPORT -------------------------------------
 async function generateOwnerReport() {
   var el = document.getElementById('owner-report-output');
   el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">AI generating your owner progress report...</div>';
@@ -5316,7 +5316,7 @@ function emailOwnerReport() {
   navigator.clipboard.writeText(text).then(function() { sbNotify('Report copied — paste into email', 'ok'); });
 }
 
-// ── CLOSEOUT PACKAGE ─────────────────────────────────
+// -- CLOSEOUT PACKAGE ---------------------------------
 async function generateCloseout() {
   var el = document.getElementById('closeout-output');
   el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">AI compiling closeout package...</div>';
@@ -5338,7 +5338,7 @@ async function generateCloseout() {
     }).join('');
 }
 
-// ── BID MANAGER ──────────────────────────────────────
+// -- BID MANAGER --------------------------------------
 var bidPackages = JSON.parse(localStorage.getItem('sb_bids') || '[]');
 
 function showBidForm() { document.getElementById('bid-form').style.display = 'block'; document.getElementById('bid-due').value = new Date(Date.now()+7*24*60*60*1000).toISOString().split('T')[0]; }
@@ -5448,7 +5448,7 @@ function awardBid(id) {
   sbNotify(bp.name + ' awarded to ' + winner, 'ok');
 }
 
-// ── INVOICE SCANNER ──────────────────────────────────
+// -- INVOICE SCANNER ----------------------------------
 var scannedInvoices = JSON.parse(localStorage.getItem('sb_invoices') || '[]');
 
 async function scanInvoice(event) {
@@ -5539,7 +5539,7 @@ function renderInvHistory() {
   }).join('');
 }
 
-// ── MULTI-PROJECT DASHBOARD ──────────────────────────
+// -- MULTI-PROJECT DASHBOARD --------------------------
 function refreshMultiDash() {
   var grid = document.getElementById('multidash-grid');
   var projects = typeof sbProjects !== 'undefined' ? sbProjects : [];
@@ -5589,7 +5589,7 @@ function exportPortfolioCSV() {
   var a = document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='SAIRNbuild-Portfolio.csv'; a.click();
 }
 
-// ── UTILITY: Claude API call ─────────────────────────
+// -- UTILITY: Claude API call -------------------------
 async function callClaude(system, userMsg) {
   try {
     var res = await fetch('https://sairn.vercel.app/api/claude', {
@@ -5619,5 +5619,125 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </script>
 
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// === SAIRNBUILD SUPABASE + AI MEMORY ENGINE ===
+// Pattern: Business Profile + AI Memory + cross-device sync (mirrors SAIRNbiz)
+const SAIRNBUILD_SUPABASE_URL = 'https://ejrlrrkvhtllxbbypdjb.supabase.co';
+const SAIRNBUILD_SUPABASE_KEY = 'sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
+let _sairnbuildSupa = null;
+
+function getSairnbuildSupabase() {
+  if (!_sairnbuildSupa && typeof supabase !== 'undefined') {
+    _sairnbuildSupa = supabase.createClient(SAIRNBUILD_SUPABASE_URL, SAIRNBUILD_SUPABASE_KEY);
+  }
+  return _sairnbuildSupa;
+}
+
+let _sairnbuildBizProfile = null;
+let _sairnbuildMemories = [];
+
+function loadSairnbuildProfile() {
+  try {
+    const raw = localStorage.getItem('sairnbuild:business_profile');
+    if (raw) _sairnbuildBizProfile = JSON.parse(raw);
+  } catch(e) {}
+  syncSairnbuildProfileFromSupabase();
+}
+
+async function syncSairnbuildProfileFromSupabase() {
+  const sb = getSairnbuildSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('sairn_license_key_sairnbuild') || '';
+  if (!licKey) return;
+  try {
+    const { data, error } = await sb.from('business_profiles').select('*').eq('license_key', licKey).single();
+    if (!error && data) {
+      _sairnbuildBizProfile = data;
+      localStorage.setItem('sairnbuild:business_profile', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+function loadSairnbuildMemories() {
+  try {
+    const raw = localStorage.getItem('sairnbuild:ai_memories');
+    if (raw) _sairnbuildMemories = JSON.parse(raw);
+  } catch(e) {}
+  syncSairnbuildMemoriesFromSupabase();
+}
+
+async function syncSairnbuildMemoriesFromSupabase() {
+  const sb = getSairnbuildSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('sairn_license_key_sairnbuild') || '';
+  if (!licKey) return;
+  try {
+    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (!prof) return;
+    const { data, error } = await sb.from('ai_memories').select('*').eq('shop_id', prof.shop_id).order('created_at', { ascending: false }).limit(10);
+    if (!error && data) {
+      _sairnbuildMemories = data;
+      localStorage.setItem('sairnbuild:ai_memories', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+async function writeSairnbuildMemory(history) {
+  const sb = getSairnbuildSupabase();
+  const licKey = localStorage.getItem('sairn_license_key_sairnbuild') || '';
+  if (!sb || !licKey || !history || history.length < 4) return;
+  try {
+    const summaryRes = await fetch('https://sairn.vercel.app/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id: 'sairnbuild',
+        is_demo: true,
+        system: 'Summarize the key business insight from this conversation in one sentence (max 120 chars).',
+        messages: history.slice(-8),
+        max_tokens: 150
+      })
+    });
+    const sd = await summaryRes.json();
+    const memText = sd.content && sd.content[0] ? sd.content[0].text : null;
+    if (!memText) return;
+    const mem = { memory_text: memText, source: 'sairnbuild', created_at: new Date().toISOString() };
+    _sairnbuildMemories.unshift(mem);
+    if (_sairnbuildMemories.length > 20) _sairnbuildMemories = _sairnbuildMemories.slice(0, 20);
+    localStorage.setItem('sairnbuild:ai_memories', JSON.stringify(_sairnbuildMemories));
+    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (prof) await sb.from('ai_memories').insert({ ...mem, shop_id: prof.shop_id });
+  } catch(e) {}
+}
+
+function buildSairnbuildSystemPrompt() {
+  const base = 'You are SAIRNbuild AI, a world-class general contractor advisor with expertise in construction project management, job costing, subcontractor scheduling, building codes, OSHA compliance, change order management, lien waivers, material procurement, and construction finance. You help construction companies run tighter, more profitable jobs. Be specific, practical, and data-driven.';
+  const p = _sairnbuildBizProfile;
+  let profileBlock = '';
+  if (p && p.company_name) {
+    profileBlock = '\n\nBUSINESS PROFILE:\n' +
+      'Company: ' + p.company_name + '\n' +
+      (p.ein ? 'EIN: ' + p.ein + '\n' : '') +
+      'City: ' + (p.city || 'Westlake') + ', Ohio\n' +
+      'Headcount: ' + (p.headcount || 1) + ' employees\n' +
+      (p.revenue_range ? 'Revenue: ' + (p.revenue_range+'').replace(/_/g,' ') + '\n' : '') +
+      (p.preferences && p.preferences.owner_name ? 'Owner: ' + p.preferences.owner_name + '\n' : '') +
+      (p.preferences && p.preferences.ai_notes ? 'Notes: ' + p.preferences.ai_notes + '\n' : '');
+  }
+  let memBlock = '';
+  if (_sairnbuildMemories && _sairnbuildMemories.length > 0) {
+    memBlock = '\n\nWHAT YOU KNOW (from past sessions):\n' +
+      _sairnbuildMemories.slice(0, 10).map(function(m, i) { return (i+1) + '. ' + m.memory_text; }).join('\n');
+  }
+  return base + profileBlock + memBlock;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadSairnbuildProfile();
+  loadSairnbuildMemories();
+});
+</script>
 </body>
 </html>
