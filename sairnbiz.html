@@ -1054,6 +1054,97 @@ textarea{resize:vertical;min-height:72px;}
           <div class="fg"><label>Exempt from Ohio Tax</label><select><option selected>No</option><option>Yes</option></select></div>
         </div>
 
+        <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Ohio Municipal / Local Income Tax (RITA)</div>
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;margin-bottom:14px;">
+          &#x2139;&#xFE0F; Ohio has <strong>600+ municipal tax districts</strong>. Tax is based on where the employee <strong>works</strong> (employer withholding obligation) and where they <strong>live</strong> (residence credit may apply). Most Ohio cities use <strong>RITA</strong> (Regional Income Tax Agency) or CCA for collection. Rates range from 0% to 3%.
+        </div>
+        <div class="form-grid">
+          <div class="fg"><label>Work Location City</label>
+            <select id="work-city" onchange="var v=this.value;if(v!=='custom')document.getElementById('work-city-rate').value=v;calcLocalTax()">
+              <option value="1.5" selected>Westlake — 1.5%</option>
+              <option value="2.5">Cleveland — 2.5%</option>
+              <option value="2.0">Lakewood — 2.0%</option>
+              <option value="2.0">Rocky River — 2.0%</option>
+              <option value="1.5">Bay Village — 1.5%</option>
+              <option value="2.0">Avon Lake — 2.0%</option>
+              <option value="1.5">Avon — 1.5%</option>
+              <option value="2.0">North Olmsted — 2.0%</option>
+              <option value="2.0">Strongsville — 2.0%</option>
+              <option value="2.0">Parma — 2.0%</option>
+              <option value="2.5">Euclid — 2.5%</option>
+              <option value="2.0">Lorain — 2.0%</option>
+              <option value="2.0">Elyria — 2.0%</option>
+              <option value="0">Unincorporated (no tax)</option>
+              <option value="custom">Other city (enter rate below)</option>
+            </select>
+          </div>
+          <div class="fg"><label>Work City Tax Rate %</label>
+            <input type="number" id="work-city-rate" value="1.5" step="0.25" min="0" max="3" onchange="calcLocalTax()">
+          </div>
+          <div class="fg"><label>Residence City (where employee lives)</label>
+            <select id="res-city" onchange="var v=this.value;if(v!=='custom')document.getElementById('res-city-rate').value=v;calcLocalTax()">
+              <option value="1.5" selected>Westlake — 1.5%</option>
+              <option value="2.5">Cleveland — 2.5%</option>
+              <option value="2.0">Lakewood — 2.0%</option>
+              <option value="2.0">Rocky River — 2.0%</option>
+              <option value="1.5">Bay Village — 1.5%</option>
+              <option value="2.0">Avon Lake — 2.0%</option>
+              <option value="1.5">Avon — 1.5%</option>
+              <option value="2.0">North Olmsted — 2.0%</option>
+              <option value="0">Unincorporated (no tax)</option>
+              <option value="custom">Other city (enter rate below)</option>
+            </select>
+          </div>
+          <div class="fg"><label>Residence City Rate %</label>
+            <input type="number" id="res-city-rate" value="1.5" step="0.25" min="0" max="3" onchange="calcLocalTax()">
+          </div>
+          <div class="fg"><label>Credit for Taxes Paid to Work City</label>
+            <select id="res-credit" onchange="calcLocalTax()">
+              <option value="full" selected>Full credit (most RITA cities)</option>
+              <option value="half">50% credit</option>
+              <option value="none">No credit</option>
+            </select>
+          </div>
+          <div class="fg"><label>Local Tax Collector</label>
+            <select>
+              <option selected>RITA (Regional Income Tax Agency)</option>
+              <option>CCA (Central Collection Agency)</option>
+              <option>City Direct Filing</option>
+            </select>
+          </div>
+          <div class="fg"><label>Exempt from Local Tax</label>
+            <select><option selected>No</option><option>Yes (attach exemption form)</option></select>
+          </div>
+          <div class="fg"><label>Additional Local Withholding ($/period)</label>
+            <input type="number" value="0" placeholder="Extra $ per paycheck" onchange="calcLocalTax()">
+          </div>
+        </div>
+
+        <!-- Live local tax calculation -->
+        <div id="local-tax-calc" style="margin-top:14px;background:#F8FAFC;border-radius:8px;padding:14px;font-size:13px;">
+          <div style="font-weight:700;color:var(--teal-dark);margin-bottom:10px;">Local Tax Calculation — This Pay Period</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div style="text-align:center;padding:10px;background:#fff;border-radius:6px;border:1px solid var(--border);">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Work City Tax</div>
+              <div id="calc-work-tax" style="font-size:18px;font-weight:900;color:#B91C1C;">$28.38</div>
+              <div style="font-size:11px;color:var(--muted);">Westlake 1.5%</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:#fff;border-radius:6px;border:1px solid var(--border);">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Residence Tax Due</div>
+              <div id="calc-res-tax" style="font-size:18px;font-weight:900;color:#94A3B8;">$0.00</div>
+              <div style="font-size:11px;color:var(--muted);">Full credit applied</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:var(--teal-light);border-radius:6px;border:1px solid var(--teal-mid);">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Total Local Withheld</div>
+              <div id="calc-local-total" style="font-size:18px;font-weight:900;color:var(--teal-dark);">$28.38</div>
+              <div style="font-size:11px;color:var(--muted);">Per pay period</div>
+            </div>
+          </div>
+          <div id="local-tax-note" style="margin-top:10px;font-size:11px;color:var(--muted);">
+            Westlake works/lives: employer withholds 1.5% work city tax. Since residence and work city match, no additional residence tax is owed.
+          </div>
+        </div>
+
         <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Calculated Withholding (This Pay Period)</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:4px;">
           <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
@@ -1081,9 +1172,14 @@ textarea{resize:vertical;min-height:72px;}
             <div style="font-size:20px;font-weight:900;color:#B91C1C;">$27</div>
             <div style="font-size:11px;color:var(--muted);">1.45% of gross</div>
           </div>
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Local (Westlake)</div>
+            <div style="font-size:20px;font-weight:900;color:#B91C1C;">$28</div>
+            <div style="font-size:11px;color:var(--muted);">RITA 1.5%</div>
+          </div>
           <div style="background:var(--teal-light);border:1px solid var(--teal-mid);border-radius:8px;padding:12px;text-align:center;">
             <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Net Pay</div>
-            <div style="font-size:20px;font-weight:900;color:var(--teal-dark);">$1,195</div>
+            <div style="font-size:20px;font-weight:900;color:var(--teal-dark);">$1,167</div>
             <div style="font-size:11px;color:var(--muted);">After all deductions</div>
           </div>
         </div>
@@ -1119,7 +1215,8 @@ textarea{resize:vertical;min-height:72px;}
           <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span>Dental</span><span style="font-weight:700;">-$12.00</span></div>
           <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span>Vision</span><span style="font-weight:700;">-$6.00</span></div>
           <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span>401k (3%)</span><span style="font-weight:700;">-$56.76</span></div>
-          <div style="display:flex;justify-content:space-between;padding:7px 0 0;font-weight:700;color:var(--teal-dark);"><span>Total Pre-Tax Deductions</span><span>-$164.76</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span>Ohio Municipal Tax (Westlake RITA 1.5%)</span><span style="font-weight:700;">-$28.38</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0 0;font-weight:700;color:var(--teal-dark);"><span>Total All Deductions</span><span>-$726.76</span></div>
         </div>
       </div>
 
@@ -1336,6 +1433,52 @@ function doLogin() {
     document.getElementById('login-error').textContent = 'Incorrect PIN.';
     ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('p0').focus();
+  }
+}
+
+function calcLocalTax() {
+  var gross = 1892;
+  var workRate = parseFloat(document.getElementById('work-city-rate').value) || 0;
+  var resRate = parseFloat(document.getElementById('res-city-rate').value) || 0;
+  var creditType = document.getElementById('res-credit') ? document.getElementById('res-credit').value : 'full';
+
+  var workTax = gross * (workRate / 100);
+
+  // Residence tax owed = residence rate minus credit for work city tax paid
+  var creditAmt = 0;
+  if (creditType === 'full') creditAmt = workTax;
+  else if (creditType === 'half') creditAmt = workTax * 0.5;
+
+  var resTaxGross = gross * (resRate / 100);
+  var resTaxDue = Math.max(0, resTaxGross - creditAmt);
+  var totalLocal = workTax + resTaxDue;
+
+  var wEl = document.getElementById('calc-work-tax');
+  var rEl = document.getElementById('calc-res-tax');
+  var tEl = document.getElementById('calc-local-total');
+  var nEl = document.getElementById('local-tax-note');
+
+  if (wEl) wEl.textContent = '$' + workTax.toFixed(2);
+  if (rEl) rEl.textContent = '$' + resTaxDue.toFixed(2);
+  if (tEl) tEl.textContent = '$' + totalLocal.toFixed(2);
+
+  if (nEl) {
+    var workSel = document.getElementById('work-city');
+    var resSel = document.getElementById('res-city');
+    var workCity = workSel ? workSel.options[workSel.selectedIndex].text.split(' —')[0] : 'Work city';
+    var resCity = resSel ? resSel.options[resSel.selectedIndex].text.split(' —')[0] : 'Residence city';
+    if (workRate === resRate && workCity === resCity) {
+      nEl.textContent = workCity + ' works/lives: employer withholds ' + workRate + '% work city tax. Residence and work city match — no additional residence tax owed.';
+    } else {
+      nEl.textContent = 'Works in ' + workCity + ' (' + workRate + '%) — employer withholds $' + workTax.toFixed(2) + '. Lives in ' + resCity + ' (' + resRate + '%) — residence tax due after credit: $' + resTaxDue.toFixed(2) + '. Total local withheld: $' + totalLocal.toFixed(2) + '.';
+    }
+  }
+
+  // Sync work city dropdown to rate field
+  var workSel2 = document.getElementById('work-city');
+  if (workSel2 && workSel2.value !== 'custom') {
+    var rateField = document.getElementById('work-city-rate');
+    if (rateField) rateField.value = workSel2.value;
   }
 }
 
