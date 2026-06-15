@@ -2588,5 +2588,152 @@ const _sendAIWithMemory = async function() {
 if (typeof window !== 'undefined') { window.sendAI = _sendAIWithMemory; }
 </script>
 
+
+<!-- PAY STUB PRINT MODAL -->
+<div class="modal-overlay" id="m-pay-stubs">
+  <div class="modal" style="width:700px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header">
+      <div class="modal-title">&#x1F5A8;&#xFE0F; Pay Stubs — Jun 1–14, 2025</div>
+      <button class="modal-close" onclick="closeModal('m-pay-stubs')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="padding:0;">
+      <div style="padding:12px 20px;background:#f9fafb;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;">
+        <span style="font-size:13px;color:var(--muted);">Select employees to print:</span>
+        <label style="font-size:13px;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="stub-chk-all" checked onchange="toggleAllStubs(this)"> All</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="stub-chk" value="Maria Santos" checked> Maria Santos</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="stub-chk" value="Dave Kim" checked> Dave Kim</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="stub-chk" value="Sarah Thompson" checked> Sarah Thompson</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="stub-chk" value="Bob Evans" checked> Bob Evans</label>
+      </div>
+      <div id="stub-preview" style="padding:20px;background:#e5e7eb;"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn btn-outline" onclick="closeModal('m-pay-stubs')">Cancel</button>
+      <button class="btn btn-teal" onclick="doPrintStubs()" style="padding:10px 28px;">&#x1F5A8;&#xFE0F; Print Pay Stubs</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// === PAY STUB DATA ===
+var _stubData = [
+  { name:'Maria Santos', title:'Field Tech', type:'Hourly $22/hr', period:'Jun 1–14, 2025', regHrs:80, otHrs:4, gross:1892, federal:340, state:66, ficaSS:117, medicare:27, health:90, k401:57, deductions:697, net:1195, ytdGross:24596, ytdNet:15535 },
+  { name:'Dave Kim',     title:'Crew Lead',  type:'Hourly $28/hr', period:'Jun 1–14, 2025', regHrs:80, otHrs:0,  gross:2240, federal:403, state:78,  ficaSS:139, medicare:32, health:90, k401:67, deductions:809, net:1431, ytdGross:29120, ytdNet:18603 },
+  { name:'Sarah Thompson', title:'Office Admin', type:'Salary $52K', period:'Jun 1–14, 2025', regHrs:80, otHrs:0, gross:2167, federal:390, state:76, ficaSS:134, medicare:31, health:90, k401:65, deductions:786, net:1381, ytdGross:28171, ytdNet:17953 },
+  { name:'Bob Evans',    title:'Sales Rep',  type:'Salary $48K',   period:'Jun 1–14, 2025', regHrs:80, otHrs:0,  gross:2000, federal:360, state:70,  ficaSS:124, medicare:29, health:90, k401:60, deductions:733, net:1267, ytdGross:26000, ytdNet:16471 }
+];
+
+function dollarWritten(n) {
+  // Write dollar amount in words for check-style stubs
+  var ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  var tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  var dollars = Math.floor(n);
+  var cents = Math.round((n - dollars) * 100);
+  function toWords(num) {
+    if (num === 0) return 'Zero';
+    if (num < 20) return ones[num];
+    if (num < 100) return tens[Math.floor(num/10)] + (num%10 ? ' ' + ones[num%10] : '');
+    return ones[Math.floor(num/100)] + ' Hundred' + (num%100 ? ' ' + toWords(num%100) : '');
+  }
+  var w = toWords(dollars) + ' Dollars';
+  if (cents > 0) w += ' and ' + cents + '/100';
+  return w;
+}
+
+function buildStubHTML(emp, company) {
+  var co = company || 'Your Company';
+  var teal = '#14B8A6';
+  return '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;margin-bottom:16px;font-family:Arial,sans-serif;font-size:12px;page-break-inside:avoid;">' +
+    // Header
+    '<div style="background:' + teal + ';color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact;">' +
+      '<div><div style="font-size:16px;font-weight:700;">' + co + '</div><div style="font-size:11px;opacity:.85;">EARNINGS STATEMENT</div></div>' +
+      '<div style="text-align:right;"><div style="font-size:11px;opacity:.85;">Pay Period</div><div style="font-weight:600;">' + emp.period + '</div></div>' +
+    '</div>' +
+    // Employee info bar
+    '<div style="padding:10px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;">' +
+      '<div><div style="font-weight:700;font-size:13px;">' + emp.name + '</div><div style="color:#6b7280;">' + emp.title + ' &mdash; ' + emp.type + '</div></div>' +
+      '<div style="text-align:right;"><div style="color:#6b7280;">Pay Date</div><div style="font-weight:600;">Jun 14, 2025</div></div>' +
+    '</div>' +
+    // Hours + Earnings
+    '<div style="padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
+      '<div>' +
+        '<div style="font-weight:700;font-size:11px;text-transform:uppercase;color:#6b7280;margin-bottom:8px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">HOURS &amp; EARNINGS</div>' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+          '<tr style="color:#6b7280;font-size:11px;"><th style="text-align:left;padding:3px 0;">Description</th><th style="text-align:right;">Hrs</th><th style="text-align:right;">Amount</th></tr>' +
+          '<tr><td style="padding:3px 0;">Regular Pay</td><td style="text-align:right;">' + emp.regHrs + '</td><td style="text-align:right;">$' + (emp.gross - (emp.otHrs * (emp.gross/emp.regHrs||0) * 0.5)).toFixed(2).replace(/\.00$/,'') + '</td></tr>' +
+          (emp.otHrs > 0 ? '<tr><td style="padding:3px 0;">Overtime (1.5x)</td><td style="text-align:right;">' + emp.otHrs + '</td><td style="text-align:right;color:#F59E0B;">$' + (emp.otHrs * (emp.gross / (emp.regHrs + emp.otHrs * 1.5)) * 1.5).toFixed(2) + '</td></tr>' : '') +
+          '<tr style="border-top:1px solid #e5e7eb;font-weight:700;"><td style="padding:5px 0;">Gross Pay</td><td></td><td style="text-align:right;">$' + emp.gross.toLocaleString() + '</td></tr>' +
+        '</table>' +
+      '</div>' +
+      // Deductions
+      '<div>' +
+        '<div style="font-weight:700;font-size:11px;text-transform:uppercase;color:#6b7280;margin-bottom:8px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">DEDUCTIONS</div>' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+          '<tr style="color:#6b7280;font-size:11px;"><th style="text-align:left;padding:3px 0;">Description</th><th style="text-align:right;">Amount</th></tr>' +
+          '<tr><td style="padding:3px 0;">Federal Income Tax</td><td style="text-align:right;">$' + emp.federal + '</td></tr>' +
+          '<tr><td style="padding:3px 0;">Ohio State Tax</td><td style="text-align:right;">$' + emp.state + '</td></tr>' +
+          '<tr><td style="padding:3px 0;">FICA Social Security</td><td style="text-align:right;">$' + emp.ficaSS + '</td></tr>' +
+          '<tr><td style="padding:3px 0;">Medicare</td><td style="text-align:right;">$' + emp.medicare + '</td></tr>' +
+          '<tr><td style="padding:3px 0;">Health Insurance</td><td style="text-align:right;">$' + emp.health + '</td></tr>' +
+          '<tr><td style="padding:3px 0;">401(k) Contribution</td><td style="text-align:right;">$' + emp.k401 + '</td></tr>' +
+          '<tr style="border-top:1px solid #e5e7eb;font-weight:700;"><td style="padding:5px 0;">Total Deductions</td><td style="text-align:right;">$' + emp.deductions + '</td></tr>' +
+        '</table>' +
+      '</div>' +
+    '</div>' +
+    // Net Pay hero
+    '<div style="margin:0 16px 12px;background:#f0fdfa;border:2px solid ' + teal + ';border-radius:6px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact;">' +
+      '<div><div style="font-size:11px;color:#0f766e;font-weight:700;text-transform:uppercase;">NET PAY</div><div style="font-size:11px;color:#6b7280;">' + dollarWritten(emp.net) + '</div></div>' +
+      '<div style="font-size:22px;font-weight:700;color:#0f766e;">$' + emp.net.toLocaleString() + '</div>' +
+    '</div>' +
+    // YTD summary
+    '<div style="margin:0 16px;padding:8px 0;border-top:1px solid #e5e7eb;display:flex;gap:24px;">' +
+      '<div><span style="color:#6b7280;font-size:11px;">YTD Gross: </span><strong>$' + emp.ytdGross.toLocaleString() + '</strong></div>' +
+      '<div><span style="color:#6b7280;font-size:11px;">YTD Deductions: </span><strong>$' + (emp.ytdGross - emp.ytdNet).toLocaleString() + '</strong></div>' +
+      '<div><span style="color:#6b7280;font-size:11px;">YTD Net: </span><strong>$' + emp.ytdNet.toLocaleString() + '</strong></div>' +
+    '</div>' +
+    // Footer / signature
+    '<div style="margin:10px 16px 14px;padding-top:10px;border-top:1px dashed #e5e7eb;display:flex;justify-content:space-between;font-size:11px;color:#9ca3af;">' +
+      '<div>This is not a negotiable instrument &mdash; Retain for your records</div>' +
+      '<div>' + co + ' &mdash; SAIRNbiz Payroll</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderStubPreview() {
+  var checked = Array.from(document.querySelectorAll('.stub-chk:checked')).map(function(c){ return c.value; });
+  var co = localStorage.getItem('sairnbiz:business_profile') ? (JSON.parse(localStorage.getItem('sairnbiz:business_profile')).company_name || 'Your Company') : 'Your Company';
+  var html = _stubData.filter(function(e){ return checked.indexOf(e.name) >= 0; }).map(function(e){ return buildStubHTML(e, co); }).join('');
+  document.getElementById('stub-preview').innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--muted);">Select at least one employee above.</div>';
+}
+
+function toggleAllStubs(chk) {
+  document.querySelectorAll('.stub-chk').forEach(function(c){ c.checked = chk.checked; });
+  renderStubPreview();
+}
+
+function printPayroll() {
+  openModal('m-pay-stubs');
+  setTimeout(renderStubPreview, 100);
+  document.querySelectorAll('.stub-chk').forEach(function(c){ c.addEventListener('change', renderStubPreview); });
+}
+
+function doPrintStubs() {
+  var co = localStorage.getItem('sairnbiz:business_profile') ? (JSON.parse(localStorage.getItem('sairnbiz:business_profile')).company_name || 'Your Company') : 'Your Company';
+  var checked = Array.from(document.querySelectorAll('.stub-chk:checked')).map(function(c){ return c.value; });
+  var stubs = _stubData.filter(function(e){ return checked.indexOf(e.name) >= 0; });
+  var win = window.open('', '_blank', 'width=750,height=900');
+  win.document.write('<!DOCTYPE html><html><head><title>Pay Stubs &mdash; ' + co + '</title>');
+  win.document.write('<style>');
+  win.document.write('body{margin:0;padding:20px;background:#fff;font-family:Arial,sans-serif;}');
+  win.document.write('@page{size:letter;margin:0.5in;}');
+  win.document.write('@media print{body{padding:0;} .no-print{display:none;}}');
+  win.document.write('</style></head><body>');
+  win.document.write('<div class="no-print" style="text-align:center;margin-bottom:16px;"><button onclick="window.print()" style="background:#14B8A6;color:#fff;border:none;padding:10px 28px;border-radius:6px;font-size:14px;cursor:pointer;">&#x1F5A8; Print All Stubs</button>&nbsp;&nbsp;<button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:10px 20px;border-radius:6px;font-size:14px;cursor:pointer;">Close</button></div>');
+  stubs.forEach(function(e){ win.document.write(buildStubHTML(e, co)); });
+  win.document.write('</body></html>');
+  win.document.close();
+  setTimeout(function(){ win.print(); }, 600);
+}
+</script>
 </body>
 </html>
