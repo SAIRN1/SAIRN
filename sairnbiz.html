@@ -2724,21 +2724,43 @@ function printPayroll() {
 }
 
 function doPrintStubs() {
-  var co = localStorage.getItem('sairnbiz:business_profile') ? (JSON.parse(localStorage.getItem('sairnbiz:business_profile')).company_name || 'Your Company') : 'Your Company';
+  var co = '';
+  try { co = JSON.parse(localStorage.getItem('sairnbiz:business_profile') || '{}').company_name || 'Your Company'; } catch(e) { co = 'Your Company'; }
   var checked = Array.from(document.querySelectorAll('.stub-chk:checked')).map(function(c){ return c.value; });
   var stubs = _stubData.filter(function(e){ return checked.indexOf(e.name) >= 0; });
-  var win = window.open('', '_blank', 'width=750,height=900');
-  win.document.write('<!DOCTYPE html><html><head><title>Pay Stubs &mdash; ' + co + '</title>');
-  win.document.write('<style>');
-  win.document.write('body{margin:0;padding:20px;background:#fff;font-family:Arial,sans-serif;}');
-  win.document.write('@page{size:letter;margin:0.5in;}');
-  win.document.write('@media print{body{padding:0;} .no-print{display:none;}}');
-  win.document.write('</style></head><body>');
-  win.document.write('<div class="no-print" style="text-align:center;margin-bottom:16px;"><button onclick="window.print()" style="background:#14B8A6;color:#fff;border:none;padding:10px 28px;border-radius:6px;font-size:14px;cursor:pointer;">&#x1F5A8; Print All Stubs</button>&nbsp;&nbsp;<button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:10px 20px;border-radius:6px;font-size:14px;cursor:pointer;">Close</button></div>');
-  stubs.forEach(function(e){ win.document.write(buildStubHTML(e, co)); });
-  win.document.write('</body></html>');
+  if (stubs.length === 0) { showToast('Select at least one employee.'); return; }
+
+  // Build ALL stub HTML in parent window scope (where buildStubHTML lives), then pass as string
+  var stubsHTML = stubs.map(function(e){ return buildStubHTML(e, co); }).join('');
+
+  var printBtn = '<div class="no-print" style="text-align:center;margin-bottom:20px;padding:16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;">' +
+    '<button onclick="window.print()" style="background:#14B8A6;color:#fff;border:none;padding:10px 28px;border-radius:6px;font-size:14px;cursor:pointer;margin-right:10px;">&#x1F5A8; Print / Save PDF</button>' +
+    '<button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:10px 20px;border-radius:6px;font-size:14px;cursor:pointer;">Close</button>' +
+    '<span style="margin-left:16px;font-size:12px;color:#9ca3af;">Tip: Choose &quot;Save as PDF&quot; in the print dialog to save a digital copy</span>' +
+    '</div>';
+
+  var fullHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pay Stubs — ' + co + '</title>' +
+    '<style>' +
+    'body{margin:0;padding:0;background:#fff;font-family:Arial,sans-serif;font-size:12px;}' +
+    '.stub-wrap{padding:20px;}' +
+    '@page{size:letter;margin:0.5in;}' +
+    '@media print{.no-print{display:none!important;}body{padding:0;}.stub-wrap{padding:0;}}' +
+    '-webkit-print-color-adjust:exact;print-color-adjust:exact;' +
+    '</style>' +
+    '</head><body>' +
+    printBtn +
+    '<div class="stub-wrap">' + stubsHTML + '</div>' +
+    '</body></html>';
+
+  var win = window.open('', '_blank', 'width=780,height=960');
+  if (!win) { showToast('Pop-up blocked. Allow pop-ups for this site and try again.'); return; }
+  win.document.open();
+  win.document.write(fullHTML);
   win.document.close();
-  setTimeout(function(){ win.print(); }, 600);
+  // Let the document fully render before triggering print
+  win.onload = function() { setTimeout(function(){ win.print(); }, 400); };
+  // Fallback if onload already fired
+  setTimeout(function(){ if (win && !win.closed) win.print(); }, 1200);
 }
 
 // === EMAIL PAY STUBS ===
