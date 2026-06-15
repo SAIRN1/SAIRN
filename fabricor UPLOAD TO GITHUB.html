@@ -11180,4 +11180,221 @@ window.saDebounce = function(func, wait) {
   };
 };
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// === STONEDESK SUPABASE + AI MEMORY ENGINE ===
+// Mirrors SAIRNbiz pattern — Business Profile + AI Memory + cross-device sync
+const SD_SUPABASE_URL = 'https://ejrlrrkvhtllxbbypdjb.supabase.co';
+const SD_SUPABASE_KEY = 'sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
+let _sdSupa = null;
+
+function getSDSupabase() {
+  if (!_sdSupa && typeof supabase !== 'undefined') {
+    _sdSupa = supabase.createClient(SD_SUPABASE_URL, SD_SUPABASE_KEY);
+  }
+  return _sdSupa;
+}
+
+// === BUSINESS PROFILE ===
+let _sdBizProfile = null;
+
+function loadSDProfile() {
+  try {
+    const raw = localStorage.getItem('stonedesk:business_profile');
+    if (raw) _sdBizProfile = JSON.parse(raw);
+  } catch(e) {}
+  syncSDProfileFromSupabase();
+}
+
+async function syncSDProfileFromSupabase() {
+  const sb = getSDSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+  if (!licKey) return;
+  try {
+    const { data, error } = await sb
+      .from('business_profiles')
+      .select('*')
+      .eq('license_key', licKey)
+      .single();
+    if (!error && data) {
+      _sdBizProfile = data;
+      localStorage.setItem('stonedesk:business_profile', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+async function saveSDProfile(profile) {
+  _sdBizProfile = profile;
+  localStorage.setItem('stonedesk:business_profile', JSON.stringify(profile));
+  const sb = getSDSupabase();
+  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+  if (sb && licKey) {
+    try {
+      const payload = { ...profile, license_key: licKey, app_id: 'stonedesk' };
+      await sb.from('business_profiles').upsert(payload, { onConflict: 'license_key' });
+    } catch(e) {}
+  }
+}
+
+// === AI MEMORY ENGINE ===
+let _sdMemories = [];
+
+function loadSDMemories() {
+  try {
+    const raw = localStorage.getItem('stonedesk:ai_memories');
+    if (raw) _sdMemories = JSON.parse(raw);
+  } catch(e) {}
+  syncSDMemoriesFromSupabase();
+}
+
+async function syncSDMemoriesFromSupabase() {
+  const sb = getSDSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+  if (!licKey) return;
+  try {
+    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (!prof) return;
+    const { data, error } = await sb.from('ai_memories')
+      .select('*')
+      .eq('shop_id', prof.shop_id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (!error && data) {
+      _sdMemories = data;
+      localStorage.setItem('stonedesk:ai_memories', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+async function writeSDMemory() {
+  // Ask Claude to summarize the session into a memory
+  const sb = getSDSupabase();
+  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+  if (!sb || !licKey || !chatHistory || chatHistory.length < 4) return;
+  try {
+    const summaryRes = await fetch('https://sairn.vercel.app/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id: 'stonedesk',
+        is_demo: true,
+        system: 'You are a memory summarizer for a stone fabrication shop AI. In one sentence (max 120 chars), summarize the key business insight or decision from this conversation.',
+        messages: chatHistory.slice(-8),
+        max_tokens: 150
+      })
+    });
+    const sd = await summaryRes.json();
+    const memText = sd.content && sd.content[0] ? sd.content[0].text : null;
+    if (!memText) return;
+    const mem = { memory_text: memText, source: 'stonedesk', created_at: new Date().toISOString() };
+    _sdMemories.unshift(mem);
+    if (_sdMemories.length > 20) _sdMemories = _sdMemories.slice(0, 20);
+    localStorage.setItem('stonedesk:ai_memories', JSON.stringify(_sdMemories));
+    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (prof) {
+      await sb.from('ai_memories').insert({ ...mem, shop_id: prof.shop_id });
+    }
+  } catch(e) {}
+}
+
+// === SYSTEM PROMPT BUILDER — injects profile + memories into every AI call ===
+function buildSDSystemPrompt() {
+  // Base StoneDesk system prompt (preserved from original)
+  const base = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
+
+  let profileBlock = '';
+  const p = _sdBizProfile;
+  if (p && p.company_name) {
+    profileBlock = '\n\nBUSINESS PROFILE:\n' +
+      'Shop: ' + p.company_name + '\n' +
+      (p.ein ? 'EIN: ' + p.ein + '\n' : '') +
+      'City: ' + (p.city || 'Westlake') + ', Ohio\n' +
+      'Headcount: ' + (p.headcount || 1) + ' employees\n' +
+      (p.revenue_range ? 'Annual Revenue: ' + (p.revenue_range+'').replace(/_/g,' ') + '\n' : '') +
+      (p.preferences && p.preferences.owner_name ? 'Owner: ' + p.preferences.owner_name + '\n' : '') +
+      (p.preferences && p.preferences.ai_notes ? 'Shop Notes: ' + p.preferences.ai_notes + '\n' : '');
+  }
+
+  let memBlock = '';
+  if (_sdMemories && _sdMemories.length > 0) {
+    memBlock = '\n\nWHAT YOU KNOW ABOUT THIS SHOP (from past sessions):\n' +
+      _sdMemories.slice(0, 10).map(function(m, i) { return (i+1) + '. ' + m.memory_text; }).join('\n');
+  }
+
+  const style = (p && p.preferences && p.preferences.ai_style) || 'direct';
+  const styleNote = '\n\nResponse style: ' + (style === 'direct' ? 'Be direct and concise.' : style === 'detailed' ? 'Provide detailed explanations.' : 'Be conversational and friendly.');
+
+  return base + profileBlock + memBlock + styleNote;
+}
+
+// === HOOK: patch sendMessage to use dynamic system prompt with memory ===
+document.addEventListener('DOMContentLoaded', function() {
+  loadSDProfile();
+  loadSDMemories();
+
+  // Patch sendMessage to inject AI memory system prompt
+  const _origSendMessage = window.sendMessage;
+  if (typeof _origSendMessage === 'function') {
+    window.sendMessage = async function() {
+      // Temporarily override SYSTEM with dynamic version
+      const _origSystem = typeof SYSTEM !== 'undefined' ? SYSTEM : '';
+      try {
+        // Get user input before calling original
+        const inp = document.getElementById('userInput');
+        const text = inp ? inp.value.trim() : '';
+        if (!text || (typeof isTyping !== 'undefined' && isTyping)) return;
+
+        if (typeof addMessage === 'function') addMessage('user', text);
+        if (typeof chatHistory !== 'undefined') chatHistory.push({ role: 'user', content: text });
+        if (inp) { inp.value = ''; inp.style.height = 'auto'; }
+        if (typeof isTyping !== 'undefined') isTyping = true;
+
+        // Show typing indicator
+        const msgs = document.getElementById('messages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'msg assistant';
+        typingDiv.id = 'typing-indicator';
+        typingDiv.innerHTML = '<div class="msg-avatar">\uD83E\uDEA8</div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+        if (msgs) { msgs.appendChild(typingDiv); msgs.scrollTop = msgs.scrollHeight; }
+
+        const modeCtx = (typeof MODE_PROMPTS !== 'undefined' && typeof currentMode !== 'undefined') ? (MODE_PROMPTS[currentMode] || '') : '';
+        const dynamicSystem = buildSDSystemPrompt() + (modeCtx ? '\n\nCurrent Mode: ' + modeCtx : '');
+
+        const res = await fetch('https://sairn.vercel.app/api/claude', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            max_tokens: 1000,
+            system: dynamicSystem,
+            messages: typeof chatHistory !== 'undefined' ? chatHistory : [],
+            app_id: 'stonedesk',
+            is_demo: true
+          })
+        });
+        const data = await res.json();
+        const reply = data.content && data.content[0] ? data.content[0].text : 'I encountered an error. Please try again.';
+        if (typingDiv) typingDiv.remove();
+        if (typeof addMessage === 'function') addMessage('assistant', reply);
+        if (typeof chatHistory !== 'undefined') {
+          chatHistory.push({ role: 'assistant', content: reply });
+          if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+        }
+        // Auto-write memory every 5 assistant replies
+        const assistantCount = (typeof chatHistory !== 'undefined') ? chatHistory.filter(function(m) { return m.role === 'assistant'; }).length : 0;
+        if (assistantCount > 0 && assistantCount % 5 === 0) {
+          writeSDMemory();
+        }
+      } catch(e) {
+        const td = document.getElementById('typing-indicator');
+        if (td) td.remove();
+        if (typeof addMessage === 'function') addMessage('assistant', 'Connection error. Check your internet and try again.');
+      }
+      if (typeof isTyping !== 'undefined') isTyping = false;
+    };
+  }
+});
+</script>
 </body></html>
