@@ -2735,30 +2735,10 @@ function doPrintStubs() {
   var stubs = _stubData.filter(function(e){ return checked.indexOf(e.name) >= 0; });
   if (stubs.length === 0) { showToast('Select at least one employee.'); return; }
 
-  var stubsHTML = stubs.map(function(e, idx) {
-    var pb = idx < stubs.length - 1 ? 'style="page-break-after:always;"' : '';
-    return '<div ' + pb + '>' + buildStubHTML(e, co) + '</div>';
-  }).join('');
-
-  var old = document.getElementById('sairn-stub-print-root');
-  if (old) old.parentNode.removeChild(old);
-
-  var printDiv = document.createElement('div');
-  printDiv.id = 'sairn-stub-print-root';
-  printDiv.innerHTML = stubsHTML;
-  document.body.appendChild(printDiv);
-
+  // Store stubs in sessionStorage so paystubs page can read them
+  sessionStorage.setItem('sairn_print_stubs', JSON.stringify({ company: co, stubs: stubs }));
   closeModal('m-pay-stubs');
-  document.body.classList.add('printing-stubs');
-
-  setTimeout(function() {
-    window.print();
-    setTimeout(function() {
-      document.body.classList.remove('printing-stubs');
-      var pd = document.getElementById('sairn-stub-print-root');
-      if (pd) pd.parentNode.removeChild(pd);
-    }, 1500);
-  }, 150);
+  window.open('paystubs.html', '_blank');
 }
 
 // === EMAIL PAY STUBS ===
