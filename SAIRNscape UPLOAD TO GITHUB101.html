@@ -1904,7 +1904,7 @@ function aiCall(targetId, prompt) {
   .then(function(r) { return r.json(); })
   .then(function(d) {
     var text = '';
-    if (d.content && d.content[0]) text = d.content[0].text || '';
+    if (d.content && d.content[0]) text = d.content?.[0]?.text || '' || '';
     else if (d.error) text = 'Error: ' + d.error;
     else text = JSON.stringify(d);
     el.innerHTML = '<div class="ai-lbl">&#129302; Claude AI</div>' + text.replace(/\n/g, '<br>');
@@ -2289,7 +2289,7 @@ window.onload = function() {
 };
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script>
 // === SAIRNSCAPE SUPABASE + AI MEMORY ENGINE ===
 // Pattern: Business Profile + AI Memory + cross-device sync (mirrors SAIRNbiz)
@@ -2370,7 +2370,7 @@ async function writeSairnscapeMemory(history) {
       })
     });
     const sd = await summaryRes.json();
-    const memText = sd.content && sd.content[0] ? sd.content[0].text : null;
+    const memText = sd.content && sd.content[0] ? sd.content?.[0]?.text || '' : null;
     if (!memText) return;
     const mem = { memory_text: memText, source: 'sairnscape', created_at: new Date().toISOString() };
     _sairnscapeMemories.unshift(mem);
@@ -2472,7 +2472,7 @@ document.addEventListener('DOMContentLoaded', function() {
              style="display:none" onchange="sairnFQHandleFile(this)">
     </div>
     <div id="sairn-fq-preview" style="display:none;margin-bottom:12px">
-      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB">
+      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB" loading="lazy">
       <div style="font-size:13px;color:#16A34A;font-weight:600;margin-top:6px">✅ Drawing captured</div>
     </div>
     <div style="display:flex;gap:9px">
