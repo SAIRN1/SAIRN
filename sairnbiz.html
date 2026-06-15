@@ -2256,8 +2256,8 @@ window.addEventListener('message', function(e) {
 // === SUPABASE CONFIG (anon key is safe in frontend) ===
 // IMPORTANT: Replace these with your actual Supabase project URL and anon key
 // Go to: https://supabase.com → Your Project → Settings → API
-const SAIRN_SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
-const SAIRN_SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+const SAIRN_SUPABASE_URL = 'https://ejrlrrkvhtllxbbypdjb.supabase.co';
+const SAIRN_SUPABASE_ANON_KEY = 'sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
 let _supa = null;
 
 function getSupabase() {
@@ -2349,7 +2349,7 @@ function loadBizProfile() {
 }
 
 async function syncBizProfileFromSupabase() {
-  if (SAIRN_SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE') return; // not configured yet
+  // Supabase configured
   const sb = getSupabase();
   if (!sb) return;
   const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
@@ -2377,7 +2377,7 @@ async function saveBizProfile() {
   const btn = document.getElementById('bp-save-btn');
   if (btn) { btn.style.display = 'none'; }
   // Sync to Supabase if configured
-  if (SAIRN_SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
+  {
     const sb = getSupabase();
     const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
     if (sb && licKey) {
@@ -2405,7 +2405,7 @@ function loadAIMemoriesLocal() {
 }
 
 async function syncAIMemoriesFromSupabase() {
-  if (SAIRN_SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE') return;
+  // Supabase configured
   const sb = getSupabase();
   if (!sb) return;
   const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
@@ -2479,7 +2479,7 @@ async function writeAIMemory() {
     localStorage.setItem('sairnbiz:ai_memories', JSON.stringify(_aiMemories));
     renderMemoryList();
     // Sync to Supabase
-    if (SAIRN_SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
+    {
       const sb = getSupabase();
       const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
       if (sb && licKey) {
