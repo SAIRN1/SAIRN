@@ -2738,7 +2738,7 @@ function doPrintStubs() {
   // Store stubs in sessionStorage so paystubs page can read them
   sessionStorage.setItem('sairn_print_stubs', JSON.stringify({ company: co, stubs: stubs }));
   closeModal('m-pay-stubs');
-  window.open('paystubs.html', '_blank');
+  window.open('/paystubs', '_blank');
 }
 
 // === EMAIL PAY STUBS ===
