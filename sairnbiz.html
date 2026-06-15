@@ -2730,37 +2730,52 @@ function doPrintStubs() {
   var stubs = _stubData.filter(function(e){ return checked.indexOf(e.name) >= 0; });
   if (stubs.length === 0) { showToast('Select at least one employee.'); return; }
 
-  // Build ALL stub HTML in parent window scope (where buildStubHTML lives), then pass as string
+  // Build all stub HTML in THIS window scope
   var stubsHTML = stubs.map(function(e){ return buildStubHTML(e, co); }).join('');
 
-  var printBtn = '<div class="no-print" style="text-align:center;margin-bottom:20px;padding:16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;">' +
-    '<button onclick="window.print()" style="background:#14B8A6;color:#fff;border:none;padding:10px 28px;border-radius:6px;font-size:14px;cursor:pointer;margin-right:10px;">&#x1F5A8; Print / Save PDF</button>' +
-    '<button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:10px 20px;border-radius:6px;font-size:14px;cursor:pointer;">Close</button>' +
-    '<span style="margin-left:16px;font-size:12px;color:#9ca3af;">Tip: Choose &quot;Save as PDF&quot; in the print dialog to save a digital copy</span>' +
-    '</div>';
+  var fullHTML = [
+    '<!DOCTYPE html>',
+    '<html><head><meta charset="UTF-8">',
+    '<title>Pay Stubs - ' + co + '</title>',
+    '<style>',
+    '*{box-sizing:border-box;}',
+    'body{margin:0;padding:20px;background:#fff;font-family:Arial,sans-serif;font-size:12px;color:#111;}',
+    '.no-print{text-align:center;padding:16px;margin-bottom:20px;background:#f9fafb;border-bottom:1px solid #e5e7eb;}',
+    '.no-print button{padding:10px 24px;border-radius:6px;font-size:14px;cursor:pointer;margin:0 5px;border:none;}',
+    '.print-btn{background:#14B8A6;color:#fff;}',
+    '.close-btn{background:#f3f4f6;color:#374151;border:1px solid #e5e7eb!important;}',
+    '.tip{font-size:12px;color:#9ca3af;display:block;margin-top:8px;}',
+    '@page{size:letter;margin:0.5in;}',
+    '@media print{',
+    '  .no-print{display:none!important;}',
+    '  body{padding:0;}',
+    '  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}',
+    '}',
+    '</style>',
+    '</head><body>',
+    '<div class="no-print">',
+    '  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>',
+    '  <button class="close-btn" onclick="window.close()">Close</button>',
+    '  <span class="tip">In the print dialog, choose your printer — or select Save as PDF to get a digital copy</span>',
+    '</div>',
+    stubsHTML,
+    '</body></html>'
+  ].join('\n');
 
-  var fullHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pay Stubs — ' + co + '</title>' +
-    '<style>' +
-    'body{margin:0;padding:0;background:#fff;font-family:Arial,sans-serif;font-size:12px;}' +
-    '.stub-wrap{padding:20px;}' +
-    '@page{size:letter;margin:0.5in;}' +
-    '@media print{.no-print{display:none!important;}body{padding:0;}.stub-wrap{padding:0;}}' +
-    '-webkit-print-color-adjust:exact;print-color-adjust:exact;' +
-    '</style>' +
-    '</head><body>' +
-    printBtn +
-    '<div class="stub-wrap">' + stubsHTML + '</div>' +
-    '</body></html>';
-
-  var win = window.open('', '_blank', 'width=780,height=960');
-  if (!win) { showToast('Pop-up blocked. Allow pop-ups for this site and try again.'); return; }
-  win.document.open();
-  win.document.write(fullHTML);
-  win.document.close();
-  // Let the document fully render before triggering print
-  win.onload = function() { setTimeout(function(){ win.print(); }, 400); };
-  // Fallback if onload already fired
-  setTimeout(function(){ if (win && !win.closed) win.print(); }, 1200);
+  // Use Blob URL — works in all browsers, no popup blocker issues
+  var blob = new Blob([fullHTML], {type: 'text/html;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var win = window.open(url, '_blank');
+  if (!win) {
+    // If popup blocked, offer download fallback
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'PayStubs-' + new Date().toISOString().slice(0,10) + '.html';
+    a.click();
+    showToast('Pop-ups blocked — downloading as HTML file. Open it and print.');
+  }
+  // Clean up blob URL after 60s
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
 }
 
 // === EMAIL PAY STUBS ===
