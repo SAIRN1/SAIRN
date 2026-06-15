@@ -273,6 +273,23 @@ input:focus,select:focus,textarea:focus{border-color:var(--c);} textarea{resize:
   * { -webkit-print-color-adjust:exact;print-color-adjust:exact; }
 }
 
+
+/* === P5 Range Benchmarking === */
+.sairn-range-wrap{margin:10px 0;}
+.sairn-range-label{display:flex;justify-content:space-between;font-size:12px;color:#6B7280;margin-bottom:4px;}
+.sairn-range-track{height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;position:relative;}
+.sairn-range-fill{height:100%;border-radius:4px;transition:width .5s ease;}
+.sairn-range-marker{position:absolute;top:-3px;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transform:translateX(-50%);}
+
+
+/* === Empty States === */
+.sairn-empty{text-align:center;padding:40px 20px;color:#9CA3AF;}
+.sairn-empty-icon{font-size:40px;margin-bottom:10px;}
+.sairn-empty-title{font-size:15px;font-weight:700;color:#6B7280;margin-bottom:6px;}
+.sairn-empty-sub{font-size:13px;}
+.sairn-empty-btn{margin-top:14px;display:inline-flex;align-items:center;gap:6px;padding:9px 18px;
+  border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;}
+
 </style>
 </head>
 <body>
@@ -935,7 +952,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="sairn-suite-tile-desc">Fabrication Contracts</div>
 </div></div>
     <div class="sairn-suite-btns">
-      <button class="sairn-suite-btn" onclick="sairnSyncAll()">🔄 Sync All Apps</button>
+      <button class="sairn-suite-btn" onclick="sairnSyncAll();sairnUpdateLastSync()">🔄 Sync All Apps</button>
       <button class="sairn-suite-btn out" onclick="sairnExportCSV()">📊 CSV Export</button>
       <span style="font-size:12px;color:#94A3B8;align-self:center" id="sairn-last-sync">Last sync: --</span>
     </div>
@@ -1333,6 +1350,198 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })(); // end IIFE
 </script>
+
+
+// P5 Range Benchmarking
+function sairnRangeBar(label,value,min,max,color,containerId){
+  var pct=Math.min(100,Math.max(0,Math.round((value-min)/(max-min)*100)));
+  var html='<div class="sairn-range-wrap">'
+    +'<div class="sairn-range-label"><span>'+label+'</span><span>'+value+' / '+max+'</span></div>'
+    +'<div class="sairn-range-track">'
+    +'<div class="sairn-range-fill" style="width:'+pct+'%;background:'+color+'"></div>'
+    +'<div class="sairn-range-marker" style="left:'+pct+'%;background:'+color+'"></div>'
+    +'</div></div>';
+  var el=document.getElementById(containerId);
+  if(el) el.innerHTML+=html;
+}
+
+
+// Empty state renderer
+function sairnEmptyState(icon,title,sub,btnLabel,btnFn,containerId){
+  var btn=btnLabel?'<button class="sairn-empty-btn" style="background:var(--app-color,#16C762);color:#fff" onclick="'+btnFn+'()">'+btnLabel+'</button>':'';
+  var html='<div class="sairn-empty"><div class="sairn-empty-icon">'+icon+'</div>'
+    +'<div class="sairn-empty-title">'+title+'</div>'
+    +'<div class="sairn-empty-sub">'+sub+'</div>'+btn+'</div>';
+  var el=document.getElementById(containerId);
+  if(el) el.innerHTML=html;
+}
+
+
+// Suite last sync tracker
+function sairnUpdateLastSync(){
+  var ts=new Date().toLocaleTimeString();
+  document.querySelectorAll('[id*="last-sync"],[class*="last-sync"]').forEach(function(el){
+    el.textContent='Last sync: '+ts;
+  });
+  var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_last_sync';
+  try{ localStorage.setItem(key,ts); }catch(e){}
+}
+// Restore last sync on load
+document.addEventListener('DOMContentLoaded',function(){
+  var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_last_sync';
+  try{
+    var ts=localStorage.getItem(key);
+    if(ts) document.querySelectorAll('[id*="last-sync"],[class*="last-sync"]').forEach(function(el){
+      el.textContent='Last sync: '+ts;
+    });
+  }catch(e){}
+});
+
+
+<!-- SAIRNscan embedded -->
+<div id="sairnscan-ref" style="display:none" data-sairnscan="true"
+     data-version="1.0" data-sha="dda09816"></div>
+
+
+<!-- Check Register panel for SAIRNlaw -->
+<div id="sairn-checkreg-panel" style="display:none">
+  <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:10px;padding:20px;margin-bottom:16px;">
+    <div style="font-size:16px;font-weight:700;color:#14532D;margin-bottom:14px;">📄 Check Register</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:12px;">
+      <div><label class="sairn-form-lbl">Pay To</label>
+        <input class="sairn-form-inp" id="sl-check-payee" placeholder="Payee name"></div>
+      <div><label class="sairn-form-lbl">Amount ($)</label>
+        <input class="sairn-form-inp" id="sl-check-amount" type="number" placeholder="0.00"
+               oninput="slUpdateCheck()"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:12px;">
+      <div><label class="sairn-form-lbl">Date</label>
+        <input class="sairn-form-inp" id="sl-check-date" type="date"></div>
+      <div><label class="sairn-form-lbl">Memo / Matter</label>
+        <input class="sairn-form-inp" id="sl-check-memo" placeholder="Matter # / description"></div>
+    </div>
+    <!-- Live check preview -->
+    <div style="border:1.5px solid #E5E7EB;border-radius:8px;padding:16px;background:#FAFAFA;
+                font-family:monospace;font-size:13px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-weight:700">[Firm Name]</div>
+        <div>Check #<span id="sl-check-num">1001</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <span>Pay to:</span>
+        <div style="border-bottom:1px solid #ccc;flex:1" id="sl-prev-payee">___________</div>
+        <div style="border:1px solid #ccc;padding:2px 10px;min-width:100px;font-weight:700"
+             id="sl-prev-amount">$_____</div>
+      </div>
+      <div style="border-bottom:1px solid #ccc;margin-bottom:10px;color:#9CA3AF;font-size:12px"
+           id="sl-prev-written">_____________________________________________ Dollars</div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF;">
+        <span id="sl-prev-memo">Memo: _________________</span>
+        <span>Signature: ___________________</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="sairn-btn sairn-btn-primary" onclick="slSaveCheck()">💾 Save Check</button>
+      <button class="sairn-btn sairn-btn-outline" onclick="window.print()">🖨️ Print 3-per-Page</button>
+      <button class="sairn-btn sairn-btn-outline" onclick="slPostGL()">🔗 Post to GL</button>
+    </div>
+  </div>
+  <!-- Register history -->
+  <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:10px;padding:20px;">
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px;">Register History</div>
+    <div id="sl-check-history">
+      <div class="sairn-empty"><div class="sairn-empty-icon">📄</div>
+        <div class="sairn-empty-title">No checks written yet</div>
+        <div class="sairn-empty-sub">Write your first check above</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+// SAIRNlaw Check Register
+var slCheckNum = parseInt(localStorage.getItem('sairnlaw_check_num') || '1001');
+function slUpdateCheck(){
+  var amt = parseFloat(document.getElementById('sl-check-amount').value||0);
+  var payee = document.getElementById('sl-check-payee').value||'';
+  var memo  = document.getElementById('sl-check-memo').value||'';
+  document.getElementById('sl-prev-payee').textContent  = payee||'___________';
+  document.getElementById('sl-prev-amount').textContent = amt ? '$'+amt.toLocaleString('en-US',{minimumFractionDigits:2}) : '$_____';
+  document.getElementById('sl-prev-written').textContent = amt ? slNumWords(amt)+' Dollars' : '_____________ Dollars';
+  document.getElementById('sl-prev-memo').textContent   = memo ? 'Memo: '+memo : 'Memo: _________________';
+}
+function slNumWords(n){
+  var ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+    'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  var tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  var d=Math.floor(n),c=Math.round((n-d)*100);
+  var w='';
+  if(d>=1000){w+=ones[Math.floor(d/1000)]+' Thousand ';}
+  if(d%1000>=100){w+=ones[Math.floor((d%1000)/100)]+' Hundred ';}
+  var r=d%100;
+  if(r>=20){w+=tens[Math.floor(r/10)]+(r%10?' '+ones[r%10]:'');}
+  else if(r>0){w+=ones[r];}
+  if(c>0){w+=' and '+c+'/100';}
+  return w.trim();
+}
+function slSaveCheck(){
+  var checks=JSON.parse(localStorage.getItem('sairnlaw_checks')||'[]');
+  var entry={
+    num:slCheckNum++,
+    date:document.getElementById('sl-check-date').value||new Date().toLocaleDateString(),
+    payee:document.getElementById('sl-check-payee').value,
+    amount:document.getElementById('sl-check-amount').value,
+    memo:document.getElementById('sl-check-memo').value
+  };
+  checks.unshift(entry);
+  localStorage.setItem('sairnlaw_checks',JSON.stringify(checks));
+  localStorage.setItem('sairnlaw_check_num',slCheckNum);
+  slRenderHistory(checks);
+  sairnToast('Check #'+entry.num+' saved');
+}
+function slRenderHistory(checks){
+  var h=document.getElementById('sl-check-history');
+  if(!checks||!checks.length){h.innerHTML='<div class="sairn-empty"><div class="sairn-empty-icon">📄</div><div class="sairn-empty-title">No checks yet</div></div>';return;}
+  h.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:13px">'
+    +'<thead><tr style="background:#F9FAFB"><th style="padding:8px;text-align:left">Check#</th>'
+    +'<th style="padding:8px;text-align:left">Date</th><th style="padding:8px;text-align:left">Payee</th>'
+    +'<th style="padding:8px;text-align:right">Amount</th><th style="padding:8px;text-align:left">Memo</th></tr></thead><tbody>'
+    +checks.slice(0,20).map(function(c){
+      return '<tr><td style="padding:8px">'+c.num+'</td><td style="padding:8px">'+c.date+'</td>'
+        +'<td style="padding:8px">'+c.payee+'</td><td style="padding:8px;text-align:right">$'+parseFloat(c.amount||0).toLocaleString()+'</td>'
+        +'<td style="padding:8px">'+c.memo+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function slPostGL(){ sairnToast('Posted to SAIRNbiz GL'); sairnSyncAll(); }
+document.addEventListener('DOMContentLoaded',function(){
+  var checks=JSON.parse(localStorage.getItem('sairnlaw_checks')||'[]');
+  if(checks.length) slRenderHistory(checks);
+  var dateEl=document.getElementById('sl-check-date');
+  if(dateEl) dateEl.value=new Date().toISOString().split('T')[0];
+});
+
+
+// SAIRNlaw role gates
+function applyRoleGates(){
+  var role = typeof currentRole !== 'undefined' ? currentRole : 'user';
+  // Check register — admin/owner only
+  var crNav = document.querySelector('[onclick*="checkreg"]');
+  if(crNav && role !== 'admin' && role !== 'owner') crNav.style.display='none';
+  // Billing — admin/owner only
+  var billNav = document.querySelector('[onclick*="billing"],[onclick*="invoice"]');
+  if(billNav && role !== 'admin' && role !== 'owner') billNav.style.display='none';
+}
+
+
+<!-- SAIRNlaw Report Generation -->
+<div id="sairnlaw-reports" style="display:none">
+  <div style="font-size:16px;font-weight:700;color:#14532D;margin-bottom:16px;">📊 Reports</div>
+  <div id="sl-range-demo"></div>
+  <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+    <button class="sairn-btn sairn-btn-primary" onclick="window.print()">🖨️ Print Report</button>
+    <button class="sairn-btn sairn-btn-outline">📊 Export CSV</button>
+  </div>
+</div>
 
 </body>
 </html>
