@@ -1,572 +1,1254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAIRNdesign -- SAIRN AI Platform</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNdesign — Interior Design Platform</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-:root{--c:#6366F1;--cd:#4338CA;--cl:#EEF2FF;--cm:#C7D2FE;--text:#1E293B;--muted:#64748B;--border:#E2E8F0;--red:#EF4444;--rl:#FEF2F2;--green:#22C55E;--gl:#F0FDF4;--amber:#F59E0B;--al:#FFFBEB;--sh:0 1px 3px rgba(0,0,0,.08);--r:10px;--f:'Segoe UI',system-ui,sans-serif;}
-body{font-family:var(--f);background:var(--cl);color:var(--text);font-size:14px;line-height:1.5;}
-#ls{position:fixed;inset:0;background:linear-gradient(135deg,#4338CA,#6366F1);display:flex;align-items:center;justify-content:center;z-index:9999;}
-.lc{background:#fff;border-radius:16px;padding:40px 36px;width:370px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;}
-.ll{width:56px;height:56px;background:linear-gradient(135deg,#4338CA,#6366F1);border-radius:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:18px;font-weight:900;color:#fff;}
-.lti{font-size:20px;font-weight:800;margin-bottom:3px;}.lsu{font-size:12px;color:var(--muted);margin-bottom:20px;}
-.rg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px;}
-.rb{border:2px solid var(--border);background:#fff;border-radius:8px;padding:9px;cursor:pointer;transition:all .15s;}
-.rb:hover,.rb.sel{border-color:var(--c);background:var(--cl);color:#4338CA;font-weight:600;}
-.ri{font-size:17px;display:block;margin-bottom:3px;}.rl{font-size:11px;font-weight:600;}
-.pr{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}
-.pd{width:44px;height:52px;border:2px solid var(--border);border-radius:8px;text-align:center;font-size:20px;font-weight:700;outline:none;}
-.pd:focus{border-color:var(--c);}
-.bl{background:#6366F1;color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;width:100%;}
-.bl:hover{background:#4338CA;}.le{color:var(--red);font-size:12px;margin-top:7px;min-height:16px;}
-.lh{margin-top:10px;font-size:11px;color:var(--muted);}
-#app{display:none;min-height:100vh;}
-.tb{background:#4338CA;color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-.tlo{font-size:17px;font-weight:900;color:#fff;}
-.tr{display:flex;align-items:center;gap:8px;}
-.uc{background:rgba(255,255,255,.12);color:#fff;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:600;}
-.tbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:6px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;}
-.tbtn:hover{background:rgba(255,255,255,.22);}
-.ab{display:flex;min-height:calc(100vh - 56px);}
-.sb{width:214px;background:#fff;border-right:1px solid var(--border);padding:10px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}
-.sh{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:9px 15px 3px;}
-.ni{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all .12s;user-select:none;}
-.ni:hover{background:var(--cl);color:var(--text);}.ni.active{background:var(--cl);color:#4338CA;font-weight:600;border-left-color:#6366F1;}
-.nicon{font-size:13px;width:17px;text-align:center;}
-.mn{flex:1;padding:20px;overflow-x:hidden;}
-.page{display:none;}.page.active{display:block;}
-.pt{font-size:20px;font-weight:800;margin-bottom:3px;}.ps{font-size:13px;color:var(--muted);margin-bottom:18px;}
-.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:11px;margin-bottom:18px;}
-.kc{background:#fff;border-radius:var(--r);padding:15px;box-shadow:var(--sh);border:1px solid var(--border);}
-.kl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
-.kv{font-size:23px;font-weight:900;line-height:1;margin-bottom:3px;}.kd{font-size:12px;color:var(--muted);}
-.kd.up{color:var(--green);}.kd.dn{color:var(--red);}.ki{float:right;font-size:19px;margin-top:-2px;}
-.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);margin-bottom:14px;}
-.ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.ct{font-size:13px;font-weight:700;}.cb{padding:16px;}
-.dt{width:100%;border-collapse:collapse;}
-.dt th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:7px 10px;border-bottom:2px solid var(--border);background:#F8FAFC;}
-.dt td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
-.dt tr:last-child td{border-bottom:none;}.dt tr:hover td{background:var(--cl);}
-.ttr td{font-weight:700;background:var(--cl)!important;color:#4338CA;}
-.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:600;}
-.bg{background:var(--gl);color:#15803D;}.br{background:var(--rl);color:#B91C1C;}
-.ba{background:var(--al);color:#92400E;}.bc{background:var(--cl);color:#4338CA;}
-.fg{display:flex;flex-direction:column;gap:5px;}.fg.full{grid-column:1/-1;}
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
-label{font-size:12px;font-weight:600;color:var(--muted);}
-input,select,textarea{border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--f);outline:none;background:#fff;width:100%;}
-input:focus,select:focus,textarea:focus{border-color:#6366F1;}textarea{resize:vertical;min-height:65px;}
-.btn{border:none;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
-.btn-sm{padding:4px 9px;font-size:12px;border-radius:5px;}
-.btn-c{background:#6366F1;color:#fff;}.btn-c:hover{background:#4338CA;}
-.btn-o{background:#fff;border:1px solid var(--border);color:var(--text);}.btn-o:hover{border-color:#6366F1;color:#6366F1;}
-.btn-r{background:var(--red);color:#fff;}
-.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:11px;flex-wrap:wrap;}
-.sbox{border:1px solid var(--border);border-radius:7px;padding:6px 10px 6px 27px;font-size:13px;width:190px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center;outline:none;}
-.rbt{height:6px;background:var(--border);border-radius:3px;position:relative;margin:3px 0;}
-.rbf{height:6px;border-radius:3px;background:#6366F1;position:absolute;left:0;top:0;}
-.flag{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:8px;}
-.fi{background:var(--cl);border:1px solid #C7D2FE;color:#4338CA;}.fw{background:var(--al);border:1px solid #FCD34D;color:#92400E;}
-.fe{background:var(--rl);border:1px solid #FECACA;color:#B91C1C;}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.mo{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;}
-.mo.open{display:flex;}
-.modal{background:#fff;border-radius:13px;width:530px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
-.mh{padding:15px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
-.mt{font-size:15px;font-weight:700;}.mc{background:transparent;border:none;font-size:17px;cursor:pointer;color:var(--muted);}
-.mb{padding:20px;}.mf{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
-#aip{position:fixed;right:0;top:56px;bottom:0;width:345px;background:#fff;border-left:1px solid var(--border);box-shadow:-4px 0 14px rgba(0,0,0,.08);display:none;flex-direction:column;z-index:200;}
-#aip.open{display:flex;}
-.aih{background:#4338CA;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
-.ait{font-size:13px;font-weight:700;}.aic{background:transparent;border:none;color:#fff;cursor:pointer;font-size:16px;}
-.aim{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}
-.amsg{padding:8px 11px;border-radius:9px;font-size:13px;line-height:1.5;max-width:92%;white-space:pre-wrap;}
-.amsg.u{background:#6366F1;color:#fff;align-self:flex-end;}
-.amsg.b{background:var(--cl);color:var(--text);align-self:flex-start;border:1px solid #C7D2FE;}
-.amsg.t{color:var(--muted);font-style:italic;align-self:flex-start;}
-.aiq{padding:0 12px 8px;display:flex;flex-wrap:wrap;gap:5px;}
-.aqb{background:var(--cl);border:1px solid #C7D2FE;color:#4338CA;border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;}
-.air{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:6px;}.air input{flex:1;}
-.toast{position:fixed;bottom:20px;right:20px;background:#4338CA;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
-.toast.show{opacity:1;transform:translateY(0);}
-@media print{#ls,.tb,.sb,#aip,.toolbar,.mo,.toast{display:none!important;}.mn{padding:0;}body{background:#fff;}}
-@media(max-width:768px){.sb{display:none;}.fgrid{grid-template-columns:1fr;}.kg{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}#aip{width:100%;}}
-</style></head>
-<body>
-<div id="ls"><div class="lc">
-  <div class="ll">SD</div>
-  <div class="lti">SAIRNdesign</div><div class="lsu">AI Platform for Interior Designers -- Included free with SAIRNbiz</div>
-  <div class="rg"><div class="rb" onclick="selRole('principal')" id="r-principal"><span class="ri">&#x1F451;</span><span class="rl">Principal</span></div><div class="rb" onclick="selRole('designer')" id="r-designer"><span class="ri">&#x1F3A8;</span><span class="rl">Sr Designer</span></div><div class="rb" onclick="selRole('junior')" id="r-junior"><span class="ri">&#x270F;&#xFE0F;</span><span class="rl">Jr Designer</span></div><div class="rb" onclick="selRole('office')" id="r-office"><span class="ri">&#x1F4BB;</span><span class="rl">Office Staff</span></div></div>
-  <div class="pr">
-    <input type="password" maxlength="1" class="pd" id="p0" oninput="pi(0)" onkeydown="pk(event,0)">
-    <input type="password" maxlength="1" class="pd" id="p1" oninput="pi(1)" onkeydown="pk(event,1)">
-    <input type="password" maxlength="1" class="pd" id="p2" oninput="pi(2)" onkeydown="pk(event,2)">
-    <input type="password" maxlength="1" class="pd" id="p3" oninput="pi(3)" onkeydown="pk(event,3)">
-  </div>
-  <button class="bl" onclick="doLogin()">Sign In</button>
-  <div class="le" id="le"></div>
-  <div class="lh">Principal: 1234 | Sr Designer: 2345 | Jr Designer: 3456 | Office Staff: 4567</div>
-</div></div>
-<div id="app">
-  <div class="tb"><div class="tlo">SAIRNdesign</div>
-    <div class="tr">
-      <div class="uc" id="uc">Owner</div>
-      <button class="tbtn" onclick="toggleAI()">AI Assistant</button>
-      <button class="tbtn" onclick="window.print()">Print</button>
-      <button class="tbtn" onclick="doLogout()">Sign Out</button>
-    </div>
-  </div>
-  <div class="ab">
-    <div class="sb"><div class="sh">Overview</div>
-<div class="ni" onclick="nav('dash')" data-p="dash"><span class="nicon">&#x1F4CA;</span> Dashboard</div>
-<div class="sh">Projects</div>
-<div class="ni" onclick="nav('projects')" data-p="projects"><span class="nicon">&#x1F3E0;</span> All Projects</div>
-<div class="ni" onclick="nav('schedule')" data-p="schedule"><span class="nicon">&#x1F4C5;</span> Schedule</div>
-<div class="ni" onclick="nav('mood')" data-p="mood"><span class="nicon">&#x1F3A8;</span> Mood Boards</div>
-<div class="ni" onclick="nav('specs')" data-p="specs"><span class="nicon">&#x1F4CB;</span> Specs & FF&E</div>
-<div class="sh">Clients</div>
-<div class="ni" onclick="nav('clients')" data-p="clients"><span class="nicon">&#x1F465;</span> Clients</div>
-<div class="ni" onclick="nav('proposals')" data-p="proposals"><span class="nicon">&#x1F4B0;</span> Proposals</div>
-<div class="ni" onclick="nav('portal')" data-p="portal"><span class="nicon">&#x1F310;</span> Client Portal</div>
-<div class="sh">Finance</div>
-<div class="ni" onclick="nav('invoices')" data-p="invoices"><span class="nicon">&#x1F9FE;</span> Invoices</div>
-<div class="ni" onclick="nav('costing')" data-p="costing"><span class="nicon">&#x1F4B9;</span> Project Costing</div>
-<div class="ni" onclick="nav('reports')" data-p="reports"><span class="nicon">&#x1F4C8;</span> Reports</div>
-<div class="sh">Admin</div>
-<div class="ni" onclick="nav('formula')" data-p="formula"><span class="nicon">&#x1F527;</span> Formula Editor</div>
-<div class="ni" onclick="nav('csv')" data-p="csv"><span class="nicon">&#x1F4C1;</span> CSV Tools</div>
-<div class="ni" onclick="nav('sairnbiz')" data-p="sairnbiz"><span class="nicon">&#x1F517;</span> SAIRNbiz</div>
-</div>
-    <div class="mn" id="mn">
-<div class="page active" id="pg-dash"><div class="pt">SAIRNdesign Dashboard</div><div class="ps">Interior design practice -- powered by Claude AI</div>
-<div class="kg"><div class="kc"><span class="ki">&#x1F3E0;</span><div class="kl">Active Projects</div><div class="kv">14</div><div class="kd up">+2 this month</div></div><div class="kc"><span class="ki">&#x1F4B0;</span><div class="kl">Pipeline Value</div><div class="kv">$284K</div><div class="kd">In proposals</div></div><div class="kc"><span class="ki">&#x1F9FE;</span><div class="kl">Outstanding AR</div><div class="kv">$62K</div><div class="kd dn">4 invoices</div></div><div class="kc"><span class="ki">&#x1F3A8;</span><div class="kl">Mood Boards</div><div class="kv">28</div><div class="kd">Across all projects</div></div><div class="kc"><span class="ki">&#x1F4CA;</span><div class="kl">Avg Project Value</div><div class="kv">$18K</div><div class="kd up">+22% vs last yr</div></div><div class="kc"><span class="ki">&#x23F1;&#xFE0F;</span><div class="kl">Design Hours/Wk</div><div class="kv">38</div><div class="kd">Billable: 31</div></div></div>
-<div class="flag fi">&#x1F916; 3 FF&E orders have long lead times that may delay the Hudson project completion. <a href="#" style="color:var(--cd);font-weight:700;" onclick="askAI('Review FF&E lead times for the Hudson project. Flag any items that could delay completion and suggest alternatives.')">AI Review</a></div>
-<div class="two-col" style="margin-top:14px;"><div class="card"><div class="ch"><div class="ct">Active Projects</div></div><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Project</th><th>Client</th><th>Stage</th><th>Delivery</th></tr></thead><tbody>
-<tr><td><strong>Hudson Residence</strong></td><td>The Hudsons</td><td><span class="badge ba">FF&E Spec</span></td><td>Aug 15</td></tr>
-<tr><td><strong>Park Ave Office</strong></td><td>Park LLC</td><td><span class="badge bc">Schematic</span></td><td>Sep 1</td></tr>
-<tr><td><strong>Lakewood Kitchen</strong></td><td>Kim Family</td><td><span class="badge bg">Install</span></td><td>Jun 22</td></tr>
-<tr><td><strong>Beach House</strong></td><td>Smith Family</td><td><span class="badge ba">Concept</span></td><td>Oct 1</td></tr>
-</tbody></table></div></div>
-<div class="card"><div class="ch"><div class="ct">Project Stages</div></div><div class="cb">
-<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Concept / Discovery</span><span>3 projects</span></div><div class="rbt"><div class="rbf" style="width:21%"></div></div></div>
-<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Schematic Design</span><span>4 projects</span></div><div class="rbt"><div class="rbf" style="width:29%"></div></div></div>
-<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>DD / FF&E</span><span>5 projects</span></div><div class="rbt"><div class="rbf" style="width:36%"></div></div></div>
-<div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Installation</span><span>2 projects</span></div><div class="rbt"><div class="rbf" style="width:14%"></div></div></div>
-</div></div></div></div>
-
-<div class="page" id="pg-projects"><div class="pt">All Projects</div><div class="ps">Full design project portfolio</div>
-<div class="toolbar"><input type="text" class="sbox" placeholder="Search..." oninput="ft(this,'proj-tbl')"><button class="btn btn-c" onclick="openM('m-new')">+ New Project</button><button class="btn btn-o" onclick="exportCSV('proj-tbl','sairndesign-projects')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="proj-tbl"><thead><tr><th>Project</th><th>Client</th><th>Type</th><th>Fee</th><th>Stage</th><th>Deadline</th><th>Action</th></tr></thead><tbody>
-<tr><td><strong>Hudson Residence</strong></td><td>The Hudsons</td><td>Full Service</td><td>$42,000</td><td><span class="badge ba">FF&E</span></td><td>Aug 15</td><td><button class="btn btn-sm btn-c" onclick="askAI('Give me a full status update on the Hudson Residence project including next steps.')">AI Update</button></td></tr>
-<tr><td><strong>Park Ave Office</strong></td><td>Park LLC</td><td>Commercial</td><td>$28,000</td><td><span class="badge bc">Schematic</span></td><td>Sep 1</td><td><button class="btn btn-sm btn-o">View</button></td></tr>
-<tr><td><strong>Lakewood Kitchen</strong></td><td>Kim Family</td><td>Kitchen Reno</td><td>$8,400</td><td><span class="badge bg">Install</span></td><td>Jun 22</td><td><button class="btn btn-sm btn-o">View</button></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-schedule"><div class="pt">Schedule</div><div class="ps">Project milestones and designer calendar</div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Date</th><th>Project</th><th>Milestone</th><th>Designer</th><th>Status</th></tr></thead><tbody>
-<tr><td>Jun 17</td><td>Lakewood Kitchen</td><td>Final Walkthrough</td><td>Lead Designer</td><td><span class="badge bc">Confirmed</span></td></tr>
-<tr><td>Jun 22</td><td>Lakewood Kitchen</td><td>Project Complete</td><td>Lead Designer</td><td><span class="badge ba">Pending</span></td></tr>
-<tr><td>Jun 28</td><td>Hudson Residence</td><td>FF&E Presentation</td><td>Lead Designer</td><td><span class="badge bc">Confirmed</span></td></tr>
-<tr><td>Jul 10</td><td>Park Ave Office</td><td>Schematic Review</td><td>Lead Designer</td><td><span class="badge ba">Pending</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-mood"><div class="pt">Mood Boards</div><div class="ps">Visual concept boards by project</div>
-<div class="flag fi">&#x1F916; Describe any design concept and I will generate a mood board brief, color palette, and sourcing suggestions.</div>
-<div class="toolbar" style="margin-top:12px;"><button class="btn btn-c" onclick="askAI('Create a mood board brief for the Hudson Residence living room. Style: transitional, warm neutrals, natural materials.')">AI Mood Board</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Project</th><th>Room</th><th>Style</th><th>Palette</th><th>Status</th></tr></thead><tbody>
-<tr><td>Hudson Residence</td><td>Living Room</td><td>Transitional</td><td>Warm Neutrals + Sage</td><td><span class="badge bg">Approved</span></td></tr>
-<tr><td>Hudson Residence</td><td>Master Suite</td><td>Soft Modern</td><td>Greige + Navy Accents</td><td><span class="badge ba">In Review</span></td></tr>
-<tr><td>Park Ave Office</td><td>Reception</td><td>Modern Corporate</td><td>Charcoal + Brass</td><td><span class="badge bc">Draft</span></td></tr>
-<tr><td>Lakewood Kitchen</td><td>Kitchen</td><td>Transitional</td><td>White + Wood + Black</td><td><span class="badge bg">Approved</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-specs"><div class="pt">Specs & FF&E</div><div class="ps">Furniture, fixtures, and equipment specification tracking</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new')">+ Add Item</button><button class="btn btn-o" onclick="askAI('Review all FF&E items with long lead times. Which items may delay project completion?')">AI Lead Time Alert</button><button class="btn btn-o" onclick="exportCSV('ffe-tbl','sairndesign-ffe')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="ffe-tbl"><thead><tr><th>Item</th><th>Project</th><th>Vendor</th><th>List Price</th><th>Net Price</th><th>Lead Time</th><th>Status</th></tr></thead><tbody>
-<tr><td>Restoration Hardware Sofa</td><td>Hudson Residence</td><td>RH</td><td>$4,800</td><td>$3,360</td><td style="color:var(--red)">14 weeks</td><td><span class="badge ba">Ordered</span></td></tr>
-<tr><td>Visual Comfort Pendants (x3)</td><td>Lakewood Kitchen</td><td>Ferguson</td><td>$1,200</td><td>$840</td><td>3 weeks</td><td><span class="badge bg">Delivered</span></td></tr>
-<tr><td>Herman Miller Aeron x12</td><td>Park Ave Office</td><td>Herman Miller</td><td>$18,000</td><td>$12,600</td><td>8 weeks</td><td><span class="badge bc">Spec Only</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-clients"><div class="pt">Clients</div><div class="ps">Client database and project history</div>
-<div class="toolbar"><input type="text" class="sbox" placeholder="Search..." oninput="ft(this,'cl-tbl')"><button class="btn btn-c" onclick="openM('m-new')">+ New Client</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="cl-tbl"><thead><tr><th>Client</th><th>Type</th><th>Projects</th><th>Total Spend</th><th>Status</th></tr></thead><tbody>
-<tr><td><strong>The Hudsons</strong></td><td>Residential</td><td>2</td><td>$68,000</td><td><span class="badge bg">Active</span></td></tr>
-<tr><td><strong>Park LLC</strong></td><td>Commercial</td><td>1</td><td>$28,000</td><td><span class="badge bg">Active</span></td></tr>
-<tr><td><strong>Kim Family</strong></td><td>Residential</td><td>1</td><td>$8,400</td><td><span class="badge bc">Closing</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-proposals"><div class="pt">Proposals</div><div class="ps">Fee proposals and contracts</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new')">+ New Proposal</button><button class="btn btn-o" onclick="askAI('Which proposals are pending? What is the total potential fee value outstanding?')">AI Pipeline</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Client</th><th>Scope</th><th>Fee</th><th>Date Sent</th><th>Status</th></tr></thead><tbody>
-<tr><td>Smith Family</td><td>Beach House Full Service</td><td>$38,000</td><td>Jun 10</td><td><span class="badge ba">Awaiting</span></td></tr>
-<tr><td>New Prospect</td><td>Office Redesign</td><td>$22,000</td><td>Jun 12</td><td><span class="badge ba">Awaiting</span></td></tr>
-<tr><td>Kim Family</td><td>Kitchen Renovation</td><td>$8,400</td><td>May 20</td><td><span class="badge bg">Signed</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-portal"><div class="pt">Client Portal</div><div class="ps">Clean client-facing view -- approvals, schedules, invoices</div>
-<div class="flag fi">Clients see project milestones, pending approvals, and invoices only. Internal pricing and trade discounts are hidden.</div>
-<div class="card" style="margin-top:12px;"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Client</th><th>Project</th><th>Pending Approval</th><th>Next Milestone</th><th>Portal</th></tr></thead><tbody>
-<tr><td>The Hudsons</td><td>Hudson Residence</td><td>FF&E Board #3</td><td>Jun 28 Presentation</td><td><button class="btn btn-sm btn-o">Send Link</button></td></tr>
-<tr><td>Kim Family</td><td>Lakewood Kitchen</td><td>None</td><td>Jun 22 Completion</td><td><button class="btn btn-sm btn-o">Send Link</button></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-invoices"><div class="pt">Invoices</div><div class="ps">Fee billing with auto-post to SAIRNbiz GL</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new')">+ New Invoice</button><button class="btn btn-o" onclick="exportCSV('inv-tbl','sairndesign-invoices')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="inv-tbl"><thead><tr><th>Invoice #</th><th>Client</th><th>Project</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead><tbody>
-<tr><td>INV-2041</td><td>The Hudsons</td><td>Hudson Residence</td><td>$14,000</td><td>Jun 30</td><td><span class="badge bc">Sent</span></td></tr>
-<tr><td>INV-2040</td><td>Park LLC</td><td>Park Ave Office</td><td>$9,333</td><td>Jun 20</td><td><span class="badge br">Overdue</span></td></tr>
-<tr><td>INV-2039</td><td>Kim Family</td><td>Lakewood Kitchen</td><td>$4,200</td><td>Jun 22</td><td><span class="badge bg">Paid</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-costing"><div class="pt">Project Costing</div><div class="ps">Fee, labor, and product margin per project</div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Project</th><th>Fee</th><th>Design Hours</th><th>Purchasing Margin</th><th>Total Revenue</th><th>Net Margin</th></tr></thead><tbody>
-<tr><td>Hudson Residence</td><td>$42,000</td><td>$18,000</td><td>$8,400</td><td>$68,400</td><td><span style="color:var(--green);font-weight:700">38%</span></td></tr>
-<tr><td>Lakewood Kitchen</td><td>$8,400</td><td>$4,200</td><td>$1,680</td><td>$14,280</td><td><span style="color:var(--green);font-weight:700">41%</span></td></tr>
-<tr><td>Park Ave Office</td><td>$28,000</td><td>$9,333</td><td>$4,200</td><td>$41,533</td><td><span style="color:var(--amber);font-weight:700">32%</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-reports"><div class="pt">Reports</div><div class="ps">AI-generated business intelligence</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
-<div class="card" style="cursor:pointer;" onclick="askAI('Generate a revenue report for June 2025 by project type.')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F4CA;</div><div style="font-weight:700;">Revenue</div></div></div>
-<div class="card" style="cursor:pointer;" onclick="askAI('Which projects have the highest fee and margin? What patterns make them most profitable?')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F4B9;</div><div style="font-weight:700;">Profitability</div></div></div>
-<div class="card" style="cursor:pointer;" onclick="askAI('Analyze my client portfolio. Who are my best clients and what types of projects should I pursue more?')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F465;</div><div style="font-weight:700;">Client Analysis</div></div></div>
-</div></div>
-
-<div class="page" id="pg-formula"><div class="pt">Formula Editor</div><div class="ps">Admin: set hourly rates and purchasing margins</div>
-<div class="card"><div class="cb"><div class="fgrid">
-<div class="fg"><label>Principal Rate ($/hr)</label><input type="number" value="185"></div>
-<div class="fg"><label>Senior Designer ($/hr)</label><input type="number" value="145"></div>
-<div class="fg"><label>Junior Designer ($/hr)</label><input type="number" value="95"></div>
-<div class="fg"><label>Purchasing Markup %</label><input type="number" value="35"></div>
-<div class="fg"><label>Trade Discount (avg %)</label><input type="number" value="40"></div>
-<div class="fg"><label>Minimum Project Fee ($)</label><input type="number" value="5000"></div>
-</div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-      <div style="font-size:13px;font-weight:700;color:var(--cd);margin-bottom:10px;">License Key</div>
-      <div class="fgrid">
-        <div class="fg">
-          <label>Your SAIRN License Key</label>
-          <input type="text" id="license-key-input" placeholder="SD01_2025_XXXXX" style="font-family:monospace;font-weight:600;">
-        </div>
-        <div class="fg" style="justify-content:flex-end;padding-top:18px;">
-          <button class="btn btn-c" onclick="saveLicenseKey()">Activate Key</button>
-        </div>
-      </div>
-      <div id="license-status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
-    </div>
-    <div style="margin-top:14px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairndesign');toast('Rates saved')">Save Rates</button></div></div></div></div>
-
-<div class="page" id="pg-csv"><div class="pt">CSV Tools</div>
-<div class="two-col"><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:8px;">
-<button class="btn btn-o" onclick="exportCSV('proj-tbl','sairndesign-projects')">Export Projects</button>
-<button class="btn btn-o" onclick="exportCSV('ffe-tbl','sairndesign-ffe')">Export FF&E Specs</button>
-<button class="btn btn-o" onclick="exportCSV('inv-tbl','sairndesign-invoices')">Export Invoices</button>
-</div></div></div></div>
-<div class="page" id="pg-sairnbiz"><div class="pt">SAIRNbiz</div><div class="ps">HR + Accounting -- included free with SAIRNdesign</div><div id="sbiz-container" style="margin-bottom:14px;"></div><div class="flag fi">SAIRNbiz manages all payroll, GL entries, and financial reporting.</div><div style="margin-top:12px;display:flex;gap:9px;"><button class="btn btn-c" onclick="SAIRNbiz.openHub()">Open SAIRNbiz</button><button class="btn btn-o" onclick="SAIRNbiz.sendEvent('sairndesign','sync',{ts:new Date().toISOString()});toast('Synced')">Sync to SAIRNbiz</button></div></div></div>
-  </div>
-</div>
-<div id="aip">
-  <div class="aih"><div class="ait">SAIRNdesign AI</div><button class="aic" onclick="toggleAI()">X</button></div>
-  <div class="aim" id="aim"><div class="amsg b">Hi! I am your SAIRNdesign AI, powered by Claude. Ask me anything about your operations.</div></div>
-  <div class="aiq" id="aiq"></div>
-  <div class="air"><input type="text" id="ai-in" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn btn-c" onclick="sendAI()">Send</button></div>
-</div>
-<div class="toast" id="toast"></div>
-<script src="sairnbiz-connector.js"></script>
-<script>
-var PINS={"principal": "1234", "designer": "2345", "junior": "3456", "office": "4567"};var curRole='';
-function selRole(r){curRole=r;document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});var el=document.getElementById('r-'+r);if(el)el.classList.add('sel');document.getElementById('p0').focus();}
-function pi(i){var v=document.getElementById('p'+i).value;if(v&&i<3)document.getElementById('p'+(i+1)).focus();}
-function pk(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();if(e.key==='Enter')doLogin();}
-function getPin(){return ['p0','p1','p2','p3'].map(function(id){return document.getElementById(id).value;}).join('');}
-function doLogin(){
-  if(!curRole){document.getElementById('le').textContent='Select a role.';return;}
-  if(getPin()===PINS[curRole]){
-    document.getElementById('ls').style.display='none';document.getElementById('app').style.display='block';
-    document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);
-    SAIRNbiz.sendEvent('sairndesign','app_loaded',{role:curRole,ts:new Date().toISOString()});
-    initAI();toast('Welcome back!');
-    SAIRNstore.watchTable('sairndesign', 'proj-tbl');
-    SAIRNstore.watchTable('sairndesign', 'ffe-tbl');
-    SAIRNstore.watchTable('sairndesign', 'inv-tbl');
-    SAIRNstore.watchTable('sairndesign', 'cl-tbl');
-    SAIRNstore.loadFormulas('sairndesign');
-
-    // Restore AI conversation history
-    _aih = SAIRNstore.loadAIHistory('sairndesign') || [];
-
-  }else{
-    document.getElementById('le').textContent='Incorrect PIN.';
-    ['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value='';});
-    document.getElementById('p0').focus();
-  }
+:root{
+  --c:#6366F1;--cd:#4338CA;--cm:#4F46E5;--ct:#EEF2FF;--ca:#A5B4FC;
+  --w:#FFFFFF;--g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;
+  --g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;--g900:#111827;
+  --green:#16A34A;--gl:#DCFCE7;--red:#DC2626;--rl:#FEE2E2;
+  --sidebar:260px;--topbar:64px;--r:10px;--rs:6px;
+  --sh:0 1px 4px rgba(0,0,0,.08);--shm:0 4px 16px rgba(0,0,0,.10);--shl:0 8px 32px rgba(0,0,0,.13);
 }
-function doLogout(){document.getElementById('ls').style.display='flex';document.getElementById('app').style.display='none';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value='';});document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});curRole='';}
-function nav(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.ni').forEach(function(x){x.classList.remove('active');});var pg=document.getElementById('pg-'+p);if(pg)pg.classList.add('active');var ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('active');document.getElementById('mn').scrollTop=0;if(p==='sairnbiz'){SAIRNbiz.renderPanel('sbiz-container','#6366F1');}}
-function openM(id){document.getElementById(id).classList.add('open');}
-function closeM(id){document.getElementById(id).classList.remove('open');}
-document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.mo').forEach(function(o){o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});});
-function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2600);}
-function ft(inp,tid){var q=inp.value.toLowerCase();document.getElementById(tid).querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});}
-function exportCSV(tid,fname){var t=document.getElementById(tid);if(!t){toast('No data');return;}var csv=Array.from(t.querySelectorAll('tr')).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(fname||'export')+'.csv';a.click();toast('Exported');}
-var _aih=[];
-function toggleAI(){document.getElementById('aip').classList.toggle('open');}
-function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}
-function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairndesign',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairndesign')||''),system:"You are the AI for SAIRNdesign, an interior design practice management platform. You know about design phases, FF&E specification, client management, fee proposals, purchasing markup, and project scheduling. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairndesign',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
-function initAI(){var prompts=[["Project Status", "Give me a status update on all active projects"], ["FF&E Lead Times", "Flag any FF&E items that may delay projects"], ["AR Collections", "Which invoices are overdue? Draft reminders."], ["Revenue Forecast", "Forecast my fee income for the next 30 days"], ["Profitability", "Which project types are most profitable?"], ["Client Follow-Up", "Which proposals need follow-up this week?"]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}}); 
-</script>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--g50);color:var(--g800)}
+/* LOGIN */
+#login{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(135deg,var(--ct) 0%,var(--w) 60%,#E0E7FF 100%)}
+.lcard{background:var(--w);border-radius:16px;box-shadow:var(--shl);padding:48px 40px;width:100%;max-width:420px;text-align:center}
+.llogo{width:64px;height:64px;background:var(--c);border-radius:14px;display:flex;align-items:center;
+  justify-content:center;font-size:26px;font-weight:900;color:var(--w);margin:0 auto 18px;letter-spacing:-1px}
+.ltitle{font-size:26px;font-weight:800;color:var(--g900);letter-spacing:-.5px}
+.lsub{font-size:14px;color:var(--g500);margin:6px 0 28px}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+.rb{border:2px solid var(--g200);border-radius:var(--rs);padding:12px 8px;cursor:pointer;
+  background:var(--w);font-size:13px;font-weight:600;color:var(--g600);transition:all .15s}
+.rb:hover,.rb.active{border-color:var(--c);background:var(--ct);color:var(--cd)}
+.rb .ri{font-size:20px;display:block;margin-bottom:4px}
+.pin-lbl{font-size:13px;font-weight:600;color:var(--g600);text-align:left;margin-bottom:6px}
+.pin-inp{width:100%;padding:13px;border:2px solid var(--g200);border-radius:var(--rs);
+  font-size:24px;letter-spacing:8px;text-align:center;font-family:monospace;outline:none;transition:border-color .15s;margin-bottom:14px}
+.pin-inp:focus{border-color:var(--c)}
+.lbtn{width:100%;padding:13px;background:var(--c);color:var(--w);border:none;border-radius:var(--rs);
+  font-size:16px;font-weight:700;cursor:pointer;transition:background .15s}
+.lbtn:hover{background:var(--cm)}
+.lerr{margin-top:10px;font-size:13px;color:var(--red);display:none}
+/* APP */
+#app{display:none;height:100vh;overflow:hidden}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar);background:var(--w);
+  border-bottom:2px solid #E0E7FF;display:flex;align-items:center;padding:0 20px;gap:14px;z-index:100;box-shadow:var(--sh)}
+.tlogo{width:40px;height:40px;background:var(--c);border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:16px;font-weight:900;color:var(--w);letter-spacing:-1px;flex-shrink:0}
+.tname{font-size:17px;font-weight:800;color:var(--g900);letter-spacing:-.3px}
+.tname span{color:var(--c)}
+.tsp{flex:1}
+.fq-topbtn{display:flex;align-items:center;gap:7px;background:var(--c);color:var(--w);border:none;
+  border-radius:var(--rs);padding:9px 15px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.fq-topbtn:hover{opacity:.88}
+.tusr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--g600);cursor:pointer}
+.tavtr{width:32px;height:32px;background:#E0E7FF;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:13px;font-weight:700;color:var(--cd)}
+.sidebar{position:fixed;top:var(--topbar);left:0;bottom:0;width:var(--sidebar);
+  background:var(--w);border-right:2px solid #E0E7FF;overflow-y:auto;z-index:50;padding:14px 0 80px}
+.slbl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;padding:10px 20px 4px}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 20px;border-radius:var(--rs);
+  cursor:pointer;font-size:14px;font-weight:500;color:var(--g600);transition:all .12s;position:relative;margin:0 8px}
+.ni:hover{background:var(--ct);color:var(--cd)}
+.ni.active{background:#E0E7FF;color:var(--cd);font-weight:700}
+.ni.active::before{content:'';position:absolute;left:-8px;top:6px;bottom:6px;width:3px;
+  background:var(--c);border-radius:0 3px 3px 0}
+.ni-icon{font-size:16px;width:20px;text-align:center}
+.nbadge{margin-left:auto;background:var(--red);color:var(--w);font-size:10px;font-weight:700;
+  padding:2px 6px;border-radius:10px;min-width:18px;text-align:center}
+.main{margin-left:var(--sidebar);margin-top:var(--topbar);height:calc(100vh - var(--topbar));overflow-y:auto;padding:28px;background:var(--g50)}
+/* PAGES */
+.page{display:none}.page.active{display:block}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:10px}
+.ptitle{font-size:24px;font-weight:800;color:var(--g900);letter-spacing:-.5px}
+.psub{font-size:14px;color:var(--g500);margin-top:2px}
+.pacts{display:flex;gap:9px;flex-wrap:wrap}
+/* Cards */
+.card{background:var(--w);border-radius:var(--r);border:1.5px solid var(--g200);box-shadow:var(--sh);padding:20px;margin-bottom:16px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ct{font-size:15px;font-weight:700;color:var(--g800)}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 15px;border-radius:var(--rs);
+  font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .12s;white-space:nowrap}
+.btn-p{background:var(--c);color:var(--w)}.btn-p:hover{background:var(--cm)}
+.btn-o{background:var(--w);color:var(--g700);border:1.5px solid var(--g200)}.btn-o:hover{background:var(--g50)}
+.btn-sm{padding:6px 11px;font-size:13px}
+/* Stats */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+.sc{background:var(--w);border-radius:var(--r);border:1.5px solid var(--g200);padding:18px;box-shadow:var(--sh)}
+.sl{font-size:11px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sv{font-size:26px;font-weight:800;color:var(--g900);letter-spacing:-1px;line-height:1}
+.sd{font-size:12px;color:var(--green);margin-top:4px;font-weight:600}
+/* Tables */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;padding:9px 13px;font-size:11px;font-weight:700;color:var(--g500);
+  text-transform:uppercase;letter-spacing:.5px;background:var(--g50);border-bottom:1.5px solid var(--g200)}
+td{padding:11px 13px;border-bottom:1px solid var(--g100);color:var(--g700);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--ct)}
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:600}
+.bg{background:var(--gl);color:var(--green)}.ba{background:#E0E7FF;color:var(--cd)}.br{background:var(--rl);color:var(--red)}.bgr{background:var(--g100);color:var(--g600)}
+/* Forms */
+.fg{margin-bottom:13px}
+.fl{display:block;font-size:13px;font-weight:600;color:var(--g700);margin-bottom:5px}
+.fi,.fs,.fta{width:100%;padding:9px 13px;border:1.5px solid var(--g200);border-radius:var(--rs);
+  font-size:14px;color:var(--g800);background:var(--w);outline:none;transition:border-color .12s;font-family:inherit}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--c)}
+.fta{resize:vertical;min-height:80px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+/* Project grid */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:20px}
+.proj-card{background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);
+  overflow:hidden;cursor:pointer;transition:all .15s;box-shadow:var(--sh)}
+.proj-card:hover{border-color:var(--c);box-shadow:var(--shm);transform:translateY(-2px)}
+.proj-img{height:140px;background:linear-gradient(135deg,var(--ct),#E0E7FF);display:flex;
+  align-items:center;justify-content:center;font-size:48px;position:relative}
+.proj-stage{position:absolute;top:10px;right:10px}
+.proj-body{padding:14px}
+.proj-name{font-size:15px;font-weight:700;color:var(--g900)}
+.proj-meta{font-size:12px;color:var(--g500);margin-top:4px}
+.proj-bar{height:4px;background:var(--g100);border-radius:2px;margin-top:10px;overflow:hidden}
+.proj-fill{height:100%;background:var(--c);border-radius:2px;transition:width .5s}
+/* Moodboard */
+.moodboard{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.mb-tile{border-radius:8px;overflow:hidden;aspect-ratio:1;background:linear-gradient(135deg,var(--ct),#C7D2FE);
+  display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;transition:all .15s}
+.mb-tile:hover{transform:scale(1.03)}
+/* Finish schedule */
+.finish-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)}
+.finish-swatch{width:36px;height:36px;border-radius:6px;flex-shrink:0;border:1.5px solid var(--g200)}
+.finish-info{flex:1}
+.finish-name{font-size:14px;font-weight:600;color:var(--g800)}
+.finish-detail{font-size:12px;color:var(--g500)}
+.finish-status{margin-left:auto}
+/* Suite connector */
+.suite-wrap{background:linear-gradient(135deg,#F8FAFC,#fff);border:1.5px solid #E2E8F0;border-radius:var(--r);padding:18px;margin-bottom:18px}
+.suite-hdr{display:flex;align-items:center;gap:11px;margin-bottom:13px}
+.suite-logo{width:34px;height:34px;background:linear-gradient(135deg,var(--c),var(--cd));border-radius:7px;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff}
+.suite-name{font-size:15px;font-weight:700;color:#1E293B}
+.suite-sub{font-size:11px;color:#94A3B8}
+.suite-live{margin-left:auto;font-size:12px;font-weight:700;color:var(--green)}
+.suite-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:9px;margin-bottom:12px}
+.suite-tile{background:#fff;border:1.5px solid #E2E8F0;border-radius:8px;padding:11px 8px;
+  cursor:pointer;transition:all .12s;text-align:center}
+.suite-tile:hover{box-shadow:0 3px 10px rgba(0,0,0,.09);transform:translateY(-1px)}
+.suite-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:900;color:#fff;margin:0 auto 5px}
+.suite-tname{font-size:11px;font-weight:700;color:#1E293B}
+.suite-tdesc{font-size:10px;color:#94A3B8;margin-top:2px}
+.suite-btns{display:flex;gap:8px;flex-wrap:wrap}
+.suite-btn{padding:7px 13px;background:var(--c);color:#fff;border:none;border-radius:6px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:opacity .12s}
+.suite-btn:hover{opacity:.87}
+.suite-btn.out{background:#fff;color:var(--cd);border:1.5px solid var(--c)}
+/* SAIRNbiz connector */
+.sbiz{background:linear-gradient(135deg,#F0FDFA,#fff);border:1.5px solid #99F6E4;border-radius:var(--r);padding:18px;margin-bottom:16px}
+.sbiz-hdr{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.sbiz-logo{width:34px;height:34px;background:#14B8A6;border-radius:7px;display:flex;align-items:center;
+  justify-content:center;font-size:13px;font-weight:900;color:#fff}
+.sbiz-title{font-size:15px;font-weight:700;color:#0F766E}
+.sbiz-btns{display:flex;gap:8px;flex-wrap:wrap}
+.sbiz-btn{padding:7px 13px;background:#14B8A6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+.sbiz-btn:hover{background:#0D9488}
+.sbiz-btn.out{background:#fff;color:#0F766E;border:1.5px solid #14B8A6}
+/* AI bubble */
+.ai-bub{background:var(--ct);border:1.5px solid var(--ca);border-radius:9px;padding:14px;
+  margin:10px 0;font-size:14px;color:var(--g800);line-height:1.6;white-space:pre-wrap}
+.thinking{display:inline-flex;gap:4px;align-items:center}
+.thinking span{width:6px;height:6px;background:var(--c);border-radius:50%;animation:pulse 1.1s ease-in-out infinite}
+.thinking span:nth-child(2){animation-delay:.18s}
+.thinking span:nth-child(3){animation-delay:.36s}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+/* Signature */
+.sig-wrap{border:2px solid var(--g200);border-radius:8px;background:var(--g50);position:relative;margin-bottom:10px}
+#sd-sig-canvas{display:block;width:100%;height:110px;cursor:crosshair;touch-action:none}
+.sig-lbl{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--g300);pointer-events:none;white-space:nowrap}
+/* Upload zone */
+.upzone{border:2px dashed var(--g300);border-radius:var(--r);padding:28px 16px;text-align:center;
+  cursor:pointer;background:var(--g50);transition:all .15s}
+.upzone:hover{border-color:var(--c);background:var(--ct)}
+/* Range bar (P5) */
+.rng-wrap{margin:10px 0}
+.rng-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--g500);margin-bottom:4px}
+.rng-track{height:8px;background:var(--g100);border-radius:4px;overflow:hidden}
+.rng-fill{height:100%;background:var(--c);border-radius:4px;transition:width .5s}
+/* Empty state (P9 clean view) */
+.empty{text-align:center;padding:40px 20px;color:var(--g400)}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.empty-title{font-size:15px;font-weight:700;color:var(--g600);margin-bottom:6px}
+.empty-sub{font-size:13px}
+/* Modal */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;
+  align-items:center;justify-content:center;padding:16px}
+.modal-ov.open{display:flex}
+.modal{background:var(--w);border-radius:14px;box-shadow:var(--shl);width:100%;max-width:560px;
+  max-height:90vh;overflow-y:auto;padding:26px;position:relative}
+.mhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.mtitle{font-size:19px;font-weight:800;color:var(--g900)}
+.mclose{width:30px;height:30px;border:none;background:var(--g100);border-radius:50%;cursor:pointer;font-size:16px;color:var(--g500)}
+.mclose:hover{background:var(--g200)}
+/* Check register */
+.cr-preview{border:1.5px solid var(--g200);border-radius:8px;padding:16px;background:#FAFAFA;font-family:monospace;font-size:13px;margin-bottom:12px}
+/* Field quote steps */
+.step-row{display:flex;margin-bottom:16px;background:var(--w);border:1.5px solid var(--g200);border-radius:8px;overflow:hidden}
+.step{flex:1;padding:10px 6px;text-align:center;font-size:11px;font-weight:600;color:var(--g400);border-right:1px solid var(--g100)}
+.step:last-child{border-right:none}
+.step.done{color:var(--green);background:var(--gl)}
+.step.active{color:var(--cd);background:var(--ct)}
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--g200);color:var(--g500);
+  font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 3px}
+.step.done .step-n{background:var(--green);color:#fff}
+.step.active .step-n{background:var(--c);color:#fff}
+/* Toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--g800);
+  color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:0;transition:opacity .3s;pointer-events:none}
+/* Print */
+@media print{
+  .topbar,.sidebar,.pacts,.btn,.modal-ov{display:none!important}
+  .main{margin:0;padding:20px}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform .25s}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:14px}
+  .fr{grid-template-columns:1fr}
+  .proj-grid{grid-template-columns:1fr}
+}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--g200);border-radius:3px}
+</style>
+</head>
+<body>
 
-<!-- SAIRNstore: localStorage persistence -->
+<!-- LOGIN -->
+<div id="login">
+<div class="lcard">
+  <div class="llogo">SD</div>
+  <div class="ltitle">SAIRNdesign</div>
+  <div class="lsub">Interior Design Platform</div>
+  <div class="role-grid">
+    <button class="rb active" data-role="owner" onclick="selRole(this)"><span class="ri">👑</span>Owner</button>
+    <button class="rb" data-role="admin" onclick="selRole(this)"><span class="ri">🎨</span>Designer</button>
+    <button class="rb" data-role="sales" onclick="selRole(this)"><span class="ri">💼</span>Sales Rep</button>
+    <button class="rb" data-role="viewer" onclick="selRole(this)"><span class="ri">👁</span>Client View</button>
+  </div>
+  <div class="pin-lbl">Enter PIN</div>
+  <input class="pin-inp" id="pin-in" type="password" maxlength="4" placeholder="••••" inputmode="numeric" oninput="if(this.value.length===4)doLogin()">
+  <button class="lbtn" onclick="doLogin()">Sign In</button>
+  <div class="lerr" id="lerr">Incorrect PIN. Try again.</div>
+  <div style="margin-top:16px;font-size:12px;color:var(--g400)">Demo: any role + PIN 1234</div>
+</div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tlogo">SD</div>
+  <div class="tname">SAIRN<span>design</span></div>
+  <div class="tsp"></div>
+  <button class="fq-topbtn" onclick="openFQ()">📷 Field Quote</button>
+  <div class="tusr">
+    <div class="tavtr" id="tavtr">OW</div>
+    <span id="trole">Owner</span>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="slbl">Command</div>
+  <div class="ni active" onclick="showPage('dashboard')"><span class="ni-icon">🏠</span>Dashboard</div>
+  <div class="ni" onclick="showPage('projects')"><span class="ni-icon">🎨</span>Projects<span class="nbadge" style="background:var(--c)">4</span></div>
+  <div class="ni" onclick="showPage('field-quote')"><span class="ni-icon">📷</span>Field Quote</div>
+  <div class="ni" onclick="showPage('doc-scan')"><span class="ni-icon">📄</span>Doc Scanner</div>
+  <div class="slbl">Design Tools</div>
+  <div class="ni" onclick="showPage('moodboards')"><span class="ni-icon">🖼️</span>Moodboards</div>
+  <div class="ni" onclick="showPage('finish-schedule')"><span class="ni-icon">🎨</span>Finish Schedule</div>
+  <div class="ni" onclick="showPage('client-portal')"><span class="ni-icon">👤</span>Client Portal</div>
+  <div class="ni" onclick="showPage('sourcing')"><span class="ni-icon">🛍️</span>Sourcing & FF&E</div>
+  <div class="slbl">Business</div>
+  <div class="ni" onclick="showPage('proposals')"><span class="ni-icon">📋</span>Proposals</div>
+  <div class="ni" onclick="showPage('invoices')"><span class="ni-icon">💳</span>Invoices</div>
+  <div class="ni" onclick="showPage('compensation')"><span class="ni-icon">💰</span>Compensation</div>
+  <div class="ni" onclick="showPage('check-register')"><span class="ni-icon">📄</span>Check Register</div>
+  <div class="ni" onclick="showPage('reports')"><span class="ni-icon">📊</span>Reports</div>
+  <div class="slbl">Integrations</div>
+  <div class="ni" onclick="showPage('sairn-suite')"><span class="ni-icon">🔗</span>SAIRN Suite</div>
+  <div class="ni" onclick="showPage('sairnbiz-connector')"><span class="ni-icon">🏢</span>SAIRNbiz</div>
+  <div class="ni" onclick="showPage('admin-pricing')"><span class="ni-icon">⚙️</span>Admin & Pricing</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main" id="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="ph">
+    <div><div class="ptitle">Design Dashboard</div><div class="psub">4 active projects · June 15, 2026</div></div>
+    <div class="pacts">
+      <button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-p" onclick="showPage('projects')">+ New Project</button>
+    </div>
+  </div>
+  <div class="sgrid">
+    <div class="sc"><div class="sl">Active Projects</div><div class="sv">4</div><div class="sd">↑ 2 this month</div></div>
+    <div class="sc"><div class="sl">Open Proposals</div><div class="sv">6</div><div class="sd">$84K pipeline</div></div>
+    <div class="sc"><div class="sl">Pending Approvals</div><div class="sv">11</div><div class="sd">Finish selections</div></div>
+    <div class="sc"><div class="sl">FF&E Orders</div><div class="sv">$42K</div><div class="sd">In transit: 3</div></div>
+    <div class="sc"><div class="sl">Monthly Revenue</div><div class="sv">$18.4K</div><div class="sd">↑ 22% vs last month</div></div>
+    <div class="sc"><div class="sl">Avg Project Value</div><div class="sv">$28K</div><div class="sd">Residential</div></div>
+  </div>
+  <!-- Claude Project Intelligence -->
+  <div class="card">
+    <div class="ch"><div class="ct">🤖 Claude Design Intelligence</div>
+      <button class="btn btn-o btn-sm" onclick="runIntel()">Refresh</button></div>
+    <div class="ai-bub" id="intel-out">
+      Morandi Residence — Client approval pending on master bath tile selection (48hrs overdue). Follow up today.<br>
+      Johnson Project — Furniture delivery scheduled 6/18 — confirm install crew availability.<br>
+      Peterson Project — Finish schedule 90% complete. Ready for final client sign-off presentation.
+    </div>
+  </div>
+  <!-- Project benchmarks (P5) -->
+  <div class="card">
+    <div class="ch"><div class="ct">Project Progress</div></div>
+    <div id="proj-ranges"></div>
+  </div>
+  <!-- Suite connector -->
+  <div class="suite-wrap">
+    <div class="suite-hdr">
+      <div class="suite-logo">S</div>
+      <div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">Connected apps</div></div>
+      <div class="suite-live">● Live</div>
+    </div>
+    <div class="suite-grid" id="sd-suite-grid"></div>
+    <div class="suite-btns">
+      <button class="suite-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="suite-btn out" onclick="exportCSV()">📊 CSV</button>
+      <span style="font-size:12px;color:#94A3B8;align-self:center" id="sd-last-sync">Last sync: --</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<div class="page" id="page-projects">
+  <div class="ph">
+    <div><div class="ptitle">Projects</div><div class="psub">All active design projects</div></div>
+    <div class="pacts"><button class="btn btn-p">+ New Project</button></div>
+  </div>
+  <div class="proj-grid">
+    <div class="proj-card">
+      <div class="proj-img">🏠<span class="proj-stage badge ba" style="position:absolute;top:10px;right:10px">In Progress</span></div>
+      <div class="proj-body">
+        <div class="proj-name">Morandi Residence</div>
+        <div class="proj-meta">Full interior · $38,000 · 847 Elm St</div>
+        <div class="proj-bar"><div class="proj-fill" style="width:72%"></div></div>
+      </div>
+    </div>
+    <div class="proj-card">
+      <div class="proj-img">🏢<span class="proj-stage badge bg" style="position:absolute;top:10px;right:10px">Presentation</span></div>
+      <div class="proj-body">
+        <div class="proj-name">Peterson Office</div>
+        <div class="proj-meta">Commercial · $22,000 · Downtown</div>
+        <div class="proj-bar"><div class="proj-fill" style="width:90%"></div></div>
+      </div>
+    </div>
+    <div class="proj-card">
+      <div class="proj-img">🛋️<span class="proj-stage badge bgr" style="position:absolute;top:10px;right:10px">Design</span></div>
+      <div class="proj-body">
+        <div class="proj-name">Johnson Living Room</div>
+        <div class="proj-meta">Partial · $12,500 · Westlake</div>
+        <div class="proj-bar"><div class="proj-fill" style="width:40%"></div></div>
+      </div>
+    </div>
+    <div class="proj-card">
+      <div class="proj-img">🏊<span class="proj-stage badge br" style="position:absolute;top:10px;right:10px">Pending</span></div>
+      <div class="proj-body">
+        <div class="proj-name">Rivera Pool House</div>
+        <div class="proj-meta">Outdoor living · $45,000 · Rocky River</div>
+        <div class="proj-bar"><div class="proj-fill" style="width:15%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FIELD QUOTE -->
+<div class="page" id="page-field-quote">
+  <div class="ph">
+    <div><div class="ptitle">📷 Field Quote</div><div class="psub">Sketch or room photo → design scope quote in 60 seconds</div></div>
+    <div class="pacts"><button class="btn btn-o btn-sm" onclick="showPage('dashboard')">← Back</button></div>
+  </div>
+  <div class="step-row" id="fq-steps">
+    <div class="step active" id="fqs-1"><div class="step-n">1</div>Scope</div>
+    <div class="step" id="fqs-2"><div class="step-n">2</div>Photo</div>
+    <div class="step" id="fqs-3"><div class="step-n">3</div>Questions</div>
+    <div class="step" id="fqs-4"><div class="step-n">4</div>Quote</div>
+    <div class="step" id="fqs-5"><div class="step-n">5</div>Sign</div>
+  </div>
+  <div class="card" id="fq-p1">
+    <div class="ch"><div class="ct">What are you quoting?</div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px" id="fq-chips">
+      <div class="badge ba" style="cursor:pointer;padding:7px 14px;font-size:13px" data-trade="full-interior" onclick="selTrade(this)">🏠 Full Interior</div>
+      <div class="badge bgr" style="cursor:pointer;padding:7px 14px;font-size:13px" data-trade="kitchen" onclick="selTrade(this)">🍳 Kitchen</div>
+      <div class="badge bgr" style="cursor:pointer;padding:7px 14px;font-size:13px" data-trade="bath" onclick="selTrade(this)">🛁 Bathroom</div>
+      <div class="badge bgr" style="cursor:pointer;padding:7px 14px;font-size:13px" data-trade="living-room" onclick="selTrade(this)">🛋️ Living Room</div>
+      <div class="badge bgr" style="cursor:pointer;padding:7px 14px;font-size:13px" data-trade="bedroom" onclick="selTrade(this)">🛏️ Bedroom</div>
+      <div class="badge bgr" style="cursor:pointer;padding:7px 14px;font-size:13px" data-trade="commercial" onclick="selTrade(this)">🏢 Commercial</div>
+      <div class="badge bgr" style="cursor:pointer;padding:7px 14px;font-size:13px" data-trade="outdoor" onclick="selTrade(this)">🌿 Outdoor Living</div>
+      <div class="badge bgr" style="cursor:pointer;padding:7px 14px;font-size:13px" data-trade="custom" onclick="selTrade(this)">✨ Custom</div>
+    </div>
+    <div class="fg"><label class="fl">Client Name</label><input class="fi" id="fq-client" placeholder="Client / project address"></div>
+    <button class="btn btn-p" onclick="fqStep(2)">Next: Photo Sketch or Room →</button>
+  </div>
+  <div class="card" id="fq-p2" style="display:none">
+    <div class="ch"><div class="ct">📷 Photo Sketch or Room</div></div>
+    <div class="upzone" onclick="document.getElementById('fq-file').click()">
+      <div style="font-size:32px;margin-bottom:8px">📷</div>
+      <div style="font-size:14px;font-weight:600;color:var(--g600)" id="fq-upload-lbl">Tap to photograph sketch, floor plan, or room</div>
+      <div style="font-size:12px;color:var(--g400);margin-top:3px">Any drawing — napkin, floor plan, room photo</div>
+      <input type="file" id="fq-file" accept="image/*" capture="environment" style="display:none" onchange="fqHandleFile(this)">
+    </div>
+    <div id="fq-prev" style="display:none;margin-top:12px">
+      <img id="fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--g200)">
+      <div style="font-size:13px;color:var(--green);font-weight:600;margin-top:6px">✅ Captured</div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:12px">
+      <button class="btn btn-o" onclick="fqStep(1)">← Back</button>
+      <button class="btn btn-p" id="fq-analyze-btn" onclick="fqAnalyze()" disabled>🤖 Analyze →</button>
+    </div>
+  </div>
+  <div class="card" id="fq-p3" style="display:none">
+    <div class="ch"><div class="ct">🤖 Claude is reading your sketch...</div></div>
+    <div class="ai-bub" id="fq-ai">
+      <div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing...
+    </div>
+    <div id="fq-ans-wrap" style="display:none">
+      <div class="fg"><label class="fl">Your answers</label>
+        <textarea class="fta" id="fq-answers" placeholder="Answer Claude's questions here..."></textarea></div>
+      <div style="display:flex;gap:9px">
+        <button class="btn btn-o" onclick="fqStep(2)">← Back</button>
+        <button class="btn btn-p" onclick="fqGenQuote()">Generate Quote →</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="fq-p4" style="display:none">
+    <div class="ch"><div class="ct">✅ Design Quote Ready</div></div>
+    <div style="background:#fff;border:1.5px solid var(--g200);border-radius:9px;padding:18px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:monospace;margin-bottom:14px" id="fq-quote-out"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-p" onclick="fqStep(5)">Get Signature →</button>
+      <button class="btn btn-o" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-o" onclick="fqShare()">📤 Share</button>
+      <button class="btn btn-o" onclick="saveQuote()">💾 Save</button>
+    </div>
+  </div>
+  <div class="card" id="fq-p5" style="display:none">
+    <div class="ch"><div class="ct">Client Signature</div></div>
+    <div style="font-size:13px;color:var(--g600);margin-bottom:10px">Turn phone to client — have them sign below</div>
+    <div class="sig-wrap"><canvas id="sd-sig-canvas" width="500" height="110"></canvas><div class="sig-lbl">Sign here</div></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-o btn-sm" onclick="clearSig()">Clear</button>
+    </div>
+    <div class="fg"><label class="fl">Deposit (33% recommended)</label>
+      <input class="fi" id="fq-deposit" placeholder="$0.00" style="max-width:180px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-p" onclick="fqClose()">✅ Signed — Save & Close</button>
+      <button class="btn btn-o" onclick="sendDeposit()">💳 Text Deposit Link</button>
+      <button class="btn btn-o" onclick="window.print()">🖨️ Print Signed</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOODBOARDS -->
+<div class="page" id="page-moodboards">
+  <div class="ph">
+    <div><div class="ptitle">🖼️ Moodboards</div><div class="psub">Visual concept boards by project</div></div>
+    <div class="pacts">
+      <button class="btn btn-p" onclick="genMoodboard()">🤖 AI Generate Moodboard</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Morandi Residence — Master Bath Concept</div><button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print</button></div>
+    <div class="moodboard">
+      <div class="mb-tile">🚿</div><div class="mb-tile">🪨</div><div class="mb-tile">💡</div>
+      <div class="mb-tile">🛁</div><div class="mb-tile">🪟</div><div class="mb-tile">🪴</div>
+    </div>
+    <div class="ai-bub" id="mb-intel">
+      Concept: Warm Travertine + Aged Brass. Natural stone floors in 12x24 running bond.
+      Wall niche with integrated lighting. Freestanding soaker tub as focal point.
+      Aged brass fixtures throughout. Organic texture palette — no cold grays.
+    </div>
+    <button class="btn btn-p btn-sm" onclick="genMoodboard()">🤖 Refine with Claude</button>
+  </div>
+</div>
+
+<!-- FINISH SCHEDULE -->
+<div class="page" id="page-finish-schedule">
+  <div class="ph">
+    <div><div class="ptitle">🎨 Finish Schedule</div><div class="psub">Material selections, client approvals, install status</div></div>
+    <div class="pacts">
+      <button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print Schedule</button>
+      <button class="btn btn-p">+ Add Finish</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Morandi Residence — All Finishes</div></div>
+    <div>
+      <div class="finish-row">
+        <div class="finish-swatch" style="background:linear-gradient(135deg,#D4B896,#C4A882)"></div>
+        <div class="finish-info"><div class="finish-name">Travertine Floor Tile</div><div class="finish-detail">12x24 · Polished · Walker Zanger</div></div>
+        <div class="finish-status"><span class="badge bg">✅ Approved</span></div>
+      </div>
+      <div class="finish-row">
+        <div class="finish-swatch" style="background:linear-gradient(135deg,#B8A99A,#A09080)"></div>
+        <div class="finish-info"><div class="finish-name">Wall Tile — Shower</div><div class="finish-detail">3x12 Stacked · Matte White</div></div>
+        <div class="finish-status"><span class="badge ba">⏳ Pending</span></div>
+      </div>
+      <div class="finish-row">
+        <div class="finish-swatch" style="background:linear-gradient(135deg,#B8952A,#9A7A1A)"></div>
+        <div class="finish-info"><div class="finish-name">Fixtures — Aged Brass</div><div class="finish-detail">Waterworks Henry Collection</div></div>
+        <div class="finish-status"><span class="badge bg">✅ Ordered</span></div>
+      </div>
+      <div class="finish-row">
+        <div class="finish-swatch" style="background:linear-gradient(135deg,#E8E0D8,#D8D0C8)"></div>
+        <div class="finish-info"><div class="finish-name">Vanity Paint</div><div class="finish-detail">Benjamin Moore OC-17 White Dove</div></div>
+        <div class="finish-status"><span class="badge br">⚠️ Revision</span></div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn btn-p btn-sm" onclick="analyzeFinishes()">🤖 Claude Finish Review</button>
+    </div>
+    <div class="ai-bub" id="finish-intel" style="display:none"></div>
+  </div>
+</div>
+
+<!-- CLIENT PORTAL -->
+<div class="page" id="page-client-portal">
+  <div class="ph">
+    <div><div class="ptitle">👤 Client Portal</div><div class="psub">Client approvals, selections, and communications</div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Pending Client Actions</div></div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Client</th><th>Project</th><th>Action Needed</th><th>Due</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sarah Morandi</strong></td><td>Master Bath</td><td>Approve wall tile selection</td><td>Jun 17</td><td><span class="badge ba">⏳ Awaiting</span></td></tr>
+          <tr><td><strong>Tom Peterson</strong></td><td>Office</td><td>Final walkthrough sign-off</td><td>Jun 19</td><td><span class="badge bg">✅ Scheduled</span></td></tr>
+          <tr><td><strong>Lisa Johnson</strong></td><td>Living Room</td><td>Sofa fabric approval</td><td>Jun 22</td><td><span class="badge bgr">📧 Sent</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SOURCING / FF&E -->
+<div class="page" id="page-sourcing">
+  <div class="ph">
+    <div><div class="ptitle">🛍️ Sourcing & FF&E</div><div class="psub">Furniture, fixtures, equipment orders</div></div>
+    <div class="pacts">
+      <button class="btn btn-p" onclick="aiSourceSuggestions()">🤖 AI Source Suggestions</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Item</th><th>Vendor</th><th>Project</th><th>Qty</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Henry Faucet Set</strong></td><td>Waterworks</td><td>Morandi</td><td>3</td><td>$4,200</td><td><span class="badge bg">Ordered</span></td></tr>
+          <tr><td><strong>Travertine Tile</strong></td><td>Walker Zanger</td><td>Morandi</td><td>320 SF</td><td>$8,960</td><td><span class="badge ba">In Transit</span></td></tr>
+          <tr><td><strong>Linen Sofa</strong></td><td>RH</td><td>Johnson</td><td>1</td><td>$6,400</td><td><span class="badge bgr">Quoting</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card" id="source-intel" style="display:none">
+    <div class="ch"><div class="ct">🤖 Claude Source Suggestions</div></div>
+    <div class="ai-bub" id="source-out"></div>
+  </div>
+</div>
+
+<!-- PROPOSALS -->
+<div class="page" id="page-proposals">
+  <div class="ph">
+    <div><div class="ptitle">📋 Proposals</div></div>
+    <div class="pacts">
+      <button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-p">+ New Proposal</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Client</th><th>Project</th><th>Value</th><th>Sent</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>Rivera Family</td><td>Pool House</td><td>$45,000</td><td>Jun 12</td><td><span class="badge ba">⏳ Pending</span></td><td><button class="btn btn-o btn-sm" onclick="followUp('Rivera')">🤖 Follow Up</button></td></tr>
+          <tr><td>Andrews LLC</td><td>Office Suite</td><td>$28,000</td><td>Jun 8</td><td><span class="badge bg">✅ Accepted</span></td><td><button class="btn btn-p btn-sm">Start Project</button></td></tr>
+          <tr><td>Williams Residence</td><td>Master Suite</td><td>$19,500</td><td>Jun 14</td><td><span class="badge bgr">Drafting</span></td><td><button class="btn btn-o btn-sm">Send</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ai-bub" id="proposal-intel" style="display:none"></div>
+  </div>
+</div>
+
+<!-- INVOICES -->
+<div class="page" id="page-invoices">
+  <div class="ph">
+    <div><div class="ptitle">💳 Invoices</div></div>
+    <div class="pacts">
+      <button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-p">+ New Invoice</button>
+    </div>
+  </div>
+  <div class="sgrid">
+    <div class="sc"><div class="sl">Outstanding</div><div class="sv">$24,800</div><div class="sd down">3 invoices</div></div>
+    <div class="sc"><div class="sl">Paid This Month</div><div class="sv">$18,400</div><div class="sd">✅ 5 paid</div></div>
+    <div class="sc"><div class="sl">Overdue</div><div class="sv">$6,200</div><div class="sd down">1 invoice</div></div>
+  </div>
+  <div class="card">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Invoice#</th><th>Client</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>INV-2041</td><td>Morandi Residence</td><td>$9,500</td><td>Jun 20</td><td><span class="badge ba">⏳ Sent</span></td></tr>
+          <tr><td>INV-2040</td><td>Peterson Office</td><td>$6,200</td><td>Jun 10</td><td><span class="badge br">⚠️ Overdue</span></td></tr>
+          <tr><td>INV-2039</td><td>Johnson Living</td><td>$3,125</td><td>Jun 25</td><td><span class="badge bgr">Drafting</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- COMPENSATION (role-gated) -->
+<div class="page" id="page-compensation">
+  <div class="ph">
+    <div><div class="ptitle">💰 Compensation</div><div class="psub">Designer commission and salary management</div></div>
+  </div>
+  <div style="background:#EEF2FF;border:1.5px solid var(--ca);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--cd);font-weight:600">
+    🔒 Role-gated — Owner/Admin full view · Designer sees own records only
+  </div>
+  <div class="sgrid">
+    <div class="sc"><div class="sl">Total Commissions</div><div class="sv">$4,820</div><div class="sd">This period</div></div>
+    <div class="sc"><div class="sl">Pending Approval</div><div class="sv">2</div></div>
+    <div class="sc"><div class="sl">Disputes</div><div class="sv">0</div><div class="sd">✅ Clean</div></div>
+  </div>
+  <div class="card">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Designer</th><th>Structure</th><th>Projects</th><th>Earned</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Emma Clarke</strong></td><td>15% design fee</td><td>3</td><td>$3,200</td>
+            <td><span class="badge ba">⏳ Pending</span></td>
+            <td><button class="btn btn-p btn-sm" onclick="if(currentRole==='owner'||currentRole==='admin')showToast('Approved')">✅ Approve</button></td></tr>
+          <tr><td><strong>Jake Rivera</strong></td><td>12% + $2K base</td><td>1</td><td>$1,620</td>
+            <td><span class="badge bg">✅ Approved</span></td>
+            <td><button class="btn btn-p btn-sm">Mark Paid</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CHECK REGISTER -->
+<div class="page" id="page-check-register">
+  <div class="ph">
+    <div><div class="ptitle">📄 Check Register</div><div class="psub">Write checks, print 3-per-page, full history</div></div>
+    <div class="pacts"><button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print Checks</button></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Write a Check</div></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Pay To</label><input class="fi" id="cr-payee" placeholder="Payee" oninput="updateCheck()"></div>
+      <div class="fg"><label class="fl">Amount ($)</label><input class="fi" id="cr-amount" type="number" placeholder="0.00" oninput="updateCheck()"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="cr-date" type="date"></div>
+      <div class="fg"><label class="fl">Memo</label><input class="fi" id="cr-memo" placeholder="Vendor / project" oninput="updateCheck()"></div>
+    </div>
+    <div class="cr-preview">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <div style="font-weight:700">SAIRNdesign LLC</div>
+        <div>Check #<span id="cr-num">1001</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <span>Pay to:</span>
+        <div style="border-bottom:1px solid #ccc;flex:1" id="cr-prev-payee">___________</div>
+        <div style="border:1px solid #ccc;padding:2px 10px;min-width:100px;font-weight:700" id="cr-prev-amount">$_____</div>
+      </div>
+      <div style="border-bottom:1px solid #ccc;margin-bottom:10px;color:#9CA3AF;font-size:12px" id="cr-prev-written">_____________________________ Dollars</div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF">
+        <span id="cr-prev-memo">Memo: _________________</span>
+        <span>Signature: ___________________</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-p" onclick="saveCheck()">💾 Save Check</button>
+      <button class="btn btn-o" onclick="window.print()">🖨️ Print 3-per-Page</button>
+      <button class="btn btn-o" onclick="syncAll()">🔗 Post to GL</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Check History</div></div>
+    <div id="cr-history">
+      <div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No checks yet</div><div class="empty-sub">Write your first check above</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="page-reports">
+  <div class="ph">
+    <div><div class="ptitle">📊 Reports</div></div>
+    <div class="pacts"><button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print</button></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Project Revenue Benchmarks</div></div>
+    <div id="report-ranges">
+      <div class="rng-wrap"><div class="rng-lbl"><span>Morandi Residence</span><span>72%</span></div><div class="rng-track"><div class="rng-fill" style="width:72%"></div></div></div>
+      <div class="rng-wrap"><div class="rng-lbl"><span>Peterson Office</span><span>90%</span></div><div class="rng-track"><div class="rng-fill" style="width:90%"></div></div></div>
+      <div class="rng-wrap"><div class="rng-lbl"><span>Johnson Living</span><span>40%</span></div><div class="rng-track"><div class="rng-fill" style="width:40%"></div></div></div>
+      <div class="rng-wrap"><div class="rng-lbl"><span>Rivera Pool House</span><span>15%</span></div><div class="rng-track"><div class="rng-fill" style="width:15%"></div></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Business Summary</div></div>
+    <div class="ai-bub">
+      Revenue trend: ↑22% month-over-month. Top project type: Full interior residential.
+      Average close time: 18 days from proposal to signed agreement.
+      Recommendation: Follow up on Rivera Pool House (12 days since proposal — high close probability).
+    </div>
+    <button class="btn btn-p btn-sm" style="margin-top:12px" onclick="runReportIntel()">🤖 Deep Analysis</button>
+    <div class="ai-bub" id="report-intel" style="display:none"></div>
+  </div>
+</div>
+
+<!-- DOC SCAN -->
+<div class="page" id="page-doc-scan">
+  <div class="ph">
+    <div><div class="ptitle">📄 Document Scanner</div><div class="psub">Photo any document — Claude identifies and extracts everything</div></div>
+  </div>
+  <div class="card">
+    <div class="upzone" onclick="document.getElementById('doc-file').click()">
+      <div style="font-size:36px;margin-bottom:10px">📄</div>
+      <div style="font-size:14px;font-weight:600;color:var(--g600)">Tap to photograph any document</div>
+      <div style="font-size:12px;color:var(--g400);margin-top:4px">Invoice · Contract · Proposal · PO · Any paper</div>
+      <input type="file" id="doc-file" accept="image/*,application/pdf" capture="environment"
+             style="display:none" onchange="scanDoc(this)">
+    </div>
+    <div id="doc-result" style="display:none;margin-top:14px">
+      <div class="ai-bub" id="doc-out"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-p btn-sm" onclick="window.print()">🖨️ Print</button>
+        <button class="btn btn-o btn-sm" onclick="saveDoc()">💾 Save</button>
+        <button class="btn btn-o btn-sm" onclick="document.getElementById('doc-file').click()">📷 Scan Another</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAIRN SUITE -->
+<div class="page" id="page-sairn-suite">
+  <div class="ph">
+    <div><div class="ptitle">🔗 SAIRN Suite</div><div class="psub">All connected apps for your design business</div></div>
+  </div>
+  <div class="suite-wrap">
+    <div class="suite-hdr">
+      <div class="suite-logo">S</div>
+      <div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">Connected apps</div></div>
+      <div class="suite-live">● Live</div>
+    </div>
+    <div class="suite-grid" id="sd-suite-grid2"></div>
+    <div class="suite-btns">
+      <button class="suite-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="suite-btn out">📊 CSV Export</button>
+      <span style="font-size:12px;color:#94A3B8;align-self:center" id="sd-last-sync2">Last sync: --</span>
+    </div>
+  </div>
+</div>
+
+<!-- SAIRNBIZ -->
+<div class="page" id="page-sairnbiz-connector">
+  <div class="ph"><div><div class="ptitle">🏢 SAIRNbiz Connector</div></div></div>
+  <div class="sbiz">
+    <div class="sbiz-hdr">
+      <div class="sbiz-logo">SB</div>
+      <div><div class="sbiz-title">SAIRNbiz — HR + Accounting</div></div>
+      <div style="margin-left:auto;font-size:12px;font-weight:700;color:var(--green)">● Connected</div>
+    </div>
+    <div class="sbiz-btns">
+      <button class="sbiz-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="sbiz-btn out">👤 Sync HR</button>
+      <button class="sbiz-btn out">💳 Sync GL</button>
+      <button class="sbiz-btn out">📊 CSV Export</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PRICING -->
+<div class="page" id="page-admin-pricing">
+  <div class="ph">
+    <div><div class="ptitle">⚙️ Admin & Pricing</div><div class="psub">Your rates — Field Quote uses these for every estimate</div></div>
+    <div class="pacts"><button class="btn btn-p" onclick="savePricing()">💾 Save All</button></div>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:14px">Design Rates</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Design Hourly Rate ($/hr)</label><input class="fi" id="r-hourly" value="150" type="number"></div>
+      <div class="fg"><label class="fl">Project Management ($/hr)</label><input class="fi" id="r-pm" value="120" type="number"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">FF&E Markup %</label><input class="fi" id="r-markup" value="30" type="number"></div>
+      <div class="fg"><label class="fl">Design Fee % (of project)</label><input class="fi" id="r-fee-pct" value="15" type="number"></div>
+    </div>
+    <div class="ct" style="margin:16px 0 12px">Unit Pricing</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Full Interior ($/SF)</label><input class="fi" id="u-full" value="18" type="number"></div>
+      <div class="fg"><label class="fl">Kitchen Design (flat)</label><input class="fi" id="u-kitchen" value="4500" type="number"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Bathroom Design (flat)</label><input class="fi" id="u-bath" value="2800" type="number"></div>
+      <div class="fg"><label class="fl">Commercial ($/SF)</label><input class="fi" id="u-commercial" value="12" type="number"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Moodboard/Concept (flat)</label><input class="fi" id="u-mood" value="800" type="number"></div>
+      <div class="fg"><label class="fl">Outdoor Living (flat)</label><input class="fi" id="u-outdoor" value="3500" type="number"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Profit Margin %</label><input class="fi" id="r-profit" value="25" type="number"></div>
+      <div class="fg"><label class="fl">Quote Valid (days)</label><input class="fi" id="r-qdays" value="30" type="number"></div>
+    </div>
+    <button class="btn btn-p" onclick="savePricing()" style="margin-top:8px">💾 Save Pricing</button>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:14px">PIN Management</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Owner PIN</label><input class="fi" type="password" maxlength="4" value="1234" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">Designer PIN</label><input class="fi" type="password" maxlength="4" value="2345" inputmode="numeric"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Sales Rep PIN</label><input class="fi" type="password" maxlength="4" value="3456" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">Client View PIN</label><input class="fi" type="password" maxlength="4" value="4567" inputmode="numeric"></div>
+    </div>
+    <button class="btn btn-p btn-sm">Save PINs</button>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+<!-- SAIRNscan ref -->
+<div id="sairnscan-ref" style="display:none" data-sairnscan="true" data-version="1.0" data-sha="dda09816"></div>
+
 <script>
-// SAIRNstore.js -- Persistent localStorage layer for all SAIRN B2B apps
-// Injected into every app. Auto-saves and auto-loads all data tables.
-// Michael L. Dibert -- SAIRN Technologies, LLC
+// ============================================================
+// SAIRNdesign — Full JavaScript
+// Proxy: https://sairn.vercel.app/api/claude
+// NEVER api.anthropic.com
+// app_id: 'sairndesign' | is_demo: true
+// No Unicode box chars in JS
+// ============================================================
+const APP_ID   = 'sairndesign';
+const PROXY    = 'https://sairn.vercel.app/api/claude';
+const BRIDGE   = 'https://sairn.vercel.app/api/bridge';
 
-var SAIRNstore = (function() {
+let currentRole = 'owner';
+let fqTrade     = 'full-interior';
+let fqImg64     = null;
+let fqConvo     = [];
+let fqQuoteTxt  = '';
+let sigDrawing  = false;
+let sigCtx      = null;
+let crNum       = parseInt(localStorage.getItem('sd_cr_num') || '1001');
 
-  // ── CORE STORE ──────────────────────────────────────────────
-  function getKey(appId, table) {
-    return 'sairn:' + appId + ':' + table;
+const PINS = { owner:'1234', admin:'2345', sales:'3456', viewer:'4567' };
+const ROLES = { owner:'Owner', admin:'Designer', sales:'Sales Rep', viewer:'Client View' };
+const INITS = { owner:'OW', admin:'DS', sales:'SR', viewer:'CV' };
+
+const SUITE_APPS = [
+  { id:'sairnbiz',   name:'SAIRNbiz',   icon:'SB', color:'#14B8A6', desc:'HR & Payroll' },
+  { id:'stonedesk',  name:'StoneDesk',  icon:'SD', color:'#16C762', desc:'Surfaces' },
+  { id:'sairnbuild', name:'SAIRNbuild', icon:'SB', color:'#F59E0B', desc:'GC Projects' },
+  { id:'sairnscape', name:'SAIRNscape', icon:'SS', color:'#22C55E', desc:'Exterior' },
+  { id:'sairnvet',   name:'SAIRNvet',   icon:'SV', color:'#7C3AED', desc:'Vet Clinics' },
+  { id:'sairncare',  name:'SAIRNcare',  icon:'SC', color:'#0D9488', desc:'Care Homes' },
+  { id:'sairnfuneral',name:'SAIRNfuneral',icon:'SF',color:'#6B7280',desc:'Funeral Homes'},
+];
+
+// ---- AUTH ----
+function selRole(btn) {
+  document.querySelectorAll('.rb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentRole = btn.dataset.role;
+}
+function doLogin() {
+  const pin = document.getElementById('pin-in').value;
+  const stored = JSON.parse(localStorage.getItem('sd_pins') || JSON.stringify(PINS));
+  if (stored[currentRole] !== pin) {
+    const e = document.getElementById('lerr'); e.style.display='block';
+    document.getElementById('pin-in').value='';
+    setTimeout(() => e.style.display='none', 3000); return;
   }
-
-  function save(appId, table, rows) {
-    try {
-      localStorage.setItem(getKey(appId, table), JSON.stringify({
-        rows: rows,
-        ts: Date.now()
-      }));
-      return true;
-    } catch(e) {
-      console.warn('SAIRNstore save error:', e);
-      return false;
-    }
-  }
-
-  function load(appId, table) {
-    try {
-      var raw = localStorage.getItem(getKey(appId, table));
-      if (!raw) return null;
-      var parsed = JSON.parse(raw);
-      return parsed.rows || null;
-    } catch(e) {
-      return null;
-    }
-  }
-
-  function clear(appId, table) {
-    try {
-      localStorage.removeItem(getKey(appId, table));
-    } catch(e) {}
-  }
-
-  function clearAll(appId) {
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      var keys = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) keys.push(k);
-      }
-      keys.forEach(function(k) { localStorage.removeItem(k); });
-    } catch(e) {}
-  }
-
-  // ── TABLE SERIALIZER ────────────────────────────────────────
-  // Reads a <tbody> and converts it to an array of row-data objects
-  function tableToRows(tbody) {
-    var rows = [];
-    if (!tbody) return rows;
-    tbody.querySelectorAll('tr').forEach(function(tr) {
-      var cells = [];
-      tr.querySelectorAll('td').forEach(function(td) {
-        cells.push(td.innerHTML);
-      });
-      if (cells.length > 0) rows.push(cells);
-    });
-    return rows;
-  }
-
-  // Restores rows into a <tbody>
-  function rowsToTable(tbody, rows) {
-    if (!tbody || !rows || rows.length === 0) return;
-    // Keep header row if it's a th-only row
-    var existingRows = tbody.querySelectorAll('tr');
-    // Clear non-header rows
-    existingRows.forEach(function(tr) {
-      if (!tr.querySelector('th')) tr.remove();
-    });
-    rows.forEach(function(cells) {
-      var tr = document.createElement('tr');
-      cells.forEach(function(html) {
-        var td = document.createElement('td');
-        td.innerHTML = html;
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('tavtr').textContent = INITS[currentRole];
+  document.getElementById('trole').textContent = ROLES[currentRole];
+  initSig(); loadPricing(); renderSuite(); loadLastSync();
+  showPage('dashboard');
+  // Populate dashboard range bars
+  const rb = document.getElementById('proj-ranges');
+  if (rb) {
+    rb.innerHTML = '';
+    [['Morandi Residence',72],['Peterson Office',90],['Johnson Living',40],['Rivera Pool',15]].forEach(([n,v]) => {
+      rb.innerHTML += '<div class="rng-wrap"><div class="rng-lbl"><span>'+n+'</span><span>'+v+'%</span></div>'
+        +'<div class="rng-track"><div class="rng-fill" style="width:'+v+'%"></div></div></div>';
     });
   }
+  // Restore check history
+  const checks = JSON.parse(localStorage.getItem('sd_checks') || '[]');
+  if (checks.length) renderCR(checks);
+  // Set date on check register
+  const dateEl = document.getElementById('cr-date');
+  if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+}
 
-  // ── AUTO-WATCH: patch all buttons that add rows ─────────────
-  function watchTable(appId, tableId) {
-    var tbl = document.getElementById(tableId);
-    if (!tbl) return;
-    var tbody = tbl.querySelector('tbody');
-    if (!tbody) return;
+// ---- NAV ----
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('page-'+id);
+  if (pg) pg.classList.add('active');
+  const nav = document.querySelector('[onclick="showPage(\''+id+'\')"]');
+  if (nav) nav.classList.add('active');
+  document.getElementById('main').scrollTop = 0;
+}
+function openFQ() { showPage('field-quote'); fqStep(1); }
 
-    // Load saved data
-    var saved = load(appId, tableId);
-    if (saved) rowsToTable(tbody, saved);
-
-    // Observe changes and auto-save
-    var observer = new MutationObserver(function() {
-      var rows = tableToRows(tbody);
-      if (rows.length > 0) save(appId, tableId, rows);
-    });
-    observer.observe(tbody, { childList: true, subtree: true, characterData: true });
+// ---- FIELD QUOTE ----
+function fqStep(s) {
+  for (let i=1;i<=5;i++) {
+    const p=document.getElementById('fq-p'+i);
+    const st=document.getElementById('fqs-'+i);
+    if(p) p.style.display=(i===s)?'block':'none';
+    if(st){st.classList.remove('active','done');if(i<s)st.classList.add('done');else if(i===s)st.classList.add('active');}
   }
-
-  // ── FORM PERSISTENCE ────────────────────────────────────────
-  function saveForm(formId, appId) {
-    var form = document.getElementById(formId);
-    if (!form) return;
-    var data = {};
-    form.querySelectorAll('input, select, textarea').forEach(function(el) {
-      if (el.name || el.id) data[el.id || el.name] = el.value;
-    });
-    save(appId, 'form:' + formId, [data]);
-  }
-
-  function loadForm(formId, appId) {
-    var saved = load(appId, 'form:' + formId);
-    if (!saved || !saved[0]) return;
-    var data = saved[0];
-    var form = document.getElementById(formId);
-    if (!form) return;
-    Object.keys(data).forEach(function(id) {
-      var el = form.querySelector('#' + id) || form.querySelector('[name="' + id + '"]');
-      if (el) el.value = data[id];
-    });
-  }
-
-  // ── FORMULA EDITOR PERSISTENCE ──────────────────────────────
-  function saveFormulas(appId) {
-    var formulas = {};
-    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
-      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
-      var key = lbl ? lbl.textContent.trim() : inp.id || Math.random();
-      formulas[key] = inp.value;
-    });
-    save(appId, 'formulas', [formulas]);
-    return formulas;
-  }
-
-  function loadFormulas(appId) {
-    var saved = load(appId, 'formulas');
-    if (!saved || !saved[0]) return;
-    var formulas = saved[0];
-    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
-      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
-      var key = lbl ? lbl.textContent.trim() : null;
-      if (key && formulas[key] !== undefined) inp.value = formulas[key];
-    });
-  }
-
-  // ── MODAL FORM → TABLE INJECTION ────────────────────────────
-  // When a modal save button is clicked, harvest its form fields
-  // and inject a new row into the target table
-  function hookModalSave(btnSelector, targetTableId, appId, rowBuilder) {
-    document.querySelectorAll(btnSelector).forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var modal = btn.closest('.modal');
-        if (!modal) return;
-        var inputs = {};
-        modal.querySelectorAll('input, select, textarea').forEach(function(el) {
-          var lbl = el.closest('.fg') ? el.closest('.fg').querySelector('label') : null;
-          var key = lbl ? lbl.textContent.trim() : el.id || el.name;
-          inputs[key] = el.value;
-        });
-        var tbl = document.getElementById(targetTableId);
-        if (!tbl) return;
-        var tbody = tbl.querySelector('tbody');
-        if (!tbody) return;
-        var row = rowBuilder(inputs);
-        if (row) {
-          var tr = document.createElement('tr');
-          row.forEach(function(cell) {
-            var td = document.createElement('td');
-            td.innerHTML = cell;
-            tr.appendChild(td);
-          });
-          tbody.insertBefore(tr, tbody.firstChild);
-          var rows = tableToRows(tbody);
-          save(appId, targetTableId, rows);
-        }
-      });
-    });
-  }
-
-  // ── EXPORT ALL ──────────────────────────────────────────────
-  function exportAll(appId) {
-    var all = {};
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) {
-          all[k.replace(prefix, '')] = JSON.parse(localStorage.getItem(k));
-        }
-      }
-    } catch(e) {}
-    return all;
-  }
-
-  // ── STORAGE STATS ───────────────────────────────────────────
-  function stats(appId) {
-    var count = 0, bytes = 0;
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) {
-          count++;
-          bytes += (localStorage.getItem(k) || '').length;
-        }
-      }
-    } catch(e) {}
-    return { tables: count, bytes: bytes, kb: (bytes / 1024).toFixed(1) };
-  }
-
-  // ── AI CONVERSATION HISTORY ─────────────────────────────────
-  function saveAIHistory(appId, history) {
-    save(appId, '_ai_history', history.slice(-20));
-  }
-
-  function loadAIHistory(appId) {
-    return load(appId, '_ai_history') || [];
-  }
-
-  return {
-    save: save,
-    load: load,
-    clear: clear,
-    clearAll: clearAll,
-    watchTable: watchTable,
-    saveForm: saveForm,
-    loadForm: loadForm,
-    saveFormulas: saveFormulas,
-    loadFormulas: loadFormulas,
-    hookModalSave: hookModalSave,
-    exportAll: exportAll,
-    stats: stats,
-    saveAIHistory: saveAIHistory,
-    loadAIHistory: loadAIHistory
+  if(s===5) initSig();
+}
+function selTrade(chip) {
+  document.querySelectorAll('#fq-chips .badge').forEach(c => { c.style.background=''; c.className='badge bgr'; c.style.cursor='pointer'; c.style.padding='7px 14px'; c.style.fontSize='13px'; });
+  chip.className='badge ba'; chip.style.cursor='pointer'; chip.style.padding='7px 14px'; chip.style.fontSize='13px';
+  fqTrade = chip.dataset.trade;
+}
+function fqHandleFile(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    fqImg64=e.target.result.split(',')[1];
+    const prev=document.getElementById('fq-prev');
+    const img=document.getElementById('fq-img');
+    if(prev) prev.style.display='block';
+    if(img) img.src=e.target.result;
+    const btn=document.getElementById('fq-analyze-btn');
+    if(btn) btn.disabled=false;
+    const lbl=document.getElementById('fq-upload-lbl');
+    if(lbl) lbl.innerHTML='<strong>Drawing captured</strong> -- tap analyze to continue';
   };
-})();
+  reader.readAsDataURL(file);
+}
+async function fqAnalyze() {
+  fqStep(3);
+  const el=document.getElementById('fq-ai');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Reading your drawing...';
+  const pricing=getPricing();
+  const client=document.getElementById('fq-client')?.value||'Client';
+  const sys=`You are the SAIRNdesign Field Sales Intelligence Engine.
+A design rep is with a client and photographed a sketch or room.
+Scope: ${fqTrade} | Client: ${client}
+COMPANY PRICING: ${JSON.stringify(pricing)}
+Read the drawing carefully. Tell the rep what you see.
+Ask MAXIMUM 3 questions. Never ask what you can determine from the drawing.
+The client is watching -- be fast and professional.`;
+  const msgs=[{role:'user',content:fqImg64
+    ?[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:fqImg64}},{type:'text',text:'Analyze for '+fqTrade+' design quote. Max 3 questions.'}]
+    :'I need a '+fqTrade+' design quote. Ask max 3 questions then price it.'}];
+  fqConvo=[...msgs];
+  try {
+    const r=await callClaude(sys,msgs);
+    el.textContent=r;
+    fqConvo.push({role:'assistant',content:r});
+    const w=document.getElementById('fq-ans-wrap');
+    if(w) w.style.display='block';
+  } catch(e) { el.textContent='Connection failed. Check internet and try again.'; }
+}
+async function fqGenQuote() {
+  const ans=document.getElementById('fq-answers')?.value?.trim();
+  if(!ans){showToast('Please answer the questions first');return;}
+  fqConvo.push({role:'user',content:ans+'\n\nNow generate the full design quote.'});
+  const el=document.getElementById('fq-ai');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Generating quote...';
+  const pricing=getPricing();
+  const sys=`You are the SAIRNdesign Field Sales Intelligence Engine.
+Generate a complete professional interior design quote using EXACTLY these rates: ${JSON.stringify(pricing)}
+Format: itemized scope, design phases, FF&E allowances, labor hours, total Low/Mid/High.
+Include: what is included, what is NOT included, quote valid 30 days, signature line.
+Plain ASCII only -- no Unicode box characters.`;
+  try {
+    const r=await callClaude(sys,fqConvo);
+    fqQuoteTxt=r;
+    fqStep(4);
+    const out=document.getElementById('fq-quote-out');
+    if(out) out.textContent=r;
+    const mid=r.match(/Mid[:\s]+\$?([\d,]+)/i);
+    if(mid){const m=parseInt(mid[1].replace(/,/g,''));const d=document.getElementById('fq-deposit');if(d)d.value='$'+Math.round(m*.33).toLocaleString();}
+  } catch(e){el.textContent='Quote generation failed. Check connection.';}
+}
+function fqShare(){if(navigator.share)navigator.share({title:'SAIRNdesign Quote',text:fqQuoteTxt}).catch(()=>{});else{navigator.clipboard.writeText(fqQuoteTxt);showToast('Quote copied!');}}
+function saveQuote(){
+  const q=JSON.parse(localStorage.getItem('sd_quotes')||'[]');
+  q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});
+  localStorage.setItem('sd_quotes',JSON.stringify(q));showToast('Quote saved');
+}
+function fqClose(){saveQuote();showToast('Signed quote saved');fqStep(1);fqImg64=null;fqConvo=[];fqQuoteTxt='';const ta=document.getElementById('fq-answers');if(ta)ta.value='';clearSig();}
+function sendDeposit(){
+  const amt=document.getElementById('fq-deposit')?.value||'';
+  const txt='Your SAIRNdesign project deposit of '+amt+' is ready to secure your project on our schedule.';
+  if(navigator.share)navigator.share({title:'Design Deposit',text:txt});
+  else{navigator.clipboard.writeText(txt);showToast('Deposit text copied!');}
+}
 
+// ---- SIGNATURE ----
+function initSig(){
+  const canvas=document.getElementById('sd-sig-canvas');
+  if(!canvas||sigCtx) return;
+  sigCtx=canvas.getContext('2d');
+  sigCtx.strokeStyle='#1F2937';sigCtx.lineWidth=2;sigCtx.lineCap='round';
+  const gp=(e,t)=>{const r=canvas.getBoundingClientRect();return t?{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}:{x:e.clientX-r.left,y:e.clientY-r.top};};
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();sigDrawing=true;const p=gp(e,1);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!sigDrawing)return;const p=gp(e,1);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();},{passive:false});
+  canvas.addEventListener('touchend',()=>sigDrawing=false);
+  canvas.addEventListener('mousedown',e=>{sigDrawing=true;const p=gp(e,0);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);});
+  canvas.addEventListener('mousemove',e=>{if(!sigDrawing)return;const p=gp(e,0);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();});
+  canvas.addEventListener('mouseup',()=>sigDrawing=false);
+}
+function clearSig(){if(sigCtx)sigCtx.clearRect(0,0,500,110);}
+
+// ---- CHECK REGISTER ----
+function updateCheck(){
+  const payee=document.getElementById('cr-payee')?.value||'';
+  const amount=parseFloat(document.getElementById('cr-amount')?.value||0);
+  const memo=document.getElementById('cr-memo')?.value||'';
+  const pp=document.getElementById('cr-prev-payee');const pa=document.getElementById('cr-prev-amount');
+  const pw=document.getElementById('cr-prev-written');const pm=document.getElementById('cr-prev-memo');
+  if(pp) pp.textContent=payee||'___________';
+  if(pa) pa.textContent=amount?'$'+amount.toLocaleString('en-US',{minimumFractionDigits:2}):'$_____';
+  if(pw) pw.textContent=amount?numWords(amount)+' Dollars':'_____________________________ Dollars';
+  if(pm) pm.textContent=memo?'Memo: '+memo:'Memo: _________________';
+}
+function numWords(n){
+  const o=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const t=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const d=Math.floor(n),c=Math.round((n-d)*100);let w='';
+  if(d>=1000)w+=o[Math.floor(d/1000)]+' Thousand ';
+  if(d%1000>=100)w+=o[Math.floor((d%1000)/100)]+' Hundred ';
+  const r=d%100;if(r>=20)w+=t[Math.floor(r/10)]+(r%10?' '+o[r%10]:'');else if(r>0)w+=o[r];
+  if(c>0)w+=' and '+c+'/100';return w.trim();
+}
+function saveCheck(){
+  const entry={num:crNum++,date:document.getElementById('cr-date')?.value||new Date().toLocaleDateString(),
+    payee:document.getElementById('cr-payee')?.value||'',
+    amount:document.getElementById('cr-amount')?.value||'0',
+    memo:document.getElementById('cr-memo')?.value||''};
+  const checks=JSON.parse(localStorage.getItem('sd_checks')||'[]');
+  checks.unshift(entry);
+  localStorage.setItem('sd_checks',JSON.stringify(checks));
+  localStorage.setItem('sd_cr_num',crNum);
+  renderCR(checks);
+  const numEl=document.getElementById('cr-num');if(numEl)numEl.textContent=crNum;
+  showToast('Check #'+entry.num+' saved');
+}
+function renderCR(checks){
+  const h=document.getElementById('cr-history');if(!h)return;
+  if(!checks||!checks.length){h.innerHTML='<div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No checks yet</div></div>';return;}
+  h.innerHTML='<div class="tw"><table><thead><tr><th>Check#</th><th>Date</th><th>Payee</th><th>Amount</th><th>Memo</th></tr></thead><tbody>'
+    +checks.slice(0,20).map(c=>'<tr><td>'+c.num+'</td><td>'+c.date+'</td><td>'+c.payee+'</td><td style="text-align:right">$'+parseFloat(c.amount||0).toLocaleString()+'</td><td>'+c.memo+'</td></tr>').join('')
+    +'</tbody></table></div>';
+}
+
+// ---- PRICING ----
+const DEFAULT_PRICING={company:'SAIRNdesign',laborRates:{hourly:150,pm:120},materialMarkup:.30,profitPercent:.25,quoteValidDays:30,minimumJob:500,depositPct:.33,
+  unitPricing:{full_interior:18,kitchen:4500,bath:2800,commercial:12,moodboard:800,outdoor:3500}};
+function getPricing(){try{return JSON.parse(localStorage.getItem('sd_pricing'))||DEFAULT_PRICING;}catch(e){return DEFAULT_PRICING;}}
+function savePricing(){
+  const p={...getPricing(),
+    laborRates:{hourly:parseFloat(document.getElementById('r-hourly')?.value||150),pm:parseFloat(document.getElementById('r-pm')?.value||120)},
+    materialMarkup:(parseFloat(document.getElementById('r-markup')?.value||30))/100,
+    profitPercent:(parseFloat(document.getElementById('r-profit')?.value||25))/100,
+    quoteValidDays:parseInt(document.getElementById('r-qdays')?.value||30),
+    unitPricing:{full_interior:parseFloat(document.getElementById('u-full')?.value||18),kitchen:parseFloat(document.getElementById('u-kitchen')?.value||4500),bath:parseFloat(document.getElementById('u-bath')?.value||2800),commercial:parseFloat(document.getElementById('u-commercial')?.value||12),moodboard:parseFloat(document.getElementById('u-mood')?.value||800),outdoor:parseFloat(document.getElementById('u-outdoor')?.value||3500)}
+  };
+  localStorage.setItem('sd_pricing',JSON.stringify(p));showToast('Pricing saved -- Field Quote will use your rates');
+}
+function loadPricing(){
+  const p=getPricing();
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+  s('r-hourly',p.laborRates?.hourly||150);s('r-pm',p.laborRates?.pm||120);
+  s('r-markup',Math.round((p.materialMarkup||.3)*100));s('r-profit',Math.round((p.profitPercent||.25)*100));
+  s('r-qdays',p.quoteValidDays||30);
+}
+
+// ---- SUITE ----
+function renderSuite(){
+  ['sd-suite-grid','sd-suite-grid2'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML=SUITE_APPS.map(a=>'<div class="suite-tile" onclick="showToast(\'Opening \'+\''+a.name+'\')">'
+      +'<div class="suite-icon" style="background:'+a.color+'">'+a.icon+'</div>'
+      +'<div class="suite-tname">'+a.name+'</div><div class="suite-tdesc">'+a.desc+'</div></div>').join('');
+  });
+}
+async function syncAll(){
+  showToast('Syncing all connected apps...');
+  try{
+    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({from:APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})});
+    const ts=new Date().toLocaleTimeString();
+    document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);
+    try{localStorage.setItem('sd_last_sync',ts);}catch(e){}
+    showToast('All apps synced');
+  }catch(e){showToast('Bridge offline -- will retry');}
+}
+function loadLastSync(){
+  try{const ts=localStorage.getItem('sd_last_sync');if(ts)document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);}catch(e){}
+}
+function exportCSV(){showToast('CSV exported');}
+
+// ---- CLAUDE API ----
+async function callClaude(system,messages){
+  const res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:APP_ID,is_demo:true,system,messages})});
+  if(!res.ok) throw new Error('Claude error '+res.status);
+  const data=await res.json();
+  return data.content?.[0]?.text||'';
+}
+
+// ---- AI FEATURES ----
+async function runIntel(){
+  const el=document.getElementById('intel-out');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing projects...';
+  try{
+    const r=await callClaude('You are the SAIRNdesign Intelligence Engine. Analyze this design business and identify: overdue client actions, upcoming deadlines, revenue opportunities, and flags. Be specific and actionable. Plain ASCII only.',
+      [{role:'user',content:'Active projects: Morandi (72% complete, tile approval overdue), Peterson (90%, final walkthrough scheduled), Johnson (40%, sofa fabric pending), Rivera (15%, proposal pending 12 days). Revenue: $18.4K this month, $84K pipeline. Generate an intelligence brief.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis unavailable. Check connection.';}
+}
+async function genMoodboard(){
+  const el=document.getElementById('mb-intel');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Generating concept...';
+  try{
+    const r=await callClaude('You are a world-class interior designer. Generate a rich design concept description including: color palette, materials, textures, key pieces, lighting concept, and mood. Be specific and inspiring. 3-4 sentences.',
+      [{role:'user',content:'Generate a design concept for: Morandi Residence Master Bathroom. Client wants: warm, organic, spa-like. Budget: $45,000 for the bathroom.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Generation unavailable.';}
+}
+async function analyzeFinishes(){
+  const el=document.getElementById('finish-intel');
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing finish selections...';
+  try{
+    const r=await callClaude('You are a world-class interior design critic and finish expert. Review this finish schedule and identify: any material conflicts, maintenance concerns, budget flags, or suggestions for improvement.',
+      [{role:'user',content:'Finish schedule: Travertine floor (12x24 polished), White stacked wall tile (3x12), Aged brass fixtures (Waterworks Henry), White Dove paint on vanity. Client requested a revision on the vanity paint color. What are your recommendations?'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis unavailable.';}
+}
+async function aiSourceSuggestions(){
+  const el=document.getElementById('source-intel');
+  const out=document.getElementById('source-out');
+  el.style.display='block';
+  out.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Generating sourcing suggestions...';
+  try{
+    const r=await callClaude('You are a luxury interior design sourcing expert. Suggest 3-5 specific vendors and product options with pricing ranges for the described project.',
+      [{role:'user',content:'Project: Morandi Residence pool house. Style: organic modern coastal. Budget: $45,000 FF&E. Needs: outdoor sofa, dining table, lounge chairs, lighting, rugs.'}]);
+    out.textContent=r;
+  }catch(e){out.textContent='Suggestions unavailable.';}
+}
+async function followUp(client){
+  showToast('Claude writing follow-up for '+client+'...');
+  try{
+    const r=await callClaude('Write a professional yet warm client follow-up email for an interior design proposal. Brief, 3 sentences, not pushy. Sign as "The SAIRNdesign Team".',
+      [{role:'user',content:'Client: '+client+'. Proposal sent 12 days ago for $45,000 pool house project. No response yet.'}]);
+    if(navigator.share)navigator.share({title:'Follow-up Draft',text:r}).catch(()=>{});
+    else{navigator.clipboard.writeText(r);showToast('Follow-up copied to clipboard!');}
+  }catch(e){showToast('Draft failed -- check connection');}
+}
+async function runReportIntel(){
+  const el=document.getElementById('report-intel');
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Running deep analysis...';
+  try{
+    const r=await callClaude('You are a business intelligence analyst for an interior design firm. Analyze these metrics and provide: top 3 insights, 1 risk, and 3 specific action recommendations for this month.',
+      [{role:'user',content:'Revenue: $18.4K this month (+22%). Pipeline: $84K. Active projects: 4. Avg project: $28K. Close time: 18 days. Pending proposals: 3 (one 12 days old). Overdue invoice: $6.2K.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis unavailable.';}
+}
+
+// ---- DOC SCANNER ----
+async function scanDoc(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const b64=e.target.result.split(',')[1];
+    const el=document.getElementById('doc-out');
+    const res=document.getElementById('doc-result');
+    res.style.display='block';
+    el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Claude is reading this document...';
+    try{
+      const r=await callClaude(`You are the SAIRN Document Intelligence Engine for SAIRNdesign.
+A document has been photographed. Your job:
+1. IDENTIFY: What specific document type is this? (invoice/contract/proposal/PO/receipt/permit/insurance cert/W9/etc)
+2. EXTRACT: Every field -- names, dates, amounts, reference numbers, vendor/client info
+3. APP ROUTE: Which SAIRN app handles this? (SAIRNdesign/SAIRNbiz/SAIRNlaw/StoneDesk/etc)
+4. FLAG: Missing signatures, expired dates, math errors, incomplete fields
+5. ACTION: Exactly what to do with this document
+
+Format clearly with section headers. Plain ASCII only.`,
+        [{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:'Scan and analyze this document.'}]}]);
+      el.textContent=r;
+    }catch(e){el.textContent='Scan failed. Check connection and try again.';}
+  };
+  reader.readAsDataURL(file);
+}
+function saveDoc(){
+  showToast('Document saved to project file');
+}
+
+// ---- TOAST ----
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.style.opacity='0',3000);
+}
+
+// ---- INIT ----
+document.addEventListener('DOMContentLoaded',()=>{
+  const dateEl=document.getElementById('cr-date');
+  if(dateEl)dateEl.value=new Date().toISOString().split('T')[0];
+  const pinEl=document.getElementById('pin-in');
+  if(pinEl)pinEl.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+});
 </script>
-</body></html>
+
+</body>
+</html>
