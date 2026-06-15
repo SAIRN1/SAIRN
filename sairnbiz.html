@@ -270,7 +270,7 @@ textarea{resize:vertical;min-height:72px;}
 .modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;}
 .ai-quick-btn{background:var(--teal-light);border:1px solid var(--teal-mid);color:var(--teal-dark);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer;margin:0 4px 4px 0;}
 .ai-msg.thinking{color:var(--muted);font-style:italic;}
-@media print{#login-screen,.topbar,.sidebar,#ai-panel,.toolbar,.modal-overlay,.toast{display:none!important;}.main-content{padding:0;}body{background:#fff;}}
+@media print{#login-screen,.topbar,.sidebar,#ai-panel,.toolbar,.modal-overlay,.toast{display:none!important;}body{background:#fff;}.main-content{padding:0;}body.printing-stubs .main-content{display:none!important;}body.printing-stubs #sairn-stub-print-root{display:block!important;}#sairn-stub-print-root{display:none;}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}}
 @media(max-width:768px){.sidebar{display:none;}.form-grid,.two-col{grid-template-columns:1fr;}.kpi-grid{grid-template-columns:1fr 1fr;}#ai-panel{width:100%;}}
 
 </style>
@@ -2730,49 +2730,30 @@ function doPrintStubs() {
   var stubs = _stubData.filter(function(e){ return checked.indexOf(e.name) >= 0; });
   if (stubs.length === 0) { showToast('Select at least one employee.'); return; }
 
-  // Build stub HTML with page breaks between each employee
   var stubsHTML = stubs.map(function(e, idx) {
-    var br = idx < stubs.length - 1 ? 'page-break-after:always;' : '';
-    return '<div style="' + br + 'page-break-inside:avoid;padding:20px 0;">' + buildStubHTML(e, co) + '</div>';
+    var pb = idx < stubs.length - 1 ? 'style="page-break-after:always;"' : '';
+    return '<div ' + pb + '>' + buildStubHTML(e, co) + '</div>';
   }).join('');
 
-  // Create a dedicated print div, inject into body, hide everything else, print, remove
+  var old = document.getElementById('sairn-stub-print-root');
+  if (old) old.parentNode.removeChild(old);
+
   var printDiv = document.createElement('div');
   printDiv.id = 'sairn-stub-print-root';
   printDiv.innerHTML = stubsHTML;
-  printDiv.style.cssText = 'display:none;';
   document.body.appendChild(printDiv);
 
-  // Inject print-only style: hide entire body, show only our div
-  var styleEl = document.createElement('style');
-  styleEl.id = 'sairn-stub-print-style';
-  styleEl.innerHTML = [
-    '@media print {',
-    '  body > *:not(#sairn-stub-print-root) { display: none !important; }',
-    '  #sairn-stub-print-root { display: block !important; }',
-    '  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }',
-    '  @page { size: letter; margin: 0.5in; }',
-    '}'
-  ].join('\n');
-  document.head.appendChild(styleEl);
-
-  // Show our div for printing
-  printDiv.style.display = 'block';
-
-  // Close the modal so it doesnt interfere
   closeModal('m-pay-stubs');
+  document.body.classList.add('printing-stubs');
 
-  // Small delay then print
   setTimeout(function() {
     window.print();
-    // Clean up after print dialog closes
     setTimeout(function() {
+      document.body.classList.remove('printing-stubs');
       var pd = document.getElementById('sairn-stub-print-root');
-      var ps = document.getElementById('sairn-stub-print-style');
       if (pd) pd.parentNode.removeChild(pd);
-      if (ps) ps.parentNode.removeChild(ps);
-    }, 2000);
-  }, 200);
+    }, 1500);
+  }, 150);
 }
 
 // === EMAIL PAY STUBS ===
