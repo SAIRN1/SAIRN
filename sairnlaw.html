@@ -216,7 +216,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.qu
 
 var SAIRNstore = (function() {
 
-  // ── CORE STORE ──────────────────────────────────────────────
+  // -- CORE STORE ----------------------------------------------
   function getKey(appId, table) {
     return 'sairn:' + appId + ':' + table;
   }
@@ -263,7 +263,7 @@ var SAIRNstore = (function() {
     } catch(e) {}
   }
 
-  // ── TABLE SERIALIZER ────────────────────────────────────────
+  // -- TABLE SERIALIZER ----------------------------------------
   // Reads a <tbody> and converts it to an array of row-data objects
   function tableToRows(tbody) {
     var rows = [];
@@ -298,7 +298,7 @@ var SAIRNstore = (function() {
     });
   }
 
-  // ── AUTO-WATCH: patch all buttons that add rows ─────────────
+  // -- AUTO-WATCH: patch all buttons that add rows -------------
   function watchTable(appId, tableId) {
     var tbl = document.getElementById(tableId);
     if (!tbl) return;
@@ -317,7 +317,7 @@ var SAIRNstore = (function() {
     observer.observe(tbody, { childList: true, subtree: true, characterData: true });
   }
 
-  // ── FORM PERSISTENCE ────────────────────────────────────────
+  // -- FORM PERSISTENCE ----------------------------------------
   function saveForm(formId, appId) {
     var form = document.getElementById(formId);
     if (!form) return;
@@ -340,7 +340,7 @@ var SAIRNstore = (function() {
     });
   }
 
-  // ── FORMULA EDITOR PERSISTENCE ──────────────────────────────
+  // -- FORMULA EDITOR PERSISTENCE ------------------------------
   function saveFormulas(appId) {
     var formulas = {};
     document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
@@ -363,7 +363,7 @@ var SAIRNstore = (function() {
     });
   }
 
-  // ── MODAL FORM → TABLE INJECTION ────────────────────────────
+  // -- MODAL FORM → TABLE INJECTION ----------------------------
   // When a modal save button is clicked, harvest its form fields
   // and inject a new row into the target table
   function hookModalSave(btnSelector, targetTableId, appId, rowBuilder) {
@@ -397,7 +397,7 @@ var SAIRNstore = (function() {
     });
   }
 
-  // ── EXPORT ALL ──────────────────────────────────────────────
+  // -- EXPORT ALL ----------------------------------------------
   function exportAll(appId) {
     var all = {};
     try {
@@ -412,7 +412,7 @@ var SAIRNstore = (function() {
     return all;
   }
 
-  // ── STORAGE STATS ───────────────────────────────────────────
+  // -- STORAGE STATS -------------------------------------------
   function stats(appId) {
     var count = 0, bytes = 0;
     try {
@@ -428,7 +428,7 @@ var SAIRNstore = (function() {
     return { tables: count, bytes: bytes, kb: (bytes / 1024).toFixed(1) };
   }
 
-  // ── AI CONVERSATION HISTORY ─────────────────────────────────
+  // -- AI CONVERSATION HISTORY ---------------------------------
   function saveAIHistory(appId, history) {
     save(appId, '_ai_history', history.slice(-20));
   }
@@ -481,6 +481,126 @@ function nav(p) {
   _origNav(p);
   if (p === 'formula') { setTimeout(loadLicenseKeyDisplay, 50); }
 }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// === SAIRNLAW SUPABASE + AI MEMORY ENGINE ===
+// Pattern: Business Profile + AI Memory + cross-device sync (mirrors SAIRNbiz)
+const SAIRNLAW_SUPABASE_URL = 'https://ejrlrrkvhtllxbbypdjb.supabase.co';
+const SAIRNLAW_SUPABASE_KEY = 'sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
+let _sairnlawSupa = null;
+
+function getSairnlawSupabase() {
+  if (!_sairnlawSupa && typeof supabase !== 'undefined') {
+    _sairnlawSupa = supabase.createClient(SAIRNLAW_SUPABASE_URL, SAIRNLAW_SUPABASE_KEY);
+  }
+  return _sairnlawSupa;
+}
+
+let _sairnlawBizProfile = null;
+let _sairnlawMemories = [];
+
+function loadSairnlawProfile() {
+  try {
+    const raw = localStorage.getItem('sairnlaw:business_profile');
+    if (raw) _sairnlawBizProfile = JSON.parse(raw);
+  } catch(e) {}
+  syncSairnlawProfileFromSupabase();
+}
+
+async function syncSairnlawProfileFromSupabase() {
+  const sb = getSairnlawSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('sairn_license_key_sairnlaw') || '';
+  if (!licKey) return;
+  try {
+    const { data, error } = await sb.from('business_profiles').select('*').eq('license_key', licKey).single();
+    if (!error && data) {
+      _sairnlawBizProfile = data;
+      localStorage.setItem('sairnlaw:business_profile', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+function loadSairnlawMemories() {
+  try {
+    const raw = localStorage.getItem('sairnlaw:ai_memories');
+    if (raw) _sairnlawMemories = JSON.parse(raw);
+  } catch(e) {}
+  syncSairnlawMemoriesFromSupabase();
+}
+
+async function syncSairnlawMemoriesFromSupabase() {
+  const sb = getSairnlawSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('sairn_license_key_sairnlaw') || '';
+  if (!licKey) return;
+  try {
+    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (!prof) return;
+    const { data, error } = await sb.from('ai_memories').select('*').eq('shop_id', prof.shop_id).order('created_at', { ascending: false }).limit(10);
+    if (!error && data) {
+      _sairnlawMemories = data;
+      localStorage.setItem('sairnlaw:ai_memories', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+async function writeSairnlawMemory(history) {
+  const sb = getSairnlawSupabase();
+  const licKey = localStorage.getItem('sairn_license_key_sairnlaw') || '';
+  if (!sb || !licKey || !history || history.length < 4) return;
+  try {
+    const summaryRes = await fetch('https://sairn.vercel.app/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id: 'sairnlaw',
+        is_demo: true,
+        system: 'Summarize the key business insight from this conversation in one sentence (max 120 chars).',
+        messages: history.slice(-8),
+        max_tokens: 150
+      })
+    });
+    const sd = await summaryRes.json();
+    const memText = sd.content && sd.content[0] ? sd.content[0].text : null;
+    if (!memText) return;
+    const mem = { memory_text: memText, source: 'sairnlaw', created_at: new Date().toISOString() };
+    _sairnlawMemories.unshift(mem);
+    if (_sairnlawMemories.length > 20) _sairnlawMemories = _sairnlawMemories.slice(0, 20);
+    localStorage.setItem('sairnlaw:ai_memories', JSON.stringify(_sairnlawMemories));
+    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (prof) await sb.from('ai_memories').insert({ ...mem, shop_id: prof.shop_id });
+  } catch(e) {}
+}
+
+function buildSairnlawSystemPrompt() {
+  const base = 'You are the AI for SAIRNlaw, a law firm practice management platform. You know about matter management, billable hours, IOLTA trust accounting, conflict checks, docket management, ABA billing guidelines, client intake, fee agreements, and legal practice operations. Be specific, data-driven, and actionable.';
+  const p = _sairnlawBizProfile;
+  let profileBlock = '';
+  if (p && p.company_name) {
+    profileBlock = '\n\nBUSINESS PROFILE:\n' +
+      'Company: ' + p.company_name + '\n' +
+      (p.ein ? 'EIN: ' + p.ein + '\n' : '') +
+      'City: ' + (p.city || 'Westlake') + ', Ohio\n' +
+      'Headcount: ' + (p.headcount || 1) + ' employees\n' +
+      (p.revenue_range ? 'Revenue: ' + (p.revenue_range+'').replace(/_/g,' ') + '\n' : '') +
+      (p.preferences && p.preferences.owner_name ? 'Owner: ' + p.preferences.owner_name + '\n' : '') +
+      (p.preferences && p.preferences.ai_notes ? 'Notes: ' + p.preferences.ai_notes + '\n' : '');
+  }
+  let memBlock = '';
+  if (_sairnlawMemories && _sairnlawMemories.length > 0) {
+    memBlock = '\n\nWHAT YOU KNOW (from past sessions):\n' +
+      _sairnlawMemories.slice(0, 10).map(function(m, i) { return (i+1) + '. ' + m.memory_text; }).join('\n');
+  }
+  return base + profileBlock + memBlock;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadSairnlawProfile();
+  loadSairnlawMemories();
+});
 </script>
 </body>
 </html>
