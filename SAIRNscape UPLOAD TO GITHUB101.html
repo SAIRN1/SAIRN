@@ -2112,5 +2112,125 @@ window.onload = function() {
   calcTeeRate();
 };
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// === SAIRNSCAPE SUPABASE + AI MEMORY ENGINE ===
+// Pattern: Business Profile + AI Memory + cross-device sync (mirrors SAIRNbiz)
+const SAIRNSCAPE_SUPABASE_URL = 'https://ejrlrrkvhtllxbbypdjb.supabase.co';
+const SAIRNSCAPE_SUPABASE_KEY = 'sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
+let _sairnscapeSupa = null;
+
+function getSairnscapeSupabase() {
+  if (!_sairnscapeSupa && typeof supabase !== 'undefined') {
+    _sairnscapeSupa = supabase.createClient(SAIRNSCAPE_SUPABASE_URL, SAIRNSCAPE_SUPABASE_KEY);
+  }
+  return _sairnscapeSupa;
+}
+
+let _sairnscapeBizProfile = null;
+let _sairnscapeMemories = [];
+
+function loadSairnscapeProfile() {
+  try {
+    const raw = localStorage.getItem('sairnscape:business_profile');
+    if (raw) _sairnscapeBizProfile = JSON.parse(raw);
+  } catch(e) {}
+  syncSairnscapeProfileFromSupabase();
+}
+
+async function syncSairnscapeProfileFromSupabase() {
+  const sb = getSairnscapeSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('sairn_license_key_sairnscape') || '';
+  if (!licKey) return;
+  try {
+    const { data, error } = await sb.from('business_profiles').select('*').eq('license_key', licKey).single();
+    if (!error && data) {
+      _sairnscapeBizProfile = data;
+      localStorage.setItem('sairnscape:business_profile', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+function loadSairnscapeMemories() {
+  try {
+    const raw = localStorage.getItem('sairnscape:ai_memories');
+    if (raw) _sairnscapeMemories = JSON.parse(raw);
+  } catch(e) {}
+  syncSairnscapeMemoriesFromSupabase();
+}
+
+async function syncSairnscapeMemoriesFromSupabase() {
+  const sb = getSairnscapeSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('sairn_license_key_sairnscape') || '';
+  if (!licKey) return;
+  try {
+    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (!prof) return;
+    const { data, error } = await sb.from('ai_memories').select('*').eq('shop_id', prof.shop_id).order('created_at', { ascending: false }).limit(10);
+    if (!error && data) {
+      _sairnscapeMemories = data;
+      localStorage.setItem('sairnscape:ai_memories', JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+async function writeSairnscapeMemory(history) {
+  const sb = getSairnscapeSupabase();
+  const licKey = localStorage.getItem('sairn_license_key_sairnscape') || '';
+  if (!sb || !licKey || !history || history.length < 4) return;
+  try {
+    const summaryRes = await fetch('https://sairn.vercel.app/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id: 'sairnscape',
+        is_demo: true,
+        system: 'Summarize the key business insight from this conversation in one sentence (max 120 chars).',
+        messages: history.slice(-8),
+        max_tokens: 150
+      })
+    });
+    const sd = await summaryRes.json();
+    const memText = sd.content && sd.content[0] ? sd.content[0].text : null;
+    if (!memText) return;
+    const mem = { memory_text: memText, source: 'sairnscape', created_at: new Date().toISOString() };
+    _sairnscapeMemories.unshift(mem);
+    if (_sairnscapeMemories.length > 20) _sairnscapeMemories = _sairnscapeMemories.slice(0, 20);
+    localStorage.setItem('sairnscape:ai_memories', JSON.stringify(_sairnscapeMemories));
+    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (prof) await sb.from('ai_memories').insert({ ...mem, shop_id: prof.shop_id });
+  } catch(e) {}
+}
+
+function buildSairnscapeSystemPrompt() {
+  const base = 'You are SAIRNscape AI, a world-class advisor for lawn care, landscaping, irrigation, tree service, snow removal, golf course management, pest control, and outdoor operations companies. You help green industry businesses optimize routes, crews, equipment, seasonal pricing, and profitability. Be specific, practical, and data-driven.';
+  const p = _sairnscapeBizProfile;
+  let profileBlock = '';
+  if (p && p.company_name) {
+    profileBlock = '\n\nBUSINESS PROFILE:\n' +
+      'Company: ' + p.company_name + '\n' +
+      (p.ein ? 'EIN: ' + p.ein + '\n' : '') +
+      'City: ' + (p.city || 'Westlake') + ', Ohio\n' +
+      'Headcount: ' + (p.headcount || 1) + ' employees\n' +
+      (p.revenue_range ? 'Revenue: ' + (p.revenue_range+'').replace(/_/g,' ') + '\n' : '') +
+      (p.preferences && p.preferences.owner_name ? 'Owner: ' + p.preferences.owner_name + '\n' : '') +
+      (p.preferences && p.preferences.ai_notes ? 'Notes: ' + p.preferences.ai_notes + '\n' : '');
+  }
+  let memBlock = '';
+  if (_sairnscapeMemories && _sairnscapeMemories.length > 0) {
+    memBlock = '\n\nWHAT YOU KNOW (from past sessions):\n' +
+      _sairnscapeMemories.slice(0, 10).map(function(m, i) { return (i+1) + '. ' + m.memory_text; }).join('\n');
+  }
+  return base + profileBlock + memBlock;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadSairnscapeProfile();
+  loadSairnscapeMemories();
+});
+</script>
 </body>
 </html>
