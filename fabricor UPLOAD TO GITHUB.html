@@ -3515,7 +3515,7 @@ function tmHandleFiles(files){
         var isImg=['png','jpg','jpeg'].includes(ext);
         var item=document.createElement('div');
         item.style.cssText='display:flex;align-items:center;padding:8px 12px;background:var(--surface-2);border-radius:8px;margin-bottom:6px;font-size:12px;border:1px solid var(--border)';
-        item.innerHTML=(isImg&&ev.target.result?'<img src="'+ev.target.result+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px;margin-right:8px">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px;margin-right:8px">'+(icons[ext]||'FILE')+'</span>')+'<div><div style="font-weight:700;color:var(--navy)">'+escHtml(file.name)+'</div><div style="color:var(--muted)">'+(file.size/1024/1024).toFixed(2)+' MB</div></div>';
+        item.innerHTML=(isImg&&ev.target.result?'<img src="'+ev.target.result+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px;margin-right:8px" loading="lazy">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px;margin-right:8px">'+(icons[ext]||'FILE')+'</span>')+'<div><div style="font-weight:700;color:var(--navy)">'+escHtml(file.name)+'</div><div style="color:var(--muted)">'+(file.size/1024/1024).toFixed(2)+' MB</div></div>';
         listEl.appendChild(item);
         var pending={name:file.name,size:file.size,ext:ext,b64:ev.target.result};
         tmPendingFiles.push(pending);
@@ -3640,7 +3640,7 @@ function tmViewDetail(id){
     var iconMap={dxf:'DXF',dwg:'DWG',pdf:'PDF',zip:'ZIP'};
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-2);border-radius:8px;margin-bottom:6px;border:1px solid var(--border)">'+
       '<div style="display:flex;align-items:center;gap:8px">'+
-        (isImg&&f.b64?'<img src="'+f.b64+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px">'+(iconMap[f.ext]||'FILE')+'</span>')+
+        (isImg&&f.b64?'<img src="'+f.b64+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px" loading="lazy">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px">'+(iconMap[f.ext]||'FILE')+'</span>')+
         '<div><div style="font-size:13px;font-weight:700;color:var(--navy)">'+escHtml(f.name)+'</div><div style="font-size:11px;color:var(--muted)">'+(f.size?(f.size/1024/1024).toFixed(2)+' MB':'')+' '+f.ext.toUpperCase()+'</div></div>'+
       '</div>'+
       (f.b64?'<a href="'+f.b64+'" download="'+escHtml(f.name)+'" style="padding:5px 12px;background:var(--a);color:#fff;border-radius:7px;font-size:11px;font-weight:600;text-decoration:none">&#11015; Download</a>':'<span style="font-size:11px;color:var(--muted)">No data</span>')+
@@ -3724,7 +3724,7 @@ async function doLogin(){
   errEl.textContent='';
   if(!email||!password){errEl.textContent='Please enter email and password';return;}
   try{
-    const res=await fetch(RAILWAY+'/api/auth/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const res=await fetch(RAILWAY+'/api/auth/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,email,password})});
     const data=await res.json();
     if(!res.ok){errEl.textContent=data.error||'Login failed';return;}
     currentUser=data.user;
@@ -3748,7 +3748,7 @@ async function doRegister(){
   if(!sn||!name||!email||!password){errEl.textContent='All fields required';return;}
   if(password.length<8){errEl.textContent='Password must be 8+ characters';return;}
   try{
-    const res=await fetch(RAILWAY+'/api/auth/register',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,name,shopName:sn})});
+    const res=await fetch(RAILWAY+'/api/auth/register',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,email,password,name,shopName:sn})});
     const data=await res.json();
     if(!res.ok){errEl.textContent=data.error||'Registration failed';return;}
     currentUser=data.user;
@@ -3770,7 +3770,7 @@ var edgeAssignments = {};
 // == RAILWAY DB SYNC ===========================================
 async function dbSaveQuoteHistory(){
   if(!currentUser) return;
-  try{ await fetch(RAILWAY+'/api/quote-history',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({history:quoteHistory})}); }catch(e){}
+  try{ await fetch(RAILWAY+'/api/quote-history',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,history:quoteHistory})}); }catch(e){}
 }
 async function dbLoadQuoteHistory(){
   if(!currentUser) return;
@@ -3787,7 +3787,7 @@ async function dbSaveSettings(){
     shopPhone:localStorage.getItem('fab_shop_phone')||'',
     shopAddr:localStorage.getItem('fab_shop_addr')||''
   };
-  try{ await fetch(RAILWAY+'/api/shop-settings',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({settings})}); }catch(e){}
+  try{ await fetch(RAILWAY+'/api/shop-settings',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,settings})}); }catch(e){}
 }
 async function dbLoadSettings(){
   if(!currentUser) return;
@@ -3806,7 +3806,7 @@ async function dbLoadSettings(){
 }
 async function dbSaveBizData(data){
   if(!currentUser) return;
-  try{ await fetch(RAILWAY+'/api/biz-data',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({data})}); }catch(e){}
+  try{ await fetch(RAILWAY+'/api/biz-data',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,data})}); }catch(e){}
 }
 async function dbLoadBizData(){
   if(!currentUser) return;
@@ -3967,7 +3967,7 @@ async function sendMessage() {
       }),
     });
     const data = await res.json();
-    const reply = data.content && data.content[0] ? data.content[0].text : 'I encountered an error. Please try again.';
+    const reply = data.content && data.content[0] ? data.content?.[0]?.text || '' : 'I encountered an error. Please try again.';
     typingDiv.remove();
     addMessage('assistant', reply);
     chatHistory.push({ role:'assistant', content: reply });
@@ -4685,9 +4685,9 @@ async function getAIDrawingAdvice() {
   sugText.textContent='Analyzing your job...';
 
   try {
-    const res=await fetch(SAIRN_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_tokens:800,system:SYSTEM,messages:[{role:'user',content:prompt}],app_id:APP_ID,is_demo:true})});
+    const res=await fetch(SAIRN_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,max_tokens:800,system:SYSTEM,messages:[{role:'user',content:prompt}],app_id:APP_ID,is_demo:true})});
     const data=await res.json();
-    const reply=data.content&&data.content[0]?data.content[0].text:'Could not get AI advice. Try again.';
+    const reply=data.content&&data.content[0]?data.content?.[0]?.text || '':'Could not get AI advice. Try again.';
     sugText.innerHTML=reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
   } catch(e) {
     sugText.textContent='Connection error. Please try again.';
@@ -4993,7 +4993,7 @@ console.log('StoneDesk Patch v1.1 loaded — all 18 panels verified and fixed');
              style="display:none" onchange="sairnFQHandleFile(this)">
     </div>
     <div id="sairn-fq-preview" style="display:none;margin-bottom:12px">
-      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB">
+      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB" loading="lazy">
       <div style="font-size:13px;color:#16A34A;font-weight:600;margin-top:6px">✅ Drawing captured</div>
     </div>
     <div style="display:flex;gap:9px">
@@ -6104,7 +6104,7 @@ window.analyzeDocument = async function() {
     var res = await fetch(SAIRN_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify({app_id:"stonedesk",is_demo:true,
         max_tokens: 1500,
         system: cfg.system,
         messages: [{ role: 'user', content: userContent }],
@@ -6113,7 +6113,7 @@ window.analyzeDocument = async function() {
       }),
     });
     var data = await res.json();
-    var reply = data.content && data.content[0] ? data.content[0].text : 'Document analysis failed.';
+    var reply = data.content && data.content[0] ? data.content?.[0]?.text || '' : 'Document analysis failed.';
 
     // Close modal and send to chat
     closeDocModal();
@@ -6275,7 +6275,7 @@ async function generateFollowUps(aiResponse) {
     var res = await fetch(SAIRN_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify({app_id:"stonedesk",is_demo:true,
         max_tokens: 800,
         system: 'You generate follow-up questions. Return ONLY a JSON array of exactly 3 strings. No markdown, no explanation.',
         messages: [{ role: 'user', content: prompt }],
@@ -6285,7 +6285,7 @@ async function generateFollowUps(aiResponse) {
     });
 
     var data = await res.json();
-    var rawText = data.content && data.content[0] ? data.content[0].text.trim() : '[]';
+    var rawText = data.content && data.content[0] ? data.content?.[0]?.text || ''.trim() : '[]';
 
     // Parse JSON safely
     var questions = [];
@@ -6517,7 +6517,7 @@ async function buildSessionSummary() {
       }),
     });
     var data = await res.json();
-    var summary = data.content && data.content[0] ? data.content[0].text.trim() : '';
+    var summary = data.content && data.content[0] ? data.content?.[0]?.text || ''.trim() : '';
     if (summary && summary.length > 20) {
       _sessionSummary = summary;
       localStorage.setItem(APP_KEY, summary);
@@ -6949,7 +6949,7 @@ async function requestRewrite(prompt, btnEl) {
     var res = await fetch(SAIRN_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify({app_id:"stonedesk",is_demo:true,
         max_tokens: 1000,
         system: 'You are a helpful AI assistant. Respond to the user\'s request directly and completely.',
         messages: (typeof messages !== 'undefined' ? messages.slice(-6) : []).concat([{ role: 'user', content: prompt }]),
@@ -6958,7 +6958,7 @@ async function requestRewrite(prompt, btnEl) {
       }),
     });
     var data = await res.json();
-    var reply = data.content && data.content[0] ? data.content[0].text : '';
+    var reply = data.content && data.content[0] ? data.content?.[0]?.text || '' : '';
     if (reply) {
       if (typeof addMsg === 'function') addMsg('ai', reply);
       if (typeof messages !== 'undefined') {
@@ -7284,7 +7284,7 @@ function detectRelevantCells(text) {
 }
 
 function sendHandoff(cell, context) {
-  sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({
+  sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({app_id:"stonedesk",is_demo:true,
     situation: context.slice(0, 1000),
     fromApp: window.location.pathname,
     timestamp: Date.now(),
@@ -7472,7 +7472,7 @@ window.runComparison = async function() {
     var res = await fetch('https://sairn.vercel.app/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify({app_id:"stonedesk",is_demo:true,
         max_tokens: 1200,
         system: 'You are an expert comparison analyst. When comparing two options, be direct. Give a clear recommendation. Back it up with specific reasoning. Do not be neutral for the sake of being neutral — the user needs a real answer.',
         messages: [{ role: 'user', content: prompt }],
@@ -7480,7 +7480,7 @@ window.runComparison = async function() {
       }),
     });
     var data = await res.json();
-    var reply = data.content && data.content[0] ? data.content[0].text : 'Comparison failed.';
+    var reply = data.content && data.content[0] ? data.content?.[0]?.text || '' : 'Comparison failed.';
     if (resultEl) resultEl.innerHTML = '<div style="font-size:13px;color:rgba(240,240,255,0.85);line-height:1.8">' + reply.replace(/\*\*(.*?)\*\*/g,'<strong style="color:#F0F0FF">$1</strong>').replace(/\n/g,'<br>') + '</div>';
     if (typeof messages !== 'undefined') {
       messages.push({ role: 'user', content: prompt });
@@ -7901,7 +7901,7 @@ function installStreamingHook() {
       } else {
         // Non-streaming fallback — parse JSON response
         var data = await response.json();
-        fullText = data.content && data.content[0] ? data.content[0].text : '';
+        fullText = data.content && data.content[0] ? data.content?.[0]?.text || '' : '';
         // Simulate streaming character by character for visual effect
         if (fullText) {
           for (var ci = 0; ci < fullText.length; ci += 4) {
@@ -8672,7 +8672,7 @@ window._saircSmartFetch = async function(url, opts, retryCount) {
         var clone = response.clone();
         var data = await clone.json();
         if (data.content && data.content[0]) {
-          var cache = { text: data.content[0].text, ts: Date.now() };
+          var cache = { text: data.content?.[0]?.text || '', ts: Date.now() };
           localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
         }
       } catch(e) {}
@@ -9300,7 +9300,7 @@ modal.innerHTML =
   '<div id="scam-camera-section">' +
   '<div id="scam-viewfinder"><video id="scam-video" autoplay playsinline muted></video></div>' +
   '<canvas id="scam-canvas"></canvas>' +
-  '<img id="scam-preview" alt="Captured image">' +
+  '<img id="scam-preview" alt="Captured image" loading="lazy">' +
   '<div class="scam-controls">' +
   '<button class="scam-btn scam-capture" id="scam-capture-btn" onclick="capturePhoto()">📷 Take Photo</button>' +
   '<button class="scam-btn scam-retake" id="scam-retake-btn" onclick="retakePhoto()" style="display:none">↩ Retake</button>' +
@@ -9313,7 +9313,7 @@ modal.innerHTML =
   '<div style="font-size:14px;font-weight:600;color:#F0F0FF;margin-bottom:6px">Tap to select an image</div>' +
   '<div style="font-size:12px;color:rgba(240,240,255,0.4)">JPG, PNG, GIF, WebP — max 10MB</div>' +
   '</div>' +
-  '<img id="scam-upload-preview" alt="Uploaded image" style="max-width:100%;border-radius:12px;display:none;margin-bottom:14px;border:2px solid ' + APP_COLOR + '">' +
+  '<img id="scam-upload-preview" alt="Uploaded image" style="max-width:100%;border-radius:12px;display:none;margin-bottom:14px;border:2px solid ' + APP_COLOR + '" loading="lazy">' +
   '</div>' +
   '<div style="width:100%;max-width:480px">' +
   '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.35);margin-bottom:8px">What do you want to know?</div>' +
@@ -9456,7 +9456,7 @@ window.analyzeImage = async function() {
     var res = await fetch('https://sairn.vercel.app/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify({app_id:"stonedesk",is_demo:true,
         max_tokens: 1200,
         system: window.SYSTEM || 'You are a helpful AI assistant. Analyze the provided image carefully and answer the question thoroughly.',
         messages: [{
@@ -9472,7 +9472,7 @@ window.analyzeImage = async function() {
     });
 
     var data = await res.json();
-    var reply = data.content && data.content[0] ? data.content[0].text : 'Image analysis failed.';
+    var reply = data.content && data.content[0] ? data.content?.[0]?.text || '' : 'Image analysis failed.';
 
     closeCamera();
 
@@ -9988,7 +9988,7 @@ function renderPhotos() {
   const catLabels = {template:'Template',material:'Material',fabrication:'Fab',install:'Install',final:'Final',damage:'Damage'};
   grid.innerHTML = photos.map(p =>
     '<div class="photo-thumb">' +
-    '<img src="' + p.data + '" alt="' + escHtml(p.name) + '" onclick="photoLightbox(\'' + p.id + '\')" style="cursor:pointer">' +
+    '<img src="' + p.data + '" alt="' + escHtml(p.name) + '" onclick="photoLightbox(\'' + p.id + '\')" style="cursor:pointer" loading="lazy">' +
     '<button class="photo-thumb-del" onclick="photoDelete(\'' + p.id + '\')">×</button>' +
     '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);padding:3px 6px;font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
       '<span style="background:rgba(255,255,255,0.15);border-radius:3px;padding:0 4px">' + (catLabels[p.cat]||p.cat) + '</span> ' + escHtml(p.job) +
@@ -10002,7 +10002,7 @@ function photoLightbox(id) {
   if (!p) return;
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99000;display:flex;align-items:center;justify-content:center;cursor:pointer';
-  overlay.innerHTML = '<img src="' + p.data + '" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.5)">' +
+  overlay.innerHTML = '<img src="' + p.data + '" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.5)" loading="lazy">' +
     '<div style="position:absolute;top:20px;right:20px;color:#fff;font-size:28px;cursor:pointer">×</div>' +
     '<div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px">' + escHtml(p.job) + ' · ' + escHtml(p.name) + '</div>';
   overlay.onclick = () => document.body.removeChild(overlay);
@@ -10165,7 +10165,7 @@ function sendAlertEmail(subject, level) {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     credentials: 'include',
-    body: JSON.stringify({
+    body: JSON.stringify({app_id:"stonedesk",is_demo:true,
       to: sdAlertSettings.email,
       subject: '🔔 StoneDesk Alert: ' + subject,
       html: '<div style="font-family:Arial,sans-serif;padding:24px"><h2 style="color:' + color + '">StoneDesk™ Alert</h2><p style="font-size:15px">' + subject + '</p><p style="font-size:12px;color:#666">Sent from StoneDesk™ — SAIRN Technologies™</p></div>'
@@ -10179,7 +10179,7 @@ function sendAlertSMS(message) {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     credentials: 'include',
-    body: JSON.stringify({ to: sdAlertSettings.phone, message: 'StoneDesk Alert: ' + message })
+    body: JSON.stringify({app_id:"stonedesk",is_demo:true, to: sdAlertSettings.phone, message: 'StoneDesk Alert: ' + message })
   }).catch(() => {});
 }
 
@@ -11558,7 +11558,7 @@ async function syncToSAIRNBridge() {
     await fetch('https://sairn.vercel.app/api/bridge', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({app: APP_ID || 'sairnapp', is_demo: true,
+      body: JSON.stringify({app_id:"stonedesk",is_demo:true,app: APP_ID || 'sairnapp', is_demo: true,
         data: {timestamp: new Date().toISOString(), synced: true}})
     });
     notify('Synced to SAIRN Bridge', 'success');
@@ -11692,7 +11692,7 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
     {empName:'Derek Cho',date:daysAgo(1),clockIn:'9:00am',clockOut:'6:45pm',hours:9.75,project:'Dashboard v2'},
     {empName:'James Torres',date:daysAgo(2),clockIn:'7:45am',clockOut:'4:30pm',hours:8.75,project:'Q3 Sales Campaign'}
   ]));
-  localStorage.setItem('sairnhr_pulse', JSON.stringify({score:78,responses:4,date:daysAgo(7)}));
+  localStorage.setItem('sairnhr_pulse', JSON.stringify({app_id:"stonedesk",is_demo:true,score:78,responses:4,date:daysAgo(7)}));
 
   // ============================================================
   // SAIRNacc
@@ -11839,7 +11839,7 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
   // ============================================================
   // SAIRNcode
   // ============================================================
-  localStorage.setItem('sc_stats', JSON.stringify({
+  localStorage.setItem('sc_stats', JSON.stringify({app_id:"stonedesk",is_demo:true,
     queriesRun: 847,
     codesValidated: 2341,
     auditsCompleted: 124,
@@ -11923,7 +11923,7 @@ window.saDebounce = function(func, wait) {
 };
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script>
 // === STONEDESK SUPABASE + AI MEMORY ENGINE ===
 // Mirrors SAIRNbiz pattern — Business Profile + AI Memory + cross-device sync
@@ -12029,7 +12029,7 @@ async function writeSDMemory() {
       })
     });
     const sd = await summaryRes.json();
-    const memText = sd.content && sd.content[0] ? sd.content[0].text : null;
+    const memText = sd.content && sd.content[0] ? sd.content?.[0]?.text || '' : null;
     if (!memText) return;
     const mem = { memory_text: memText, source: 'stonedesk', created_at: new Date().toISOString() };
     _sdMemories.unshift(mem);
@@ -12117,7 +12117,7 @@ document.addEventListener('DOMContentLoaded', function() {
           })
         });
         const data = await res.json();
-        const reply = data.content && data.content[0] ? data.content[0].text : 'I encountered an error. Please try again.';
+        const reply = data.content && data.content[0] ? data.content?.[0]?.text || '' : 'I encountered an error. Please try again.';
         if (typingDiv) typingDiv.remove();
         if (typeof addMessage === 'function') addMessage('assistant', reply);
         if (typeof chatHistory !== 'undefined') {
