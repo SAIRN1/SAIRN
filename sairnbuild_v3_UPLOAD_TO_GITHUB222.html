@@ -32,7 +32,7 @@
   --green-light: #DCFCE7;
   --red:         #DC2626;
   --red-light:   #FEE2E2;
-  --blue-flag:   #2563EB;  /* only for SAIRNdesign link */
+  --sairndesign-ref: #6366F1; /* SAIRNdesign indigo for link tiles */
   --sidebar-w:   260px;
   --topbar-h:    64px;
   --radius:      10px;
@@ -1410,7 +1410,7 @@ tr:hover td { background: var(--amber-tint); }
         </div>
 
         <div id="fq-preview" style="display:none;margin-top:16px">
-          <img id="fq-preview-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--gray-200)">
+          <img id="fq-preview-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--gray-200)" loading="lazy">
           <div style="margin-top:8px;font-size:13px;color:var(--green);font-weight:600">
             ✅ Drawing captured — ready to analyze
           </div>
@@ -1600,7 +1600,7 @@ tr:hover td { background: var(--amber-tint); }
                  style="display:none" onchange="handleBPUpload(this,'photo')">
         </div>
         <div id="bp-photo-preview" style="display:none;margin-top:16px">
-          <img id="bp-photo-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--gray-200)">
+          <img id="bp-photo-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--gray-200)" loading="lazy">
           <button class="btn btn-primary" style="margin-top:12px" onclick="runBlueprintAnalysis('photo')">
             🤖 Analyze Blueprint →
           </button>
@@ -2928,7 +2928,7 @@ tr:hover td { background: var(--amber-tint); }
 
     <div class="card" style="border-top:4px solid #3B82F6;cursor:pointer;text-align:center">
       <div style="width:48px;height:48px;background:#3B82F6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;margin:0 auto 12px;">SC</div>
-      <div style="font-weight:700;color:#1D4ED8;">SAIRNscan</div>
+      <div style="font-weight:700;color:#4338CA;">SAIRNscan</div>
       <div style="font-size:12px;color:var(--gray-500);margin:4px 0 12px">LiDAR + Blueprint + Sketch AI</div>
       <span class="badge badge-green">● Embedded</span>
       <div style="margin-top:12px">
@@ -3887,7 +3887,7 @@ async function syncAllSuite() {
     await fetch(BRIDGE_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
+      body:    JSON.stringify({app_id:"sairnbuild",is_demo:true,
         from:      APP_ID,
         to:        'all',
         type:      'full-sync',
@@ -3976,6 +3976,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.style.display = 'none';
   });
 });
+
+// Geolocation weather (Pattern 12)
+function loadWeather() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    var lat = pos.coords.latitude, lon = pos.coords.longitude;
+    fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var cw = d.current_weather;
+        var icons = {0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',61:'🌧',71:'🌨',80:'🌦',95:'⛈'};
+        var goGo = cw.temperature > 32 && cw.temperature < 100 && cw.windspeed < 25;
+        var icon = icons[cw.weathercode] || '⛅';
+        var wxIcon = document.querySelector('.weather-icon,.weather-widget span');
+        var wxTemp = document.querySelector('.weather-temp');
+        var wxDesc = document.querySelector('.weather-desc');
+        var wxSts  = document.querySelector('.weather-alert,[class*="wx-status"]');
+        if(wxIcon) wxIcon.textContent = icon;
+        if(wxTemp) wxTemp.textContent = Math.round(cw.temperature)+'°F';
+        if(wxDesc) wxDesc.textContent = Math.round(cw.temperature)+'°F · Wind '+Math.round(cw.windspeed)+'mph';
+        if(wxSts){ wxSts.textContent = goGo ? '✅ Green Light' : '⚠️ Check Before Sending Crews'; wxSts.style.color = goGo ? '#16A34A' : '#D97706'; }
+      }).catch(function(){});
+  }, function(){});
+}
+document.addEventListener('DOMContentLoaded', function(){ loadWeather(); });
+
 </script>
 
 </body>
