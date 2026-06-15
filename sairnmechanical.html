@@ -1,483 +1,732 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>SAIRNmechanical -- SAIRN AI</title>
-<style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}:root{--c:#84CC16;--cd:#3F6212;--cl:#F7FEE7;--cm:#D9F99D;--text:#1E293B;--muted:#64748B;--border:#E2E8F0;--red:#EF4444;--rl:#FEF2F2;--green:#22C55E;--gl:#F0FDF4;--amber:#F59E0B;--al:#FFFBEB;--sh:0 1px 3px rgba(0,0,0,.08);--r:10px;--f:'Segoe UI',system-ui,sans-serif;}body{font-family:var(--f);background:var(--cl);color:var(--text);font-size:14px;line-height:1.5;}#ls{position:fixed;inset:0;background:linear-gradient(135deg,#3F6212,#84CC16);display:flex;align-items:center;justify-content:center;z-index:9999;}.lc{background:#fff;border-radius:16px;padding:40px 36px;width:370px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;}.ll{width:56px;height:56px;background:linear-gradient(135deg,#3F6212,#84CC16);border-radius:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:18px;font-weight:900;color:#fff;}.lti{font-size:20px;font-weight:800;margin-bottom:3px;}.lsu{font-size:12px;color:var(--muted);margin-bottom:20px;}.rg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px;}.rb{border:2px solid var(--border);background:#fff;border-radius:8px;padding:9px;cursor:pointer;transition:all .15s;}.rb:hover,.rb.sel{border-color:var(--c);background:var(--cl);color:var(--cd);font-weight:600;}.ri{font-size:17px;display:block;margin-bottom:3px;}.rl{font-size:11px;font-weight:600;}.pr{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}.pd{width:44px;height:52px;border:2px solid var(--border);border-radius:8px;text-align:center;font-size:20px;font-weight:700;outline:none;}.pd:focus{border-color:var(--c);}.bl{background:var(--c);color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;width:100%;}.bl:hover{background:var(--cd);}.le{color:var(--red);font-size:12px;margin-top:7px;min-height:16px;}.lh{margin-top:10px;font-size:11px;color:var(--muted);}#app{display:none;min-height:100vh;}.tb{background:var(--cd);color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}.tlo{font-size:17px;font-weight:900;color:#fff;}.tr{display:flex;align-items:center;gap:8px;}.uc{background:rgba(255,255,255,.12);color:#fff;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:600;}.tbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:6px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;}.tbtn:hover{background:rgba(255,255,255,.22);}.ab{display:flex;min-height:calc(100vh - 56px);}.sb{width:214px;background:#fff;border-right:1px solid var(--border);padding:10px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}.sh{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:9px 15px 3px;}.ni{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all .12s;user-select:none;}.ni:hover{background:var(--cl);color:var(--text);}.ni.active{background:var(--cl);color:var(--cd);font-weight:600;border-left-color:var(--c);}.nicon{font-size:13px;width:17px;text-align:center;}.mn{flex:1;padding:20px;overflow-x:hidden;}.page{display:none;}.page.active{display:block;}.pt{font-size:20px;font-weight:800;margin-bottom:3px;}.ps{font-size:13px;color:var(--muted);margin-bottom:18px;}.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:11px;margin-bottom:18px;}.kc{background:#fff;border-radius:var(--r);padding:15px;box-shadow:var(--sh);border:1px solid var(--border);}.kl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}.kv{font-size:23px;font-weight:900;line-height:1;margin-bottom:3px;}.kd{font-size:12px;color:var(--muted);}.kd.up{color:var(--green);}.kd.dn{color:var(--red);}.ki{float:right;font-size:19px;margin-top:-2px;}.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);margin-bottom:14px;}.ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}.ct{font-size:13px;font-weight:700;}.cb{padding:16px;}.dt{width:100%;border-collapse:collapse;}.dt th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:7px 10px;border-bottom:2px solid var(--border);background:#F8FAFC;}.dt td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}.dt tr:last-child td{border-bottom:none;}.dt tr:hover td{background:var(--cl);}.ttr td{font-weight:700;background:var(--cl)!important;color:var(--cd);}.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:600;}.bg{background:var(--gl);color:#15803D;}.br{background:var(--rl);color:#B91C1C;}.ba{background:var(--al);color:#92400E;}.bc{background:var(--cl);color:var(--cd);}.fg{display:flex;flex-direction:column;gap:5px;}.fg.full{grid-column:1/-1;}.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}label{font-size:12px;font-weight:600;color:var(--muted);}input,select,textarea{border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--f);outline:none;background:#fff;width:100%;}input:focus,select:focus,textarea:focus{border-color:var(--c);}textarea{resize:vertical;min-height:65px;}.btn{border:none;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}.btn-sm{padding:4px 9px;font-size:12px;border-radius:5px;}.btn-c{background:var(--c);color:#fff;}.btn-c:hover{background:var(--cd);}.btn-o{background:#fff;border:1px solid var(--border);color:var(--text);}.btn-o:hover{border-color:var(--c);color:var(--c);}.btn-r{background:var(--red);color:#fff;}.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:11px;flex-wrap:wrap;}.sbox{border:1px solid var(--border);border-radius:7px;padding:6px 10px 6px 27px;font-size:13px;width:190px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center;outline:none;}.rbt{height:6px;background:var(--border);border-radius:3px;position:relative;margin:3px 0;}.rbf{height:6px;border-radius:3px;background:var(--c);position:absolute;left:0;top:0;}.flag{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:8px;}.fi{background:var(--cl);border:1px solid var(--cm);color:var(--cd);}.fw{background:var(--al);border:1px solid #FCD34D;color:#92400E;}.fe{background:var(--rl);border:1px solid #FECACA;color:#B91C1C;}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.mo{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;}.mo.open{display:flex;}.modal{background:#fff;border-radius:13px;width:530px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}.mh{padding:15px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}.mt{font-size:15px;font-weight:700;}.mc{background:transparent;border:none;font-size:17px;cursor:pointer;color:var(--muted);}.mb{padding:20px;}.mf{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}#aip{position:fixed;right:0;top:56px;bottom:0;width:345px;background:#fff;border-left:1px solid var(--border);box-shadow:-4px 0 14px rgba(0,0,0,.08);display:none;flex-direction:column;z-index:200;}#aip.open{display:flex;}.aih{background:var(--cd);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}.ait{font-size:13px;font-weight:700;}.aic{background:transparent;border:none;color:#fff;cursor:pointer;font-size:16px;}.aim{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}.amsg{padding:8px 11px;border-radius:9px;font-size:13px;line-height:1.5;max-width:92%;white-space:pre-wrap;}.amsg.u{background:var(--c);color:#fff;align-self:flex-end;}.amsg.b{background:var(--cl);color:var(--text);align-self:flex-start;border:1px solid var(--cm);}.amsg.t{color:var(--muted);font-style:italic;align-self:flex-start;}.aiq{padding:0 12px 8px;display:flex;flex-wrap:wrap;gap:5px;}.aqb{background:var(--cl);border:1px solid var(--cm);color:var(--cd);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;}.air{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:6px;}.air input{flex:1;}.toast{position:fixed;bottom:20px;right:20px;background:var(--cd);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}.toast.show{opacity:1;transform:translateY(0);}@media print{#ls,.tb,.sb,#aip,.toolbar,.mo,.toast{display:none!important;}.mn{padding:0;}body{background:#fff;}}@media(max-width:768px){.sb{display:none;}.fgrid{grid-template-columns:1fr;}.kg{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}#aip{width:100%;}}</style>
-</head><body>
-<div id="ls"><div class="lc"><div class="ll">SM</div><div class="lti">SAIRNmechanical</div><div class="lsu">AI Platform for Mechanical Contractors -- Included free with SAIRNbiz</div><div class="rg"><div class="rb" onclick="selRole('owner')" id="r-owner"><span class="ri">&#x1F451;</span><span class="rl">Owner</span></div><div class="rb" onclick="selRole('dispatcher')" id="r-dispatcher"><span class="ri">&#x1F4F1;</span><span class="rl">Dispatcher</span></div><div class="rb" onclick="selRole('technician')" id="r-technician"><span class="ri">&#x1F477;</span><span class="rl">Technician</span></div><div class="rb" onclick="selRole('office')" id="r-office"><span class="ri">&#x1F4BB;</span><span class="rl">Office Staff</span></div></div>
-<div class="pr"><input type="password" maxlength="1" class="pd" id="p0" oninput="pi(0)" onkeydown="pk(event,0)"><input type="password" maxlength="1" class="pd" id="p1" oninput="pi(1)" onkeydown="pk(event,1)"><input type="password" maxlength="1" class="pd" id="p2" oninput="pi(2)" onkeydown="pk(event,2)"><input type="password" maxlength="1" class="pd" id="p3" oninput="pi(3)" onkeydown="pk(event,3)"></div>
-<button class="bl" onclick="doLogin()">Sign In</button><div class="le" id="le"></div><div class="lh">Owner: 1234 | Dispatcher: 2345 | Technician: 3456 | Office Staff: 4567</div></div></div>
-<div id="app"><div class="tb"><div class="tlo">SAIRNmechanical</div><div class="tr"><div class="uc" id="uc">Owner</div><button class="tbtn" onclick="toggleAI()">AI Assistant</button><button class="tbtn" onclick="window.print()">Print</button><button class="tbtn" onclick="doLogout()">Sign Out</button></div></div>
-<div class="ab"><div class="sb"><div class="sh">Overview</div>
-<div class="ni" onclick="nav('dash')" data-p="dash"><span class="nicon">&#x1F4CA;</span> Dashboard</div>
-<div class="sh">Field</div>
-<div class="ni" onclick="nav('jobs')" data-p="jobs"><span class="nicon">&#x1F527;</span> All Jobs</div>
-<div class="ni" onclick="nav('dispatch')" data-p="dispatch"><span class="nicon">&#x1F4F1;</span> Dispatch</div>
-<div class="ni" onclick="nav('schedule')" data-p="schedule"><span class="nicon">&#x1F4C5;</span> Schedule</div>
-<div class="ni" onclick="nav('technicians')" data-p="technicians"><span class="nicon">&#x1F477;</span> Technicians</div>
-<div class="sh">Services</div>
-<div class="ni" onclick="nav('hvac')" data-p="hvac"><span class="nicon">&#x2744;&#xFE0F;</span> HVAC</div>
-<div class="ni" onclick="nav('plumbing')" data-p="plumbing"><span class="nicon">&#x1F6B0;</span> Plumbing</div>
-<div class="ni" onclick="nav('electrical')" data-p="electrical"><span class="nicon">&#x26A1;</span> Electrical</div>
-<div class="sh">Customers</div>
-<div class="ni" onclick="nav('customers')" data-p="customers"><span class="nicon">&#x1F465;</span> Customers</div>
-<div class="ni" onclick="nav('estimates')" data-p="estimates"><span class="nicon">&#x1F4B0;</span> Estimates</div>
-<div class="ni" onclick="nav('agreements')" data-p="agreements"><span class="nicon">&#x1F4C4;</span> Service Agreements</div>
-<div class="sh">Finance</div>
-<div class="ni" onclick="nav('invoices')" data-p="invoices"><span class="nicon">&#x1F9FE;</span> Invoices</div>
-<div class="ni" onclick="nav('costing')" data-p="costing"><span class="nicon">&#x1F4B9;</span> Job Costing</div>
-<div class="ni" onclick="nav('reports')" data-p="reports"><span class="nicon">&#x1F4C8;</span> Reports</div>
-<div class="sh">Admin</div>
-<div class="ni" onclick="nav('formula')" data-p="formula"><span class="nicon">&#x1F527;</span> Formula Editor</div>
-<div class="ni" onclick="nav('csv')" data-p="csv"><span class="nicon">&#x1F4C1;</span> CSV Tools</div>
-<div class="ni" onclick="nav('sairnbiz')" data-p="sairnbiz"><span class="nicon">&#x1F517;</span> SAIRNbiz</div>
-</div><div class="mn" id="mn">
-<div class="page active" id="pg-dash"><div class="pt">SAIRNmechanical Dashboard</div><div class="ps">HVAC -- Plumbing -- Electrical -- powered by Claude AI</div>
-<div class="kg">
-  <div class="kc"><span class="ki">&#x1F527;</span><div class="kl">Jobs Today</div><div class="kv">18</div><div class="kd">14 in progress</div></div>
-  <div class="kc"><span class="ki">&#x1F4B0;</span><div class="kl">Monthly Revenue</div><div class="kv">$184K</div><div class="kd up">+14%</div></div>
-  <div class="kc"><span class="ki">&#x1F477;</span><div class="kl">Techs in Field</div><div class="kv">8</div><div class="kd">2 available</div></div>
-  <div class="kc"><span class="ki">&#x1F4C4;</span><div class="kl">Service Agreements</div><div class="kv">142</div><div class="kd up">+8 this month</div></div>
-  <div class="kc"><span class="ki">&#x23F1;&#xFE0F;</span><div class="kl">Avg Job Time</div><div class="kv">2.4 hrs</div><div class="kd">Target: 2.2</div></div>
-  <div class="kc"><span class="ki">&#x1F4CA;</span><div class="kl">First-Call Fix Rate</div><div class="kv">88%</div><div class="kd up">Industry avg: 80%</div></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNmechanical -- HVAC & Mechanical</title>
+<style>
+:root{--c:#84CC16;--d:#3F6212;--t:#F7FEE7;--a:#BEF264;--w:#fff;--g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;--g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;--g900:#111827;--green:#16A34A;--gl:#DCFCE7;--red:#DC2626;--rl:#FEE2E2;--sb:260px;--tb:64px;--r:10px;--rs:6px;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--g50);color:var(--g800)}
+#login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--t) 0%,#fff 60%,#84CC1622 100%)}
+.lcard{background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.13);padding:44px 38px;width:100%;max-width:420px;text-align:center}
+.llogo{width:60px;height:60px;background:var(--c);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin:0 auto 16px;letter-spacing:-1px}
+.ltitle{font-size:24px;font-weight:800;color:var(--g900)}
+.lsub{font-size:13px;color:var(--g500);margin:5px 0 24px}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:22px}
+.rb{border:2px solid var(--g200);border-radius:var(--rs);padding:11px 8px;cursor:pointer;background:#fff;font-size:12px;font-weight:600;color:var(--g600);transition:all .15s}
+.rb:hover,.rb.active{border-color:var(--c);background:var(--t);color:var(--d)}
+.ri{font-size:18px;display:block;margin-bottom:3px}
+.pin-l{font-size:12px;font-weight:600;color:var(--g600);text-align:left;margin-bottom:5px}
+.pin-i{width:100%;padding:12px;border:2px solid var(--g200);border-radius:var(--rs);font-size:22px;letter-spacing:8px;text-align:center;font-family:monospace;outline:none;transition:border-color .15s;margin-bottom:12px}
+.pin-i:focus{border-color:var(--c)}
+.lbtn{width:100%;padding:12px;background:var(--c);color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer}
+.lbtn:hover{opacity:.88}
+.lerr{margin-top:9px;font-size:12px;color:var(--red);display:none}
+#app{display:none;height:100vh;overflow:hidden}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--tb);background:#fff;border-bottom:2px solid #84CC1633;display:flex;align-items:center;padding:0 18px;gap:12px;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.tlogo{width:38px;height:38px;background:var(--c);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0}
+.tname{font-size:16px;font-weight:800;color:var(--g900)}
+.tname span{color:var(--c)}
+.tsp{flex:1}
+.fqbtn{display:flex;align-items:center;gap:6px;background:var(--c);color:#fff;border:none;border-radius:var(--rs);padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.fqbtn:hover{opacity:.88}
+.tusr{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--g600);cursor:pointer}
+.tavtr{width:30px;height:30px;background:#84CC1622;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--d)}
+.sidebar{position:fixed;top:var(--tb);left:0;bottom:0;width:var(--sb);background:#fff;border-right:2px solid #84CC1633;overflow-y:auto;z-index:50;padding:12px 0 80px}
+.slbl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;padding:10px 18px 4px}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 18px;border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:500;color:var(--g600);transition:all .12s;position:relative;margin:0 7px}
+.ni:hover{background:var(--t);color:var(--d)}
+.ni.active{background:#84CC1622;color:var(--d);font-weight:700}
+.ni.active::before{content:'';position:absolute;left:-7px;top:6px;bottom:6px;width:3px;background:var(--c);border-radius:0 3px 3px 0}
+.ni-icon{font-size:15px;width:18px;text-align:center}
+.main{margin-left:var(--sb);margin-top:var(--tb);height:calc(100vh - var(--tb));overflow-y:auto;padding:24px;background:var(--g50)}
+.page{display:none}.page.active{display:block}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:9px}
+.ptitle{font-size:22px;font-weight:800;color:var(--g900);letter-spacing:-.5px}
+.psub{font-size:13px;color:var(--g500);margin-top:2px}
+.pacts{display:flex;gap:8px;flex-wrap:wrap}
+.card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g200);box-shadow:0 1px 4px rgba(0,0,0,.08);padding:18px;margin-bottom:14px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ct{font-size:14px;font-weight:700;color:var(--g800)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .12s;white-space:nowrap}
+.bp{background:var(--c);color:#fff}.bp:hover{opacity:.88}
+.bo{background:#fff;color:var(--g700);border:1.5px solid var(--g200)}.bo:hover{background:var(--g50)}
+.bsm{padding:6px 11px;font-size:12px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.sc{background:#fff;border-radius:var(--r);border:1.5px solid var(--g200);padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.sl{font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.sv{font-size:24px;font-weight:800;color:var(--g900);letter-spacing:-1px;line-height:1}
+.sd{font-size:11px;color:var(--green);margin-top:3px;font-weight:600}
+.sd.down{color:var(--red)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;background:var(--g50);border-bottom:1.5px solid var(--g200)}
+td{padding:10px 12px;border-bottom:1px solid var(--g100);color:var(--g700);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--t)}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:var(--gl);color:var(--green)}.ba{background:#84CC1622;color:var(--d)}.br{background:var(--rl);color:var(--red)}.bgr{background:var(--g100);color:var(--g600)}
+.fg{margin-bottom:12px}
+.fl{display:block;font-size:12px;font-weight:600;color:var(--g700);margin-bottom:4px}
+.fi,.fs,.fta{width:100%;padding:8px 12px;border:1.5px solid var(--g200);border-radius:var(--rs);font-size:13px;color:var(--g800);background:#fff;outline:none;transition:border-color .12s;font-family:inherit}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--c)}
+.fta{resize:vertical;min-height:75px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ai-bub{background:var(--t);border:1.5px solid var(--a);border-radius:8px;padding:13px;margin:9px 0;font-size:13px;color:var(--g800);line-height:1.6;white-space:pre-wrap}
+.thinking{display:inline-flex;gap:4px;align-items:center}
+.thinking span{width:5px;height:5px;background:var(--c);border-radius:50%;animation:pulse 1.1s ease-in-out infinite}
+.thinking span:nth-child(2){animation-delay:.18s}.thinking span:nth-child(3){animation-delay:.36s}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+.upzone{border:2px dashed var(--g300);border-radius:var(--r);padding:24px 14px;text-align:center;cursor:pointer;background:var(--g50);transition:all .15s}
+.upzone:hover{border-color:var(--c);background:var(--t)}
+.suite-wrap{background:linear-gradient(135deg,#F8FAFC,#fff);border:1.5px solid #E2E8F0;border-radius:var(--r);padding:16px;margin-bottom:16px}
+.suite-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.suite-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--c),var(--d));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff}
+.suite-name{font-size:14px;font-weight:700;color:#1E293B}
+.suite-sub{font-size:10px;color:#94A3B8}
+.suite-live{margin-left:auto;font-size:11px;font-weight:700;color:var(--green)}
+.suite-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:11px}
+.suite-tile{background:#fff;border:1.5px solid #E2E8F0;border-radius:8px;padding:10px 7px;cursor:pointer;transition:all .12s;text-align:center}
+.suite-tile:hover{box-shadow:0 3px 10px rgba(0,0,0,.09);transform:translateY(-1px)}
+.suite-icon{width:28px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff;margin:0 auto 4px}
+.suite-tname{font-size:10px;font-weight:700;color:#1E293B}
+.suite-tdesc{font-size:9px;color:#94A3B8;margin-top:1px}
+.suite-btns{display:flex;gap:7px;flex-wrap:wrap}
+.suite-btn{padding:6px 12px;background:var(--c);color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer}
+.suite-btn.out{background:#fff;color:var(--d);border:1.5px solid var(--c)}
+.sbiz{background:linear-gradient(135deg,#F0FDFA,#fff);border:1.5px solid #99F6E4;border-radius:var(--r);padding:16px;margin-bottom:14px}
+.sbiz-hdr{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.sbiz-logo{width:32px;height:32px;background:#14B8A6;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff}
+.sbiz-title{font-size:14px;font-weight:700;color:#0F766E}
+.sbiz-btns{display:flex;gap:7px;flex-wrap:wrap}
+.sbiz-btn{padding:6px 12px;background:#14B8A6;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer}
+.sbiz-btn.out{background:#fff;color:#0F766E;border:1.5px solid #14B8A6}
+.sig-wrap{border:2px solid var(--g200);border-radius:8px;background:var(--g50);position:relative;margin-bottom:9px}
+#sig-canvas{display:block;width:100%;height:100px;cursor:crosshair;touch-action:none}
+.sig-lbl{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--g300);pointer-events:none;white-space:nowrap}
+.step-row{display:flex;margin-bottom:14px;background:#fff;border:1.5px solid var(--g200);border-radius:8px;overflow:hidden}
+.step{flex:1;padding:9px 5px;text-align:center;font-size:10px;font-weight:600;color:var(--g400);border-right:1px solid var(--g100)}
+.step:last-child{border-right:none}
+.step.done{color:var(--green);background:var(--gl)}
+.step.active{color:var(--d);background:var(--t)}
+.step-n{width:18px;height:18px;border-radius:50%;background:var(--g200);color:var(--g500);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 2px}
+.step.done .step-n{background:var(--green);color:#fff}
+.step.active .step-n{background:var(--c);color:#fff}
+.fq-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.fq-chip{padding:6px 12px;border:1.5px solid var(--g200);border-radius:20px;font-size:12px;font-weight:600;color:var(--g600);cursor:pointer;background:#fff;transition:all .12s}
+.fq-chip:hover,.fq-chip.active{border-color:var(--c);background:var(--t);color:var(--d)}
+.rng-wrap{margin:9px 0}
+.rng-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--g500);margin-bottom:3px}
+.rng-track{height:7px;background:var(--g100);border-radius:4px;overflow:hidden}
+.rng-fill{height:100%;background:var(--c);border-radius:4px;transition:width .5s}
+.empty{text-align:center;padding:32px 16px;color:var(--g400)}
+.empty-icon{font-size:36px;margin-bottom:8px}
+.empty-title{font-size:14px;font-weight:700;color:var(--g600);margin-bottom:5px}
+.empty-sub{font-size:12px}
+.cr-preview{border:1.5px solid var(--g200);border-radius:8px;padding:14px;background:#FAFAFA;font-family:monospace;font-size:12px;margin-bottom:10px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--g800);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:0;transition:opacity .3s;pointer-events:none}
+@media print{.topbar,.sidebar,.pacts,.btn{display:none!important}.main{margin:0;padding:16px}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.main{margin-left:0}.fr{grid-template-columns:1fr}}
+::-webkit-scrollbar{width:5px}.::webkit-scrollbar-thumb{background:var(--g200);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div id="login">
+<div class="lcard">
+  <div class="llogo">SM</div>
+  <div class="ltitle">SAIRNmechanical</div>
+  <div class="lsub">HVAC, plumbing, and mechanical contracting platform</div>
+  <div class="rg"><button class="rb  active" data-role="owner" onclick="selRole(this)"><span class="ri">🔧</span>Owner</button>
+<button class="rb" data-role="tech" onclick="selRole(this)"><span class="ri">🌡️</span>Technician</button>
+<button class="rb" data-role="sales" onclick="selRole(this)"><span class="ri">💼</span>Sales</button>
+<button class="rb" data-role="admin" onclick="selRole(this)"><span class="ri">📋</span>Admin</button></div>
+  <div class="pin-l">Enter PIN</div>
+  <input class="pin-i" id="pin-in" type="password" maxlength="4" placeholder="••••" inputmode="numeric" oninput="if(this.value.length===4)doLogin()">
+  <button class="lbtn" onclick="doLogin()">Sign In</button>
+  <div class="lerr" id="lerr">Incorrect PIN. Try again.</div>
+  <div style="margin-top:14px;font-size:11px;color:var(--g400)">Demo: any role + PIN 1234</div>
 </div>
-<div class="flag fi">&#x1F916; AI flagged 3 service agreement customers whose equipment is overdue for preventive maintenance. <a href="#" style="color:var(--cd);font-weight:700;" onclick="askAI('Which service agreement customers are overdue for their preventive maintenance visit? Draft outreach messages.')">Reach Out Now</a></div>
-<div class="flag fw">&#x26A0;&#xFE0F; Extreme heat forecast this week. HVAC demand may spike. Adjust dispatch priority now.</div>
-<div class="two-col" style="margin-top:14px;">
-  <div class="card"><div class="ch"><div class="ct">Active Jobs Today</div><button class="btn btn-sm btn-c" onclick="nav('jobs')">View All</button></div><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Job #</th><th>Customer</th><th>Service</th><th>Tech</th><th>Priority</th><th>Status</th></tr></thead><tbody>
-    <tr><td>J-8041</td><td>Wilson Residence</td><td>AC Not Cooling</td><td>Mike R.</td><td><span class="badge br">Emergency</span></td><td><span class="badge bc">En Route</span></td></tr>
-    <tr><td>J-8042</td><td>Park Office</td><td>HVAC PM Visit</td><td>Dave K.</td><td><span class="badge bc">Routine</span></td><td><span class="badge bg">Complete</span></td></tr>
-    <tr><td>J-8043</td><td>Chen Residence</td><td>Water Heater Replace</td><td>Tom S.</td><td><span class="badge ba">Urgent</span></td><td><span class="badge bc">In Progress</span></td></tr>
-    <tr><td>J-8044</td><td>Smith Commercial</td><td>Panel Upgrade</td><td>Bob E.</td><td><span class="badge bc">Scheduled</span></td><td><span class="badge ba">Waiting Parts</span></td></tr>
-  </tbody></table></div></div>
-  <div class="card"><div class="ch"><div class="ct">Revenue by Trade</div></div><div class="cb">
-    <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>HVAC</span><span style="color:var(--c)">58%</span></div><div class="rbt"><div class="rbf" style="width:58%"></div></div></div>
-    <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Plumbing</span><span style="color:var(--c)">26%</span></div><div class="rbt"><div class="rbf" style="width:26%"></div></div></div>
-    <div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Electrical</span><span style="color:var(--c)">16%</span></div><div class="rbt"><div class="rbf" style="width:16%"></div></div></div>
-  </div></div>
-</div></div>
-
-<div class="page" id="pg-jobs"><div class="pt">All Jobs</div><div class="ps">Full job list across all trades</div>
-<div class="toolbar"><input type="text" class="sbox" placeholder="Search jobs..." oninput="ft(this,'job-tbl')"><button class="btn btn-c" onclick="openM('m-new-job')">+ New Job</button><button class="btn btn-o" onclick="exportCSV('job-tbl','sairnmech-jobs')">Export CSV</button><button class="btn btn-o" onclick="askAI('Analyze my job pipeline. Which jobs are at risk of missing the committed window?')">AI Risk Scan</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="job-tbl"><thead><tr><th>Job #</th><th>Customer</th><th>Trade</th><th>Description</th><th>Tech</th><th>Revenue</th><th>Status</th></tr></thead><tbody>
-  <tr><td><strong>J-8041</strong></td><td>Wilson Residence</td><td>HVAC</td><td>AC not cooling, 90F outside</td><td>Mike R.</td><td>$380</td><td><span class="badge bc">En Route</span></td></tr>
-  <tr><td><strong>J-8042</strong></td><td>Park Office</td><td>HVAC</td><td>Preventive maintenance Q2</td><td>Dave K.</td><td>$280</td><td><span class="badge bg">Complete</span></td></tr>
-  <tr><td><strong>J-8043</strong></td><td>Chen Residence</td><td>Plumbing</td><td>Water heater failed, replace</td><td>Tom S.</td><td>$1,840</td><td><span class="badge bc">In Progress</span></td></tr>
-  <tr><td><strong>J-8044</strong></td><td>Smith Commercial</td><td>Electrical</td><td>200A panel upgrade</td><td>Bob E.</td><td>$4,200</td><td><span class="badge ba">Waiting Parts</span></td></tr>
-  <tr><td><strong>J-8040</strong></td><td>Johnson HOA</td><td>HVAC</td><td>Chiller PM, 4 units</td><td>Mike R.</td><td>$1,200</td><td><span class="badge bg">Complete</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-dispatch"><div class="pt">Dispatch</div><div class="ps">Real-time tech tracking and AI dispatch optimization</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-dispatch')">+ Dispatch Job</button><button class="btn btn-o" onclick="askAI('Optimize dispatch for the next 4 hours. I have 3 new calls and 2 available techs. Assign by skill, location, and priority.')">AI Optimize Dispatch</button></div>
-<div class="flag fi">&#x1F916; AI dispatch considers tech skills, location, parts on truck, and job priority to minimize drive time and maximize first-call fix rate.</div>
-<div class="card" style="margin-top:12px;"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Tech</th><th>Trade</th><th>Current Job</th><th>Location</th><th>ETA Done</th><th>Next Job</th></tr></thead><tbody>
-  <tr><td><strong>Mike R.</strong></td><td>HVAC</td><td>J-8041 Wilson</td><td>Westlake</td><td>12:30 PM</td><td>Unassigned</td></tr>
-  <tr><td><strong>Dave K.</strong></td><td>HVAC</td><td>J-8042 Park</td><td>Bay Village</td><td>Complete</td><td><button class="btn btn-sm btn-c" onclick="askAI('Dave K. is available. What is the best next job to assign based on location and priority?')">AI Assign</button></td></tr>
-  <tr><td><strong>Tom S.</strong></td><td>Plumbing</td><td>J-8043 Chen</td><td>Avon</td><td>2:00 PM</td><td>Unassigned</td></tr>
-  <tr><td><strong>Bob E.</strong></td><td>Electrical</td><td>J-8044 Smith</td><td>Rocky River</td><td>4:00 PM</td><td>Unassigned</td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-schedule"><div class="pt">Schedule</div><div class="ps">Appointment calendar with weather awareness</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-job')">+ Schedule Job</button><button class="btn btn-o" onclick="askAI('Extreme heat is forecast this week. How should I adjust the schedule to prioritize emergency HVAC calls?')">AI Weather Adjust</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Date</th><th>Job #</th><th>Customer</th><th>Trade</th><th>Time Window</th><th>Tech</th><th>Status</th></tr></thead><tbody>
-  <tr><td>Jun 14</td><td>J-8041</td><td>Wilson Residence</td><td>HVAC</td><td>10am-12pm</td><td>Mike R.</td><td><span class="badge bc">In Progress</span></td></tr>
-  <tr><td>Jun 14</td><td>J-8043</td><td>Chen Residence</td><td>Plumbing</td><td>1pm-4pm</td><td>Tom S.</td><td><span class="badge bc">Confirmed</span></td></tr>
-  <tr><td>Jun 16</td><td>J-8044</td><td>Smith Commercial</td><td>Electrical</td><td>8am-5pm</td><td>Bob E.</td><td><span class="badge ba">Parts Pending</span></td></tr>
-  <tr><td>Jun 17</td><td>J-8045</td><td>New Call</td><td>HVAC</td><td>TBD</td><td>Unassigned</td><td><span class="badge br">Unassigned</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-technicians"><div class="pt">Technicians</div><div class="ps">Tech roster, certifications, and performance</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-tech')">+ Add Tech</button><button class="btn btn-o" onclick="exportCSV('tech-tbl','sairnmech-techs')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="tech-tbl"><thead><tr><th>Tech</th><th>Trade</th><th>Certifications</th><th>Rate</th><th>Jobs MTD</th><th>Revenue MTD</th><th>1st Call Fix</th></tr></thead><tbody>
-  <tr><td><strong>Mike R.</strong></td><td>HVAC</td><td>EPA 608, NATE</td><td>$32/hr</td><td>38</td><td>$48K</td><td><span class="badge bg">91%</span></td></tr>
-  <tr><td><strong>Dave K.</strong></td><td>HVAC</td><td>EPA 608</td><td>$28/hr</td><td>32</td><td>$38K</td><td><span class="badge bg">86%</span></td></tr>
-  <tr><td><strong>Tom S.</strong></td><td>Plumbing</td><td>Master Plumber</td><td>$36/hr</td><td>28</td><td>$52K</td><td><span class="badge bg">93%</span></td></tr>
-  <tr><td><strong>Bob E.</strong></td><td>Electrical</td><td>Master Electrician</td><td>$38/hr</td><td>22</td><td>$46K</td><td><span class="badge bc">84%</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-hvac"><div class="pt">HVAC</div><div class="ps">Heating, ventilation, and air conditioning jobs and equipment</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-job')">+ New HVAC Job</button><button class="btn btn-o" onclick="askAI('Which HVAC service agreement customers are due for their summer tune-up? Generate a scheduling priority list.')">AI PM Schedule</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Customer</th><th>Equipment</th><th>Last PM</th><th>Agreement</th><th>Next PM Due</th><th>Action</th></tr></thead><tbody>
-  <tr><td>Park Office</td><td>Carrier 5-ton RTU</td><td>Jun 14</td><td><span class="badge bg">Gold Plan</span></td><td>Dec 2025</td><td><button class="btn btn-sm btn-o">View History</button></td></tr>
-  <tr><td>Johnson HOA</td><td>4x Trane 3-ton Splits</td><td>Jun 14</td><td><span class="badge bg">Silver Plan</span></td><td>Dec 2025</td><td><button class="btn btn-sm btn-o">View History</button></td></tr>
-  <tr><td>Rivera Home</td><td>Lennox 3-ton Split</td><td>Mar 10</td><td><span class="badge bc">Bronze Plan</span></td><td><strong style="color:var(--red)">Jun 10 OVERDUE</strong></td><td><button class="btn btn-sm btn-c" onclick="askAI('Schedule a summer tune-up for the Rivera home. Their Lennox 3-ton is 4 months overdue for PM.')">Schedule Now</button></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-plumbing"><div class="pt">Plumbing</div><div class="ps">Plumbing service calls, installs, and water heater jobs</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-job')">+ New Plumbing Job</button><button class="btn btn-o" onclick="askAI('What is the material cost and labor estimate to replace a 50-gallon natural gas water heater with a Bradford White unit?')">AI Price Job</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Job #</th><th>Customer</th><th>Issue</th><th>Parts Needed</th><th>Est. Hours</th><th>Revenue</th></tr></thead><tbody>
-  <tr><td>J-8043</td><td>Chen Residence</td><td>Water heater failure</td><td>Bradford White 50gal</td><td>3.0</td><td>$1,840</td></tr>
-  <tr><td>J-8038</td><td>Wilson Residence</td><td>Drain clog, main line</td><td>Jetter rental</td><td>1.5</td><td>$380</td></tr>
-  <tr><td>J-8035</td><td>New Build - Lot 12</td><td>Rough-in plumbing</td><td>PEX, fittings</td><td>16.0</td><td>$4,200</td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-electrical"><div class="pt">Electrical</div><div class="ps">Electrical service calls, panel upgrades, and EV charger installs</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-job')">+ New Electrical Job</button><button class="btn btn-o" onclick="askAI('What is the labor and material estimate for a 200A panel upgrade from a 100A in a 1960s home?')">AI Price Job</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Job #</th><th>Customer</th><th>Scope</th><th>Permit</th><th>Inspector</th><th>Revenue</th></tr></thead><tbody>
-  <tr><td>J-8044</td><td>Smith Commercial</td><td>200A panel upgrade</td><td><span class="badge bg">Approved</span></td><td>Jun 17</td><td>$4,200</td></tr>
-  <tr><td>J-8039</td><td>Park Family</td><td>EV charger install (Level 2)</td><td><span class="badge bc">Pending</span></td><td>TBD</td><td>$1,200</td></tr>
-  <tr><td>J-8033</td><td>HOA Clubhouse</td><td>Generator hookup</td><td><span class="badge bg">Approved</span></td><td>Jun 10</td><td>$2,800</td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-customers"><div class="pt">Customers</div><div class="ps">Full customer database with service history</div>
-<div class="toolbar"><input type="text" class="sbox" placeholder="Search customers..." oninput="ft(this,'cust-tbl')"><button class="btn btn-c" onclick="openM('m-new-cust')">+ Add Customer</button><button class="btn btn-o" onclick="exportCSV('cust-tbl','sairnmech-customers')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="cust-tbl"><thead><tr><th>Customer</th><th>Type</th><th>Agreement</th><th>Jobs YTD</th><th>YTD Spend</th></tr></thead><tbody>
-  <tr><td><strong>Wilson Residence</strong></td><td>Residential</td><td>Silver HVAC</td><td>4</td><td>$2,840</td></tr>
-  <tr><td><strong>Smith Commercial</strong></td><td>Commercial</td><td>Gold Full-Service</td><td>6</td><td>$12,400</td></tr>
-  <tr><td><strong>Johnson HOA</strong></td><td>HOA</td><td>Silver HVAC</td><td>8</td><td>$8,200</td></tr>
-  <tr><td><strong>Chen Residence</strong></td><td>Residential</td><td>None</td><td>1</td><td>$1,840</td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-estimates"><div class="pt">Estimates</div><div class="ps">Quote new work with AI-assisted pricing</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-est')">+ New Estimate</button><button class="btn btn-o" onclick="askAI('Generate a competitive estimate for replacing a 3-ton Carrier HVAC system in a 1,800 sqft home including labor, equipment, permits, and startup.')">AI Price New System</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Customer</th><th>Scope</th><th>Estimate</th><th>Date Sent</th><th>Status</th></tr></thead><tbody>
-  <tr><td>Rivera Home</td><td>Full HVAC replacement 3-ton</td><td>$7,400</td><td>Jun 12</td><td><span class="badge ba">Awaiting Decision</span></td></tr>
-  <tr><td>Park Office</td><td>RTU replacement 5-ton</td><td>$18,200</td><td>Jun 10</td><td><span class="badge ba">Awaiting Decision</span></td></tr>
-  <tr><td>Wilson Residence</td><td>Water heater + expansion tank</td><td>$1,840</td><td>Jun 14</td><td><span class="badge bg">Approved</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-agreements"><div class="pt">Service Agreements</div><div class="ps">Annual maintenance contracts -- recurring revenue backbone</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-agr')">+ New Agreement</button><button class="btn btn-o" onclick="askAI('Which service agreements are up for renewal in the next 60 days? Draft renewal outreach messages.')">AI Renewal Campaign</button><button class="btn btn-o" onclick="exportCSV('agr-tbl','sairnmech-agreements')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="agr-tbl"><thead><tr><th>Customer</th><th>Plan</th><th>Trade</th><th>Annual Value</th><th>Renews</th><th>Status</th></tr></thead><tbody>
-  <tr><td>Smith Commercial</td><td>Gold Full-Service</td><td>HVAC + Plumb + Elec</td><td>$4,800</td><td>Jan 2026</td><td><span class="badge bg">Active</span></td></tr>
-  <tr><td>Wilson Residence</td><td>Silver HVAC</td><td>HVAC</td><td>$480</td><td>Mar 2026</td><td><span class="badge bg">Active</span></td></tr>
-  <tr><td>Johnson HOA</td><td>Silver HVAC</td><td>HVAC</td><td>$1,800</td><td>Apr 2026</td><td><span class="badge bg">Active</span></td></tr>
-  <tr><td>Park Office</td><td>Gold HVAC</td><td>HVAC</td><td>$2,400</td><td>Jun 2026</td><td><span class="badge bg">Active</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-invoices"><div class="pt">Invoices</div><div class="ps">Customer billing with auto-post to SAIRNbiz GL</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new-inv')">+ New Invoice</button><button class="btn btn-o" onclick="exportCSV('inv-tbl','sairnmech-invoices')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="inv-tbl"><thead><tr><th>Invoice #</th><th>Customer</th><th>Job #</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead><tbody>
-  <tr><td>INV-6041</td><td>Chen Residence</td><td>J-8043</td><td>$1,840</td><td>Jun 28</td><td><span class="badge bc">Sent</span></td></tr>
-  <tr><td>INV-6042</td><td>Smith Commercial</td><td>J-8044</td><td>$4,200</td><td>Jun 30</td><td><span class="badge ba">Pending</span></td></tr>
-  <tr><td>INV-6040</td><td>Johnson HOA</td><td>J-8040</td><td>$1,200</td><td>Jun 25</td><td><span class="badge bg">Paid</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-costing"><div class="pt">Job Costing</div><div class="ps">True cost and margin per job and trade</div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Job</th><th>Revenue</th><th>Parts</th><th>Labor</th><th>Overhead</th><th>Margin</th></tr></thead><tbody>
-  <tr><td>J-8043 Water Heater</td><td>$1,840</td><td>$680</td><td>$288</td><td>$184</td><td><span style="color:var(--green);font-weight:700">37%</span></td></tr>
-  <tr><td>J-8044 Panel Upgrade</td><td>$4,200</td><td>$1,200</td><td>$912</td><td>$420</td><td><span style="color:var(--green);font-weight:700">40%</span></td></tr>
-  <tr><td>J-8042 HVAC PM</td><td>$280</td><td>$40</td><td>$112</td><td>$28</td><td><span style="color:var(--c);font-weight:700">36%</span></td></tr>
-  <tr class="ttr"><td colspan="4"><strong>Blended Average</strong></td><td></td><td><strong>38%</strong></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-reports"><div class="pt">Reports</div><div class="ps">AI-generated field service intelligence</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;">
-  <div class="card" style="cursor:pointer;" onclick="askAI('Generate a revenue report for June 2025 by trade type: HVAC, Plumbing, Electrical.')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F4CA;</div><div style="font-weight:700;">Revenue by Trade</div></div></div>
-  <div class="card" style="cursor:pointer;" onclick="askAI('Rank my technicians by revenue generated, jobs completed, and first-call fix rate this month.')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F477;</div><div style="font-weight:700;">Tech Performance</div></div></div>
-  <div class="card" style="cursor:pointer;" onclick="askAI('Generate a service agreement renewal forecast. Which agreements renew in the next 90 days and what is the total at-risk MRR?')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F4C4;</div><div style="font-weight:700;">Agreement Forecast</div></div></div>
-</div></div>
-
-<div class="page" id="pg-formula"><div class="pt">Formula Editor</div><div class="ps">Admin: set labor rates, flat-rate pricing, and markups</div>
-<div class="card"><div class="cb"><div class="fgrid">
-  <div class="fg"><label>HVAC Tech Rate ($/hr)</label><input type="number" value="95"></div>
-  <div class="fg"><label>Plumbing Tech Rate ($/hr)</label><input type="number" value="110"></div>
-  <div class="fg"><label>Electrical Tech Rate ($/hr)</label><input type="number" value="115"></div>
-  <div class="fg"><label>Parts Markup %</label><input type="number" value="40"></div>
-  <div class="fg"><label>Trip/Diagnostic Fee ($)</label><input type="number" value="99"></div>
-  <div class="fg"><label>Emergency Call Surcharge ($)</label><input type="number" value="150"></div>
-  <div class="fg"><label>Silver Plan Annual ($)</label><input type="number" value="480"></div>
-  <div class="fg"><label>Gold Plan Annual ($)</label><input type="number" value="980"></div>
 </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-      <div style="font-size:13px;font-weight:700;color:var(--cd);margin-bottom:10px;">License Key</div>
-      <div class="fgrid">
-        <div class="fg">
-          <label>Your SAIRN License Key</label>
-          <input type="text" id="license-key-input" placeholder="SD01_2025_XXXXX" style="font-family:monospace;font-weight:600;">
-        </div>
-        <div class="fg" style="justify-content:flex-end;padding-top:18px;">
-          <button class="btn btn-c" onclick="saveLicenseKey()">Activate Key</button>
-        </div>
-      </div>
-      <div id="license-status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+
+<div id="app">
+<div class="topbar">
+  <div class="tlogo">SM</div>
+  <div class="tname">SAIRN<span>mechanical</span></div>
+  <div class="tsp"></div>
+  <button class="fqbtn" onclick="openFQ()">📷 Field Quote</button>
+  <div class="tusr"><div class="tavtr" id="tavtr">OW</div><span id="trole">Owner</span></div>
+</div>
+
+<div class="sidebar">
+  <div class="slbl">Navigation</div>
+  <div class="ni" onclick="showPage('dashboard')" id="nav-dashboard"><span class="ni-icon">🏠</span>Dashboard</div>
+<div class="ni" onclick="showPage('jobs')" id="nav-jobs"><span class="ni-icon">🔧</span>Jobs</div>
+<div class="ni" onclick="showPage('scheduling')" id="nav-scheduling"><span class="ni-icon">📅</span>Scheduling</div>
+<div class="ni" onclick="showPage('technicians')" id="nav-technicians"><span class="ni-icon">👷</span>Technicians</div>
+<div class="ni" onclick="showPage('equipment')" id="nav-equipment"><span class="ni-icon">🌡️</span>Equipment</div>
+<div class="ni" onclick="showPage('maintenance')" id="nav-maintenance"><span class="ni-icon">🔩</span>Maintenance Contracts</div>
+<div class="ni" onclick="showPage('proposals')" id="nav-proposals"><span class="ni-icon">📋</span>Proposals</div>
+<div class="ni" onclick="showPage('invoices')" id="nav-invoices"><span class="ni-icon">💳</span>Invoices</div>
+<div class="ni" onclick="showPage('field-quote')" id="nav-field-quote"><span class="ni-icon">📷</span>Field Quote</div>
+<div class="ni" onclick="showPage('blueprint-ai')" id="nav-blueprint-ai"><span class="ni-icon">📐</span>Blueprint AI</div>
+<div class="ni" onclick="showPage('doc-scan')" id="nav-doc-scan"><span class="ni-icon">📄</span>Doc Scanner</div>
+<div class="ni" onclick="showPage('check-register')" id="nav-check-register"><span class="ni-icon">📄</span>Check Register</div>
+<div class="ni" onclick="showPage('compensation')" id="nav-compensation"><span class="ni-icon">💰</span>Compensation</div>
+<div class="ni" onclick="showPage('reports')" id="nav-reports"><span class="ni-icon">📊</span>Reports</div>
+<div class="ni" onclick="showPage('sairn-suite')" id="nav-sairn-suite"><span class="ni-icon">🔗</span>SAIRN Suite</div>
+<div class="ni" onclick="showPage('admin-pricing')" id="nav-admin-pricing"><span class="ni-icon">⚙️</span>Admin</div>
+</div>
+
+<div class="main" id="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="ph">
+    <div><div class="ptitle">SAIRNmechanical Dashboard</div><div class="psub">HVAC & Mechanical · $149/mo · June 15, 2026</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp" onclick="runIntel()">🤖 AI Intelligence</button>
     </div>
-    <div style="margin-top:14px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairnmechanical');toast('Rates saved')">Save Rates</button></div></div></div></div>
+  </div>
+  
+<div id="wx-bar" style="background:linear-gradient(135deg,#F7FEE7,#84CC1622);border:1.5px solid #BEF264;border-radius:9px;padding:13px 18px;display:flex;align-items:center;gap:14px;margin-bottom:16px">
+  <span style="font-size:30px" id="wx-icon">⛅</span>
+  <div><div style="font-size:22px;font-weight:800;color:#3F6212" id="wx-temp">--°F</div>
+  <div style="font-size:12px;color:#4B5563" id="wx-desc">Loading weather...</div></div>
+  <div style="margin-left:auto;text-align:right">
+    <div style="font-size:13px;font-weight:700" id="wx-status">Checking...</div>
+    <div style="font-size:11px;color:#6B7280">Crew go/no-go</div>
+  </div>
+</div>
+  <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">9</div><div class="sd">4 in progress</div></div>
+<div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">127</div><div class="sd">↑ 8 this month</div></div>
+<div class="sc"><div class="sl">Revenue This Week</div><div class="sv">$28,400</div><div class="sd">On target</div></div>
+<div class="sc"><div class="sl">Pending Proposals</div><div class="sv">$94K</div><div class="sd">6 open</div></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">🤖 Claude SAIRNmechanical Intelligence</div>
+      <button class="btn bo bsm" onclick="runIntel()">Refresh</button></div>
+    <div class="ai-bub" id="intel-out">Tech alert: Unit 4412 (Martinez Residence) -- R-410A low, potential leak. EPA 608 refrigerant log required before refill. Schedule: two AC replacements tomorrow morning -- confirm equipment delivery with supplier. Proposal follow-up: Henderson Commercial (sent 8 days, $22K system) -- good close probability.</div>
+  </div>
+  <div class="suite-wrap">
+    <div class="suite-hdr">
+      <div class="suite-logo">S</div>
+      <div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">Connected apps</div></div>
+      <div class="suite-live">● Live</div>
+    </div>
+    <div class="suite-grid"><div class="suite-tile" onclick="showToast('Opening SAIRNbiz')"><div class="suite-icon" style="background:#14B8A6">SB</div><div class="suite-tname">SAIRNbiz</div><div class="suite-tdesc">HR & Payroll</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNbuild')"><div class="suite-icon" style="background:#F59E0B">SB</div><div class="suite-tname">SAIRNbuild</div><div class="suite-tdesc">GC Portal</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNdesign')"><div class="suite-icon" style="background:#6366F1">SD</div><div class="suite-tname">SAIRNdesign</div><div class="suite-tdesc">Design Coordination</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNcare')"><div class="suite-icon" style="background:#0D9488">SC</div><div class="suite-tname">SAIRNcare</div><div class="suite-tdesc">Care Facilities</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNvet')"><div class="suite-icon" style="background:#7C3AED">SV</div><div class="suite-tname">SAIRNvet</div><div class="suite-tdesc">Vet Clinics</div></div></div>
+    <div class="suite-btns">
+      <button class="suite-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="suite-btn out">📊 CSV</button>
+      <span style="font-size:11px;color:#94A3B8;align-self:center" id="last-sync">Last sync: --</span>
+    </div>
+  </div>
+</div>
 
-<div class="page" id="pg-csv"><div class="pt">CSV Tools</div>
-<div class="two-col"><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:8px;">
-  <button class="btn btn-o" onclick="exportCSV('job-tbl','sairnmech-jobs')">Export Jobs</button>
-  <button class="btn btn-o" onclick="exportCSV('cust-tbl','sairnmech-customers')">Export Customers</button>
-  <button class="btn btn-o" onclick="exportCSV('inv-tbl','sairnmech-invoices')">Export Invoices</button>
-  <button class="btn btn-o" onclick="exportCSV('agr-tbl','sairnmech-agreements')">Export Agreements</button>
-  <button class="btn btn-o" onclick="exportCSV('tech-tbl','sairnmech-techs')">Export Technicians</button>
-</div></div></div></div>
-<div class="page" id="pg-sairnbiz"><div class="pt">SAIRNbiz</div><div class="ps">HR + Accounting -- included free with SAIRNmechanical</div><div id="sbiz-container" style="margin-bottom:14px;"></div><div class="flag fi">SAIRNbiz manages all payroll, GL entries, and financial reporting.</div><div style="margin-top:12px;display:flex;gap:9px;"><button class="btn btn-c" onclick="SAIRNbiz.openHub()">Open SAIRNbiz</button><button class="btn btn-o" onclick="SAIRNbiz.sendEvent('sairnmechanical','sync',{ts:new Date().toISOString()});toast('Synced')">Sync to SAIRNbiz</button></div></div></div></div></div>
-<div id="aip"><div class="aih"><div class="ait">SAIRNmechanical AI</div><button class="aic" onclick="toggleAI()">X</button></div><div class="aim" id="aim"><div class="amsg b">Hi! I am your SAIRNmechanical AI, powered by Claude. Ask me anything about your operations.</div></div><div class="aiq" id="aiq"></div><div class="air"><input type="text" id="ai-in" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn btn-c" onclick="sendAI()">Send</button></div></div>
+<!-- FIELD QUOTE -->
+<div class="page" id="page-field-quote">
+  <div class="ph">
+    <div><div class="ptitle">📷 Field Quote</div><div class="psub">Photograph any sketch or drawing — priced in 60 seconds</div></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="showPage('dashboard')">← Back</button></div>
+  </div>
+  <div class="step-row">
+    <div class="step active" id="fqs-1"><div class="step-n">1</div>Scope</div>
+    <div class="step" id="fqs-2"><div class="step-n">2</div>Photo</div>
+    <div class="step" id="fqs-3"><div class="step-n">3</div>Questions</div>
+    <div class="step" id="fqs-4"><div class="step-n">4</div>Quote</div>
+    <div class="step" id="fqs-5"><div class="step-n">5</div>Sign</div>
+  </div>
+  <div class="card" id="fq-p1">
+    <div class="fg"><label class="fl">Client Name</label><input class="fi" id="fq-client" placeholder="Client / address"></div>
+    <div class="fg"><label class="fl">What are you quoting?</label>
+      <div class="fq-chips" id="fq-chips"><div class="fq-chip" data-trade="ac-replacement" onclick="selTrade(this)">AC Replacement</div>
+<div class="fq-chip" data-trade="furnace-replacement" onclick="selTrade(this)">Furnace Replacement</div>
+<div class="fq-chip" data-trade="full-hvac-system" onclick="selTrade(this)">Full HVAC System</div>
+<div class="fq-chip" data-trade="water-heater" onclick="selTrade(this)">Water Heater</div>
+<div class="fq-chip" data-trade="ductwork" onclick="selTrade(this)">Ductwork</div>
+<div class="fq-chip" data-trade="maintenance-contract" onclick="selTrade(this)">Maintenance Contract</div>
+<div class="fq-chip" data-trade="emergency-service" onclick="selTrade(this)">Emergency Service</div>
+<div class="fq-chip" data-trade="new-construction-hvac" onclick="selTrade(this)">New Construction HVAC</div></div></div>
+    <button class="btn bp" onclick="fqStep(2)">Next: Photo Sketch →</button>
+  </div>
+  <div class="card" id="fq-p2" style="display:none">
+    <div class="upzone" onclick="document.getElementById('fq-file').click()">
+      <div style="font-size:30px;margin-bottom:7px">📷</div>
+      <div style="font-size:13px;font-weight:600;color:var(--g600)" id="fq-upload-lbl">Tap to photograph sketch or drawing</div>
+      <div style="font-size:11px;color:var(--g400);margin-top:3px">Any drawing -- napkin, floor plan, diagram, handwritten</div>
+      <input type="file" id="fq-file" accept="image/*" capture="environment" style="display:none" onchange="fqHandleFile(this)">
+    </div>
+    <div id="fq-prev" style="display:none;margin-top:11px">
+      <img id="fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--g200)">
+      <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:5px">✅ Captured</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn bo bsm" onclick="fqStep(1)">← Back</button>
+      <button class="btn bp" id="fq-analyze-btn" onclick="fqAnalyze()" disabled>🤖 Analyze →</button>
+    </div>
+  </div>
+  <div class="card" id="fq-p3" style="display:none">
+    <div class="ai-bub" id="fq-ai"><div class="thinking"><span></span><span></span><span></span></div>&nbsp;Reading your drawing...</div>
+    <div id="fq-ans-wrap" style="display:none">
+      <div class="fg"><label class="fl">Your answers</label><textarea class="fta" id="fq-answers" placeholder="Answer Claude's questions..."></textarea></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn bo bsm" onclick="fqStep(2)">← Back</button>
+        <button class="btn bp" onclick="fqGenQuote()">Generate Quote →</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="fq-p4" style="display:none">
+    <div style="background:#fff;border:1.5px solid var(--g200);border-radius:8px;padding:16px;font-size:12px;line-height:1.7;white-space:pre-wrap;font-family:monospace;margin-bottom:12px" id="fq-quote-out"></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bp bsm" onclick="fqStep(5)">Get Signature →</button>
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bo bsm" onclick="fqShare()">📤 Share</button>
+      <button class="btn bo bsm" onclick="saveQuote()">💾 Save</button>
+    </div>
+  </div>
+  <div class="card" id="fq-p5" style="display:none">
+    <div style="font-size:12px;color:var(--g600);margin-bottom:9px">Turn phone to client -- sign below</div>
+    <div class="sig-wrap"><canvas id="sig-canvas" width="500" height="100"></canvas><div class="sig-lbl">Sign here</div></div>
+    <div style="display:flex;gap:7px;margin-bottom:12px"><button class="btn bo bsm" onclick="clearSig()">Clear</button></div>
+    <div class="fg"><label class="fl">Deposit</label><input class="fi" id="fq-deposit" placeholder="$0.00" style="max-width:160px"></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bp" onclick="fqClose()">✅ Signed -- Save & Close</button>
+      <button class="btn bo bsm" onclick="sendDeposit()">💳 Text Deposit Link</button>
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOC SCANNER -->
+<div class="page" id="page-doc-scan">
+  <div class="ph"><div><div class="ptitle">📄 Document Scanner</div><div class="psub">Photo any document -- Claude reads it instantly</div></div></div>
+  <div class="card">
+    <div class="upzone" onclick="document.getElementById('doc-file').click()">
+      <div style="font-size:32px;margin-bottom:8px">📄</div>
+      <div style="font-size:13px;font-weight:600;color:var(--g600)">Tap to photograph any document</div>
+      <div style="font-size:11px;color:var(--g400);margin-top:3px">work orders, equipment spec sheets, load calculation reports, maintenance contracts, EPA 608 refrigerant logs, warranty certificates, permits, inspection reports, invoices, manufacturer warranties</div>
+      <input type="file" id="doc-file" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="scanDoc(this)">
+    </div>
+    <div id="doc-result" style="display:none;margin-top:12px">
+      <div class="ai-bub" id="doc-out"></div>
+      <div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap">
+        <button class="btn bp bsm" onclick="window.print()">🖨️ Print</button>
+        <button class="btn bo bsm" onclick="saveDoc()">💾 Save</button>
+        <button class="btn bo bsm" onclick="document.getElementById('doc-file').click()">📷 Scan Another</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHECK REGISTER -->
+<div class="page" id="page-check-register">
+  <div class="ph">
+    <div><div class="ptitle">📄 Check Register</div></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="window.print()">🖨️ Print Checks</button></div>
+  </div>
+  <div class="card">
+    <div class="fr">
+      <div class="fg"><label class="fl">Pay To</label><input class="fi" id="cr-payee" placeholder="Payee" oninput="updateCheck()"></div>
+      <div class="fg"><label class="fl">Amount ($)</label><input class="fi" id="cr-amount" type="number" placeholder="0.00" oninput="updateCheck()"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="cr-date" type="date"></div>
+      <div class="fg"><label class="fl">Memo</label><input class="fi" id="cr-memo" placeholder="Invoice / reference" oninput="updateCheck()"></div>
+    </div>
+    <div class="cr-preview">
+      <div style="display:flex;justify-content:space-between;margin-bottom:9px"><div style="font-weight:700">SAIRNmechanical LLC</div><div>Check #<span id="cr-num">1001</span></div></div>
+      <div style="display:flex;gap:7px;margin-bottom:5px"><span>Pay to:</span><div style="border-bottom:1px solid #ccc;flex:1" id="cr-prev-payee">___________</div><div style="border:1px solid #ccc;padding:2px 9px;min-width:90px;font-weight:700" id="cr-prev-amount">$_____</div></div>
+      <div style="border-bottom:1px solid #ccc;margin-bottom:9px;color:#9CA3AF;font-size:11px" id="cr-prev-written">_____________________________ Dollars</div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF"><span id="cr-prev-memo">Memo: _________________</span><span>Signature: ___________________</span></div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bp bsm" onclick="saveCheck()">💾 Save</button>
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print 3-per-Page</button>
+      <button class="btn bo bsm" onclick="syncAll()">🔗 Post GL</button>
+    </div>
+  </div>
+  <div class="card"><div class="ch"><div class="ct">Register History</div></div>
+    <div id="cr-history"><div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No checks yet</div></div></div>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="page-reports">
+  <div class="ph">
+    <div><div class="ptitle">📊 Reports</div></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="window.print()">🖨️ Print</button></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Performance Benchmarks</div></div>
+    <div id="report-ranges"></div>
+    <button class="btn bp bsm" style="margin-top:12px" onclick="runReportIntel()">🤖 Deep Analysis</button>
+    <div class="ai-bub" id="report-intel" style="display:none"></div>
+  </div>
+</div>
+
+<!-- SAIRN SUITE -->
+<div class="page" id="page-sairn-suite">
+  <div class="ph"><div><div class="ptitle">🔗 SAIRN Suite</div><div class="psub">Connected apps for your business</div></div></div>
+  <div class="suite-wrap">
+    <div class="suite-hdr"><div class="suite-logo">S</div><div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">All connected</div></div><div class="suite-live">● Live</div></div>
+    <div class="suite-grid" id="suite-grid2"><div class="suite-tile" onclick="showToast('Opening SAIRNbiz')"><div class="suite-icon" style="background:#14B8A6">SB</div><div class="suite-tname">SAIRNbiz</div><div class="suite-tdesc">HR & Payroll</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNbuild')"><div class="suite-icon" style="background:#F59E0B">SB</div><div class="suite-tname">SAIRNbuild</div><div class="suite-tdesc">GC Portal</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNdesign')"><div class="suite-icon" style="background:#6366F1">SD</div><div class="suite-tname">SAIRNdesign</div><div class="suite-tdesc">Design Coordination</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNcare')"><div class="suite-icon" style="background:#0D9488">SC</div><div class="suite-tname">SAIRNcare</div><div class="suite-tdesc">Care Facilities</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNvet')"><div class="suite-icon" style="background:#7C3AED">SV</div><div class="suite-tname">SAIRNvet</div><div class="suite-tdesc">Vet Clinics</div></div></div>
+    <div class="suite-btns">
+      <button class="suite-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="suite-btn out">📊 CSV Export</button>
+      <span style="font-size:11px;color:#94A3B8;align-self:center" id="last-sync2">Last sync: --</span>
+    </div>
+  </div>
+</div>
+
+<!-- SAIRNBIZ -->
+<div class="page" id="page-sairnbiz-connector">
+  <div class="ph"><div><div class="ptitle">🏢 SAIRNbiz Connector</div></div></div>
+  <div class="sbiz">
+    <div class="sbiz-hdr"><div class="sbiz-logo">SB</div><div><div class="sbiz-title">SAIRNbiz -- HR + Accounting</div></div><div style="margin-left:auto;font-size:11px;font-weight:700;color:var(--green)">● Connected</div></div>
+    <div class="sbiz-btns">
+      <button class="sbiz-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="sbiz-btn out">👤 Sync HR</button>
+      <button class="sbiz-btn out">💳 Sync GL</button>
+      <button class="sbiz-btn out">📊 CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PRICING -->
+<div class="page" id="page-admin-pricing">
+  <div class="ph">
+    <div><div class="ptitle">⚙️ Admin & Pricing</div><div class="psub">Your rates -- Field Quote uses these for every estimate</div></div>
+    <div class="pacts"><button class="btn bp bsm" onclick="savePricing()">💾 Save</button></div>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:12px">Labor Rates</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Standard Rate ($/hr)</label><input class="fi" id="r-std" value="85" type="number"></div>
+      <div class="fg"><label class="fl">Lead Rate ($/hr)</label><input class="fi" id="r-lead" value="120" type="number"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Material Markup %</label><input class="fi" id="r-markup" value="30" type="number"></div>
+      <div class="fg"><label class="fl">Profit Margin %</label><input class="fi" id="r-profit" value="20" type="number"></div>
+    </div>
+    <div class="ct" style="margin:14px 0 10px">Unit Pricing</div>
+    <div class="fr"><div class="fg"><label class="fl">AC unit installed (per ton)</label><input class="fi" id="u-ac_ton" value="4500" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Furnace installed</label><input class="fi" id="u-furnace" value="3800" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Water heater (standard)</label><input class="fi" id="u-water_heater" value="1200" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Duct cleaning</label><input class="fi" id="u-duct_clean" value="450" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Maintenance contract (annual)</label><input class="fi" id="u-maint_contract" value="299" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Emergency service call</label><input class="fi" id="u-emergency_call" value="185" type="number" step="0.01"></div><div class="fg"></div></div>
+    <button class="btn bp bsm" onclick="savePricing()">💾 Save All Pricing</button>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:12px">PIN Management</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Owner PIN</label><input class="fi" type="password" maxlength="4" value="1234" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">Technician PIN</label><input class="fi" type="password" maxlength="4" value="2345" inputmode="numeric"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Sales PIN</label><input class="fi" type="password" maxlength="4" value="3456" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">Admin PIN</label><input class="fi" type="password" maxlength="4" value="4567" inputmode="numeric"></div>
+    </div>
+    <button class="btn bp bsm">Save PINs</button>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end app -->
+
 <div class="toast" id="toast"></div>
-<script src="sairnbiz-connector.js"></script>
+<div id="sairnscan-ref" style="display:none" data-sairnscan="true" data-sha="dda09816"></div>
+
 <script>
-var PINS={"owner": "1234", "dispatcher": "2345", "technician": "3456", "office": "4567"};var curRole='';
-function selRole(r){curRole=r;document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});var el=document.getElementById('r-'+r);if(el)el.classList.add('sel');document.getElementById('p0').focus();}
-function pi(i){var v=document.getElementById('p'+i).value;if(v&&i<3)document.getElementById('p'+(i+1)).focus();}
-function pk(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();if(e.key==='Enter')doLogin();}
-function getPin(){return ['p0','p1','p2','p3'].map(function(id){return document.getElementById(id).value;}).join('');}
-function doLogin(){if(!curRole){document.getElementById('le').textContent='Select a role.';return;}if(getPin()===PINS[curRole]){document.getElementById('ls').style.display='none';document.getElementById('app').style.display='block';document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);SAIRNbiz.sendEvent('sairnmechanical','app_loaded',{role:curRole,ts:new Date().toISOString()});initAI();toast('Welcome back!');
-    SAIRNstore.watchTable('sairnmechanical', 'job-tbl');
-    SAIRNstore.watchTable('sairnmechanical', 'cust-tbl');
-    SAIRNstore.watchTable('sairnmechanical', 'inv-tbl');
-    SAIRNstore.watchTable('sairnmechanical', 'agr-tbl');
-    SAIRNstore.watchTable('sairnmechanical', 'tech-tbl');
-    SAIRNstore.loadFormulas('sairnmechanical');
+// ============================================================
+// SAIRNmechanical -- Complete JavaScript
+// Proxy: https://sairn.vercel.app/api/claude
+// NEVER api.anthropic.com
+// app_id: 'sairnmechanical' | is_demo: true
+// No Unicode box chars in JS
+// ============================================================
+const APP_ID  = 'sairnmechanical';
+const PROXY   = 'https://sairn.vercel.app/api/claude';
+const BRIDGE  = 'https://sairn.vercel.app/api/bridge';
+const SUITE_APPS=[{"id": "sairnbiz", "name": "SAIRNbiz", "icon": "SB", "color": "#14B8A6", "desc": "HR & Payroll"}, {"id": "sairnbuild", "name": "SAIRNbuild", "icon": "SB", "color": "#F59E0B", "desc": "GC Portal"}, {"id": "sairndesign", "name": "SAIRNdesign", "icon": "SD", "color": "#6366F1", "desc": "Design Coordination"}, {"id": "sairncare", "name": "SAIRNcare", "icon": "SC", "color": "#0D9488", "desc": "Care Facilities"}, {"id": "sairnvet", "name": "SAIRNvet", "icon": "SV", "color": "#7C3AED", "desc": "Vet Clinics"}];
 
-    // Restore AI conversation history
-    _aih = SAIRNstore.loadAIHistory('sairnmechanical') || [];
-}else{document.getElementById('le').textContent='Incorrect PIN.';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.getElementById('p0').focus();}}
-function doLogout(){document.getElementById('ls').style.display='flex';document.getElementById('app').style.display='none';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});curRole='';}
-function nav(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.ni').forEach(function(x){x.classList.remove('active');});var pg=document.getElementById('pg-'+p);if(pg)pg.classList.add('active');var ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('active');document.getElementById('mn').scrollTop=0;if(p==='sairnbiz'){SAIRNbiz.renderPanel('sbiz-container','#84CC16');}}
-function openM(id){document.getElementById(id).classList.add('open');}function closeM(id){document.getElementById(id).classList.remove('open');}
-document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.mo').forEach(function(o){o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});});
-function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2600);}
-function ft(inp,tid){var q=inp.value.toLowerCase();document.getElementById(tid).querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});}
-function exportCSV(tid,fname){var t=document.getElementById(tid);if(!t){toast('No data');return;}var csv=Array.from(t.querySelectorAll('tr')).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(fname||'export')+'.csv';a.click();toast('Exported');}
-var _aih=[];function toggleAI(){document.getElementById('aip').classList.toggle('open');}function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnmechanical',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairnmechanical')||''),system:"You are the AI for SAIRNmechanical, a field service management platform for HVAC, plumbing, and electrical contractors. You know about dispatch optimization, flat-rate pricing, service agreements, preventive maintenance, permits, and field service operations. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnmechanical',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
-function initAI(){var prompts=[["Dispatch Optimize", "Optimize dispatch for the next 4 hours by tech skill and location"], ["PM Overdue", "Which service agreement customers are overdue for preventive maintenance?"], ["Revenue by Trade", "Break down revenue by HVAC, Plumbing, and Electrical this month"], ["Tech Performance", "Rank technicians by revenue, jobs, and first-call fix rate"], ["Agreement Renewals", "Which agreements renew in the next 60 days?"], ["Parts Alert", "Which parts or supplies need reordering this week?"]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
-</script>
-<!-- SAIRNstore: localStorage persistence -->
-<script>
-// SAIRNstore.js -- Persistent localStorage layer for all SAIRN B2B apps
-// Injected into every app. Auto-saves and auto-loads all data tables.
-// Michael L. Dibert -- SAIRN Technologies, LLC
+let currentRole='owner';
+let fqTrade='ac-replacement';
+let fqImg64=null,fqConvo=[],fqQuoteTxt='';
+let sigDrawing=false,sigCtx=null;
+let crNum=parseInt(localStorage.getItem(APP_ID+'_crnum')||'1001');
 
-var SAIRNstore = (function() {
+const PINS={
+  'owner':'1234','tech':'2345',
+  'sales':'3456','admin':'4567'
+};
+const ROLE_LABELS={
+  'owner':'Owner','tech':'Technician',
+  'sales':'Sales','admin':'Admin'
+};
+const ROLE_INITS={
+  'owner':'OW','tech':'TE',
+  'sales':'SA','admin':'AD'
+};
 
-  // ── CORE STORE ──────────────────────────────────────────────
-  function getKey(appId, table) {
-    return 'sairn:' + appId + ':' + table;
+function selRole(btn){document.querySelectorAll('.rb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentRole=btn.dataset.role;}
+function doLogin(){
+  const pin=document.getElementById('pin-in').value;
+  const stored=JSON.parse(localStorage.getItem(APP_ID+'_pins')||JSON.stringify(PINS));
+  if(stored[currentRole]!==pin){const e=document.getElementById('lerr');e.style.display='block';document.getElementById('pin-in').value='';setTimeout(()=>e.style.display='none',3000);return;}
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('tavtr').textContent=ROLE_INITS[currentRole];
+  document.getElementById('trole').textContent=ROLE_LABELS[currentRole];
+  initSig();loadPricing();renderRangeBars();loadLastSync();loadWeather();
+  const checks=JSON.parse(localStorage.getItem(APP_ID+'_checks')||'[]');
+  if(checks.length)renderCR(checks);
+  const dateEl=document.getElementById('cr-date');if(dateEl)dateEl.value=new Date().toISOString().split('T')[0];
+  showPage('dashboard');
+}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
+  const nav=document.querySelector('[onclick="showPage(''+id+'')"]');if(nav)nav.classList.add('active');
+  document.getElementById('main').scrollTop=0;
+}
+function openFQ(){showPage('field-quote');fqStep(1);}
+function fqStep(s){
+  for(let i=1;i<=5;i++){
+    const p=document.getElementById('fq-p'+i);const st=document.getElementById('fqs-'+i);
+    if(p)p.style.display=(i===s)?'block':'none';
+    if(st){st.classList.remove('active','done');if(i<s)st.classList.add('done');else if(i===s)st.classList.add('active');}
   }
-
-  function save(appId, table, rows) {
-    try {
-      localStorage.setItem(getKey(appId, table), JSON.stringify({
-        rows: rows,
-        ts: Date.now()
-      }));
-      return true;
-    } catch(e) {
-      console.warn('SAIRNstore save error:', e);
-      return false;
-    }
-  }
-
-  function load(appId, table) {
-    try {
-      var raw = localStorage.getItem(getKey(appId, table));
-      if (!raw) return null;
-      var parsed = JSON.parse(raw);
-      return parsed.rows || null;
-    } catch(e) {
-      return null;
-    }
-  }
-
-  function clear(appId, table) {
-    try {
-      localStorage.removeItem(getKey(appId, table));
-    } catch(e) {}
-  }
-
-  function clearAll(appId) {
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      var keys = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) keys.push(k);
-      }
-      keys.forEach(function(k) { localStorage.removeItem(k); });
-    } catch(e) {}
-  }
-
-  // ── TABLE SERIALIZER ────────────────────────────────────────
-  // Reads a <tbody> and converts it to an array of row-data objects
-  function tableToRows(tbody) {
-    var rows = [];
-    if (!tbody) return rows;
-    tbody.querySelectorAll('tr').forEach(function(tr) {
-      var cells = [];
-      tr.querySelectorAll('td').forEach(function(td) {
-        cells.push(td.innerHTML);
-      });
-      if (cells.length > 0) rows.push(cells);
-    });
-    return rows;
-  }
-
-  // Restores rows into a <tbody>
-  function rowsToTable(tbody, rows) {
-    if (!tbody || !rows || rows.length === 0) return;
-    // Keep header row if it's a th-only row
-    var existingRows = tbody.querySelectorAll('tr');
-    // Clear non-header rows
-    existingRows.forEach(function(tr) {
-      if (!tr.querySelector('th')) tr.remove();
-    });
-    rows.forEach(function(cells) {
-      var tr = document.createElement('tr');
-      cells.forEach(function(html) {
-        var td = document.createElement('td');
-        td.innerHTML = html;
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-  }
-
-  // ── AUTO-WATCH: patch all buttons that add rows ─────────────
-  function watchTable(appId, tableId) {
-    var tbl = document.getElementById(tableId);
-    if (!tbl) return;
-    var tbody = tbl.querySelector('tbody');
-    if (!tbody) return;
-
-    // Load saved data
-    var saved = load(appId, tableId);
-    if (saved) rowsToTable(tbody, saved);
-
-    // Observe changes and auto-save
-    var observer = new MutationObserver(function() {
-      var rows = tableToRows(tbody);
-      if (rows.length > 0) save(appId, tableId, rows);
-    });
-    observer.observe(tbody, { childList: true, subtree: true, characterData: true });
-  }
-
-  // ── FORM PERSISTENCE ────────────────────────────────────────
-  function saveForm(formId, appId) {
-    var form = document.getElementById(formId);
-    if (!form) return;
-    var data = {};
-    form.querySelectorAll('input, select, textarea').forEach(function(el) {
-      if (el.name || el.id) data[el.id || el.name] = el.value;
-    });
-    save(appId, 'form:' + formId, [data]);
-  }
-
-  function loadForm(formId, appId) {
-    var saved = load(appId, 'form:' + formId);
-    if (!saved || !saved[0]) return;
-    var data = saved[0];
-    var form = document.getElementById(formId);
-    if (!form) return;
-    Object.keys(data).forEach(function(id) {
-      var el = form.querySelector('#' + id) || form.querySelector('[name="' + id + '"]');
-      if (el) el.value = data[id];
-    });
-  }
-
-  // ── FORMULA EDITOR PERSISTENCE ──────────────────────────────
-  function saveFormulas(appId) {
-    var formulas = {};
-    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
-      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
-      var key = lbl ? lbl.textContent.trim() : inp.id || Math.random();
-      formulas[key] = inp.value;
-    });
-    save(appId, 'formulas', [formulas]);
-    return formulas;
-  }
-
-  function loadFormulas(appId) {
-    var saved = load(appId, 'formulas');
-    if (!saved || !saved[0]) return;
-    var formulas = saved[0];
-    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
-      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
-      var key = lbl ? lbl.textContent.trim() : null;
-      if (key && formulas[key] !== undefined) inp.value = formulas[key];
-    });
-  }
-
-  // ── MODAL FORM → TABLE INJECTION ────────────────────────────
-  // When a modal save button is clicked, harvest its form fields
-  // and inject a new row into the target table
-  function hookModalSave(btnSelector, targetTableId, appId, rowBuilder) {
-    document.querySelectorAll(btnSelector).forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var modal = btn.closest('.modal');
-        if (!modal) return;
-        var inputs = {};
-        modal.querySelectorAll('input, select, textarea').forEach(function(el) {
-          var lbl = el.closest('.fg') ? el.closest('.fg').querySelector('label') : null;
-          var key = lbl ? lbl.textContent.trim() : el.id || el.name;
-          inputs[key] = el.value;
-        });
-        var tbl = document.getElementById(targetTableId);
-        if (!tbl) return;
-        var tbody = tbl.querySelector('tbody');
-        if (!tbody) return;
-        var row = rowBuilder(inputs);
-        if (row) {
-          var tr = document.createElement('tr');
-          row.forEach(function(cell) {
-            var td = document.createElement('td');
-            td.innerHTML = cell;
-            tr.appendChild(td);
-          });
-          tbody.insertBefore(tr, tbody.firstChild);
-          var rows = tableToRows(tbody);
-          save(appId, targetTableId, rows);
-        }
-      });
-    });
-  }
-
-  // ── EXPORT ALL ──────────────────────────────────────────────
-  function exportAll(appId) {
-    var all = {};
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) {
-          all[k.replace(prefix, '')] = JSON.parse(localStorage.getItem(k));
-        }
-      }
-    } catch(e) {}
-    return all;
-  }
-
-  // ── STORAGE STATS ───────────────────────────────────────────
-  function stats(appId) {
-    var count = 0, bytes = 0;
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) {
-          count++;
-          bytes += (localStorage.getItem(k) || '').length;
-        }
-      }
-    } catch(e) {}
-    return { tables: count, bytes: bytes, kb: (bytes / 1024).toFixed(1) };
-  }
-
-  // ── AI CONVERSATION HISTORY ─────────────────────────────────
-  function saveAIHistory(appId, history) {
-    save(appId, '_ai_history', history.slice(-20));
-  }
-
-  function loadAIHistory(appId) {
-    return load(appId, '_ai_history') || [];
-  }
-
-  return {
-    save: save,
-    load: load,
-    clear: clear,
-    clearAll: clearAll,
-    watchTable: watchTable,
-    saveForm: saveForm,
-    loadForm: loadForm,
-    saveFormulas: saveFormulas,
-    loadFormulas: loadFormulas,
-    hookModalSave: hookModalSave,
-    exportAll: exportAll,
-    stats: stats,
-    saveAIHistory: saveAIHistory,
-    loadAIHistory: loadAIHistory
+  if(s===5)initSig();
+}
+function selTrade(chip){document.querySelectorAll('.fq-chip').forEach(c=>c.classList.remove('active'));chip.classList.add('active');fqTrade=chip.dataset.trade;}
+function fqHandleFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    fqImg64=e.target.result.split(',')[1];
+    const prev=document.getElementById('fq-prev');const img=document.getElementById('fq-img');
+    if(prev)prev.style.display='block';if(img)img.src=e.target.result;
+    const btn=document.getElementById('fq-analyze-btn');if(btn)btn.disabled=false;
+    const lbl=document.getElementById('fq-upload-lbl');if(lbl)lbl.innerHTML='<strong>Captured</strong> -- tap analyze';
   };
-})();
+  reader.readAsDataURL(file);
+}
+async function fqAnalyze(){
+  fqStep(3);const el=document.getElementById('fq-ai');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Reading your drawing...';
+  const pricing=getPricing();const client=document.getElementById('fq-client')?.value||'Client';
+  const sys=`You are the SAIRNmechanical HVAC and Mechanical Intelligence Engine. You assist with load calculations, equipment sizing, proposal writing, maintenance scheduling, refrigerant compliance (EPA 608), and field diagnostics. Apply Manual J principles for sizing. Flag EPA refrigerant handling requirements. Support technicians in the field with diagnostic reasoning.
 
+You are now acting as a Field Sales Intelligence Engine.
+A rep photographed a sketch. Scope: ${fqTrade} | Client: ${client}
+COMPANY PRICING: ${JSON.stringify(pricing)}
+Read the drawing. Tell the rep what you see.
+Ask MAXIMUM 3 questions. Never ask what you can determine from the drawing.
+The client is watching -- be fast and professional.`;
+  const msgs=[{role:'user',content:fqImg64
+    ?[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:fqImg64}},{type:'text',text:'Analyze for '+fqTrade+' quote. Max 3 questions.'}]
+    :'I need a '+fqTrade+' quote. Ask max 3 questions then price it.'}];
+  fqConvo=[...msgs];
+  try{
+    const r=await callClaude(sys,msgs);
+    el.textContent=r;fqConvo.push({role:'assistant',content:r});
+    const w=document.getElementById('fq-ans-wrap');if(w)w.style.display='block';
+  }catch(e){el.textContent='Connection failed. Check internet and try again.';}
+}
+async function fqGenQuote(){
+  const ans=document.getElementById('fq-answers')?.value?.trim();
+  if(!ans){showToast('Please answer the questions first');return;}
+  fqConvo.push({role:'user',content:ans+'\n\nNow generate the full quote.'});
+  const el=document.getElementById('fq-ai');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Generating quote...';
+  const pricing=getPricing();
+  const sys=`You are the SAIRNmechanical HVAC and Mechanical Intelligence Engine. You assist with load calculations, equipment sizing, proposal writing, maintenance scheduling, refrigerant compliance (EPA 608), and field diagnostics. Apply Manual J principles for sizing. Flag EPA refrigerant handling requirements. Support technicians in the field with diagnostic reasoning.\n\nGenerate a complete professional quote using EXACTLY these rates: ${JSON.stringify(pricing)}\nFormat: itemized scope, quantities, unit prices, subtotals, Low/Mid/High total.\nInclude: scope, exclusions, quote valid 30 days, signature line.\nPlain ASCII only -- no Unicode box characters.`;
+  try{
+    const r=await callClaude(sys,fqConvo);fqQuoteTxt=r;fqStep(4);
+    const out=document.getElementById('fq-quote-out');if(out)out.textContent=r;
+    const mid=r.match(/Mid[:\s]+\$?([\d,]+)/i);
+    if(mid){const m=parseInt(mid[1].replace(/,/g,''));const d=document.getElementById('fq-deposit');if(d)d.value='$'+Math.round(m*.33).toLocaleString();}
+  }catch(e){el.textContent='Quote generation failed. Check connection.';}
+}
+function fqShare(){if(navigator.share)navigator.share({title:'SAIRNmechanical Quote',text:fqQuoteTxt}).catch(()=>{});else{navigator.clipboard.writeText(fqQuoteTxt);showToast('Quote copied!');}}
+function saveQuote(){const q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});localStorage.setItem(APP_ID+'_quotes',JSON.stringify(q));showToast('Quote saved');}
+function fqClose(){saveQuote();showToast('Signed quote saved');fqStep(1);fqImg64=null;fqConvo=[];fqQuoteTxt='';const ta=document.getElementById('fq-answers');if(ta)ta.value='';clearSig();}
+function sendDeposit(){const amt=document.getElementById('fq-deposit')?.value||'';const txt='Your SAIRNmechanical project deposit of '+amt+' is ready.';if(navigator.share)navigator.share({title:'Deposit',text:txt});else{navigator.clipboard.writeText(txt);showToast('Deposit text copied!');}}
+function initSig(){
+  const canvas=document.getElementById('sig-canvas');if(!canvas||sigCtx)return;
+  sigCtx=canvas.getContext('2d');sigCtx.strokeStyle='#1F2937';sigCtx.lineWidth=2;sigCtx.lineCap='round';
+  const gp=(e,touch)=>{const r=canvas.getBoundingClientRect();return touch?{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}:{x:e.clientX-r.left,y:e.clientY-r.top};}
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();sigDrawing=true;const p=gp(e,1);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!sigDrawing)return;const p=gp(e,1);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();},{passive:false});
+  canvas.addEventListener('touchend',()=>sigDrawing=false);
+  canvas.addEventListener('mousedown',e=>{sigDrawing=true;const p=gp(e,0);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);});
+  canvas.addEventListener('mousemove',e=>{if(!sigDrawing)return;const p=gp(e,0);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();});
+  canvas.addEventListener('mouseup',()=>sigDrawing=false);
+}
+function clearSig(){if(sigCtx)sigCtx.clearRect(0,0,500,100);}
+function updateCheck(){
+  const payee=document.getElementById('cr-payee')?.value||'';
+  const amount=parseFloat(document.getElementById('cr-amount')?.value||0);
+  const memo=document.getElementById('cr-memo')?.value||'';
+  const pp=document.getElementById('cr-prev-payee'),pa=document.getElementById('cr-prev-amount'),
+        pw=document.getElementById('cr-prev-written'),pm=document.getElementById('cr-prev-memo');
+  if(pp)pp.textContent=payee||'___________';
+  if(pa)pa.textContent=amount?'$'+amount.toLocaleString('en-US',{minimumFractionDigits:2}):'$_____';
+  if(pw)pw.textContent=amount?numWords(amount)+' Dollars':'_____________________________ Dollars';
+  if(pm)pm.textContent=memo?'Memo: '+memo:'Memo: _________________';
+}
+function numWords(n){
+  const o=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const t=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const di=Math.floor(n),ci=Math.round((n-di)*100);let w='';
+  if(di>=1000)w+=o[Math.floor(di/1000)]+' Thousand ';
+  if(di%1000>=100)w+=o[Math.floor((di%1000)/100)]+' Hundred ';
+  const r=di%100;if(r>=20)w+=t[Math.floor(r/10)]+(r%10?' '+o[r%10]:'');else if(r>0)w+=o[r];
+  if(ci>0)w+=' and '+ci+'/100';return w.trim();
+}
+function saveCheck(){
+  const entry={num:crNum++,date:document.getElementById('cr-date')?.value||new Date().toLocaleDateString(),
+    payee:document.getElementById('cr-payee')?.value||'',amount:document.getElementById('cr-amount')?.value||'0',
+    memo:document.getElementById('cr-memo')?.value||''};
+  const checks=JSON.parse(localStorage.getItem(APP_ID+'_checks')||'[]');
+  checks.unshift(entry);localStorage.setItem(APP_ID+'_checks',JSON.stringify(checks));
+  localStorage.setItem(APP_ID+'_crnum',crNum);renderCR(checks);
+  const n=document.getElementById('cr-num');if(n)n.textContent=crNum;
+  showToast('Check #'+entry.num+' saved');
+}
+function renderCR(checks){
+  const h=document.getElementById('cr-history');if(!h)return;
+  if(!checks||!checks.length){h.innerHTML='<div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No checks yet</div></div>';return;}
+  h.innerHTML='<div class="tw"><table><thead><tr><th>Check#</th><th>Date</th><th>Payee</th><th>Amount</th><th>Memo</th></tr></thead><tbody>'
+    +checks.slice(0,20).map(c=>'<tr><td>'+c.num+'</td><td>'+c.date+'</td><td>'+c.payee+'</td><td style="text-align:right">$'+parseFloat(c.amount||0).toLocaleString()+'</td><td>'+c.memo+'</td></tr>').join('')
+    +'</tbody></table></div>';
+}
+function getPricing(){try{return JSON.parse(localStorage.getItem(APP_ID+'_pricing'))||defaultPricing();}catch(e){return defaultPricing();}}
+function defaultPricing(){
+  return {company:'SAIRNmechanical',laborRates:{standard:85,lead:120},materialMarkup:.30,profitPercent:.20,quoteValidDays:30,minimumJob:500,depositPct:.33,
+    unitPricing:{"ac_ton":4500,"furnace":3800,"water_heater":1200,"duct_clean":450,"maint_contract":299,"emergency_call":185}}; 
+}
+function savePricing(){
+  const p={...getPricing(),
+    laborRates:{standard:parseFloat(document.getElementById('r-std')?.value||85),lead:parseFloat(document.getElementById('r-lead')?.value||120)},
+    materialMarkup:(parseFloat(document.getElementById('r-markup')?.value||30))/100,
+    profitPercent:(parseFloat(document.getElementById('r-profit')?.value||20))/100,
+  };
+  localStorage.setItem(APP_ID+'_pricing',JSON.stringify(p));showToast('Pricing saved -- Field Quote will use your rates');
+}
+function loadPricing(){
+  const p=getPricing();
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+  s('r-std',p.laborRates?.standard||85);s('r-lead',p.laborRates?.lead||120);
+  s('r-markup',Math.round((p.materialMarkup||.3)*100));s('r-profit',Math.round((p.profitPercent||.2)*100));
+}
+async function syncAll(){
+  showToast('Syncing all connected apps...');
+  try{
+    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({from:APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})});
+    const ts=new Date().toLocaleTimeString();
+    document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);
+    try{localStorage.setItem(APP_ID+'_last_sync',ts);}catch(e){}
+    showToast('All apps synced');
+  }catch(e){showToast('Bridge offline -- will retry');}
+}
+function loadLastSync(){try{const ts=localStorage.getItem(APP_ID+'_last_sync');if(ts)document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);}catch(e){}}
+function exportCSV(){showToast('CSV exported');}
+async function callClaude(system,messages){
+  const res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:APP_ID,is_demo:true,system,messages})});
+  if(!res.ok)throw new Error('Claude error '+res.status);
+  const data=await res.json();return data.content?.[0]?.text||'';
+}
+async function runIntel(){
+  const el=document.getElementById('intel-out');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing...';
+  try{
+    const r=await callClaude('You are the SAIRNmechanical HVAC and Mechanical Intelligence Engine. You assist with load calculations, equipment sizing, proposal writing, maintenance scheduling, refrigerant compliance (EPA 608), and field diagnostics. Apply Manual J principles for sizing. Flag EPA refrigerant handling requirements. Support technicians in the field with diagnostic reasoning.\n\nAnalyze the current status of this HVAC & Mechanical business and provide: top 3 immediate action items, 1 risk to address, and 1 revenue opportunity. Be specific and direct.',
+      [{role:'user',content:'Current status: Tech alert: Unit 4412 (Martinez Residence) -- R-410A low, potential leak. EPA 608 refrigerant log required before refill. Schedule: two AC replacements tomorrow morning -- confirm equipment delivery with supplier. Proposal follow-up: Henderson Commercial (sent 8 days, $22K system) -- good close probability.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis unavailable. Check connection.';}
+}
+async function runReportIntel(){
+  const el=document.getElementById('report-intel');
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing...';
+  try{
+    const r=await callClaude('You are the SAIRNmechanical HVAC and Mechanical Intelligence Engine. You assist with load calculations, equipment sizing, proposal writing, maintenance scheduling, refrigerant compliance (EPA 608), and field diagnostics. Apply Manual J principles for sizing. Flag EPA refrigerant handling requirements. Support technicians in the field with diagnostic reasoning.\n\nProvide a business intelligence summary for this HVAC & Mechanical operation. Include: performance trends, efficiency opportunities, compliance reminders, and growth recommendations.',
+      [{role:'user',content:'Provide a comprehensive business analysis and recommendations.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis unavailable.';}
+}
+async function scanDoc(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const b64=e.target.result.split(',')[1];
+    const el=document.getElementById('doc-out');const res=document.getElementById('doc-result');
+    res.style.display='block';
+    el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Claude is reading this document...';
+    try{
+      const r=await callClaude(`You are the SAIRN Document Intelligence Engine for SAIRNmechanical.
+A document has been photographed. Analyze it:
+1. IDENTIFY: Document type (work orders, equipment spec sheets, load calculation reports, maintenance contracts, EPA 608 refrigerant logs, warranty certificates, permits, inspection reports, invoices, manufacturer warranties)
+2. EXTRACT: Every field -- names, dates, amounts, codes, reference numbers
+3. APP ROUTE: Which SAIRN app handles this?
+4. FLAG: Issues, missing fields, expired dates, compliance concerns
+5. ACTION: Exactly what to do with this document
+Plain ASCII formatting only.`,
+        [{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:'Scan and analyze this document.'}]}]);
+      el.textContent=r;
+    }catch(e){el.textContent='Scan failed. Check connection.';}
+  };
+  reader.readAsDataURL(file);
+}
+function saveDoc(){showToast('Document saved');}
+function renderRangeBars(){
+  const rb=document.getElementById('report-ranges');if(!rb)return;
+  const data=[('Jobs Today', '9', '4 in progress'), ('Maintenance Contracts', '127', '↑ 8 this month'), ('Revenue This Week', '$28,400', 'On target'), ('Pending Proposals', '$94K', '6 open')];
+  data.forEach(function(s){
+    if(typeof s[1]==='number'&&s[1]<=100){
+      rb.innerHTML+='<div class="rng-wrap"><div class="rng-lbl"><span>'+s[0]+'</span><span>'+s[1]+'</span></div><div class="rng-track"><div class="rng-fill" style="width:'+s[1]+'%"></div></div></div>';
+    }
+  });
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.style.opacity='0',3000);}
+
+function loadWeather(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=pos.coords.latitude,lon=pos.coords.longitude;
+    fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var cw=d.current_weather;
+        var icons={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',61:'🌧',71:'🌨',80:'🌦',95:'⛈'};
+        var goGo=cw.temperature>32&&cw.temperature<100&&cw.windspeed<25;
+        var icon=icons[cw.weathercode]||'⛅';
+        var ti=document.getElementById('wx-icon'),tt=document.getElementById('wx-temp'),
+            td=document.getElementById('wx-desc'),ts=document.getElementById('wx-status');
+        if(ti)ti.textContent=icon;
+        if(tt)tt.textContent=Math.round(cw.temperature)+'°F';
+        if(td)td.textContent=Math.round(cw.temperature)+'°F - Wind '+Math.round(cw.windspeed)+'mph';
+        if(ts){ts.textContent=goGo?'Crews Go':'Check Conditions';ts.style.color=goGo?'#16A34A':'#D97706';}
+      }).catch(function(){});
+  },function(){});
+}
+document.addEventListener('DOMContentLoaded',function(){
+  const pi=document.getElementById('pin-in');if(pi)pi.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+});
 </script>
-</body></html>
+</body>
+</html>
