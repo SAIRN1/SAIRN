@@ -335,7 +335,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--c);} textarea{resize:
   <div class="air"><input type="text" id="ai-in" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn btn-c" onclick="sendAI()">Send</button></div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="sairnbiz-connector.js"></script>
+<script src="sairnbiz-connector.js" defer></script>
 <script>
 var PINS="partner": "1234", "associate": "2345", "paralegal": "3456", "staff": "4567";
 var curRole='';
@@ -378,7 +378,7 @@ var _aih=[];
 function toggleAI(){document.getElementById('aip').classList.toggle('open');}
 function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}
 function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnlaw',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairnlaw')||''),system:"You are the AI for SAIRNlaw, a law firm practice management platform. You know about matter management, billable hours, IOLTA trust accounting, conflict checks, docket management, ABA billing guidelines, and legal practice operations. Be specific, data-driven, and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnlaw',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
+async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairnlaw',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairnlaw')||''),system:"You are the AI for SAIRNlaw, a law firm practice management platform. You know about matter management, billable hours, IOLTA trust accounting, conflict checks, docket management, ABA billing guidelines, and legal practice operations. Be specific, data-driven, and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content?.[0]?.text || '')||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairnlaw',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
 function initAI(){var prompts=[["Deadline Alert", "Which matters have deadlines in the next 30 days?"], ["Unbilled Time", "Find all unbilled time entries and suggest invoices."], ["AR Collections", "Which invoices are overdue? Draft collection letters."], ["Matter Status", "Give me a status update on all active matters."], ["Conflict Check", "Run a conflict check for all current matters."], ["Revenue Forecast", "Forecast my revenue for next 30 days based on pipeline."]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
 
@@ -399,7 +399,7 @@ var SAIRNstore = (function() {
 
   function save(appId, table, rows) {
     try {
-      localStorage.setItem(getKey(appId, table), JSON.stringify({
+      localStorage.setItem(getKey(appId, table), JSON.stringify({app_id:"sairnlaw",is_demo:true,
         rows: rows,
         ts: Date.now()
       }));
@@ -659,7 +659,7 @@ function nav(p) {
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script>
 // === SAIRNLAW SUPABASE + AI MEMORY ENGINE ===
 // Pattern: Business Profile + AI Memory + cross-device sync (mirrors SAIRNbiz)
@@ -740,7 +740,7 @@ async function writeSairnlawMemory(history) {
       })
     });
     const sd = await summaryRes.json();
-    const memText = sd.content && sd.content[0] ? sd.content[0].text : null;
+    const memText = sd.content && sd.content[0] ? sd.content?.[0]?.text || '' : null;
     if (!memText) return;
     const mem = { memory_text: memText, source: 'sairnlaw', created_at: new Date().toISOString() };
     _sairnlawMemories.unshift(mem);
@@ -842,7 +842,7 @@ document.addEventListener('DOMContentLoaded', function() {
              style="display:none" onchange="sairnFQHandleFile(this)">
     </div>
     <div id="sairn-fq-preview" style="display:none;margin-bottom:12px">
-      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB">
+      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB" loading="lazy">
       <div style="font-size:13px;color:#16A34A;font-weight:600;margin-top:6px">✅ Drawing captured</div>
     </div>
     <div style="display:flex;gap:9px">
