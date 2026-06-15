@@ -5563,6 +5563,64 @@ document.addEventListener('DOMContentLoaded',function(){
 <div id="sairnscan-ref" style="display:none" data-sairnscan="true"
      data-version="1.0" data-sha="dda09816"></div>
 
+
+<!-- Check Register module -->
+<div id="sairn-check-register-panel" style="display:none">
+  <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:10px;padding:20px;margin-bottom:16px;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px;">📄 Check Register</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div><label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">Pay To</label>
+        <input id="sairn-cr-payee" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:6px;font-size:14px" placeholder="Payee"></div>
+      <div><label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">Amount ($)</label>
+        <input id="sairn-cr-amount" type="number" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:6px;font-size:14px" placeholder="0.00"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div><label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">Date</label>
+        <input id="sairn-cr-date" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:6px;font-size:14px"></div>
+      <div><label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">Memo</label>
+        <input id="sairn-cr-memo" style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:6px;font-size:14px" placeholder="Invoice / job reference"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="sairnSaveCheck()" style="padding:9px 16px;background:#1F2937;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;">💾 Save Check</button>
+      <button onclick="window.print()" style="padding:9px 16px;background:#fff;color:#374151;border:1.5px solid #E5E7EB;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;">🖨️ Print</button>
+      <button onclick="sairnSyncAll()" style="padding:9px 16px;background:#fff;color:#374151;border:1.5px solid #E5E7EB;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;">🔗 Post GL</button>
+    </div>
+  </div>
+  <div id="sairn-cr-history" style="background:#fff;border:1.5px solid #E5E7EB;border-radius:10px;padding:20px;">
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Register History</div>
+    <div class="sairn-empty"><div class="sairn-empty-icon">📄</div>
+      <div class="sairn-empty-title">No checks yet</div></div>
+  </div>
+</div>
+<script>
+var sairnCRNum=parseInt(localStorage.getItem('sairn_cr_num')||'1001');
+function sairnSaveCheck(){
+  var entry={num:sairnCRNum++,date:document.getElementById('sairn-cr-date').value||new Date().toLocaleDateString(),
+    payee:document.getElementById('sairn-cr-payee').value,
+    amount:document.getElementById('sairn-cr-amount').value,
+    memo:document.getElementById('sairn-cr-memo').value};
+  var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_checks';
+  var checks=JSON.parse(localStorage.getItem(key)||'[]');
+  checks.unshift(entry);
+  localStorage.setItem(key,JSON.stringify(checks));
+  localStorage.setItem('sairn_cr_num',sairnCRNum);
+  sairnRenderCR(checks);
+  sairnToast('Check #'+entry.num+' saved');
+}
+function sairnRenderCR(checks){
+  var h=document.getElementById('sairn-cr-history');
+  if(!checks||!checks.length){h.innerHTML='<div class="sairn-empty"><div class="sairn-empty-icon">📄</div><div class="sairn-empty-title">No checks yet</div></div>';return;}
+  h.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#F9FAFB"><th style="padding:7px 10px;text-align:left">Check#</th><th style="padding:7px 10px;text-align:left">Date</th><th style="padding:7px 10px;text-align:left">Payee</th><th style="padding:7px 10px;text-align:right">Amount</th><th style="padding:7px 10px;text-align:left">Memo</th></tr></thead><tbody>'+checks.slice(0,20).map(function(c){return'<tr><td style="padding:7px 10px">'+c.num+'</td><td style="padding:7px 10px">'+c.date+'</td><td style="padding:7px 10px">'+c.payee+'</td><td style="padding:7px 10px;text-align:right">$'+parseFloat(c.amount||0).toLocaleString()+'</td><td style="padding:7px 10px">'+c.memo+'</td></tr>';}).join('')+'</tbody></table>';
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var dateEl=document.getElementById('sairn-cr-date');
+  if(dateEl)dateEl.value=new Date().toISOString().split('T')[0];
+  var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_checks';
+  var checks=JSON.parse(localStorage.getItem(key)||'[]');
+  if(checks.length)sairnRenderCR(checks);
+});
+</script>
+
 </body></html>');
   win.document.close();
 }
