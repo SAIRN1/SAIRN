@@ -2730,49 +2730,49 @@ function doPrintStubs() {
   var stubs = _stubData.filter(function(e){ return checked.indexOf(e.name) >= 0; });
   if (stubs.length === 0) { showToast('Select at least one employee.'); return; }
 
-  // Build each stub as a separate page-break section
-  var stubsHTML = stubs.map(function(e) {
-    return '<div style="page-break-after:always;page-break-inside:avoid;">' + buildStubHTML(e, co) + '</div>';
+  // Build stub HTML with page breaks between each employee
+  var stubsHTML = stubs.map(function(e, idx) {
+    var br = idx < stubs.length - 1 ? 'page-break-after:always;' : '';
+    return '<div style="' + br + 'page-break-inside:avoid;padding:20px 0;">' + buildStubHTML(e, co) + '</div>';
   }).join('');
 
-  var fullHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
-    '<style>' +
-    '*{box-sizing:border-box;}' +
-    'body{margin:0;padding:24px;background:#fff;font-family:Arial,sans-serif;font-size:12px;color:#111;}' +
-    '@page{size:letter;margin:0.5in;}' +
-    '@media print{' +
-    '  body{padding:0;}' +
-    '  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
-    '}' +
-    '</style>' +
-    '</head><body>' + stubsHTML + '</body></html>';
+  // Create a dedicated print div, inject into body, hide everything else, print, remove
+  var printDiv = document.createElement('div');
+  printDiv.id = 'sairn-stub-print-root';
+  printDiv.innerHTML = stubsHTML;
+  printDiv.style.cssText = 'display:none;';
+  document.body.appendChild(printDiv);
 
-  // Remove any existing print iframe
-  var old = document.getElementById('sairn-print-frame');
-  if (old) old.parentNode.removeChild(old);
+  // Inject print-only style: hide entire body, show only our div
+  var styleEl = document.createElement('style');
+  styleEl.id = 'sairn-stub-print-style';
+  styleEl.innerHTML = [
+    '@media print {',
+    '  body > *:not(#sairn-stub-print-root) { display: none !important; }',
+    '  #sairn-stub-print-root { display: block !important; }',
+    '  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }',
+    '  @page { size: letter; margin: 0.5in; }',
+    '}'
+  ].join('\n');
+  document.head.appendChild(styleEl);
 
-  // Create hidden iframe in THIS page — no popup, no blocker
-  var iframe = document.createElement('iframe');
-  iframe.id = 'sairn-print-frame';
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:800px;height:600px;border:none;visibility:hidden;';
-  document.body.appendChild(iframe);
+  // Show our div for printing
+  printDiv.style.display = 'block';
 
-  iframe.onload = function() {
+  // Close the modal so it doesnt interfere
+  closeModal('m-pay-stubs');
+
+  // Small delay then print
+  setTimeout(function() {
+    window.print();
+    // Clean up after print dialog closes
     setTimeout(function() {
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      } catch(err) {
-        showToast('Print error: ' + err.message);
-      }
-    }, 300);
-  };
-
-  // Write content into iframe
-  var idoc = iframe.contentDocument || iframe.contentWindow.document;
-  idoc.open();
-  idoc.write(fullHTML);
-  idoc.close();
+      var pd = document.getElementById('sairn-stub-print-root');
+      var ps = document.getElementById('sairn-stub-print-style');
+      if (pd) pd.parentNode.removeChild(pd);
+      if (ps) ps.parentNode.removeChild(ps);
+    }, 2000);
+  }, 200);
 }
 
 // === EMAIL PAY STUBS ===
