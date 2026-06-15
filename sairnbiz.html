@@ -346,6 +346,7 @@ textarea{resize:vertical;min-height:72px;}
         <div class="nav-item" onclick="nav('fmla')" data-p="fmla"><span class="nav-icon">&#x1F3E5;</span> FMLA / ADA</div>
         <div class="nav-item" onclick="nav('lms')" data-p="lms"><span class="nav-icon">&#x1F4DA;</span> Training (LMS)</div>
         <div class="sidebar-heading">System</div>
+        <div class="nav-item" onclick="nav('biz-profile')" data-p="biz-profile"><span class="nav-icon">&#x1F3E2;</span> Business Profile</div>
         <div class="nav-item" onclick="nav('connectors')" data-p="connectors"><span class="nav-icon">&#x1F50C;</span> App Connectors</div>
         <div class="nav-item" onclick="nav('settings')" data-p="settings"><span class="nav-icon">&#x2699;&#xFE0F;</span> Settings</div>
       </div>
@@ -657,6 +658,131 @@ textarea{resize:vertical;min-height:72px;}
 </div>
 
 <!-- CONNECTORS -->
+<div class="page" id="page-biz-profile">
+  <div class="page-header"><h2>&#x1F3E2; Business Profile</h2><p>Your company identity — read by AI on every session</p></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;">
+
+    <!-- Left column -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Company Information</div></div>
+      <div style="padding:0 16px 16px;">
+        <div class="form-group"><label class="form-label">Company Name</label>
+          <input class="form-input" id="bp-company" placeholder="e.g. Westlake Stone Works" oninput="bpDirty()"></div>
+        <div class="form-group"><label class="form-label">EIN (Federal Tax ID)</label>
+          <input class="form-input" id="bp-ein" placeholder="XX-XXXXXXX" oninput="bpDirty()"></div>
+        <div class="form-group"><label class="form-label">Industry</label>
+          <select class="form-input" id="bp-industry" onchange="bpDirty()">
+            <option value="stone_fabrication">Stone / Countertop Fabrication</option>
+            <option value="construction">Construction / General Contracting</option>
+            <option value="landscaping">Landscaping / Outdoor Services</option>
+            <option value="legal">Legal / Law Firm</option>
+            <option value="medical">Medical / Healthcare</option>
+            <option value="veterinary">Veterinary / Animal Care</option>
+            <option value="funeral">Funeral Services</option>
+            <option value="design">Interior Design / Architecture</option>
+            <option value="other">Other</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Number of Employees</label>
+          <input class="form-input" id="bp-headcount" type="number" min="1" placeholder="e.g. 12" oninput="bpDirty()"></div>
+        <div class="form-group"><label class="form-label">Annual Revenue Range</label>
+          <select class="form-input" id="bp-revenue" onchange="bpDirty()">
+            <option value="">Select range</option>
+            <option value="under_500k">Under $500K</option>
+            <option value="500k_1m">$500K – $1M</option>
+            <option value="1m_3m">$1M – $3M</option>
+            <option value="3m_10m">$3M – $10M</option>
+            <option value="over_10m">Over $10M</option>
+          </select></div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Ohio Tax Setup</div></div>
+      <div style="padding:0 16px 16px;">
+        <div class="form-group"><label class="form-label">City / Municipality</label>
+          <select class="form-input" id="bp-city" onchange="bpCityChange()">
+            <option value="Westlake" data-rate="1.5" data-collector="RITA">Westlake — 1.5% (RITA)</option>
+            <option value="Cleveland" data-rate="2.5" data-collector="CCA">Cleveland — 2.5% (CCA)</option>
+            <option value="Lakewood" data-rate="2.0" data-collector="RITA">Lakewood — 2.0% (RITA)</option>
+            <option value="Rocky River" data-rate="2.0" data-collector="RITA">Rocky River — 2.0% (RITA)</option>
+            <option value="Bay Village" data-rate="1.5" data-collector="RITA">Bay Village — 1.5% (RITA)</option>
+            <option value="Avon Lake" data-rate="2.0" data-collector="RITA">Avon Lake — 2.0% (RITA)</option>
+            <option value="Avon" data-rate="1.5" data-collector="RITA">Avon — 1.5% (RITA)</option>
+            <option value="North Olmsted" data-rate="2.0" data-collector="RITA">North Olmsted — 2.0% (RITA)</option>
+            <option value="Strongsville" data-rate="2.0" data-collector="RITA">Strongsville — 2.0% (RITA)</option>
+            <option value="Parma" data-rate="2.0" data-collector="RITA">Parma — 2.0% (RITA)</option>
+            <option value="Euclid" data-rate="2.5" data-collector="RITA">Euclid — 2.5% (RITA)</option>
+            <option value="Lorain" data-rate="2.0" data-collector="RITA">Lorain — 2.0% (RITA)</option>
+            <option value="Elyria" data-rate="2.0" data-collector="RITA">Elyria — 2.0% (RITA)</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Tax Collector</label>
+          <input class="form-input" id="bp-tax-collector" value="RITA" readonly style="background:#f9fafb;color:var(--muted);"></div>
+        <div class="form-group"><label class="form-label">Local Tax Rate</label>
+          <input class="form-input" id="bp-tax-rate" value="1.5%" readonly style="background:#f9fafb;color:var(--muted);"></div>
+        <div class="form-group"><label class="form-label">Pay Schedule</label>
+          <select class="form-input" id="bp-pay-schedule" onchange="bpDirty()">
+            <option value="biweekly">Biweekly (every 2 weeks)</option>
+            <option value="weekly">Weekly</option>
+            <option value="semimonthly">Semimonthly (1st & 15th)</option>
+            <option value="monthly">Monthly</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Owner / Key Contact</label>
+          <input class="form-input" id="bp-owner-name" placeholder="e.g. Michael Dibert" oninput="bpDirty()"></div>
+      </div>
+    </div>
+
+    <!-- AI Preferences (full width) -->
+    <div class="card" style="grid-column:1/-1;">
+      <div class="card-header"><div class="card-title">&#x1F916; AI Preferences</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline" id="bp-save-btn" onclick="saveBizProfile()" style="display:none;">Save Profile</button>
+          <button class="btn btn-teal" onclick="askAI('Analyze my business profile and tell me the top 3 things I should focus on in SAIRNbiz this week.')">AI Insights</button>
+        </div>
+      </div>
+      <div style="padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group"><label class="form-label">Communication Style</label>
+          <select class="form-input" id="bp-ai-style" onchange="bpDirty()">
+            <option value="direct">Direct &amp; concise</option>
+            <option value="detailed">Detailed explanations</option>
+            <option value="casual">Casual / conversational</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Primary AI Focus</label>
+          <select class="form-input" id="bp-ai-focus" onchange="bpDirty()">
+            <option value="payroll">Payroll &amp; compliance</option>
+            <option value="cashflow">Cash flow &amp; AR</option>
+            <option value="hr">HR &amp; hiring</option>
+            <option value="all">Everything equally</option>
+          </select></div>
+        <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Notes for AI (anything Claude should always know)</label>
+          <textarea class="form-input" id="bp-ai-notes" rows="3" placeholder="e.g. We run biweekly payroll. Two field crews. Peak season April–October. Owner reviews all AP." oninput="bpDirty()" style="resize:vertical;"></textarea></div>
+      </div>
+      <div style="padding:0 16px 16px;">
+        <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:14px 16px;">
+          <div style="font-size:12px;font-weight:700;color:#0f766e;margin-bottom:6px;">&#x1F4A1; What this does</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.6;">Claude reads your Business Profile at the start of every AI session. It knows your company name, EIN, tax setup, pay schedule, headcount, and revenue — without you repeating it every time. As you use SAIRNbiz, Claude learns more about your patterns and preferences, and gets smarter with every session.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Memory Log (full width) -->
+    <div class="card" style="grid-column:1/-1;">
+      <div class="card-header"><div class="card-title">&#x1F9E0; AI Memory Log</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline" onclick="clearAIMemories()">Clear Memories</button>
+          <button class="btn btn-outline" onclick="writeAIMemory()">Save Session Memory</button>
+        </div>
+      </div>
+      <div style="padding:0 16px 16px;">
+        <div id="bp-memory-list" style="display:flex;flex-direction:column;gap:8px;min-height:60px;">
+          <div style="color:var(--muted);font-size:13px;padding:12px 0;">No memories yet. Use SAIRNbiz and memories will accumulate here.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <div class="page" id="page-connectors">
   <div class="page-title">App Connectors</div>
   <div class="page-sub">SAIRNbiz receives data from all 10 B2B apps automatically</div>
@@ -1603,6 +1729,7 @@ function nav(p) {
   const ni = document.querySelector('[data-p="' + p + '"]'); if (ni) ni.classList.add('active');
   document.getElementById('main-content').scrollTop = 0;
   if (p === 'formula') loadLicenseKeyDisplay();
+  if (p === 'biz-profile') { if (typeof loadBizProfile === 'function') loadBizProfile(); if (typeof loadAIMemoriesLocal === 'function') loadAIMemoriesLocal(); }
 }
 
 function switchWing(w) {
@@ -2118,6 +2245,348 @@ window.addEventListener('message', function(e) {
     </div>
   </div>
 </div>
+
+
+<!-- ============================================================ -->
+<!-- SAIRN AI MEMORY + NETWORK INTELLIGENCE ENGINE                 -->
+<!-- Supabase client (anon key only — no service_role in frontend) -->
+<!-- ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// === SUPABASE CONFIG (anon key is safe in frontend) ===
+// IMPORTANT: Replace these with your actual Supabase project URL and anon key
+// Go to: https://supabase.com → Your Project → Settings → API
+const SAIRN_SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+const SAIRN_SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+let _supa = null;
+
+function getSupabase() {
+  if (!_supa && typeof supabase !== 'undefined') {
+    _supa = supabase.createClient(SAIRN_SUPABASE_URL, SAIRN_SUPABASE_ANON_KEY);
+  }
+  return _supa;
+}
+
+// === BUSINESS PROFILE ===
+// Stored in localStorage immediately; synced to Supabase when URL is configured
+let _bizProfile = null;
+let _bizProfileDirty = false;
+
+function bpDirty() {
+  _bizProfileDirty = true;
+  const btn = document.getElementById('bp-save-btn');
+  if (btn) { btn.style.display = ''; btn.style.background = '#fef3c7'; }
+}
+
+function bpCityChange() {
+  const sel = document.getElementById('bp-city');
+  if (!sel) return;
+  const opt = sel.options[sel.selectedIndex];
+  const rate = opt.getAttribute('data-rate') || '1.5';
+  const collector = opt.getAttribute('data-collector') || 'RITA';
+  const tcEl = document.getElementById('bp-tax-collector');
+  const trEl = document.getElementById('bp-tax-rate');
+  if (tcEl) tcEl.value = collector;
+  if (trEl) trEl.value = rate + '%';
+  bpDirty();
+}
+
+function readBizProfileFromDOM() {
+  const citySel = document.getElementById('bp-city');
+  const cityOpt = citySel ? citySel.options[citySel.selectedIndex] : null;
+  return {
+    company_name: (document.getElementById('bp-company') || {}).value || '',
+    ein: (document.getElementById('bp-ein') || {}).value || '',
+    industry: (document.getElementById('bp-industry') || {}).value || 'stone_fabrication',
+    headcount: parseInt((document.getElementById('bp-headcount') || {}).value) || 1,
+    revenue_range: (document.getElementById('bp-revenue') || {}).value || '',
+    city: citySel ? citySel.value : 'Westlake',
+    municipality: citySel ? citySel.value : 'Westlake',
+    tax_collector: (document.getElementById('bp-tax-collector') || {}).value || 'RITA',
+    local_tax_rate: parseFloat(((document.getElementById('bp-tax-rate') || {}).value || '1.5').replace('%','')) / 100,
+    pay_schedule: (document.getElementById('bp-pay-schedule') || {}).value || 'biweekly',
+    preferences: {
+      owner_name: (document.getElementById('bp-owner-name') || {}).value || '',
+      ai_style: (document.getElementById('bp-ai-style') || {}).value || 'direct',
+      ai_focus: (document.getElementById('bp-ai-focus') || {}).value || 'all',
+      ai_notes: (document.getElementById('bp-ai-notes') || {}).value || ''
+    }
+  };
+}
+
+function applyBizProfileToDOM(profile) {
+  if (!profile) return;
+  function set(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+  set('bp-company', profile.company_name);
+  set('bp-ein', profile.ein);
+  set('bp-industry', profile.industry);
+  set('bp-headcount', profile.headcount || '');
+  set('bp-revenue', profile.revenue_range);
+  set('bp-city', profile.city || 'Westlake');
+  set('bp-pay-schedule', profile.pay_schedule);
+  if (profile.preferences) {
+    set('bp-owner-name', profile.preferences.owner_name);
+    set('bp-ai-style', profile.preferences.ai_style);
+    set('bp-ai-focus', profile.preferences.ai_focus);
+    set('bp-ai-notes', profile.preferences.ai_notes);
+  }
+  bpCityChange(); // refresh rate/collector from selected city
+  _bizProfileDirty = false;
+  const btn = document.getElementById('bp-save-btn');
+  if (btn) { btn.style.display = 'none'; }
+}
+
+function loadBizProfile() {
+  try {
+    const raw = localStorage.getItem('sairnbiz:business_profile');
+    if (raw) {
+      _bizProfile = JSON.parse(raw);
+      applyBizProfileToDOM(_bizProfile);
+    }
+  } catch(e) {}
+  // Also try Supabase if configured
+  syncBizProfileFromSupabase();
+}
+
+async function syncBizProfileFromSupabase() {
+  if (SAIRN_SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE') return; // not configured yet
+  const sb = getSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
+  if (!licKey) return;
+  try {
+    const { data, error } = await sb
+      .from('business_profiles')
+      .select('*')
+      .eq('license_key', licKey)
+      .single();
+    if (!error && data) {
+      _bizProfile = data;
+      localStorage.setItem('sairnbiz:business_profile', JSON.stringify(data));
+      applyBizProfileToDOM(data);
+    }
+  } catch(e) {}
+}
+
+async function saveBizProfile() {
+  const profile = readBizProfileFromDOM();
+  _bizProfile = profile;
+  // Always save to localStorage first (instant)
+  localStorage.setItem('sairnbiz:business_profile', JSON.stringify(profile));
+  _bizProfileDirty = false;
+  const btn = document.getElementById('bp-save-btn');
+  if (btn) { btn.style.display = 'none'; }
+  // Sync to Supabase if configured
+  if (SAIRN_SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
+    const sb = getSupabase();
+    const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
+    if (sb && licKey) {
+      try {
+        const payload = { ...profile, license_key: licKey, app_id: 'sairnbiz' };
+        const { error } = await sb.from('business_profiles').upsert(payload, { onConflict: 'license_key' });
+        if (error) { showToast('Saved locally (Supabase sync failed)'); return; }
+      } catch(e) {}
+    }
+  }
+  showToast('Business Profile saved!');
+}
+
+// === AI MEMORY ENGINE ===
+let _aiMemories = [];
+
+function loadAIMemoriesLocal() {
+  try {
+    const raw = localStorage.getItem('sairnbiz:ai_memories');
+    if (raw) _aiMemories = JSON.parse(raw);
+    renderMemoryList();
+  } catch(e) {}
+  // Async load from Supabase if configured
+  syncAIMemoriesFromSupabase();
+}
+
+async function syncAIMemoriesFromSupabase() {
+  if (SAIRN_SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE') return;
+  const sb = getSupabase();
+  if (!sb) return;
+  const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
+  if (!licKey) return;
+  try {
+    // First get shop_id from license key
+    const { data: profile } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+    if (!profile) return;
+    const { data, error } = await sb.from('ai_memories').select('*')
+      .eq('shop_id', profile.shop_id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (!error && data && data.length > 0) {
+      _aiMemories = data;
+      localStorage.setItem('sairnbiz:ai_memories', JSON.stringify(_aiMemories));
+      renderMemoryList();
+    }
+  } catch(e) {}
+}
+
+function renderMemoryList() {
+  const el = document.getElementById('bp-memory-list');
+  if (!el) return;
+  if (!_aiMemories || _aiMemories.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0;">No memories yet. Use SAIRNbiz and memories will accumulate here.</div>';
+    return;
+  }
+  el.innerHTML = _aiMemories.map(function(m) {
+    const date = m.session_date || (m.created_at ? m.created_at.slice(0,10) : '');
+    const topics = (m.topics || []).map(function(t) {
+      return '<span style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:4px;padding:1px 6px;font-size:11px;color:#0f766e;margin-right:4px;">' + t + '</span>';
+    }).join('');
+    return '<div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;gap:12px;align-items:flex-start;">' +
+      '<div style="min-width:70px;font-size:11px;color:var(--muted);padding-top:2px;">' + date + '</div>' +
+      '<div style="flex:1;"><div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px;">' + (m.memory_text || '') + '</div>' +
+      '<div>' + topics + '</div></div>' +
+      '</div>';
+  }).join('');
+}
+
+async function writeAIMemory() {
+  if (!_aih || _aih.length < 2) { showToast('Have a conversation first — nothing to remember yet.'); return; }
+  showToast('Claude is summarizing this session...');
+  try {
+    const convText = _aih.map(function(m) { return m.role.toUpperCase() + ': ' + m.content; }).join('\n');
+    const res = await fetch('https://sairn.vercel.app/api/claude', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        app_id: 'sairnbiz',
+        is_demo: true,
+        system: 'You are a business intelligence summarizer. Extract 3-5 bullet points of what you learned about this business from the conversation. Focus on: business facts, owner preferences, patterns, decisions made. Format as a single paragraph (no bullets), 2-4 sentences max. Topics: list 2-4 relevant tags like payroll, hr, invoicing, compliance.',
+        messages: [{ role: 'user', content: 'Summarize what you learned about this business:\n\n' + convText + '\n\nRespond with JSON only: {"memory_text": "...", "topics": ["tag1","tag2"], "importance": 7}' }],
+        max_tokens: 300
+      })
+    });
+    const d = await res.json();
+    const raw = (d.content && d.content[0] && d.content[0].text) || '';
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()); } catch(e) { parsed = { memory_text: raw, topics: ['general'], importance: 5 }; }
+    const mem = {
+      id: Date.now().toString(),
+      session_date: new Date().toISOString().slice(0,10),
+      memory_text: parsed.memory_text || raw,
+      topics: parsed.topics || ['general'],
+      importance: parsed.importance || 5,
+      created_at: new Date().toISOString()
+    };
+    _aiMemories.unshift(mem);
+    if (_aiMemories.length > 10) _aiMemories = _aiMemories.slice(0, 10);
+    localStorage.setItem('sairnbiz:ai_memories', JSON.stringify(_aiMemories));
+    renderMemoryList();
+    // Sync to Supabase
+    if (SAIRN_SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
+      const sb = getSupabase();
+      const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
+      if (sb && licKey) {
+        try {
+          const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
+          if (prof) {
+            await sb.from('ai_memories').insert({ ...mem, shop_id: prof.shop_id, id: undefined });
+          }
+        } catch(e) {}
+      }
+    }
+    showToast('Session memory saved!');
+  } catch(e) {
+    showToast('Memory write failed — check connection.');
+  }
+}
+
+function clearAIMemories() {
+  if (!confirm('Clear all AI memories? This cannot be undone.')) return;
+  _aiMemories = [];
+  localStorage.removeItem('sairnbiz:ai_memories');
+  renderMemoryList();
+  showToast('AI memories cleared.');
+}
+
+// === SYSTEM PROMPT BUILDER — injects profile + memories into every AI call ===
+function buildSystemPrompt() {
+  const base = 'You are the AI for SAIRNbiz, the HR and Accounting backbone for SAIRN Technologies. You are an expert in payroll, HR compliance, accounting, Ohio tax law, RITA/CCA municipal taxes, and small business operations.';
+  const profile = _bizProfile;
+  let profileBlock = '';
+  if (profile && profile.company_name) {
+    profileBlock = '\n\nBUSINESS PROFILE:\n' +
+      'Company: ' + profile.company_name + '\n' +
+      (profile.ein ? 'EIN: ' + profile.ein + '\n' : '') +
+      'Industry: ' + (profile.industry || 'stone_fabrication').replace('_',' ') + '\n' +
+      'City: ' + (profile.city || 'Westlake') + ', Ohio' + '\n' +
+      'Tax Collector: ' + (profile.tax_collector || 'RITA') + ' — Local Rate: ' + ((profile.local_tax_rate || 0.015) * 100).toFixed(1) + '%\n' +
+      'Pay Schedule: ' + (profile.pay_schedule || 'biweekly') + '\n' +
+      'Headcount: ' + (profile.headcount || 1) + ' employees\n' +
+      (profile.revenue_range ? 'Revenue: ' + profile.revenue_range.replace(/_/g,' ') + '\n' : '') +
+      (profile.preferences && profile.preferences.owner_name ? 'Owner: ' + profile.preferences.owner_name + '\n' : '') +
+      (profile.preferences && profile.preferences.ai_notes ? 'Notes: ' + profile.preferences.ai_notes + '\n' : '');
+  }
+  let memBlock = '';
+  if (_aiMemories && _aiMemories.length > 0) {
+    memBlock = '\n\nWHAT YOU KNOW ABOUT THIS BUSINESS (from past sessions):\n' +
+      _aiMemories.slice(0, 10).map(function(m, i) { return (i+1) + '. ' + m.memory_text; }).join('\n');
+  }
+  const style = (profile && profile.preferences && profile.preferences.ai_style) || 'direct';
+  const styleNote = '\n\nResponse style: ' + (style === 'direct' ? 'Be direct and concise.' : style === 'detailed' ? 'Provide detailed explanations.' : 'Be conversational and friendly.');
+  return base + profileBlock + memBlock + styleNote;
+}
+
+// === HOOK: patch sendAI to use dynamic system prompt ===
+// Save reference to original sendAI, then override
+const _origSendAI = typeof sendAI !== 'undefined' ? sendAI : null;
+</script>
+<script>
+// Patch sendAI AFTER original is defined (runs after main script block)
+document.addEventListener('DOMContentLoaded', function() {
+  // Load business profile and memories on app start
+  loadBizProfile();
+  loadAIMemoriesLocal();
+});
+
+// Override sendAI to inject system prompt
+const _sendAIWithMemory = async function() {
+  const inp = document.getElementById('ai-input');
+  const msg = inp.value.trim(); if (!msg) return;
+  inp.value = ''; addMsg(msg, 'user');
+  const th = addMsg('Thinking...', 'bot thinking');
+  _aih.push({role:'user', content:msg});
+  if (_aih.length > 12) _aih = _aih.slice(-12);
+  try {
+    const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
+    const dynamicSystem = buildSystemPrompt();
+    const res = await fetch('https://sairn.vercel.app/api/claude', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        app_id: 'sairnbiz',
+        is_demo: true,
+        license_key: licKey,
+        system: dynamicSystem,
+        messages: _aih,
+        max_tokens: 700
+      })
+    });
+    const d = await res.json();
+    const r = (d.content && d.content[0] && d.content[0].text) || d.error || d.message || 'No response.';
+    _aih.push({role:'assistant', content:r});
+    th.className = 'ai-msg bot'; th.textContent = r;
+    saveAIHistory(_aih);
+    if (d._remaining && d._remaining !== 'unlimited') {
+      if (parseInt(d._remaining) < 10) showToast(d._remaining + ' free AI calls left today. Enter license key to unlock unlimited.');
+    }
+    // Auto-write memory every 5 exchanges (background, silent)
+    if (_aih.filter(function(m) { return m.role === 'assistant'; }).length % 5 === 0) {
+      writeAIMemory();
+    }
+  } catch(e) {
+    th.className = 'ai-msg bot'; th.textContent = 'Connection error. Check your internet connection.';
+  }
+};
+// Replace sendAI globally
+if (typeof window !== 'undefined') { window.sendAI = _sendAIWithMemory; }
+</script>
 
 </body>
 </html>
