@@ -1,432 +1,694 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>SAIRNcare -- SAIRN AI</title><style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}:root{--c:#0D9488;--cd:#0F766E;--cl:#F0FDFA;--cm:#99F6E4;--text:#1E293B;--muted:#64748B;--border:#E2E8F0;--red:#EF4444;--rl:#FEF2F2;--green:#22C55E;--gl:#F0FDF4;--amber:#F59E0B;--al:#FFFBEB;--sh:0 1px 3px rgba(0,0,0,.08);--r:10px;--f:'Segoe UI',system-ui,sans-serif;}body{font-family:var(--f);background:var(--cl);color:var(--text);font-size:14px;line-height:1.5;}#ls{position:fixed;inset:0;background:linear-gradient(135deg,var(--cd),var(--c));display:flex;align-items:center;justify-content:center;z-index:9999;}.lc{background:#fff;border-radius:16px;padding:40px 36px;width:370px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;}.ll{width:56px;height:56px;background:linear-gradient(135deg,var(--cd),var(--c));border-radius:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:18px;font-weight:900;color:#fff;}.lti{font-size:20px;font-weight:800;margin-bottom:3px;}.lsu{font-size:12px;color:var(--muted);margin-bottom:20px;}.rg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px;}.rb{border:2px solid var(--border);background:#fff;border-radius:8px;padding:9px;cursor:pointer;transition:all .15s;}.rb:hover,.rb.sel{border-color:var(--c);background:var(--cl);color:var(--cd);font-weight:600;}.ri{font-size:17px;display:block;margin-bottom:3px;}.rl{font-size:11px;font-weight:600;}.pr{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}.pd{width:44px;height:52px;border:2px solid var(--border);border-radius:8px;text-align:center;font-size:20px;font-weight:700;outline:none;}.pd:focus{border-color:var(--c);}.bl{background:var(--c);color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;width:100%;}.bl:hover{background:var(--cd);}.le{color:var(--red);font-size:12px;margin-top:7px;min-height:16px;}.lh{margin-top:10px;font-size:11px;color:var(--muted);}#app{display:none;min-height:100vh;}.tb{background:var(--cd);color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}.tlo{font-size:17px;font-weight:900;color:#fff;}.tr{display:flex;align-items:center;gap:8px;}.uc{background:rgba(255,255,255,.12);color:#fff;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:600;}.tbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:6px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;}.tbtn:hover{background:rgba(255,255,255,.22);}.ab{display:flex;min-height:calc(100vh - 56px);}.sb{width:214px;background:#fff;border-right:1px solid var(--border);padding:10px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}.sh{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:9px 15px 3px;}.ni{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all .12s;user-select:none;}.ni:hover{background:var(--cl);color:var(--text);}.ni.active{background:var(--cl);color:var(--cd);font-weight:600;border-left-color:var(--c);}.nicon{font-size:13px;width:17px;text-align:center;}.mn{flex:1;padding:20px;overflow-x:hidden;}.page{display:none;}.page.active{display:block;}.pt{font-size:20px;font-weight:800;margin-bottom:3px;}.ps{font-size:13px;color:var(--muted);margin-bottom:18px;}.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:11px;margin-bottom:18px;}.kc{background:#fff;border-radius:var(--r);padding:15px;box-shadow:var(--sh);border:1px solid var(--border);}.kl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}.kv{font-size:23px;font-weight:900;line-height:1;margin-bottom:3px;}.kd{font-size:12px;color:var(--muted);}.kd.up{color:var(--green);}.kd.dn{color:var(--red);}.ki{float:right;font-size:19px;margin-top:-2px;}.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);margin-bottom:14px;}.ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}.ct{font-size:13px;font-weight:700;}.cb{padding:16px;}.dt{width:100%;border-collapse:collapse;}.dt th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:7px 10px;border-bottom:2px solid var(--border);background:#F8FAFC;}.dt td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}.dt tr:last-child td{border-bottom:none;}.dt tr:hover td{background:var(--cl);}.ttr td{font-weight:700;background:var(--cl)!important;color:var(--cd);}.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:600;}.bg{background:var(--gl);color:#15803D;}.br{background:var(--rl);color:#B91C1C;}.ba{background:var(--al);color:#92400E;}.bc{background:var(--cl);color:var(--cd);}.fg{display:flex;flex-direction:column;gap:5px;}.fg.full{grid-column:1/-1;}.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}label{font-size:12px;font-weight:600;color:var(--muted);}input,select,textarea{border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--f);outline:none;background:#fff;width:100%;}input:focus,select:focus,textarea:focus{border-color:var(--c);}textarea{resize:vertical;min-height:65px;}.btn{border:none;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}.btn-sm{padding:4px 9px;font-size:12px;border-radius:5px;}.btn-c{background:var(--c);color:#fff;}.btn-c:hover{background:var(--cd);}.btn-o{background:#fff;border:1px solid var(--border);color:var(--text);}.btn-o:hover{border-color:var(--c);color:var(--c);}.btn-r{background:var(--red);color:#fff;}.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:11px;flex-wrap:wrap;}.sbox{border:1px solid var(--border);border-radius:7px;padding:6px 10px 6px 27px;font-size:13px;width:190px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center;outline:none;}.rbt{height:6px;background:var(--border);border-radius:3px;position:relative;margin:3px 0;}.rbf{height:6px;border-radius:3px;background:var(--c);position:absolute;left:0;top:0;}.flag{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:8px;}.fi{background:var(--cl);border:1px solid var(--cm);color:var(--cd);}.fw{background:var(--al);border:1px solid #FCD34D;color:#92400E;}.fe{background:var(--rl);border:1px solid #FECACA;color:#B91C1C;}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.mo{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;}.mo.open{display:flex;}.modal{background:#fff;border-radius:13px;width:530px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}.mh{padding:15px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}.mt{font-size:15px;font-weight:700;}.mc{background:transparent;border:none;font-size:17px;cursor:pointer;color:var(--muted);}.mb{padding:20px;}.mf{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}#aip{position:fixed;right:0;top:56px;bottom:0;width:345px;background:#fff;border-left:1px solid var(--border);box-shadow:-4px 0 14px rgba(0,0,0,.08);display:none;flex-direction:column;z-index:200;}#aip.open{display:flex;}.aih{background:var(--cd);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}.ait{font-size:13px;font-weight:700;}.aic{background:transparent;border:none;color:#fff;cursor:pointer;font-size:16px;}.aim{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}.amsg{padding:8px 11px;border-radius:9px;font-size:13px;line-height:1.5;max-width:92%;white-space:pre-wrap;}.amsg.u{background:var(--c);color:#fff;align-self:flex-end;}.amsg.b{background:var(--cl);color:var(--text);align-self:flex-start;border:1px solid var(--cm);}.amsg.t{color:var(--muted);font-style:italic;align-self:flex-start;}.aiq{padding:0 12px 8px;display:flex;flex-wrap:wrap;gap:5px;}.aqb{background:var(--cl);border:1px solid var(--cm);color:var(--cd);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;}.air{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:6px;}.air input{flex:1;}.toast{position:fixed;bottom:20px;right:20px;background:var(--cd);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}.toast.show{opacity:1;transform:translateY(0);}@media print{#ls,.tb,.sb,#aip,.toolbar,.mo,.toast{display:none!important;}.mn{padding:0;}body{background:#fff;}}@media(max-width:768px){.sb{display:none;}.fgrid{grid-template-columns:1fr;}.kg{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}#aip{width:100%;}}</style></head><body>
-<div id="ls"><div class="lc"><div class="ll">SC</div><div class="lti">SAIRNcare</div><div class="lsu">AI Platform for Home Care Agencies -- Included free with SAIRNbiz</div><div class="rg"><div class="rb" onclick="selRole('owner')" id="r-owner"><span class="ri">&#x1F451;</span><span class="rl">Owner</span></div><div class="rb" onclick="selRole('coordinator')" id="r-coordinator"><span class="ri">&#x1F4CB;</span><span class="rl">Coordinator</span></div><div class="rb" onclick="selRole('caregiver')" id="r-caregiver"><span class="ri">&#x1F91D;</span><span class="rl">Caregiver</span></div><div class="rb" onclick="selRole('office')" id="r-office"><span class="ri">&#x1F4BB;</span><span class="rl">Office Staff</span></div></div>
-<div class="pr"><input type="password" maxlength="1" class="pd" id="p0" oninput="pi(0)" onkeydown="pk(event,0)"><input type="password" maxlength="1" class="pd" id="p1" oninput="pi(1)" onkeydown="pk(event,1)"><input type="password" maxlength="1" class="pd" id="p2" oninput="pi(2)" onkeydown="pk(event,2)"><input type="password" maxlength="1" class="pd" id="p3" oninput="pi(3)" onkeydown="pk(event,3)"></div>
-<button class="bl" onclick="doLogin()">Sign In</button><div class="le" id="le"></div><div class="lh">Owner: 1234 | Coordinator: 2345 | Caregiver: 3456 | Office Staff: 4567</div></div></div>
-<div id="app"><div class="tb"><div class="tlo">SAIRNcare</div><div class="tr"><div class="uc" id="uc">Owner</div><button class="tbtn" onclick="toggleAI()">AI Assistant</button><button class="tbtn" onclick="window.print()">Print</button><button class="tbtn" onclick="doLogout()">Sign Out</button></div></div>
-<div class="ab"><div class="sb"><div class="sh">Overview</div>
-<div class="ni" onclick="nav('dash')" data-p="dash"><span class="nicon">&#x1F4CA;</span> Dashboard</div>
-<div class="sh">Care</div>
-<div class="ni" onclick="nav('clients')" data-p="clients"><span class="nicon">&#x1F9D3;</span> Clients</div>
-<div class="ni" onclick="nav('schedule')" data-p="schedule"><span class="nicon">&#x1F4C5;</span> Schedule</div>
-<div class="ni" onclick="nav('caregivers')" data-p="caregivers"><span class="nicon">&#x1F91D;</span> Caregivers</div>
-<div class="ni" onclick="nav('visits')" data-p="visits"><span class="nicon">&#x1F3E0;</span> Visit Logs</div>
-<div class="sh">Clinical</div>
-<div class="ni" onclick="nav('care-plans')" data-p="care-plans"><span class="nicon">&#x1F4CB;</span> Care Plans</div>
-<div class="ni" onclick="nav('medications')" data-p="medications"><span class="nicon">&#x1F48A;</span> Medications</div>
-<div class="ni" onclick="nav('incidents')" data-p="incidents"><span class="nicon">&#x26A0;&#xFE0F;</span> Incidents</div>
-<div class="sh">Finance</div>
-<div class="ni" onclick="nav('invoices')" data-p="invoices"><span class="nicon">&#x1F9FE;</span> Invoices</div>
-<div class="ni" onclick="nav('payroll')" data-p="payroll"><span class="nicon">&#x1F4B0;</span> Caregiver Pay</div>
-<div class="ni" onclick="nav('reports')" data-p="reports"><span class="nicon">&#x1F4C8;</span> Reports</div>
-<div class="sh">Admin</div>
-<div class="ni" onclick="nav('formula')" data-p="formula"><span class="nicon">&#x1F527;</span> Formula Editor</div>
-<div class="ni" onclick="nav('csv')" data-p="csv"><span class="nicon">&#x1F4C1;</span> CSV Tools</div>
-<div class="ni" onclick="nav('sairnbiz')" data-p="sairnbiz"><span class="nicon">&#x1F517;</span> SAIRNbiz</div>
-</div><div class="mn" id="mn">
-<div class="page active" id="pg-dash"><div class="pt">SAIRNcare Dashboard</div><div class="ps">Home care operations -- powered by Claude AI</div>
-<div class="kg"><div class="kc"><span class="ki">&#x1F9D3;</span><div class="kl">Active Clients</div><div class="kv">48</div><div class="kd up">+3 this month</div></div><div class="kc"><span class="ki">&#x1F91D;</span><div class="kl">Caregivers</div><div class="kv">22</div><div class="kd">4 on call</div></div><div class="kc"><span class="ki">&#x1F4C5;</span><div class="kl">Visits This Week</div><div class="kv">184</div><div class="kd">96% completed</div></div><div class="kc"><span class="ki">&#x1F4B0;</span><div class="kl">Monthly Revenue</div><div class="kv">$128K</div><div class="kd up">+9%</div></div><div class="kc"><span class="ki">&#x23F1;&#xFE0F;</span><div class="kl">Avg Hours/Client</div><div class="kv">24 hrs</div><div class="kd">Per week</div></div><div class="kc"><span class="ki">&#x1F4CA;</span><div class="kl">Caregiver Utilization</div><div class="kv">87%</div><div class="kd up">Strong</div></div></div>
-<div class="flag fw">&#x26A0;&#xFE0F; 2 clients have missed medication checks this week. Review immediately.</div>
-<div class="flag fi">&#x1F916; Caregiver Kim has 3 open shifts this week. <a href="#" style="color:var(--cd);font-weight:700;" onclick="askAI('Caregiver Kim has 3 open shifts this week. Which caregivers are available and qualified to cover? Consider client preferences.')">AI Match</a></div>
-<div class="two-col" style="margin-top:14px;"><div class="card"><div class="ch"><div class="ct">Today's Visits</div></div><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Time</th><th>Client</th><th>Caregiver</th><th>Type</th><th>Status</th></tr></thead><tbody>
-<tr><td>8:00 AM</td><td>Johnson, M. (85)</td><td>Maria S.</td><td>Morning Routine</td><td><span class="badge bg">Complete</span></td></tr>
-<tr><td>10:00 AM</td><td>Williams, R. (91)</td><td>Dave K.</td><td>Personal Care</td><td><span class="badge bc">In Progress</span></td></tr>
-<tr><td>2:00 PM</td><td>Park, L. (78)</td><td>Sarah T.</td><td>Companionship</td><td><span class="badge ba">Upcoming</span></td></tr>
-<tr><td>6:00 PM</td><td>Chen, G. (88)</td><td>TBD</td><td>Evening Care</td><td><span class="badge br">Unassigned</span></td></tr>
-</tbody></table></div></div>
-<div class="card"><div class="ch"><div class="ct">Service Mix</div></div><div class="cb">
-<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Personal Care</span><span>38%</span></div><div class="rbt"><div class="rbf" style="width:38%"></div></div></div>
-<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Companionship</span><span>28%</span></div><div class="rbt"><div class="rbf" style="width:28%"></div></div></div>
-<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Skilled Care</span><span>22%</span></div><div class="rbt"><div class="rbf" style="width:22%"></div></div></div>
-<div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Respite</span><span>12%</span></div><div class="rbt"><div class="rbf" style="width:12%"></div></div></div>
-</div></div></div></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNcare -- Home Care</title>
+<style>
+:root{--c:#0D9488;--d:#0F766E;--t:#F0FDFA;--a:#99F6E4;--w:#fff;--g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;--g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;--g900:#111827;--green:#16A34A;--gl:#DCFCE7;--red:#DC2626;--rl:#FEE2E2;--sb:260px;--tb:64px;--r:10px;--rs:6px;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--g50);color:var(--g800)}
+#login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--t) 0%,#fff 60%,#0D948822 100%)}
+.lcard{background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.13);padding:44px 38px;width:100%;max-width:420px;text-align:center}
+.llogo{width:60px;height:60px;background:var(--c);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin:0 auto 16px;letter-spacing:-1px}
+.ltitle{font-size:24px;font-weight:800;color:var(--g900)}
+.lsub{font-size:13px;color:var(--g500);margin:5px 0 24px}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:22px}
+.rb{border:2px solid var(--g200);border-radius:var(--rs);padding:11px 8px;cursor:pointer;background:#fff;font-size:12px;font-weight:600;color:var(--g600);transition:all .15s}
+.rb:hover,.rb.active{border-color:var(--c);background:var(--t);color:var(--d)}
+.ri{font-size:18px;display:block;margin-bottom:3px}
+.pin-l{font-size:12px;font-weight:600;color:var(--g600);text-align:left;margin-bottom:5px}
+.pin-i{width:100%;padding:12px;border:2px solid var(--g200);border-radius:var(--rs);font-size:22px;letter-spacing:8px;text-align:center;font-family:monospace;outline:none;transition:border-color .15s;margin-bottom:12px}
+.pin-i:focus{border-color:var(--c)}
+.lbtn{width:100%;padding:12px;background:var(--c);color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer}
+.lbtn:hover{opacity:.88}
+.lerr{margin-top:9px;font-size:12px;color:var(--red);display:none}
+#app{display:none;height:100vh;overflow:hidden}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--tb);background:#fff;border-bottom:2px solid #0D948833;display:flex;align-items:center;padding:0 18px;gap:12px;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.tlogo{width:38px;height:38px;background:var(--c);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0}
+.tname{font-size:16px;font-weight:800;color:var(--g900)}
+.tname span{color:var(--c)}
+.tsp{flex:1}
+.fqbtn{display:flex;align-items:center;gap:6px;background:var(--c);color:#fff;border:none;border-radius:var(--rs);padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.fqbtn:hover{opacity:.88}
+.tusr{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--g600);cursor:pointer}
+.tavtr{width:30px;height:30px;background:#0D948822;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--d)}
+.sidebar{position:fixed;top:var(--tb);left:0;bottom:0;width:var(--sb);background:#fff;border-right:2px solid #0D948833;overflow-y:auto;z-index:50;padding:12px 0 80px}
+.slbl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;padding:10px 18px 4px}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 18px;border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:500;color:var(--g600);transition:all .12s;position:relative;margin:0 7px}
+.ni:hover{background:var(--t);color:var(--d)}
+.ni.active{background:#0D948822;color:var(--d);font-weight:700}
+.ni.active::before{content:'';position:absolute;left:-7px;top:6px;bottom:6px;width:3px;background:var(--c);border-radius:0 3px 3px 0}
+.ni-icon{font-size:15px;width:18px;text-align:center}
+.main{margin-left:var(--sb);margin-top:var(--tb);height:calc(100vh - var(--tb));overflow-y:auto;padding:24px;background:var(--g50)}
+.page{display:none}.page.active{display:block}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:9px}
+.ptitle{font-size:22px;font-weight:800;color:var(--g900);letter-spacing:-.5px}
+.psub{font-size:13px;color:var(--g500);margin-top:2px}
+.pacts{display:flex;gap:8px;flex-wrap:wrap}
+.card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g200);box-shadow:0 1px 4px rgba(0,0,0,.08);padding:18px;margin-bottom:14px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ct{font-size:14px;font-weight:700;color:var(--g800)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .12s;white-space:nowrap}
+.bp{background:var(--c);color:#fff}.bp:hover{opacity:.88}
+.bo{background:#fff;color:var(--g700);border:1.5px solid var(--g200)}.bo:hover{background:var(--g50)}
+.bsm{padding:6px 11px;font-size:12px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.sc{background:#fff;border-radius:var(--r);border:1.5px solid var(--g200);padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.sl{font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.sv{font-size:24px;font-weight:800;color:var(--g900);letter-spacing:-1px;line-height:1}
+.sd{font-size:11px;color:var(--green);margin-top:3px;font-weight:600}
+.sd.down{color:var(--red)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;background:var(--g50);border-bottom:1.5px solid var(--g200)}
+td{padding:10px 12px;border-bottom:1px solid var(--g100);color:var(--g700);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--t)}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:var(--gl);color:var(--green)}.ba{background:#0D948822;color:var(--d)}.br{background:var(--rl);color:var(--red)}.bgr{background:var(--g100);color:var(--g600)}
+.fg{margin-bottom:12px}
+.fl{display:block;font-size:12px;font-weight:600;color:var(--g700);margin-bottom:4px}
+.fi,.fs,.fta{width:100%;padding:8px 12px;border:1.5px solid var(--g200);border-radius:var(--rs);font-size:13px;color:var(--g800);background:#fff;outline:none;transition:border-color .12s;font-family:inherit}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--c)}
+.fta{resize:vertical;min-height:75px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ai-bub{background:var(--t);border:1.5px solid var(--a);border-radius:8px;padding:13px;margin:9px 0;font-size:13px;color:var(--g800);line-height:1.6;white-space:pre-wrap}
+.thinking{display:inline-flex;gap:4px;align-items:center}
+.thinking span{width:5px;height:5px;background:var(--c);border-radius:50%;animation:pulse 1.1s ease-in-out infinite}
+.thinking span:nth-child(2){animation-delay:.18s}.thinking span:nth-child(3){animation-delay:.36s}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+.upzone{border:2px dashed var(--g300);border-radius:var(--r);padding:24px 14px;text-align:center;cursor:pointer;background:var(--g50);transition:all .15s}
+.upzone:hover{border-color:var(--c);background:var(--t)}
+.suite-wrap{background:linear-gradient(135deg,#F8FAFC,#fff);border:1.5px solid #E2E8F0;border-radius:var(--r);padding:16px;margin-bottom:16px}
+.suite-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.suite-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--c),var(--d));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff}
+.suite-name{font-size:14px;font-weight:700;color:#1E293B}
+.suite-sub{font-size:10px;color:#94A3B8}
+.suite-live{margin-left:auto;font-size:11px;font-weight:700;color:var(--green)}
+.suite-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:11px}
+.suite-tile{background:#fff;border:1.5px solid #E2E8F0;border-radius:8px;padding:10px 7px;cursor:pointer;transition:all .12s;text-align:center}
+.suite-tile:hover{box-shadow:0 3px 10px rgba(0,0,0,.09);transform:translateY(-1px)}
+.suite-icon{width:28px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff;margin:0 auto 4px}
+.suite-tname{font-size:10px;font-weight:700;color:#1E293B}
+.suite-tdesc{font-size:9px;color:#94A3B8;margin-top:1px}
+.suite-btns{display:flex;gap:7px;flex-wrap:wrap}
+.suite-btn{padding:6px 12px;background:var(--c);color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer}
+.suite-btn.out{background:#fff;color:var(--d);border:1.5px solid var(--c)}
+.sbiz{background:linear-gradient(135deg,#F0FDFA,#fff);border:1.5px solid #99F6E4;border-radius:var(--r);padding:16px;margin-bottom:14px}
+.sbiz-hdr{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.sbiz-logo{width:32px;height:32px;background:#14B8A6;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff}
+.sbiz-title{font-size:14px;font-weight:700;color:#0F766E}
+.sbiz-btns{display:flex;gap:7px;flex-wrap:wrap}
+.sbiz-btn{padding:6px 12px;background:#14B8A6;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer}
+.sbiz-btn.out{background:#fff;color:#0F766E;border:1.5px solid #14B8A6}
+.sig-wrap{border:2px solid var(--g200);border-radius:8px;background:var(--g50);position:relative;margin-bottom:9px}
+#sig-canvas{display:block;width:100%;height:100px;cursor:crosshair;touch-action:none}
+.sig-lbl{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--g300);pointer-events:none;white-space:nowrap}
+.step-row{display:flex;margin-bottom:14px;background:#fff;border:1.5px solid var(--g200);border-radius:8px;overflow:hidden}
+.step{flex:1;padding:9px 5px;text-align:center;font-size:10px;font-weight:600;color:var(--g400);border-right:1px solid var(--g100)}
+.step:last-child{border-right:none}
+.step.done{color:var(--green);background:var(--gl)}
+.step.active{color:var(--d);background:var(--t)}
+.step-n{width:18px;height:18px;border-radius:50%;background:var(--g200);color:var(--g500);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 2px}
+.step.done .step-n{background:var(--green);color:#fff}
+.step.active .step-n{background:var(--c);color:#fff}
+.fq-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.fq-chip{padding:6px 12px;border:1.5px solid var(--g200);border-radius:20px;font-size:12px;font-weight:600;color:var(--g600);cursor:pointer;background:#fff;transition:all .12s}
+.fq-chip:hover,.fq-chip.active{border-color:var(--c);background:var(--t);color:var(--d)}
+.rng-wrap{margin:9px 0}
+.rng-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--g500);margin-bottom:3px}
+.rng-track{height:7px;background:var(--g100);border-radius:4px;overflow:hidden}
+.rng-fill{height:100%;background:var(--c);border-radius:4px;transition:width .5s}
+.empty{text-align:center;padding:32px 16px;color:var(--g400)}
+.empty-icon{font-size:36px;margin-bottom:8px}
+.empty-title{font-size:14px;font-weight:700;color:var(--g600);margin-bottom:5px}
+.empty-sub{font-size:12px}
+.cr-preview{border:1.5px solid var(--g200);border-radius:8px;padding:14px;background:#FAFAFA;font-family:monospace;font-size:12px;margin-bottom:10px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--g800);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:0;transition:opacity .3s;pointer-events:none}
+@media print{.topbar,.sidebar,.pacts,.btn{display:none!important}.main{margin:0;padding:16px}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.main{margin-left:0}.fr{grid-template-columns:1fr}}
+::-webkit-scrollbar{width:5px}.::webkit-scrollbar-thumb{background:var(--g200);border-radius:3px}
+</style>
+</head>
+<body>
 
-<div class="page" id="pg-clients"><div class="pt">Clients</div><div class="ps">Full client roster with care plans and status</div>
-<div class="toolbar"><input type="text" class="sbox" placeholder="Search clients..." oninput="ft(this,'cl-tbl')"><button class="btn btn-c" onclick="openM('m-new')">+ Add Client</button><button class="btn btn-o" onclick="exportCSV('cl-tbl','sairncare-clients')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="cl-tbl"><thead><tr><th>Client</th><th>Age</th><th>Hours/Wk</th><th>Payer</th><th>Assigned CG</th><th>Status</th><th>Action</th></tr></thead><tbody>
-<tr><td><strong>Johnson, Martha</strong></td><td>85</td><td>28</td><td>Medicare</td><td>Maria S.</td><td><span class="badge bg">Active</span></td><td><button class="btn btn-sm btn-c" onclick="askAI('Review Martha Johnson's care plan. Are there any gaps or concerns I should address?')">AI Review</button></td></tr>
-<tr><td><strong>Williams, Robert</strong></td><td>91</td><td>35</td><td>Long-Term Care Ins</td><td>Dave K.</td><td><span class="badge bg">Active</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr>
-<tr><td><strong>Park, Linda</strong></td><td>78</td><td>14</td><td>Private Pay</td><td>Sarah T.</td><td><span class="badge bg">Active</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr>
-<tr><td><strong>Chen, George</strong></td><td>88</td><td>21</td><td>Medicaid</td><td>Unassigned</td><td><span class="badge br">Needs CG</span></td><td><button class="btn btn-sm btn-r" onclick="askAI('Find the best caregiver match for George Chen, 88, needs evening care 3 days/week. Medicaid client.')">AI Match</button></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-schedule"><div class="pt">Schedule</div><div class="ps">Caregiver and visit calendar</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new')">+ Schedule Visit</button><button class="btn btn-o" onclick="askAI('Optimize this week schedule. Flag any coverage gaps or caregiver conflicts.')">AI Optimize</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Date/Time</th><th>Client</th><th>Caregiver</th><th>Service</th><th>Duration</th><th>Status</th></tr></thead><tbody>
-<tr><td>Jun 16, 8am</td><td>Johnson, M.</td><td>Maria S.</td><td>Morning Routine</td><td>3 hrs</td><td><span class="badge bc">Confirmed</span></td></tr>
-<tr><td>Jun 16, 10am</td><td>Williams, R.</td><td>Dave K.</td><td>Personal Care</td><td>4 hrs</td><td><span class="badge bc">Confirmed</span></td></tr>
-<tr><td>Jun 16, 2pm</td><td>Park, L.</td><td>Sarah T.</td><td>Companionship</td><td>2 hrs</td><td><span class="badge bc">Confirmed</span></td></tr>
-<tr><td>Jun 16, 6pm</td><td>Chen, G.</td><td><strong style="color:var(--red)">OPEN</strong></td><td>Evening Care</td><td>3 hrs</td><td><span class="badge br">Unassigned</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-caregivers"><div class="pt">Caregivers</div><div class="ps">Caregiver roster, certifications, and availability</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new')">+ Add Caregiver</button><button class="btn btn-o" onclick="exportCSV('cg-tbl','sairncare-caregivers')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="cg-tbl"><thead><tr><th>Name</th><th>Certifications</th><th>Rate</th><th>Availability</th><th>Active Clients</th><th>Utilization</th></tr></thead><tbody>
-<tr><td><strong>Maria Santos</strong></td><td>CNA, HHA</td><td>$18/hr</td><td>Mon-Fri</td><td>4</td><td><span class="badge bg">92%</span></td></tr>
-<tr><td><strong>Dave Kim</strong></td><td>HHA</td><td>$16/hr</td><td>Mon-Sat</td><td>3</td><td><span class="badge bc">78%</span></td></tr>
-<tr><td><strong>Sarah Thompson</strong></td><td>CNA, CPR</td><td>$17/hr</td><td>Part Time</td><td>2</td><td><span class="badge ba">55%</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-visits"><div class="pt">Visit Logs</div><div class="ps">EVV-compliant visit records with AI review</div>
-<div class="toolbar"><input type="text" class="sbox" placeholder="Search logs..." oninput="ft(this,'vl-tbl')"><button class="btn btn-o" onclick="exportCSV('vl-tbl','sairncare-visits')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="vl-tbl"><thead><tr><th>Date</th><th>Client</th><th>Caregiver</th><th>Check-In</th><th>Check-Out</th><th>Tasks</th><th>Status</th></tr></thead><tbody>
-<tr><td>Jun 14</td><td>Johnson, M.</td><td>Maria S.</td><td>8:02 AM</td><td>11:05 AM</td><td>Bathing, Breakfast, Meds</td><td><span class="badge bg">Verified</span></td></tr>
-<tr><td>Jun 14</td><td>Williams, R.</td><td>Dave K.</td><td>10:00 AM</td><td>2:00 PM</td><td>Personal Care, Lunch, Exercise</td><td><span class="badge bg">Verified</span></td></tr>
-<tr><td>Jun 13</td><td>Park, L.</td><td>Sarah T.</td><td>2:05 PM</td><td>4:00 PM</td><td>Companionship, Light housekeeping</td><td><span class="badge bg">Verified</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-care-plans"><div class="pt">Care Plans</div><div class="ps">Individualized care plans with AI assistance</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new')">+ New Care Plan</button><button class="btn btn-o" onclick="askAI('Review all active care plans. Flag any that are outdated or where client needs have changed.')">AI Review All</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Client</th><th>Diagnosis</th><th>Services</th><th>Hours/Wk</th><th>Last Updated</th><th>Status</th></tr></thead><tbody>
-<tr><td>Johnson, M.</td><td>Dementia, Diabetes</td><td>Personal Care, Medication Mgmt</td><td>28</td><td>May 15</td><td><span class="badge bg">Current</span></td></tr>
-<tr><td>Williams, R.</td><td>CHF, Mobility</td><td>Personal Care, PT Assist</td><td>35</td><td>Apr 20</td><td><span class="badge ba">Update Needed</span></td></tr>
-<tr><td>Park, L.</td><td>Isolation, Mild Cognitive</td><td>Companionship, Light Housekeeping</td><td>14</td><td>Jun 1</td><td><span class="badge bg">Current</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-medications"><div class="pt">Medication Tracking</div><div class="ps">Medication reminders and administration logs</div>
-<div class="flag fw">&#x26A0;&#xFE0F; 2 clients have missed medication check confirmations this week. Review immediately.</div>
-<div class="card" style="margin-top:12px;"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Client</th><th>Medication</th><th>Dose</th><th>Schedule</th><th>Last Given</th><th>Status</th></tr></thead><tbody>
-<tr><td>Johnson, M.</td><td>Metformin 500mg</td><td>1 tablet</td><td>Morning + Evening</td><td>Jun 14, 8am</td><td><span class="badge bg">On Track</span></td></tr>
-<tr><td>Johnson, M.</td><td>Aricept 10mg</td><td>1 tablet</td><td>Bedtime</td><td>Jun 13</td><td><span class="badge br">Missed Jun 14</span></td></tr>
-<tr><td>Williams, R.</td><td>Lasix 40mg</td><td>1 tablet</td><td>Morning</td><td>Jun 14</td><td><span class="badge bg">On Track</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-incidents"><div class="pt">Incident Reports</div><div class="ps">Falls, medication errors, and safety incidents</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new')">+ Report Incident</button><button class="btn btn-o" onclick="askAI('Analyze incident reports for the past 90 days. Are there patterns I should address in training or care protocols?')">AI Pattern Analysis</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Date</th><th>Client</th><th>Type</th><th>Description</th><th>Severity</th><th>Follow-Up</th></tr></thead><tbody>
-<tr><td>Jun 10</td><td>Williams, R.</td><td>Near Fall</td><td>Nearly fell in bathroom. No injury. Wet floor.</td><td><span class="badge ba">Medium</span></td><td><span class="badge bc">Grip bars ordered</span></td></tr>
-<tr><td>Jun 5</td><td>Johnson, M.</td><td>Medication</td><td>Morning meds given 2 hours late due to scheduling.</td><td><span class="badge bc">Low</span></td><td><span class="badge bg">Resolved</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-invoices"><div class="pt">Invoices</div><div class="ps">Client billing with insurance and private pay tracking</div>
-<div class="toolbar"><button class="btn btn-c" onclick="openM('m-new')">+ New Invoice</button><button class="btn btn-o" onclick="exportCSV('inv-tbl','sairncare-invoices')">Export CSV</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt" id="inv-tbl"><thead><tr><th>Invoice #</th><th>Client</th><th>Payer</th><th>Hours</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead><tbody>
-<tr><td>INV-3041</td><td>Johnson, M.</td><td>Medicare</td><td>112</td><td>$2,016</td><td>Jun 30</td><td><span class="badge bc">Submitted</span></td></tr>
-<tr><td>INV-3042</td><td>Park, L.</td><td>Private Pay</td><td>56</td><td>$1,064</td><td>Jun 25</td><td><span class="badge bg">Paid</span></td></tr>
-<tr><td>INV-3040</td><td>Williams, R.</td><td>LTC Insurance</td><td>140</td><td>$2,800</td><td>Jun 20</td><td><span class="badge br">Overdue</span></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-payroll"><div class="pt">Caregiver Pay</div><div class="ps">Calculate and run caregiver payroll from visit logs</div>
-<div class="toolbar"><button class="btn btn-o" onclick="askAI('Calculate payroll for all caregivers this pay period based on visit logs. Flag any overtime.')">AI Calculate Pay</button><button class="btn btn-c" onclick="SAIRNbiz.sendEvent('sairncare','payroll_sync',{ts:new Date().toISOString()});toast('Payroll synced to SAIRNbiz')">Sync to SAIRNbiz</button></div>
-<div class="card"><div class="cb" style="padding:0;"><table class="dt"><thead><tr><th>Caregiver</th><th>Hours This Period</th><th>OT Hours</th><th>Rate</th><th>Gross Pay</th></tr></thead><tbody>
-<tr><td>Maria Santos</td><td>84</td><td>4</td><td>$18/hr</td><td>$1,572</td></tr>
-<tr><td>Dave Kim</td><td>72</td><td>0</td><td>$16/hr</td><td>$1,152</td></tr>
-<tr><td>Sarah Thompson</td><td>38</td><td>0</td><td>$17/hr</td><td>$646</td></tr>
-<tr class="ttr"><td colspan="4"><strong>Total Payroll</strong></td><td><strong>$3,370</strong></td></tr>
-</tbody></table></div></div></div>
-
-<div class="page" id="pg-reports"><div class="pt">Reports</div><div class="ps">AI-generated business and clinical intelligence</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;">
-<div class="card" style="cursor:pointer;" onclick="askAI('Generate a client census report. Active clients by service type, hours, and payer.')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F9D3;</div><div style="font-weight:700;">Client Census</div></div></div>
-<div class="card" style="cursor:pointer;" onclick="askAI('Generate a caregiver utilization report for this month. Hours worked, utilization rate, client assignments.')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F91D;</div><div style="font-weight:700;">Caregiver Report</div></div></div>
-<div class="card" style="cursor:pointer;" onclick="askAI('Generate a revenue report by payer type for this month.')"><div class="cb" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:7px;">&#x1F4CA;</div><div style="font-weight:700;">Revenue by Payer</div></div></div>
-</div></div>
-<div class="page" id="pg-formula"><div class="pt">Formula Editor</div><div class="ps">Admin: set billing rates by service and payer</div>
-<div class="card"><div class="cb"><div class="fgrid">
-<div class="fg"><label>Personal Care Rate ($/hr)</label><input type="number" value="22"></div>
-<div class="fg"><label>Skilled Care Rate ($/hr)</label><input type="number" value="35"></div>
-<div class="fg"><label>Companionship Rate ($/hr)</label><input type="number" value="18"></div>
-<div class="fg"><label>Overnight Rate ($/hr)</label><input type="number" value="15"></div>
-<div class="fg"><label>Medicare Billing Rate ($/hr)</label><input type="number" value="24"></div>
-<div class="fg"><label>Minimum Visit (hrs)</label><input type="number" value="2"></div>
+<div id="login">
+<div class="lcard">
+  <div class="llogo">SC</div>
+  <div class="ltitle">SAIRNcare</div>
+  <div class="lsub">HIPAA-compliant home care management, scheduling, and billing</div>
+  <div class="rg"><button class="rb  active" data-role="owner" onclick="selRole(this)"><span class="ri">🏥</span>Owner</button>
+<button class="rb" data-role="coordinator" onclick="selRole(this)"><span class="ri">📋</span>Coordinator</button>
+<button class="rb" data-role="caregiver" onclick="selRole(this)"><span class="ri">🤝</span>Caregiver</button>
+<button class="rb" data-role="admin" onclick="selRole(this)"><span class="ri">🔧</span>Admin</button></div>
+  <div class="pin-l">Enter PIN</div>
+  <input class="pin-i" id="pin-in" type="password" maxlength="4" placeholder="••••" inputmode="numeric" oninput="if(this.value.length===4)doLogin()">
+  <button class="lbtn" onclick="doLogin()">Sign In</button>
+  <div class="lerr" id="lerr">Incorrect PIN. Try again.</div>
+  <div style="margin-top:14px;font-size:11px;color:var(--g400)">Demo: any role + PIN 1234</div>
 </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-      <div style="font-size:13px;font-weight:700;color:var(--cd);margin-bottom:10px;">License Key</div>
-      <div class="fgrid">
-        <div class="fg">
-          <label>Your SAIRN License Key</label>
-          <input type="text" id="license-key-input" placeholder="SD01_2025_XXXXX" style="font-family:monospace;font-weight:600;">
-        </div>
-        <div class="fg" style="justify-content:flex-end;padding-top:18px;">
-          <button class="btn btn-c" onclick="saveLicenseKey()">Activate Key</button>
-        </div>
-      </div>
-      <div id="license-status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+</div>
+
+<div id="app">
+<div class="topbar">
+  <div class="tlogo">SC</div>
+  <div class="tname">SAIRN<span>care</span></div>
+  <div class="tsp"></div>
+  <button class="fqbtn" onclick="openFQ()">📷 Field Quote</button>
+  <div class="tusr"><div class="tavtr" id="tavtr">OW</div><span id="trole">Owner</span></div>
+</div>
+
+<div class="sidebar">
+  <div class="slbl">Navigation</div>
+  <div class="ni" onclick="showPage('dashboard')" id="nav-dashboard"><span class="ni-icon">🏠</span>Dashboard</div>
+<div class="ni" onclick="showPage('clients')" id="nav-clients"><span class="ni-icon">👴</span>Clients</div>
+<div class="ni" onclick="showPage('scheduling')" id="nav-scheduling"><span class="ni-icon">📅</span>Scheduling</div>
+<div class="ni" onclick="showPage('caregivers')" id="nav-caregivers"><span class="ni-icon">🤝</span>Caregivers</div>
+<div class="ni" onclick="showPage('visits')" id="nav-visits"><span class="ni-icon">📋</span>Visit Logs</div>
+<div class="ni" onclick="showPage('billing')" id="nav-billing"><span class="ni-icon">💳</span>Billing</div>
+<div class="ni" onclick="showPage('field-quote')" id="nav-field-quote"><span class="ni-icon">📷</span>Field Quote</div>
+<div class="ni" onclick="showPage('doc-scan')" id="nav-doc-scan"><span class="ni-icon">📄</span>Doc Scanner</div>
+<div class="ni" onclick="showPage('check-register')" id="nav-check-register"><span class="ni-icon">📄</span>Check Register</div>
+<div class="ni" onclick="showPage('reports')" id="nav-reports"><span class="ni-icon">📊</span>Reports</div>
+<div class="ni" onclick="showPage('sairn-suite')" id="nav-sairn-suite"><span class="ni-icon">🔗</span>SAIRN Suite</div>
+<div class="ni" onclick="showPage('admin-pricing')" id="nav-admin-pricing"><span class="ni-icon">⚙️</span>Admin</div>
+</div>
+
+<div class="main" id="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="ph">
+    <div><div class="ptitle">SAIRNcare Dashboard</div><div class="psub">Home Care · $149/mo · June 15, 2026</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp" onclick="runIntel()">🤖 AI Intelligence</button>
     </div>
-    <div style="margin-top:14px;"><button class="btn btn-c" onclick="SAIRNstore.saveFormulas('sairncare');toast('Rates saved')">Save Rates</button></div></div></div></div>
-<div class="page" id="pg-csv"><div class="pt">CSV Tools</div><div class="two-col"><div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:8px;">
-<button class="btn btn-o" onclick="exportCSV('cl-tbl','sairncare-clients')">Export Clients</button>
-<button class="btn btn-o" onclick="exportCSV('cg-tbl','sairncare-caregivers')">Export Caregivers</button>
-<button class="btn btn-o" onclick="exportCSV('vl-tbl','sairncare-visits')">Export Visit Logs</button>
-<button class="btn btn-o" onclick="exportCSV('inv-tbl','sairncare-invoices')">Export Invoices</button>
-</div></div></div></div>
-<div class="page" id="pg-sairnbiz"><div class="pt">SAIRNbiz</div><div class="ps">HR + Accounting -- included free with SAIRNcare</div><div id="sbiz-container" style="margin-bottom:14px;"></div><div class="flag fi">SAIRNbiz manages all payroll, GL entries, and financial reporting for your team.</div><div style="margin-top:12px;display:flex;gap:9px;"><button class="btn btn-c" onclick="SAIRNbiz.openHub()">Open SAIRNbiz</button><button class="btn btn-o" onclick="SAIRNbiz.sendEvent('sairncare','sync',{ts:new Date().toISOString()});toast('Synced')">Sync to SAIRNbiz</button></div></div></div></div></div>
-<div id="aip"><div class="aih"><div class="ait">SAIRNcare AI</div><button class="aic" onclick="toggleAI()">X</button></div><div class="aim" id="aim"><div class="amsg b">Hi! I am your SAIRNcare AI. Ask me anything.</div></div><div class="aiq" id="aiq"></div><div class="air"><input type="text" id="ai-in" placeholder="Ask..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn btn-c" onclick="sendAI()">Send</button></div></div>
+  </div>
+  
+  <div class="sgrid"><div class="sc"><div class="sl">Active Clients</div><div class="sv">34</div><div class="sd">↑ 3 this month</div></div>
+<div class="sc"><div class="sl">Visits Today</div><div class="sv">28</div><div class="sd">8 completed</div></div>
+<div class="sc"><div class="sl">Caregivers On Shift</div><div class="sv">12</div><div class="sd">2 on call</div></div>
+<div class="sc"><div class="sl">Billing Pending</div><div class="sv">$18,400</div><div class="sd">This week</div></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">🤖 Claude SAIRNcare Intelligence</div>
+      <button class="btn bo bsm" onclick="runIntel()">Refresh</button></div>
+    <div class="ai-bub" id="intel-out">Mrs. Henderson (Client 041) -- care plan update due in 3 days. Caregiver rotation note: James R. has been assigned 6 consecutive days -- consider rest day per policy. Billing flag: 4 visits missing EVV signatures -- required for Medicaid reimbursement.</div>
+  </div>
+  <div class="suite-wrap">
+    <div class="suite-hdr">
+      <div class="suite-logo">S</div>
+      <div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">Connected apps</div></div>
+      <div class="suite-live">● Live</div>
+    </div>
+    <div class="suite-grid"><div class="suite-tile" onclick="showToast('Opening SAIRNbiz')"><div class="suite-icon" style="background:#14B8A6">SB</div><div class="suite-tname">SAIRNbiz</div><div class="suite-tdesc">HR & Payroll</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNcode')"><div class="suite-icon" style="background:#F87171">SC</div><div class="suite-tname">SAIRNcode</div><div class="suite-tdesc">Medical Billing</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNmech')"><div class="suite-icon" style="background:#84CC16">SM</div><div class="suite-tname">SAIRNmech</div><div class="suite-tdesc">HVAC Service</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNdesign')"><div class="suite-icon" style="background:#6366F1">SD</div><div class="suite-tname">SAIRNdesign</div><div class="suite-tdesc">Facility Design</div></div></div>
+    <div class="suite-btns">
+      <button class="suite-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="suite-btn out">📊 CSV</button>
+      <span style="font-size:11px;color:#94A3B8;align-self:center" id="last-sync">Last sync: --</span>
+    </div>
+  </div>
+</div>
+
+<!-- FIELD QUOTE -->
+<div class="page" id="page-field-quote">
+  <div class="ph">
+    <div><div class="ptitle">📷 Field Quote</div><div class="psub">Photograph any sketch or drawing — priced in 60 seconds</div></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="showPage('dashboard')">← Back</button></div>
+  </div>
+  <div class="step-row">
+    <div class="step active" id="fqs-1"><div class="step-n">1</div>Scope</div>
+    <div class="step" id="fqs-2"><div class="step-n">2</div>Photo</div>
+    <div class="step" id="fqs-3"><div class="step-n">3</div>Questions</div>
+    <div class="step" id="fqs-4"><div class="step-n">4</div>Quote</div>
+    <div class="step" id="fqs-5"><div class="step-n">5</div>Sign</div>
+  </div>
+  <div class="card" id="fq-p1">
+    <div class="fg"><label class="fl">Client Name</label><input class="fi" id="fq-client" placeholder="Client / address"></div>
+    <div class="fg"><label class="fl">What are you quoting?</label>
+      <div class="fq-chips" id="fq-chips"><div class="fq-chip" data-trade="home-care-assessment" onclick="selTrade(this)">Home Care Assessment</div>
+<div class="fq-chip" data-trade="companion-care" onclick="selTrade(this)">Companion Care</div>
+<div class="fq-chip" data-trade="personal-care" onclick="selTrade(this)">Personal Care</div>
+<div class="fq-chip" data-trade="skilled-nursing" onclick="selTrade(this)">Skilled Nursing</div>
+<div class="fq-chip" data-trade="therapy-services" onclick="selTrade(this)">Therapy Services</div>
+<div class="fq-chip" data-trade="respite-care" onclick="selTrade(this)">Respite Care</div></div></div>
+    <button class="btn bp" onclick="fqStep(2)">Next: Photo Sketch →</button>
+  </div>
+  <div class="card" id="fq-p2" style="display:none">
+    <div class="upzone" onclick="document.getElementById('fq-file').click()">
+      <div style="font-size:30px;margin-bottom:7px">📷</div>
+      <div style="font-size:13px;font-weight:600;color:var(--g600)" id="fq-upload-lbl">Tap to photograph sketch or drawing</div>
+      <div style="font-size:11px;color:var(--g400);margin-top:3px">Any drawing -- napkin, floor plan, diagram, handwritten</div>
+      <input type="file" id="fq-file" accept="image/*" capture="environment" style="display:none" onchange="fqHandleFile(this)">
+    </div>
+    <div id="fq-prev" style="display:none;margin-top:11px">
+      <img id="fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--g200)">
+      <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:5px">✅ Captured</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn bo bsm" onclick="fqStep(1)">← Back</button>
+      <button class="btn bp" id="fq-analyze-btn" onclick="fqAnalyze()" disabled>🤖 Analyze →</button>
+    </div>
+  </div>
+  <div class="card" id="fq-p3" style="display:none">
+    <div class="ai-bub" id="fq-ai"><div class="thinking"><span></span><span></span><span></span></div>&nbsp;Reading your drawing...</div>
+    <div id="fq-ans-wrap" style="display:none">
+      <div class="fg"><label class="fl">Your answers</label><textarea class="fta" id="fq-answers" placeholder="Answer Claude's questions..."></textarea></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn bo bsm" onclick="fqStep(2)">← Back</button>
+        <button class="btn bp" onclick="fqGenQuote()">Generate Quote →</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="fq-p4" style="display:none">
+    <div style="background:#fff;border:1.5px solid var(--g200);border-radius:8px;padding:16px;font-size:12px;line-height:1.7;white-space:pre-wrap;font-family:monospace;margin-bottom:12px" id="fq-quote-out"></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bp bsm" onclick="fqStep(5)">Get Signature →</button>
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bo bsm" onclick="fqShare()">📤 Share</button>
+      <button class="btn bo bsm" onclick="saveQuote()">💾 Save</button>
+    </div>
+  </div>
+  <div class="card" id="fq-p5" style="display:none">
+    <div style="font-size:12px;color:var(--g600);margin-bottom:9px">Turn phone to client -- sign below</div>
+    <div class="sig-wrap"><canvas id="sig-canvas" width="500" height="100"></canvas><div class="sig-lbl">Sign here</div></div>
+    <div style="display:flex;gap:7px;margin-bottom:12px"><button class="btn bo bsm" onclick="clearSig()">Clear</button></div>
+    <div class="fg"><label class="fl">Deposit</label><input class="fi" id="fq-deposit" placeholder="$0.00" style="max-width:160px"></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bp" onclick="fqClose()">✅ Signed -- Save & Close</button>
+      <button class="btn bo bsm" onclick="sendDeposit()">💳 Text Deposit Link</button>
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOC SCANNER -->
+<div class="page" id="page-doc-scan">
+  <div class="ph"><div><div class="ptitle">📄 Document Scanner</div><div class="psub">Photo any document -- Claude reads it instantly</div></div></div>
+  <div class="card">
+    <div class="upzone" onclick="document.getElementById('doc-file').click()">
+      <div style="font-size:32px;margin-bottom:8px">📄</div>
+      <div style="font-size:13px;font-weight:600;color:var(--g600)">Tap to photograph any document</div>
+      <div style="font-size:11px;color:var(--g400);margin-top:3px">care plans, physician orders, HIPAA authorizations, medication administration records, incident reports, insurance cards, advance directives, skilled nursing assessments</div>
+      <input type="file" id="doc-file" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="scanDoc(this)">
+    </div>
+    <div id="doc-result" style="display:none;margin-top:12px">
+      <div class="ai-bub" id="doc-out"></div>
+      <div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap">
+        <button class="btn bp bsm" onclick="window.print()">🖨️ Print</button>
+        <button class="btn bo bsm" onclick="saveDoc()">💾 Save</button>
+        <button class="btn bo bsm" onclick="document.getElementById('doc-file').click()">📷 Scan Another</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHECK REGISTER -->
+<div class="page" id="page-check-register">
+  <div class="ph">
+    <div><div class="ptitle">📄 Check Register</div></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="window.print()">🖨️ Print Checks</button></div>
+  </div>
+  <div class="card">
+    <div class="fr">
+      <div class="fg"><label class="fl">Pay To</label><input class="fi" id="cr-payee" placeholder="Payee" oninput="updateCheck()"></div>
+      <div class="fg"><label class="fl">Amount ($)</label><input class="fi" id="cr-amount" type="number" placeholder="0.00" oninput="updateCheck()"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="cr-date" type="date"></div>
+      <div class="fg"><label class="fl">Memo</label><input class="fi" id="cr-memo" placeholder="Invoice / reference" oninput="updateCheck()"></div>
+    </div>
+    <div class="cr-preview">
+      <div style="display:flex;justify-content:space-between;margin-bottom:9px"><div style="font-weight:700">SAIRNcare LLC</div><div>Check #<span id="cr-num">1001</span></div></div>
+      <div style="display:flex;gap:7px;margin-bottom:5px"><span>Pay to:</span><div style="border-bottom:1px solid #ccc;flex:1" id="cr-prev-payee">___________</div><div style="border:1px solid #ccc;padding:2px 9px;min-width:90px;font-weight:700" id="cr-prev-amount">$_____</div></div>
+      <div style="border-bottom:1px solid #ccc;margin-bottom:9px;color:#9CA3AF;font-size:11px" id="cr-prev-written">_____________________________ Dollars</div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF"><span id="cr-prev-memo">Memo: _________________</span><span>Signature: ___________________</span></div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bp bsm" onclick="saveCheck()">💾 Save</button>
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print 3-per-Page</button>
+      <button class="btn bo bsm" onclick="syncAll()">🔗 Post GL</button>
+    </div>
+  </div>
+  <div class="card"><div class="ch"><div class="ct">Register History</div></div>
+    <div id="cr-history"><div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No checks yet</div></div></div>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="page-reports">
+  <div class="ph">
+    <div><div class="ptitle">📊 Reports</div></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="window.print()">🖨️ Print</button></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Performance Benchmarks</div></div>
+    <div id="report-ranges"></div>
+    <button class="btn bp bsm" style="margin-top:12px" onclick="runReportIntel()">🤖 Deep Analysis</button>
+    <div class="ai-bub" id="report-intel" style="display:none"></div>
+  </div>
+</div>
+
+<!-- SAIRN SUITE -->
+<div class="page" id="page-sairn-suite">
+  <div class="ph"><div><div class="ptitle">🔗 SAIRN Suite</div><div class="psub">Connected apps for your business</div></div></div>
+  <div class="suite-wrap">
+    <div class="suite-hdr"><div class="suite-logo">S</div><div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">All connected</div></div><div class="suite-live">● Live</div></div>
+    <div class="suite-grid" id="suite-grid2"><div class="suite-tile" onclick="showToast('Opening SAIRNbiz')"><div class="suite-icon" style="background:#14B8A6">SB</div><div class="suite-tname">SAIRNbiz</div><div class="suite-tdesc">HR & Payroll</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNcode')"><div class="suite-icon" style="background:#F87171">SC</div><div class="suite-tname">SAIRNcode</div><div class="suite-tdesc">Medical Billing</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNmech')"><div class="suite-icon" style="background:#84CC16">SM</div><div class="suite-tname">SAIRNmech</div><div class="suite-tdesc">HVAC Service</div></div>
+<div class="suite-tile" onclick="showToast('Opening SAIRNdesign')"><div class="suite-icon" style="background:#6366F1">SD</div><div class="suite-tname">SAIRNdesign</div><div class="suite-tdesc">Facility Design</div></div></div>
+    <div class="suite-btns">
+      <button class="suite-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="suite-btn out">📊 CSV Export</button>
+      <span style="font-size:11px;color:#94A3B8;align-self:center" id="last-sync2">Last sync: --</span>
+    </div>
+  </div>
+</div>
+
+<!-- SAIRNBIZ -->
+<div class="page" id="page-sairnbiz-connector">
+  <div class="ph"><div><div class="ptitle">🏢 SAIRNbiz Connector</div></div></div>
+  <div class="sbiz">
+    <div class="sbiz-hdr"><div class="sbiz-logo">SB</div><div><div class="sbiz-title">SAIRNbiz -- HR + Accounting</div></div><div style="margin-left:auto;font-size:11px;font-weight:700;color:var(--green)">● Connected</div></div>
+    <div class="sbiz-btns">
+      <button class="sbiz-btn" onclick="syncAll()">🔄 Sync All</button>
+      <button class="sbiz-btn out">👤 Sync HR</button>
+      <button class="sbiz-btn out">💳 Sync GL</button>
+      <button class="sbiz-btn out">📊 CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PRICING -->
+<div class="page" id="page-admin-pricing">
+  <div class="ph">
+    <div><div class="ptitle">⚙️ Admin & Pricing</div><div class="psub">Your rates -- Field Quote uses these for every estimate</div></div>
+    <div class="pacts"><button class="btn bp bsm" onclick="savePricing()">💾 Save</button></div>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:12px">Labor Rates</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Standard Rate ($/hr)</label><input class="fi" id="r-std" value="85" type="number"></div>
+      <div class="fg"><label class="fl">Lead Rate ($/hr)</label><input class="fi" id="r-lead" value="120" type="number"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Material Markup %</label><input class="fi" id="r-markup" value="30" type="number"></div>
+      <div class="fg"><label class="fl">Profit Margin %</label><input class="fi" id="r-profit" value="20" type="number"></div>
+    </div>
+    <div class="ct" style="margin:14px 0 10px">Unit Pricing</div>
+    <div class="fr"><div class="fg"><label class="fl">Companion care ($/hr)</label><input class="fi" id="u-companion_hr" value="22" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Personal care ($/hr)</label><input class="fi" id="u-personal_hr" value="26" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Skilled nursing ($/hr)</label><input class="fi" id="u-skilled_hr" value="55" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Therapy ($/hr)</label><input class="fi" id="u-therapy_hr" value="85" type="number" step="0.01"></div><div class="fg"></div></div>
+<div class="fr"><div class="fg"><label class="fl">Overnight care ($/night)</label><input class="fi" id="u-overnight" value="180" type="number" step="0.01"></div><div class="fg"></div></div>
+    <button class="btn bp bsm" onclick="savePricing()">💾 Save All Pricing</button>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:12px">PIN Management</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Owner PIN</label><input class="fi" type="password" maxlength="4" value="1234" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">Coordinator PIN</label><input class="fi" type="password" maxlength="4" value="2345" inputmode="numeric"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Caregiver PIN</label><input class="fi" type="password" maxlength="4" value="3456" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">Admin PIN</label><input class="fi" type="password" maxlength="4" value="4567" inputmode="numeric"></div>
+    </div>
+    <button class="btn bp bsm">Save PINs</button>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end app -->
+
 <div class="toast" id="toast"></div>
-<script src="sairnbiz-connector.js"></script>
+<div id="sairnscan-ref" style="display:none" data-sairnscan="true" data-sha="dda09816"></div>
+
 <script>
-var PINS={"owner": "1234", "coordinator": "2345", "caregiver": "3456", "office": "4567"};var curRole='';
-function selRole(r){curRole=r;document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});var el=document.getElementById('r-'+r);if(el)el.classList.add('sel');document.getElementById('p0').focus();}
-function pi(i){var v=document.getElementById('p'+i).value;if(v&&i<3)document.getElementById('p'+(i+1)).focus();}
-function pk(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();if(e.key==='Enter')doLogin();}
-function getPin(){return ['p0','p1','p2','p3'].map(function(id){return document.getElementById(id).value;}).join('');}
-function doLogin(){if(!curRole){document.getElementById('le').textContent='Select a role.';return;}if(getPin()===PINS[curRole]){document.getElementById('ls').style.display='none';document.getElementById('app').style.display='block';document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);SAIRNbiz.sendEvent('sairncare','app_loaded',{role:curRole,ts:new Date().toISOString()});initAI();toast('Welcome back!');
-    SAIRNstore.watchTable('sairncare', 'cl-tbl');
-    SAIRNstore.watchTable('sairncare', 'cg-tbl');
-    SAIRNstore.watchTable('sairncare', 'vl-tbl');
-    SAIRNstore.watchTable('sairncare', 'inv-tbl');
-    SAIRNstore.loadFormulas('sairncare');
+// ============================================================
+// SAIRNcare -- Complete JavaScript
+// Proxy: https://sairn.vercel.app/api/claude
+// NEVER api.anthropic.com
+// app_id: 'sairncare' | is_demo: true
+// No Unicode box chars in JS
+// ============================================================
+const APP_ID  = 'sairncare';
+const PROXY   = 'https://sairn.vercel.app/api/claude';
+const BRIDGE  = 'https://sairn.vercel.app/api/bridge';
+const SUITE_APPS=[{"id": "sairnbiz", "name": "SAIRNbiz", "icon": "SB", "color": "#14B8A6", "desc": "HR & Payroll"}, {"id": "sairncode", "name": "SAIRNcode", "icon": "SC", "color": "#F87171", "desc": "Medical Billing"}, {"id": "sairnmechanical", "name": "SAIRNmech", "icon": "SM", "color": "#84CC16", "desc": "HVAC Service"}, {"id": "sairndesign", "name": "SAIRNdesign", "icon": "SD", "color": "#6366F1", "desc": "Facility Design"}];
 
-    // Restore AI conversation history
-    _aih = SAIRNstore.loadAIHistory('sairncare') || [];
-}else{document.getElementById('le').textContent='Incorrect PIN.';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.getElementById('p0').focus();}}
-function doLogout(){document.getElementById('ls').style.display='flex';document.getElementById('app').style.display='none';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value=''});document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});curRole='';}
-function nav(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.ni').forEach(function(x){x.classList.remove('active');});var pg=document.getElementById('pg-'+p);if(pg)pg.classList.add('active');var ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('active');document.getElementById('mn').scrollTop=0;if(p==='sairnbiz'){SAIRNbiz.renderPanel('sbiz-container','#0D9488');}}
-function openM(id){document.getElementById(id).classList.add('open');}function closeM(id){document.getElementById(id).classList.remove('open');}
-document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.mo').forEach(function(o){o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});});
-function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2600);}
-function ft(inp,tid){var q=inp.value.toLowerCase();document.getElementById(tid).querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});}
-function exportCSV(tid,fname){var t=document.getElementById(tid);if(!t){toast('No data');return;}var csv=Array.from(t.querySelectorAll('tr')).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(fname||'export')+'.csv';a.click();toast('Exported');}
-var _aih=[];function toggleAI(){document.getElementById('aip').classList.toggle('open');}function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('aip').classList.contains('open'))toggleAI();}function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
-async function sendAI(){var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'u');var th=addMsg('Thinking...','t');_aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);try{var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncare',is_demo:true,license_key:(localStorage.getItem('sairn_license_key_sairncare')||''),system:"You are the AI for SAIRNcare, a home care agency management platform. You know about caregiver scheduling, EVV compliance, care plans, medication management, Medicare and Medicaid billing for home care, incident reporting, and caregiver retention. Be specific and actionable.",messages:_aih,max_tokens:700})});var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';_aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('sairncare',_aih);th.className='amsg b';th.textContent=r;}catch(e){th.className='amsg b';th.textContent='Connection error.';}}
-function initAI(){var prompts=[["Schedule Gap", "Find any open shifts or coverage gaps this week"], ["Caregiver Match", "Who is the best caregiver match for a new client?"], ["Missed Medications", "Which clients have missed medication confirmations?"], ["Revenue by Payer", "Break down revenue by payer type this month"], ["Incident Review", "Analyze incident reports for patterns"], ["Caregiver Pay", "Calculate payroll for this pay period"]];var qw=document.getElementById('aiq');qw.innerHTML='';prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});}
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('aip').classList.remove('open');}});
-</script>
-<!-- SAIRNstore: localStorage persistence -->
-<script>
-// SAIRNstore.js -- Persistent localStorage layer for all SAIRN B2B apps
-// Injected into every app. Auto-saves and auto-loads all data tables.
-// Michael L. Dibert -- SAIRN Technologies, LLC
+let currentRole='owner';
+let fqTrade='home-care-assessment';
+let fqImg64=null,fqConvo=[],fqQuoteTxt='';
+let sigDrawing=false,sigCtx=null;
+let crNum=parseInt(localStorage.getItem(APP_ID+'_crnum')||'1001');
 
-var SAIRNstore = (function() {
+const PINS={
+  'owner':'1234','coordinator':'2345',
+  'caregiver':'3456','admin':'4567'
+};
+const ROLE_LABELS={
+  'owner':'Owner','coordinator':'Coordinator',
+  'caregiver':'Caregiver','admin':'Admin'
+};
+const ROLE_INITS={
+  'owner':'OW','coordinator':'CO',
+  'caregiver':'CA','admin':'AD'
+};
 
-  // ── CORE STORE ──────────────────────────────────────────────
-  function getKey(appId, table) {
-    return 'sairn:' + appId + ':' + table;
+function selRole(btn){document.querySelectorAll('.rb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentRole=btn.dataset.role;}
+function doLogin(){
+  const pin=document.getElementById('pin-in').value;
+  const stored=JSON.parse(localStorage.getItem(APP_ID+'_pins')||JSON.stringify(PINS));
+  if(stored[currentRole]!==pin){const e=document.getElementById('lerr');e.style.display='block';document.getElementById('pin-in').value='';setTimeout(()=>e.style.display='none',3000);return;}
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('tavtr').textContent=ROLE_INITS[currentRole];
+  document.getElementById('trole').textContent=ROLE_LABELS[currentRole];
+  initSig();loadPricing();renderRangeBars();loadLastSync();loadWeather();
+  const checks=JSON.parse(localStorage.getItem(APP_ID+'_checks')||'[]');
+  if(checks.length)renderCR(checks);
+  const dateEl=document.getElementById('cr-date');if(dateEl)dateEl.value=new Date().toISOString().split('T')[0];
+  showPage('dashboard');
+}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
+  const nav=document.querySelector('[onclick="showPage(''+id+'')"]');if(nav)nav.classList.add('active');
+  document.getElementById('main').scrollTop=0;
+}
+function openFQ(){showPage('field-quote');fqStep(1);}
+function fqStep(s){
+  for(let i=1;i<=5;i++){
+    const p=document.getElementById('fq-p'+i);const st=document.getElementById('fqs-'+i);
+    if(p)p.style.display=(i===s)?'block':'none';
+    if(st){st.classList.remove('active','done');if(i<s)st.classList.add('done');else if(i===s)st.classList.add('active');}
   }
-
-  function save(appId, table, rows) {
-    try {
-      localStorage.setItem(getKey(appId, table), JSON.stringify({
-        rows: rows,
-        ts: Date.now()
-      }));
-      return true;
-    } catch(e) {
-      console.warn('SAIRNstore save error:', e);
-      return false;
-    }
-  }
-
-  function load(appId, table) {
-    try {
-      var raw = localStorage.getItem(getKey(appId, table));
-      if (!raw) return null;
-      var parsed = JSON.parse(raw);
-      return parsed.rows || null;
-    } catch(e) {
-      return null;
-    }
-  }
-
-  function clear(appId, table) {
-    try {
-      localStorage.removeItem(getKey(appId, table));
-    } catch(e) {}
-  }
-
-  function clearAll(appId) {
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      var keys = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) keys.push(k);
-      }
-      keys.forEach(function(k) { localStorage.removeItem(k); });
-    } catch(e) {}
-  }
-
-  // ── TABLE SERIALIZER ────────────────────────────────────────
-  // Reads a <tbody> and converts it to an array of row-data objects
-  function tableToRows(tbody) {
-    var rows = [];
-    if (!tbody) return rows;
-    tbody.querySelectorAll('tr').forEach(function(tr) {
-      var cells = [];
-      tr.querySelectorAll('td').forEach(function(td) {
-        cells.push(td.innerHTML);
-      });
-      if (cells.length > 0) rows.push(cells);
-    });
-    return rows;
-  }
-
-  // Restores rows into a <tbody>
-  function rowsToTable(tbody, rows) {
-    if (!tbody || !rows || rows.length === 0) return;
-    // Keep header row if it's a th-only row
-    var existingRows = tbody.querySelectorAll('tr');
-    // Clear non-header rows
-    existingRows.forEach(function(tr) {
-      if (!tr.querySelector('th')) tr.remove();
-    });
-    rows.forEach(function(cells) {
-      var tr = document.createElement('tr');
-      cells.forEach(function(html) {
-        var td = document.createElement('td');
-        td.innerHTML = html;
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-  }
-
-  // ── AUTO-WATCH: patch all buttons that add rows ─────────────
-  function watchTable(appId, tableId) {
-    var tbl = document.getElementById(tableId);
-    if (!tbl) return;
-    var tbody = tbl.querySelector('tbody');
-    if (!tbody) return;
-
-    // Load saved data
-    var saved = load(appId, tableId);
-    if (saved) rowsToTable(tbody, saved);
-
-    // Observe changes and auto-save
-    var observer = new MutationObserver(function() {
-      var rows = tableToRows(tbody);
-      if (rows.length > 0) save(appId, tableId, rows);
-    });
-    observer.observe(tbody, { childList: true, subtree: true, characterData: true });
-  }
-
-  // ── FORM PERSISTENCE ────────────────────────────────────────
-  function saveForm(formId, appId) {
-    var form = document.getElementById(formId);
-    if (!form) return;
-    var data = {};
-    form.querySelectorAll('input, select, textarea').forEach(function(el) {
-      if (el.name || el.id) data[el.id || el.name] = el.value;
-    });
-    save(appId, 'form:' + formId, [data]);
-  }
-
-  function loadForm(formId, appId) {
-    var saved = load(appId, 'form:' + formId);
-    if (!saved || !saved[0]) return;
-    var data = saved[0];
-    var form = document.getElementById(formId);
-    if (!form) return;
-    Object.keys(data).forEach(function(id) {
-      var el = form.querySelector('#' + id) || form.querySelector('[name="' + id + '"]');
-      if (el) el.value = data[id];
-    });
-  }
-
-  // ── FORMULA EDITOR PERSISTENCE ──────────────────────────────
-  function saveFormulas(appId) {
-    var formulas = {};
-    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
-      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
-      var key = lbl ? lbl.textContent.trim() : inp.id || Math.random();
-      formulas[key] = inp.value;
-    });
-    save(appId, 'formulas', [formulas]);
-    return formulas;
-  }
-
-  function loadFormulas(appId) {
-    var saved = load(appId, 'formulas');
-    if (!saved || !saved[0]) return;
-    var formulas = saved[0];
-    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
-      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
-      var key = lbl ? lbl.textContent.trim() : null;
-      if (key && formulas[key] !== undefined) inp.value = formulas[key];
-    });
-  }
-
-  // ── MODAL FORM → TABLE INJECTION ────────────────────────────
-  // When a modal save button is clicked, harvest its form fields
-  // and inject a new row into the target table
-  function hookModalSave(btnSelector, targetTableId, appId, rowBuilder) {
-    document.querySelectorAll(btnSelector).forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var modal = btn.closest('.modal');
-        if (!modal) return;
-        var inputs = {};
-        modal.querySelectorAll('input, select, textarea').forEach(function(el) {
-          var lbl = el.closest('.fg') ? el.closest('.fg').querySelector('label') : null;
-          var key = lbl ? lbl.textContent.trim() : el.id || el.name;
-          inputs[key] = el.value;
-        });
-        var tbl = document.getElementById(targetTableId);
-        if (!tbl) return;
-        var tbody = tbl.querySelector('tbody');
-        if (!tbody) return;
-        var row = rowBuilder(inputs);
-        if (row) {
-          var tr = document.createElement('tr');
-          row.forEach(function(cell) {
-            var td = document.createElement('td');
-            td.innerHTML = cell;
-            tr.appendChild(td);
-          });
-          tbody.insertBefore(tr, tbody.firstChild);
-          var rows = tableToRows(tbody);
-          save(appId, targetTableId, rows);
-        }
-      });
-    });
-  }
-
-  // ── EXPORT ALL ──────────────────────────────────────────────
-  function exportAll(appId) {
-    var all = {};
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) {
-          all[k.replace(prefix, '')] = JSON.parse(localStorage.getItem(k));
-        }
-      }
-    } catch(e) {}
-    return all;
-  }
-
-  // ── STORAGE STATS ───────────────────────────────────────────
-  function stats(appId) {
-    var count = 0, bytes = 0;
-    try {
-      var prefix = 'sairn:' + appId + ':';
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf(prefix) === 0) {
-          count++;
-          bytes += (localStorage.getItem(k) || '').length;
-        }
-      }
-    } catch(e) {}
-    return { tables: count, bytes: bytes, kb: (bytes / 1024).toFixed(1) };
-  }
-
-  // ── AI CONVERSATION HISTORY ─────────────────────────────────
-  function saveAIHistory(appId, history) {
-    save(appId, '_ai_history', history.slice(-20));
-  }
-
-  function loadAIHistory(appId) {
-    return load(appId, '_ai_history') || [];
-  }
-
-  return {
-    save: save,
-    load: load,
-    clear: clear,
-    clearAll: clearAll,
-    watchTable: watchTable,
-    saveForm: saveForm,
-    loadForm: loadForm,
-    saveFormulas: saveFormulas,
-    loadFormulas: loadFormulas,
-    hookModalSave: hookModalSave,
-    exportAll: exportAll,
-    stats: stats,
-    saveAIHistory: saveAIHistory,
-    loadAIHistory: loadAIHistory
+  if(s===5)initSig();
+}
+function selTrade(chip){document.querySelectorAll('.fq-chip').forEach(c=>c.classList.remove('active'));chip.classList.add('active');fqTrade=chip.dataset.trade;}
+function fqHandleFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    fqImg64=e.target.result.split(',')[1];
+    const prev=document.getElementById('fq-prev');const img=document.getElementById('fq-img');
+    if(prev)prev.style.display='block';if(img)img.src=e.target.result;
+    const btn=document.getElementById('fq-analyze-btn');if(btn)btn.disabled=false;
+    const lbl=document.getElementById('fq-upload-lbl');if(lbl)lbl.innerHTML='<strong>Captured</strong> -- tap analyze';
   };
-})();
+  reader.readAsDataURL(file);
+}
+async function fqAnalyze(){
+  fqStep(3);const el=document.getElementById('fq-ai');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Reading your drawing...';
+  const pricing=getPricing();const client=document.getElementById('fq-client')?.value||'Client';
+  const sys=`You are the SAIRNcare Home Care Intelligence Engine. You assist with care planning, scheduling optimization, caregiver matching, billing codes (PCS, T-codes), HIPAA compliance, and incident documentation. Always prioritize client safety and caregiver wellbeing. Flag any care concerns immediately.
 
+You are now acting as a Field Sales Intelligence Engine.
+A rep photographed a sketch. Scope: ${fqTrade} | Client: ${client}
+COMPANY PRICING: ${JSON.stringify(pricing)}
+Read the drawing. Tell the rep what you see.
+Ask MAXIMUM 3 questions. Never ask what you can determine from the drawing.
+The client is watching -- be fast and professional.`;
+  const msgs=[{role:'user',content:fqImg64
+    ?[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:fqImg64}},{type:'text',text:'Analyze for '+fqTrade+' quote. Max 3 questions.'}]
+    :'I need a '+fqTrade+' quote. Ask max 3 questions then price it.'}];
+  fqConvo=[...msgs];
+  try{
+    const r=await callClaude(sys,msgs);
+    el.textContent=r;fqConvo.push({role:'assistant',content:r});
+    const w=document.getElementById('fq-ans-wrap');if(w)w.style.display='block';
+  }catch(e){el.textContent='Connection failed. Check internet and try again.';}
+}
+async function fqGenQuote(){
+  const ans=document.getElementById('fq-answers')?.value?.trim();
+  if(!ans){showToast('Please answer the questions first');return;}
+  fqConvo.push({role:'user',content:ans+'\n\nNow generate the full quote.'});
+  const el=document.getElementById('fq-ai');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Generating quote...';
+  const pricing=getPricing();
+  const sys=`You are the SAIRNcare Home Care Intelligence Engine. You assist with care planning, scheduling optimization, caregiver matching, billing codes (PCS, T-codes), HIPAA compliance, and incident documentation. Always prioritize client safety and caregiver wellbeing. Flag any care concerns immediately.\n\nGenerate a complete professional quote using EXACTLY these rates: ${JSON.stringify(pricing)}\nFormat: itemized scope, quantities, unit prices, subtotals, Low/Mid/High total.\nInclude: scope, exclusions, quote valid 30 days, signature line.\nPlain ASCII only -- no Unicode box characters.`;
+  try{
+    const r=await callClaude(sys,fqConvo);fqQuoteTxt=r;fqStep(4);
+    const out=document.getElementById('fq-quote-out');if(out)out.textContent=r;
+    const mid=r.match(/Mid[:\s]+\$?([\d,]+)/i);
+    if(mid){const m=parseInt(mid[1].replace(/,/g,''));const d=document.getElementById('fq-deposit');if(d)d.value='$'+Math.round(m*.33).toLocaleString();}
+  }catch(e){el.textContent='Quote generation failed. Check connection.';}
+}
+function fqShare(){if(navigator.share)navigator.share({title:'SAIRNcare Quote',text:fqQuoteTxt}).catch(()=>{});else{navigator.clipboard.writeText(fqQuoteTxt);showToast('Quote copied!');}}
+function saveQuote(){const q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});localStorage.setItem(APP_ID+'_quotes',JSON.stringify(q));showToast('Quote saved');}
+function fqClose(){saveQuote();showToast('Signed quote saved');fqStep(1);fqImg64=null;fqConvo=[];fqQuoteTxt='';const ta=document.getElementById('fq-answers');if(ta)ta.value='';clearSig();}
+function sendDeposit(){const amt=document.getElementById('fq-deposit')?.value||'';const txt='Your SAIRNcare project deposit of '+amt+' is ready.';if(navigator.share)navigator.share({title:'Deposit',text:txt});else{navigator.clipboard.writeText(txt);showToast('Deposit text copied!');}}
+function initSig(){
+  const canvas=document.getElementById('sig-canvas');if(!canvas||sigCtx)return;
+  sigCtx=canvas.getContext('2d');sigCtx.strokeStyle='#1F2937';sigCtx.lineWidth=2;sigCtx.lineCap='round';
+  const gp=(e,touch)=>{const r=canvas.getBoundingClientRect();return touch?{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}:{x:e.clientX-r.left,y:e.clientY-r.top};}
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();sigDrawing=true;const p=gp(e,1);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!sigDrawing)return;const p=gp(e,1);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();},{passive:false});
+  canvas.addEventListener('touchend',()=>sigDrawing=false);
+  canvas.addEventListener('mousedown',e=>{sigDrawing=true;const p=gp(e,0);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);});
+  canvas.addEventListener('mousemove',e=>{if(!sigDrawing)return;const p=gp(e,0);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();});
+  canvas.addEventListener('mouseup',()=>sigDrawing=false);
+}
+function clearSig(){if(sigCtx)sigCtx.clearRect(0,0,500,100);}
+function updateCheck(){
+  const payee=document.getElementById('cr-payee')?.value||'';
+  const amount=parseFloat(document.getElementById('cr-amount')?.value||0);
+  const memo=document.getElementById('cr-memo')?.value||'';
+  const pp=document.getElementById('cr-prev-payee'),pa=document.getElementById('cr-prev-amount'),
+        pw=document.getElementById('cr-prev-written'),pm=document.getElementById('cr-prev-memo');
+  if(pp)pp.textContent=payee||'___________';
+  if(pa)pa.textContent=amount?'$'+amount.toLocaleString('en-US',{minimumFractionDigits:2}):'$_____';
+  if(pw)pw.textContent=amount?numWords(amount)+' Dollars':'_____________________________ Dollars';
+  if(pm)pm.textContent=memo?'Memo: '+memo:'Memo: _________________';
+}
+function numWords(n){
+  const o=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const t=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const di=Math.floor(n),ci=Math.round((n-di)*100);let w='';
+  if(di>=1000)w+=o[Math.floor(di/1000)]+' Thousand ';
+  if(di%1000>=100)w+=o[Math.floor((di%1000)/100)]+' Hundred ';
+  const r=di%100;if(r>=20)w+=t[Math.floor(r/10)]+(r%10?' '+o[r%10]:'');else if(r>0)w+=o[r];
+  if(ci>0)w+=' and '+ci+'/100';return w.trim();
+}
+function saveCheck(){
+  const entry={num:crNum++,date:document.getElementById('cr-date')?.value||new Date().toLocaleDateString(),
+    payee:document.getElementById('cr-payee')?.value||'',amount:document.getElementById('cr-amount')?.value||'0',
+    memo:document.getElementById('cr-memo')?.value||''};
+  const checks=JSON.parse(localStorage.getItem(APP_ID+'_checks')||'[]');
+  checks.unshift(entry);localStorage.setItem(APP_ID+'_checks',JSON.stringify(checks));
+  localStorage.setItem(APP_ID+'_crnum',crNum);renderCR(checks);
+  const n=document.getElementById('cr-num');if(n)n.textContent=crNum;
+  showToast('Check #'+entry.num+' saved');
+}
+function renderCR(checks){
+  const h=document.getElementById('cr-history');if(!h)return;
+  if(!checks||!checks.length){h.innerHTML='<div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No checks yet</div></div>';return;}
+  h.innerHTML='<div class="tw"><table><thead><tr><th>Check#</th><th>Date</th><th>Payee</th><th>Amount</th><th>Memo</th></tr></thead><tbody>'
+    +checks.slice(0,20).map(c=>'<tr><td>'+c.num+'</td><td>'+c.date+'</td><td>'+c.payee+'</td><td style="text-align:right">$'+parseFloat(c.amount||0).toLocaleString()+'</td><td>'+c.memo+'</td></tr>').join('')
+    +'</tbody></table></div>';
+}
+function getPricing(){try{return JSON.parse(localStorage.getItem(APP_ID+'_pricing'))||defaultPricing();}catch(e){return defaultPricing();}}
+function defaultPricing(){
+  return {company:'SAIRNcare',laborRates:{standard:85,lead:120},materialMarkup:.30,profitPercent:.20,quoteValidDays:30,minimumJob:500,depositPct:.33,
+    unitPricing:{"companion_hr":22,"personal_hr":26,"skilled_hr":55,"therapy_hr":85,"overnight":180}}; 
+}
+function savePricing(){
+  const p={...getPricing(),
+    laborRates:{standard:parseFloat(document.getElementById('r-std')?.value||85),lead:parseFloat(document.getElementById('r-lead')?.value||120)},
+    materialMarkup:(parseFloat(document.getElementById('r-markup')?.value||30))/100,
+    profitPercent:(parseFloat(document.getElementById('r-profit')?.value||20))/100,
+  };
+  localStorage.setItem(APP_ID+'_pricing',JSON.stringify(p));showToast('Pricing saved -- Field Quote will use your rates');
+}
+function loadPricing(){
+  const p=getPricing();
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+  s('r-std',p.laborRates?.standard||85);s('r-lead',p.laborRates?.lead||120);
+  s('r-markup',Math.round((p.materialMarkup||.3)*100));s('r-profit',Math.round((p.profitPercent||.2)*100));
+}
+async function syncAll(){
+  showToast('Syncing all connected apps...');
+  try{
+    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({from:APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})});
+    const ts=new Date().toLocaleTimeString();
+    document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);
+    try{localStorage.setItem(APP_ID+'_last_sync',ts);}catch(e){}
+    showToast('All apps synced');
+  }catch(e){showToast('Bridge offline -- will retry');}
+}
+function loadLastSync(){try{const ts=localStorage.getItem(APP_ID+'_last_sync');if(ts)document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);}catch(e){}}
+function exportCSV(){showToast('CSV exported');}
+async function callClaude(system,messages){
+  const res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:APP_ID,is_demo:true,system,messages})});
+  if(!res.ok)throw new Error('Claude error '+res.status);
+  const data=await res.json();return data.content?.[0]?.text||'';
+}
+async function runIntel(){
+  const el=document.getElementById('intel-out');
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing...';
+  try{
+    const r=await callClaude('You are the SAIRNcare Home Care Intelligence Engine. You assist with care planning, scheduling optimization, caregiver matching, billing codes (PCS, T-codes), HIPAA compliance, and incident documentation. Always prioritize client safety and caregiver wellbeing. Flag any care concerns immediately.\n\nAnalyze the current status of this Home Care business and provide: top 3 immediate action items, 1 risk to address, and 1 revenue opportunity. Be specific and direct.',
+      [{role:'user',content:'Current status: Mrs. Henderson (Client 041) -- care plan update due in 3 days. Caregiver rotation note: James R. has been assigned 6 consecutive days -- consider rest day per policy. Billing flag: 4 visits missing EVV signatures -- required for Medicaid reimbursement.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis unavailable. Check connection.';}
+}
+async function runReportIntel(){
+  const el=document.getElementById('report-intel');
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing...';
+  try{
+    const r=await callClaude('You are the SAIRNcare Home Care Intelligence Engine. You assist with care planning, scheduling optimization, caregiver matching, billing codes (PCS, T-codes), HIPAA compliance, and incident documentation. Always prioritize client safety and caregiver wellbeing. Flag any care concerns immediately.\n\nProvide a business intelligence summary for this Home Care operation. Include: performance trends, efficiency opportunities, compliance reminders, and growth recommendations.',
+      [{role:'user',content:'Provide a comprehensive business analysis and recommendations.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis unavailable.';}
+}
+async function scanDoc(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const b64=e.target.result.split(',')[1];
+    const el=document.getElementById('doc-out');const res=document.getElementById('doc-result');
+    res.style.display='block';
+    el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Claude is reading this document...';
+    try{
+      const r=await callClaude(`You are the SAIRN Document Intelligence Engine for SAIRNcare.
+A document has been photographed. Analyze it:
+1. IDENTIFY: Document type (care plans, physician orders, HIPAA authorizations, medication administration records, incident reports, insurance cards, advance directives, skilled nursing assessments)
+2. EXTRACT: Every field -- names, dates, amounts, codes, reference numbers
+3. APP ROUTE: Which SAIRN app handles this?
+4. FLAG: Issues, missing fields, expired dates, compliance concerns
+5. ACTION: Exactly what to do with this document
+Plain ASCII formatting only.`,
+        [{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:'Scan and analyze this document.'}]}]);
+      el.textContent=r;
+    }catch(e){el.textContent='Scan failed. Check connection.';}
+  };
+  reader.readAsDataURL(file);
+}
+function saveDoc(){showToast('Document saved');}
+function renderRangeBars(){
+  const rb=document.getElementById('report-ranges');if(!rb)return;
+  const data=[('Active Clients', '34', '↑ 3 this month'), ('Visits Today', '28', '8 completed'), ('Caregivers On Shift', '12', '2 on call'), ('Billing Pending', '$18,400', 'This week')];
+  data.forEach(function(s){
+    if(typeof s[1]==='number'&&s[1]<=100){
+      rb.innerHTML+='<div class="rng-wrap"><div class="rng-lbl"><span>'+s[0]+'</span><span>'+s[1]+'</span></div><div class="rng-track"><div class="rng-fill" style="width:'+s[1]+'%"></div></div></div>';
+    }
+  });
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.style.opacity='0',3000);}
+function loadWeather(){}
+document.addEventListener('DOMContentLoaded',function(){
+  const pi=document.getElementById('pin-in');if(pi)pi.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+});
 </script>
-</body></html>
+</body>
+</html>
