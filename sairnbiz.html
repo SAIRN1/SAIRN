@@ -514,7 +514,7 @@ textarea{resize:vertical;min-height:72px;}
   <div class="page-title">Payroll</div>
   <div class="page-sub">Run payroll, view history, sync to SAIRNbiz GL</div>
   <div class="toolbar">
-    <button class="btn btn-teal" onclick="runPayroll()">Run Payroll</button>
+    <button class="btn btn-teal" onclick="openModal('m-payroll-preview')">&#x1F441;&#xFE0F; Preview GL &amp; Post Payroll</button>
     <button class="btn btn-outline" onclick="askAI('Calculate payroll for all active employees this period. Flag any overtime.')">AI Calculate</button>
     <button class="btn btn-outline" onclick="exportCSV('pay-tbl','sairnbiz-payroll')">Export CSV</button>
   </div>
@@ -1582,7 +1582,73 @@ function approvePTO(btn) {
 
 // === PAYROLL ===
 function runPayroll() {
-  showToast('Payroll approved and posted to GL');
+  openModal('m-payroll-preview');
+}
+
+function postPayrollToGL() {
+  closeModal('m-payroll-preview');
+
+  // Add the 5 journal entries to the GL table
+  var glTbl = document.getElementById('gl-tbl');
+  if (glTbl) {
+    var tbody = glTbl.querySelector('tbody');
+    var today = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var entries = [
+      [today,'5000','Payroll Expense','Gross wages Jun 1-14','$8,299','',''],
+      [today,'2100','Wages Payable','Net pay owed to employees','','$5,274',''],
+      [today,'2110','Federal Tax Payable','FIT withheld','','$1,493',''],
+      [today,'2111','Ohio State Tax Payable','SIT withheld','','$290',''],
+      [today,'2112','FICA SS Payable','Employee SS withheld','','$514',''],
+      [today,'2113','Medicare Payable','Employee Medicare','','$119',''],
+      [today,'2114','RITA Municipal Tax','Local tax withheld — Westlake','','$113',''],
+      [today,'5010','Employer FICA SS','Employer SS match','$514','',''],
+      [today,'5011','Employer Medicare','Employer Medicare match','$120','',''],
+      [today,'5012','FUTA Expense','Federal unemployment','$49','',''],
+      [today,'5013','SUTA Expense','Ohio unemployment','$234','',''],
+      [today,'2115','Employer Taxes Payable','Employer tax liability','','$917',''],
+      [today,'5020','Health Benefit Expense','Employer health contribution','$720','',''],
+      [today,'5021','401k Match Expense','Employer 401k match','$249','',''],
+    ];
+    entries.forEach(function(e) {
+      var tr = document.createElement('tr');
+      e.forEach(function(cell) {
+        var td = document.createElement('td');
+        td.textContent = cell;
+        if (cell.startsWith('$') && e.indexOf(cell) === 4) td.style.fontWeight = '700';
+        if (cell.startsWith('$') && e.indexOf(cell) === 5) td.style.fontWeight = '700';
+        tr.appendChild(td);
+      });
+      tbody.insertBefore(tr, tbody.firstChild);
+    });
+    saveTable('gl-tbl');
+  }
+
+  // Add to payroll journal
+  var prjTbl = document.getElementById('prj-tbl');
+  if (prjTbl) {
+    var tbody2 = prjTbl.querySelector('tbody');
+    var tr2 = document.createElement('tr');
+    ['Jun 1-14','Jun 14','4','$8,299','$3,025','$5,274',''].forEach(function(cell, i) {
+      var td = document.createElement('td');
+      if (i === 6) {
+        td.innerHTML = '<span class="badge badge-green">Posted</span>';
+      } else {
+        td.textContent = cell;
+      }
+      tr2.appendChild(td);
+    });
+    tbody2.insertBefore(tr2, tbody2.firstChild);
+    saveTable('prj-tbl');
+  }
+
+  showToast('Payroll posted — 5 journal entries added to GL');
+
+  // Switch to GL page to show the entries
+  setTimeout(function() {
+    switchWing('money');
+    nav('gl');
+    showToast('GL updated — 14 payroll entries posted');
+  }, 1200);
 }
 
 function printPayroll() {
@@ -1795,6 +1861,186 @@ window.addEventListener('message', function(e) {
   }
 });
 </script>
+
+
+<!-- PAYROLL GL PREVIEW MODAL -->
+<div class="modal-overlay" id="m-payroll-preview">
+  <div class="modal-box" style="width:780px;max-width:96vw;">
+    <div class="modal-header">
+      <div class="modal-title">&#x1F441;&#xFE0F; Payroll GL Preview — Jun 1&ndash;14, 2025</div>
+      <button class="modal-close" onclick="closeModal('m-payroll-preview')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- WARNING BANNER -->
+      <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:11px 15px;font-size:13px;color:#92400E;margin-bottom:18px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px;">&#x26A0;&#xFE0F;</span>
+        <span>Review these journal entries carefully before posting. Once posted to the GL they will appear in your financial reports and cannot be deleted — only reversed.</span>
+      </div>
+
+      <!-- SUMMARY ROW -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+        <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Gross Payroll</div>
+          <div style="font-size:22px;font-weight:900;color:var(--text);">$8,299</div>
+        </div>
+        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Total Deductions</div>
+          <div style="font-size:22px;font-weight:900;color:#B91C1C;">$3,025</div>
+        </div>
+        <div style="background:var(--teal-light);border:1px solid var(--teal-mid);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Net to Employees</div>
+          <div style="font-size:22px;font-weight:900;color:var(--teal-dark);">$5,274</div>
+        </div>
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Employer Taxes</div>
+          <div style="font-size:22px;font-weight:900;color:#15803D;">$917</div>
+        </div>
+      </div>
+
+      <!-- JOURNAL ENTRIES TABLE -->
+      <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin-bottom:10px;">Journal Entries — Payroll Expense Recognition</div>
+      <table class="dt" style="margin-bottom:20px;">
+        <thead>
+          <tr>
+            <th style="width:90px;">Entry #</th>
+            <th>Account #</th>
+            <th>Account Name</th>
+            <th>Description</th>
+            <th style="text-align:right;">Debit</th>
+            <th style="text-align:right;">Credit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- GROSS WAGES -->
+          <tr style="background:#FFFBEB;">
+            <td rowspan="2" style="font-weight:700;color:#92400E;vertical-align:middle;">JE-2501<br><span style="font-size:10px;font-weight:400;">Gross Wages</span></td>
+            <td>5000</td><td>Payroll Expense — Wages</td><td>Gross wages Jun 1–14 (4 employees)</td>
+            <td style="text-align:right;font-weight:700;">$8,299.00</td><td></td>
+          </tr>
+          <tr style="background:#FFFBEB;">
+            <td>2100</td><td>Wages Payable</td><td>Net pay owed to employees</td>
+            <td></td><td style="text-align:right;font-weight:700;">$5,274.00</td>
+          </tr>
+
+          <!-- EMPLOYEE TAX WITHHOLDINGS -->
+          <tr style="background:#FEF2F2;">
+            <td rowspan="5" style="font-weight:700;color:#B91C1C;vertical-align:middle;">JE-2502<br><span style="font-size:10px;font-weight:400;">Employee Tax</span></td>
+            <td>2110</td><td>Federal Income Tax Payable</td><td>Employee FIT withheld (avg 18%)</td>
+            <td></td><td style="text-align:right;font-weight:700;">$1,493.00</td>
+          </tr>
+          <tr style="background:#FEF2F2;">
+            <td>2111</td><td>Ohio State Tax Payable</td><td>Employee SIT withheld (3.5%)</td>
+            <td></td><td style="text-align:right;font-weight:700;">$290.00</td>
+          </tr>
+          <tr style="background:#FEF2F2;">
+            <td>2112</td><td>FICA — SS Payable (Employee)</td><td>Employee SS withheld (6.2%)</td>
+            <td></td><td style="text-align:right;font-weight:700;">$514.00</td>
+          </tr>
+          <tr style="background:#FEF2F2;">
+            <td>2113</td><td>Medicare Payable (Employee)</td><td>Employee Medicare withheld (1.45%)</td>
+            <td></td><td style="text-align:right;font-weight:700;">$119.00</td>
+          </tr>
+          <tr style="background:#FEF2F2;">
+            <td>2114</td><td>Ohio Municipal Tax Payable (RITA)</td><td>Local tax withheld — Westlake 1.5%</td>
+            <td></td><td style="text-align:right;font-weight:700;">$113.00</td>
+          </tr>
+
+          <!-- EMPLOYEE BENEFIT DEDUCTIONS -->
+          <tr style="background:#F0FDF4;">
+            <td rowspan="3" style="font-weight:700;color:#15803D;vertical-align:middle;">JE-2503<br><span style="font-size:10px;font-weight:400;">Benefits</span></td>
+            <td>2120</td><td>Health Insurance Payable</td><td>Employee health premium withheld</td>
+            <td></td><td style="text-align:right;font-weight:700;">$270.00</td>
+          </tr>
+          <tr style="background:#F0FDF4;">
+            <td>2121</td><td>Dental / Vision Payable</td><td>Employee dental &amp; vision withheld</td>
+            <td></td><td style="text-align:right;font-weight:700;">$72.00</td>
+          </tr>
+          <tr style="background:#F0FDF4;">
+            <td>2122</td><td>401k Payable — Employee</td><td>Employee 401k deferral (3%)</td>
+            <td></td><td style="text-align:right;font-weight:700;">$249.00</td>
+          </tr>
+
+          <!-- EMPLOYER TAXES -->
+          <tr style="background:#EFF6FF;">
+            <td rowspan="4" style="font-weight:700;color:#1D4ED8;vertical-align:middle;">JE-2504<br><span style="font-size:10px;font-weight:400;">Employer Tax</span></td>
+            <td>5010</td><td>Payroll Tax Expense — FICA SS</td><td>Employer SS match (6.2%)</td>
+            <td style="text-align:right;font-weight:700;">$514.00</td><td></td>
+          </tr>
+          <tr style="background:#EFF6FF;">
+            <td>5011</td><td>Payroll Tax Expense — Medicare</td><td>Employer Medicare match (1.45%)</td>
+            <td style="text-align:right;font-weight:700;">$120.00</td><td></td>
+          </tr>
+          <tr style="background:#EFF6FF;">
+            <td>5012</td><td>Payroll Tax Expense — FUTA</td><td>Federal unemployment (0.6% on first $7K)</td>
+            <td style="text-align:right;font-weight:700;">$49.00</td><td></td>
+          </tr>
+          <tr style="background:#EFF6FF;">
+            <td>5013</td><td>Payroll Tax Expense — SUTA</td><td>Ohio unemployment (2.7% on first $9K)</td>
+            <td style="text-align:right;font-weight:700;">$234.00</td><td></td>
+          </tr>
+
+          <!-- EMPLOYER TAX LIABILITY OFFSET -->
+          <tr style="background:#EFF6FF;">
+            <td style="font-weight:700;color:#1D4ED8;">JE-2504<br><span style="font-size:10px;font-weight:400;">cont.</span></td>
+            <td>2115</td><td>Employer Taxes Payable</td><td>Employer FICA + FUTA + SUTA liability</td>
+            <td></td><td style="text-align:right;font-weight:700;">$917.00</td>
+          </tr>
+
+          <!-- EMPLOYER BENEFITS MATCH -->
+          <tr style="background:#F0FDF4;">
+            <td rowspan="2" style="font-weight:700;color:#15803D;vertical-align:middle;">JE-2505<br><span style="font-size:10px;font-weight:400;">Employer Benefits</span></td>
+            <td>5020</td><td>Benefits Expense — Health (Employer)</td><td>Employer health contribution</td>
+            <td style="text-align:right;font-weight:700;">$720.00</td><td></td>
+          </tr>
+          <tr style="background:#F0FDF4;">
+            <td>5021</td><td>Benefits Expense — 401k Match</td><td>Employer 401k match (3%)</td>
+            <td style="text-align:right;font-weight:700;">$249.00</td><td></td>
+          </tr>
+
+          <!-- TOTALS -->
+          <tr class="ttr">
+            <td colspan="4" style="text-align:right;"><strong>Totals (must balance)</strong></td>
+            <td style="text-align:right;"><strong>$10,185.00</strong></td>
+            <td style="text-align:right;"><strong>$10,185.00</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- BALANCE CHECK -->
+      <div style="display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:12px 16px;margin-bottom:18px;">
+        <span style="font-size:20px;">&#x2705;</span>
+        <div>
+          <div style="font-weight:700;color:#15803D;font-size:13px;">Entries Balance — Debits = Credits ($10,185.00)</div>
+          <div style="font-size:12px;color:#64748B;margin-top:2px;">5 journal entries · 17 line items · Pay period Jun 1–14, 2025 · Run date Jun 14, 2025</div>
+        </div>
+      </div>
+
+      <!-- WHAT HAPPENS NEXT -->
+      <div style="background:#F8FAFC;border-radius:8px;padding:14px 16px;font-size:12px;color:var(--muted);">
+        <strong style="color:var(--text);display:block;margin-bottom:6px;">What happens when you click Post:</strong>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div>&#x2192; JE-2501 through JE-2505 post to the General Ledger</div>
+          <div>&#x2192; Employee net pay queued for direct deposit or check printing</div>
+          <div>&#x2192; Tax liabilities appear in AP aging for payment to IRS / RITA</div>
+          <div>&#x2192; Benefits payables queued for carrier remittance</div>
+          <div>&#x2192; Payroll journal entry added to run history</div>
+          <div>&#x2192; Pay stubs generated and available to print</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn btn-outline" onclick="closeModal('m-payroll-preview')">&#x2190; Go Back &amp; Edit</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="window.print()">Print Preview</button>
+        <button class="btn btn-teal" onclick="postPayrollToGL()" style="padding:10px 24px;">
+          &#x2713; Approve &amp; Post to GL
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
