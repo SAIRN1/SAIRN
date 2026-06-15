@@ -983,19 +983,164 @@ textarea{resize:vertical;min-height:72px;}
 </div>
 
 <div class="modal-overlay" id="m-emp-detail">
-  <div class="modal-box">
-    <div class="modal-header"><div class="modal-title">Employee Record</div><button class="modal-close" onclick="closeModal('m-emp-detail')">&#x2715;</button></div>
-    <div class="modal-body"><div class="form-grid">
-      <div class="fg"><label>Full Name</label><input type="text" value="Maria Santos"></div>
-      <div class="fg"><label>Role</label><input type="text" value="Caregiver Lead"></div>
-      <div class="fg"><label>Department</label><input type="text" value="Operations"></div>
-      <div class="fg"><label>Start Date</label><input type="date" value="2022-03-01"></div>
-      <div class="fg"><label>Pay Rate</label><input type="text" value="$22/hr"></div>
-      <div class="fg"><label>Status</label><select><option>Active</option><option>On Leave</option><option>Terminated</option></select></div>
+  <div class="modal-box" style="width:680px;">
+    <div class="modal-header">
+      <div class="modal-title">Employee Record — Maria Santos</div>
+      <button class="modal-close" onclick="closeModal('m-emp-detail')">&#x2715;</button>
     </div>
-    <div style="margin-top:14px;"><button class="btn btn-outline" onclick="askAI('Generate a full employee profile summary for Maria Santos including tenure, PTO balance, and performance notes.')">AI Profile Summary</button></div>
+    <div class="modal-body">
+
+      <!-- TAB NAV -->
+      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0;">
+        <button class="emp-tab active" onclick="empTab(this,'et-info')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid var(--teal);color:var(--teal-dark);margin-bottom:-2px;">Personal Info</button>
+        <button class="emp-tab" onclick="empTab(this,'et-tax')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">W-4 &amp; Tax</button>
+        <button class="emp-tab" onclick="empTab(this,'et-pay')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">Pay &amp; Benefits</button>
+        <button class="emp-tab" onclick="empTab(this,'et-history')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">History</button>
+      </div>
+
+      <!-- TAB 1: PERSONAL INFO -->
+      <div id="et-info" class="emp-tab-panel">
+        <div class="form-grid">
+          <div class="fg"><label>Full Legal Name</label><input type="text" value="Maria Elena Santos"></div>
+          <div class="fg"><label>Preferred Name</label><input type="text" value="Maria"></div>
+          <div class="fg"><label>SSN (last 4)</label><input type="text" value="****-**-6782" placeholder="For records only"></div>
+          <div class="fg"><label>Date of Birth</label><input type="date" value="1988-04-12"></div>
+          <div class="fg"><label>Personal Email</label><input type="email" value="maria.santos@gmail.com"></div>
+          <div class="fg"><label>Phone</label><input type="tel" value="(440) 555-8801"></div>
+          <div class="fg" style="grid-column:1/-1;"><label>Home Address</label><input type="text" value="248 Maple St, Westlake, OH 44145"></div>
+          <div class="fg"><label>Emergency Contact</label><input type="text" value="Carlos Santos (Husband)"></div>
+          <div class="fg"><label>Emergency Phone</label><input type="tel" value="(440) 555-8802"></div>
+          <div class="fg"><label>Start Date</label><input type="date" value="2022-03-01"></div>
+          <div class="fg"><label>Department</label><select><option selected>Operations</option><option>Sales</option><option>Admin</option></select></div>
+          <div class="fg"><label>Role / Title</label><input type="text" value="Caregiver Lead"></div>
+          <div class="fg"><label>Manager</label><input type="text" value="Owner"></div>
+          <div class="fg"><label>Employment Status</label><select><option selected>Active</option><option>On Leave</option><option>Terminated</option></select></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: W-4 & TAX WITHHOLDING -->
+      <div id="et-tax" class="emp-tab-panel" style="display:none;">
+        <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:16px;">
+          &#x26A0;&#xFE0F; This information is based on the employee's most recent W-4. Update only when the employee submits a new form.
+        </div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Federal W-4 (2025)</div>
+        <div class="form-grid">
+          <div class="fg"><label>Filing Status</label>
+            <select>
+              <option selected>Single / Married Filing Separately</option>
+              <option>Married Filing Jointly</option>
+              <option>Head of Household</option>
+            </select>
+          </div>
+          <div class="fg"><label>Multiple Jobs / Spouse Works</label>
+            <select><option selected>No</option><option>Yes (Step 2 checked)</option></select>
+          </div>
+          <div class="fg"><label>Dependents — Child Tax Credit ($)</label><input type="number" value="0" placeholder="e.g. 4000 for 2 children under 17"></div>
+          <div class="fg"><label>Other Dependents Credit ($)</label><input type="number" value="0" placeholder="e.g. 500 per qualifying dependent"></div>
+          <div class="fg"><label>Other Income (not from jobs) ($)</label><input type="number" value="0" placeholder="Interest, dividends, retirement"></div>
+          <div class="fg"><label>Deductions (Step 4b) ($)</label><input type="number" value="0" placeholder="If itemizing above standard deduction"></div>
+          <div class="fg"><label>Additional Withholding per Period ($)</label><input type="number" value="0" placeholder="Extra $ to withhold each paycheck"></div>
+          <div class="fg"><label>Exempt from Federal Withholding</label><select><option selected>No</option><option>Yes (Step 4c — Exempt)</option></select></div>
+        </div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Ohio State Tax (IT-4)</div>
+        <div class="form-grid">
+          <div class="fg"><label>Ohio Filing Status</label>
+            <select><option selected>Single</option><option>Married</option><option>Head of Household</option></select>
+          </div>
+          <div class="fg"><label>Ohio Exemptions Claimed</label><input type="number" value="1" placeholder="Number of exemptions"></div>
+          <div class="fg"><label>Additional Ohio Withholding ($)</label><input type="number" value="0" placeholder="Extra $ per pay period"></div>
+          <div class="fg"><label>Exempt from Ohio Tax</label><select><option selected>No</option><option>Yes</option></select></div>
+        </div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Calculated Withholding (This Pay Period)</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:4px;">
+          <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Gross Pay</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">$1,892</div>
+            <div style="font-size:11px;color:var(--muted);">80 reg + 4 OT hrs</div>
+          </div>
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Federal</div>
+            <div style="font-size:20px;font-weight:900;color:#B91C1C;">$340</div>
+            <div style="font-size:11px;color:var(--muted);">Single, 18%</div>
+          </div>
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Ohio State</div>
+            <div style="font-size:20px;font-weight:900;color:#B91C1C;">$66</div>
+            <div style="font-size:11px;color:var(--muted);">3.5%, 1 exemption</div>
+          </div>
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">FICA SS</div>
+            <div style="font-size:20px;font-weight:900;color:#B91C1C;">$117</div>
+            <div style="font-size:11px;color:var(--muted);">6.2% of gross</div>
+          </div>
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Medicare</div>
+            <div style="font-size:20px;font-weight:900;color:#B91C1C;">$27</div>
+            <div style="font-size:11px;color:var(--muted);">1.45% of gross</div>
+          </div>
+          <div style="background:var(--teal-light);border:1px solid var(--teal-mid);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Net Pay</div>
+            <div style="font-size:20px;font-weight:900;color:var(--teal-dark);">$1,195</div>
+            <div style="font-size:11px;color:var(--muted);">After all deductions</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: PAY & BENEFITS -->
+      <div id="et-pay" class="emp-tab-panel" style="display:none;">
+        <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Compensation</div>
+        <div class="form-grid">
+          <div class="fg"><label>Pay Type</label><select><option selected>Hourly</option><option>Salary</option><option>Salary + Commission</option></select></div>
+          <div class="fg"><label>Pay Rate</label><input type="text" value="$22.00/hr"></div>
+          <div class="fg"><label>Pay Period</label><select><option selected>Semi-Monthly</option><option>Bi-Weekly</option><option>Weekly</option></select></div>
+          <div class="fg"><label>Overtime Eligible</label><select><option selected>Yes (Non-exempt)</option><option>No (Exempt)</option></select></div>
+          <div class="fg"><label>Direct Deposit Bank</label><input type="text" value="Chase Bank ****4421"></div>
+          <div class="fg"><label>Direct Deposit %</label><input type="number" value="100"></div>
+        </div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Benefits Elections</div>
+        <div class="form-grid">
+          <div class="fg"><label>Health Insurance</label><select><option selected>Blue Cross PPO — Employee Only</option><option>Blue Cross PPO — Employee + Spouse</option><option>Blue Cross PPO — Family</option><option>Waived</option></select></div>
+          <div class="fg"><label>Employee Health Premium ($/period)</label><input type="number" value="90"></div>
+          <div class="fg"><label>Dental</label><select><option selected>Delta Dental — Employee Only</option><option>Delta Dental — Family</option><option>Waived</option></select></div>
+          <div class="fg"><label>Dental Premium ($/period)</label><input type="number" value="12"></div>
+          <div class="fg"><label>Vision</label><select><option selected>VSP — Employee Only</option><option>VSP — Family</option><option>Waived</option></select></div>
+          <div class="fg"><label>Vision Premium ($/period)</label><input type="number" value="6"></div>
+          <div class="fg"><label>401k Contribution %</label><input type="number" value="3"></div>
+          <div class="fg"><label>Employer Match %</label><input type="number" value="3" style="background:#F8FAFC;" readonly></div>
+        </div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Pre-Tax Deductions Summary (Per Pay Period)</div>
+        <div style="background:#F8FAFC;border-radius:8px;padding:14px;font-size:13px;">
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span>Health Insurance</span><span style="font-weight:700;">-$90.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span>Dental</span><span style="font-weight:700;">-$12.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span>Vision</span><span style="font-weight:700;">-$6.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span>401k (3%)</span><span style="font-weight:700;">-$56.76</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0 0;font-weight:700;color:var(--teal-dark);"><span>Total Pre-Tax Deductions</span><span>-$164.76</span></div>
+        </div>
+      </div>
+
+      <!-- TAB 4: HISTORY -->
+      <div id="et-history" class="emp-tab-panel" style="display:none;">
+        <table class="dt"><thead><tr><th>Date</th><th>Event</th><th>Changed By</th><th>Notes</th></tr></thead><tbody>
+          <tr><td>Jun 14, 2025</td><td>Pay rate review</td><td>Owner</td><td>Rate confirmed at $22/hr — next review Jan 2026</td></tr>
+          <tr><td>Jan 1, 2025</td><td>W-4 updated</td><td>Maria Santos</td><td>Changed filing status to Single</td></tr>
+          <tr><td>Nov 15, 2024</td><td>Benefits renewal</td><td>Admin</td><td>Renewed Blue Cross PPO, added VSP vision</td></tr>
+          <tr><td>Mar 1, 2022</td><td>Hired</td><td>Owner</td><td>Start date. Caregiver Lead, Operations dept.</td></tr>
+        </tbody></table>
+      </div>
+
+      <div style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="askAI('Generate a complete employee profile for Maria Santos. Include withholding analysis, benefit costs to the company, YTD deductions, and any recommendations.')">AI Full Profile Report</button>
+      </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('m-emp-detail')">Cancel</button><button class="btn btn-teal" onclick="closeModal('m-emp-detail');showToast('Employee updated')">Save Changes</button></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('m-emp-detail')">Cancel</button>
+      <button class="btn btn-teal" onclick="closeModal('m-emp-detail');showToast('Employee record saved')">Save All Changes</button>
+    </div>
   </div>
 </div>
 
@@ -1192,6 +1337,17 @@ function doLogin() {
     ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('p0').focus();
   }
+}
+
+function empTab(btn, panelId) {
+  document.querySelectorAll('.emp-tab').forEach(b => {
+    b.style.borderBottomColor = 'transparent';
+    b.style.color = 'var(--muted)';
+  });
+  btn.style.borderBottomColor = 'var(--teal)';
+  btn.style.color = 'var(--teal-dark)';
+  document.querySelectorAll('.emp-tab-panel').forEach(p => p.style.display = 'none');
+  document.getElementById(panelId).style.display = '';
 }
 
 function doLogout() {
