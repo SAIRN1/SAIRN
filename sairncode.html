@@ -161,6 +161,46 @@ function showToast(msg, dur) {
   t._to = setTimeout(function() { t.style.opacity = '0'; }, dur || 3000);
 }
 
+/* === SAIRN INTELLIGENCE NETWORK WIRING (added June 16 2026) ===
+   Read: cached network intelligence folded into every system prompt, same
+   pattern as local business memory above -- never blocks, never throws.
+   Write: after a successful response, send ONE short anonymized signal
+   describing the TYPE of interaction, never the actual response text or
+   any business-specific detail. The server (api/network.js) re-validates
+   and rejects anything that looks like a price, name, or PII regardless --
+   this is belt-and-suspenders, not the only safeguard. */
+
+async function loadNetworkIntelligence() {
+  try {
+    var cached   = localStorage.getItem(APP_ID + '_net_intel');
+    var cacheTs  = localStorage.getItem(APP_ID + '_net_intel_ts');
+    var fresh    = cacheTs && (Date.now() - parseInt(cacheTs)) < 3600000; /* 1hr */
+    if (fresh && cached) { window._sairnNetIntel = JSON.parse(cached); return; }
+
+    var res  = await fetch('https://sairn.vercel.app/api/network?app=' + APP_ID);
+    var data = await res.json();
+    window._sairnNetIntel = data;
+    localStorage.setItem(APP_ID + '_net_intel', JSON.stringify(data));
+    localStorage.setItem(APP_ID + '_net_intel_ts', String(Date.now()));
+  } catch(e) { /* network intelligence is always optional -- never block the app */ }
+}
+
+function sendNetworkInsight(insightType, pattern) {
+  /* fire-and-forget -- never awaited by a caller, never blocks the UI */
+  try {
+    fetch('https://sairn.vercel.app/api/network', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app: APP_ID,
+        type: insightType,
+        pattern: pattern,
+        score: 0.6
+      })
+    }).catch(function(){ /* silent -- a rejected or failed insight is not a user-facing error */ });
+  } catch(e) {}
+}
+
 /* callClaude — THE function. No duplicates. */
 async function callClaude(system, messages, maxTokens) {
   /* pull local memory for context */
@@ -174,6 +214,16 @@ async function callClaude(system, messages, maxTokens) {
   } catch(e) {}
 
   var sys = system + (ctx ? '\n\nBUSINESS CONTEXT: ' + ctx : '');
+
+  /* Network intelligence: fold in cached cross-business patterns, same way
+     local memory is folded in above. Read-only here -- writing happens after
+     a successful response, further down. */
+  try {
+    if (window._sairnNetIntel && window._sairnNetIntel.insights && window._sairnNetIntel.insights.length) {
+      sys += '\n\nSAIRN NETWORK INTELLIGENCE (anonymized patterns from other ' + APP_ID + ' installs): ' +
+             window._sairnNetIntel.insights.slice(0, 5).join(' | ');
+    }
+  } catch(e) {}
 
   try {
     var res = await fetch(PROXY, {
@@ -228,6 +278,20 @@ async function callClaude(system, messages, maxTokens) {
       localStorage.setItem(APP_ID + '_memory', JSON.stringify(memory.slice(0, 30)));
     } catch(e) {}
 
+    /* Network insight: report ONLY that this feature category was used
+       successfully -- never the response text, never the user's input.
+       This is intentionally low-information by design: "coding_assist
+       calls succeed" is useful aggregate signal; the actual codes, dollar
+       figures, or patient context in `text` are not sent anywhere. The
+       server-side scrub gate in api/network.js would reject those anyway,
+       but this function never attempts to send them in the first place. */
+    try {
+      var featureCategory = (system.match(/SAIRNcode (\w[\w\s]{2,30}?) Engine/) || [])[1] ||
+                             (system.match(/^You are the (\w[\w\s]{2,30}?)[.,]/) || [])[1] ||
+                             'general_assist';
+      sendNetworkInsight('feature_usage', featureCategory.trim().toLowerCase().replace(/\s+/g, '_') + '_call_succeeded');
+    } catch(e) {}
+
     return text;
 
   } catch(e) {
@@ -237,6 +301,12 @@ async function callClaude(system, messages, maxTokens) {
     throw e;
   }
 }
+
+/* Fire once on page load. Same script block as the function definition --
+   no cross-<script>-tag timing risk. Network intelligence is fetched once
+   and cached for 1hr (see loadNetworkIntelligence above); failure is silent
+   and never blocks the app. */
+loadNetworkIntelligence();
 </script>
 
 <div id="login">
