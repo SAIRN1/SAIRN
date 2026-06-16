@@ -3093,7 +3093,7 @@ async function checkQuickBooksStatus() {
   try {
     const shopId = await getCurrentShopId();
     if (!shopId) return setConnectorBadge('qb-status-badge', 'qb-connect-btn', false);
-    const res = await fetch('https://sairn.vercel.app/api/quickbooks?action=status&shop_id=' + encodeURIComponent(shopId));
+    const res = await fetch('https://sairn.vercel.app/api/accounting?provider=quickbooks&action=status&shop_id=' + encodeURIComponent(shopId));
     const d = await res.json();
     setConnectorBadge('qb-status-badge', 'qb-connect-btn', !!d.connected);
   } catch (e) { setConnectorBadge('qb-status-badge', 'qb-connect-btn', false); }
@@ -3103,7 +3103,7 @@ async function checkGustoStatus() {
   try {
     const shopId = await getCurrentShopId();
     if (!shopId) return setConnectorBadge('gusto-status-badge', 'gusto-connect-btn', false);
-    const res = await fetch('https://sairn.vercel.app/api/gusto?action=status&shop_id=' + encodeURIComponent(shopId));
+    const res = await fetch('https://sairn.vercel.app/api/accounting?provider=gusto&action=status&shop_id=' + encodeURIComponent(shopId));
     const d = await res.json();
     setConnectorBadge('gusto-status-badge', 'gusto-connect-btn', !!d.connected);
   } catch (e) { setConnectorBadge('gusto-status-badge', 'gusto-connect-btn', false); }
@@ -3112,13 +3112,13 @@ async function checkGustoStatus() {
 async function connectQuickBooks() {
   const shopId = await getCurrentShopId();
   if (!shopId) { showToast('Set up your business profile first (Settings) before connecting QuickBooks.'); return; }
-  window.location.href = 'https://sairn.vercel.app/api/quickbooks?action=connect&shop_id=' + encodeURIComponent(shopId);
+  window.location.href = 'https://sairn.vercel.app/api/accounting?provider=quickbooks&action=connect&shop_id=' + encodeURIComponent(shopId);
 }
 
 async function connectGusto() {
   const shopId = await getCurrentShopId();
   if (!shopId) { showToast('Set up your business profile first (Settings) before connecting Gusto.'); return; }
-  window.location.href = 'https://sairn.vercel.app/api/gusto?action=connect&shop_id=' + encodeURIComponent(shopId);
+  window.location.href = 'https://sairn.vercel.app/api/accounting?provider=gusto&action=connect&shop_id=' + encodeURIComponent(shopId);
 }
 
 /* === SAIRN INTELLIGENCE NETWORK WIRING (added June 16 2026) ===
