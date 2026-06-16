@@ -4111,7 +4111,7 @@ document.addEventListener('DOMContentLoaded',function(){
 // ============================================================
 (function() {
 
-  // ── STATE ─────────────────────────────────────────────────
+  // -- STATE -------------------------------------------------
   var APP_ID       = 'sairnbuild';
   var FIRST_PAGE   = 'dashboard';
   var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "super": "3456", "sales": "4567"};
@@ -4119,7 +4119,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var ROLE_INITS   = {"owner": "OW", "admin": "AD", "super": "SP", "sales": "SR"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
-  // ── SHOW PAGE ─────────────────────────────────────────────
+  // -- SHOW PAGE ---------------------------------------------
   function showPage(id) {
     // Show/hide pages
     document.querySelectorAll('.page').forEach(function(p) {
@@ -4144,7 +4144,7 @@ document.addEventListener('DOMContentLoaded',function(){
   window.openFQ   = function() { showPage('field-quote'); };
   window.nav      = showPage; // sairnbiz alias
 
-  // ── LOGIN ─────────────────────────────────────────────────
+  // -- LOGIN -------------------------------------------------
   function getPins() {
     try {
       var stored = JSON.parse(localStorage.getItem(APP_ID + '_pins'));
@@ -4257,7 +4257,7 @@ document.addEventListener('DOMContentLoaded',function(){
   window.savePins    = savePins;
   window.sdSavePins  = savePins;
 
-  // ── WIRE EVERYTHING ON DOM READY ──────────────────────────
+  // -- WIRE EVERYTHING ON DOM READY --------------------------
   function init() {
     // Clear any stale lockouts from previous broken login attempts
     try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
@@ -4393,6 +4393,190 @@ function fqInitSig(){
   c.addEventListener('mouseup',function(){fqSigDrw=false;});
 }
 function fqClearSig(){if(fqSigCtx2){var c=document.getElementById('fq-sig-canvas');if(c)fqSigCtx2.clearRect(0,0,c.width,c.height);}}
+</script>
+
+<script>
+// FQ shared functions — safe to re-declare
+if(typeof fqStep==='undefined'||!window.fqStep){
+  var fqTrade='general',fqImg64=null,fqConvo=[],fqQuoteTxt='';
+  function fqStep(s){
+    for(var i=1;i<=5;i++){
+      var p=document.getElementById('fq-p'+i);
+      var st=document.getElementById('fqs-'+i);
+      if(p)p.style.display=(i===s)?'block':'none';
+      if(st){st.classList.remove('active','done');if(i<s)st.classList.add('done');else if(i===s)st.classList.add('active');}
+    }
+    if(s===5&&typeof fqInitSig==='function')fqInitSig();
+  }
+  function selTrade(chip){
+    document.querySelectorAll('.fq-chip').forEach(function(c){c.classList.remove('active');c.style.background='#fff';c.style.color='#374151';});
+    chip.classList.add('active');chip.style.background='var(--c)';chip.style.color='#fff';
+    fqTrade=chip.dataset.trade||chip.textContent;
+  }
+  function fqHandleFile(input){
+    var file=input.files[0];if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      fqImg64=e.target.result.split(',')[1];
+      var prev=document.getElementById('fq-prev');if(prev)prev.style.display='block';
+      var img=document.getElementById('fq-img');if(img)img.src=e.target.result;
+      var btn=document.getElementById('fq-analyze-btn');if(btn)btn.disabled=false;
+    };
+    reader.readAsDataURL(file);
+  }
+  async function fqAnalyze(){
+    fqStep(3);
+    var el=document.getElementById('fq-ai');
+    el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Reading your drawing...';
+    var client=document.getElementById('fq-client')?.value||'Client';
+    var sys='You are the SAIRN Field Sales Intelligence Engine. A sales rep has photographed a drawing or sketch for a '+fqTrade+' quote for client: '+client+'. Read it carefully and ask MAXIMUM 3 targeted questions. The client is watching — be fast and professional. Never ask what you can already see.';
+    var msgs=fqImg64
+      ?[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:fqImg64}},{type:'text',text:'Analyze for '+fqTrade+' quote. Max 3 questions.'}]}]
+      :[{role:'user',content:'Quoting '+fqTrade+' for '+client+'. Ask max 3 questions to generate quote.'}];
+    fqConvo=msgs.slice();
+    try{
+      var r=await callClaude(sys,msgs);
+      el.textContent=r;fqConvo.push({role:'assistant',content:r});
+      var w=document.getElementById('fq-ans-wrap');if(w)w.style.display='block';
+    }catch(e){el.textContent='Connection failed. Check internet and retry.';}
+  }
+  async function fqGenQuote(){
+    var ans=document.getElementById('fq-answers')?.value?.trim();
+    if(!ans){if(typeof showToast==='function')showToast('Answer the questions first');return;}
+    fqConvo.push({role:'user',content:ans+'\n\nNow generate the full itemized quote using our pricing rates.'});
+    var el=document.getElementById('fq-ai');
+    el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Generating quote...';
+    var sys='You are SAIRN Field Sales Intelligence. Generate a complete professional quote. Include: itemized scope with unit prices, Low/Mid/High total range, terms, valid for 30 days, signature line. Use plain ASCII only.';
+    try{
+      var r=await callClaude(sys,fqConvo);
+      fqQuoteTxt=r;fqStep(4);
+      var out=document.getElementById('fq-quote-out');if(out)out.textContent=r;
+      var mid=r.match(/Mid[:\s]+\$?([\d,]+)/i);
+      if(mid){var m=parseInt(mid[1].replace(/,/g,''));var d=document.getElementById('fq-deposit');if(d)d.value='$'+Math.round(m*.33).toLocaleString();}
+    }catch(e){el.textContent='Quote generation failed. Check connection.';}
+  }
+  function fqShare(){
+    if(navigator.share)navigator.share({title:'Quote',text:fqQuoteTxt}).catch(function(){});
+    else{navigator.clipboard.writeText(fqQuoteTxt);if(typeof showToast==='function')showToast('Quote copied!');}
+  }
+  function saveQuote(){
+    var key=(typeof APP_ID!=='undefined'?APP_ID:'sairn')+'_quotes';
+    var q=JSON.parse(localStorage.getItem(key)||'[]');
+    q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});
+    localStorage.setItem(key,JSON.stringify(q));
+    if(typeof showToast==='function')showToast('Quote saved');
+  }
+  function fqClose(){
+    saveQuote();if(typeof showToast==='function')showToast('Signed quote saved');
+    fqStep(1);fqImg64=null;fqConvo=[];fqQuoteTxt='';
+    var ta=document.getElementById('fq-answers');if(ta)ta.value='';
+    if(typeof fqClearSig==='function')fqClearSig();
+  }
+  function fqSendDeposit(){
+    var amt=document.getElementById('fq-deposit')?.value||'';
+    var txt='Your deposit of '+amt+' is ready to secure your project. Reply YES to confirm.';
+    if(navigator.share)navigator.share({title:'Deposit',text:txt});
+    else{navigator.clipboard.writeText(txt);if(typeof showToast==='function')showToast('Deposit text copied!');}
+  }
+  window.fqStep=fqStep;window.selTrade=selTrade;window.fqHandleFile=fqHandleFile;
+  window.fqAnalyze=fqAnalyze;window.fqGenQuote=fqGenQuote;
+  window.fqShare=fqShare;window.saveQuote=saveQuote;window.fqClose=fqClose;
+  window.fqSendDeposit=fqSendDeposit;
+  window.openFQ=function(){showPage('field-quote');fqStep(1);};
+}
+</script>
+
+<script>
+// SAIRNbuild Field Quote steps injector
+document.addEventListener('DOMContentLoaded', function() {
+  var fqPage = document.getElementById('page-field-quote');
+  if (!fqPage) return;
+  if (document.getElementById('fq-p1')) return; // already exists
+
+  // Build step structure inside the FQ page
+  var stepHTML = [
+    '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap" id="fq-steps">',
+    [1,2,3,4,5].map(function(n){
+      var labels=['Scope','Photo','Questions','Quote','Sign'];
+      return '<div class="step'+(n===1?' active':'')+'" id="fqs-'+n+'" style="display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;background:'+(n===1?'var(--c)':'#F3F4F6')+';color:'+(n===1?'#fff':'#9CA3AF')+'">' +
+        '<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:10px">'+n+'</div>'+labels[n-1]+'</div>';
+    }).join(''),
+    '</div>',
+    // Step 1
+    '<div id="fq-p1" class="card">',
+    '<div class="ch"><div class="ct">Step 1: What are you quoting?</div></div>',
+    '<div class="fq-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px">',
+    ['Full GC Estimate','Roofing','Electrical','Framing','Plumbing','HVAC','Tile','Siding'].map(function(t){
+      return '<div class="fq-chip'+(t==='Full GC Estimate'?' active':'')+'" data-trade="'+t.toLowerCase().replace(/ /g,'-')+'" onclick="selTrade(this)" style="padding:7px 14px;border-radius:20px;border:1.5px solid #E5E7EB;font-size:12px;font-weight:600;cursor:pointer;background:'+(t==='Full GC Estimate'?'var(--c)':'#fff')+';color:'+(t==='Full GC Estimate'?'#fff':'#374151')+'">'+t+'</div>';
+    }).join(''),
+    '</div>',
+    '<div class="fg"><label class="fl">Client / Property</label>',
+    '<input class="fi" id="fq-client" placeholder="Client name or job address"></div>',
+    '<button class="btn bp" onclick="fqStep(2)">Next: Photo Sketch -></button>',
+    '</div>',
+    // Step 2
+    '<div id="fq-p2" class="card" style="display:none">',
+    '<div class="ch"><div class="ct">Step 2: Photograph Sketch or Blueprint</div></div>',
+    '<div class="upzone" onclick="document.getElementById('fq-file').click()" style="cursor:pointer;border:2px dashed #E5E7EB;border-radius:10px;padding:32px 20px;text-align:center">',
+    '<div style="font-size:36px;margin-bottom:8px">📷</div>',
+    '<div style="font-size:13px;font-weight:600;color:#374151">Tap to photograph any drawing or blueprint</div>',
+    '<div style="font-size:11px;color:#9CA3AF;margin-top:4px">Napkin sketch, whiteboard, blueprint — anything</div>',
+    '<input type="file" id="fq-file" accept="image/*" capture="environment" style="display:none" onchange="fqHandleFile(this)">',
+    '</div>',
+    '<div id="fq-prev" style="display:none;margin-top:10px"><img id="fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB"><div style="font-size:12px;color:#16A34A;font-weight:600;margin-top:6px">Captured - tap Analyze</div></div>',
+    '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn bo bsm" onclick="fqStep(1)"><- Back</button>',
+    '<button class="btn bp" id="fq-analyze-btn" onclick="fqAnalyze()" disabled>Analyze -></button></div>',
+    '</div>',
+    // Step 3
+    '<div id="fq-p3" class="card" style="display:none">',
+    '<div class="ch"><div class="ct">Step 3: Claude is reading your drawing</div></div>',
+    '<div class="ai-bub" id="fq-ai">Reading drawing...</div>',
+    '<div id="fq-ans-wrap" style="display:none;margin-top:12px">',
+    '<div class="fg"><label class="fl">Your answers (client is watching)</label>',
+    '<textarea class="fta" id="fq-answers" placeholder="Answer Claude's questions..." style="min-height:80px"></textarea></div>',
+    '<div style="display:flex;gap:8px"><button class="btn bo bsm" onclick="fqStep(2)"><- Back</button>',
+    '<button class="btn bp" onclick="fqGenQuote()">Generate Quote -></button></div></div>',
+    '</div>',
+    // Step 4
+    '<div id="fq-p4" class="card" style="display:none">',
+    '<div class="ch"><div class="ct">Quote Ready</div><div style="display:flex;gap:7px"><button class="btn bo bsm" onclick="window.print()">Print</button><button class="btn bo bsm" onclick="fqShare()">Share</button></div></div>',
+    '<div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:8px;padding:14px;font-size:12px;line-height:1.7;white-space:pre-wrap;font-family:monospace;max-height:300px;overflow-y:auto;margin-bottom:12px" id="fq-quote-out"></div>',
+    '<div style="display:flex;gap:8px"><button class="btn bp" onclick="fqStep(5)">Get Signature -></button><button class="btn bo bsm" onclick="saveQuote()">Save</button></div>',
+    '</div>',
+    // Step 5
+    '<div id="fq-p5" class="card" style="display:none">',
+    '<div class="ch"><div class="ct">Client Signature</div></div>',
+    '<div style="font-size:12px;color:#6B7280;margin-bottom:8px">Turn phone to client</div>',
+    '<div style="border:2px solid #E5E7EB;border-radius:8px;background:#F9FAFB;position:relative;margin-bottom:10px">',
+    '<canvas id="fq-sig-canvas" width="560" height="110" style="display:block;width:100%;height:110px;cursor:crosshair;touch-action:none"></canvas>',
+    '<div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:11px;color:#D1D5DB;pointer-events:none">Sign here</div>',
+    '</div>',
+    '<div style="display:flex;gap:7px;margin-bottom:12px"><button class="btn bo bsm" onclick="fqClearSig()">Clear Sig</button></div>',
+    '<div class="fg"><label class="fl">Deposit Amount</label><input class="fi" id="fq-deposit" placeholder="$0.00" style="max-width:160px"></div>',
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">',
+    '<button class="btn bp" onclick="fqClose()">Signed - Save & Close</button>',
+    '<button class="btn bo bsm" onclick="fqSendDeposit()">Text Deposit Link</button>',
+    '</div></div>',
+  ].join('
+');
+
+  fqPage.innerHTML = fqPage.innerHTML + stepHTML;
+
+  // Init sig canvas
+  var fqSigCtx=null,fqSigDrw=false;
+  window.fqInitSig = function() {
+    var c=document.getElementById('fq-sig-canvas');if(!c||fqSigCtx)return;
+    fqSigCtx=c.getContext('2d');fqSigCtx.strokeStyle='#111';fqSigCtx.lineWidth=2;fqSigCtx.lineCap='round';
+    function gp(e,t){var r=c.getBoundingClientRect();return t?{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}:{x:e.clientX-r.left,y:e.clientY-r.top};}
+    c.addEventListener('touchstart',function(e){e.preventDefault();fqSigDrw=true;var p=gp(e,1);fqSigCtx.beginPath();fqSigCtx.moveTo(p.x,p.y);},{passive:false});
+    c.addEventListener('touchmove',function(e){e.preventDefault();if(!fqSigDrw)return;var p=gp(e,1);fqSigCtx.lineTo(p.x,p.y);fqSigCtx.stroke();},{passive:false});
+    c.addEventListener('touchend',function(){fqSigDrw=false;});
+    c.addEventListener('mousedown',function(e){fqSigDrw=true;var p=gp(e,0);fqSigCtx.beginPath();fqSigCtx.moveTo(p.x,p.y);});
+    c.addEventListener('mousemove',function(e){if(!fqSigDrw)return;var p=gp(e,0);fqSigCtx.lineTo(p.x,p.y);fqSigCtx.stroke();});
+    c.addEventListener('mouseup',function(){fqSigDrw=false;});
+  };
+  window.fqClearSig = function(){if(fqSigCtx){var c=document.getElementById('fq-sig-canvas');if(c)fqSigCtx.clearRect(0,0,c.width,c.height);}};
+});
 </script>
 </body>
 </html>
