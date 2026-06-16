@@ -3702,10 +3702,7 @@ function tmUpdateKPIs(){
 
 // Hook into showPanel
 var _tmOrigShow=typeof showPanel==='function'?showPanel:null;
-function showPanel(id){
-  if(_tmOrigShow)_tmOrigShow(id);
-  if(id==='template'){setTimeout(tmLoad,50);}
-}
+
 
 
 // ==================================================================
@@ -6300,18 +6297,7 @@ if (customQ) {
   });
 }
 
-function updateAnalyzeBtn() {
-  var btn = document.getElementById('sdm-analyze-btn');
-  if (!btn) return;
-  var customQEl = document.getElementById('sdm-custom-q');
-  var hasFile    = !!_docBase64;
-  var hasQ       = !!_selectedPrompt || (customQEl && customQEl.value.trim().length > 0);
-  if (hasFile && hasQ) {
-    btn.classList.add('ready');
-  } else {
-    btn.classList.remove('ready');
-  }
-}
+
 
 // == ANALYZE ===================================================
 window.analyzeDocument = async function() {
@@ -6451,7 +6437,7 @@ var APP_COLOR = (function() {
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#3B82F6';
+  if (p.includes('study'))   return '#6366F1';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
@@ -6826,7 +6812,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#6366F1';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -6963,7 +6949,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#6366F1';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -7179,7 +7165,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#6366F1';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -7348,7 +7334,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#6366F1';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -7630,7 +7616,7 @@ var APP_COLOR = (function(){
   if (p.includes('health')) return '#06B6D4';
   if (p.includes('money'))  return '#10B981';
   if (p.includes('legal'))  return '#7C3AED';
-  if (p.includes('study'))  return '#3B82F6';
+  if (p.includes('study'))  return '#6366F1';
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
@@ -8194,11 +8180,7 @@ function installStreamingHook() {
 }
 
 // Install when ready
-function tryInstall() {
-  if (typeof window.sendMessage === 'function' && typeof window.addMsg === 'function') {
-    installStreamingHook();
-  }
-}
+
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(tryInstall, 800); });
 setTimeout(tryInstall, 1000);
 
@@ -8333,7 +8315,7 @@ function installMarkdownHook() {
 function tryInstall() {
   if (typeof window.addMsg === 'function') installMarkdownHook();
 }
-document.addEventListener('DOMContentLoaded', function(){ setTimeout(tryInstall, 400); });
+document.addEventListener('DOMContentLoaded', function);
 setTimeout(tryInstall, 600);
 if (typeof window.addMsg === 'function') installMarkdownHook();
 else {
@@ -8758,7 +8740,7 @@ var APP_COLOR = (function(){
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#3B82F6';
+  if (p.includes('study'))   return '#6366F1';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
@@ -9479,7 +9461,7 @@ var APP_COLOR = (function(){
   if (p.includes('health'))  return '#06B6D4';
   if (p.includes('money'))   return '#10B981';
   if (p.includes('legal'))   return '#7C3AED';
-  if (p.includes('study'))   return '#3B82F6';
+  if (p.includes('study'))   return '#6366F1';
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
