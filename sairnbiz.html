@@ -474,6 +474,110 @@ textarea{resize:vertical;min-height:72px;}
 </style>
 </head>
 <body>
+<script>
+/* ============================================================
+   SAIRN CLAUDE ENGINE — sairnbiz
+   Single definition. Loaded first. Works everywhere.
+   ============================================================ */
+var APP_ID  = 'sairnbiz';
+var PROXY   = 'https://sairn.vercel.app/api/claude';
+var BRIDGE  = 'https://sairn.vercel.app/api/bridge';
+
+/* showToast — safe to call anywhere */
+function showToast(msg, dur) {
+  var t = document.getElementById('_sairn_toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_sairn_toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+      'background:#111827;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;' +
+      'font-weight:600;z-index:99999;opacity:0;transition:opacity .25s;pointer-events:none;' +
+      'white-space:nowrap;max-width:90vw;text-align:center';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._to);
+  t._to = setTimeout(function() { t.style.opacity = '0'; }, dur || 3000);
+}
+
+/* callClaude — THE function. No duplicates. */
+async function callClaude(system, messages, maxTokens) {
+  /* pull local memory for context */
+  var ctx = '';
+  try {
+    var mem = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
+    var biz = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
+    if (biz.name)     ctx += 'Business: ' + biz.name + '. ';
+    if (biz.industry) ctx += 'Industry: ' + biz.industry + '. ';
+    if (mem.length)   ctx += 'Context: ' + mem.slice(0,3).join(' | ');
+  } catch(e) {}
+
+  var sys = system + (ctx ? '\n\nBUSINESS CONTEXT: ' + ctx : '');
+
+  try {
+    var res = await fetch(PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id:     APP_ID,
+        is_demo:    true,
+        system:     sys,
+        messages:   messages,
+        max_tokens: maxTokens || 1500
+      })
+    });
+
+    var data = await res.json();
+
+    /* Rate limit hit — show clear message */
+    if (data.error === 'demo_limit' || (data.error && data.error.includes && data.error.includes('limit'))) {
+      var msg = 'Demo limit reached for today. Resets at midnight. ' +
+                'Email michael@sairn.com for your license key to unlock unlimited access.';
+      showToast(msg, 6000);
+      throw new Error('demo_limit');
+    }
+
+    /* Any other HTTP error */
+    if (!res.ok) {
+      var errMsg = (data.error && data.error.message) ? data.error.message :
+                   (typeof data.error === 'string') ? data.error : 'Claude error ' + res.status;
+      showToast('Claude: ' + errMsg, 4000);
+      throw new Error(errMsg);
+    }
+
+    /* Extract text */
+    var text = '';
+    if (data.content && data.content[0] && data.content[0].text) {
+      text = data.content[0].text;
+    } else if (data.error) {
+      var errMsg2 = data.error.message || JSON.stringify(data.error);
+      showToast(errMsg2, 4000);
+      throw new Error(errMsg2);
+    }
+
+    if (!text) {
+      showToast('Claude returned empty response. Try again.', 3000);
+      throw new Error('empty_response');
+    }
+
+    /* Store memory */
+    try {
+      var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
+      memory.unshift(new Date().toLocaleDateString() + ': ' + text.substring(0, 120));
+      localStorage.setItem(APP_ID + '_memory', JSON.stringify(memory.slice(0, 30)));
+    } catch(e) {}
+
+    return text;
+
+  } catch(e) {
+    if (e.message !== 'demo_limit' && e.message !== 'empty_response') {
+      showToast('Connection error. Check internet and try again.', 4000);
+    }
+    throw e;
+  }
+}
+</script>
 
 <!-- ========== LOGIN ========== -->
 <div id="login-screen">
@@ -1922,56 +2026,7 @@ var BRIDGE   = 'https://sairn.vercel.app/api/bridge';
 var NET_URL  = 'https://sairn.vercel.app/api/network'; // SAIRN Intelligence Network
 
 // ── callClaude: the one function all AI calls use ────────────
-async function callClaude(system, messages, maxTokens) {
-  // Gather business context for richer AI responses
-  var bizCtx = '';
-  try {
-    var p = JSON.parse(localStorage.getItem(APP_ID + '_pricing') || '{}');
-    var biz = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
-    var mem = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
-    bizCtx = (biz.name ? 'Business: ' + biz.name + '. ' : '') +
-             (biz.industry ? 'Industry: ' + biz.industry + '. ' : '') +
-             (mem.length ? 'Known facts: ' + mem.slice(0,5).join('; ') + '. ' : '');
-  } catch(e) {}
 
-  var enhancedSystem = system +
-    (bizCtx ? '\n\nBUSINESS CONTEXT: ' + bizCtx : '') +
-    '\n\nApp: ' + APP_ID + '. Always be specific, actionable, and brief.';
-
-  try {
-    var res = await fetch(PROXY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        app_id:     APP_ID,
-        is_demo:    true,
-        system:     enhancedSystem,
-        messages:   messages,
-        max_tokens: maxTokens || 1500
-      })
-    });
-    if (!res.ok) {
-      var err = await res.json().catch(function() { return {}; });
-      if (err.upgrade) {
-        showToast('Demo limit reached. Contact michael@sairn.com for your license key.');
-        throw new Error('demo_limit');
-      }
-      throw new Error('Claude error ' + res.status);
-    }
-    var data = await res.json();
-    var text = data && data.content && data.content[0] && data.content[0].text
-      ? data.content[0].text : '';
-    if (!text) throw new Error('Empty response');
-
-    // Learn from every interaction
-    learnFromResponse(system, text);
-
-    return text;
-  } catch(e) {
-    if (e.message !== 'demo_limit') console.error('[SAIRN Claude]', e.message);
-    throw e;
-  }
-}
 
 // ── learnFromResponse: extract and store business intelligence ─
 function learnFromResponse(question, answer) {
@@ -2033,7 +2088,6 @@ function saveBusinessFact(fact) {
     localStorage.setItem(APP_ID + '_memory', JSON.stringify(memory.slice(0, 50)));
   } catch(e) {}
 }
-window.callClaude         = callClaude;
 window.getBusinessContext = getBusinessContext;
 window.saveBusinessFact   = saveBusinessFact;
 window.learnFromResponse  = learnFromResponse;
