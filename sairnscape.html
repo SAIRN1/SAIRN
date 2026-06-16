@@ -3219,5 +3219,111 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 })();
 </script>
+
+<script>
+/* SAIRN NAV FIX — sairnscape — replaces broken showPage */
+(function(){
+
+  // ── FIXED showPage ──────────────────────────────────────────
+  window.showPage = function(id) {
+    // Hide all pages
+    document.querySelectorAll('.page').forEach(function(p) {
+      p.classList.remove('active');
+      p.style.display = 'none';
+    });
+    // Show target page
+    var pg = document.getElementById('page-' + id);
+    if (pg) {
+      pg.classList.add('active');
+      pg.style.display = 'block';
+    }
+    // Clear all nav active states
+    document.querySelectorAll('.ni, .nav-item, [class*="nav-btn"]').forEach(function(n) {
+      n.classList.remove('active');
+    });
+    // Set active nav — try multiple selector approaches
+    var navSelectors = [
+      '[onclick*="showPage(\''+id+'\'")']',
+      '[onclick*="showPage(\"'+id+'\"")"]',
+      '[onclick="showPage(\''+id+'\')"]',
+      '#nav-' + id,
+      '[id="nav-' + id + '"]'
+    ];
+    for (var i = 0; i < navSelectors.length; i++) {
+      try {
+        var navEl = document.querySelector(navSelectors[i]);
+        if (navEl) { navEl.classList.add('active'); break; }
+      } catch(e) {}
+    }
+    // Also find by data attribute or text content match
+    if (!document.querySelector('.ni.active')) {
+      document.querySelectorAll('.ni').forEach(function(n) {
+        var oc = n.getAttribute('onclick') || '';
+        if (oc.indexOf(id) !== -1) n.classList.add('active');
+      });
+    }
+    // Scroll to top
+    var main = document.getElementById('main');
+    if (main) main.scrollTop = 0;
+    window.scrollTo(0, 0);
+  };
+
+  // ── FORCE APP VISIBLE + SHOW DASHBOARD ON LOGIN ────────────
+  var _origDoLogin = window.doLogin;
+  window.doLogin = function() {
+    if (typeof _origDoLogin === 'function') _origDoLogin();
+    // Force app visible regardless of CSS
+    setTimeout(function() {
+      var app = document.getElementById('app');
+      if (app) {
+        app.style.setProperty('display', 'block', 'important');
+        app.style.setProperty('visibility', 'visible', 'important');
+        app.style.setProperty('opacity', '1', 'important');
+        app.classList.add('visible');
+      }
+      // Hide login
+      ['login','auth-screen','login-screen','auth-gate','ls'].forEach(function(lid) {
+        var el = document.getElementById(lid);
+        if (el) el.style.setProperty('display', 'none', 'important');
+      });
+      // Show first page
+      showPage('dashboard');
+      // Ensure sidebar and topbar are visible
+      ['sidebar','topbar'].forEach(function(cls) {
+        var el = document.querySelector('.' + cls);
+        if (el) el.style.setProperty('display', 'block', 'important');
+      });
+    }, 80);
+  };
+
+  // ── ALSO FIX CSS: ensure .page.active shows ────────────────
+  var style = document.createElement('style');
+  style.textContent = [
+    '.page { display: none !important; }',
+    '.page.active { display: block !important; }',
+    '#app { display: none; }',
+    '#app.visible, #app[style*="block"] { display: block !important; }',
+    '.sidebar { display: block; }',
+    '.topbar { display: flex; }',
+  ].join('\n');
+  document.head.appendChild(style);
+
+  // ── WIRE ALL NAV CLICKS directly (belt + suspenders) ───────
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.ni, [onclick*="showPage"]').forEach(function(el) {
+      var oc = el.getAttribute('onclick') || '';
+      var match = oc.match(/showPage\(['"]([\w-]+)['"]\)/);
+      if (match) {
+        var pageId = match[1];
+        el.addEventListener('click', function(e) {
+          e.stopPropagation();
+          showPage(pageId);
+        });
+      }
+    });
+  });
+
+})();
+</script>
 </body>
 </html>
