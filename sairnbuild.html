@@ -4686,7 +4686,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Step 2
     '<div id="fq-p2" class="card" style="display:none">',
     '<div class="ch"><div class="ct">Step 2: Photograph Sketch or Blueprint</div></div>',
-    '<div class="upzone" onclick="document.getElementById('fq-file').click()" style="cursor:pointer;border:2px dashed #E5E7EB;border-radius:10px;padding:32px 20px;text-align:center">',
+    '<div class="upzone" onclick="document.getElementById(\'fq-file\').click()" style="cursor:pointer;border:2px dashed #E5E7EB;border-radius:10px;padding:32px 20px;text-align:center">',
     '<div style="font-size:36px;margin-bottom:8px">📷</div>',
     '<div style="font-size:13px;font-weight:600;color:#374151">Tap to photograph any drawing or blueprint</div>',
     '<div style="font-size:11px;color:#9CA3AF;margin-top:4px">Napkin sketch, whiteboard, blueprint — anything</div>',
@@ -4702,7 +4702,7 @@ document.addEventListener('DOMContentLoaded', function() {
     '<div class="ai-bub" id="fq-ai">Reading drawing...</div>',
     '<div id="fq-ans-wrap" style="display:none;margin-top:12px">',
     '<div class="fg"><label class="fl">Your answers (client is watching)</label>',
-    '<textarea class="fta" id="fq-answers" placeholder="Answer Claude's questions..." style="min-height:80px"></textarea></div>',
+    '<textarea class="fta" id="fq-answers" placeholder="Answer the questions above..." style="min-height:80px"></textarea></div>',
     '<div style="display:flex;gap:8px"><button class="btn bo bsm" onclick="fqStep(2)"><- Back</button>',
     '<button class="btn bp" onclick="fqGenQuote()">Generate Quote -></button></div></div>',
     '</div>',
@@ -4726,8 +4726,7 @@ document.addEventListener('DOMContentLoaded', function() {
     '<button class="btn bp" onclick="fqClose()">Signed - Save & Close</button>',
     '<button class="btn bo bsm" onclick="fqSendDeposit()">Text Deposit Link</button>',
     '</div></div>',
-  ].join('
-');
+  ].join('\n');
 
   fqPage.innerHTML = fqPage.innerHTML + stepHTML;
 
