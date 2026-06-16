@@ -4754,7 +4754,10 @@ document.addEventListener('DOMContentLoaded',function(){
     }
     // SUCCESS
     if (errEl) errEl.style.display = 'none';
-    if (pinEl) pinEl.value = '';
+    ['p0','p1','p2','p3'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
     showApp();
   }
   window.doLogin = doLogin;
