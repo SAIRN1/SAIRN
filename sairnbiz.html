@@ -4640,7 +4640,24 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   window.selRole        = selRole;
   window.sdSelRole      = selRole;
-  window.selectRole     = selRole;
+  // FIX June 16 2026 (Guardian): the role tiles in markup call
+  // selectRole('owner') with a STRING, but this was aliased directly to
+  // selRole(el), which expects a DOM ELEMENT and calls el.classList.add(...).
+  // Calling it with a string threw "Cannot read properties of undefined
+  // (reading 'add')" -- the PIN screen looked completely dead because the
+  // very first click (selecting a role) crashed before the PIN input ever
+  // got focus. This wrapper finds the right element by id instead.
+  window.selectRole = function(roleName) {
+    var el = document.getElementById('role-' + roleName);
+    if (el) { selRole(el); return; }
+    // Fallback if no matching tile id exists -- still set the role directly
+    // so login isn't silently broken even if markup changes later.
+    document.querySelectorAll('.rb, .role-btn, [class*=role-pill]')
+      .forEach(function(b) { b.classList.remove('active'); });
+    currentRole = roleName;
+    var pinEl = findPinInput();
+    if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+  };
   window.selectAuthTab  = function() {};
   window.doRegister     = function() {};
 
