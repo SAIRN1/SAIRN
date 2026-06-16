@@ -4591,9 +4591,17 @@ document.addEventListener('DOMContentLoaded',function(){
   // -- STATE -------------------------------------------------
   var APP_ID       = 'sairnbiz';
   var FIRST_PAGE   = 'p-dash';
-  var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "hr": "3456", "staff": "4567"};
-  var ROLE_LABELS  = {"owner": "Owner", "admin": "Admin", "hr": "HR Manager", "staff": "Staff"};
-  var ROLE_INITS   = {"owner": "OW", "admin": "AD", "hr": "HR", "staff": "ST"};
+  // FIX June 16 2026 (Guardian): these previously listed hr/staff, but the
+  // actual login tiles in markup call selectRole('manager') and
+  // selectRole('employee') -- neither key existed here, so currentRole
+  // would be set to 'manager' or 'employee' and pins[currentRole] silently
+  // fell back to the literal string '1234' for both, meaning the Manager
+  // and Employee tiles' real PINs (3456/4567) never worked even though the
+  // login screen displays them as the demo PINs. Owner/Admin happened to
+  // work by coincidence since '1234'/'2345' matched both old and new sets.
+  var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "manager": "3456", "employee": "4567"};
+  var ROLE_LABELS  = {"owner": "Owner", "admin": "Admin", "manager": "Manager", "employee": "Employee"};
+  var ROLE_INITS   = {"owner": "OW", "admin": "AD", "manager": "MG", "employee": "EM"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
   // -- SHOW PAGE ---------------------------------------------
@@ -4708,8 +4716,17 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   function doLogin() {
-    var pinEl   = findPinInput();
-    var entered = pinEl ? pinEl.value.trim() : '';
+    // FIX June 16 2026 (Guardian): findPinInput() looked for ids like
+    // 'pin-in'/'auth-password' or a single input[type=password], none of
+    // which exist -- the actual login screen uses 4 separate boxes
+    // (id="p0".."p3", maxlength="1" each). findPinInput() always returned
+    // null/wrong element, so `entered` was always empty and login could
+    // never succeed regardless of what PIN was typed. Read the 4 boxes
+    // directly instead.
+    var entered = ['p0','p1','p2','p3'].map(function(id) {
+      var el = document.getElementById(id);
+      return el ? el.value : '';
+    }).join('');
     var pins    = getPins();
     var correct = pins[currentRole] || '1234';
     var errEl   = document.getElementById('auth-error')
@@ -4721,13 +4738,18 @@ document.addEventListener('DOMContentLoaded',function(){
     try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
     if (window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts = 0;
 
-    if (!entered) {
+    if (!entered || entered.length < 4) {
       if (errEl) { errEl.textContent = 'Enter your PIN'; errEl.style.display = 'block'; }
       return;
     }
     if (entered !== correct) {
       if (errEl) { errEl.textContent = 'Incorrect PIN — try again'; errEl.style.display = 'block'; }
-      if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+      ['p0','p1','p2','p3'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      var p0 = document.getElementById('p0');
+      if (p0) p0.focus();
       return;
     }
     // SUCCESS
