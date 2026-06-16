@@ -1,5 +1,118 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/stonedesk",
+      "destination": "/fabricor UPLOAD TO GITHUB.html"
+    },
+    {
+      "source": "/fabricor",
+      "destination": "/fabricor UPLOAD TO GITHUB.html"
+    },
+    {
+      "source": "/sairnbiz",
+      "destination": "/sairnbiz.html"
+    },
+    {
+      "source": "/sairnlaw",
+      "destination": "/sairnlaw.html"
+    },
+    {
+      "source": "/sairnscape",
+      "destination": "/SAIRNscape UPLOAD TO GITHUB101.html"
+    },
+    {
+      "source": "/sairnbuild",
+      "destination": "/sairnbuild_v3_UPLOAD_TO_GITHUB222.html"
+    },
+    {
+      "source": "/sairndesign",
+      "destination": "/sairndesign.html"
+    },
+    {
+      "source": "/sairncode",
+      "destination": "/sairncode.html"
+    },
+    {
+      "source": "/sairncare",
+      "destination": "/sairncare.html"
+    },
+    {
+      "source": "/sairnvet",
+      "destination": "/sairnvet.html"
+    },
+    {
+      "source": "/sairnfuneral",
+      "destination": "/sairnfuneral.html"
+    },
+    {
+      "source": "/sairnmechanical",
+      "destination": "/sairnmechanical.html"
+    },
+    {
+      "source": "/stone",
+      "destination": "/fabricor UPLOAD TO GITHUB.html"
+    },
+    {
+      "source": "/biz",
+      "destination": "/sairnbiz.html"
+    },
+    {
+      "source": "/law",
+      "destination": "/sairnlaw.html"
+    },
+    {
+      "source": "/scape",
+      "destination": "/SAIRNscape UPLOAD TO GITHUB101.html"
+    },
+    {
+      "source": "/build",
+      "destination": "/sairnbuild_v3_UPLOAD_TO_GITHUB222.html"
+    },
+    {
+      "source": "/design",
+      "destination": "/sairndesign.html"
+    },
+    {
+      "source": "/code",
+      "destination": "/sairncode.html"
+    },
+    {
+      "source": "/care",
+      "destination": "/sairncare.html"
+    },
+    {
+      "source": "/vet",
+      "destination": "/sairnvet.html"
+    },
+    {
+      "source": "/funeral",
+      "destination": "/sairnfuneral.html"
+    },
+    {
+      "source": "/mechanical",
+      "destination": "/sairnmechanical.html"
+    },
     {
       "source": "/sairnaccounting",
       "destination": "/sairnaccounting.html"
@@ -11,10 +124,6 @@
     {
       "source": "/stonedesk-hr",
       "destination": "/stonedesk-hr.html"
-    },
-    {
-      "source": "/sairncomm",
-      "destination": "/sairncomm.html"
     },
     {
       "source": "/pricing",
@@ -85,20 +194,12 @@
       "destination": "/contractor.html"
     },
     {
-      "source": "/biz",
-      "destination": "/biz.html"
-    },
-    {
       "source": "/pay",
       "destination": "/pay.html"
     },
     {
       "source": "/hr",
       "destination": "/hr.html"
-    },
-    {
-      "source": "/sairnscape",
-      "destination": "/sairnscape.html"
     },
     {
       "source": "/sairnflow",
@@ -109,16 +210,8 @@
       "destination": "/sairnvetglobal.html"
     },
     {
-      "source": "/sairnvet",
-      "destination": "/sairnvet.html"
-    },
-    {
       "source": "/sairnfix",
       "destination": "/sairnfix.html"
-    },
-    {
-      "source": "/sairnfuneral",
-      "destination": "/sairnfuneral.html"
     },
     {
       "source": "/sairniq",
@@ -129,24 +222,8 @@
       "destination": "/sairnlearn.html"
     },
     {
-      "source": "/sairnlearn-dashboard",
-      "destination": "/sairnlearn_dashboard.html"
-    },
-    {
-      "source": "/sairnlaw",
-      "destination": "/sairnlaw.html"
-    },
-    {
       "source": "/sairnhealth",
       "destination": "/sairnhealth.html"
-    },
-    {
-      "source": "/sairncare",
-      "destination": "/sairncare.html"
-    },
-    {
-      "source": "/sairnbuild",
-      "destination": "/sairnbuild.html"
     },
     {
       "source": "/sairngrow",
@@ -157,20 +234,8 @@
       "destination": "/sairngive.html"
     },
     {
-      "source": "/sairngov",
-      "destination": "/sairngov.html"
-    },
-    {
       "source": "/network",
       "destination": "/sairn_network.html"
-    },
-    {
-      "source": "/fabricor",
-      "destination": "/fabricor.html"
-    },
-    {
-      "source": "/sairnvets",
-      "destination": "/sairnvets.html"
     },
     {
       "source": "/sairnhope",
@@ -185,22 +250,12 @@
       "destination": "/sairnlearn_careteam.html"
     },
     {
-      "source": "/sairncode",
-      "destination": "/sairncode.html"
-    },
-    {
       "source": "/memory",
       "destination": "/memory_settings.html"
-    },
-    {
-      "source": "/sairndesign",
-      "destination": "/sairndesign.html"
     },
     {
       "source": "/paystubs",
       "destination": "/paystubs.html"
     }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
+  ]
 }
