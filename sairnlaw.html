@@ -1625,7 +1625,7 @@ document.addEventListener('DOMContentLoaded', () => {
 })(); // end IIFE
 </script>
 
-
+<script>
 // P5 Range Benchmarking
 function sairnRangeBar(label,value,min,max,color,containerId){
   var pct=Math.min(100,Math.max(0,Math.round((value-min)/(max-min)*100)));
@@ -1670,7 +1670,7 @@ document.addEventListener('DOMContentLoaded',function(){
     });
   }catch(e){}
 });
-
+</script>
 
 <!-- SAIRNscan embedded -->
 <div id="sairnscan-ref" style="display:none" data-sairnscan="true"
@@ -1732,7 +1732,7 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
-
+<script>
 // SAIRNlaw Check Register
 var slCheckNum = parseInt(localStorage.getItem('sairnlaw_check_num') || '1001');
 function slUpdateCheck(){
@@ -1805,6 +1805,7 @@ function applyRoleGates(){
   var billNav = document.querySelector('[onclick*="billing"],[onclick*="invoice"]');
   if(billNav && role !== 'admin' && role !== 'owner') billNav.style.display='none';
 }
+</script>
 
 
 <!-- SAIRNlaw Report Generation -->
