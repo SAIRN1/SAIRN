@@ -537,7 +537,7 @@ window.learnFromResponse  = learnFromResponse;
 // =============================================================
 </script>
 <script>
-var PINS="partner": "1234", "associate": "2345", "paralegal": "3456", "staff": "4567";
+var PINS={"partner": "1234", "associate": "2345", "paralegal": "3456", "staff": "4567"};
 var curRole='';
 function selRole(r){curRole=r;document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});var el=document.getElementById('r-'+r);if(el)el.classList.add('sel');document.getElementById('p0').focus();}
 function pi(i){var v=document.getElementById('p'+i).value;if(v&&i<3)document.getElementById('p'+(i+1)).focus();}
