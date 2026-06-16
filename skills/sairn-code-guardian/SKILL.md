@@ -23,7 +23,7 @@ description: >
 
 This skill is the permanent mechanical guardian for the entire SAIRN platform. It is domain-aware, SAIRN-specific, and automated. It does not rely on human review to catch mechanical bugs — it runs the scan itself, finds every violation, fixes every finding, and pushes clean code. It activates on every build and every push without being asked.
 
-**Why 15 checks, not 8:** on June 16, 2026, all three existing SAIRN quality skills (this Guardian's original 8 checks, sairn-runtime-validator, sairn-ultra-scan) passed a build of stonedesk.html that was completely broken in the browser — every AI button did nothing, the entire SOP-printing feature was dead, and a chat-rendering hook was silently misdirected to the wrong feature. The root causes were a multi-hundred-line unterminated string, a stray script tag pasted mid-block, an orphaned HTML fragment that ate a `<script>` opening tag (leaving two real functions executing as inert page text with zero console errors), a global function-name collision, two malformed-but-valid regex literals, and two stale hardcoded model strings. Checks 9-12 were built to catch those. Then, on the same day, after a round of fixes that passed Checks 9-12 was pushed live, the page crashed anyway with a hard SyntaxError — the same `APP_ID` constant had been declared in two separate `<script>` tags, which Check 9 cannot catch because it validates each script block in isolation, not the combined global scope a real browser builds across all of them. Check 13 was built for that, and a same-day platform audit found the identical bug in all 11 of 11 B2B apps. Later the same day, after Checks 9-13 all passed clean, the user reported seeing raw JavaScript rendered as visible text on the live page — three separate times in one file. Each time, a prior edit had deleted a `<script>` opening tag or inserted a stray `</body>` mid-file, leaving real working JS (a demo-data seeder, a range-bar renderer, an admin-formula editor) sitting outside any script wrapper. None of this throws a console error, because there's nothing to parse as JS — the browser just prints it as text. Check 14 was built for that gap: every prior check assumes it's already looking at real script content; none of them check the space between tags. None of these were syntax errors a regex scan reliably catches, and none were caught until a human read browser console output and manually traced the file line by line. Checks 9-14 exist so that tracing never has to happen by hand again.
+**Why 17 checks, not 8:** on June 16, 2026, all three existing SAIRN quality skills (this Guardian's original 8 checks, sairn-runtime-validator, sairn-ultra-scan) passed a build of stonedesk.html that was completely broken in the browser — every AI button did nothing, the entire SOP-printing feature was dead, and a chat-rendering hook was silently misdirected to the wrong feature. The root causes were a multi-hundred-line unterminated string, a stray script tag pasted mid-block, an orphaned HTML fragment that ate a `<script>` opening tag (leaving two real functions executing as inert page text with zero console errors), a global function-name collision, two malformed-but-valid regex literals, and two stale hardcoded model strings. Checks 9-12 were built to catch those. Then, on the same day, after a round of fixes that passed Checks 9-12 was pushed live, the page crashed anyway with a hard SyntaxError — the same `APP_ID` constant had been declared in two separate `<script>` tags, which Check 9 cannot catch because it validates each script block in isolation, not the combined global scope a real browser builds across all of them. Check 13 was built for that, and a same-day platform audit found the identical bug in all 11 of 11 B2B apps. Later the same day, after Checks 9-13 all passed clean, the user reported seeing raw JavaScript rendered as visible text on the live page — three separate times in one file. Each time, a prior edit had deleted a `<script>` opening tag or inserted a stray `</body>` mid-file, leaving real working JS (a demo-data seeder, a range-bar renderer, an admin-formula editor) sitting outside any script wrapper. None of this throws a console error, because there's nothing to parse as JS — the browser just prints it as text. Check 14 was built for that gap. A platform-wide sweep then found Check 9 was also blind to 8 call sites silently downgrading the AI model tier via mismatched `app_id` values — Check 15 was built for that. Finally, after delivering a generated warranty terms document and then raising its prices $100 per package at the user's request, the matching prices hardcoded in the live app's `onclick` handlers were never updated, since nothing connects a generated document to the app's source — Check 16 was built for that drift, and Check 17 was built so the next legal document ships defensible across states on the FIRST draft, not after two follow-up rounds. None of these were syntax errors a regex scan reliably catches, and none were caught until a human read browser console output and manually traced the file line by line, or until the user caught a business-logic mismatch by eye. Checks 9-17 exist so that tracing never has to happen by hand again.
 
 ---
 
@@ -117,7 +117,7 @@ Report: filename, line count, SHA, file size. This is the baseline.
 
 ### PHASE 2 — The 12-Point Mechanical Scan
 
-Run all 15 checks simultaneously on the pulled file. Every check reports: PASS, WARN, or FAIL with exact line numbers. Checks 9-15 (added June 2026) require Node to be available in the execution environment for Check 9 specifically; if Node is unavailable, Check 9 reports WARN rather than silently skipping, and Checks 10-15 still run normally since they are pure Python. Check 13, Check 14, and Check 15 in particular should always be run, even if Check 9 passed cleanly — a clean Check 9 says nothing about cross-script-tag collisions, content sitting entirely outside any script tag, or app_id values silently downgrading the model tier, all three of which caused real production issues in StoneDesk despite a clean Check 9 result.
+Run all 17 checks simultaneously on the pulled file. Every check reports: PASS, WARN, or FAIL with exact line numbers. Checks 9-17 (added June 2026) require Node to be available in the execution environment for Check 9 specifically; if Node is unavailable, Check 9 reports WARN rather than silently skipping, and Checks 10-17 still run normally since they are pure Python (Checks 16 and 17 require additional inputs beyond the single app file — see their individual sections). Check 13, Check 14, and Check 15 in particular should always be run, even if Check 9 passed cleanly — a clean Check 9 says nothing about cross-script-tag collisions, content sitting entirely outside any script tag, or app_id values silently downgrading the model tier, all three of which caused real production issues in StoneDesk despite a clean Check 9 result. Check 17 should be applied as a default checklist on every customer-facing legal document, not only when explicitly requested.
 
 ---
 
@@ -719,6 +719,70 @@ def check_app_id_mismatch(content, canonical_app_id):
 
 ---
 
+#### CHECK 16 — Price Consistency Between Generated Documents and Live App
+
+**Added June 16, 2026.** A dollar amount changed in a generated sales/legal document (StoneDesk's extended warranty packages were raised $100 each at the user's request: $149→$249, $349→$449, $699→$799) and the change was applied to the document only — the live app's `onclick="addWarrantyToJob('Basic Protection',149,1)"` calls were never touched, because the document and the app source are two separate files that nothing automatically keeps in sync. This is a price quietly living in two places and drifting apart, the same root-cause shape as Check 13's variable collision or Check 15's app_id mismatch, just at the business-logic layer instead of the code layer.
+
+**The rule:** Whenever a price, term length, or package detail changes in a generated customer-facing document (warranty terms, pricing sheet, sales deck, SOP), check whether the same number is hardcoded anywhere in the live app (HTML onclick attributes, JS constants, pricing config objects) for the matching package/plan/item name. If it is, flag it — don't assume the document and the app were updated together just because they were edited in the same session.
+
+```python
+import re
+
+def extract_dollar_terms_from_doc_text(text):
+    """name -> price, from headings/labels like 'Basic Protection — $249'."""
+    findings = {}
+    for m in re.finditer(r'([A-Za-z][A-Za-z\s]{2,40}?)\s*[—\-]\s*\$(\d[\d,]*)', text):
+        name = re.sub(r'^\d+\.\s*', '', m.group(1)).strip()
+        findings[name] = int(m.group(2).replace(',', ''))
+    return findings
+
+def extract_dollar_terms_from_app_js(content, fn_name):
+    """name -> [prices], from onclick="fnName('Label', NUMBER, ...)" call sites."""
+    findings = {}
+    pattern = re.compile(rf"{re.escape(fn_name)}\(\s*['\"]([^'\"]+)['\"]\s*,\s*(\d+)")
+    for m in pattern.finditer(content):
+        findings.setdefault(m.group(1).strip(), []).append(int(m.group(2)))
+    return findings
+
+def check_price_consistency(doc_text, app_content, app_fn_name):
+    doc_prices = extract_dollar_terms_from_doc_text(doc_text)
+    app_prices = extract_dollar_terms_from_app_js(app_content, app_fn_name)
+    findings = []
+    for doc_name, doc_price in doc_prices.items():
+        matched = next((a for a in app_prices
+                         if a.lower() in doc_name.lower() or doc_name.lower() in a.lower()), None)
+        if matched and doc_price not in app_prices[matched]:
+            findings.append(f"PRICE DRIFT: document '{doc_name}' = ${doc_price}, "
+                             f"app's {app_fn_name}('{matched}',...) uses ${app_prices[matched][0]}")
+    return findings
+```
+
+**Verification note:** name matching is intentionally fuzzy (substring match on package name), so confirm each finding by hand — a generic name like "Basic" could coincidentally substring-match something unrelated in a larger file. This check requires both the document's extracted text and the app's source as separate inputs; it doesn't run as part of the single-file Phase 2 scan and should be triggered explicitly any time a generated document with prices is delivered alongside (or shortly after) edits to a live app's pricing.
+
+**FAIL condition:** Any drift → ask the user which value is correct before changing either side. Do not assume the document is right and silently patch the app, or vice versa — the user may have intentionally changed only one side.
+
+---
+
+#### CHECK 17 — Legal Document Defensibility Baseline
+
+**Added June 16, 2026.** A first-draft warranty terms document (StoneDesk's three extended-warranty packages) was generated complete and well-organized, but needed two follow-up rounds before it was safe to call a customer-facing legal document: one to add multi-state defensibility (severability, governing-law, state-rights disclosure, removing an unenforceable blanket damages waiver), and the user had to ask for both rounds explicitly. This is a checklist, not a regex scan — legal adequacy can't be pattern-matched — but the checklist itself should be applied automatically on the FIRST draft of any customer-facing legal document, not only when asked.
+
+**Triggers:** any generated warranty terms, Terms of Service, Acceptable Use Policy, Data Privacy Addendum, SOP that customers sign, or similar document intended to be presented to or signed by an end customer (not internal SAIRN business documents, which don't need this).
+
+**The baseline checklist — apply by default, every time:**
+
+1. **State-rights disclosure.** Include language equivalent to "this warranty gives you specific legal rights; you may also have other rights which vary by state" — standard under federal Magnuson-Moss Warranty Act practice for written consumer warranties, and broadly safe to include regardless of which state the customer is in.
+2. **No blanket damages waiver.** Never write an unconditional "we are not liable for any incidental or consequential damages" with no qualifier — several states refuse to enforce this as written. Always pair it with "to the extent permitted by the law of the state where [the installation/service] is located" or an equivalent carve-out, and note that the limitation does not apply where state law prohibits it.
+3. **Severability clause.** Include a clause stating that if any provision is found unenforceable under applicable state law, that provision is limited or severed, and the rest of the document remains in force. Without this, one bad clause can risk the whole document.
+4. **Governing law tied to a variable, not a fixed state.** Default to "the law of the state where the installation/service/customer is located" rather than naming SAIRN's home state (Ohio) outright — naming one fixed state in a document meant to be used nationally creates exactly the cross-state risk this checklist exists to avoid.
+5. **No unauthorized-repair clause that voids unrelated coverage.** If the document includes a clause voiding coverage when a customer or third party performs unauthorized repairs, scope the voiding to the specific affected area/damage, not the entire remaining warranty — broad voiding clauses are a common point states strike down or narrow.
+6. **Plain, conspicuous language.** Several states require warranty terms to be "clear and conspicuous." Avoid dense legalese where a plain-language sentence says the same thing; this also makes the document easier for Michael's customers to actually read and trust.
+7. **Template/review footer.** Every generated legal document includes a visible note that it is a template and should be reviewed by an attorney licensed in the state(s) where the business operates before use. This is not optional and is not a hedge to skip once the user seems satisfied — it stays in every version, including final ones, until the user explicitly confirms attorney review has happened.
+
+**FAIL condition:** Any customer-facing legal document delivered without items 1, 2, 3, 4, and 7 above → treat as an incomplete first draft, not a finished deliverable, regardless of whether the user asked for multi-state coverage. Apply the checklist proactively; don't wait for the user to ask a second time the way this session required.
+
+---
+
 Run when a Supabase patch has been injected or when the app connects to Supabase.
 
 **What to verify:**
@@ -844,6 +908,8 @@ CHECK 12 — Stale Model Strings:    [PASS / WARN: N findings]
 CHECK 13 — Cross-Block Var Collision: [PASS / FAIL: N findings] ← HARD STOP IF CRITICAL (real browser crash)
 CHECK 14 — Orphaned Content Outside Script: [PASS / FAIL: N findings] ← HARD STOP IF FAIL (text renders on live page)
 CHECK 15 — App ID Value Mismatch:  [PASS / FAIL: N findings]  ← fix before push (silent Haiku downgrade)
+CHECK 16 — Price Consistency (doc vs app): [PASS / FAIL: N findings / SKIP no doc to compare] ← ask user before fixing either side
+CHECK 17 — Legal Doc Defensibility:  [PASS / FAIL: N items missing] ← applies only to customer-facing legal documents
 BONUS    — Supabase Schema:        [PASS / SKIP / FAIL]
 
 TOTAL FINDINGS: [N critical] [N warnings] [N info]
