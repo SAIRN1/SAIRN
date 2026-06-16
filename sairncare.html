@@ -422,6 +422,97 @@ tr:hover td{background:var(--t)}
   </div>
 </div>
 
+
+<div class="page" id="page-clients">
+  <div class="ph">
+    <div><div class="ptitle">👴 Clients</div><div class="psub">All active home care clients</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ Add Client</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Active Clients</div><div class="sv">34</div><div class="sd">↑ 3 this month</div></div><div class="sc"><div class="sl">Total Hours/Wk</div><div class="sv">847</div><div class="sd">Across all clients</div></div><div class="sc"><div class="sl">Medicaid Clients</div><div class="sv">22</div><div class="sd">64% of caseload</div></div><div class="sc"><div class="sl">Care Plan Reviews Due</div><div class="sv">4</div><div class="sd">This week</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Client</th><th>Age</th><th>Care Level</th><th>Primary Dx</th><th>Hours/Wk</th><th>Payer</th><th>Status</th></tr></thead>
+      <tbody><tr><td>Henderson, Ruth</td><td>82</td><td>Personal Care</td><td>Dementia</td><td>28</td><td>Medicaid</td><td><span class="badge bg">Active</span></td></tr><tr><td>Martinez, Jose</td><td>75</td><td>Companion</td><td>Hip Replacement</td><td>14</td><td>Medicare</td><td><span class="badge bg">Active</span></td></tr><tr><td>Williams, Dorothy</td><td>90</td><td>Skilled Nursing</td><td>CHF</td><td>40</td><td>Private Pay</td><td><span class="badge bg">Active</span></td></tr><tr><td>Chen, George</td><td>68</td><td>Therapy</td><td>Stroke Recovery</td><td>20</td><td>Insurance</td><td><span class="badge ba">Pending Auth</span></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-scheduling">
+  <div class="ph">
+    <div><div class="ptitle">📅 Scheduling</div><div class="psub">Caregiver assignments and visit schedule</div></div>
+    <div class="pacts">
+      <button class="btn bp" onclick="aiSchedule()">🤖 AI Optimize Routes</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Visits Today</div><div class="sv">28</div><div class="sd">8 complete</div></div><div class="sc"><div class="sl">On Shift</div><div class="sv">12</div><div class="sd">2 on call</div></div><div class="sc"><div class="sl">Callouts</div><div class="sv">1</div><div class="sd">Covered</div></div><div class="sc"><div class="sl">EVV Pending</div><div class="sv">4</div><div class="sd">Needs signature</div></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">Today's Schedule</div></div>
+    <div class="tw"><table>
+      <thead><tr><th>Time</th><th>Client</th><th>Caregiver</th><th>Service</th><th>Hours</th><th>EVV</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>8:00 AM</td><td>Henderson, Ruth</td><td>James R.</td><td>Personal Care</td><td>4</td><td><span class="badge bg">✅ Verified</span></td><td><span class="badge bg">Complete</span></td></tr>
+        <tr><td>9:00 AM</td><td>Martinez, Jose</td><td>Maria L.</td><td>Companion</td><td>3</td><td><span class="badge ba">⏳ Active</span></td><td><span class="badge ba">In Progress</span></td></tr>
+        <tr><td>1:00 PM</td><td>Williams, Dorothy</td><td>Sarah K.</td><td>Skilled Nursing</td><td>4</td><td><span class="badge bgr">Pending</span></td><td><span class="badge bgr">Scheduled</span></td></tr>
+        <tr><td>3:00 PM</td><td>Chen, George</td><td>David M.</td><td>Therapy Assist</td><td>2</td><td><span class="badge bgr">Pending</span></td><td><span class="badge bgr">Scheduled</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="ai-bub" id="sched-ai-out" style="display:none;margin-top:12px"></div>
+  </div>
+</div>
+<div class="page" id="page-caregivers">
+  <div class="ph">
+    <div><div class="ptitle">🤝 Caregivers</div><div class="psub">Caregiver roster, certifications, and availability</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ Add Caregiver</button>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Name</th><th>Cert Level</th><th>Certs</th><th>Hours Avail</th><th>Clients</th><th>Compliance</th><th>Status</th></tr></thead>
+      <tbody><tr><td>James Rodriguez</td><td>HHA</td><td>CPR, First Aid</td><td>40/wk</td><td>3</td><td><span class="badge bg">✅ Current</span></td><td><span class="badge bg">Active</span></td></tr><tr><td>Maria Lopez</td><td>CNA</td><td>CNA, CPR</td><td>32/wk</td><td>2</td><td><span class="badge bg">✅ Current</span></td><td><span class="badge bg">Active</span></td></tr><tr><td>Sarah Kim</td><td>RN</td><td>RN, CPR, Wound Care</td><td>20/wk</td><td>2</td><td><span class="badge bg">✅ Current</span></td><td><span class="badge bg">Active</span></td></tr><tr><td>David Mitchell</td><td>HHA</td><td>CPR</td><td>40/wk</td><td>2</td><td><span class="badge br">⚠️ TB Test Due</span></td><td><span class="badge bg">Active</span></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-visits">
+  <div class="ph">
+    <div><div class="ptitle">📋 Visit Logs</div><div class="psub">Completed visit records with EVV status</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp" onclick="showToast('New 📋')">+ New</button>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Date</th><th>Client</th><th>Caregiver</th><th>Check-In</th><th>Check-Out</th><th>Hours</th><th>EVV</th><th>Notes</th></tr></thead>
+      <tbody><tr><td>06/14</td><td>Henderson, Ruth</td><td>James R.</td><td>8:02 AM</td><td>12:06 PM</td><td>4.0</td><td><span class="badge bg">✅</span></td><td>Care plan followed</td></tr><tr><td>06/14</td><td>Williams, Dorothy</td><td>Sarah K.</td><td>9:00 AM</td><td>1:00 PM</td><td>4.0</td><td><span class="badge bg">✅</span></td><td>Wound check completed</td></tr><tr><td>06/13</td><td>Martinez, Jose</td><td>Maria L.</td><td>10:00 AM</td><td>1:00 PM</td><td>3.0</td><td><span class="badge bg">✅</span></td><td>Exercises completed</td></tr><tr><td>06/13</td><td>Chen, George</td><td>David M.</td><td>3:00 PM</td><td>5:00 PM</td><td>2.0</td><td><span class="badge br">❌ Missing</span></td><td><button class="btn br bsm" onclick="showToast('EVV flagged')">Fix EVV</button></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-billing">
+  <div class="ph">
+    <div><div class="ptitle">💳 Billing</div><div class="psub">Medicaid, Medicare, and private pay billing</div></div>
+    <div class="pacts">
+      <button class="btn bp" onclick="runBillingAI()">🤖 Scrub Claims</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Billable This Week</div><div class="sv">$18,400</div><div class="sd">847 hrs × avg rate</div></div><div class="sc"><div class="sl">Submitted</div><div class="sv">$12,200</div><div class="sd">6 claims</div></div><div class="sc"><div class="sl">Pending Auth</div><div class="sv">$4,800</div><div class="sd">2 clients</div></div><div class="sc"><div class="sl">Collected MTD</div><div class="sv">$38,900</div><div class="sd">On target</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Client</th><th>Period</th><th>Payer</th><th>Hours</th><th>Rate</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Henderson, Ruth</td><td>6/8-6/14</td><td>Medicaid</td><td>28</td><td>$22</td><td>$616</td><td><span class="badge bg">Submitted</span></td></tr>
+        <tr><td>Williams, Dorothy</td><td>6/8-6/14</td><td>Private Pay</td><td>40</td><td>$32</td><td>$1,280</td><td><span class="badge ba">Invoiced</span></td></tr>
+        <tr><td>Martinez, Jose</td><td>6/8-6/14</td><td>Medicare</td><td>14</td><td>$26</td><td>$364</td><td><span class="badge ba">Pending</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="ai-bub" id="billing-ai-out" style="display:none;margin-top:12px"></div>
+  </div>
+</div>
 </div><!-- end main -->
 </div><!-- end app -->
 
@@ -809,5 +900,24 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 })();
 </script>
+<script>
+async function aiSchedule(){
+  const el=document.getElementById('sched-ai-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Optimizing schedule...';
+  try{
+    const r=await callClaude('You are the SAIRNcare Scheduling Intelligence Engine. Analyze this care schedule and identify: route optimization opportunities, compliance risks (consecutive days, max hours), EVV gaps, and any caregiver-client matching improvements. Be specific.',
+      [{role:'user',content:'Schedule: Henderson (James R, 8am, 4hrs), Martinez (Maria L, 9am, 3hrs), Williams (Sarah K, 1pm, 4hrs), Chen (David M, 3pm, 2hrs). James R has worked 6 consecutive days. EVV missing for Chen visit yesterday.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis failed.';}
+}
+async function runBillingAI(){
+  const el=document.getElementById('billing-ai-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Scrubbing claims...';
+  try{
+    const r=await callClaude('You are the SAIRNcare Billing Intelligence Engine. Review these home care claims for: EVV compliance, authorization limits, T-code accuracy, Medicaid billing rules, and any denial risks. Flag issues before submission.',
+      [{role:'user',content:'Claims: Henderson (28hrs, Medicaid T1019, auth limit 30hrs — OK), Williams (40hrs, Private Pay — OK), Martinez (14hrs, Medicare — verify G codes required for Medicare billing).'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Scrub failed.';}
+}</script>
 </body>
 </html>
