@@ -873,7 +873,7 @@ async function deaAICheck(){
 // ============================================================
 (function() {
 
-  // ── STATE ─────────────────────────────────────────────────
+  // -- STATE -------------------------------------------------
   var APP_ID       = 'sairnvet';
   var FIRST_PAGE   = 'dashboard';
   var DEFAULT_PINS = {"owner": "1234", "vet": "2345", "tech": "3456", "front": "4567"};
@@ -881,7 +881,7 @@ async function deaAICheck(){
   var ROLE_INITS   = {"owner": "DV", "vet": "VT", "tech": "TC", "front": "FD"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
-  // ── SHOW PAGE ─────────────────────────────────────────────
+  // -- SHOW PAGE ---------------------------------------------
   function showPage(id) {
     // Show/hide pages
     document.querySelectorAll('.page').forEach(function(p) {
@@ -906,7 +906,7 @@ async function deaAICheck(){
   window.openFQ   = function() { showPage('field-quote'); };
   window.nav      = showPage; // sairnbiz alias
 
-  // ── LOGIN ─────────────────────────────────────────────────
+  // -- LOGIN -------------------------------------------------
   function getPins() {
     try {
       var stored = JSON.parse(localStorage.getItem(APP_ID + '_pins'));
@@ -1019,7 +1019,7 @@ async function deaAICheck(){
   window.savePins    = savePins;
   window.sdSavePins  = savePins;
 
-  // ── WIRE EVERYTHING ON DOM READY ──────────────────────────
+  // -- WIRE EVERYTHING ON DOM READY --------------------------
   function init() {
     // Clear any stale lockouts from previous broken login attempts
     try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
