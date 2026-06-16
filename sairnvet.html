@@ -722,7 +722,7 @@ function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
-  const nav=document.querySelector('[onclick="showPage(''+id+'')"]');if(nav)nav.classList.add('active');
+  const navEl=document.getElementById('nav-'+id)||Array.from(document.querySelectorAll('.ni')).find(function(el){return (el.getAttribute('onclick')||'').indexOf(id)!==-1;});if(navEl)navEl.classList.add('active');
   document.getElementById('main').scrollTop=0;
 }
 function openFQ(){showPage('field-quote');fqStep(1);}
