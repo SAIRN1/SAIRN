@@ -6799,8 +6799,6 @@ window.analyzeDocument = async function() {
         max_tokens: 1500,
         system: cfg.system,
         messages: [{ role: 'user', content: userContent }],
-        app_id: 'doc_analysis',
-        is_demo: true,
       }),
     });
     var data = await res.json();
@@ -6970,8 +6968,6 @@ async function generateFollowUps(aiResponse) {
         max_tokens: 800,
         system: 'You generate follow-up questions. Return ONLY a JSON array of exactly 3 strings. No markdown, no explanation.',
         messages: [{ role: 'user', content: prompt }],
-        app_id: 'followup_gen',
-        is_demo: true,
       }),
     });
 
@@ -7203,7 +7199,7 @@ async function buildSessionSummary() {
         max_tokens: 1000,
         system: 'You create concise session memory summaries. Extract the key facts, decisions, and context from this conversation in 3-5 bullet points. Be specific and factual. This summary will be injected into future AI responses to maintain continuity.',
         messages: [{ role: 'user', content: 'Summarize the key facts and context from this conversation:\n\n' + convo }],
-        app_id: 'memory_builder',
+        app_id: 'stonedesk',
         is_demo: true,
       }),
     });
@@ -7644,8 +7640,6 @@ async function requestRewrite(prompt, btnEl) {
         max_tokens: 1000,
         system: 'You are a helpful AI assistant. Respond to the user\'s request directly and completely.',
         messages: (typeof messages !== 'undefined' ? messages.slice(-6) : []).concat([{ role: 'user', content: prompt }]),
-        app_id: 'simplify',
-        is_demo: true,
       }),
     });
     var data = await res.json();
@@ -8167,7 +8161,6 @@ window.runComparison = async function() {
         max_tokens: 1200,
         system: 'You are an expert comparison analyst. When comparing two options, be direct. Give a clear recommendation. Back it up with specific reasoning. Do not be neutral for the sake of being neutral — the user needs a real answer.',
         messages: [{ role: 'user', content: prompt }],
-        app_id: 'compare', is_demo: true,
       }),
     });
     var data = await res.json();
@@ -10153,7 +10146,6 @@ window.analyzeImage = async function() {
             { type: 'text', text: question }
           ]
         }],
-        app_id: APP_ID + '_vision',
         is_demo: true,
       }),
     });
@@ -12099,7 +12091,7 @@ async function execAiSend(role){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({is_demo:true,
         max_tokens:1500,
-        app_id:'stonedesk_'+role,
+        app_id:'stonedesk',
         system:EAI_SYSTEMS[role],
         messages:msgs
       })
@@ -12156,7 +12148,7 @@ async function runEmailTriage(){
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({is_demo:true,
         max_tokens:2000,
-        app_id:'stonedesk_email_triage',
+        app_id:'stonedesk',
         system:TRIAGE_SYSTEM,
         messages:[{role:'user',content:prompt}]
       })
