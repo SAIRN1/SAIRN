@@ -3562,9 +3562,14 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   // -- STATE -------------------------------------------------
   var APP_ID       = 'sairnscape';
   var FIRST_PAGE   = 'dashboard';
-  var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "crew": "3456", "sales": "4567"};
-  var ROLE_LABELS  = {"owner": "Owner", "admin": "Admin", "crew": "Crew Lead", "sales": "Sales"};
-  var ROLE_INITS   = {"owner": "OW", "admin": "AD", "crew": "CL", "sales": "SR"};
+  // FIX June 16 2026 (Guardian Check 18): listed owner/admin/crew/sales, but
+  // the actual login buttons in markup only call selRole('user') and
+  // selRole('admin') -- 'crew'/'sales' are unused dead keys, and 'user' was
+  // missing entirely, silently defaulting that role's PIN to '1234' fallback
+  // regardless of what was configured.
+  var DEFAULT_PINS = {"user": "1234", "admin": "2345"};
+  var ROLE_LABELS  = {"user": "Operator", "admin": "Admin"};
+  var ROLE_INITS   = {"user": "OP", "admin": "AD"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
   // -- SHOW PAGE ---------------------------------------------
@@ -3601,11 +3606,20 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     return DEFAULT_PINS;
   }
 
-  function selRole(el) {
-    document.querySelectorAll('.rb, .role-btn, [class*=role-pill]')
+  function selRole(elOrRoleName) {
+    // FIX June 16 2026 (Guardian Check 18): markup calls selRole('user')/('admin')
+    // with a STRING (see onclick="selRole('user')" on the role buttons), but this
+    // function assumed a DOM ELEMENT and called el.classList.add(...) -- throwing
+    // on the very first click, before the PIN screen could do anything at all.
+    document.querySelectorAll('.rb, .role-btn, [class*=role-pill], .auth-role-btn')
       .forEach(function(b) { b.classList.remove('active'); });
-    el.classList.add('active');
-    currentRole = el.dataset.role || el.getAttribute('data-role') || currentRole;
+    var el = (typeof elOrRoleName === 'string')
+      ? document.getElementById('role-' + elOrRoleName)
+      : elOrRoleName;
+    if (el) el.classList.add('active');
+    currentRole = (typeof elOrRoleName === 'string')
+      ? elOrRoleName
+      : (el ? (el.dataset.role || el.getAttribute('data-role') || currentRole) : currentRole);
     var pinEl = findPinInput();
     if (pinEl) { pinEl.value = ''; pinEl.focus(); }
   }
