@@ -3573,6 +3573,125 @@ document.addEventListener('DOMContentLoaded',function(){
 <div id="sairnscan-ref" style="display:none" data-sairnscan="true"
      data-version="1.0" data-sha="dda09816"></div>
 
+
+<script>
+/* SAIRN PIN LOGIN OVERRIDE — sairnbiz — injected */
+(function(){
+  var _PINS_sairnbiz = {
+    owner:'1234', admin:'2345', sales:'3456',
+    install:'4567', coder:'2345', biller:'3456',
+    tech:'3456', front:'4567', director:'2345',
+    arranger:'3456', coordinator:'2345', caregiver:'3456',
+    vet:'2345', viewer:'4567'
+  };
+  function _findPinEl() {
+    var ids = ['pin-in','pin-in','pin-input','sd-pin-input','sairn-pin'];
+    for(var i=0;i<ids.length;i++){
+      var el=document.getElementById(ids[i]);
+      if(el) return el;
+    }
+    // fallback: any password input visible on screen
+    var all=document.querySelectorAll('input[type=password],input[type=number]');
+    for(var j=0;j<all.length;j++){
+      if(all[j].offsetParent!==null) return all[j];
+    }
+    return null;
+  }
+  function _findRole() {
+    if(typeof sdCurrentRole!=='undefined'&&sdCurrentRole) return sdCurrentRole;
+    if(typeof currentRole!=='undefined'&&currentRole) return currentRole;
+    if(typeof curRole!=='undefined'&&curRole) return curRole;
+    if(typeof selRole!=='undefined'&&selRole) return selRole;
+    var active=document.querySelector('.rb.active,.role-btn.active,.role-pill.active,[class*=role][class*=active]');
+    if(active&&active.dataset&&active.dataset.role) return active.dataset.role;
+    return 'owner';
+  }
+  function _hideLogin() {
+    var loginIds=['login-screen','login','login-screen','auth-screen','auth-gate','ls'];
+    loginIds.forEach(function(id){
+      var el=document.getElementById(id);
+      if(el)el.style.display='none';
+    });
+  }
+  function _showApp() {
+    var appIds=['app','app','app-shell','main-app'];
+    appIds.forEach(function(id){
+      var el=document.getElementById(id);
+      if(el){
+        el.style.display='block';
+        el.style.removeProperty('display');
+        el.classList.add('visible');
+        // If it was set to none by CSS, force flex or block
+        if(window.getComputedStyle(el).display==='none'){
+          el.style.display='flex';
+        }
+      }
+    });
+  }
+  window.doLogin = function() {
+    var pinEl = _findPinEl();
+    var entered = pinEl ? pinEl.value.trim() : '';
+    var role = _findRole();
+    var stored = null;
+    try{ stored = JSON.parse(localStorage.getItem('sairnbiz_pins')||'null'); }catch(e){}
+    var correct = (stored&&stored[role]) ? stored[role] : (_PINS_sairnbiz[role]||'1234');
+    // Clear any lockout
+    try{sessionStorage.setItem('s_attempts','0');}catch(e){}
+    if(window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts=0;
+    var errEl=document.getElementById('auth-error')||document.getElementById('lerr')||
+              document.getElementById('login-error')||document.getElementById('le')||
+              document.querySelector('[id*=error],[id*=err]');
+    if(!entered){
+      if(errEl)errEl.textContent='Enter your PIN';
+      if(errEl)errEl.style.display='block';
+      return;
+    }
+    if(entered!==correct){
+      if(errEl){errEl.textContent='Incorrect PIN — try again';errEl.style.display='block';}
+      if(pinEl){pinEl.value='';pinEl.focus();}
+      return;
+    }
+    // SUCCESS
+    if(errEl)errEl.style.display='none';
+    if(typeof loginRole!=='undefined') loginRole=role;
+    if(typeof currentRole!=='undefined') currentRole=role;
+    if(typeof curRole!=='undefined') curRole=role;
+    if(typeof selRole!=='undefined') selRole=role;
+    if(typeof currentUser!=='undefined') currentUser={role:role,name:role};
+    _hideLogin();
+    _showApp();
+    if(typeof applyRoleGates==='function')applyRoleGates();
+    // Fire any post-login init
+    ['dbLoadAll','initApp','applyRoleGates','loadFormulas','watchAllTables','initAI',
+     'nav','loadLicenseKeyDisplay'].forEach(function(fn){
+      if(typeof window[fn]==='function') try{window[fn](role);}catch(e){}
+    });
+    if(typeof showToast==='function') showToast('Welcome back!');
+    if(typeof toast==='function') toast('Welcome back!');
+  };
+  // Wire up all inputs on DOM ready
+  document.addEventListener('DOMContentLoaded',function(){
+    // Clear any stale lockouts
+    try{sessionStorage.setItem('s_attempts','0');}catch(e){}
+    if(window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts=0;
+    // Wire Enter key and auto-submit on all PIN inputs
+    var pinIds=['pin-in','pin-input','sd-pin-input','sairn-pin','pin-in'];
+    pinIds.forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el)return;
+      el.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+      el.addEventListener('input',function(){
+        if(this.value.length===4){var me=this;setTimeout(function(){if(me.value.length===4)doLogin();},50);}
+      });
+      el.focus();
+    });
+    // Wire all Sign In buttons
+    document.querySelectorAll('[onclick*=doLogin],[onclick*="doLogin"]').forEach(function(btn){
+      btn.onclick=function(){doLogin();};
+    });
+  });
+})();
+</script>
 </body></html>';
 
   var w = window.open('', '_blank', 'width=820,height=900');
