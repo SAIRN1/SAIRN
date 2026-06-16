@@ -2111,23 +2111,7 @@ function selRole(r) {
   document.getElementById('role-admin').classList.toggle('active', r === 'admin');
 }
 
-function doLogin() {
-  var pin = document.getElementById('pin-in').value;
-  var err = document.getElementById('auth-err');
-  if (currentRole === 'admin' && pin === adminPIN) {
-    document.body.classList.add('is-admin');
-    document.getElementById('user-badge').textContent = 'Admin';
-    document.getElementById('user-badge').classList.add('admin-badge');
-    document.getElementById('auth-gate').style.display = 'none';
-  } else if (currentRole === 'user' && pin === userPIN) {
-    document.body.classList.remove('is-admin');
-    document.getElementById('user-badge').textContent = 'Operator';
-    document.getElementById('auth-gate').style.display = 'none';
-  } else {
-    err.textContent = 'Incorrect PIN. Try again.';
-    setTimeout(function() { err.textContent = ''; }, 2500);
-  }
-}
+
 
 function saveAdminPins() {
   var ap = document.getElementById('adm-pin').value;
