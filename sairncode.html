@@ -417,6 +417,112 @@ tr:hover td{background:var(--t)}
   </div>
 </div>
 
+
+<div class="page" id="page-encounters">
+  <div class="ph">
+    <div><div class="ptitle">📋 Encounters</div><div class="psub">Patient visits pending coding</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ Add Encounter</button>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Patient</th><th>DOB</th><th>Provider</th><th>Visit Date</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody><tr><td>Johnson, Mary</td><td>04/12/1968</td><td>Dr. Chen</td><td>06/14/26</td><td>Office Visit</td><td><span class="badge ba">Pending</span></td><td><button class="btn bp bsm" onclick="showPage('coding-queue')">Code</button></td></tr><tr><td>Davis, Robert</td><td>09/03/1955</td><td>Dr. Patel</td><td>06/14/26</td><td>Follow-Up</td><td><span class="badge ba">Pending</span></td><td><button class="btn bp bsm" onclick="showPage('coding-queue')">Code</button></td></tr><tr><td>Williams, Sue</td><td>11/22/1980</td><td>Dr. Chen</td><td>06/13/26</td><td>New Patient</td><td><span class="badge bg">Coded</span></td><td><button class="btn bo bsm">Review</button></td></tr><tr><td>Brown, Tom</td><td>02/14/1945</td><td>Dr. Patel</td><td>06/13/26</td><td>Annual</td><td><span class="badge bg">Submitted</span></td><td><button class="btn bo bsm">View</button></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-coding-queue">
+  <div class="ph">
+    <div><div class="ptitle">🔢 Coding Queue</div><div class="psub">AI-assisted ICD-10 and CPT coding</div></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="window.print()">🖨️ Print</button></div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Queue Today</div><div class="sv">12</div><div class="sd">3 urgent</div></div><div class="sc"><div class="sl">Avg Code Time</div><div class="sv">4.2 min</div><div class="sd">Per encounter</div></div><div class="sc"><div class="sl">Accuracy Rate</div><div class="sv">98.7%</div><div class="sd">Last 30 days</div></div><div class="sc"><div class="sl">Revenue Impact</div><div class="sv">$84,200</div><div class="sd">This week</div></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">🤖 Claude Coding Assistant</div></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Patient / Encounter</label><input class="fi" id="cq-patient" placeholder="Patient name or encounter ID"></div>
+      <div class="fg"><label class="fl">Visit Type</label><select class="fi" id="cq-type"><option>Office Visit</option><option>New Patient</option><option>Annual Wellness</option><option>Follow-Up</option><option>Procedure</option><option>Telehealth</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Clinical Documentation</label>
+      <textarea class="fta" id="cq-notes" placeholder="Paste clinical notes, diagnoses, procedures performed..." style="min-height:120px"></textarea></div>
+    <button class="btn bp" onclick="runCodingAI()">🤖 Generate Codes</button>
+    <div class="ai-bub" id="cq-out" style="display:none;margin-top:12px"></div>
+    <div id="cq-code-result" style="display:none;margin-top:14px">
+      <div class="fr">
+        <div class="fg"><label class="fl">ICD-10 Code(s)</label><input class="fi" id="cq-icd" placeholder="e.g. J06.9, Z00.00"></div>
+        <div class="fg"><label class="fl">CPT Code(s)</label><input class="fi" id="cq-cpt" placeholder="e.g. 99213, 99395"></div>
+      </div>
+      <div class="fg"><label class="fl">Modifier</label><input class="fi" id="cq-mod" placeholder="e.g. 25, 59" style="max-width:180px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn bp" onclick="saveCodedEncounter()">💾 Save & Submit</button>
+        <button class="btn bo bsm" onclick="showToast('Sent for review')">👁️ Flag for Review</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="page" id="page-claims">
+  <div class="ph">
+    <div><div class="ptitle">💳 Claims</div><div class="psub">Submitted claims and payment status</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp" onclick="showToast('Scrubbing claim...')">🤖 Scrub & Submit</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Submitted This Week</div><div class="sv">$84,200</div><div class="sd">18 claims</div></div><div class="sc"><div class="sl">Pending</div><div class="sv">$42,100</div><div class="sd">9 claims</div></div><div class="sc"><div class="sl">Denial Rate</div><div class="sv">4.2%</div><div class="sd">↓ vs 8% avg</div></div><div class="sc"><div class="sl">A/R Over 30 Days</div><div class="sv">$12,400</div><div class="sd">3 claims</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Claim #</th><th>Patient</th><th>DOS</th><th>Payer</th><th>Billed</th><th>Paid</th><th>Status</th></tr></thead>
+      <tbody><tr><td>CLM-2041</td><td>Johnson, Mary</td><td>06/14</td><td>United Health</td><td>$285.00</td><td>$198.40</td><td><span class="badge bg">Paid</span></td></tr><tr><td>CLM-2040</td><td>Davis, Robert</td><td>06/14</td><td>Aetna</td><td>$185.00</td><td>$0</td><td><span class="badge ba">Pending</span></td></tr><tr><td>CLM-2039</td><td>Williams, Sue</td><td>06/13</td><td>Medicare</td><td>$420.00</td><td>$336.00</td><td><span class="badge bg">Paid</span></td></tr><tr><td>CLM-2038</td><td>Brown, Tom</td><td>06/13</td><td>BCBS</td><td>$650.00</td><td>$0</td><td><span class="badge br">Denied</span></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-denials">
+  <div class="ph">
+    <div><div class="ptitle">⚠️ Denials</div><div class="psub">AI-assisted denial management and appeal drafting</div></div>
+    <div class="pacts"><button class="btn bp" onclick="draftAppeal()">🤖 Draft Appeal</button></div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Claim #</th><th>Patient</th><th>Payer</th><th>Denial Code</th><th>Reason</th><th>Amount</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>CLM-2038</td><td>Brown, Tom</td><td>BCBS</td><td>CO-4</td><td>Modifier required</td><td>$650</td><td><button class="btn bp bsm" onclick="draftAppeal()">🤖 Appeal</button></td></tr>
+        <tr><td>CLM-2035</td><td>Lee, Amy</td><td>Aetna</td><td>CO-97</td><td>Bundled service</td><td>$285</td><td><button class="btn bp bsm" onclick="draftAppeal()">🤖 Appeal</button></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="card" id="denial-appeal-card" style="display:none">
+    <div class="ch"><div class="ct">🤖 Claude Appeal Draft</div></div>
+    <div class="ai-bub" id="denial-ai-out"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn bp bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bo bsm" onclick="showToast('Copied');navigator.clipboard.writeText(document.getElementById('denial-ai-out').textContent)">📋 Copy</button>
+    </div>
+  </div>
+</div>
+<div class="page" id="page-eob-scanner">
+  <div class="ph">
+    <div><div class="ptitle">📄 EOB Scanner</div><div class="psub">Photo any EOB — Claude extracts every field instantly</div></div>
+  </div>
+  <div class="card">
+    <div class="upzone" onclick="document.getElementById('eob-file').click()" style="cursor:pointer">
+      <div style="font-size:36px;margin-bottom:10px">📄</div>
+      <div style="font-size:14px;font-weight:600;color:var(--g600)">Tap to photograph or upload EOB</div>
+      <div style="font-size:12px;color:var(--g400);margin-top:4px">Explanation of Benefits · Remittance Advice · CMS-1500</div>
+      <input type="file" id="eob-file" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="scanEOB(this)">
+    </div>
+    <div id="eob-result" style="display:none;margin-top:14px">
+      <div class="ai-bub" id="eob-out"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn bp bsm" onclick="window.print()">🖨️ Print</button>
+        <button class="btn bo bsm" onclick="showToast('Saved')">💾 Save</button>
+        <button class="btn bo bsm" onclick="document.getElementById('eob-file').click()">📷 Scan Another</button>
+      </div>
+    </div>
+  </div>
+</div>
 </div><!-- end main -->
 </div><!-- end app -->
 
@@ -804,5 +910,69 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 })();
 </script>
+<script>
+async function runCodingAI(){
+  const notes=document.getElementById('cq-notes')?.value?.trim();
+  const type=document.getElementById('cq-type')?.value||'Office Visit';
+  const patient=document.getElementById('cq-patient')?.value||'Patient';
+  if(!notes){showToast('Paste clinical notes first');return;}
+  const el=document.getElementById('cq-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing documentation...';
+  try{
+    const r=await callClaude(
+      `You are the SAIRNcode Medical Coding Intelligence Engine. Review this clinical documentation and provide: 1) Primary ICD-10 diagnosis code(s) with descriptions 2) CPT procedure code(s) with E&M level justification 3) Any modifiers required 4) Compliance flags or documentation gaps 5) Estimated reimbursement range. Be specific and cite documentation support for each code.`,
+      [{role:'user',content:`Visit Type: ${type}\nPatient: ${patient}\n\nClinical Notes:\n${notes}`}]
+    );
+    el.textContent=r;
+    const codeCard=document.getElementById('cq-code-result');
+    if(codeCard){
+      codeCard.style.display='block';
+      const icdMatch=r.match(/ICD-10[:\s]+([A-Z]\d{2}\.?\d*)/i);
+      const cptMatch=r.match(/CPT[:\s]+(\d{5})/i);
+      if(icdMatch)document.getElementById('cq-icd').value=icdMatch[1];
+      if(cptMatch)document.getElementById('cq-cpt').value=cptMatch[1];
+    }
+  }catch(e){el.textContent='Analysis failed. Check connection.';}
+}
+async function saveCodedEncounter(){
+  const key=APP_ID+'_coded';
+  const arr=JSON.parse(localStorage.getItem(key)||'[]');
+  arr.unshift({date:new Date().toLocaleDateString(),patient:document.getElementById('cq-patient')?.value,
+    icd:document.getElementById('cq-icd')?.value,cpt:document.getElementById('cq-cpt')?.value});
+  localStorage.setItem(key,JSON.stringify(arr));
+  showToast('Encounter coded and saved');
+}
+async function draftAppeal(){
+  const card=document.getElementById('denial-appeal-card');
+  const el=document.getElementById('denial-ai-out');
+  if(card)card.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Drafting appeal...';
+  try{
+    const r=await callClaude(
+      'You are a medical billing appeal specialist. Draft a professional, specific appeal letter for a denied claim. Include: denial reason rebuttal, supporting documentation references, regulatory citations (CMS guidelines), and clear request for reconsideration. Professional tone. Plain text format.',
+      [{role:'user',content:'Denial: CO-4 (Modifier required). Claim for office visit 99213 with separate procedure. Patient: Brown, Tom. Payer: BCBS. Draft appeal letter.'}]
+    );
+    el.textContent=r;
+  }catch(e){el.textContent='Draft failed. Check connection.';}
+}
+async function scanEOB(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const b64=e.target.result.split(',')[1];
+    const el=document.getElementById('eob-out');
+    const res=document.getElementById('eob-result');
+    res.style.display='block';
+    el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Reading EOB...';
+    try{
+      const r=await callClaude(
+        'You are the SAIRNcode Document Intelligence Engine. Analyze this EOB/remittance document and extract: Payer name, Claim number, Patient name, DOS, Billed amount, Allowed amount, Paid amount, Adjustment codes and reasons, Patient responsibility, Any denial codes. Flag any discrepancies. Plain text format.',
+        [{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:'Extract all EOB fields.'}]}]
+      );
+      el.textContent=r;
+    }catch(e){el.textContent='Scan failed. Check connection.';}
+  };
+  reader.readAsDataURL(file);
+}</script>
 </body>
 </html>
