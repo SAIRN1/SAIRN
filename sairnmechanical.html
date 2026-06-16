@@ -906,124 +906,6 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 
 <script>
-/* SAIRN PIN LOGIN OVERRIDE — sairnmechanical — injected */
-(function(){
-  var _PINS_sairnmechanical = {
-    owner:'1234', admin:'2345', sales:'3456',
-    install:'4567', coder:'2345', biller:'3456',
-    tech:'3456', front:'4567', director:'2345',
-    arranger:'3456', coordinator:'2345', caregiver:'3456',
-    vet:'2345', viewer:'4567'
-  };
-  function _findPinEl() {
-    var ids = ['pin-in','pin-in','pin-input','sd-pin-input','sairn-pin'];
-    for(var i=0;i<ids.length;i++){
-      var el=document.getElementById(ids[i]);
-      if(el) return el;
-    }
-    // fallback: any password input visible on screen
-    var all=document.querySelectorAll('input[type=password],input[type=number]');
-    for(var j=0;j<all.length;j++){
-      if(all[j].offsetParent!==null) return all[j];
-    }
-    return null;
-  }
-  function _findRole() {
-    if(typeof sdCurrentRole!=='undefined'&&sdCurrentRole) return sdCurrentRole;
-    if(typeof currentRole!=='undefined'&&currentRole) return currentRole;
-    if(typeof curRole!=='undefined'&&curRole) return curRole;
-    if(typeof selRole!=='undefined'&&selRole) return selRole;
-    var active=document.querySelector('.rb.active,.role-btn.active,.role-pill.active,[class*=role][class*=active]');
-    if(active&&active.dataset&&active.dataset.role) return active.dataset.role;
-    return 'owner';
-  }
-  function _hideLogin() {
-    var loginIds=['login','login','login-screen','auth-screen','auth-gate','ls'];
-    loginIds.forEach(function(id){
-      var el=document.getElementById(id);
-      if(el)el.style.display='none';
-    });
-  }
-  function _showApp() {
-    var appIds=['app','app','app-shell','main-app'];
-    appIds.forEach(function(id){
-      var el=document.getElementById(id);
-      if(el){
-        el.style.display='block';
-        el.style.removeProperty('display');
-        el.classList.add('visible');
-        // If it was set to none by CSS, force flex or block
-        if(window.getComputedStyle(el).display==='none'){
-          el.style.display='flex';
-        }
-      }
-    });
-  }
-  window.doLogin = function() {
-    var pinEl = _findPinEl();
-    var entered = pinEl ? pinEl.value.trim() : '';
-    var role = _findRole();
-    var stored = null;
-    try{ stored = JSON.parse(localStorage.getItem('sairnmechanical_pins')||'null'); }catch(e){}
-    var correct = (stored&&stored[role]) ? stored[role] : (_PINS_sairnmechanical[role]||'1234');
-    // Clear any lockout
-    try{sessionStorage.setItem('s_attempts','0');}catch(e){}
-    if(window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts=0;
-    var errEl=document.getElementById('auth-error')||document.getElementById('lerr')||
-              document.getElementById('login-error')||document.getElementById('le')||
-              document.querySelector('[id*=error],[id*=err]');
-    if(!entered){
-      if(errEl)errEl.textContent='Enter your PIN';
-      if(errEl)errEl.style.display='block';
-      return;
-    }
-    if(entered!==correct){
-      if(errEl){errEl.textContent='Incorrect PIN — try again';errEl.style.display='block';}
-      if(pinEl){pinEl.value='';pinEl.focus();}
-      return;
-    }
-    // SUCCESS
-    if(errEl)errEl.style.display='none';
-    if(typeof loginRole!=='undefined') loginRole=role;
-    if(typeof currentRole!=='undefined') currentRole=role;
-    if(typeof curRole!=='undefined') curRole=role;
-    if(typeof selRole!=='undefined') selRole=role;
-    if(typeof currentUser!=='undefined') currentUser={role:role,name:role};
-    _hideLogin();
-    _showApp();
-    document.getElementById('app').style.display='block';
-    // Fire any post-login init
-    ['dbLoadAll','initApp','applyRoleGates','loadFormulas','watchAllTables','initAI',
-     'nav','loadLicenseKeyDisplay'].forEach(function(fn){
-      if(typeof window[fn]==='function') try{window[fn](role);}catch(e){}
-    });
-    if(typeof showToast==='function') showToast('Welcome back!');
-    if(typeof toast==='function') toast('Welcome back!');
-  };
-  // Wire up all inputs on DOM ready
-  document.addEventListener('DOMContentLoaded',function(){
-    // Clear any stale lockouts
-    try{sessionStorage.setItem('s_attempts','0');}catch(e){}
-    if(window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts=0;
-    // Wire Enter key and auto-submit on all PIN inputs
-    var pinIds=['pin-in','pin-input','sd-pin-input','sairn-pin','pin-in'];
-    pinIds.forEach(function(id){
-      var el=document.getElementById(id);
-      if(!el)return;
-      el.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
-      el.addEventListener('input',function(){
-        if(this.value.length===4){var me=this;setTimeout(function(){if(me.value.length===4)doLogin();},50);}
-      });
-      el.focus();
-    });
-    // Wire all Sign In buttons
-    document.querySelectorAll('[onclick*=doLogin],[onclick*="doLogin"]').forEach(function(btn){
-      btn.onclick=function(){doLogin();};
-    });
-  });
-})();
-</script>
-<script>
 async function aiDispatch(){
   const el=document.getElementById('dispatch-out');el.style.display='block';
   el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Optimizing routes...';
@@ -1063,108 +945,224 @@ async function runBlueprintAI(input){
   reader.readAsDataURL(file);
 }</script>
 
-<script>
-/* SAIRN NAV FIX — sairnmechanical — replaces broken showPage */
-(function(){
 
-  // ── FIXED showPage ──────────────────────────────────────────
-  window.showPage = function(id) {
-    // Hide all pages
+<script>
+// ============================================================
+// SAIRN UNIFIED CONTROLLER — sairnmechanical
+// Single script. No layers. No overrides. Just works.
+// ============================================================
+(function() {
+
+  // ── STATE ─────────────────────────────────────────────────
+  var APP_ID       = 'sairnmechanical';
+  var FIRST_PAGE   = 'dashboard';
+  var DEFAULT_PINS = {"owner": "1234", "tech": "2345", "sales": "3456", "admin": "4567"};
+  var ROLE_LABELS  = {"owner": "Owner", "tech": "Technician", "sales": "Sales", "admin": "Admin"};
+  var ROLE_INITS   = {"owner": "OW", "tech": "TC", "sales": "SR", "admin": "AD"};
+  var currentRole  = Object.keys(DEFAULT_PINS)[0];
+
+  // ── SHOW PAGE ─────────────────────────────────────────────
+  function showPage(id) {
+    // Show/hide pages
     document.querySelectorAll('.page').forEach(function(p) {
-      p.classList.remove('active');
-      p.style.display = 'none';
+      var isTarget = p.id === 'page-' + id;
+      p.style.cssText = isTarget
+        ? 'display:block!important'
+        : 'display:none!important';
+      if (isTarget) p.classList.add('active');
+      else p.classList.remove('active');
     });
-    // Show target page
-    var pg = document.getElementById('page-' + id);
-    if (pg) {
-      pg.classList.add('active');
-      pg.style.display = 'block';
-    }
-    // Clear all nav active states
-    document.querySelectorAll('.ni, .nav-item, [class*="nav-btn"]').forEach(function(n) {
-      n.classList.remove('active');
+    // Highlight nav
+    document.querySelectorAll('.ni').forEach(function(n) {
+      var oc = (n.getAttribute('onclick') || '') + (n.id || '');
+      var isActive = oc.indexOf(id) !== -1;
+      if (isActive) n.classList.add('active');
+      else n.classList.remove('active');
     });
-    // Set active nav — try multiple selector approaches
-    var navSelectors = [
-      '[onclick*="showPage(\''+id+'\'")']',
-      '[onclick*="showPage(\"'+id+'\"")"]',
-      '[onclick="showPage(\''+id+'\')"]',
-      '#nav-' + id,
-      '[id="nav-' + id + '"]'
-    ];
-    for (var i = 0; i < navSelectors.length; i++) {
-      try {
-        var navEl = document.querySelector(navSelectors[i]);
-        if (navEl) { navEl.classList.add('active'); break; }
-      } catch(e) {}
-    }
-    // Also find by data attribute or text content match
-    if (!document.querySelector('.ni.active')) {
-      document.querySelectorAll('.ni').forEach(function(n) {
-        var oc = n.getAttribute('onclick') || '';
-        if (oc.indexOf(id) !== -1) n.classList.add('active');
-      });
-    }
-    // Scroll to top
     var main = document.getElementById('main');
     if (main) main.scrollTop = 0;
-    window.scrollTo(0, 0);
-  };
+  }
+  window.showPage = showPage;
+  window.openFQ   = function() { showPage('field-quote'); };
+  window.nav      = showPage; // sairnbiz alias
 
-  // ── FORCE APP VISIBLE + SHOW DASHBOARD ON LOGIN ────────────
-  var _origDoLogin = window.doLogin;
-  window.doLogin = function() {
-    if (typeof _origDoLogin === 'function') _origDoLogin();
-    // Force app visible regardless of CSS
-    setTimeout(function() {
-      var app = document.getElementById('app');
-      if (app) {
-        app.style.setProperty('display', 'block', 'important');
-        app.style.setProperty('visibility', 'visible', 'important');
-        app.style.setProperty('opacity', '1', 'important');
-        app.classList.add('visible');
+  // ── LOGIN ─────────────────────────────────────────────────
+  function getPins() {
+    try {
+      var stored = JSON.parse(localStorage.getItem(APP_ID + '_pins'));
+      if (stored) return stored;
+    } catch(e) {}
+    return DEFAULT_PINS;
+  }
+
+  function selRole(el) {
+    document.querySelectorAll('.rb, .role-btn, [class*=role-pill]')
+      .forEach(function(b) { b.classList.remove('active'); });
+    el.classList.add('active');
+    currentRole = el.dataset.role || el.getAttribute('data-role') || currentRole;
+    var pinEl = findPinInput();
+    if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+  }
+  window.selRole        = selRole;
+  window.sdSelRole      = selRole;
+  window.selectRole     = selRole;
+  window.selectAuthTab  = function() {};
+  window.doRegister     = function() {};
+
+  function findPinInput() {
+    var ids = ['pin-in','pin-input','sd-pin-input','sairn-pin','auth-password'];
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (el && el.offsetParent !== null) return el;
+    }
+    return document.querySelector('input[type=password],input[type=number][maxlength="4"]');
+  }
+
+  function showApp() {
+    // Hide ALL possible login containers
+    ['login','auth-screen','login-screen','auth-gate','ls','auth-box'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.style.cssText = 'display:none!important'; }
+    });
+    // Force body out of login state
+    document.body.classList.remove('login-visible');
+    // Show app
+    var app = document.getElementById('app');
+    if (app) {
+      app.style.cssText = 'display:block!important;visibility:visible!important;opacity:1!important;height:100vh!important;overflow:hidden!important';
+      app.classList.add('visible');
+    }
+    // Show sidebar + topbar explicitly
+    var sb = document.querySelector('.sidebar');
+    var tb = document.querySelector('.topbar');
+    if (sb) sb.style.cssText = 'display:block!important';
+    if (tb) tb.style.cssText = 'display:flex!important';
+    // Show first page
+    showPage(FIRST_PAGE);
+    // Update user display
+    var tavtr = document.getElementById('tavtr');
+    var trole = document.getElementById('trole');
+    var uc    = document.getElementById('uc') || document.getElementById('user-chip');
+    if (tavtr) tavtr.textContent = ROLE_INITS[currentRole] || currentRole.substring(0,2).toUpperCase();
+    if (trole) trole.textContent = ROLE_LABELS[currentRole] || currentRole;
+    if (uc)    uc.textContent    = ROLE_LABELS[currentRole] || currentRole;
+    // Fire any post-login inits
+    ['dbLoadAll','loadFormulas','watchAllTables','initAI','loadPricing',
+     'renderSuite','loadLastSync','loadWeather'].forEach(function(fn) {
+      if (typeof window[fn] === 'function') {
+        try { window[fn](); } catch(e) {}
       }
-      // Hide login
-      ['login','auth-screen','login-screen','auth-gate','ls'].forEach(function(lid) {
-        var el = document.getElementById(lid);
-        if (el) el.style.setProperty('display', 'none', 'important');
-      });
-      // Show first page
-      showPage('dashboard');
-      // Ensure sidebar and topbar are visible
-      ['sidebar','topbar'].forEach(function(cls) {
-        var el = document.querySelector('.' + cls);
-        if (el) el.style.setProperty('display', 'block', 'important');
-      });
-    }, 80);
-  };
+    });
+  }
 
-  // ── ALSO FIX CSS: ensure .page.active shows ────────────────
-  var style = document.createElement('style');
-  style.textContent = [
-    '.page { display: none !important; }',
-    '.page.active { display: block !important; }',
-    '#app { display: none; }',
-    '#app.visible, #app[style*="block"] { display: block !important; }',
-    '.sidebar { display: block; }',
-    '.topbar { display: flex; }',
-  ].join('\n');
-  document.head.appendChild(style);
+  function doLogin() {
+    var pinEl   = findPinInput();
+    var entered = pinEl ? pinEl.value.trim() : '';
+    var pins    = getPins();
+    var correct = pins[currentRole] || '1234';
+    var errEl   = document.getElementById('auth-error')
+                  || document.getElementById('lerr')
+                  || document.getElementById('login-error')
+                  || document.getElementById('le');
 
-  // ── WIRE ALL NAV CLICKS directly (belt + suspenders) ───────
-  document.addEventListener('DOMContentLoaded', function() {
+    // Clear lockout
+    try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
+    if (window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts = 0;
+
+    if (!entered) {
+      if (errEl) { errEl.textContent = 'Enter your PIN'; errEl.style.display = 'block'; }
+      return;
+    }
+    if (entered !== correct) {
+      if (errEl) { errEl.textContent = 'Incorrect PIN — try again'; errEl.style.display = 'block'; }
+      if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+      return;
+    }
+    // SUCCESS
+    if (errEl) errEl.style.display = 'none';
+    if (pinEl) pinEl.value = '';
+    showApp();
+  }
+  window.doLogin = doLogin;
+
+  function savePins() {
+    var p = {};
+    Object.keys(DEFAULT_PINS).forEach(function(role) {
+      var el = document.getElementById('pin-' + role) || document.getElementById('sd-pin-' + role + '-inp');
+      if (el && el.value.length === 4) p[role] = el.value;
+    });
+    if (Object.keys(p).length) {
+      localStorage.setItem(APP_ID + '_pins', JSON.stringify(Object.assign({}, getPins(), p)));
+      if (typeof showToast === 'function') showToast('PINs saved');
+    }
+  }
+  window.savePins    = savePins;
+  window.sdSavePins  = savePins;
+
+  // ── WIRE EVERYTHING ON DOM READY ──────────────────────────
+  function init() {
+    // Clear any stale lockouts from previous broken login attempts
+    try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
+    if (window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts = 0;
+
+    // Wire PIN input — Enter key + 4-digit auto-submit
+    var pinEl = findPinInput();
+    if (pinEl) {
+      pinEl.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') doLogin();
+      });
+      pinEl.addEventListener('input', function() {
+        if (this.value.length === 4) {
+          var me = this;
+          setTimeout(function() { if (me.value.length === 4) doLogin(); }, 50);
+        }
+      });
+      pinEl.focus();
+    }
+
+    // Wire role buttons
+    document.querySelectorAll('.rb, .role-btn, [data-role]').forEach(function(btn) {
+      btn.addEventListener('click', function() { selRole(this); });
+    });
+
+    // Wire login button
+    document.querySelectorAll('[onclick*=doLogin], .lbtn, .auth-btn, .login-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        doLogin();
+      });
+    });
+
+    // Wire ALL nav items — belt AND suspenders
     document.querySelectorAll('.ni, [onclick*="showPage"]').forEach(function(el) {
       var oc = el.getAttribute('onclick') || '';
-      var match = oc.match(/showPage\(['"]([\w-]+)['"]\)/);
-      if (match) {
-        var pageId = match[1];
+      var m  = oc.match(/showPage\(['"]([\w-]+)['"]\)/);
+      if (m) {
+        var pid = m[1];
         el.addEventListener('click', function(e) {
+          e.preventDefault();
           e.stopPropagation();
-          showPage(pageId);
+          showPage(pid);
         });
       }
     });
-  });
+
+    // Inject CSS that cannot be overridden
+    var css = document.createElement('style');
+    css.id  = 'sairn-unified-css';
+    css.textContent = [
+      '.page { display:none!important }',
+      '.page.active { display:block!important }',
+      '#app { display:none }',
+    ].join(' ');
+    document.head.appendChild(css);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 
 })();
 </script>
