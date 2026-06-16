@@ -23,7 +23,7 @@ description: >
 
 This skill is the permanent mechanical guardian for the entire SAIRN platform. It is domain-aware, SAIRN-specific, and automated. It does not rely on human review to catch mechanical bugs — it runs the scan itself, finds every violation, fixes every finding, and pushes clean code. It activates on every build and every push without being asked.
 
-**Why 12 checks, not 8:** on June 16, 2026, all three existing SAIRN quality skills (this Guardian's original 8 checks, sairn-runtime-validator, sairn-ultra-scan) passed a build of stonedesk.html that was completely broken in the browser — every AI button did nothing, the entire SOP-printing feature was dead, and a chat-rendering hook was silently misdirected to the wrong feature. The root causes were a multi-hundred-line unterminated string, a stray script tag pasted mid-block, an orphaned HTML fragment that ate a `<script>` opening tag (leaving two real functions executing as inert page text with zero console errors), a global function-name collision, two malformed-but-valid regex literals, and two stale hardcoded model strings. None of these were syntax errors a regex scan reliably catches, and none were caught until a human read browser console output and manually traced the file line by line. Checks 9-12 exist so that tracing never has to happen by hand again.
+**Why 13 checks, not 8:** on June 16, 2026, all three existing SAIRN quality skills (this Guardian's original 8 checks, sairn-runtime-validator, sairn-ultra-scan) passed a build of stonedesk.html that was completely broken in the browser — every AI button did nothing, the entire SOP-printing feature was dead, and a chat-rendering hook was silently misdirected to the wrong feature. The root causes were a multi-hundred-line unterminated string, a stray script tag pasted mid-block, an orphaned HTML fragment that ate a `<script>` opening tag (leaving two real functions executing as inert page text with zero console errors), a global function-name collision, two malformed-but-valid regex literals, and two stale hardcoded model strings. Checks 9-12 were built to catch those. Then, on the same day, after a round of fixes that passed Checks 9-12 was pushed live, the page crashed anyway with a hard SyntaxError — the same `APP_ID` constant had been declared in two separate `<script>` tags, which Check 9 cannot catch because it validates each script block in isolation, not the combined global scope a real browser builds across all of them. Check 13 was built for that, and a same-day platform audit found the identical bug in all 11 of 11 B2B apps. None of these were syntax errors a regex scan reliably catches, and none were caught until a human read browser console output and manually traced the file line by line. Checks 9-13 exist so that tracing never has to happen by hand again.
 
 ---
 
@@ -39,9 +39,48 @@ This skill is the permanent mechanical guardian for the entire SAIRN platform. I
 
 ---
 
-## The Guardian Protocol — 5 Phases
+## The Guardian Protocol — 6 Phases (0 through 5)
 
-Run all 5 phases in order. Never skip a phase. Never push until Phase 5 passes.
+Run all 6 phases in order. Never skip a phase. Never push until Phase 5 passes.
+
+---
+
+### PHASE 0 — Skill Inventory Check (run once per session, before Phase 1)
+
+**Added June 16, 2026.** `sairn-code-guardian` itself existed only in this sandbox's local `/mnt/skills/user/` for an unknown number of sessions before it was ever pushed to GitHub's `skills/` folder — meaning any session that started fresh without that local copy present would have silently run with 8 checks (or zero, if the skill directory itself was empty) and no warning that anything was missing. A skill that exists but isn't loaded is indistinguishable from a skill that doesn't exist, from the perspective of the bugs it would have caught.
+
+Before any build, scan, or push work begins, check BOTH locations and reconcile:
+
+```python
+import os, json, urllib.request
+
+# 1. What's available locally in this sandbox right now
+local_skills = []
+if os.path.isdir('/mnt/skills/user'):
+    local_skills = sorted(os.listdir('/mnt/skills/user'))
+
+# 2. What's actually persisted on GitHub
+PAT = "[user's PAT]"
+REPO = "SAIRN1/SAIRN"
+req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/skills",
+    headers={"Authorization": f"token {PAT}", "User-Agent": "Python"}
+)
+try:
+    with urllib.request.urlopen(req) as r:
+        github_skills = sorted(item['name'] for item in json.loads(r.read()) if item['type'] == 'dir')
+except urllib.error.HTTPError as e:
+    github_skills = [] if e.code == 404 else None  # None = couldn't check, flag this
+
+print("Local only (not backed up to GitHub):", set(local_skills) - set(github_skills or []))
+print("GitHub only (not loaded in this sandbox):", set(github_skills or []) - set(local_skills))
+```
+
+**If a skill exists in GitHub's `skills/` folder but not locally:** pull it down and read it before proceeding — it may contain checks, rules, or context this session would otherwise silently miss.
+
+**If a skill exists locally but not on GitHub:** flag this to the user explicitly rather than assuming it's intentional. Push it once confirmed, so the next session (which may start with a different or empty local skill directory) doesn't lose it.
+
+**Report this reconciliation result before doing anything else in the session.** A one-line "skills in sync" or an explicit list of what's missing from where — never silently proceed as if the two locations are guaranteed to match.
 
 ---
 
@@ -78,7 +117,7 @@ Report: filename, line count, SHA, file size. This is the baseline.
 
 ### PHASE 2 — The 12-Point Mechanical Scan
 
-Run all 12 checks simultaneously on the pulled file. Every check reports: PASS, WARN, or FAIL with exact line numbers. Checks 9-12 (added June 2026) require Node to be available in the execution environment for Check 9 specifically; if Node is unavailable, Check 9 reports WARN rather than silently skipping, and Checks 10-12 still run normally since they are pure Python.
+Run all 13 checks simultaneously on the pulled file. Every check reports: PASS, WARN, or FAIL with exact line numbers. Checks 9-13 (added June 2026) require Node to be available in the execution environment for Check 9 specifically; if Node is unavailable, Check 9 reports WARN rather than silently skipping, and Checks 10-13 still run normally since they are pure Python. Check 13 in particular should always be run, even if Check 9 passed cleanly — a clean Check 9 says nothing about cross-script-tag collisions, which is exactly the bug class that crashed StoneDesk live despite a clean Check 9 result.
 
 ---
 
@@ -505,6 +544,79 @@ def check_hardcoded_model_strings(content):
 
 ---
 
+#### CHECK 13 — Cross-Script-Block Variable Redeclaration
+
+**Added June 16, 2026, after Checks 9-12 still let a real bug ship to production.** `var APP_ID = 'stonedesk';` was declared in two separate `<script>` tags in StoneDesk. Check 9 (Node ground-truth) validates each script block in ISOLATION and passed cleanly on both — the collision only exists once a browser combines multiple `<script>` tags into one shared global scope, which a per-block Node `--check` cannot simulate. In a real browser: two `var X` declarations of the same name silently merge with no error in normal (non-strict) script context, but if EITHER block opens with `'use strict'`, or either declaration uses `let`/`const` instead of `var`, redeclaring a name that already exists in the shared global scope is a **hard SyntaxError that aborts the entire script tag at parse time, before a single line of it runs.** This is exactly what crashed StoneDesk live — `Identifier 'APP_ID' has already been declared` — which then cascaded into a dozen unrelated "X is not defined" errors for every function that was meant to be registered by scripts that never got to execute.
+
+A full platform audit the same day found this exact `APP_ID`/`PROXY`/`BRIDGE` collision, in some combination of `var`/`var` (silently fragile) or `var`/`const` (unconditionally fatal), in **all 11 of 11 SAIRN B2B apps** — traced to a platform-wide patch session (the "SAIRN Intelligence Network" / "SAIRN CORE" block) that re-declared constants every app already had from its earlier "SAIRN CLAUDE ENGINE" block, instead of reusing them.
+
+```python
+import re
+
+VAR_DECL_PATTERN = re.compile(r'^\s*(var|const|let)\s+(\w+)\s*=')
+STRICT_MODE_PATTERN = re.compile(r'^\s*[\'"]use strict[\'"]\s*;?\s*$')
+
+def find_top_level_var_declarations(content):
+    """
+    Returns dict: name -> list of (line_number, script_block_index, decl_kind,
+    block_is_strict) for every var/const/let declared at TRUE top level of a
+    <script> tag -- using REAL BRACE-DEPTH TRACKING relative to that script
+    tag's own opening, not leading whitespace. This deliberately differs from
+    Check 10's duplicate-function detector, which abandoned brace counting
+    because a syntax error anywhere upstream would desync a naive counter for
+    everything downstream -- exactly the failure mode Check 10 exists to
+    catch. Check 13 doesn't have that problem: it only ever runs on a file
+    that has ALREADY passed Check 9, so brace counting is safe here. (An
+    earlier version of Check 13 used leading-whitespace as its top-level
+    proxy and produced 13 false positives on StoneDesk alone -- every var
+    sitting inside a column-0-indented `(function(){ ... })();` "install
+    once" IIFE wrapper, a very common SAIRN pattern, looked top-level by
+    indentation but is genuinely scoped to its own IIFE.)
+    """
+    occurrences = {}
+    lines = content.split('\n')
+    script_block_idx = -1
+    block_is_strict = False
+    depth = 0
+    for i, line in enumerate(lines):
+        if re.search(r'<script(?![^>]*\bsrc=)[^>]*>', line, re.IGNORECASE):
+            script_block_idx += 1
+            block_is_strict = False
+            depth = 0  # depth resets per script tag
+        if STRICT_MODE_PATTERN.match(line):
+            block_is_strict = True
+        m = VAR_DECL_PATTERN.match(line)
+        if m:
+            kind, name = m.groups()
+            if depth == 0:
+                occurrences.setdefault(name, []).append((i + 1, script_block_idx, kind, block_is_strict))
+        depth += line.count('{') - line.count('}')
+        if depth < 0:
+            depth = 0
+    return occurrences
+
+def check_cross_block_variable_collisions(content):
+    findings = []
+    decls = find_top_level_var_declarations(content)
+    for name, occs in decls.items():
+        block_indices = set(o[1] for o in occs)
+        if len(block_indices) < 2:
+            continue  # same block -- that's Check 9's job
+        any_strict = any(o[3] for o in occs)
+        any_let_or_const = any(o[2] in ('let', 'const') for o in occs)
+        severity = 'CRITICAL' if (any_strict or any_let_or_const) else 'WARN'
+        findings.append((severity, name, [o[0] for o in occs]))
+    return findings
+```
+
+**Verification note:** because the brace-depth tracking here is "good enough, not perfect" (it doesn't distinguish a block-statement `{` from an object-literal `{`), always spot-check 2-3 findings by hand before bulk-fixing, the same as every other Guardian check. In practice, on real SAIRN files this has produced zero false positives once IIFE-scoping was handled correctly — the remaining risk is theoretical, not something that's actually bitten this skill yet.
+
+**Fix pattern:** do NOT blindly delete every duplicate. Check what's genuinely unique in each colliding block first (the StoneDesk fix kept a new `NET_URL` constant from the second block while removing only the redundant `APP_ID`/`PROXY`/`BRIDGE`; the sairnbuild fix had to handle 3 separate blocks, each needing slightly different treatment based on what else in that block actually used the colliding name). Confirm with a plain grep which block's declaration is actually load-order-safe to keep (a `const` from a later block can't be referenced by code earlier in the file, so if an earlier block calls something that needs the value before the later block has run, you cannot simply delete the earlier declaration — verify this before fixing, every time).
+
+**FAIL condition:** Any CRITICAL finding → BLOCK push, this is a guaranteed live crash, not a maybe. WARN findings (plain `var`/`var`, no strict mode anywhere involved) don't block but should still be consolidated — they're one future `'use strict'` patch away from becoming the same crash with zero warning.
+
+---
+
 Run when a Supabase patch has been injected or when the app connects to Supabase.
 
 **What to verify:**
@@ -627,6 +739,7 @@ CHECK 9 — Node Ground-Truth:       [PASS / FAIL: N findings]  ← HARD STOP IF
 CHECK 10 — Duplicate Globals:      [PASS / WARN / FAIL]        ← HARD STOP IF load-bearing name unchained
 CHECK 11 — Regex Literal Sanity:   [PASS / FAIL: N findings]  ← HARD STOP IF comment-trap found
 CHECK 12 — Stale Model Strings:    [PASS / WARN: N findings]
+CHECK 13 — Cross-Block Var Collision: [PASS / FAIL: N findings] ← HARD STOP IF CRITICAL (real browser crash)
 BONUS    — Supabase Schema:        [PASS / SKIP / FAIL]
 
 TOTAL FINDINGS: [N critical] [N warnings] [N info]
@@ -718,12 +831,13 @@ The Guardian does not wait to be asked. It runs. It reports. It fixes. It pushes
 
 ---
 
-## A Note On False Positives (Checks 9-12)
+## A Note On False Positives (Checks 9-13)
 
-Checks 1-8 are exact pattern matches with very low false-positive rates. Checks 9-12 involve more judgment, and during development against the real StoneDesk corruption, each one produced at least one false positive that had to be tracked down and fixed in the detection logic itself before the check could be trusted:
+Checks 1-8 are exact pattern matches with very low false-positive rates. Checks 9-13 involve more judgment, and during development against the real StoneDesk corruption, each one produced at least one false positive that had to be tracked down and fixed in the detection logic itself before the check could be trusted:
 
 - **Check 9** initially mis-split blocks on escaped `<\/script>` sequences inside JS strings (fixed with a negative lookbehind) and on adjacent `</script><script>` tags handled by a line-by-line scanner instead of a single global regex pass (fixed by switching to `re.finditer`).
 - **Check 10** initially flooded with hundreds of false positives from local variables (`var x`, `const r`) declared inside different, properly-scoped functions, because an early version used a brace-depth counter to decide "global" — and that counter drifted off-true the moment it crossed an actual unterminated string elsewhere in the file (the exact bug Check 9 exists to find), silently hiding the real `doLogin` and `tryInstall` collisions in the process. The fix was to stop trusting brace-depth as the primary signal and use indentation plus explicit `window.X = X` export tracking instead.
 - **Check 10** also initially flagged the safe "declare then immediately export" pattern (`function selRole(){...} window.selRole = selRole;`) as a 2x collision; fixed by requiring 2+ DISTINCT function bodies before counting an export as evidence of a collision.
+- **Check 13** initially used leading-whitespace as its "is this top-level" signal (deliberately copying Check 10's approach) and produced 13 false positives on StoneDesk alone — every `var` sitting inside a column-0-indented `(function(){ ... })();` "install once" IIFE wrapper looked top-level by indentation but is genuinely scoped to its own IIFE, never colliding with anything outside it. The fix was the OPPOSITE of Check 10's: switch TO real brace-depth tracking, which is safe here specifically because Check 13 only ever runs on a file that has already passed Check 9 (no syntax errors to desync the counter) — the exact precondition that made brace-depth tracking unsafe for Check 10 doesn't apply to Check 13.
 
-If a future finding from Checks 9-12 looks wrong, the right move is the same one used here: verify against the actual source at the cited line number, and if it's a genuine new false-positive class, fix the detection logic and document the fix inline the way the three above are documented — don't just suppress the finding silently.
+If a future finding from Checks 9-13 looks wrong, the right move is the same one used here: verify against the actual source at the cited line number, and if it's a genuine new false-positive class, fix the detection logic and document the fix inline the way the four above are documented — don't just suppress the finding silently.
