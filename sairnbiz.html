@@ -3037,7 +3037,44 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load business profile and memories on app start
   loadBizProfile();
   loadAIMemoriesLocal();
+  // SAIRN Intelligence Network: fetch cached cross-business patterns.
+  // Defined in this same script block (below) -- no cross-tag timing risk.
+  loadNetworkIntelligence();
 });
+
+/* === SAIRN INTELLIGENCE NETWORK WIRING (added June 16 2026) ===
+   Read: cached network intelligence folded into the live sendAI's system
+   prompt (see _sairnNetIntel usage in _sendAIWithMemory below).
+   Write: after a successful response, send ONE short anonymized signal
+   describing the TYPE of interaction, never the actual response text or
+   any business-specific detail. The server (api/network.js) re-validates
+   and rejects anything that looks like a price, name, or PII regardless --
+   this is belt-and-suspenders, not the only safeguard. */
+async function loadNetworkIntelligence() {
+  try {
+    var cached  = localStorage.getItem('sairnbiz_net_intel');
+    var cacheTs = localStorage.getItem('sairnbiz_net_intel_ts');
+    var fresh   = cacheTs && (Date.now() - parseInt(cacheTs)) < 3600000; /* 1hr */
+    if (fresh && cached) { window._sairnNetIntel = JSON.parse(cached); return; }
+
+    var res  = await fetch('https://sairn.vercel.app/api/network?app=sairnbiz');
+    var data = await res.json();
+    window._sairnNetIntel = data;
+    localStorage.setItem('sairnbiz_net_intel', JSON.stringify(data));
+    localStorage.setItem('sairnbiz_net_intel_ts', String(Date.now()));
+  } catch(e) { /* network intelligence is always optional -- never block the app */ }
+}
+
+function sendNetworkInsight(insightType, pattern) {
+  /* fire-and-forget -- never awaited by a caller, never blocks the UI */
+  try {
+    fetch('https://sairn.vercel.app/api/network', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app: 'sairnbiz', type: insightType, pattern: pattern, score: 0.6 })
+    }).catch(function(){ /* silent -- a rejected or failed insight is not a user-facing error */ });
+  } catch(e) {}
+}
 
 // Override sendAI to inject system prompt
 const _sendAIWithMemory = async function() {
@@ -3049,7 +3086,15 @@ const _sendAIWithMemory = async function() {
   if (_aih.length > 12) _aih = _aih.slice(-12);
   try {
     const licKey = localStorage.getItem('sairn_license_key_sairnbiz') || '';
-    const dynamicSystem = buildSystemPrompt();
+    let dynamicSystem = buildSystemPrompt();
+    /* Network intelligence: fold in cached cross-business patterns. Read-only
+       here; writing happens after a successful response, below. */
+    try {
+      if (window._sairnNetIntel && window._sairnNetIntel.insights && window._sairnNetIntel.insights.length) {
+        dynamicSystem += '\n\nSAIRN NETWORK INTELLIGENCE (anonymized patterns from other sairnbiz installs): ' +
+                          window._sairnNetIntel.insights.slice(0, 5).join(' | ');
+      }
+    } catch(e) {}
     const res = await fetch('https://sairn.vercel.app/api/claude', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -3067,6 +3112,11 @@ const _sendAIWithMemory = async function() {
     _aih.push({role:'assistant', content:r});
     th.className = 'ai-msg bot'; th.textContent = r;
     saveAIHistory(_aih);
+    /* Network insight: report only that an HR/Accounting assist call
+       succeeded -- never the response text, the user's message, or any
+       business figure. Server-side scrub gate would reject those anyway;
+       this function never attempts to send them. */
+    try { sendNetworkInsight('feature_usage', 'hr_accounting_assist_call_succeeded'); } catch(e) {}
     if (d._remaining && d._remaining !== 'unlimited') {
       if (parseInt(d._remaining) < 10) showToast(d._remaining + ' free AI calls left today. Enter license key to unlock unlimited.');
     }
