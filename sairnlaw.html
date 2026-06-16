@@ -1887,7 +1887,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
 // ============================================================
 (function() {
 
-  // ── STATE ─────────────────────────────────────────────────
+  // -- STATE -------------------------------------------------
   var APP_ID       = 'sairnlaw';
   var FIRST_PAGE   = 'dashboard';
   var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "attorney": "3456", "staff": "4567"};
@@ -1895,7 +1895,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   var ROLE_INITS   = {"owner": "OW", "admin": "AD", "attorney": "AT", "staff": "ST"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
-  // ── SHOW PAGE ─────────────────────────────────────────────
+  // -- SHOW PAGE ---------------------------------------------
   function showPage(id) {
     // Show/hide pages
     document.querySelectorAll('.page').forEach(function(p) {
@@ -1920,7 +1920,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   window.openFQ   = function() { showPage('field-quote'); };
   window.nav      = showPage; // sairnbiz alias
 
-  // ── LOGIN ─────────────────────────────────────────────────
+  // -- LOGIN -------------------------------------------------
   function getPins() {
     try {
       var stored = JSON.parse(localStorage.getItem(APP_ID + '_pins'));
@@ -2033,7 +2033,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   window.savePins    = savePins;
   window.sdSavePins  = savePins;
 
-  // ── WIRE EVERYTHING ON DOM READY ──────────────────────────
+  // -- WIRE EVERYTHING ON DOM READY --------------------------
   function init() {
     // Clear any stale lockouts from previous broken login attempts
     try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
@@ -2149,6 +2149,21 @@ function saveScannedDoc() {
 function crSave(){var KEY=(typeof APP_ID!=="undefined"?APP_ID:"sairn")+"_checks";var num=parseInt(localStorage.getItem(KEY+"_num")||"1001");var entry={num:num++,date:new Date().toLocaleDateString(),payee:document.getElementById("cr-payee")?.value||"",amount:document.getElementById("cr-amount")?.value||"0",memo:document.getElementById("cr-memo")?.value||""};var arr=JSON.parse(localStorage.getItem(KEY)||"[]");arr.unshift(entry);localStorage.setItem(KEY,JSON.stringify(arr));localStorage.setItem(KEY+"_num",String(num));if(typeof showToast==="function")showToast("Check #"+entry.num+" saved");}
 function crPostGL(){if(typeof showToast==="function")showToast("Posted to GL");}
 function crUpdate(){}
+</script>
+
+<script>
+if(typeof showToast==='undefined'){
+  window.showToast=function(msg,dur){
+    var t=document.getElementById('sairn-toast');
+    if(!t){t=document.createElement('div');t.id='sairn-toast';
+      t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);'+
+        'background:#111827;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;'+
+        'font-weight:600;z-index:99999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap';
+      document.body.appendChild(t);}
+    t.textContent=msg;t.style.opacity='1';
+    clearTimeout(t._to);t._to=setTimeout(function(){t.style.opacity='0';},dur||2500);
+  };
+}
 </script>
 </body>
 </html>
