@@ -424,6 +424,116 @@ tr:hover td{background:var(--t)}
   </div>
 </div>
 
+
+<div class="page" id="page-cases">
+  <div class="ph">
+    <div><div class="ptitle">📋 Active Cases</div><div class="psub">All current funeral service cases</div></div>
+    <div class="pacts"><button class="btn bp">+ New Case</button></div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Active Cases</div><div class="sv">6</div><div class="sd">2 services this week</div></div><div class="sc"><div class="sl">Pending Death Certs</div><div class="sv">2</div><div class="sd">Awaiting physician</div></div><div class="sc"><div class="sl">Pre-Need Follow-Ups</div><div class="sv">3</div><div class="sd">This week</div></div><div class="sc"><div class="sl">Compliance</div><div class="sv">✅ FTC Current</div><div class="sd">GPL updated</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Case #</th><th>Decedent</th><th>Date of Death</th><th>Service Type</th><th>Family Contact</th><th>Director</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>FC-2041</td><td>Johnson, Robert E.</td><td>06/12/26</td><td>Traditional</td><td>Mary Johnson</td><td>Director Smith</td><td><span class="badge ba">In Progress</span></td></tr>
+        <tr><td>FC-2040</td><td>Williams, Dorothy</td><td>06/10/26</td><td>Cremation</td><td>James Williams</td><td>Director Park</td><td><span class="badge bg">Service Complete</span></td></tr>
+        <tr><td>FC-2039</td><td>Garcia, Miguel</td><td>06/08/26</td><td>Graveside</td><td>Elena Garcia</td><td>Director Smith</td><td><span class="badge bg">Closed</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-arrangements">
+  <div class="ph">
+    <div><div class="ptitle">🤝 Arrangements</div><div class="psub">Family arrangement documentation and AI assistance</div></div>
+    <div class="pacts"><button class="btn bp" onclick="aiArrangements()">🤖 AI Arrangement Assistant</button></div>
+  </div>
+  <div class="card">
+    <div class="fr">
+      <div class="fg"><label class="fl">Decedent Name</label><input class="fi" id="arr-name" placeholder="Full legal name"></div>
+      <div class="fg"><label class="fl">Date of Death</label><input class="fi" type="date" id="arr-dod"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Service Type</label><select class="fi" id="arr-type"><option>Traditional Funeral</option><option>Direct Cremation</option><option>Memorial Service</option><option>Graveside</option><option>Celebration of Life</option></select></div>
+      <div class="fg"><label class="fl">Family Contact</label><input class="fi" id="arr-family" placeholder="Primary family contact"></div>
+    </div>
+    <div class="fg"><label class="fl">Special Requests / Notes</label>
+      <textarea class="fta" id="arr-notes" placeholder="Military honors, religious requirements, special music, floral preferences..."></textarea></div>
+    <button class="btn bp" onclick="aiArrangements()">🤖 Generate Arrangement Summary</button>
+    <div class="ai-bub" id="arr-ai-out" style="display:none;margin-top:12px"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn bp bsm" onclick="showToast('Arrangements saved')">💾 Save</button>
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print for Family</button>
+    </div>
+  </div>
+</div>
+<div class="page" id="page-pre-need">
+  <div class="ph">
+    <div><div class="ptitle">📄 Pre-Need Contracts</div><div class="psub">Pre-arranged funeral contracts</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ New Pre-Need</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Active Contracts</div><div class="sv">48</div><div class="sd">3 new this month</div></div><div class="sc"><div class="sl">Fully Funded</div><div class="sv">38</div><div class="sd">79%</div></div><div class="sc"><div class="sl">Installment Plans</div><div class="sv">10</div><div class="sd">On track</div></div><div class="sc"><div class="sl">Trust Balance</div><div class="sv">$284,000</div><div class="sd">State regulated</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Contract #</th><th>Client</th><th>Date</th><th>Service Type</th><th>Amount</th><th>Paid</th><th>Trustee</th><th>Status</th></tr></thead>
+      <tbody><tr><td>PN-1041</td><td>Henderson, Ruth</td><td>03/15/22</td><td>Traditional</td><td>$8,400</td><td>$8,400</td><td>State Trust</td><td><span class="badge bg">Funded</span></td></tr><tr><td>PN-1040</td><td>Martinez, Carlos</td><td>06/01/24</td><td>Cremation</td><td>$2,800</td><td>$1,400</td><td>State Trust</td><td><span class="badge ba">Installments</span></td></tr><tr><td>PN-1039</td><td>Chen, Alice</td><td>01/12/23</td><td>Memorial</td><td>$4,200</td><td>$4,200</td><td>State Trust</td><td><span class="badge bg">Funded</span></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-scheduling">
+  <div class="ph">
+    <div><div class="ptitle">📅 Service Scheduling</div><div class="psub">Chapel, cemetery, and vendor coordination</div></div>
+    <div class="pacts"><button class="btn bp" onclick="aiScheduleSvc()">🤖 Coordinate Services</button></div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Case</th><th>Service</th><th>Date / Time</th><th>Location</th><th>Officiant</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>FC-2041 Johnson</td><td>Visitation</td><td>Sat 06/15 2-4pm</td><td>Chapel A</td><td>Rev. Mitchell</td><td><span class="badge bg">Confirmed</span></td></tr>
+        <tr><td>FC-2041 Johnson</td><td>Funeral Service</td><td>Sun 06/16 11am</td><td>Chapel A</td><td>Rev. Mitchell</td><td><span class="badge bg">Confirmed</span></td></tr>
+        <tr><td>FC-2041 Johnson</td><td>Graveside</td><td>Sun 06/16 1pm</td><td>Westlake Cemetery</td><td>—</td><td><span class="badge ba">Pending</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="ai-bub" id="svc-sched-out" style="display:none;margin-top:12px"></div>
+  </div>
+</div>
+<div class="page" id="page-inventory">
+  <div class="ph">
+    <div><div class="ptitle">📦 Inventory</div><div class="psub">Caskets, urns, and merchandise</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ Add Item</button>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Item</th><th>SKU</th><th>Category</th><th>Cost</th><th>Retail</th><th>Qty</th><th>Status</th></tr></thead>
+      <tbody><tr><td>Heritage Bronze Casket</td><td>CB-2201</td><td>Casket</td><td>$1,800</td><td>$4,200</td><td>3</td><td><span class="badge bg">In Stock</span></td></tr><tr><td>Serenity Steel Casket</td><td>CB-2108</td><td>Casket</td><td>$1,200</td><td>$2,800</td><td>5</td><td><span class="badge bg">In Stock</span></td></tr><tr><td>Marble Cremation Urn</td><td>UR-1044</td><td>Urn</td><td>$85</td><td>$295</td><td>12</td><td><span class="badge bg">In Stock</span></td></tr><tr><td>Presidential Casket</td><td>CB-2401</td><td>Casket</td><td>$3,200</td><td>$7,400</td><td>1</td><td><span class="badge br">Low Stock</span></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-billing">
+  <div class="ph">
+    <div><div class="ptitle">💳 Billing</div><div class="psub">Family invoices — FTC Funeral Rule compliant</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print GPL</button>
+      <button class="btn bp">+ New Invoice</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Outstanding</div><div class="sv">$24,800</div><div class="sd">4 families</div></div><div class="sc"><div class="sl">Collected MTD</div><div class="sv">$38,400</div><div class="sd">8 cases</div></div><div class="sc"><div class="sl">Insurance Assignments</div><div class="sv">$12,000</div><div class="sd">3 pending</div></div><div class="sc"><div class="sl">Pre-Need Applied</div><div class="sv">$8,400</div><div class="sd">FC-2041</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Case</th><th>Family</th><th>Services</th><th>Merch</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>FC-2041</td><td>Johnson</td><td>$2,800</td><td>$4,200</td><td>$9,400</td><td>$8,400</td><td>$1,000</td><td><span class="badge ba">Balance Due</span></td></tr>
+        <tr><td>FC-2040</td><td>Williams</td><td>$1,200</td><td>$295</td><td>$2,800</td><td>$2,800</td><td>$0</td><td><span class="badge bg">Paid</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
 </div><!-- end main -->
 </div><!-- end app -->
 
@@ -811,5 +921,29 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 })();
 </script>
+<script>
+async function aiArrangements(){
+  const name=document.getElementById('arr-name')?.value||'';
+  const type=document.getElementById('arr-type')?.value||'Traditional';
+  const notes=document.getElementById('arr-notes')?.value||'';
+  const el=document.getElementById('arr-ai-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Preparing arrangement summary...';
+  try{
+    const r=await callClaude(
+      'You are the SAIRNfuneral Arrangement Intelligence Engine. Generate a dignified, compassionate arrangement summary for the funeral director. Include: service checklist, vendor coordination items needed, documentation required (death certificate, permits), family communication touchpoints, and FTC Funeral Rule compliance notes. Maintain the highest professional and compassionate tone.',
+      [{role:'user',content:`Decedent: ${name}\nService Type: ${type}\nFamily Notes: ${notes}`}]
+    );
+    el.textContent=r;
+  }catch(e){el.textContent='Generation failed.';}
+}
+async function aiScheduleSvc(){
+  const el=document.getElementById('svc-sched-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Coordinating services...';
+  try{
+    const r=await callClaude('You are a funeral service coordinator. Review this service schedule and identify: any conflicts, missing vendor confirmations, transportation coordination needed, and a detailed timeline for the funeral director. Be specific and actionable.',
+      [{role:'user',content:'FC-2041 Johnson: Visitation Sat 2-4pm Chapel A, Funeral Sun 11am Chapel A (Rev Mitchell confirmed), Graveside Sun 1pm Westlake Cemetery (officiant pending), Limousine needed, Florist order placed, Military honors requested (VFW Post 1234 — status unknown).'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Coordination failed.';}
+}</script>
 </body>
 </html>
