@@ -1183,10 +1183,10 @@ async function callClaude(system, messages, maxTokens) {
 
 var NET_URL  = 'https://sairn.vercel.app/api/network'; // SAIRN Intelligence Network
 
-// ── callClaude: the one function all AI calls use ────────────
+// --- callClaude: the one function all AI calls use ---
 
 
-// ── learnFromResponse: extract and store business intelligence ─
+// --- learnFromResponse: extract and store business intelligence ---
 function learnFromResponse(question, answer) {
   try {
     // Extract key facts from Claude's responses about the business
@@ -1212,7 +1212,7 @@ function learnFromResponse(question, answer) {
   } catch(e) { /* never crash on learning */ }
 }
 
-// ── sendToNetwork: post to SAIRN Bridge (non-blocking) ────────
+// --- sendToNetwork: post to SAIRN Bridge (non-blocking) ---
 function sendToNetwork(data) {
   fetch(BRIDGE, {
     method: 'POST',
@@ -1221,7 +1221,7 @@ function sendToNetwork(data) {
   }).catch(function() { /* silent — network is optional */ });
 }
 
-// ── getBusinessContext: read everything we know ────────────────
+// --- getBusinessContext: read everything we know ---
 function getBusinessContext() {
   try {
     var profile = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
@@ -1238,7 +1238,7 @@ function getBusinessContext() {
   } catch(e) { return {}; }
 }
 
-// ── saveBusinessFact: remember key facts ──────────────────────
+// --- saveBusinessFact: remember key facts ---
 function saveBusinessFact(fact) {
   try {
     var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
@@ -2896,8 +2896,8 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <div class="warranty-name">Basic Protection</div>
             <div class="warranty-desc">1 year labor warranty. Covers installation defects, seam issues, and edge chip repairs. One service visit included.</div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
-              <div class="warranty-price">$149</div>
-              <button class="warranty-add" onclick="addWarrantyToJob('Basic Protection',149,1)">Add to Job</button>
+              <div class="warranty-price">$249</div>
+              <button class="warranty-add" onclick="addWarrantyToJob('Basic Protection',249,1)">Add to Job</button>
             </div>
           </div>
         </div>
@@ -2907,8 +2907,8 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <div class="warranty-name" style="color:var(--a)">Premium Protection ⭐ Popular</div>
             <div class="warranty-desc">3 year full coverage. Labor + sealer reapplication + stain treatment + up to 2 service visits per year.</div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
-              <div class="warranty-price">$349</div>
-              <button class="warranty-add" onclick="addWarrantyToJob('Premium Protection',349,3)">Add to Job</button>
+              <div class="warranty-price">$449</div>
+              <button class="warranty-add" onclick="addWarrantyToJob('Premium Protection',449,3)">Add to Job</button>
             </div>
           </div>
         </div>
@@ -2918,8 +2918,8 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <div class="warranty-name">Elite Lifetime</div>
             <div class="warranty-desc">Lifetime labor warranty + annual sealing service + priority scheduling + unlimited service calls. Transferable on home sale.</div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
-              <div class="warranty-price">$699</div>
-              <button class="warranty-add" onclick="addWarrantyToJob('Elite Lifetime',699,99)">Add to Job</button>
+              <div class="warranty-price">$799</div>
+              <button class="warranty-add" onclick="addWarrantyToJob('Elite Lifetime',799,99)">Add to Job</button>
             </div>
           </div>
         </div>
@@ -3898,6 +3898,11 @@ const SAIRN_API = 'https://sairn.vercel.app/api/claude';
 // which under 'use strict' elsewhere in the file was a hard SyntaxError that
 // crashed the page at parse time before anything could run.
 const APP_ID_LOCAL = 'stonedesk';
+// FIX June 16 2026 (Guardian): chatHistory was previously only ever assigned
+// inside setMode(), never declared at top scope. Sending a chat message before
+// switching modes once threw "chatHistory is not defined". Declared here so
+// it always exists as [] from first paint.
+let chatHistory = [];
 
 // == SYSTEM PROMPT ==============================================
 const SYSTEM = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
@@ -4146,6 +4151,15 @@ async function sendMessage() {
   } catch(e) {
     typingDiv.remove();
     addMessage('assistant', 'Connection error. Check your internet and try again.');
+    // FIX June 16 2026 (Guardian): on any failed exchange, remove the dangling
+    // unanswered user turn. Without this, the NEXT sendMessage() call appended
+    // a second consecutive user-role message, which Anthropic's API rejects
+    // with HTTP 400 (roles must alternate) -- making every message fail until
+    // a full page reload, with the only visible symptom being the generic
+    // "I encountered an error" fallback text.
+    if (chatHistory.length && chatHistory[chatHistory.length - 1].role === 'user') {
+      chatHistory.pop();
+    }
   }
   isTyping = false;
 }
@@ -7397,17 +7411,14 @@ var APP_COLOR = (function(){
   return '#16C762';
 })();
 
-var APP_ID = (function(){
-  var p = window.location.pathname;
-  if (p.includes('health')) return 'health';
-  if (p.includes('money'))  return 'money';
-  if (p.includes('legal'))  return 'law';
-  if (p.includes('study'))  return 'study';
-  if (p.includes('lingual'))return 'lingual';
-  if (p.includes('senior')) return 'senior';
-  if (p.includes('home'))   return 'home';
-  return 'type';
-})();
+// FIX June 16 2026 (Guardian): this was leftover NEXUS-consumer-app boilerplate
+// (path-sniffing for health/money/legal/study/lingual/senior/home) that does not
+// match any StoneDesk URL, so it always fell through to 'type' -- silently
+// overwriting the correct window.APP_ID = 'stonedesk' set at line 1079, and
+// causing every later chat/AI call site that reads window.APP_ID to send the
+// wrong app_id, which the proxy rejects with HTTP 400. StoneDesk is always
+// 'stonedesk' -- no path-sniffing needed.
+var APP_ID = 'stonedesk';
 
 var PLAN_KEY = 'sairn_action_plans_' + APP_ID;
 
@@ -8618,9 +8629,18 @@ function installStreamingHook() {
 }
 
 // Install when ready
-
-document.addEventListener('DOMContentLoaded', function(){ setTimeout(tryInstall, 800); });
-setTimeout(tryInstall, 1000);
+// FIX June 16 2026 (Guardian): the two calls that were here --
+// document.addEventListener('DOMContentLoaded', function(){ setTimeout(tryInstall, 800); });
+// setTimeout(tryInstall, 1000);
+// -- referenced tryInstall() before it was defined. tryInstall() is declared in
+// a LATER, separate <script> block (the Markdown Renderer block below), and a
+// function declared in one inline <script> tag is not visible to an earlier
+// one. setTimeout(tryInstall, ...) evaluates the identifier immediately to
+// capture the reference, so this threw "ReferenceError: tryInstall is not
+// defined" synchronously on every page load. Removed here -- the later
+// script block already calls document.addEventListener('DOMContentLoaded',
+// tryInstall) and setTimeout(tryInstall, 600) itself, correctly, since it's
+// defined by the time those run.
 
 })();
 
@@ -9630,21 +9650,11 @@ setInterval(function() {
 if (window._saircPersonalizationInstalled) return;
 window._saircPersonalizationInstalled = true;
 
-var APP_ID = (function(){
-  var p = window.location.pathname;
-  if (p.includes('health'))   return 'health';
-  if (p.includes('money'))    return 'money';
-  if (p.includes('legal'))    return 'law';
-  if (p.includes('study'))    return 'study';
-  if (p.includes('lingual'))  return 'lingual';
-  if (p.includes('senior'))   return 'senior';
-  if (p.includes('home'))     return 'home';
-  if (p.includes('roam'))     return 'roam';
-  if (p.includes('code'))     return 'code';
-  if (p.includes('clinical')) return 'clinical';
-  if (p.includes('fabricor')) return 'fabricor';
-  return 'type';
-})();
+// FIX June 16 2026 (Guardian): same leftover NEXUS/cross-app boilerplate as
+// the earlier occurrence -- StoneDesk's path never matches any branch here,
+// so it always fell through to 'type', overwriting the correct 'stonedesk'
+// value and causing HTTP 400s on chat/AI calls that read window.APP_ID.
+var APP_ID = 'stonedesk';
 
 var LEARN_KEY    = 'sairn_learned_' + APP_ID;
 var GLOBAL_KEY   = 'sairn_learned_global';
@@ -9876,21 +9886,11 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installLear
 if (window._saircMultiModalInstalled) return;
 window._saircMultiModalInstalled = true;
 
-var APP_ID = (function(){
-  var p = window.location.pathname;
-  if (p.includes('health'))   return 'health';
-  if (p.includes('money'))    return 'money';
-  if (p.includes('legal'))    return 'law';
-  if (p.includes('study'))    return 'study';
-  if (p.includes('lingual'))  return 'lingual';
-  if (p.includes('senior'))   return 'senior';
-  if (p.includes('home'))     return 'home';
-  if (p.includes('roam'))     return 'roam';
-  if (p.includes('code'))     return 'code';
-  if (p.includes('clinical')) return 'clinical';
-  if (p.includes('fabricor')) return 'fabricor';
-  return 'type';
-})();
+// FIX June 16 2026 (Guardian): same leftover NEXUS/cross-app boilerplate as
+// the earlier occurrence -- StoneDesk's path never matches any branch here,
+// so it always fell through to 'type', overwriting the correct 'stonedesk'
+// value and causing HTTP 400s on chat/AI calls that read window.APP_ID.
+var APP_ID = 'stonedesk';
 
 var APP_COLOR = (function(){
   var s = getComputedStyle(document.documentElement).getPropertyValue('--a').trim();
@@ -12920,6 +12920,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const td = document.getElementById('typing-indicator');
         if (td) td.remove();
         if (typeof addMessage === 'function') addMessage('assistant', 'Connection error. Check your internet and try again.');
+        // FIX June 16 2026 (Guardian): pop the dangling unanswered user turn so
+        // the next send doesn't produce two consecutive user-role messages,
+        // which the Anthropic API rejects with HTTP 400 (roles must alternate).
+        // Without this, one failed exchange broke every message after it until
+        // page reload, surfacing only as the generic "I encountered an error" text.
+        if (typeof chatHistory !== 'undefined' && chatHistory.length &&
+            chatHistory[chatHistory.length - 1].role === 'user') {
+          chatHistory.pop();
+        }
       }
       if (typeof isTyping !== 'undefined') isTyping = false;
     };
