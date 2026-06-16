@@ -505,14 +505,150 @@ def check_hardcoded_model_strings(content):
 
 
 # =====================================================================
+# CHECK 13 — Cross-Script-Block Variable Redeclaration
+# =====================================================================
+#
+# Added after Check 9-12 still let a real bug ship: `var APP_ID = 'stonedesk';`
+# was declared in two separate <script> tags. Check 9 (Node ground-truth)
+# validates each script block in ISOLATION, so this passed cleanly -- the
+# collision only exists once a browser combines multiple <script> tags into
+# one shared global scope, which Node's per-file --check cannot simulate on
+# its own. In a real browser:
+#   - two `var X` declarations of the same name: SILENTLY MERGE, no error,
+#     in NORMAL (non-strict) script context
+#   - but the SECOND block here opened with 'use strict', and re-declaring a
+#     `var` that already exists in the shared scope under strict mode IS a
+#     hard SyntaxError that aborts the entire script tag at parse time --
+#     before a single line of it runs.
+# This is exactly what crashed StoneDesk live: `Identifier 'APP_ID' has
+# already been declared`, which then cascaded into a dozen "X is not defined"
+# errors for every function meant to be registered by the scripts that never
+# got a chance to execute after the crash.
+
+VAR_DECL_PATTERN = re.compile(r'^\s*(var|const|let)\s+(\w+)\s*=')
+STRICT_MODE_PATTERN = re.compile(r'^\s*[\'"]use strict[\'"]\s*;?\s*$')
+
+
+def find_top_level_var_declarations(content):
+    """
+    Returns dict: name -> list of (line_number, script_block_index, decl_kind,
+    block_is_strict) for every var/const/let declared at TRUE top level of a
+    <script> tag -- meaning brace depth 0 relative to that script tag's own
+    opening, not merely zero leading whitespace in the source text.
+
+    This intentionally uses real brace-depth tracking, unlike Check 10's
+    duplicate-function detector, which abandoned brace counting because a
+    syntax error anywhere upstream in the same file would desync a naive
+    counter for everything downstream -- exactly the failure mode Check 10
+    exists to help catch. Check 13 does not have that problem: it only ever
+    runs on a file that has ALREADY passed Check 9 (Node ground-truth parse),
+    so by the time Check 13 runs, the file is known to be syntactically
+    valid and brace counting is safe and accurate. A first version of this
+    check used leading-whitespace as a proxy for top-level, which produced
+    false positives for any var/const/let sitting inside a column-0-indented
+    `(function(){ ... })();` IIFE wrapper (a very common SAIRN pattern for
+    "install once" guards) -- those are genuinely scoped to their own IIFE
+    and never collide with anything outside it, no matter how many other
+    blocks in the file use the same variable name inside their own separate
+    IIFEs. Real brace-depth tracking fixes this.
+
+    Note: this still does not perfectly model JS scoping (e.g. it does not
+    distinguish a `{` that opens a block statement from one that opens an
+    object literal), but combined with already-passing Check 9, the common
+    SAIRN cases (bare script-tag top level vs. IIFE-wrapped) are both
+    handled correctly, which is what matters in practice.
+    """
+    occurrences = {}
+    lines = content.split('\n')
+
+    script_block_idx = -1
+    block_is_strict = False
+    depth = 0
+    for i, line in enumerate(lines):
+        if re.search(r'<script(?![^>]*\bsrc=)[^>]*>', line, re.IGNORECASE):
+            script_block_idx += 1
+            block_is_strict = False
+            depth = 0  # reset: depth is relative to THIS script tag's own scope
+
+        if STRICT_MODE_PATTERN.match(line):
+            block_is_strict = True
+
+        m = VAR_DECL_PATTERN.match(line)
+        if m:
+            kind, name = m.groups()
+            if depth == 0:  # genuinely at the script tag's own top level
+                occurrences.setdefault(name, []).append(
+                    (i + 1, script_block_idx, kind, block_is_strict)
+                )
+
+        # update depth AFTER checking this line's declaration, using a naive
+        # but (per the docstring above) now-safe brace count, since Check 13
+        # only ever runs post-Check-9 on syntactically valid files. Strings
+        # and comments containing brace characters can still throw this off
+        # in rare cases; findings should be spot-checked before bulk-fixing,
+        # same as every other Guardian check.
+        depth += line.count('{') - line.count('}')
+        if depth < 0:
+            depth = 0  # script tag itself or a stray close; don't go negative
+
+    return occurrences
+
+
+def check_cross_block_variable_collisions(content):
+    findings = []
+    decls = find_top_level_var_declarations(content)
+
+    for name, occs in decls.items():
+        block_indices = set(o[1] for o in occs)
+        if len(block_indices) < 2:
+            continue  # all in the same block -- that's Check 9's job, not this one
+
+        lines_list = [o[0] for o in occs]
+        any_strict = any(o[3] for o in occs)
+        any_let_or_const = any(o[2] in ('let', 'const') for o in occs)
+
+        if any_strict or any_let_or_const:
+            findings.append({
+                'line': lines_list[0],
+                'severity': 'CRITICAL',
+                'message': (
+                    "'{}' declared {}x across {} different <script> tags at lines {} "
+                    "-- at least one declaration uses 'use strict' or let/const, which "
+                    "makes this a HARD SyntaxError in a real browser (redeclaring a "
+                    "shared-scope variable under strict mode aborts that entire script "
+                    "tag at parse time, before any line of it runs). This is the exact "
+                    "bug class that crashed StoneDesk live on June 16 2026 despite a "
+                    "clean per-block Node check. Remove the duplicate declaration(s), "
+                    "keeping only the one in the block that actually needs it first."
+                ).format(name, len(occs), len(block_indices), lines_list),
+            })
+        else:
+            findings.append({
+                'line': lines_list[0],
+                'severity': 'WARN',
+                'message': (
+                    "'{}' declared {}x across {} different <script> tags at lines {}. "
+                    "All are plain 'var' in non-strict context, so this currently merges "
+                    "silently without crashing -- but it's fragile: adding 'use strict' "
+                    "to any future patch touching one of these blocks turns this into a "
+                    "hard crash with no warning. Consolidate to one declaration."
+                ).format(name, len(occs), len(block_indices), lines_list),
+            })
+
+    return findings
+
+
+# =====================================================================
 # Combined runner
 # =====================================================================
 
 def run_all_checks_9_through_12(content, node_path='node'):
     """
-    Runs Checks 9-12 and returns a single combined findings list plus a
+    Runs Checks 9-13 and returns a single combined findings list plus a
     pass/fail summary, in the same shape the existing Guardian report format
-    expects (see SKILL.md Scan Report Format).
+    expects (see SKILL.md Scan Report Format). Function name kept as
+    run_all_checks_9_through_12 for backward compatibility with existing
+    callers; it now also runs Check 13.
     """
     all_findings = []
     all_findings.extend(
@@ -527,6 +663,9 @@ def run_all_checks_9_through_12(content, node_path='node'):
     all_findings.extend(
         [dict(f, check=12, check_name='Stale Model String') for f in check_hardcoded_model_strings(content)]
     )
+    all_findings.extend(
+        [dict(f, check=13, check_name='Cross-Block Variable Collision') for f in check_cross_block_variable_collisions(content)]
+    )
 
     crits = sum(1 for f in all_findings if f['severity'] == 'CRITICAL')
     highs = sum(1 for f in all_findings if f['severity'] == 'HIGH')
@@ -537,5 +676,5 @@ def run_all_checks_9_through_12(content, node_path='node'):
         'crits': crits,
         'highs': highs,
         'warns': warns,
-        'pass': crits == 0,  # HIGH/WARN do not block a push, CRITICAL does
+        'pass': crits == 0,
     }
