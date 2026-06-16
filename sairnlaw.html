@@ -2078,9 +2078,13 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   // -- STATE -------------------------------------------------
   var APP_ID       = 'sairnlaw';
   var FIRST_PAGE   = 'dashboard';
-  var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "attorney": "3456", "staff": "4567"};
-  var ROLE_LABELS  = {"owner": "Owner", "admin": "Admin", "attorney": "Attorney", "staff": "Staff"};
-  var ROLE_INITS   = {"owner": "OW", "admin": "AD", "attorney": "AT", "staff": "ST"};
+  // FIX June 16 2026 (Guardian Check 18): these listed owner/admin/attorney/staff,
+  // but the actual login tiles in markup call selRole('partner')/('associate')/
+  // ('paralegal')/('staff') -- 3 of 4 keys mismatched, silently defaulting those
+  // roles' PINs to the literal fallback '1234' instead of their real configured PIN.
+  var DEFAULT_PINS = {"partner": "1234", "associate": "2345", "paralegal": "3456", "staff": "4567"};
+  var ROLE_LABELS  = {"partner": "Partner", "associate": "Associate", "paralegal": "Paralegal", "staff": "Staff"};
+  var ROLE_INITS   = {"partner": "PT", "associate": "AS", "paralegal": "PL", "staff": "ST"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
   // -- SHOW PAGE ---------------------------------------------
@@ -2117,11 +2121,25 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     return DEFAULT_PINS;
   }
 
-  function selRole(el) {
+  function selRole(elOrRoleName) {
+    // FIX June 16 2026 (Guardian Check 18): markup calls selRole('partner') etc.
+    // with a STRING (see onclick="selRole('partner')" on the role tiles), but
+    // this function assumed a DOM ELEMENT and called el.classList.add(...) --
+    // throwing "Cannot read properties of undefined (reading 'add')" on the
+    // very first click, before the PIN screen could do anything at all.
     document.querySelectorAll('.rb, .role-btn, [class*=role-pill]')
       .forEach(function(b) { b.classList.remove('active'); });
-    el.classList.add('active');
-    currentRole = el.dataset.role || el.getAttribute('data-role') || currentRole;
+    var el = (typeof elOrRoleName === 'string')
+      ? document.getElementById('r-' + elOrRoleName)
+      : elOrRoleName;
+    if (el) el.classList.add('active');
+    if (typeof elOrRoleName === 'string') {
+      currentRole = elOrRoleName;
+    } else if (el) {
+      currentRole = el.dataset.role || el.getAttribute('data-role') || currentRole;
+    }
+    var p0 = document.getElementById('p0');
+    if (p0) { p0.focus(); }
     var pinEl = findPinInput();
     if (pinEl) { pinEl.value = ''; pinEl.focus(); }
   }
@@ -2178,8 +2196,14 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   }
 
   function doLogin() {
-    var pinEl   = findPinInput();
-    var entered = pinEl ? pinEl.value.trim() : '';
+    // FIX June 16 2026 (Guardian Check 18): findPinInput() looks for single-box
+    // ids ('pin-in', 'sd-pin-input', etc.) that don't exist here -- this app's
+    // markup uses 4 separate boxes (id="p0".."p3"). entered was always empty,
+    // so login could never succeed regardless of what PIN was typed.
+    var entered = ['p0','p1','p2','p3'].map(function(id) {
+      var el = document.getElementById(id);
+      return el ? el.value : '';
+    }).join('');
     var pins    = getPins();
     var correct = pins[currentRole] || '1234';
     var errEl   = document.getElementById('auth-error')
@@ -2191,18 +2215,26 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
     if (window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts = 0;
 
-    if (!entered) {
+    if (!entered || entered.length < 4) {
       if (errEl) { errEl.textContent = 'Enter your PIN'; errEl.style.display = 'block'; }
       return;
     }
     if (entered !== correct) {
       if (errEl) { errEl.textContent = 'Incorrect PIN — try again'; errEl.style.display = 'block'; }
-      if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+      ['p0','p1','p2','p3'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      var p0 = document.getElementById('p0');
+      if (p0) p0.focus();
       return;
     }
     // SUCCESS
     if (errEl) errEl.style.display = 'none';
-    if (pinEl) pinEl.value = '';
+    ['p0','p1','p2','p3'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
     showApp();
   }
   window.doLogin = doLogin;
