@@ -223,6 +223,10 @@
       "destination": "/contractor.html"
     },
     {
+      "source": "/api/gusto",
+      "destination": "/api/accounting?provider=gusto"
+    },
+    {
       "source": "/api/stripe/checkout",
       "destination": "/api/stripe-checkout.js"
     }
