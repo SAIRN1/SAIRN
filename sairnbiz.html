@@ -3986,13 +3986,6 @@ async function aiCompAnalysis(){
     [{role:'user',content:'Small business team. Analyze typical pay structures for office manager, field tech, sales rep roles and provide benchmarks.'}]);
     el.textContent=r;}catch(e){el.textContent='Analysis failed.';}
 }
-async function aibenefitsAnalysis(){
-  var el=document.getElementById('benefits-ai-out');if(!el)return;
-  el.style.display='block';el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing benefits...';
-  try{var r=await callClaude('You are an HR benefits advisor. Provide: recommended benefits package for a small business with 5-20 employees, cost estimates, and ACA compliance notes.',
-    [{role:'user',content:'Small business benefits analysis request.'}]);
-    el.textContent=r;}catch(e){el.textContent='Analysis failed.';}
-}
 document.addEventListener('DOMContentLoaded',function(){
   var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
   var prEmpCt=document.getElementById('pr-emp-ct');if(prEmpCt)prEmpCt.textContent=emps.length;
