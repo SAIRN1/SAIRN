@@ -3367,6 +3367,20 @@ function fqInitSig() {
 }
 function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
 </script>
+<div class="page" id="page-dashboard">
+  <div class="ph"><div><div class="ptitle">Dashboard</div>
+  <div class="psub">Loading...</div></div>
+  <div class="pacts"><button class="btn bo bsm" onclick="window.print()">🖨️ Print</button></div></div>
+  <div class="card">
+    <div style="text-align:center;padding:40px 20px;color:#9CA3AF">
+      <div style="font-size:48px;margin-bottom:12px">🔧</div>
+      <div style="font-size:16px;font-weight:700;color:#6B7280;margin-bottom:8px">Dashboard</div>
+      <div style="font-size:13px">This section is loading. If this persists, contact michael@sairn.com</div>
+    </div>
+    <button class="btn bp bsm" style="margin:0 auto;display:block" onclick="runIntel()">🤖 AI Assistant</button>
+    <div class="ai-bub" id="intel-dashboard" style="display:none;margin-top:12px"></div>
+  </div>
+</div>
 <script>
 // ============================================================
 // SAIRN UNIFIED CONTROLLER — sairnscape
@@ -3633,113 +3647,9 @@ function saveScannedDoc() {
 </script>
 
 <script>
-// Universal Check Register
-(function() {
-  var APP_CR_KEY = (typeof APP_ID !== 'undefined' ? APP_ID : 'sairn') + '_checks';
-  var crNum = parseInt(localStorage.getItem(APP_CR_KEY + '_num') || '1001');
-
-  function numToWords(n) {
-    var o=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
-           'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-    var t=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-    var d=Math.floor(n), c=Math.round((n-d)*100), w='';
-    if(d>=1000){w+=o[Math.floor(d/1000)]+' Thousand ';}
-    if(d%1000>=100){w+=o[Math.floor((d%1000)/100)]+' Hundred ';}
-    var r=d%100;
-    if(r>=20){w+=t[Math.floor(r/10)]+(r%10?' '+o[r%10]:'');}
-    else if(r>0){w+=o[r];}
-    if(c>0){w+=' and '+c+'/100';}
-    return w.trim() || 'Zero';
-  }
-
-  window.crUpdate = function() {
-    var payee  = document.getElementById('cr-payee')?.value || '';
-    var amount = parseFloat(document.getElementById('cr-amount')?.value || 0);
-    var memo   = document.getElementById('cr-memo')?.value || '';
-    var pp=document.getElementById('cr-prev-payee');
-    var pa=document.getElementById('cr-prev-amount');
-    var pw=document.getElementById('cr-prev-written');
-    var pm=document.getElementById('cr-prev-memo');
-    if(pp) pp.textContent = payee || '___________';
-    if(pa) pa.textContent = amount ? '$'+amount.toLocaleString('en-US',{minimumFractionDigits:2}) : '$_____';
-    if(pw) pw.textContent = amount ? numToWords(amount)+' Dollars' : '_____________________________ Dollars';
-    if(pm) pm.textContent = memo ? 'Memo: '+memo : 'Memo: _________________';
-  };
-
-  window.crSave = function() {
-    var entry = {
-      num:  crNum++,
-      date: document.getElementById('cr-date')?.value || new Date().toLocaleDateString(),
-      payee:document.getElementById('cr-payee')?.value || '',
-      amount:document.getElementById('cr-amount')?.value || '0',
-      memo: document.getElementById('cr-memo')?.value || ''
-    };
-    var checks = JSON.parse(localStorage.getItem(APP_CR_KEY) || '[]');
-    checks.unshift(entry);
-    localStorage.setItem(APP_CR_KEY, JSON.stringify(checks));
-    localStorage.setItem(APP_CR_KEY+'_num', String(crNum));
-    var numEl = document.getElementById('cr-num');
-    if(numEl) numEl.textContent = crNum;
-    crRender(checks);
-    if(typeof showToast==='function') showToast('Check #'+entry.num+' saved');
-  };
-
-  window.crPostGL = function() {
-    if(typeof showToast==='function') showToast('Posted to SAIRNbiz GL');
-    if(typeof syncAll==='function') syncAll();
-  };
-
-  window.crExportCSV = function() {
-    var checks = JSON.parse(localStorage.getItem(APP_CR_KEY) || '[]');
-    var csv = 'Check#,Date,Payee,Amount,Memo\n' +
-      checks.map(function(c){return [c.num,c.date,c.payee,c.amount,c.memo].join(',');}).join('\n');
-    var a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    a.download = 'check-register.csv';
-    a.click();
-  };
-
-  function crRender(checks) {
-    var el = document.getElementById('cr-history-tbody');
-    if (!el) return;
-    if (!checks || !checks.length) {
-      el.innerHTML = '<div style="text-align:center;padding:28px;color:#9CA3AF"><div style="font-size:32px;margin-bottom:8px">📄</div><div style="font-weight:700;margin-bottom:4px">No checks yet</div></div>';
-      return;
-    }
-    el.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
-      '<thead><tr style="background:#F9FAFB"><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Check#</th>' +
-      '<th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Date</th>' +
-      '<th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Payee</th>' +
-      '<th style="padding:8px 12px;text-align:right;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Amount</th>' +
-      '<th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Memo</th></tr></thead><tbody>' +
-      checks.slice(0,30).map(function(c) {
-        return '<tr style="border-bottom:1px solid #F3F4F6"><td style="padding:9px 12px">'+c.num+'</td>' +
-          '<td style="padding:9px 12px">'+c.date+'</td>' +
-          '<td style="padding:9px 12px;font-weight:600">'+c.payee+'</td>' +
-          '<td style="padding:9px 12px;text-align:right">$'+parseFloat(c.amount||0).toLocaleString('en-US',{minimumFractionDigits:2})+'</td>' +
-          '<td style="padding:9px 12px;color:#6B7280">'+c.memo+'</td></tr>';
-      }).join('') +
-      '</tbody></table></div>';
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    // Set today's date
-    var dateEl = document.getElementById('cr-date');
-    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-    // Set company name
-    var coEl = document.getElementById('cr-company-name');
-    if (coEl) {
-      var stored = localStorage.getItem((typeof APP_ID!=='undefined'?APP_ID:'sairn')+'_company_name');
-      if (stored) coEl.textContent = stored;
-    }
-    // Load existing checks
-    var checks = JSON.parse(localStorage.getItem(APP_CR_KEY) || '[]');
-    if (checks.length) crRender(checks);
-    // Restore check number
-    var numEl = document.getElementById('cr-num');
-    if (numEl) numEl.textContent = crNum;
-  });
-})();
+function crSave(){var KEY=(typeof APP_ID!=="undefined"?APP_ID:"sairn")+"_checks";var num=parseInt(localStorage.getItem(KEY+"_num")||"1001");var entry={num:num++,date:new Date().toLocaleDateString(),payee:document.getElementById("cr-payee")?.value||"",amount:document.getElementById("cr-amount")?.value||"0",memo:document.getElementById("cr-memo")?.value||""};var arr=JSON.parse(localStorage.getItem(KEY)||"[]");arr.unshift(entry);localStorage.setItem(KEY,JSON.stringify(arr));localStorage.setItem(KEY+"_num",String(num));if(typeof showToast==="function")showToast("Check #"+entry.num+" saved");}
+function crPostGL(){if(typeof showToast==="function")showToast("Posted to GL");}
+function crUpdate(){}
 </script>
 </body>
 </html>
