@@ -4283,9 +4283,14 @@ document.addEventListener('DOMContentLoaded',function(){
   // -- STATE -------------------------------------------------
   var APP_ID       = 'sairnbuild';
   var FIRST_PAGE   = 'dashboard';
-  var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "super": "3456", "sales": "4567"};
-  var ROLE_LABELS  = {"owner": "Owner", "admin": "Admin", "super": "Superintendent", "sales": "Sales"};
-  var ROLE_INITS   = {"owner": "OW", "admin": "AD", "super": "SP", "sales": "SR"};
+  // FIX June 16 2026 (Guardian Check 18): this later definition said "super",
+  // but the actual role tile in markup uses data-role="manager" (and an
+  // earlier, non-winning DEFAULT_PINS definition at the top of this file
+  // correctly said "manager") -- the mismatch silently defaulted that role's
+  // PIN to the literal fallback '1234' regardless of what was configured.
+  var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "manager": "3456", "sales": "4567"};
+  var ROLE_LABELS  = {"owner": "Owner", "admin": "Admin", "manager": "Manager", "sales": "Sales"};
+  var ROLE_INITS   = {"owner": "OW", "admin": "AD", "manager": "MG", "sales": "SR"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
   // -- SHOW PAGE ---------------------------------------------
