@@ -1566,7 +1566,7 @@ textarea{resize:vertical;min-height:72px;}
         </div>
 
         <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Ohio Municipal / Local Income Tax (RITA)</div>
-        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;margin-bottom:14px;">
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#0F766E;margin-bottom:14px;">
           &#x2139;&#xFE0F; Ohio has <strong>600+ municipal tax districts</strong>. Tax is based on where the employee <strong>works</strong> (employer withholding obligation) and where they <strong>live</strong> (residence credit may apply). Most Ohio cities use <strong>RITA</strong> (Regional Income Tax Agency) or CCA for collection. Rates range from 0% to 3%.
         </div>
         <div class="form-grid">
@@ -3760,6 +3760,56 @@ function saveScannedDoc() {
   if (typeof showToast === 'function') showToast('Document saved to history');
 }
 </script>
+
+<script>
+async function runPayrollAI(){
+  var el=document.getElementById('payroll-ai-out');if(!el)return;
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Running payroll check...';
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  try{
+    var r=await callClaude('You are the SAIRNbiz Payroll Intelligence Engine. Review this payroll data and provide: compliance flags, tax withholding reminders, overtime risks, and a go/no-go recommendation for running payroll.',
+      [{role:'user',content:'Employees: '+JSON.stringify(emps)+'. Run payroll compliance check.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Payroll check failed. Check connection.';}
+}
+function exportPayrollCSV(){
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  if(!emps.length){if(typeof showToast==='function')showToast('No payroll data to export');return;}
+  var csv='Name,Title,Department,PayType,Rate
+'+
+    emps.map(function(e){return[e.fname+' '+e.lname,e.title||'',e.dept||'',e.payType||'',e.rate||''].join(',');}).join('
+');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='payroll.csv';a.click();
+}
+async function aiCompAnalysis(){
+  var el=document.getElementById('comp-ai-out');if(!el)return;
+  el.style.display='block';el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing compensation...';
+  try{var r=await callClaude('You are a compensation consultant. Analyze our team pay structure and provide: market competitiveness assessment, pay equity flags, and 3 specific recommendations.',
+    [{role:'user',content:'Small business team. Analyze typical pay structures for office manager, field tech, sales rep roles and provide benchmarks.'}]);
+    el.textContent=r;}catch(e){el.textContent='Analysis failed.';}
+}
+async function aibenefitsAnalysis(){
+  var el=document.getElementById('benefits-ai-out');if(!el)return;
+  el.style.display='block';el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing benefits...';
+  try{var r=await callClaude('You are an HR benefits advisor. Provide: recommended benefits package for a small business with 5-20 employees, cost estimates, and ACA compliance notes.',
+    [{role:'user',content:'Small business benefits analysis request.'}]);
+    el.textContent=r;}catch(e){el.textContent='Analysis failed.';}
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  var prEmpCt=document.getElementById('pr-emp-ct');if(prEmpCt)prEmpCt.textContent=emps.length;
+  var prTotal=document.getElementById('pr-total');
+  if(prTotal){var t=emps.reduce(function(s,e){return s+(parseFloat(e.rate||0)/26);},0);
+    prTotal.textContent='$'+Math.round(t).toLocaleString();}
+  var tbody=document.getElementById('payroll-table');
+  if(tbody&&emps.length){
+    tbody.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#F9FAFB"><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Employee</th><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Pay Type</th><th style="padding:8px 12px;text-align:right;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Bi-Weekly</th><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Status</th></tr></thead><tbody>'+
+    emps.map(function(e){var bw=parseFloat(e.rate||0)/26;return'<tr style="border-bottom:1px solid #F3F4F6"><td style="padding:9px 12px;font-weight:600">'+e.fname+' '+e.lname+'</td><td style="padding:9px 12px">'+e.payType+'</td><td style="padding:9px 12px;text-align:right">$'+Math.round(bw).toLocaleString()+'</td><td style="padding:9px 12px"><span class="badge bg">Ready</span></td></tr>';}).join('')+
+    '</tbody></table></div>';}
+});
+</script>
 </body></html>';
 
   var w = window.open('', '_blank', 'width=820,height=900');
@@ -4252,7 +4302,7 @@ document.addEventListener('DOMContentLoaded',function(){
 // ============================================================
 (function() {
 
-  // ── STATE ─────────────────────────────────────────────────
+  // -- STATE -------------------------------------------------
   var APP_ID       = 'sairnbiz';
   var FIRST_PAGE   = 'p-dash';
   var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "hr": "3456", "staff": "4567"};
@@ -4260,7 +4310,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var ROLE_INITS   = {"owner": "OW", "admin": "AD", "hr": "HR", "staff": "ST"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
-  // ── SHOW PAGE ─────────────────────────────────────────────
+  // -- SHOW PAGE ---------------------------------------------
   function showPage(id) {
     // Show/hide pages
     document.querySelectorAll('.page').forEach(function(p) {
@@ -4285,7 +4335,7 @@ document.addEventListener('DOMContentLoaded',function(){
   window.openFQ   = function() { showPage('field-quote'); };
   window.nav      = showPage; // sairnbiz alias
 
-  // ── LOGIN ─────────────────────────────────────────────────
+  // -- LOGIN -------------------------------------------------
   function getPins() {
     try {
       var stored = JSON.parse(localStorage.getItem(APP_ID + '_pins'));
@@ -4398,7 +4448,7 @@ document.addEventListener('DOMContentLoaded',function(){
   window.savePins    = savePins;
   window.sdSavePins  = savePins;
 
-  // ── WIRE EVERYTHING ON DOM READY ──────────────────────────
+  // -- WIRE EVERYTHING ON DOM READY --------------------------
   function init() {
     // Clear any stale lockouts from previous broken login attempts
     try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
@@ -4508,6 +4558,56 @@ async function scanDoc(input) {
 function saveScannedDoc() {
   if (typeof showToast === 'function') showToast('Document saved to history');
 }
+</script>
+
+<script>
+async function runPayrollAI(){
+  var el=document.getElementById('payroll-ai-out');if(!el)return;
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Running payroll check...';
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  try{
+    var r=await callClaude('You are the SAIRNbiz Payroll Intelligence Engine. Review this payroll data and provide: compliance flags, tax withholding reminders, overtime risks, and a go/no-go recommendation for running payroll.',
+      [{role:'user',content:'Employees: '+JSON.stringify(emps)+'. Run payroll compliance check.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Payroll check failed. Check connection.';}
+}
+function exportPayrollCSV(){
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  if(!emps.length){if(typeof showToast==='function')showToast('No payroll data to export');return;}
+  var csv='Name,Title,Department,PayType,Rate
+'+
+    emps.map(function(e){return[e.fname+' '+e.lname,e.title||'',e.dept||'',e.payType||'',e.rate||''].join(',');}).join('
+');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='payroll.csv';a.click();
+}
+async function aiCompAnalysis(){
+  var el=document.getElementById('comp-ai-out');if(!el)return;
+  el.style.display='block';el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing compensation...';
+  try{var r=await callClaude('You are a compensation consultant. Analyze our team pay structure and provide: market competitiveness assessment, pay equity flags, and 3 specific recommendations.',
+    [{role:'user',content:'Small business team. Analyze typical pay structures for office manager, field tech, sales rep roles and provide benchmarks.'}]);
+    el.textContent=r;}catch(e){el.textContent='Analysis failed.';}
+}
+async function aibenefitsAnalysis(){
+  var el=document.getElementById('benefits-ai-out');if(!el)return;
+  el.style.display='block';el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing benefits...';
+  try{var r=await callClaude('You are an HR benefits advisor. Provide: recommended benefits package for a small business with 5-20 employees, cost estimates, and ACA compliance notes.',
+    [{role:'user',content:'Small business benefits analysis request.'}]);
+    el.textContent=r;}catch(e){el.textContent='Analysis failed.';}
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  var prEmpCt=document.getElementById('pr-emp-ct');if(prEmpCt)prEmpCt.textContent=emps.length;
+  var prTotal=document.getElementById('pr-total');
+  if(prTotal){var t=emps.reduce(function(s,e){return s+(parseFloat(e.rate||0)/26);},0);
+    prTotal.textContent='$'+Math.round(t).toLocaleString();}
+  var tbody=document.getElementById('payroll-table');
+  if(tbody&&emps.length){
+    tbody.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#F9FAFB"><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Employee</th><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Pay Type</th><th style="padding:8px 12px;text-align:right;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Bi-Weekly</th><th style="padding:8px 12px;text-align:left;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase">Status</th></tr></thead><tbody>'+
+    emps.map(function(e){var bw=parseFloat(e.rate||0)/26;return'<tr style="border-bottom:1px solid #F3F4F6"><td style="padding:9px 12px;font-weight:600">'+e.fname+' '+e.lname+'</td><td style="padding:9px 12px">'+e.payType+'</td><td style="padding:9px 12px;text-align:right">$'+Math.round(bw).toLocaleString()+'</td><td style="padding:9px 12px"><span class="badge bg">Ready</span></td></tr>';}).join('')+
+    '</tbody></table></div>';}
+});
 </script>
 </body>
 </html>
