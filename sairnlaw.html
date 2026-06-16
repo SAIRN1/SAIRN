@@ -384,7 +384,7 @@ function doLogin(){
   }
 }
 function doLogout(){document.getElementById('ls').style.display='flex';document.getElementById('app').style.display='none';['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value='';});document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});curRole='';}
-function nav(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.ni').forEach(function(x){x.classList.remove('active');});var pg=document.getElementById('pg-'+p);if(pg)pg.classList.add('active');var ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('active');document.getElementById('mn').scrollTop=0;if(p==='sairnbiz'){SAIRNbiz.renderPanel('sbiz-container','#15803D');}}
+
 function openM(id){document.getElementById(id).classList.add('open');}
 function closeM(id){document.getElementById(id).classList.remove('open');}
 document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.mo').forEach(function(o){o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});});
