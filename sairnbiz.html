@@ -693,41 +693,9 @@ async function callClaude(system, messages, maxTokens) {
 <!-- P-DASH: People Dashboard -->
 <div class="page active" id="page-p-dash">
   <div class="ph"><div><div class="ptitle">🏠 Dashboard</div><div class="psub">SAIRNbiz — People + Money · Overview</div></div></div>
-  <div class="sgrid">
-    <div class="sc"><div class="sl">Total Employees</div><div class="sv" id="db-emp-count">--</div><div class="sd">Active</div></div>
-    <div class="sc"><div class="sl">Payroll This Period</div><div class="sv" id="db-payroll">--</div><div class="sd">Pending approval</div></div>
-    <div class="sc"><div class="sl">Open Positions</div><div class="sv" id="db-open-pos">--</div><div class="sd">Recruiting</div></div>
-    <div class="sc"><div class="sl">Benefits Enrolled</div><div class="sv" id="db-benefits">--</div><div class="sd">% of workforce</div></div>
-  </div>
   <div class="card">
     <div class="ch"><div class="ct">🤖 SAIRNbiz Intelligence</div><button class="btn bo bsm" onclick="runBizIntel()">Refresh</button></div>
     <div class="ai-bub" id="biz-intel-out">Loading intelligence brief...</div>
-  </div></div>
-  <div class="page-sub">Live HR intelligence — powered by Claude AI</div>
-  <div class="kpi-grid">
-    <div class="kpi-card"><span class="kpi-icon">&#x1F465;</span><div class="kpi-label">Total Employees</div><div class="kpi-value">24</div><div class="kpi-delta pos">+2 this month</div></div>
-    <div class="kpi-card"><span class="kpi-icon">&#x1F4B0;</span><div class="kpi-label">Monthly Payroll</div><div class="kpi-value">$84K</div><div class="kpi-delta">Next run Jun 30</div></div>
-    <div class="kpi-card"><span class="kpi-icon">&#x1F334;</span><div class="kpi-label">PTO Requests</div><div class="kpi-value">3</div><div class="kpi-delta neg">Pending approval</div></div>
-    <div class="kpi-card"><span class="kpi-icon">&#x1F4CB;</span><div class="kpi-label">Open Positions</div><div class="kpi-value">2</div><div class="kpi-delta">Active recruiting</div></div>
-    <div class="kpi-card"><span class="kpi-icon">&#x2705;</span><div class="kpi-label">Onboarding</div><div class="kpi-value">1</div><div class="kpi-delta">In progress</div></div>
-    <div class="kpi-card"><span class="kpi-icon">&#x1F4CA;</span><div class="kpi-label">Headcount Cost</div><div class="kpi-value">38%</div><div class="kpi-delta">Of revenue</div></div>
-  </div>
-  <div class="ai-flag">&#x1F916; 3 PTO requests pending. Maria S. has been waiting 4 days. <a href="#" onclick="askAI('Review all pending PTO requests. Who should I approve first and why?');return false;">AI Review PTO</a></div>
-  <div class="flag-warn">&#x26A0;&#xFE0F; Carlos R. I-9 expires in 14 days. Action required to stay compliant.</div>
-  <div class="two-col">
-    <div class="card"><div class="card-header"><div class="card-title">Recent Activity</div></div><div class="card-body p0">
-      <table class="dt"><thead><tr><th>Date</th><th>Employee</th><th>Event</th></tr></thead><tbody>
-        <tr><td>Jun 14</td><td>Tom Davis</td><td>Start date confirmed</td></tr>
-        <tr><td>Jun 12</td><td>Maria Santos</td><td>PTO request submitted</td></tr>
-        <tr><td>Jun 10</td><td>Dave Kim</td><td>Direct deposit updated</td></tr>
-        <tr><td>Jun 9</td><td>All Staff</td><td>Benefits open enrollment sent</td></tr>
-      </tbody></table>
-    </div></div>
-    <div class="card"><div class="card-header"><div class="card-title">Headcount by Department</div></div><div class="card-body">
-      <div class="rbar-row"><span>Operations</span><div class="rbar"><div class="rbar-fill" style="width:58%"></div></div><span>14</span></div>
-      <div class="rbar-row"><span>Sales</span><div class="rbar"><div class="rbar-fill" style="width:25%"></div></div><span>6</span></div>
-      <div class="rbar-row"><span>Admin</span><div class="rbar"><div class="rbar-fill" style="width:17%"></div></div><span>4</span></div>
-    </div></div>
   </div>
 </div>
 
