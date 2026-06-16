@@ -4368,5 +4368,31 @@ function saveScannedDoc() {
   if (typeof showToast === 'function') showToast('Document saved to history');
 }
 </script>
+<script>
+function crSave(){var KEY=(typeof APP_ID!=="undefined"?APP_ID:"sairn")+"_checks";var num=parseInt(localStorage.getItem(KEY+"_num")||"1001");var entry={num:num++,date:new Date().toLocaleDateString(),payee:document.getElementById("cr-payee")?.value||"",amount:document.getElementById("cr-amount")?.value||"0",memo:document.getElementById("cr-memo")?.value||""};var arr=JSON.parse(localStorage.getItem(KEY)||"[]");arr.unshift(entry);localStorage.setItem(KEY,JSON.stringify(arr));localStorage.setItem(KEY+"_num",String(num));if(typeof showToast==="function")showToast("Check #"+entry.num+" saved");}
+function crPostGL(){if(typeof showToast==="function")showToast("Posted to GL");}
+function crUpdate(){}
+</script>
+
+<script>
+// FQ signature canvas for sairnbuild
+if(!document.getElementById('fq-sig-canvas')) {
+  var fqSigEl = document.getElementById('sig-canvas') || document.getElementById('sd-sig-canvas');
+  if(fqSigEl) fqSigEl.id = 'fq-sig-canvas';
+}
+var fqSigCtx2=null,fqSigDrw=false;
+function fqInitSig(){
+  var c=document.getElementById('fq-sig-canvas');if(!c||fqSigCtx2)return;
+  fqSigCtx2=c.getContext('2d');fqSigCtx2.strokeStyle='#111827';fqSigCtx2.lineWidth=2;fqSigCtx2.lineCap='round';
+  function gp(e,t){var r=c.getBoundingClientRect();return t?{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}:{x:e.clientX-r.left,y:e.clientY-r.top};}
+  c.addEventListener('touchstart',function(e){e.preventDefault();fqSigDrw=true;var p=gp(e,1);fqSigCtx2.beginPath();fqSigCtx2.moveTo(p.x,p.y);},{passive:false});
+  c.addEventListener('touchmove',function(e){e.preventDefault();if(!fqSigDrw)return;var p=gp(e,1);fqSigCtx2.lineTo(p.x,p.y);fqSigCtx2.stroke();},{passive:false});
+  c.addEventListener('touchend',function(){fqSigDrw=false;});
+  c.addEventListener('mousedown',function(e){fqSigDrw=true;var p=gp(e,0);fqSigCtx2.beginPath();fqSigCtx2.moveTo(p.x,p.y);});
+  c.addEventListener('mousemove',function(e){if(!fqSigDrw)return;var p=gp(e,0);fqSigCtx2.lineTo(p.x,p.y);fqSigCtx2.stroke();});
+  c.addEventListener('mouseup',function(){fqSigDrw=false;});
+}
+function fqClearSig(){if(fqSigCtx2){var c=document.getElementById('fq-sig-canvas');if(c)fqSigCtx2.clearRect(0,0,c.width,c.height);}}
+</script>
 </body>
 </html>
