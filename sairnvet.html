@@ -1099,5 +1099,10 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
+<script>
+function crSave(){var KEY=(typeof APP_ID!=="undefined"?APP_ID:"sairn")+"_checks";var num=parseInt(localStorage.getItem(KEY+"_num")||"1001");var entry={num:num++,date:new Date().toLocaleDateString(),payee:document.getElementById("cr-payee")?.value||"",amount:document.getElementById("cr-amount")?.value||"0",memo:document.getElementById("cr-memo")?.value||""};var arr=JSON.parse(localStorage.getItem(KEY)||"[]");arr.unshift(entry);localStorage.setItem(KEY,JSON.stringify(arr));localStorage.setItem(KEY+"_num",String(num));if(typeof showToast==="function")showToast("Check #"+entry.num+" saved");}
+function crPostGL(){if(typeof showToast==="function")showToast("Posted to GL");}
+function crUpdate(){}
+</script>
 </body>
 </html>
