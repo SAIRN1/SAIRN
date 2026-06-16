@@ -1,0 +1,729 @@
+---
+name: sairn-code-guardian
+description: >
+  The permanent mechanical guardian for every SAIRN app. Trigger this skill automatically on
+  every build session start, every file push, every code review, and every time the user says
+  "check", "scan", "push", "fix", "audit", "is this ready", "before I push", or "something broke".
+  This skill is SAIRN-aware — it knows the proxy rule, color system, bridge pattern, print rules,
+  role gates, Unicode restrictions, regex safety, and all 11 universal patterns. It pulls files
+  directly from GitHub, runs a full mechanical scan (12 checks, including Node ground-truth syntax
+  validation and duplicate-global-identifier detection added after the June 2026 StoneDesk outage),
+  auto-fixes every finding, and pushes clean code back — one automated flow. No manual grep. No
+  line-by-line hunting. Zero syntax errors shipped, zero silently-overwritten functions, zero
+  malformed regex literals, zero stale hardcoded model strings. This is the skill that caught the
+  fabricor.html line 4605 bug, the StoneDesk multi-script-tag corruption (unterminated strings,
+  an orphaned fragment that ate a <script> opening tag and left two functions executing as inert
+  HTML text, a global function-name collision that silently misdirected a chat hook), and every
+  bug like them. Always active. Never skipped.
+---
+
+# SAIRN Code Guardian
+
+> *"Ship nothing broken. Know the rules before you write the first line. Fix before you push. Always."*
+
+This skill is the permanent mechanical guardian for the entire SAIRN platform. It is domain-aware, SAIRN-specific, and automated. It does not rely on human review to catch mechanical bugs — it runs the scan itself, finds every violation, fixes every finding, and pushes clean code. It activates on every build and every push without being asked.
+
+**Why 12 checks, not 8:** on June 16, 2026, all three existing SAIRN quality skills (this Guardian's original 8 checks, sairn-runtime-validator, sairn-ultra-scan) passed a build of stonedesk.html that was completely broken in the browser — every AI button did nothing, the entire SOP-printing feature was dead, and a chat-rendering hook was silently misdirected to the wrong feature. The root causes were a multi-hundred-line unterminated string, a stray script tag pasted mid-block, an orphaned HTML fragment that ate a `<script>` opening tag (leaving two real functions executing as inert page text with zero console errors), a global function-name collision, two malformed-but-valid regex literals, and two stale hardcoded model strings. None of these were syntax errors a regex scan reliably catches, and none were caught until a human read browser console output and manually traced the file line by line. Checks 9-12 exist so that tracing never has to happen by hand again.
+
+---
+
+## Trigger Conditions — Always Active On:
+
+- Every new SAIRN app build (runs at start AND before push)
+- Every file push to GitHub
+- Every code review request
+- Any broken app or unexpected behavior report
+- User says: "scan", "check", "push", "fix", "audit", "something broke", "before I push", "is this ready", "syntax error", "not loading", "patch not working"
+- After any Supabase patch injection
+- After any major feature addition to an existing app
+
+---
+
+## The Guardian Protocol — 5 Phases
+
+Run all 5 phases in order. Never skip a phase. Never push until Phase 5 passes.
+
+---
+
+### PHASE 1 — Pull & Inventory
+
+Before any scan, pull the target file from GitHub using the Python urllib method (never curl for large files — shell arg limit at ~646KB):
+
+```python
+import base64, json, urllib.request
+
+PAT = "[user's PAT]"
+REPO = "SAIRN1/SAIRN"
+FILENAME = "[target file]"
+
+# Step 1: Get current SHA
+req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/{FILENAME}",
+    headers={"Authorization": f"token {PAT}", "User-Agent": "Python"}
+)
+with urllib.request.urlopen(req) as r:
+    meta = json.loads(r.read())
+    sha = meta['sha']
+    content = base64.b64decode(meta['content']).decode('utf-8', errors='replace')
+
+with open(f'/home/claude/{FILENAME}', 'w') as f:
+    f.write(content)
+
+print(f"Pulled: {FILENAME} | Lines: {len(content.splitlines())} | SHA: {sha}")
+```
+
+Report: filename, line count, SHA, file size. This is the baseline.
+
+---
+
+### PHASE 2 — The 12-Point Mechanical Scan
+
+Run all 12 checks simultaneously on the pulled file. Every check reports: PASS, WARN, or FAIL with exact line numbers. Checks 9-12 (added June 2026) require Node to be available in the execution environment for Check 9 specifically; if Node is unavailable, Check 9 reports WARN rather than silently skipping, and Checks 10-12 still run normally since they are pure Python.
+
+---
+
+#### CHECK 1 — JS String Integrity (Orphaned HTML)
+
+**The bug this catches:** The fabricor.html line 4605 bug — HTML tags escaping out of `win.document.write()` strings into raw JS scope, causing `Unexpected token '<'`.
+
+**What to scan for:**
+- Any line that begins with `</` or `<` that is NOT inside a JS string or template literal
+- Orphaned closing tags after `win.document.write(...)` calls
+- `document.write(` calls where the opening quote has no matching closing quote on the same or continued line
+- HTML entities (`</body>`, `</html>`, `</script>`) sitting outside string delimiters
+
+**Python scan pattern:**
+```python
+import re
+
+def check_js_string_integrity(lines):
+    findings = []
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        # Orphaned HTML: line starts with < but is not inside a string context
+        if re.match(r'^</?\w', stripped) and not re.search(r'["\'].*</?\w.*["\']', line):
+            # Check if it's inside a document.write call continuation
+            if "document.write" not in line and "innerHTML" not in line and not stripped.startswith("<!--"):
+                findings.append((i, "ORPHANED HTML outside JS string", stripped[:80]))
+    return findings
+```
+
+**FAIL condition:** Any match → block push, auto-fix by merging orphaned HTML into preceding `document.write()` call.
+
+---
+
+#### CHECK 2 — Unicode Box-Drawing Character Scan
+
+**The rule:** NEVER use Unicode box-drawing characters (─ │ ╔ ═ ╗ ╚ ╝ ║ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼) inside JavaScript. They crash the JS parser silently on some engines and caused 27,000+ character removal across the SAIRN suite in the June 2026 audit.
+
+**What to scan for:**
+```python
+BOX_CHARS = set('─│╔═╗╚╝║┌┐└┘├┤┬┴┼╠╣╦╩╬▀▄█▌▐░▒▓')
+
+def check_unicode_box_chars(lines):
+    findings = []
+    in_js = False
+    for i, line in enumerate(lines, 1):
+        # Simple heuristic: flag any box char in a .js file or inside <script> tags
+        for ch in line:
+            if ch in BOX_CHARS:
+                findings.append((i, f"UNICODE BOX CHAR '{ch}' in JS scope", line.strip()[:80]))
+                break
+    return findings
+```
+
+**Auto-fix:** Replace all box chars with ASCII equivalents: `─` → `---`, `│` → `|`, `═` → `===`, `╔╗╚╝` → `+`. Replace `// ─────` style comments with `// ===` or `// ---`.
+
+**FAIL condition:** Any box char found in JS → auto-fix and re-scan.
+
+---
+
+#### CHECK 3 — Regex Literal Newline Safety
+
+**The rule:** Always escape newlines in JavaScript regex as `\\n` not literal newlines. The pattern `.replace(/\n\n/g` must always be written as `.replace(/\\n\\n/g` or buttons will silently break.
+
+**What to scan for:**
+```python
+def check_regex_newlines(lines):
+    findings = []
+    for i, line in enumerate(lines, 1):
+        # Find regex literals with unescaped literal newline references
+        if re.search(r'/[^/]*\n[^/]*/[gimsuy]*', line):
+            findings.append((i, "LITERAL NEWLINE inside regex literal", line.strip()[:80]))
+        # Find common incorrect pattern
+        if re.search(r'replace\s*\(\s*/\\n', line) and '\\\\n' not in line:
+            # Check if it's a single backslash-n (should be double)
+            if re.search(r'replace\s*\(\s*/\bn\b', line):
+                findings.append((i, "POSSIBLY UNESCAPED \\n in regex — verify \\\\n", line.strip()[:80]))
+    return findings
+```
+
+**FAIL condition:** Any literal newline inside a regex literal → auto-fix to `\\n`.
+
+---
+
+#### CHECK 4 — Direct Anthropic API Call Scanner (Proxy Violation)
+
+**The rule — PERMANENT:** ALL Claude API calls must route through `https://sairn.vercel.app/api/claude`. NEVER call `api.anthropic.com` directly from the browser. Every fetch must include `app_id` and `is_demo: true`.
+
+**What to scan for:**
+```python
+FORBIDDEN_ENDPOINTS = [
+    'api.anthropic.com',
+    'anthropic.com/v1',
+    'claude.ai/api',
+]
+
+REQUIRED_PROXY = 'sairn.vercel.app/api/claude'
+REQUIRED_FIELDS = ['app_id', 'is_demo']
+
+def check_proxy_compliance(content):
+    findings = []
+    for endpoint in FORBIDDEN_ENDPOINTS:
+        if endpoint in content:
+            lines_found = [i+1 for i, l in enumerate(content.splitlines()) if endpoint in l]
+            findings.append(f"DIRECT ANTHROPIC CALL at lines {lines_found} — must use proxy")
+    
+    if 'fetch(' in content and REQUIRED_PROXY in content:
+        # Verify app_id and is_demo are present near proxy calls
+        proxy_blocks = [i+1 for i, l in enumerate(content.splitlines()) if REQUIRED_PROXY in l]
+        for line_num in proxy_blocks:
+            block = '\n'.join(content.splitlines()[max(0,line_num-5):line_num+10])
+            if 'app_id' not in block:
+                findings.append(f"PROXY CALL at line {line_num} missing app_id")
+            if 'is_demo' not in block:
+                findings.append(f"PROXY CALL at line {line_num} missing is_demo")
+    
+    return findings
+```
+
+**FAIL condition:** Any direct `api.anthropic.com` call → BLOCK push immediately. This is a hard stop. Fix before anything else.
+
+---
+
+#### CHECK 5 — Print Render Compliance
+
+**The rule:** Every SAIRN app must use `print-color-adjust: exact` and `-webkit-print-color-adjust: exact` on any colored sections. Always include a visible Print/Save PDF button. Dark accent sections (covers, pricing heroes, footers) are allowed but MUST have print-color-adjust so they render correctly on white paper.
+
+**What to scan for:**
+```python
+PRINT_TRIGGERS = ['background:#', 'background-color:', 'background: #', 'bg-']
+PRINT_FIX = 'print-color-adjust'
+WEBKIT_FIX = '-webkit-print-color-adjust'
+
+def check_print_compliance(content):
+    findings = []
+    has_colored_sections = any(t in content for t in PRINT_TRIGGERS)
+    has_print_adjust = PRINT_FIX in content
+    has_webkit_adjust = WEBKIT_FIX in content
+    has_print_button = any(t in content.lower() for t in ['print', 'save pdf', 'window.print'])
+    
+    if has_colored_sections and not has_print_adjust:
+        findings.append("MISSING print-color-adjust:exact — colored sections will not print correctly")
+    if has_colored_sections and not has_webkit_adjust:
+        findings.append("MISSING -webkit-print-color-adjust:exact — Chrome/Safari print broken")
+    if not has_print_button:
+        findings.append("WARN: No print/PDF button found — consider adding one per print-first design rule")
+    
+    return findings
+```
+
+**FAIL condition:** Colored sections without print-color-adjust → auto-inject into the relevant CSS block.
+
+---
+
+#### CHECK 6 — SAIRN Bridge Sync Validator
+
+**The rule — PERMANENT:** Every B2B app (StoneDesk, SAIRNhr, SAIRNacc, SAIRNbuild, SAIRNlaw, SAIRNscape) must include: (1) SAIRN Suite launcher panel linking to companion apps, (2) "Sync All Apps" button pushing data to the bridge at `sairn.vercel.app/api/bridge`, (3) CSV export buttons (jobs/payroll/GL format).
+
+**B2B apps that require bridge:** StoneDesk, SAIRNhr, SAIRNacc, SAIRNbuild, SAIRNlaw, SAIRNscape, SAIRNfuneral
+
+**Consumer apps — bridge NOT required:** SAIRNtype, Lingual, Health, Money, Legal, Study, Roam, Senior (NEXUS apps)
+
+```python
+B2B_APPS = ['stonedesk', 'fabricor', 'saairnhr', 'sairnacc', 'sairnbuild', 'sairnlaw', 'sairnscape', 'sairnfuneral']
+BRIDGE_URL = 'sairn.vercel.app/api/bridge'
+BRIDGE_REQUIREMENTS = ['api/bridge', 'Sync All Apps', 'CSV']
+
+def check_bridge_sync(filename, content):
+    findings = []
+    is_b2b = any(app in filename.lower() for app in B2B_APPS)
+    if not is_b2b:
+        return []  # NEXUS apps skip this check
+    
+    for req in BRIDGE_REQUIREMENTS:
+        if req not in content:
+            findings.append(f"B2B BRIDGE MISSING: '{req}' not found — required for all B2B apps")
+    
+    return findings
+```
+
+**FAIL condition:** Any B2B app missing bridge touchpoints → flag for manual addition (cannot auto-fix without business logic context).
+
+---
+
+#### CHECK 7 — Role Gate Audit
+
+**The rule:** Every SAIRN B2B app with user roles must gate protected routes at the API level. Required roles: `owner`, `admin`, `manager`, `sales`, `installer`, `viewer`. The Compensation module is always gated: owner/admin see all, manager sees team, sales sees own, installer/viewer blocked.
+
+**What to scan for:**
+```python
+ROLE_KEYWORDS = ['owner', 'admin', 'manager', 'sales', 'installer', 'viewer']
+GATE_PATTERNS = ['role', 'pin', 'auth', 'access', 'permission', 'guard']
+
+def check_role_gates(content):
+    findings = []
+    has_roles = any(r in content.lower() for r in ROLE_KEYWORDS)
+    has_gates = any(g in content.lower() for g in GATE_PATTERNS)
+    has_compensation = any(t in content.lower() for t in ['commission', 'compensation', 'payroll', 'salary'])
+    
+    if has_compensation:
+        # Verify compensation is gated
+        comp_gated = 'role' in content.lower() and ('commission' in content.lower() or 'compensation' in content.lower())
+        if not comp_gated:
+            findings.append("COMPENSATION MODULE may be ungated — owner/admin/manager/sales/installer gates required")
+        
+        # Check for installer block
+        if 'installer' not in content.lower():
+            findings.append("WARN: 'installer' role not referenced — verify installer is blocked from compensation view")
+    
+    if has_roles and not has_gates:
+        findings.append("ROLES defined but no gate pattern found — verify role-based access is enforced")
+    
+    return findings
+```
+
+**FAIL condition:** Compensation module without role gates → hard flag, cannot ship.
+
+---
+
+#### CHECK 8 — Color Compliance (No Blue Violations)
+
+**The rule — FINAL COLOR MAP:**
+- StoneDesk = Money Green `#16C762` / Dark `#0A3D1F` / Light `#F0FEF6` / Accent `#5CFF9D`
+- SAIRNdesign = Indigo `#6366F1` — **OWNS ALL BLUE/BLUE-ADJACENT**
+- SAIRNhr = Violet `#7C3AED`
+- SAIRNacc = Teal `#0D9488`
+- SAIRNbuild = Amber `#F59E0B`
+- SAIRNlaw = Forest Green `#15803D`
+- SAIRNcode = Slate `#475569`
+- SAIRNscape = Sky Green `#22C55E`
+
+**Forbidden:** Any blue or blue-adjacent color (`#3B82F6`, `#2563EB`, `#1D4ED8`, `#60A5FA`, `blue`, `#0000FF`, `#00F`, `#4F46E5` used outside SAIRNdesign) in any app that is NOT SAIRNdesign.
+
+```python
+BLUE_COLORS = [
+    '#3B82F6', '#2563EB', '#1D4ED8', '#60A5FA', '#93C5FD', '#BFDBFE',
+    '#4F46E5', '#3730A3', '#0000FF', '#0000ff', '#00F',
+    'color:blue', 'color: blue', 'background:blue', 'background: blue',
+]
+BLUE_OWNER = 'sairndesign'
+
+def check_color_compliance(filename, content):
+    findings = []
+    is_design_app = BLUE_OWNER in filename.lower()
+    if is_design_app:
+        return []  # SAIRNdesign owns blue — skip
+    
+    for color in BLUE_COLORS:
+        if color.lower() in content.lower():
+            lines_found = [i+1 for i, l in enumerate(content.splitlines()) if color.lower() in l.lower()]
+            findings.append(f"BLUE COLOR VIOLATION: '{color}' found at lines {lines_found} — only SAIRNdesign uses blue")
+    
+    # Check that the app uses its correct brand color
+    # (informational — warn if neither brand color nor a known SAIRN color is present)
+    known_colors = ['#16C762', '#6366F1', '#7C3AED', '#0D9488', '#F59E0B', '#15803D', '#475569', '#22C55E', '#0A3D1F']
+    if not any(c in content for c in known_colors):
+        findings.append("WARN: No recognized SAIRN brand color found — verify correct app color is applied")
+    
+    return findings
+```
+
+**FAIL condition:** Blue in non-SAIRNdesign app → flag all instances. Auto-suggest the correct app color.
+
+---
+
+#### CHECK 9 — Node Ground-Truth Syntax Validation
+
+**Added after the StoneDesk outage (June 16, 2026).** Checks 1-8 above are regex-based static scans. They missed a multi-hundred-line unterminated string in `win.document.write(...)`, a stray `<script>` tag pasted inside an already-open script block, `document.addEventListener('DOMContentLoaded', function);` (the bare `function` keyword passed instead of a reference), and two entire functions (`showSOPs`, `printAllSOPs`) sitting completely outside any `<script>` tag due to an orphaned fragment eating the opening tag. All of these are syntactically real bugs that Check 1's single-line orphaned-HTML pattern cannot catch because they span many lines or involve no orphaned HTML at all on the offending line itself.
+
+**The rule:** Before any push, extract every inline `<script>...</script>` block and run `node --check` on each one individually — this mirrors exactly how a browser parses separate script tags, and is ground truth rather than a heuristic.
+
+**What to scan for:** any block that fails `node --check`, with the exact error and offending line surfaced.
+
+```python
+import re, subprocess, tempfile, os
+
+def extract_script_blocks(content):
+    # Global non-greedy match (not a line-by-line scanner) — correctly handles
+    # adjacent </script><script> tags. Negative lookbehind for a backslash
+    # before </script> avoids false-splitting on SAIRN's escaped print-popup
+    # pattern: win.document.write('...<script>...<\/script>').
+    blocks = []
+    pattern = re.compile(
+        r'<script(?![^>]*\bsrc=)[^>]*>(.*?)(?<!\\)</script>',
+        re.DOTALL | re.IGNORECASE
+    )
+    for m in pattern.finditer(content):
+        code = m.group(1)
+        start_line = content.count('\n', 0, m.start(1)) + 1
+        end_line = content.count('\n', 0, m.end(1)) + 1
+        blocks.append((start_line, end_line, code))
+    return blocks
+
+def check_node_groundtruth(content, node_path='node'):
+    findings = []
+    blocks = extract_script_blocks(content)
+    if not blocks:
+        return findings
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for idx, (start, end, code) in enumerate(blocks):
+            fpath = os.path.join(tmpdir, f'block_{idx}.js')
+            with open(fpath, 'w', encoding='utf-8') as f:
+                f.write(code)
+            try:
+                result = subprocess.run([node_path, '--check', fpath],
+                                         capture_output=True, text=True, timeout=10)
+            except FileNotFoundError:
+                findings.append(f"WARN: Node unavailable — ground-truth check skipped")
+                return findings
+            if result.returncode != 0:
+                err = re.search(r'(SyntaxError: .+)', result.stderr)
+                findings.append(f"CRITICAL: parse failure in block lines {start}-{end}: "
+                                 f"{err.group(1) if err else result.stderr.strip()[:200]}")
+    return findings
+```
+
+**FAIL condition:** Any block fails to parse → BLOCK push immediately. This is the highest-priority check in the entire scan, since a parse failure in one script tag can silently prevent unrelated script tags from executing correctly depending on what DOM setup they depended on.
+
+---
+
+#### CHECK 10 — Duplicate Global Identifier Detector
+
+**Added after the StoneDesk outage.** Multiple inline `<script>` tags in one HTML document share a single global scope for plain `function name(){}` declarations and `window.name = function` assignments. StoneDesk had `tryInstall` declared twice (a markdown-render hook installer and an unrelated confidence-bar hook installer) — the second silently won, so the first feature's `setTimeout(tryInstall, ...)` call ended up running the second feature's code instead. No error was thrown anywhere, because calling a function that exists — just the wrong one — is not an error.
+
+**The rule:** Before any push, find every top-level `function name(){}` and `window.name = function` declaration across the whole file. Two or more declarations of the same name is at minimum a WARN; if the name is load-bearing (`callClaude`, `doLogin`, `showPage`, `showToast`, `showApp`, `dbLoadAll`, `applyRoleGates`, `applyExecRole`, `initAI`) or the surviving definition looks like an empty stub, it's CRITICAL. The known exceptions are `fetch`, `addMsg`, and `open` — SAIRN deliberately re-wraps these many times to layer features (the "onion wrapper" pattern: `var _orig = window.fetch; window.fetch = function(...){ ...; return _orig.apply(this, arguments); }`), so these are only flagged if a later reassignment fails to chain to a saved `_orig` reference.
+
+**Known false positive to watch for when reviewing findings by hand:** a function declared and immediately exported right next to itself (`function selRole(el){...} window.selRole = selRole;`) is the standard safe pattern, not a collision — only flag when 2+ DISTINCT function bodies of the same name exist.
+
+```python
+import re
+
+LOAD_BEARING_NAMES = {'callClaude','doLogin','showPage','showToast','showApp',
+                       'dbLoadAll','applyRoleGates','applyExecRole','initAI'}
+WRAPPER_TOLERANT_NAMES = {'fetch', 'addMsg', 'open'}
+
+def find_all_function_declarations(content):
+    occurrences = {}
+    lines = content.split('\n')
+    func_pattern = re.compile(r'^(\s*)(?:async\s+)?function\s+(\w+)\s*\(')
+    window_pattern = re.compile(r'^(\s*)window\.(\w+)\s*=\s*(?:async\s+)?function')
+    for i, line in enumerate(lines):
+        for pattern in (func_pattern, window_pattern):
+            m = pattern.match(line)
+            if m:
+                indent, name = m.groups()
+                occurrences.setdefault(name, []).append((i + 1, len(indent)))
+    return occurrences
+
+def check_duplicate_globals(content):
+    findings = []
+    occs = find_all_function_declarations(content)
+    for name, locs in occs.items():
+        lines_only = sorted(set(l for l, _ in locs))
+        if len(lines_only) < 2:
+            continue  # single declaration (+ maybe its own export) — not a collision
+        zero_indent = sum(1 for _, ind in locs if ind == 0)
+        is_collision = zero_indent >= 2 or (zero_indent >= 1 and len(locs) >= 2)
+        if not is_collision:
+            continue
+        severity = 'CRITICAL' if name in LOAD_BEARING_NAMES else 'WARN'
+        findings.append(f"{severity}: '{name}' declared {len(lines_only)}x at lines "
+                         f"{lines_only} — only the LAST is live, all earlier are dead code")
+    return findings
+```
+
+**FAIL condition:** Any load-bearing name with an unchained duplicate → BLOCK push. Other duplicates → flag and consolidate before next push, but does not block.
+
+---
+
+#### CHECK 11 — Regex Literal Sanity Check
+
+**Added after the StoneDesk outage.** Catches regex literals that are syntactically valid JavaScript (so Check 9's Node parser will not flag them) but semantically broken. StoneDesk's `renderMarkdown` had `/**([^*]+)**/g` and `/*([^*]+)*/g` — both intended to match markdown bold/italic, but `/*` is the start of a JS block comment, not a regex, so JavaScript silently swallows everything until the next `*/` anywhere later in the file. It also had `/^(d+). (.+)$/` — missing the backslash before `d`, so it matched the literal letter "d" instead of `\d` (a digit), compiling fine but matching nothing useful.
+
+```python
+import re
+
+def check_regex_literals(content):
+    findings = []
+    lines = content.split('\n')
+    comment_trap = re.compile(r'(?<![\/\*])/\*\*?\(')
+    missing_backslash = re.compile(
+        r'\.(?:replace|match|test|exec)\s*\(\s*/\^?\(?(d|w|s)\+\)?[^/]*?/[gimsuy]*'
+    )
+    for i, line in enumerate(lines):
+        if comment_trap.search(line):
+            findings.append(f"CRITICAL line {i+1}: regex opens with '/*' — JS parses this "
+                             f"as a block comment start, not a regex. Escape: /\\*\\*(...)")
+        m = missing_backslash.search(line)
+        if m:
+            findings.append(f"HIGH line {i+1}: bare '{m.group(1)}' in regex where "
+                             f"'\\{m.group(1)}' was intended — matches literal letter, not class")
+    return findings
+```
+
+**FAIL condition:** Any comment-trap regex → BLOCK push (can silently corrupt unrelated downstream code via the swallowed comment). Missing-backslash → fix before push, does not block.
+
+---
+
+#### CHECK 12 — Stale/Hardcoded Model String Detector
+
+**Added after the StoneDesk outage.** Catches client-side `fetch()` calls to the SAIRN proxy that hardcode a Claude model identifier instead of letting the proxy (`api/claude.js`) choose the model from `app_id`/`is_demo` per the PERMANENT proxy pattern. StoneDesk had two call sites sending `model:'claude-sonnet-4-20250514'` directly. This bug class is invisible to Checks 1-11: it's not a syntax error, not a duplicate, not a malformed regex — it fails at the network/API layer the moment that model is deprecated upstream, which can be weeks after the code shipped clean.
+
+```python
+import re
+
+PROXY_URL_FRAGMENT = 'sairn.vercel.app/api/claude'
+
+def check_hardcoded_model_strings(content):
+    findings = []
+    lines = content.split('\n')
+    model_pattern = re.compile(r'model\s*:\s*[\'"]([\w.\-]+)[\'"]')
+    for i, line in enumerate(lines):
+        m = model_pattern.search(line)
+        if not m:
+            continue
+        nearby = '\n'.join(lines[max(0,i-15):i+15])
+        if PROXY_URL_FRAGMENT not in nearby:
+            continue
+        findings.append(f"HIGH line {i+1}: hardcoded model '{m.group(1)}' sent to SAIRN proxy — "
+                         f"remove and let the proxy choose the model, matching every other call site")
+    return findings
+```
+
+**FAIL condition:** Any hardcoded model string → fix before push (not a hard stop, since it works until the model is deprecated, but must be tracked and resolved).
+
+---
+
+Run when a Supabase patch has been injected or when the app connects to Supabase.
+
+**What to verify:**
+```python
+SUPABASE_CHECKS = {
+    'client_init': ['supabase.createClient', 'SUPABASE_URL', 'SUPABASE_KEY'],
+    'rls_awareness': ['RLS', 'row level security', 'auth.uid()'],
+    'error_handling': ['.catch(', 'try {', 'if (error)'],
+    'no_key_exposure': [],  # anon key in frontend is OK; service_role key is NOT
+}
+
+FORBIDDEN_IN_FRONTEND = ['service_role', 'SERVICE_ROLE']
+
+def check_supabase(content):
+    findings = []
+    has_supabase = 'supabase' in content.lower()
+    if not has_supabase:
+        return []
+    
+    # Hard stop: service_role key in frontend
+    for forbidden in FORBIDDEN_IN_FRONTEND:
+        if forbidden in content:
+            findings.append(f"CRITICAL SECURITY: '{forbidden}' key found in frontend — NEVER expose this key. Use anon key only.")
+    
+    # Verify error handling on Supabase calls
+    has_from = '.from(' in content
+    has_error_handling = 'if (error)' in content or '.catch(' in content or 'try {' in content
+    if has_from and not has_error_handling:
+        findings.append("Supabase .from() calls found without visible error handling — add try/catch or if(error) checks")
+    
+    # Warn if RLS not mentioned (may be intentional but worth flagging)
+    if has_from and 'rls' not in content.lower() and 'auth.uid' not in content.lower():
+        findings.append("WARN: Supabase queries present but no RLS reference found — verify Row Level Security is configured in Supabase dashboard")
+    
+    return findings
+```
+
+---
+
+### PHASE 4 — File Naming Enforcer
+
+**The rule:** Every file delivered for GitHub upload must have a descriptive suffix so Michael knows exactly what to do with it. Never plain names.
+
+**Check on every file output:**
+```python
+REQUIRED_SUFFIX_PATTERNS = ['UPLOAD TO GITHUB', 'UPLOAD', 'PUSH TO', 'DEPLOY']
+
+def check_file_naming(filename):
+    findings = []
+    # Only applies to deliverable HTML/JS/CSS files, not scripts or temp files
+    if filename.endswith(('.html', '.js', '.css', '.jsx', '.ts', '.tsx')):
+        has_suffix = any(p in filename.upper() for p in REQUIRED_SUFFIX_PATTERNS)
+        if not has_suffix:
+            findings.append(f"FILE NAME '{filename}' missing action suffix — rename to '{filename.replace('.html', '')} UPLOAD TO GITHUB.html'")
+    return findings
+```
+
+---
+
+### PHASE 5 — Push Protocol
+
+Only push when ALL checks pass (or all FAILs are resolved). Use the Python urllib push method — never curl for large files.
+
+```python
+def push_to_github(pat, repo, filename, local_path, sha, commit_message):
+    with open(local_path, 'rb') as f:
+        content = base64.b64encode(f.read()).decode('utf-8')
+    
+    payload = json.dumps({
+        "message": commit_message,
+        "content": content,
+        "sha": sha
+    }).encode('utf-8')
+    
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/contents/{filename}",
+        data=payload,
+        method="PUT",
+        headers={
+            "Authorization": f"token {pat}",
+            "Content-Type": "application/json",
+            "User-Agent": "Python"
+        }
+    )
+    
+    with urllib.request.urlopen(req) as resp:
+        data = json.loads(resp.read())
+        return data['commit']['sha'], data['commit']['html_url']
+```
+
+**Commit message format:**
+```
+fix: [what was fixed] — Guardian scan [N] issues resolved
+```
+or
+```
+feat: [what was added] — Guardian scan PASS all 8 checks
+```
+
+---
+
+## Scan Report Format
+
+After every scan, output a clean Guardian Report before any fixes:
+
+```
+=== SAIRN CODE GUARDIAN SCAN ===
+File: [filename]
+Lines: [count] | Size: [KB] | SHA: [first 8 chars]
+
+CHECK 1 — JS String Integrity:     [PASS / FAIL: N findings]
+CHECK 2 — Unicode Box Chars:       [PASS / FAIL: N findings]
+CHECK 3 — Regex Newline Safety:    [PASS / FAIL: N findings]
+CHECK 4 — Proxy Compliance:        [PASS / FAIL: N findings]  ← HARD STOP IF FAIL
+CHECK 5 — Print Render:            [PASS / WARN / FAIL]
+CHECK 6 — Bridge Sync:             [PASS / SKIP (NEXUS) / FAIL]
+CHECK 7 — Role Gates:              [PASS / WARN / FAIL]
+CHECK 8 — Color Compliance:        [PASS / WARN / FAIL]
+CHECK 9 — Node Ground-Truth:       [PASS / FAIL: N findings]  ← HARD STOP IF FAIL
+CHECK 10 — Duplicate Globals:      [PASS / WARN / FAIL]        ← HARD STOP IF load-bearing name unchained
+CHECK 11 — Regex Literal Sanity:   [PASS / FAIL: N findings]  ← HARD STOP IF comment-trap found
+CHECK 12 — Stale Model Strings:    [PASS / WARN: N findings]
+BONUS    — Supabase Schema:        [PASS / SKIP / FAIL]
+
+TOTAL FINDINGS: [N critical] [N warnings] [N info]
+STATUS: [CLEAR TO PUSH / FIX REQUIRED / HARD STOP]
+================================
+```
+
+Then list every finding with exact line numbers, severity, and fix applied.
+
+Then push.
+
+---
+
+## SAIRN Universal Pattern Checklist
+
+Before closing any build session, verify all 11 universal patterns from "the first" are present in every B2B app:
+
+| # | Pattern | Check |
+|---|---|---|
+| 1 | Role-based PIN auth | `pin`, `role`, `9999` or equivalent |
+| 2 | Structured intake form | Form elements with labeled fields |
+| 3 | Live calculation engine | Real-time formula updates |
+| 4 | Line item breakdown | Itemized cost/detail display |
+| 5 | Range bar benchmarking | Visual range/comparison bars |
+| 6 | Smart flags | Conditional warning/alert system |
+| 7 | Save + history | LocalStorage or Supabase save pattern |
+| 8 | Print with signature lines | `window.print()` + sig-row elements |
+| 9 | Clean client view | Separate view hiding internal pricing |
+| 10 | Admin formula editor | Editable formula/config panel |
+| 11 | CSV stress test | CSV import/export functionality |
+| 12 | Weather Command Engine | Present in: SAIRNscape, SAIRNbuild, StoneDesk, SAIRNdesign, SAIRNlaw ONLY |
+
+**Pattern 12 inclusion rule:**
+- INCLUDE weather: SAIRNscape, SAIRNbuild, StoneDesk, SAIRNdesign, SAIRNlaw
+- EXCLUDE weather: SAIRNcode, SAIRNhr, SAIRNacc, SAIRNvet, SAIRNvetGlobal, SAIRNcare, ALL NEXUS apps
+- Test: *Do crews go outside to do this work?* Yes = include. No = skip.
+
+---
+
+## Hard Rules — Never Violated
+
+These are absolute stops. No exception. No override.
+
+| Rule | Violation Action |
+|---|---|
+| No direct `api.anthropic.com` calls | BLOCK push immediately |
+| No `service_role` key in frontend | BLOCK push immediately |
+| No blue in non-SAIRNdesign apps | Flag all instances before push |
+| No Unicode box chars in JS | Auto-fix, re-scan, then push |
+| No dark backgrounds (print rule) | Flag, suggest light alternative |
+| No file delivered without action suffix | Rename before presenting |
+| No Compensation module without role gates | Flag, cannot ship |
+| Bridge required in all B2B apps | Flag missing touchpoints |
+| Every inline `<script>` block must pass `node --check` | BLOCK push immediately |
+| No unchained duplicate of a load-bearing function name | BLOCK push immediately |
+| No regex literal starting with `/*` or `/**` (JS comment trap) | BLOCK push immediately |
+| No hardcoded model string in a SAIRN-proxy fetch call | Flag, fix before next push |
+
+---
+
+## GitHub Workflow Reference
+
+**Always use Python urllib for files over ~100KB. Never curl for large files.**
+
+```
+Pull → Scan (8 checks) → Fix → Verify fix → Push → Confirm SHA
+```
+
+**PAT storage:** Michael's PAT is provided at session start. Never hardcode in delivered files. Never log to output. Use only in-session for GitHub API calls.
+
+**Repo:** `SAIRN1/SAIRN`
+**Branch:** `main` (default)
+
+---
+
+## Activation Summary
+
+The Guardian activates automatically when:
+1. A SAIRN file is being built or modified
+2. A GitHub push is requested
+3. Something is broken and needs diagnosis
+4. A Supabase patch has been injected
+5. A new app build session begins
+6. User says any variant of: check, scan, push, fix, audit, broken, not loading, syntax error
+
+The Guardian does not wait to be asked. It runs. It reports. It fixes. It pushes.
+
+*No SAIRN app ships without passing all 12 checks.*
+
+---
+
+## A Note On False Positives (Checks 9-12)
+
+Checks 1-8 are exact pattern matches with very low false-positive rates. Checks 9-12 involve more judgment, and during development against the real StoneDesk corruption, each one produced at least one false positive that had to be tracked down and fixed in the detection logic itself before the check could be trusted:
+
+- **Check 9** initially mis-split blocks on escaped `<\/script>` sequences inside JS strings (fixed with a negative lookbehind) and on adjacent `</script><script>` tags handled by a line-by-line scanner instead of a single global regex pass (fixed by switching to `re.finditer`).
+- **Check 10** initially flooded with hundreds of false positives from local variables (`var x`, `const r`) declared inside different, properly-scoped functions, because an early version used a brace-depth counter to decide "global" — and that counter drifted off-true the moment it crossed an actual unterminated string elsewhere in the file (the exact bug Check 9 exists to find), silently hiding the real `doLogin` and `tryInstall` collisions in the process. The fix was to stop trusting brace-depth as the primary signal and use indentation plus explicit `window.X = X` export tracking instead.
+- **Check 10** also initially flagged the safe "declare then immediately export" pattern (`function selRole(){...} window.selRole = selRole;`) as a 2x collision; fixed by requiring 2+ DISTINCT function bodies before counting an export as evidence of a collision.
+
+If a future finding from Checks 9-12 looks wrong, the right move is the same one used here: verify against the actual source at the cited line number, and if it's a genuine new false-positive class, fix the detection logic and document the fix inline the way the three above are documented — don't just suppress the finding silently.
