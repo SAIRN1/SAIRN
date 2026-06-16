@@ -584,7 +584,17 @@ textarea{resize:vertical;min-height:72px;}
 
 <!-- P-DASH: People Dashboard -->
 <div class="page active" id="page-p-dash">
-  <div class="page-title">People Dashboard</div>
+  <div class="ph"><div><div class="ptitle">🏠 Dashboard</div><div class="psub">SAIRNbiz — People + Money · Overview</div></div></div>
+  <div class="sgrid">
+    <div class="sc"><div class="sl">Total Employees</div><div class="sv" id="db-emp-count">--</div><div class="sd">Active</div></div>
+    <div class="sc"><div class="sl">Payroll This Period</div><div class="sv" id="db-payroll">--</div><div class="sd">Pending approval</div></div>
+    <div class="sc"><div class="sl">Open Positions</div><div class="sv" id="db-open-pos">--</div><div class="sd">Recruiting</div></div>
+    <div class="sc"><div class="sl">Benefits Enrolled</div><div class="sv" id="db-benefits">--</div><div class="sd">% of workforce</div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">🤖 SAIRNbiz Intelligence</div><button class="btn bo bsm" onclick="runBizIntel()">Refresh</button></div>
+    <div class="ai-bub" id="biz-intel-out">Loading intelligence brief...</div>
+  </div></div>
   <div class="page-sub">Live HR intelligence — powered by Claude AI</div>
   <div class="kpi-grid">
     <div class="kpi-card"><span class="kpi-icon">&#x1F465;</span><div class="kpi-label">Total Employees</div><div class="kpi-value">24</div><div class="kpi-delta pos">+2 this month</div></div>
@@ -615,7 +625,21 @@ textarea{resize:vertical;min-height:72px;}
 
 <!-- EMPLOYEES -->
 <div class="page" id="page-employees">
-  <div class="page-title">Employees</div>
+  <div class="ph">
+    <div><div class="ptitle">👤 Employees</div><div class="psub">Full employee roster and records</div></div>
+    <div class="pacts"><button class="btn bp" onclick="nav('onboarding')">+ Onboard New</button></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Employee Roster</div>
+      <input class="fi" id="emp-search" placeholder="Search employees..." style="max-width:240px"
+             oninput="filterEmployees(this.value)"></div>
+    <div class="tw"><table id="emp-table">
+      <thead><tr><th>Name</th><th>Title</th><th>Dept</th><th>Status</th><th>Start Date</th><th>Pay Type</th><th>Action</th></tr></thead>
+      <tbody id="emp-tbody">
+        <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Loading employees...</td></tr>
+      </tbody>
+    </table></div>
+  </div></div>
   <div class="page-sub">Full employee roster with status and records</div>
   <div class="toolbar">
     <input class="sbox" placeholder="Search employees..." oninput="ft(this,'emp-tbl')">
@@ -638,7 +662,43 @@ textarea{resize:vertical;min-height:72px;}
 
 <!-- ONBOARDING -->
 <div class="page" id="page-onboarding">
-  <div class="page-title">Onboarding</div>
+  <div class="ph">
+    <div><div class="ptitle">📋 Onboarding</div><div class="psub">New employee setup — digital, paperless</div></div>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:14px">New Employee Information</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Legal First Name</label><input class="fi" id="ob-fname" placeholder="First name"></div>
+      <div class="fg"><label class="fl">Legal Last Name</label><input class="fi" id="ob-lname" placeholder="Last name"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Job Title</label><input class="fi" id="ob-title" placeholder="Position title"></div>
+      <div class="fg"><label class="fl">Department</label><input class="fi" id="ob-dept" placeholder="Department"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Start Date</label><input class="fi" type="date" id="ob-start"></div>
+      <div class="fg"><label class="fl">Pay Type</label>
+        <select class="fi" id="ob-pay-type"><option>Salary</option><option>Hourly</option><option>Commission</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Pay Rate ($/yr or $/hr)</label><input class="fi" type="number" id="ob-rate" placeholder="0"></div>
+      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="ob-email" placeholder="employee@company.com"></div>
+    </div>
+    <div class="fg"><label class="fl">Documents to Collect</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" checked> W-4</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" checked> I-9</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" checked> Direct Deposit</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox"> Benefits Enrollment</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox"> NDA/Offer Letter</label>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:4px">
+      <button class="btn bp" onclick="saveNewEmployee()">💾 Create Employee Record</button>
+      <button class="btn bo bsm" onclick="aiOnboardChecklist()">🤖 AI Onboarding Checklist</button>
+    </div>
+    <div class="ai-bub" id="ob-ai-out" style="display:none;margin-top:12px"></div>
+  </div></div>
   <div class="page-sub">New hire checklist and 7-day setup tracker</div>
   <div class="toolbar"><button class="btn btn-teal" onclick="openModal('m-new-hire')">+ Start Onboarding</button></div>
   <div class="card"><div class="card-body p0">
@@ -661,7 +721,27 @@ textarea{resize:vertical;min-height:72px;}
 
 <!-- ATS -->
 <div class="page" id="page-ats">
-  <div class="page-title">Applicant Tracking</div>
+  <div class="ph">
+    <div><div class="ptitle">🎯 Recruiting (ATS)</div><div class="psub">Applicant tracking and AI screening</div></div>
+    <div class="pacts"><button class="btn bp">+ Post Job</button></div>
+  </div>
+  <div class="sgrid">
+    <div class="sc"><div class="sl">Open Positions</div><div class="sv">3</div><div class="sd">Active</div></div>
+    <div class="sc"><div class="sl">Applications</div><div class="sv">24</div><div class="sd">This month</div></div>
+    <div class="sc"><div class="sl">Interviews</div><div class="sv">6</div><div class="sd">Scheduled</div></div>
+    <div class="sc"><div class="sl">Offers Out</div><div class="sv">1</div><div class="sd">Pending</div></div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Position</th><th>Dept</th><th>Applications</th><th>Stage</th><th>AI Score</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Office Manager</strong></td><td>Operations</td><td>12</td><td><span class="badge ba">Screening</span></td><td>87/100</td><td><button class="btn bp bsm" onclick="aiScreenCandidates()">🤖 Screen</button></td></tr>
+        <tr><td><strong>Sales Rep</strong></td><td>Sales</td><td>8</td><td><span class="badge bgr">Interviewing</span></td><td>79/100</td><td><button class="btn bo bsm">View</button></td></tr>
+        <tr><td><strong>Field Tech</strong></td><td>Operations</td><td>4</td><td><span class="badge bgr">New</span></td><td>--</td><td><button class="btn bp bsm" onclick="aiScreenCandidates()">🤖 Screen</button></td></tr>
+      </tbody>
+    </table></div>
+    <div class="ai-bub" id="ats-ai-out" style="display:none;margin-top:12px"></div>
+  </div></div>
   <div class="page-sub">Open positions, candidates, and pipeline</div>
   <div class="toolbar"><button class="btn btn-teal" onclick="openModal('m-new-job')">+ New Position</button><button class="btn btn-outline" onclick="askAI('Review my current hiring pipeline. Which candidates should I move forward this week?')">AI Pipeline Review</button></div>
   <div class="card"><div class="card-body p0">
@@ -680,7 +760,37 @@ textarea{resize:vertical;min-height:72px;}
 
 <!-- ORG -->
 <div class="page" id="page-org">
-  <div class="page-title">Org Chart</div>
+  <div class="ph">
+    <div><div class="ptitle">🏢 Org Chart</div><div class="psub">Company structure and reporting lines</div></div>
+    <div class="pacts"><button class="btn bp bsm" onclick="window.print()">🖨️ Print</button></div>
+  </div>
+  <div class="card">
+    <div style="text-align:center;padding:20px">
+      <div style="display:inline-block;background:var(--c);color:#fff;padding:10px 24px;border-radius:8px;font-weight:700;font-size:15px;margin-bottom:16px">Owner / CEO</div>
+      <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="width:2px;height:20px;background:var(--g200);margin:0 auto 0"></div>
+          <div style="background:var(--t);border:1.5px solid var(--a);padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px">Operations</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="background:#fff;border:1px solid var(--g200);padding:6px 12px;border-radius:6px;font-size:12px">Field Technicians</div>
+            <div style="background:#fff;border:1px solid var(--g200);padding:6px 12px;border-radius:6px;font-size:12px">Office Manager</div>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:2px;height:20px;background:var(--g200);margin:0 auto 0"></div>
+          <div style="background:var(--t);border:1.5px solid var(--a);padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px">Sales</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="background:#fff;border:1px solid var(--g200);padding:6px 12px;border-radius:6px;font-size:12px">Sales Reps</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:20px;font-size:12px;color:var(--g400)">Edit structure in employee records</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">🤖 Org Intelligence</div><button class="btn bo bsm" onclick="runOrgIntel()">Analyze</button></div>
+    <div class="ai-bub" id="org-ai-out" style="display:none"></div>
+  </div></div>
   <div class="page-sub">Company structure and reporting lines</div>
   <div class="ai-flag">&#x1F916; Ask AI to analyze your org structure, identify gaps, or suggest restructuring as you grow.</div>
   <div class="card"><div class="card-body" style="text-align:center;padding:32px;">
@@ -2053,9 +2163,7 @@ function postPayrollToGL() {
   }, 1200);
 }
 
-function printPayroll() {
-  window.print();
-}
+
 
 // === CHECK PREVIEW ===
 function updateCheckPreview() {
@@ -3691,6 +3799,82 @@ document.addEventListener('DOMContentLoaded',function(){
     });
   });
 })();
+</script>
+
+<script>
+// SAIRNbiz new page functions
+async function runBizIntel(){
+  const el=document.getElementById('biz-intel-out');
+  if(!el)return;
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing...';
+  try{
+    const r=await callClaude('You are the SAIRNbiz HR and Accounting Intelligence Engine. Provide a brief daily briefing covering: payroll deadlines this week, compliance reminders, any employee actions needed, and one financial insight. Be specific and direct. 4-5 bullet points.',
+      [{role:'user',content:'Provide daily business intelligence brief for a small business using SAIRNbiz.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Intelligence unavailable. Check connection.';}
+}
+async function aiOnboardChecklist(){
+  const name=(document.getElementById('ob-fname')?.value||'')+' '+(document.getElementById('ob-lname')?.value||'');
+  const title=document.getElementById('ob-title')?.value||'new employee';
+  const el=document.getElementById('ob-ai-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Building checklist...';
+  try{
+    const r=await callClaude('You are an HR onboarding specialist. Create a comprehensive 30-day onboarding checklist for this new hire. Include: Day 1 (paperwork, setup, introductions), Week 1 (training, systems access), Week 2-4 (shadowing, first projects), Day 30 (check-in). Be specific and actionable.',
+      [{role:'user',content:`New hire: ${name.trim()||'Employee'}, Title: ${title}`}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Generation failed.';}
+}
+function saveNewEmployee(){
+  const emp={
+    fname:document.getElementById('ob-fname')?.value,lname:document.getElementById('ob-lname')?.value,
+    title:document.getElementById('ob-title')?.value,dept:document.getElementById('ob-dept')?.value,
+    start:document.getElementById('ob-start')?.value,payType:document.getElementById('ob-pay-type')?.value,
+    rate:document.getElementById('ob-rate')?.value,email:document.getElementById('ob-email')?.value,
+    id:'emp_'+Date.now(),status:'Active'
+  };
+  const emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  emps.push(emp);localStorage.setItem('sairnbiz_employees',JSON.stringify(emps));
+  if(typeof showToast==='function')showToast('Employee record created');
+  else alert('Employee saved');
+  nav('employees');
+}
+function filterEmployees(q){
+  const rows=document.querySelectorAll('#emp-tbody tr');
+  rows.forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});
+}
+async function aiScreenCandidates(){
+  const el=document.getElementById('ats-ai-out');if(!el)return;
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Screening candidates...';
+  try{
+    const r=await callClaude('You are an AI recruiting assistant. Screen these candidates for the role and rank them with specific reasoning. Identify: top 3 candidates, red flags, recommended interview questions for each finalist.',
+      [{role:'user',content:'Position: Office Manager. Candidates: Sarah M (8yrs admin exp, QuickBooks cert, available 6/25), David K (5yrs, no software cert, great references), Amy L (3yrs, MBA, salary req high). Rank and recommend.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Screening failed.';}
+}
+async function runOrgIntel(){
+  const el=document.getElementById('org-ai-out');if(!el)return;
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing org structure...';
+  try{
+    const r=await callClaude('You are an organizational design consultant. Analyze this small business org structure and provide: span of control assessment, reporting line risks, growth bottlenecks, and one specific recommendation for the next hire.',
+      [{role:'user',content:'Structure: Owner/CEO → Operations (Field Techs x3, Office Manager), Sales (Sales Reps x2). 8 total employees. Growing 20% per year. Owner involved in all decisions.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Analysis failed.';}
+}
+document.addEventListener('DOMContentLoaded',function(){
+  // Load employee data into table on page load
+  const emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  const tbody=document.getElementById('emp-tbody');
+  if(tbody&&emps.length){
+    tbody.innerHTML=emps.map(e=>`<tr><td><strong>${e.fname} ${e.lname}</strong></td><td>${e.title||''}</td><td>${e.dept||''}</td><td><span class="badge bg">Active</span></td><td>${e.start||''}</td><td>${e.payType||''}</td><td><button class="btn bo bsm">View</button></td></tr>`).join('');
+  }else if(tbody){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#9CA3AF;padding:24px">No employees yet — <a href="#" onclick="nav('onboarding')" style="color:var(--c)">onboard your first employee</a></td></tr>';
+  }
+  // Update dashboard counters
+  const empCount=document.getElementById('db-emp-count');
+  if(empCount)empCount.textContent=emps.length||'0';
+});
 </script>
 </body></html>';
 
