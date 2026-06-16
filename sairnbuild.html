@@ -1012,8 +1012,14 @@ tr:hover td { background: var(--amber-tint); }
 /* ============================================================
    SAIRN CLAUDE ENGINE — sairnbuild
    Single definition. Loaded first. Works everywhere.
+   NOTE: APP_ID intentionally NOT declared here -- it's declared
+   once, later, in the main app state block (const APP_ID). Fixed
+   June 16 2026: this file had APP_ID declared 3 separate times
+   across 3 script blocks, two of which used var and one const --
+   const-after-var is always a hard SyntaxError, crashing the page.
+   PROXY/BRIDGE are kept here since callClaude() in this block
+   needs them and they're genuinely just var (safe to share).
    ============================================================ */
-var APP_ID  = 'sairnbuild';
 var PROXY   = 'https://sairn.vercel.app/api/claude';
 var BRIDGE  = 'https://sairn.vercel.app/api/bridge';
 
@@ -3170,9 +3176,6 @@ async function callClaude(system, messages, maxTokens) {
 // =============================================================
 'use strict';
 
-var APP_ID   = 'sairnbuild';
-var PROXY    = 'https://sairn.vercel.app/api/claude';
-var BRIDGE   = 'https://sairn.vercel.app/api/bridge';
 var NET_URL  = 'https://sairn.vercel.app/api/network'; // SAIRN Intelligence Network
 
 // ── callClaude: the one function all AI calls use ────────────
