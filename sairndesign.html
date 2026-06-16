@@ -1473,5 +1473,18 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 })();
 </script>
+
+<script>
+// Signature canvas alias — ensure fq-sig-canvas resolves
+document.addEventListener('DOMContentLoaded', function() {
+  // Alias any existing sig canvas to fq-sig-canvas name
+  ['sig-canvas','sd-sig-canvas','sairn-sig-canvas'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && !document.getElementById('fq-sig-canvas')) {
+      el.id = 'fq-sig-canvas';
+    }
+  });
+});
+</script>
 </body>
 </html>
