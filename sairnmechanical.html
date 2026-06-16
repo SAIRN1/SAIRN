@@ -440,6 +440,182 @@ tr:hover td{background:var(--t)}
   </div>
 </div>
 
+
+<div class="page" id="page-jobs">
+  <div class="ph">
+    <div><div class="ptitle">🔧 Jobs</div><div class="psub">All active and scheduled service calls</div></div>
+    <div class="pacts"><button class="btn bp">+ New Job</button></div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">9</div><div class="sd">4 in progress</div></div><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">$28,400</div><div class="sd">On target</div></div><div class="sc"><div class="sl">Pending Estimates</div><div class="sv">$94K</div><div class="sd">6 open</div></div><div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">127</div><div class="sd">↑ 8 this month</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Job #</th><th>Customer</th><th>Address</th><th>Type</th><th>Tech</th><th>Priority</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>JOB-4041</td><td>Henderson Residence</td><td>142 Oak Dr</td><td>AC Replacement</td><td>Mike R.</td><td><span class="badge br">Urgent</span></td><td><span class="badge ba">In Progress</span></td></tr>
+        <tr><td>JOB-4040</td><td>Martinez Commercial</td><td>800 Center Rd</td><td>Ductwork</td><td>Dave K.</td><td><span class="badge bgr">Normal</span></td><td><span class="badge bg">Complete</span></td></tr>
+        <tr><td>JOB-4039</td><td>Park Residence</td><td>55 Elm St</td><td>Furnace Install</td><td>Tom S.</td><td><span class="badge bgr">Normal</span></td><td><span class="badge bgr">Scheduled</span></td></tr>
+        <tr><td>JOB-4038</td><td>Chen Office Bldg</td><td>400 Main St</td><td>Maintenance</td><td>Mike R.</td><td><span class="badge bgr">Routine</span></td><td><span class="badge bgr">Scheduled</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-scheduling">
+  <div class="ph">
+    <div><div class="ptitle">📅 Dispatch & Scheduling</div><div class="psub">Technician routing and job assignment</div></div>
+    <div class="pacts"><button class="btn bp" onclick="aiDispatch()">🤖 AI Optimize Routes</button></div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Time</th><th>Job</th><th>Customer</th><th>Tech</th><th>Type</th><th>ETA</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>8:00 AM</td><td>JOB-4041</td><td>Henderson</td><td>Mike R.</td><td>AC Replacement</td><td>4 hrs</td><td><span class="badge ba">In Progress</span></td></tr>
+        <tr><td>10:00 AM</td><td>JOB-4044</td><td>Smith Residence</td><td>Dave K.</td><td>Water Heater</td><td>2 hrs</td><td><span class="badge bgr">En Route</span></td></tr>
+        <tr><td>1:00 PM</td><td>JOB-4039</td><td>Park Residence</td><td>Tom S.</td><td>Furnace Install</td><td>5 hrs</td><td><span class="badge bgr">Scheduled</span></td></tr>
+        <tr><td>2:00 PM</td><td>JOB-4038</td><td>Chen Office</td><td>Mike R.</td><td>Maintenance</td><td>2 hrs</td><td><span class="badge bgr">Scheduled</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="ai-bub" id="dispatch-out" style="display:none;margin-top:12px"></div>
+  </div>
+</div>
+<div class="page" id="page-technicians">
+  <div class="ph">
+    <div><div class="ptitle">👷 Technicians</div><div class="psub">Tech roster, certifications, and performance</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ Add Tech</button>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Name</th><th>Certs</th><th>EPA 608</th><th>Specialties</th><th>Jobs/Wk</th><th>Revenue</th><th>Status</th></tr></thead>
+      <tbody><tr><td>Mike Rodriguez</td><td>NATE, EPA 608</td><td>Universal</td><td>AC, Furnace, Heat Pump</td><td>12</td><td>$18,400</td><td><span class="badge bg">Active</span></td></tr><tr><td>Dave Kim</td><td>NATE, EPA 608</td><td>Universal</td><td>Ductwork, Commercial</td><td>9</td><td>$14,200</td><td><span class="badge bg">Active</span></td></tr><tr><td>Tom Santos</td><td>EPA 608</td><td>Type II</td><td>Residential AC, Water Heaters</td><td>8</td><td>$11,800</td><td><span class="badge bg">Active</span></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-equipment">
+  <div class="ph">
+    <div><div class="ptitle">🌡️ Equipment</div><div class="psub">Installed units and service history</div></div>
+    <div class="pacts"><button class="btn bp">+ Add Equipment</button></div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Customer</th><th>Unit Type</th><th>Brand/Model</th><th>Serial #</th><th>Installed</th><th>Last Service</th><th>Next PM</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Henderson Res.</td><td>AC 3-ton</td><td>Carrier 24ACC</td><td>4919CXX41</td><td>06/14/26</td><td>Today</td><td>12/14/26</td><td><span class="badge bg">New Install</span></td></tr>
+        <tr><td>Martinez Comm.</td><td>RTU 10-ton</td><td>Trane M-Series</td><td>TRN8822B</td><td>03/10/22</td><td>03/10/26</td><td>09/10/26</td><td><span class="badge bg">Good</span></td></tr>
+        <tr><td>Chen Office</td><td>Furnace 100k</td><td>Lennox EL296V</td><td>LEN9941C</td><td>11/15/21</td><td>11/15/25</td><td>11/15/26</td><td><span class="badge ba">PM Due Soon</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-maintenance">
+  <div class="ph">
+    <div><div class="ptitle">🔩 Maintenance Contracts</div><div class="psub">Recurring service agreements — your steady revenue</div></div>
+    <div class="pacts"><button class="btn bp">+ New Contract</button></div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Active Contracts</div><div class="sv">127</div><div class="sd">$37,973/yr recurring</div></div><div class="sc"><div class="sl">Renewals Due</div><div class="sv">8</div><div class="sd">This month</div></div><div class="sc"><div class="sl">PM Visits Scheduled</div><div class="sv">14</div><div class="sd">This month</div></div><div class="sc"><div class="sl">Avg Contract Value</div><div class="sv">$299/yr</div><div class="sd">Annual</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Customer</th><th>Plan</th><th>Units</th><th>Annual Fee</th><th>Next Visit</th><th>Auto-Renew</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Henderson Res.</td><td>Standard</td><td>1 AC + 1 Furnace</td><td>$299</td><td>12/14/26</td><td>✅</td><td><span class="badge bg">Active</span></td></tr>
+        <tr><td>Martinez Comm.</td><td>Commercial</td><td>3 RTUs</td><td>$1,200</td><td>09/10/26</td><td>✅</td><td><span class="badge bg">Active</span></td></tr>
+        <tr><td>Smith Residence</td><td>Standard</td><td>1 AC</td><td>$199</td><td>07/01/26</td><td>❌</td><td><span class="badge br">Renewal Due</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-proposals">
+  <div class="ph">
+    <div><div class="ptitle">📋 Proposals</div><div class="psub">Open estimates and replacement proposals</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp" onclick="openFQ()">📷 Field Quote</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Open Proposals</div><div class="sv">6</div><div class="sd">$94K pipeline</div></div><div class="sc"><div class="sl">Avg Close Rate</div><div class="sv">38%</div><div class="sd">Industry avg 25%</div></div><div class="sc"><div class="sl">Pending 7+ Days</div><div class="sv">3</div><div class="sd">Follow up today</div></div><div class="sc"><div class="sl">Won This Month</div><div class="sv">$28,400</div><div class="sd">4 proposals</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Customer</th><th>System</th><th>Amount</th><th>Sent</th><th>Follow-Up</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>Henderson Comm.</td><td>Full HVAC System</td><td>$22,000</td><td>06/07</td><td>Today</td><td><span class="badge ba">Open</span></td><td><button class="btn bp bsm" onclick="aiFollowUp()">🤖 Follow Up</button></td></tr>
+        <tr><td>Park Residence</td><td>AC + Furnace</td><td>$8,400</td><td>06/10</td><td>06/17</td><td><span class="badge ba">Open</span></td><td><button class="btn bo bsm">Call</button></td></tr>
+        <tr><td>Chen Office</td><td>RTU Replacement</td><td>$18,000</td><td>06/12</td><td>06/19</td><td><span class="badge bgr">Viewed</span></td><td><button class="btn bp bsm" onclick="aiFollowUp()">🤖 Follow Up</button></td></tr>
+      </tbody>
+    </table></div>
+    <div class="ai-bub" id="proposal-ai-out" style="display:none;margin-top:12px"></div>
+  </div>
+</div>
+<div class="page" id="page-invoices">
+  <div class="ph">
+    <div><div class="ptitle">💳 Invoices</div><div class="psub">Service invoices and payment tracking</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ New Invoice</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">$28,400</div><div class="sd">9 jobs</div></div><div class="sc"><div class="sl">Outstanding</div><div class="sv">$14,200</div><div class="sd">6 invoices</div></div><div class="sc"><div class="sl">Overdue 30+</div><div class="sv">$3,800</div><div class="sd">2 invoices</div></div><div class="sc"><div class="sl">Avg Job Value</div><div class="sv">$3,156</div><div class="sd">This month</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Invoice#</th><th>Customer</th><th>Job</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>INV-8041</td><td>Henderson Res.</td><td>AC Replacement</td><td>$4,800</td><td>07/14</td><td><span class="badge ba">Sent</span></td></tr>
+        <tr><td>INV-8040</td><td>Martinez Comm.</td><td>Ductwork</td><td>$3,200</td><td>07/10</td><td><span class="badge bg">Paid</span></td></tr>
+        <tr><td>INV-8039</td><td>Smith Residence</td><td>Water Heater</td><td>$1,400</td><td>06/10</td><td><span class="badge br">Overdue</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-compensation">
+  <div class="ph">
+    <div><div class="ptitle">💰 Compensation</div><div class="psub">Tech commission and pay management</div></div>
+  </div>
+  <div style="background:var(--t);border:1.5px solid var(--a);border-radius:8px;padding:11px 16px;margin-bottom:14px;font-size:13px;color:var(--d);font-weight:600">
+    🔒 Owner and Admin access only
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Total Commissions</div><div class="sv">$4,820</div><div class="sd">This period</div></div><div class="sc"><div class="sl">Pending Approval</div><div class="sv">2</div><div class="sd">Review needed</div></div><div class="sc"><div class="sl">Paid This Period</div><div class="sv">$12,400</div><div class="sd">5 techs</div></div><div class="sc"><div class="sl">Disputes</div><div class="sv">0</div><div class="sd">Clean</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Tech</th><th>Structure</th><th>Jobs</th><th>Revenue</th><th>Commission</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>Mike Rodriguez</td><td>12% of revenue</td><td>12</td><td>$18,400</td><td>$2,208</td><td><span class="badge ba">Pending</span></td><td><button class="btn bp bsm" onclick="showToast('Approved')">✅ Approve</button></td></tr>
+        <tr><td>Dave Kim</td><td>10% + $1,500 base</td><td>9</td><td>$14,200</td><td>$2,920</td><td><span class="badge bg">Approved</span></td><td><button class="btn bp bsm" onclick="showToast('Marked paid')">Mark Paid</button></td></tr>
+        <tr><td>Tom Santos</td><td>8% of revenue</td><td>8</td><td>$11,800</td><td>$944</td><td><span class="badge ba">Pending</span></td><td><button class="btn bp bsm" onclick="showToast('Approved')">✅ Approve</button></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-blueprint-ai">
+  <div class="ph">
+    <div><div class="ptitle">📐 Blueprint AI Takeoff</div><div class="psub">Photo any blueprint — Claude reads HVAC scope instantly</div></div>
+  </div>
+  <div class="card">
+    <div class="fg"><label class="fl">System Type</label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+        <div class="fq-chip active" data-trade="hvac-full" onclick="selTrade(this)">Full HVAC System</div>
+        <div class="fq-chip" data-trade="ac-only" onclick="selTrade(this)">AC Only</div>
+        <div class="fq-chip" data-trade="furnace" onclick="selTrade(this)">Furnace / Heat</div>
+        <div class="fq-chip" data-trade="ductwork" onclick="selTrade(this)">Ductwork</div>
+        <div class="fq-chip" data-trade="water-heater" onclick="selTrade(this)">Water Heater</div>
+        <div class="fq-chip" data-trade="commercial-rtu" onclick="selTrade(this)">Commercial RTU</div>
+      </div>
+    </div>
+    <div class="upzone" onclick="document.getElementById('bp-file').click()">
+      <div style="font-size:32px;margin-bottom:8px">📐</div>
+      <div style="font-size:13px;font-weight:600;color:var(--g600)">Tap to photograph or upload blueprint</div>
+      <div style="font-size:11px;color:var(--g400);margin-top:3px">Floor plan, mechanical drawing, load calc sheet — any format</div>
+      <input type="file" id="bp-file" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="runBlueprintAI(this)">
+    </div>
+    <div id="bp-result" style="display:none;margin-top:14px">
+      <div class="ai-bub" id="bp-out"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn bp bsm" onclick="window.print()">🖨️ Print Takeoff</button>
+        <button class="btn bo bsm" onclick="showToast('Saved')">💾 Save</button>
+      </div>
+    </div>
+  </div>
+</div>
 </div><!-- end main -->
 </div><!-- end app -->
 
@@ -847,5 +1023,44 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 })();
 </script>
+<script>
+async function aiDispatch(){
+  const el=document.getElementById('dispatch-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Optimizing routes...';
+  try{
+    const r=await callClaude('You are the SAIRNmechanical Dispatch Intelligence Engine. Analyze this schedule and optimize: route efficiency, tech specialization matching, equipment/parts staging, and identify any EPA 608 refrigerant handling requirements. Be specific with recommendations.',
+      [{role:'user',content:'Schedule: Mike (AC replacement Henderson 8am 4hrs, Maintenance Chen 2pm 2hrs), Dave (Water heater Smith 10am 2hrs), Tom (Furnace install Park 1pm 5hrs). Note: Henderson AC job requires R-410A — EPA log required.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Dispatch failed.';}
+}
+async function aiFollowUp(){
+  const el=document.getElementById('proposal-ai-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Writing follow-up...';
+  try{
+    const r=await callClaude('Write a professional, brief HVAC proposal follow-up message. Warm but direct. 3 sentences max. Reference the efficiency savings and financing options. Sign as SAIRN Mechanical Team.',
+      [{role:'user',content:'Follow up on $22,000 commercial HVAC proposal sent 8 days ago to Henderson Commercial. No response yet. Good close probability.'}]);
+    el.textContent=r;
+    if(navigator.share)navigator.share({title:'Follow-Up',text:r}).catch(()=>{});
+    else{navigator.clipboard.writeText(r);showToast('Follow-up copied!');}
+  }catch(e){el.textContent='Draft failed.';}
+}
+async function runBlueprintAI(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const b64=e.target.result.split(',')[1];
+    const res=document.getElementById('bp-result');
+    const el=document.getElementById('bp-out');
+    res.style.display='block';
+    el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Reading blueprint...';
+    try{
+      const r=await callClaude('You are the SAIRNmechanical Blueprint AI. Analyze this mechanical drawing or floor plan and provide: 1) Square footage estimate 2) Recommended tonnage (Manual J principles) 3) Duct layout observations 4) Equipment specifications 5) Labor hours estimate 6) Material list. Be specific and cite calculations.',
+        [{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:'Analyze for HVAC takeoff. System type: '+fqTrade}]}]
+      );
+      el.textContent=r;
+    }catch(e){el.textContent='Analysis failed.';}
+  };
+  reader.readAsDataURL(file);
+}</script>
 </body>
 </html>
