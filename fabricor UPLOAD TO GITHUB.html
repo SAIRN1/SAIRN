@@ -1098,14 +1098,14 @@ var SAIRN_SEC = {
     'api.github.com'
   ],
   sessionTimeout: 30 * 60 * 1000,   // 30 minutes
-  maxLoginAttempts: 5,
+  maxLoginAttempts: 20,
   dataEncryptKey: 'SAIRN2026SEC',
   logEnabled: true,
   auditLog: [],
   violationCount: 0,
   lastActivity: Date.now(),
   sessionLocked: false,
-  loginAttempts: parseInt(sessionStorage.getItem('s_attempts') || '0')
+  loginAttempts: 0  /* reset on load — PIN system does not persist lockout across sessions */
 };
 
 // ===========================================================
@@ -1240,7 +1240,15 @@ window.saTrackLoginAttempt = function(success) {
   sessionStorage.setItem('s_attempts', String(SAIRN_SEC.loginAttempts));
   if (SAIRN_SEC.loginAttempts >= SAIRN_SEC.maxLoginAttempts) {
     saLog('L6-BRUTE', 'Max login attempts exceeded — lockout triggered', 'critical');
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:sans-serif"><h2 style="color:#DC2626">Too Many Failed Attempts</h2><p>Access temporarily locked. Please try again in 15 minutes.</p></div>';
+    var lockDiv=document.getElementById('sd-lockout-msg');
+    if(!lockDiv){
+      lockDiv=document.createElement('div');
+      lockDiv.id='sd-lockout-msg';
+      lockDiv.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:sans-serif';
+      lockDiv.innerHTML='<div style="text-align:center;color:#fff;padding:40px"><div style="font-size:48px;margin-bottom:16px">&#128274;</div><h2 style="color:#F87171;margin-bottom:12px">Too Many Attempts</h2><p style="color:#9CA3AF;margin-bottom:20px">Wait 60 seconds and try again.</p><button onclick="document.getElementById(\"sd-lockout-msg\").remove();SAIRN_SEC.loginAttempts=0;sessionStorage.setItem(\"s_attempts\",\"0\")" style="padding:10px 24px;background:#16C762;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Try Again</button></div>';
+      document.body.appendChild(lockDiv);
+    }
+    setTimeout(function(){var el=document.getElementById('sd-lockout-msg');if(el)el.remove();SAIRN_SEC.loginAttempts=0;sessionStorage.setItem('s_attempts','0');},60000);
     setTimeout(function() { sessionStorage.setItem('s_attempts','0'); }, 15 * 60 * 1000);
   }
   return false;
@@ -1703,7 +1711,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     <input type="password" id="sd-pin-input" maxlength="4" inputmode="numeric"
       placeholder="&#8226;&#8226;&#8226;&#8226;"
       style="width:100%;padding:16px;font-size:32px;letter-spacing:14px;text-align:center;font-family:monospace;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;transition:border-color .15s"
-      oninput="if(this.value.length===4)doLogin()"
+      oninput="var _v=this.value;if(_v.length===4){var _el=this;setTimeout(function(){if(_el.value.length===4)doLogin();},30);}"
       onfocus="this.style.borderColor='rgba(232,133,10,0.7)'"
       onblur="this.style.borderColor='rgba(232,133,10,0.3)'"
     >
@@ -5608,6 +5616,20 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 
+
+document.addEventListener('DOMContentLoaded',function(){
+  // PIN input Enter key + auto-clear on role switch
+  var pinEl=document.getElementById('sd-pin-input');
+  if(pinEl){
+    pinEl.addEventListener('keydown',function(e){
+      if(e.key==='Enter')doLogin();
+    });
+    pinEl.focus();
+  }
+  // Clear sessionStorage lockout counter on fresh load
+  sessionStorage.setItem('s_attempts','0');
+  if(window.SAIRN_SEC) SAIRN_SEC.loginAttempts=0;
+});
 </body></html>');
   win.document.close();
 }
