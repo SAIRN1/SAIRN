@@ -3291,7 +3291,18 @@ function doPrintStubs() {
 
   var stubHTML = stubs.map(mkStub).join('');
   var printBtn = '<div class="no-print"><button class="btn-p" onclick="window.print()">&#x1F5A8; Print / Save as PDF</button><button class="btn-c" onclick="window.close()">Close</button></div>';
-  var full = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pay Stubs — '+co+'</title><style>'+css+'</style></head><body>'+printBtn+stubHTML+'
+  var full = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pay Stubs — '+co+'</title><style>'+css+'</style></head><body>'+printBtn+stubHTML+'</body></html>';
+
+  var w = window.open('', '_blank', 'width=820,height=900');
+  if (!w) { showToast('Allow pop-ups for this site then try again.'); return; }
+  w.document.open();
+  w.document.write(full);
+  w.document.close();
+  w.onload = function(){ w.focus(); w.print(); };
+  setTimeout(function(){ if (w && !w.closed){ w.focus(); w.print(); } }, 900);
+  closeModal('m-pay-stubs');
+}
+</script>
 <!-- ============================================================
      SAIRN UNIVERSAL INJECTION — SAIRNbiz
      Field Quote | SAIRN Suite | Bridge Sync | Admin Pricing
@@ -3959,10 +3970,8 @@ async function runPayrollAI(){
 function exportPayrollCSV(){
   var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
   if(!emps.length){if(typeof showToast==='function')showToast('No payroll data to export');return;}
-  var csv='Name,Title,Department,PayType,Rate
-'+
-    emps.map(function(e){return[e.fname+' '+e.lname,e.title||'',e.dept||'',e.payType||'',e.rate||''].join(',');}).join('
-');
+  var csv='Name,Title,Department,PayType,Rate\n'+
+    emps.map(function(e){return[e.fname+' '+e.lname,e.title||'',e.dept||'',e.payType||'',e.rate||''].join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='payroll.csv';a.click();
 }
@@ -3993,17 +4002,7 @@ document.addEventListener('DOMContentLoaded',function(){
     '</tbody></table></div>';}
 });
 </script>
-</body></html>';
-
-  var w = window.open('', '_blank', 'width=820,height=900');
-  if (!w) { showToast('Allow pop-ups for this site then try again.'); return; }
-  w.document.open();
-  w.document.write(full);
-  w.document.close();
-  w.onload = function(){ w.focus(); w.print(); };
-  setTimeout(function(){ if (w && !w.closed){ w.focus(); w.print(); } }, 900);
-  closeModal('m-pay-stubs');
-}
+<script>
 
 function closeStubScreen() {
   document.getElementById('stub-fullscreen').style.display = 'none';
@@ -4039,43 +4038,21 @@ async function doEmailStubs() {
     } else {
       // Fallback: mailto — opens mail client with stub summary in body
       var mailtoBody = encodeURIComponent(
-        'Hi ' + emp.name.split(' ')[0] + ',
-
-' +
-        'Please find your pay stub for ' + emp.period + ' below.
-
-' +
-        'EARNINGS
-' +
-        'Gross Pay:        $' + emp.gross.toLocaleString() + '
-
-' +
-        'DEDUCTIONS
-' +
-        'Federal Tax:      $' + emp.federal + '
-' +
-        'Ohio State Tax:   $' + emp.state + '
-' +
-        'FICA SS:          $' + emp.ficaSS + '
-' +
-        'Medicare:         $' + emp.medicare + '
-' +
-        'Health Insurance: $' + emp.health + '
-' +
-        '401(k):           $' + emp.k401 + '
-' +
-        'Total Deductions: $' + emp.deductions + '
-
-' +
-        'NET PAY:          $' + emp.net.toLocaleString() + '
-
-' +
-        'YTD Gross: $' + emp.ytdGross.toLocaleString() + '   YTD Net: $' + emp.ytdNet.toLocaleString() + '
-
-' +
-        'Questions? Contact payroll at ' + co + '.
-
-' +
+        'Hi ' + emp.name.split(' ')[0] + ',\n\n' +
+        'Please find your pay stub for ' + emp.period + ' below.\n\n' +
+        'EARNINGS\n' +
+        'Gross Pay:        $' + emp.gross.toLocaleString() + '\n\n' +
+        'DEDUCTIONS\n' +
+        'Federal Tax:      $' + emp.federal + '\n' +
+        'Ohio State Tax:   $' + emp.state + '\n' +
+        'FICA SS:          $' + emp.ficaSS + '\n' +
+        'Medicare:         $' + emp.medicare + '\n' +
+        'Health Insurance: $' + emp.health + '\n' +
+        '401(k):           $' + emp.k401 + '\n' +
+        'Total Deductions: $' + emp.deductions + '\n\n' +
+        'NET PAY:          $' + emp.net.toLocaleString() + '\n\n' +
+        'YTD Gross: $' + emp.ytdGross.toLocaleString() + '   YTD Net: $' + emp.ytdNet.toLocaleString() + '\n\n' +
+        'Questions? Contact payroll at ' + co + '.\n\n' +
         '— Sent via SAIRNbiz Payroll'
       );
       window.open('mailto:' + emp.email + '?subject=' + subject + '&body=' + mailtoBody);
@@ -4758,10 +4735,8 @@ async function runPayrollAI(){
 function exportPayrollCSV(){
   var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
   if(!emps.length){if(typeof showToast==='function')showToast('No payroll data to export');return;}
-  var csv='Name,Title,Department,PayType,Rate
-'+
-    emps.map(function(e){return[e.fname+' '+e.lname,e.title||'',e.dept||'',e.payType||'',e.rate||''].join(',');}).join('
-');
+  var csv='Name,Title,Department,PayType,Rate\n'+
+    emps.map(function(e){return[e.fname+' '+e.lname,e.title||'',e.dept||'',e.payType||'',e.rate||''].join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='payroll.csv';a.click();
 }
