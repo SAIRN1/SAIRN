@@ -810,7 +810,7 @@ async function runBillingAI(){
 // ============================================================
 (function() {
 
-  // ── STATE ─────────────────────────────────────────────────
+  // -- STATE -------------------------------------------------
   var APP_ID       = 'sairncare';
   var FIRST_PAGE   = 'dashboard';
   var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "coordinator": "3456", "caregiver": "4567"};
@@ -818,7 +818,7 @@ async function runBillingAI(){
   var ROLE_INITS   = {"owner": "OW", "admin": "AD", "coordinator": "CO", "caregiver": "CG"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
-  // ── SHOW PAGE ─────────────────────────────────────────────
+  // -- SHOW PAGE ---------------------------------------------
   function showPage(id) {
     // Show/hide pages
     document.querySelectorAll('.page').forEach(function(p) {
@@ -843,7 +843,7 @@ async function runBillingAI(){
   window.openFQ   = function() { showPage('field-quote'); };
   window.nav      = showPage; // sairnbiz alias
 
-  // ── LOGIN ─────────────────────────────────────────────────
+  // -- LOGIN -------------------------------------------------
   function getPins() {
     try {
       var stored = JSON.parse(localStorage.getItem(APP_ID + '_pins'));
@@ -956,7 +956,7 @@ async function runBillingAI(){
   window.savePins    = savePins;
   window.sdSavePins  = savePins;
 
-  // ── WIRE EVERYTHING ON DOM READY ──────────────────────────
+  // -- WIRE EVERYTHING ON DOM READY --------------------------
   function init() {
     // Clear any stale lockouts from previous broken login attempts
     try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
