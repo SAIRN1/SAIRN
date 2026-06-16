@@ -23,7 +23,7 @@ description: >
 
 This skill is the permanent mechanical guardian for the entire SAIRN platform. It is domain-aware, SAIRN-specific, and automated. It does not rely on human review to catch mechanical bugs — it runs the scan itself, finds every violation, fixes every finding, and pushes clean code. It activates on every build and every push without being asked.
 
-**Why 13 checks, not 8:** on June 16, 2026, all three existing SAIRN quality skills (this Guardian's original 8 checks, sairn-runtime-validator, sairn-ultra-scan) passed a build of stonedesk.html that was completely broken in the browser — every AI button did nothing, the entire SOP-printing feature was dead, and a chat-rendering hook was silently misdirected to the wrong feature. The root causes were a multi-hundred-line unterminated string, a stray script tag pasted mid-block, an orphaned HTML fragment that ate a `<script>` opening tag (leaving two real functions executing as inert page text with zero console errors), a global function-name collision, two malformed-but-valid regex literals, and two stale hardcoded model strings. Checks 9-12 were built to catch those. Then, on the same day, after a round of fixes that passed Checks 9-12 was pushed live, the page crashed anyway with a hard SyntaxError — the same `APP_ID` constant had been declared in two separate `<script>` tags, which Check 9 cannot catch because it validates each script block in isolation, not the combined global scope a real browser builds across all of them. Check 13 was built for that, and a same-day platform audit found the identical bug in all 11 of 11 B2B apps. None of these were syntax errors a regex scan reliably catches, and none were caught until a human read browser console output and manually traced the file line by line. Checks 9-13 exist so that tracing never has to happen by hand again.
+**Why 15 checks, not 8:** on June 16, 2026, all three existing SAIRN quality skills (this Guardian's original 8 checks, sairn-runtime-validator, sairn-ultra-scan) passed a build of stonedesk.html that was completely broken in the browser — every AI button did nothing, the entire SOP-printing feature was dead, and a chat-rendering hook was silently misdirected to the wrong feature. The root causes were a multi-hundred-line unterminated string, a stray script tag pasted mid-block, an orphaned HTML fragment that ate a `<script>` opening tag (leaving two real functions executing as inert page text with zero console errors), a global function-name collision, two malformed-but-valid regex literals, and two stale hardcoded model strings. Checks 9-12 were built to catch those. Then, on the same day, after a round of fixes that passed Checks 9-12 was pushed live, the page crashed anyway with a hard SyntaxError — the same `APP_ID` constant had been declared in two separate `<script>` tags, which Check 9 cannot catch because it validates each script block in isolation, not the combined global scope a real browser builds across all of them. Check 13 was built for that, and a same-day platform audit found the identical bug in all 11 of 11 B2B apps. Later the same day, after Checks 9-13 all passed clean, the user reported seeing raw JavaScript rendered as visible text on the live page — three separate times in one file. Each time, a prior edit had deleted a `<script>` opening tag or inserted a stray `</body>` mid-file, leaving real working JS (a demo-data seeder, a range-bar renderer, an admin-formula editor) sitting outside any script wrapper. None of this throws a console error, because there's nothing to parse as JS — the browser just prints it as text. Check 14 was built for that gap: every prior check assumes it's already looking at real script content; none of them check the space between tags. None of these were syntax errors a regex scan reliably catches, and none were caught until a human read browser console output and manually traced the file line by line. Checks 9-14 exist so that tracing never has to happen by hand again.
 
 ---
 
@@ -117,7 +117,7 @@ Report: filename, line count, SHA, file size. This is the baseline.
 
 ### PHASE 2 — The 12-Point Mechanical Scan
 
-Run all 13 checks simultaneously on the pulled file. Every check reports: PASS, WARN, or FAIL with exact line numbers. Checks 9-13 (added June 2026) require Node to be available in the execution environment for Check 9 specifically; if Node is unavailable, Check 9 reports WARN rather than silently skipping, and Checks 10-13 still run normally since they are pure Python. Check 13 in particular should always be run, even if Check 9 passed cleanly — a clean Check 9 says nothing about cross-script-tag collisions, which is exactly the bug class that crashed StoneDesk live despite a clean Check 9 result.
+Run all 15 checks simultaneously on the pulled file. Every check reports: PASS, WARN, or FAIL with exact line numbers. Checks 9-15 (added June 2026) require Node to be available in the execution environment for Check 9 specifically; if Node is unavailable, Check 9 reports WARN rather than silently skipping, and Checks 10-15 still run normally since they are pure Python. Check 13, Check 14, and Check 15 in particular should always be run, even if Check 9 passed cleanly — a clean Check 9 says nothing about cross-script-tag collisions, content sitting entirely outside any script tag, or app_id values silently downgrading the model tier, all three of which caused real production issues in StoneDesk despite a clean Check 9 result.
 
 ---
 
@@ -617,6 +617,108 @@ def check_cross_block_variable_collisions(content):
 
 ---
 
+#### CHECK 14 — Orphaned Content Outside Script Tags
+
+**Added June 16, 2026, after the same bug class shipped THREE separate times in one session despite Checks 1-13 all passing.** Every prior check assumes it's already looking at real `<script>` content — none of them check the gaps *between* tags. StoneDesk had three distinct stretches of real, working JavaScript (a demo-data seeder, a range-bar/empty-state renderer, an admin-formula editor) sitting completely outside any `<script>` wrapper, because an edit somewhere deleted an opening `<script>` tag or inserted a stray `</body>` mid-file. None of this throws a console error — the browser just renders the function bodies and JSON literals as literal visible text on the page, which only shows up as "I see code on my screen" from the user, not as a stack trace Claude can grep for.
+
+**The rule:** Before any push, scan two signals: (1) any bare `</body>` that isn't the true final closing tag at end-of-file — a mid-file `</body>` is almost always a sign of a duplicated/misplaced tail section; (2) any stretch of content between a `</script>` and the next `<script>` that matches JS syntax markers (`function name(`, `var`/`const`/`let` declarations, `document.addEventListener`, `window.x = function`, `win.document.write/close`, IIFE closers `})();`) — real HTML between script tags is normal and expected, but JS-shaped text there means a wrapper went missing.
+
+```python
+import re
+
+def find_premature_body_close(content):
+    findings = []
+    real_close_pattern = re.compile(r'</body>\s*</html>\s*$', re.IGNORECASE)
+    is_real_eof_close = bool(real_close_pattern.search(content.rstrip()))
+    for m in re.finditer(r'(?:^|\n)\s*</body>\s*\n', content, re.IGNORECASE):
+        line_no = content.count('\n', 0, m.start()) + 1
+        tail = content[m.end():].strip()
+        if is_real_eof_close and not tail:
+            continue  # this IS the real one, nothing follows it
+        findings.append(f"CRITICAL line {line_no}: premature </body> with content "
+                         f"still remaining after it — likely orphaned content below "
+                         f"with no <script> wrapper, or a duplicated tail section")
+    return findings
+
+def find_orphaned_content_outside_script(content):
+    findings = []
+    lines = content.split('\n')
+    in_script = False
+    gap_lines = []
+    js_markers = re.compile(
+        r'^\s*(?:async\s+)?function\s+\w+\s*\(|'
+        r'^\s*(?:var|const|let)\s+\w+\s*=|'
+        r'^\s*document\.addEventListener|'
+        r'^\s*window\.\w+\s*=\s*(?:async\s+)?function|'
+        r'^\s*win\.document\.(write|close)|'
+        r'^\s*\}\)\(\);|'
+        r'^\s*\(function\s*\(\)\s*\{'
+    )
+    for i, line in enumerate(lines, 1):
+        opens = bool(re.search(r'<script(?:\s[^>]*)?>', line, re.IGNORECASE))
+        closes = bool(re.search(r'</script>', line, re.IGNORECASE))
+        was_in = in_script
+        if opens and not closes:
+            in_script = True
+        elif closes and not opens:
+            in_script = False
+            gap_lines = []
+            continue
+        if not was_in and not in_script and js_markers.match(line):
+            gap_lines.append((i, line.strip()[:80]))
+        if (opens or in_script) and gap_lines:
+            findings.append({'start_line': gap_lines[0][0], 'end_line': gap_lines[-1][0],
+                              'sample': gap_lines[0][1], 'count': len(gap_lines)})
+            gap_lines = []
+    if gap_lines:
+        findings.append({'start_line': gap_lines[0][0], 'end_line': gap_lines[-1][0],
+                          'sample': gap_lines[0][1], 'count': len(gap_lines)})
+    return findings
+```
+
+**Known limitation, accepted rather than over-engineered:** a JS string-literal fragment that happens to start with an HTML-looking tag (e.g. the tail end of a `win.document.write('...</body></html>')` call, orphaned on its own line by a different nearby bug) will NOT be caught by the gap scan, since it starts with `<` and looks like harmless HTML. This is rare debris, not the core failure mode — if Check 9 (Node ground-truth) or Check 13 already flagged the surrounding area, hand-trace that specific spot rather than expecting Check 14 to catch every variant.
+
+**FAIL condition:** Any premature `</body>` finding → BLOCK push, fix immediately by re-wrapping the orphaned content in `<script>...</script>` (verify with Check 9 afterward). Any orphaned-JS-marker finding → BLOCK push, same fix.
+
+---
+
+#### CHECK 15 — App ID Value Mismatch (Silent B2B-Tier Downgrade)
+
+**Added June 16, 2026.** Check 4 already verifies `app_id` is *present* on every proxy call — it never verifies the *value* is the app's real canonical name. `api/claude.js` does an exact-match lookup against a `B2B_APPS` Set to decide Sonnet-vs-Haiku tier, demo rate limit (50/day vs 15/day), and max_tokens ceiling. StoneDesk had 8 call sites sending suffixed values (`'doc_analysis'`, `'followup_gen'`, `'memory_builder'`, `'simplify'`, `'compare'`, `APP_ID + '_vision'`, `'stonedesk_'+role`, `'stonedesk_email_triage'`) instead of plain `'stonedesk'`. Several of these were hidden behind a correct `app_id:"stonedesk"` key earlier in the same object literal — JS object literals silently let the LAST duplicate key win, so the wrong value was the one actually sent, with zero error anywhere. The result: those 8 features quietly ran on Haiku instead of Sonnet, with a tighter token cap and a stricter rate limit, indistinguishable from "working" unless someone compared response quality call-by-call.
+
+**The rule:** Every `app_id` value sent to the SAIRN proxy must exactly match the file's own canonical app name (e.g. `stonedesk.html` → `'stonedesk'`, never a suffixed or different value). Check the LAST `app_id` key if an object literal has more than one, since that's the one JS actually sends.
+
+```python
+import re
+
+def check_app_id_mismatch(content, canonical_app_id):
+    findings = []
+    # Find every JSON.stringify({...}) or object literal passed to the proxy,
+    # extract ALL app_id keys within it, keep only the LAST (JS dup-key rule)
+    obj_pattern = re.compile(r'\{[^{}]*?app_id\s*:\s*[^,}]+[^{}]*?\}', re.DOTALL)
+    for m in obj_pattern.finditer(content):
+        block = m.group(0)
+        line_no = content.count('\n', 0, m.start()) + 1
+        app_id_keys = re.findall(r'app_id\s*:\s*([^,}]+)', block)
+        if not app_id_keys:
+            continue
+        last_value = app_id_keys[-1].strip().strip('"\'')
+        if last_value == canonical_app_id:
+            continue
+        if last_value.startswith(canonical_app_id) or last_value.startswith('APP_ID'):
+            findings.append(f"CRITICAL line {line_no}: app_id resolves to '{last_value}', "
+                             f"not canonical '{canonical_app_id}' — proxy's B2B_APPS lookup is "
+                             f"exact-match, this call silently downgrades to Haiku tier with "
+                             f"tighter rate limits")
+    return findings
+```
+
+**Verification note:** the regex is intentionally permissive (it can't fully parse nested JS objects), so always confirm each finding by hand before fixing — look at the actual object literal and identify which `app_id` key is genuinely last in source order, not just last in the regex match.
+
+**FAIL condition:** Any mismatch → fix before push (not a hard crash, but a real product-quality regression that's invisible without comparing model tier — treat as high priority, same urgency as Check 12's stale model strings).
+
+---
+
 Run when a Supabase patch has been injected or when the app connects to Supabase.
 
 **What to verify:**
@@ -740,6 +842,8 @@ CHECK 10 — Duplicate Globals:      [PASS / WARN / FAIL]        ← HARD STOP I
 CHECK 11 — Regex Literal Sanity:   [PASS / FAIL: N findings]  ← HARD STOP IF comment-trap found
 CHECK 12 — Stale Model Strings:    [PASS / WARN: N findings]
 CHECK 13 — Cross-Block Var Collision: [PASS / FAIL: N findings] ← HARD STOP IF CRITICAL (real browser crash)
+CHECK 14 — Orphaned Content Outside Script: [PASS / FAIL: N findings] ← HARD STOP IF FAIL (text renders on live page)
+CHECK 15 — App ID Value Mismatch:  [PASS / FAIL: N findings]  ← fix before push (silent Haiku downgrade)
 BONUS    — Supabase Schema:        [PASS / SKIP / FAIL]
 
 TOTAL FINDINGS: [N critical] [N warnings] [N info]
