@@ -427,6 +427,141 @@ tr:hover td{background:var(--t)}
   </div>
 </div>
 
+
+<div class="page" id="page-patients">
+  <div class="ph">
+    <div><div class="ptitle">🐾 Patients</div><div class="psub">All registered patients</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ Add Patient</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Active Patients</div><div class="sv">847</div><div class="sd">↑ 12 this month</div></div><div class="sc"><div class="sl">Appointments Today</div><div class="sv">18</div><div class="sd">6 complete</div></div><div class="sc"><div class="sl">Vaccines Due</div><div class="sv">23</div><div class="sd">This week</div></div><div class="sc"><div class="sl">Controlled Rx Active</div><div class="sv">4</div><div class="sd">DEA monitored</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>DOB</th><th>Last Visit</th><th>Status</th></tr></thead>
+      <tbody><tr><td>Max</td><td>Canine</td><td>Labrador</td><td>John Smith</td><td>03/15/19</td><td>06/10/26</td><td><span class="badge bg">Active</span></td></tr><tr><td>Luna</td><td>Feline</td><td>Domestic SH</td><td>Sarah Lee</td><td>08/22/20</td><td>05/28/26</td><td><span class="badge bg">Active</span></td></tr><tr><td>Bella</td><td>Canine</td><td>Golden Retriever</td><td>Chris Davis</td><td>05/10/21</td><td>06/14/26</td><td><span class="badge ba">Today</span></td></tr><tr><td>Rocky</td><td>Canine</td><td>Bulldog</td><td>Maria Chen</td><td>01/05/18</td><td>04/12/26</td><td><span class="badge bgr">Overdue Vaccine</span></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-appointments">
+  <div class="ph">
+    <div><div class="ptitle">📅 Appointments</div><div class="psub">Today's schedule and upcoming visits</div></div>
+    <div class="pacts"><button class="btn bp">+ Schedule</button></div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Time</th><th>Patient</th><th>Owner</th><th>Type</th><th>DVM</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>9:00 AM</td><td>Max (Lab)</td><td>J. Smith</td><td>Annual Wellness</td><td>Dr. Kim</td><td><span class="badge bg">Complete</span></td></tr>
+        <tr><td>10:30 AM</td><td>Luna (Cat)</td><td>S. Lee</td><td>Sick Visit</td><td>Dr. Park</td><td><span class="badge bg">Complete</span></td></tr>
+        <tr><td>1:00 PM</td><td>Bella (Golden)</td><td>C. Davis</td><td>Post-Op Check</td><td>Dr. Kim</td><td><span class="badge ba">In Progress</span></td></tr>
+        <tr><td>2:30 PM</td><td>Rocky (Bulldog)</td><td>M. Chen</td><td>Dental Consult</td><td>Dr. Park</td><td><span class="badge bgr">Scheduled</span></td></tr>
+        <tr><td>3:30 PM</td><td>Charlie (Beagle)</td><td>P. Jones</td><td>Vaccine Update</td><td>Dr. Kim</td><td><span class="badge bgr">Scheduled</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-soap-notes">
+  <div class="ph">
+    <div><div class="ptitle">📋 SOAP Notes</div><div class="psub">AI-assisted clinical documentation</div></div>
+    <div class="pacts"><button class="btn bp" onclick="generateSOAP()">🤖 Generate SOAP</button></div>
+  </div>
+  <div class="card">
+    <div class="fr">
+      <div class="fg"><label class="fl">Patient</label><input class="fi" id="soap-patient" placeholder="Patient name / ID"></div>
+      <div class="fg"><label class="fl">Visit Type</label><select class="fi" id="soap-type"><option>Wellness Exam</option><option>Sick Visit</option><option>Post-Op</option><option>Dental</option><option>Emergency</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">S — Subjective (Chief Complaint / History)</label>
+      <textarea class="fta" id="soap-s" placeholder="Owner reports... Patient presented with... History of..."></textarea></div>
+    <div class="fg"><label class="fl">O — Objective (Physical Exam Findings)</label>
+      <textarea class="fta" id="soap-o" placeholder="Weight: _kg  Temp: _°F  HR: _bpm  RR: _rpm  Findings..."></textarea></div>
+    <div class="fg"><label class="fl">A — Assessment (Diagnoses)</label>
+      <textarea class="fta" id="soap-a" placeholder="Primary diagnosis, differentials..."></textarea></div>
+    <div class="fg"><label class="fl">P — Plan (Treatment / Next Steps)</label>
+      <textarea class="fta" id="soap-p" placeholder="Medications, procedures, follow-up..."></textarea></div>
+    <button class="btn bp" onclick="generateSOAP()">🤖 Enhance with Claude</button>
+    <div class="ai-bub" id="soap-out" style="display:none;margin-top:12px"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn bp bsm" onclick="saveSOAP()">💾 Save Note</button>
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+</div>
+<div class="page" id="page-prescriptions">
+  <div class="ph">
+    <div><div class="ptitle">💊 Prescriptions</div><div class="psub">Prescription management and controlled substance monitoring</div></div>
+    <div class="pacts"><button class="btn bp">+ New Rx</button></div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Active Rx</div><div class="sv">47</div><div class="sd">This month</div></div><div class="sc"><div class="sl">Controlled Substances</div><div class="sv">4</div><div class="sd">DEA Schedule II-V</div></div><div class="sc"><div class="sl">Refills Due</div><div class="sv">8</div><div class="sd">This week</div></div><div class="sc"><div class="sl">Drug Interactions Flagged</div><div class="sv">0</div><div class="sd">Clean</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Patient</th><th>Drug</th><th>Schedule</th><th>Dose</th><th>Qty</th><th>Refills</th><th>Expires</th><th>DVM</th></tr></thead>
+      <tbody>
+        <tr><td>Max (Lab)</td><td>Tramadol</td><td><span class="badge br">Schedule IV</span></td><td>50mg BID</td><td>30</td><td>0</td><td>07/14/26</td><td>Dr. Kim</td></tr>
+        <tr><td>Bella (Golden)</td><td>Amoxicillin</td><td><span class="badge bg">Non-Controlled</span></td><td>250mg BID</td><td>14</td><td>0</td><td>06/28/26</td><td>Dr. Kim</td></tr>
+        <tr><td>Luna (Cat)</td><td>Gabapentin</td><td><span class="badge ba">Schedule V</span></td><td>100mg SID</td><td>30</td><td>2</td><td>09/14/26</td><td>Dr. Park</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-dea-log">
+  <div class="ph">
+    <div><div class="ptitle">🔒 DEA Controlled Substance Log</div><div class="psub">DEA Schedule II-V — always audit-ready</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print Audit Report</button>
+      <button class="btn bp" onclick="deaAICheck()">🤖 Compliance Check</button>
+    </div>
+  </div>
+  <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:#991B1B;font-weight:600">
+    🔒 DEA Compliance — All controlled substance dispensing must be logged within 24 hours. Biannual inventory required.
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Schedule II Qty</div><div class="sv">Tramadol: 180 units</div><div class="sd">Last count 06/10</div></div><div class="sc"><div class="sl">Schedule III-V</div><div class="sv">Gabapentin: 90 units</div><div class="sd">Last count 06/10</div></div><div class="sc"><div class="sl">Last Audit</div><div class="sv">06/10/26</div><div class="sd">Clean — 0 discrepancies</div></div><div class="sc"><div class="sl">Next Required Audit</div><div class="sv">12/10/26</div><div class="sd">180 days</div></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">Dispensing Log</div></div>
+    <div class="tw"><table>
+      <thead><tr><th>Date</th><th>Drug</th><th>Schedule</th><th>Patient</th><th>Qty Out</th><th>Balance</th><th>DVM</th><th>Tech Witness</th></tr></thead>
+      <tbody>
+        <tr><td>06/14</td><td>Tramadol 50mg</td><td>IV</td><td>Max (Smith)</td><td>30</td><td>150</td><td>Dr. Kim</td><td>J. Torres RVT</td></tr>
+        <tr><td>06/12</td><td>Tramadol 50mg</td><td>IV</td><td>Rocky (Chen)</td><td>30</td><td>180</td><td>Dr. Park</td><td>M. Lee RVT</td></tr>
+        <tr><td>06/10</td><td>Gabapentin 100mg</td><td>V</td><td>Luna (Lee)</td><td>30</td><td>90</td><td>Dr. Park</td><td>J. Torres RVT</td></tr>
+      </tbody>
+    </table></div>
+    <div class="ai-bub" id="dea-ai-out" style="display:none;margin-top:12px"></div>
+  </div>
+</div>
+<div class="page" id="page-lab-results">
+  <div class="ph">
+    <div><div class="ptitle">🔬 Lab Results</div><div class="psub">Diagnostic results and pending tests</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp" onclick="showToast('Order sent')">+ Order Lab</button>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Date</th><th>Patient</th><th>Test</th><th>Lab</th><th>Result</th><th>Reference</th><th>Flag</th><th>DVM</th></tr></thead>
+      <tbody><tr><td>06/14</td><td>Max (Lab)</td><td>CBC Panel</td><td>IDEXX</td><td>WBC 8.2, RBC 6.1</td><td>Normal ranges</td><td><span class="badge bg">Normal</span></td><td>Dr. Kim</td></tr><tr><td>06/14</td><td>Bella (Golden)</td><td>Culture & Sensitivity</td><td>ANTECH</td><td>E. coli — Amox sensitive</td><td>N/A</td><td><span class="badge ba">Review</span></td><td>Dr. Kim</td></tr><tr><td>06/13</td><td>Luna (Cat)</td><td>T4 Thyroid</td><td>IDEXX</td><td>4.8 µg/dL</td><td>1.0-4.0</td><td><span class="badge br">⚠️ High</span></td><td>Dr. Park</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+<div class="page" id="page-invoices">
+  <div class="ph">
+    <div><div class="ptitle">💳 Invoices</div><div class="psub">Client billing and payment status</div></div>
+    <div class="pacts">
+      <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn bp">+ New Invoice</button>
+    </div>
+  </div>
+  <div class="sgrid"><div class="sc"><div class="sl">Revenue Today</div><div class="sv">$2,840</div><div class="sd">8 invoices</div></div><div class="sc"><div class="sl">Outstanding</div><div class="sv">$8,400</div><div class="sd">12 invoices</div></div><div class="sc"><div class="sl">Overdue 30+</div><div class="sv">$1,200</div><div class="sd">2 invoices</div></div><div class="sc"><div class="sl">Avg Invoice</div><div class="sv">$285</div><div class="sd">This month</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Invoice#</th><th>Client</th><th>Patient</th><th>Services</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+      <tbody><tr><td>INV-4041</td><td>J. Smith</td><td>Max</td><td>Annual + Vaccines</td><td>$285</td><td>$285</td><td>$0</td><td><span class="badge bg">Paid</span></td></tr><tr><td>INV-4040</td><td>C. Davis</td><td>Bella</td><td>Post-Op + Rx</td><td>$1,240</td><td>$620</td><td>$620</td><td><span class="badge ba">Partial</span></td></tr><tr><td>INV-4039</td><td>M. Chen</td><td>Rocky</td><td>Dental Consult</td><td>$185</td><td>$0</td><td>$185</td><td><span class="badge br">Unpaid</span></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
 </div><!-- end main -->
 </div><!-- end app -->
 
@@ -814,5 +949,38 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 })();
 </script>
+<script>
+async function generateSOAP(){
+  const s=document.getElementById('soap-s')?.value;
+  const o=document.getElementById('soap-o')?.value;
+  const a=document.getElementById('soap-a')?.value;
+  const p_val=document.getElementById('soap-p')?.value;
+  const type=document.getElementById('soap-type')?.value||'Wellness';
+  const el=document.getElementById('soap-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Enhancing SOAP note...';
+  try{
+    const r=await callClaude(
+      'You are an expert veterinary clinical documentation specialist. Review and enhance this SOAP note: check for completeness, suggest additional differentials if appropriate, verify treatment plan aligns with diagnosis, flag any drug interaction concerns, and ensure documentation supports the visit level for billing. Output the enhanced SOAP note in clean format.',
+      [{role:'user',content:`Visit Type: ${type}\nS: ${s}\nO: ${o}\nA: ${a}\nP: ${p_val}`}]
+    );
+    el.textContent=r;
+  }catch(e){el.textContent='Enhancement failed.';}
+}
+function saveSOAP(){
+  const key=APP_ID+'_soap';
+  const arr=JSON.parse(localStorage.getItem(key)||'[]');
+  arr.unshift({date:new Date().toLocaleDateString(),patient:document.getElementById('soap-patient')?.value,
+    s:document.getElementById('soap-s')?.value,a:document.getElementById('soap-a')?.value});
+  localStorage.setItem(key,JSON.stringify(arr));showToast('SOAP note saved');
+}
+async function deaAICheck(){
+  const el=document.getElementById('dea-ai-out');el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Running DEA compliance check...';
+  try{
+    const r=await callClaude('You are a DEA veterinary compliance specialist. Review this controlled substance log and identify: any missing witness signatures, inventory discrepancies, dispensing outside normal ranges, audit timeline compliance, and documentation gaps. Flag any DEA 21 CFR Part 1304 compliance issues.',
+      [{role:'user',content:'DEA Log: Tramadol 50mg (Sch IV): 180 units on hand, 3 dispensing records this month, all witnessed. Gabapentin 100mg (Sch V): 90 units, 1 dispensing record. Last biannual audit 06/10/26 — clean. Next due 12/10/26.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Check failed.';}
+}</script>
 </body>
 </html>
