@@ -1686,40 +1686,30 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
 </script>
 
-<!-- SAIRN AUTH GATE -->
-
-
-
-<!-- == AUTH == -->
+<!-- SAIRN AUTH GATE — Role + PIN -->
 <div id="auth-screen">
   <div class="auth-glow"></div>
-  <div class="auth-logo">StoneDesk™</div>
+  <div class="auth-logo">StoneDesk&#8482;</div>
   <div class="auth-tag">Stone Fabrication Intelligence Platform</div>
   <div class="auth-box">
-    <div class="role-pills">
-      <div class="role-pill active" onclick="selectAuthTab('login',this)">Sign In</div>
-      <div class="role-pill" onclick="selectAuthTab('register',this)">Register</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Select your role</div>
+    <div class="role-pills" id="sd-role-pills">
+      <div class="role-pill active" data-role="owner"   onclick="sdSelRole(this)">&#128081; Owner</div>
+      <div class="role-pill"        data-role="admin"   onclick="sdSelRole(this)">&#9874;&#65039; Manager</div>
+      <div class="role-pill"        data-role="sales"   onclick="sdSelRole(this)">&#128188; Sales</div>
+      <div class="role-pill"        data-role="install" onclick="sdSelRole(this)">&#128295; Install</div>
     </div>
-    <div id="auth-login-form">
-      <label>Email</label>
-      <input type="email" id="auth-email" placeholder="you@yourshop.com" style="width:100%;margin-bottom:8px" onkeydown="if(event.key==='Enter')doLogin()">
-      <label>Password</label>
-      <input type="password" id="auth-password" placeholder="••••••••" style="width:100%" onkeydown="if(event.key==='Enter')doLogin()">
-      <div class="auth-error" id="auth-error"></div>
-      <button class="auth-btn" onclick="doLogin()">Sign In to StoneDesk™</button>
-    </div>
-    <div id="auth-register-form" style="display:none">
-      <label>Shop Name</label>
-      <input type="text" id="auth-shopname" placeholder="Your Fabrication Shop" style="width:100%;margin-bottom:8px">
-      <label>Your Name</label>
-      <input type="text" id="auth-name" placeholder="John Smith" style="width:100%;margin-bottom:8px">
-      <label>Email</label>
-      <input type="email" id="auth-reg-email" placeholder="you@yourshop.com" style="width:100%;margin-bottom:8px">
-      <label>Password</label>
-      <input type="password" id="auth-reg-password" placeholder="Min 8 characters" style="width:100%" onkeydown="if(event.key==='Enter')doRegister()">
-      <div class="auth-error" id="auth-reg-error"></div>
-      <button class="auth-btn" onclick="doRegister()">Create Free Account</button>
-    </div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Enter PIN</div>
+    <input type="password" id="sd-pin-input" maxlength="4" inputmode="numeric"
+      placeholder="&#8226;&#8226;&#8226;&#8226;"
+      style="width:100%;padding:16px;font-size:32px;letter-spacing:14px;text-align:center;font-family:monospace;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;transition:border-color .15s"
+      oninput="if(this.value.length===4)doLogin()"
+      onfocus="this.style.borderColor='rgba(232,133,10,0.7)'"
+      onblur="this.style.borderColor='rgba(232,133,10,0.3)'"
+    >
+    <div class="auth-error" id="auth-error" style="margin-top:10px"></div>
+    <button class="auth-btn" onclick="doLogin()" style="margin-top:14px">Sign In to StoneDesk&#8482;</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Demo PIN: 1234</div>
   </div>
 </div>
 
@@ -3727,56 +3717,53 @@ let CODES = { sales: '1234', admin: '9999' };
 const RAILWAY='https://fabricor-production.up.railway.app';
 let currentUser=null;
 
-function selectAuthTab(tab,el){
-  document.querySelectorAll('.role-pill').forEach(p=>p.classList.remove('active'));
+// SAIRN Standard PIN Login
+var SD_PINS = {
+  owner:   localStorage.getItem('sd_pin_owner')   || '1234',
+  admin:   localStorage.getItem('sd_pin_admin')   || '2345',
+  sales:   localStorage.getItem('sd_pin_sales')   || '3456',
+  install: localStorage.getItem('sd_pin_install') || '4567'
+};
+var SD_ROLE_LABELS = { owner:'Owner', admin:'Manager', sales:'Sales Rep', install:'Installer' };
+var sdCurrentRole = 'owner';
+
+function sdSelRole(el) {
+  document.querySelectorAll('#sd-role-pills .role-pill').forEach(function(p){p.classList.remove('active');});
   el.classList.add('active');
-  document.getElementById('auth-login-form').style.display=tab==='login'?'block':'none';
-  document.getElementById('auth-register-form').style.display=tab==='register'?'block':'none';
+  sdCurrentRole = el.getAttribute('data-role');
+  var pin = document.getElementById('sd-pin-input');
+  if (pin) { pin.value = ''; pin.focus(); }
 }
 
-async function doLogin(){
-  const email=document.getElementById('auth-email').value.trim();
-  const password=document.getElementById('auth-password').value;
-  const errEl=document.getElementById('auth-error');
-  errEl.textContent='';
-  if(!email||!password){errEl.textContent='Please enter email and password';return;}
-  try{
-    const res=await fetch(RAILWAY+'/api/auth/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,email,password})});
-    const data=await res.json();
-    if(!res.ok){errEl.textContent=data.error||'Login failed';return;}
-    currentUser=data.user;
-    shopName=(data.user.shop_name||data.user.shopName)||'My Shop';
-    loginRole=data.user.role==='admin'?'admin':'sales';
-    applyExecRole(data.user);
-    document.getElementById('auth-screen').style.display='none';
-    document.getElementById('app').classList.add('visible');
-    if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
-    dbLoadAll();
-  }catch(e){errEl.textContent='Connection error - try again.';}
+function doLogin() {
+  var pin   = document.getElementById('sd-pin-input');
+  var errEl = document.getElementById('auth-error');
+  if (!pin) return;
+  var entered = pin.value;
+  var correct = SD_PINS[sdCurrentRole] || '1234';
+  errEl.textContent = '';
+  if (entered !== correct) {
+    errEl.textContent = 'Incorrect PIN. Try again.';
+    pin.value = '';
+    pin.focus();
+    if (typeof window.saTrackLoginAttempt === 'function') window.saTrackLoginAttempt(false);
+    return;
+  }
+  if (typeof window.saTrackLoginAttempt === 'function') window.saTrackLoginAttempt(true);
+  loginRole   = sdCurrentRole;
+  currentUser = { role: sdCurrentRole, name: SD_ROLE_LABELS[sdCurrentRole] };
+  shopName    = localStorage.getItem('fab_shopname') || 'My Stone Shop';
+  if (typeof applyExecRole === 'function') applyExecRole(currentUser);
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  var ts = document.getElementById('topbar-shop');
+  if (ts) ts.textContent = shopName;
+  if (typeof dbLoadAll === 'function') dbLoadAll();
+  if (typeof applyRoleGates === 'function') applyRoleGates();
 }
 
-async function doRegister(){
-  const sn=document.getElementById('auth-shopname').value.trim();
-  const name=document.getElementById('auth-name').value.trim();
-  const email=document.getElementById('auth-reg-email').value.trim();
-  const password=document.getElementById('auth-reg-password').value;
-  const errEl=document.getElementById('auth-reg-error');
-  errEl.textContent='';
-  if(!sn||!name||!email||!password){errEl.textContent='All fields required';return;}
-  if(password.length<8){errEl.textContent='Password must be 8+ characters';return;}
-  try{
-    const res=await fetch(RAILWAY+'/api/auth/register',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,email,password,name,shopName:sn})});
-    const data=await res.json();
-    if(!res.ok){errEl.textContent=data.error||'Registration failed';return;}
-    currentUser=data.user;
-    shopName=(data.user.shop_name||data.user.shopName)||sn;
-    loginRole='admin';
-    applyExecRole(currentUser||{});
-    document.getElementById('auth-screen').style.display='none';
-    document.getElementById('app').classList.add('visible');
-    if(document.getElementById('topbar-shop'))document.getElementById('topbar-shop').textContent=shopName;
-  }catch(e){errEl.textContent='Connection error - try again.';}
-}
+function selectAuthTab() {} // stub — no longer used
+function doRegister()    {} // stub — registration handled via Admin PIN setup
 
 
 // Safety stubs for missing functions
