@@ -478,10 +478,14 @@ textarea{resize:vertical;min-height:72px;}
 /* ============================================================
    SAIRN CLAUDE ENGINE — sairnbiz
    Single definition. Loaded first. Works everywhere.
+   NOTE: APP_ID/PROXY/BRIDGE intentionally NOT declared here --
+   they are declared once, below, in the main app script block.
+   Fixed June 16 2026: previously redeclared here too. Both blocks
+   used 'var', so this merged silently in normal mode -- but the
+   second block has 'use strict', under which redeclaring a var
+   already in shared scope is a hard SyntaxError that crashes the
+   whole page at parse time.
    ============================================================ */
-var APP_ID  = 'sairnbiz';
-var PROXY   = 'https://sairn.vercel.app/api/claude';
-var BRIDGE  = 'https://sairn.vercel.app/api/bridge';
 
 /* showToast — safe to call anywhere */
 function showToast(msg, dur) {
