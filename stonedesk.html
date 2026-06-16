@@ -5755,7 +5755,7 @@ document.addEventListener('DOMContentLoaded', () => {
 })(); // end IIFE
 </script>
 
-
+<script>
 // P5 Range Benchmarking
 function sairnRangeBar(label,value,min,max,color,containerId){
   var pct=Math.min(100,Math.max(0,Math.round((value-min)/(max-min)*100)));
@@ -5800,15 +5800,13 @@ document.addEventListener('DOMContentLoaded',function(){
     });
   }catch(e){}
 });
-
+</script>
 
 <!-- SAIRNscan embedded -->
 <div id="sairnscan-ref" style="display:none" data-sairnscan="true"
      data-version="1.0" data-sha="dda09816"></div>
 
-
-
-
+<script>
 document.addEventListener('DOMContentLoaded',function(){
   // PIN input Enter key + auto-clear on role switch
   var pinEl=document.getElementById('sd-pin-input');
@@ -5822,6 +5820,7 @@ document.addEventListener('DOMContentLoaded',function(){
   sessionStorage.setItem('s_attempts','0');
   if(window.SAIRN_SEC) SAIRN_SEC.loginAttempts=0;
 });
+</script>
 
 
 
@@ -6285,10 +6284,7 @@ function crPostGL(){if(typeof showToast==="function")showToast("Posted to GL");}
 function crUpdate(){}
 </script>
 
-</body></html>');
-  win.document.close();
-}
-
+<script>
 // == ADMIN FORMULA ============================================
 function initAdminFormula() {
   const matEl = document.getElementById('mat-formula-rows');
