@@ -352,7 +352,136 @@ input:focus,select:focus,textarea:focus{border-color:var(--c);} textarea{resize:
   <div class="air"><input type="text" id="ai-in" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn btn-c" onclick="sendAI()">Send</button></div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="sairnbiz-connector.js" defer></script>
+<script src="sairnbiz-connector.js" defer></script><script>
+// =============================================================
+// SAIRN CORE — sairnlaw
+// Defined first. Called anywhere. Never undefined.
+// =============================================================
+'use strict';
+
+var APP_ID   = 'sairnlaw';
+var PROXY    = 'https://sairn.vercel.app/api/claude';
+var BRIDGE   = 'https://sairn.vercel.app/api/bridge';
+var NET_URL  = 'https://sairn.vercel.app/api/network'; // SAIRN Intelligence Network
+
+// ── callClaude: the one function all AI calls use ────────────
+async function callClaude(system, messages, maxTokens) {
+  // Gather business context for richer AI responses
+  var bizCtx = '';
+  try {
+    var p = JSON.parse(localStorage.getItem(APP_ID + '_pricing') || '{}');
+    var biz = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
+    var mem = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
+    bizCtx = (biz.name ? 'Business: ' + biz.name + '. ' : '') +
+             (biz.industry ? 'Industry: ' + biz.industry + '. ' : '') +
+             (mem.length ? 'Known facts: ' + mem.slice(0,5).join('; ') + '. ' : '');
+  } catch(e) {}
+
+  var enhancedSystem = system +
+    (bizCtx ? '\n\nBUSINESS CONTEXT: ' + bizCtx : '') +
+    '\n\nApp: ' + APP_ID + '. Always be specific, actionable, and brief.';
+
+  try {
+    var res = await fetch(PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id:     APP_ID,
+        is_demo:    true,
+        system:     enhancedSystem,
+        messages:   messages,
+        max_tokens: maxTokens || 1500
+      })
+    });
+    if (!res.ok) {
+      var err = await res.json().catch(function() { return {}; });
+      if (err.upgrade) {
+        showToast('Demo limit reached. Contact michael@sairn.com for your license key.');
+        throw new Error('demo_limit');
+      }
+      throw new Error('Claude error ' + res.status);
+    }
+    var data = await res.json();
+    var text = data && data.content && data.content[0] && data.content[0].text
+      ? data.content[0].text : '';
+    if (!text) throw new Error('Empty response');
+
+    // Learn from every interaction
+    learnFromResponse(system, text);
+
+    return text;
+  } catch(e) {
+    if (e.message !== 'demo_limit') console.error('[SAIRN Claude]', e.message);
+    throw e;
+  }
+}
+
+// ── learnFromResponse: extract and store business intelligence ─
+function learnFromResponse(question, answer) {
+  try {
+    // Extract key facts from Claude's responses about the business
+    var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
+    var timestamp = new Date().toISOString().split('T')[0];
+
+    // Store high-value insights (keep last 50)
+    if (answer.length > 100) {
+      var insight = timestamp + ': ' + answer.substring(0, 150).replace(/\n/g, ' ');
+      memory.unshift(insight);
+      memory = memory.slice(0, 50);
+      localStorage.setItem(APP_ID + '_memory', JSON.stringify(memory));
+    }
+
+    // Push to SAIRN Intelligence Network (async, non-blocking)
+    sendToNetwork({
+      app:    APP_ID,
+      type:   'insight',
+      q:      question.substring(0, 100),
+      a:      answer.substring(0, 200),
+      ts:     new Date().toISOString()
+    });
+  } catch(e) { /* never crash on learning */ }
+}
+
+// ── sendToNetwork: post to SAIRN Bridge (non-blocking) ────────
+function sendToNetwork(data) {
+  fetch(BRIDGE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: APP_ID, to: 'network', type: 'learn', payload: data })
+  }).catch(function() { /* silent — network is optional */ });
+}
+
+// ── getBusinessContext: read everything we know ────────────────
+function getBusinessContext() {
+  try {
+    var profile = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
+    var memory  = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
+    var pricing = JSON.parse(localStorage.getItem(APP_ID + '_pricing') || '{}');
+    var employees = JSON.parse(localStorage.getItem(APP_ID + '_employees') || '[]');
+    return {
+      profile:   profile,
+      memory:    memory.slice(0, 10),
+      pricing:   pricing,
+      employees: employees.length,
+      lastSync:  localStorage.getItem(APP_ID + '_last_sync') || 'never'
+    };
+  } catch(e) { return {}; }
+}
+
+// ── saveBusinessFact: remember key facts ──────────────────────
+function saveBusinessFact(fact) {
+  try {
+    var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
+    memory.unshift(new Date().toLocaleDateString() + ': ' + fact);
+    localStorage.setItem(APP_ID + '_memory', JSON.stringify(memory.slice(0, 50)));
+  } catch(e) {}
+}
+window.callClaude         = callClaude;
+window.getBusinessContext = getBusinessContext;
+window.saveBusinessFact   = saveBusinessFact;
+window.learnFromResponse  = learnFromResponse;
+// =============================================================
+</script>
 <script>
 var PINS="partner": "1234", "associate": "2345", "paralegal": "3456", "staff": "4567";
 var curRole='';
