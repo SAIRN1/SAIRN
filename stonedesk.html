@@ -652,7 +652,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 }
 .dm-btn.ai-btn{
   background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);
-  color:#A78BFA;
+  color:#7C3AED;
 }
 
 /* AI suggestion panel */
@@ -664,8 +664,8 @@ textarea#userInput::placeholder{color:var(--muted)}
   display:flex;align-items:center;gap:8px;margin-bottom:8px;
 }
 .ai-suggestion-icon{font-size:16px}
-.ai-suggestion-title{font-size:12px;font-weight:700;color:#A78BFA}
-.ai-suggestion-text{font-size:12px;color:rgba(245,240,232,.65);line-height:1.6}
+.ai-suggestion-title{font-size:12px;font-weight:700;color:#7C3AED}
+.ai-suggestion-text{font-size:12px;color:var(--text);line-height:1.6}
 
 /* SOPs modal */
 .sop-modal{
@@ -1968,6 +1968,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <button class="nav-btn" onclick="showPanel('template')">&#128208; Templates</button>
       <button class="nav-btn" onclick="showPanel('doc-scan')">📄 Doc Scanner</button>
       <button class="nav-btn" onclick="showPanel('check-register')">📄 Check Register</button>
+      <button class="nav-btn" onclick="window.sairnOpenSuite()">🔗 SAIRN Suite</button>
       <button class="nav-btn admin-only" onclick="showPanel('admin')">Admin</button>
     </div>
     <div class="topbar-right">
@@ -1976,7 +1977,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
-  <!-- == AI PANEL (full Fabricor AI chat) == -->
+  <!-- == AI PANEL (full StoneDesk AI chat) == -->
   
 <!-- == GLOBAL ALERT BAR == -->
 <div class="alert-bar" id="alert-bar"></div>
@@ -2319,7 +2320,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="q-btn" style="width:100%" onclick="printEstimate()">🖨️ Print / PDF</button>
           </div>
           <div style="margin-top:10px">
-            <button class="q-btn ai-quote-btn" style="width:100%;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);color:#A78BFA" onclick="getAIQuoteAdvice()">🧠 AI Quote Review</button>
+            <button class="q-btn ai-quote-btn" style="width:100%;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);color:#7C3AED" onclick="getAIQuoteAdvice()">🧠 AI Quote Review</button>
           </div>
         </div>
       </div>
@@ -2443,7 +2444,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </div>
 
         <button class="dm-btn primary" onclick="calcDrawing()">Calculate All Square Footage</button>
-        <button class="dm-btn" style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);color:#A78BFA" onclick="getAIDrawingAdvice()">🧠 AI — Review This Job</button>
+        <button class="dm-btn" style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);color:#7C3AED" onclick="getAIDrawingAdvice()">🧠 AI — Review This Job</button>
         <button class="dm-btn secondary" onclick="printDrawCutSheet()">🖨️ Print Professional Cut Sheet</button>
 
       </div><!-- end left panel -->
@@ -2467,7 +2468,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <div id="ai-draw-suggestion" style="display:none" class="ai-suggestion">
           <div class="ai-suggestion-header">
             <span class="ai-suggestion-icon">🧠</span>
-            <span class="ai-suggestion-title">Fabricor AI — Job Review</span>
+            <span class="ai-suggestion-title">StoneDesk AI — Job Review</span>
           </div>
           <div class="ai-suggestion-text" id="ai-draw-text"></div>
         </div>
@@ -4065,7 +4066,7 @@ async function doLogout() {
 
 function showWelcome() {
   const shopName = localStorage.getItem('fab_shop_name') || 'your shop';
-  addMessage('assistant', 'Welcome to **Fabricor** — your AI stone shop intelligence platform. I know granite, quartz, quartzite, and marble the way your best fabricator does. Ask me anything about running ' + shopName + ' — capacity planning, pricing, waste reduction, job costing, scheduling, or stone-specific questions. What can I help you with today?');
+  addMessage('assistant', 'Welcome to **StoneDesk** — your AI stone shop intelligence platform. I know granite, quartz, quartzite, and marble the way your best fabricator does. Ask me anything about running ' + shopName + ' — capacity planning, pricing, waste reduction, job costing, scheduling, or stone-specific questions. What can I help you with today?');
 }
 
 // == PANEL NAV =================================================
@@ -5215,7 +5216,7 @@ function printDrawCutSheet() {
   const win=window.open('','_blank');
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cut Sheet - '+jobName+'</title>');
   win.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:32px;color:#111;font-size:13px;line-height:1.6;max-width:950px;margin:0 auto}.hdr{border-bottom:3px solid #1A1410;padding-bottom:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end}.shop{font-size:22px;font-weight:700}.doctitle{font-size:14px;color:#555;margin-top:2px}.meta{font-size:11px;color:#999;text-align:right}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px}.sec{border:1px solid #e0d8cc;border-radius:6px;padding:14px}.sec-t{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#C8720A;margin-bottom:10px}.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f5f0e8;font-size:12px}.row:last-child{border:none}.rl{color:#777}.rv{font-weight:600}.mets{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}.met{background:#FEF3E2;border-radius:6px;padding:12px;text-align:center}.met-n{font-size:22px;font-weight:700;color:#C8720A}.met-l{font-size:9px;color:#999;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}.highlight{background:#FEF3E2;border:2px solid #E8850A!important}.holes-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}.hole-tag{background:#FEF3E2;border:1px solid #F0C070;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:600;color:#8A5010}.edge-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px}.edge-item{font-size:11px;padding:4px 8px;border-radius:4px;display:flex;align-items:center;gap:6px}.edge-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}.notes-box{border:1px solid #e0d8cc;border-radius:6px;padding:14px;min-height:55px;background:#FDFAF5;font-size:12px;color:#555;margin-bottom:18px}.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:28px;margin-top:32px}.sig{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#777}.ftr{margin-top:18px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:10px;color:#bbb}@media print{body{padding:20px}}</style></head><body>');
-  win.document.write('<div class="hdr"><div><div class="shop">'+shopName+'</div><div class="doctitle">Fabrication Cut Sheet — '+jobName+'</div></div><div class="meta">Date: '+date+'<br>Shape: '+ctShape.toUpperCase()+'<br>Powered by Fabricor AI</div></div>');
+  win.document.write('<div class="hdr"><div><div class="shop">'+shopName+'</div><div class="doctitle">Fabrication Cut Sheet — '+jobName+'</div></div><div class="meta">Date: '+date+'<br>Shape: '+ctShape.toUpperCase()+'<br>Powered by StoneDesk AI</div></div>');
   win.document.write('<div class="grid2"><div class="sec"><div class="sec-t">Job Details</div><div class="row"><span class="rl">Job Name</span><span class="rv">'+(jobName||'—')+'</span></div><div class="row"><span class="rl">Material</span><span class="rv">'+(material||'—')+'</span></div><div class="row"><span class="rl">Edge Profile</span><span class="rv">'+(edgeProfile||'—')+'</span></div><div class="row"><span class="rl">Shape Type</span><span class="rv">'+ctShape.charAt(0).toUpperCase()+ctShape.slice(1)+'</span></div></div>');
   win.document.write('<div class="sec"><div class="sec-t">Dimensions</div>');
   if(aL&&aD) win.document.write('<div class="row"><span class="rl">Section A</span><span class="rv">'+aL+'" \xd7 '+aD+'"</span></div>');
@@ -5248,7 +5249,7 @@ function printDrawCutSheet() {
 
   if(notes) win.document.write('<div class="sec-t" style="margin-bottom:6px">Notes</div><div class="notes-box">'+notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>');
   win.document.write('<div class="sig-row"><div class="sig">Estimator &amp; Date</div><div class="sig">Customer Approval &amp; Date</div><div class="sig">Fabricator Sign-Off</div><div class="sig">Installer Sign-Off</div></div>');
-  win.document.write('<div class="ftr"><div>'+shopName+' — Fabrication Cut Sheet — Internal Use Only</div><div>Generated by Fabricor AI \xb7 sairn.vercel.app/fabricor</div></div>');
+  win.document.write('<div class="ftr"><div>'+shopName+' — Fabrication Cut Sheet — Internal Use Only</div><div>Generated by StoneDesk AI \xb7 sairn.vercel.app/stonedesk</div></div>');
   win.document.write('<script>window.onload=function(){window.print();}<\/script>');
 }
 </script>
@@ -5264,7 +5265,6 @@ function printDrawCutSheet() {
 <div id="sairn-memory-indicator" style="display:none"></div>
 <div id="sairn-memory-panel" style="display:none"></div>
 <div id="sairn-profile-btn" style="display:none"></div>
-<div id="sairn-suite-modal" style="display:none"></div>
 <div id="sairn-tone-bar" style="display:none"></div>
 <div id="sairn-tone-tooltip" style="display:none"></div>
 <div id="sairn-voice-btn" style="display:none"></div>
@@ -5628,22 +5628,38 @@ console.log('StoneDesk Patch v1.1 loaded — all 18 panels verified and fixed');
       </div>
       <div class="sairn-suite-live">● Live</div>
     </div>
-    <div class="sairn-suite-grid"><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app','_blank')">
+    <div class="sairn-suite-grid"><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnbiz','_blank')">
   <div class="sairn-suite-icon" style="background:#14B8A6">SB</div>
   <div class="sairn-suite-tile-name">SAIRNbiz</div>
   <div class="sairn-suite-tile-desc">HR & Payroll</div>
-</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app','_blank')">
-  <div class="sairn-suite-icon" style="background:#6366F1">SD</div>
-  <div class="sairn-suite-tile-name">SAIRNdesign</div>
-  <div class="sairn-suite-tile-desc">Designer Orders</div>
-</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app','_blank')">
+</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnbuild','_blank')">
   <div class="sairn-suite-icon" style="background:#F59E0B">SB</div>
   <div class="sairn-suite-tile-name">SAIRNbuild</div>
-  <div class="sairn-suite-tile-desc">GC Orders</div>
-</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app','_blank')">
+  <div class="sairn-suite-tile-desc">GC Projects</div>
+</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnscape','_blank')">
   <div class="sairn-suite-icon" style="background:#22C55E">SS</div>
   <div class="sairn-suite-tile-name">SAIRNscape</div>
-  <div class="sairn-suite-tile-desc">Outdoor Surfaces</div>
+  <div class="sairn-suite-tile-desc">Exterior</div>
+</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnlaw','_blank')">
+  <div class="sairn-suite-icon" style="background:#15803D">SL</div>
+  <div class="sairn-suite-tile-name">SAIRNlaw</div>
+  <div class="sairn-suite-tile-desc">Legal</div>
+</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairndesign','_blank')">
+  <div class="sairn-suite-icon" style="background:#6366F1">SD</div>
+  <div class="sairn-suite-tile-name">SAIRNdesign</div>
+  <div class="sairn-suite-tile-desc">Interior Design</div>
+</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnvet','_blank')">
+  <div class="sairn-suite-icon" style="background:#7C3AED">SV</div>
+  <div class="sairn-suite-tile-name">SAIRNvet</div>
+  <div class="sairn-suite-tile-desc">Vet Clinics</div>
+</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairncare','_blank')">
+  <div class="sairn-suite-icon" style="background:#0D9488">SC</div>
+  <div class="sairn-suite-tile-name">SAIRNcare</div>
+  <div class="sairn-suite-tile-desc">Home Care</div>
+</div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnfuneral','_blank')">
+  <div class="sairn-suite-icon" style="background:#6B7280">SF</div>
+  <div class="sairn-suite-tile-name">SAIRNfuneral</div>
+  <div class="sairn-suite-tile-desc">Funeral Homes</div>
 </div></div>
     <div class="sairn-suite-btns">
       <button class="sairn-suite-btn" onclick="sairnSyncAll();sairnUpdateLastSync()">🔄 Sync All Apps</button>
@@ -6241,7 +6257,7 @@ function printSOP(p, shopName) {
   win.document.write('<h2>Position Responsibilities</h2><ul>');
   p.duties.forEach(d=>win.document.write('<li>'+d+'</li>'));
   win.document.write('</ul><div style="margin-top:32px"><span class="sig">Employee Name (print)</span><span class="sig">Signature &amp; Date</span><span class="sig">Supervisor Sign-Off</span></div>');
-  win.document.write('<div class="ftr"><span>'+shopName+' — Standard Operating Procedures — Confidential</span><span>Fabricor AI by SAIRN Technologies™</span></div>');
+  win.document.write('<div class="ftr"><span>'+shopName+' — Standard Operating Procedures — Confidential</span><span>StoneDesk AI by SAIRN Technologies™</span></div>');
   win.document.write('<script>window.onload=function(){window.print();}<\/script>');
 }
 </script>
@@ -10195,7 +10211,7 @@ var CAM_CONFIG = {
   money:    { label:'📷 Photo', prompts:['Analyze this financial document','Read this bill or statement','What does this receipt show?','Analyze this check or money order','Read this loan or credit document'] },
   law:      { label:'📷 Photo', prompts:['Read this legal document','Analyze this notice or letter','What does this contract say?','Read this court document','Analyze this lease or agreement'] },
   home:     { label:'📷 Photo', prompts:['Analyze this home document','What do you see — any damage or issues?','Read this inspection report','Analyze this HOA notice','What type of home issue is this?'] },
-  fabricor: { label:'📷 Stone', prompts:['Identify this stone material and grade','Estimate this countertop project','What edge profile is this?','Analyze this stone for pricing','Identify veining and quality'] },
+  stonedesk: { label:'📷 Stone', prompts:['Identify this stone material and grade','Estimate this countertop project','What edge profile is this?','Analyze this stone for pricing','Identify veining and quality'] },
   clinical: { label:'📷 Clinical', prompts:['Analyze this clinical document','Read this patient chart or record','What does this lab result show?','Analyze this medical image description','Read this clinical form'] },
   senior:   { label:'📷 Photo', prompts:['Read this Medicare document','Analyze this medical bill','What does this letter from SSA say?','Read this prescription label','Analyze this insurance document'] },
   roam:     { label:'📷 Photo', prompts:['Identify this location or landmark','Translate this text or sign','Read this travel document','What does this menu or sign say?','Identify this food or dish'] },
@@ -12953,29 +12969,6 @@ function syncToSAIRNdesign() {
   }).catch(function(e) {
     console.log('Bridge sync:', e.message);
   });
-}
-</script>
-
-<script>
-// SAIRN Suite Launcher
-function showSAIRNSuite() {
-  var existing = document.getElementById('sairn-suite-modal');
-  if (existing) { existing.style.display='flex'; return; }
-  var modal = document.createElement('div');
-  modal.id = 'sairn-suite-modal';
-  modal.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;';
-  modal.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);">'
-    + '<h2 style="margin:0 0 20px;font-size:20px;color:#0f1f3d;">SAIRN Suite</h2>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
-    + '<a href="https://sairn.vercel.app/sairnhr" target="_blank" style="display:block;padding:14px;background:#F5F3FF;border:1px solid #7C3AED;border-radius:10px;text-decoration:none;color:#4C1D95;font-weight:600;text-align:center;">SAIRNhr<br><span style=\'font-size:11px;font-weight:400;\'>HR &amp; People</span></a>'
-    + '<a href="https://sairn.vercel.app/sairnaccounting" target="_blank" style="display:block;padding:14px;background:#F0FDFA;border:1px solid #0D9488;border-radius:10px;text-decoration:none;color:#0F766E;font-weight:600;text-align:center;">SAIRNacc<br><span style=\'font-size:11px;font-weight:400;\'>Accounting</span></a>'
-    + '<a href="https://sairn.vercel.app/sairndesign" target="_blank" style="display:block;padding:14px;background:#EEF2FF;border:1px solid #6366F1;border-radius:10px;text-decoration:none;color:#3730A3;font-weight:600;text-align:center;">SAIRNdesign<br><span style=\'font-size:11px;font-weight:400;\'>Design</span></a>'
-    + '<a href="https://sairn.vercel.app/fabricor" target="_blank" style="display:block;padding:14px;background:#F0FEF6;border:1px solid #16C762;border-radius:10px;text-decoration:none;color:#0A3D1F;font-weight:600;text-align:center;">StoneDesk<br><span style=\'font-size:11px;font-weight:400;\'>Stone Fabrication</span></a>'
-    + '</div>'
-    + '<button onclick="document.getElementById(\'sairn-suite-modal\').style.display=\'none\'" style="margin-top:20px;width:100%;padding:10px;background:#f3f4f6;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Close</button>'
-    + '</div>';
-  document.body.appendChild(modal);
-  modal.addEventListener('click', function(e) { if (e.target===modal) modal.style.display='none'; });
 }
 </script>
 
