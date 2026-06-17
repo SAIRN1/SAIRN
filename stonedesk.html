@@ -2453,7 +2453,14 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
         <div class="dm-card" style="flex-shrink:0">
           <div class="dm-card-title" style="margin-bottom:10px">Shape Preview — Color-Coded Edges Update Live</div>
-          <canvas id="ct-canvas" width="640" height="300" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810"></canvas>
+          <div class="draw-toolbar">
+            <button class="draw-btn active" id="dc-tool-add" onclick="setDCDrawTool('add',this)">+ Add Run</button>
+            <button class="draw-btn" id="dc-tool-erase" onclick="setDCDrawTool('erase',this)">Erase</button>
+            <button class="draw-btn" onclick="clearDCCanvas()">Clear All</button>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Drag to draw · Click erase to remove · Scale: 1px = 0.5 inch</span>
+          </div>
+          <canvas id="ct-canvas" width="640" height="300" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810;cursor:crosshair"></canvas>
+          <div id="dc-runs-summary" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
         </div>
 
         <!-- AI suggestion area -->
@@ -4087,7 +4094,7 @@ function showPanel(id) {
   const btns = document.querySelectorAll('.topbar-nav .nav-btn');
   if (navMap[id] !== undefined) btns[navMap[id]].classList.add('active');
   if (id === 'client') buildEstimate();
-  if (id === 'draw') initDrawPanel();
+  if (id === 'draw') { initDrawPanel(); initDCCanvas(); }
   if (id === 'quote') initKTCanvas();
 }
 
@@ -4683,6 +4690,125 @@ function clearKTCanvas() {
   calc();
 }
 
+// == DRAW-PANEL CANVAS (ct-canvas) — freeform sketch, mirrors kt-canvas pattern ==
+var dcCanvas = null, dcCtx = null, dcDragging = false, dcDrawTool = 'add';
+var dcDragStart = { x: 0, y: 0 };
+var dcRuns = [];
+
+function initDCCanvas() {
+  dcCanvas = document.getElementById('ct-canvas');
+  if (!dcCanvas) return;
+  dcCtx = dcCanvas.getContext('2d');
+  dcCanvas.width = dcCanvas.offsetWidth || 640;
+  dcCanvas.height = 300;
+  dcRuns = [];
+  redrawDCCanvas();
+  dcCanvas.onmousedown = dcStartDraw;
+  dcCanvas.onmousemove = dcMoveDraw;
+  dcCanvas.onmouseup = dcEndDraw;
+}
+
+function dcStartDraw(e) {
+  if (dcDrawTool === 'erase') { dcEraseAt(e.offsetX, e.offsetY); return; }
+  dcDragging = true;
+  dcDragStart = { x:e.offsetX, y:e.offsetY };
+}
+
+function dcMoveDraw(e) {
+  if (!dcDragging) return;
+  redrawDCCanvas();
+  const dx = e.offsetX - dcDragStart.x;
+  const dy = e.offsetY - dcDragStart.y;
+  const s = Math.abs(dx) > Math.abs(dy) ? {x:dx,y:0} : {x:0,y:dy};
+  dcCtx.strokeStyle = '#E8850A'; dcCtx.lineWidth = 42; dcCtx.lineCap = 'round'; dcCtx.globalAlpha = 0.12;
+  dcCtx.beginPath(); dcCtx.moveTo(dcDragStart.x, dcDragStart.y); dcCtx.lineTo(dcDragStart.x+s.x, dcDragStart.y+s.y); dcCtx.stroke();
+  dcCtx.globalAlpha = 1; dcCtx.lineWidth = 2.5; dcCtx.setLineDash([4,3]);
+  dcCtx.beginPath(); dcCtx.moveTo(dcDragStart.x, dcDragStart.y); dcCtx.lineTo(dcDragStart.x+s.x, dcDragStart.y+s.y); dcCtx.stroke();
+  dcCtx.setLineDash([]);
+  const len = Math.round(Math.sqrt(s.x**2+s.y**2)/0.5);
+  dcCtx.fillStyle = '#E8850A'; dcCtx.font = 'bold 11px Outfit,sans-serif'; dcCtx.fillText(len+'" / '+(len/12).toFixed(1)+'LF', dcDragStart.x+s.x+8, dcDragStart.y+s.y-5);
+}
+
+function dcEndDraw(e) {
+  if (!dcDragging || !e) return;
+  dcDragging = false;
+  const dx = e.offsetX - dcDragStart.x;
+  const dy = e.offsetY - dcDragStart.y;
+  const s = Math.abs(dx) > Math.abs(dy) ? {x:dx,y:0} : {x:0,y:dy};
+  const lenPx = Math.sqrt(s.x**2+s.y**2);
+  if (lenPx < 10) return;
+  const lenIn = Math.round(lenPx / 0.5);
+  dcRuns.push({ x1:dcDragStart.x, y1:dcDragStart.y, x2:dcDragStart.x+s.x, y2:dcDragStart.y+s.y, inches:lenIn, label:'Run '+(dcRuns.length+1) });
+  syncDCToInputs();
+  redrawDCCanvas();
+  updateDCSummary();
+}
+
+function dcEraseAt(x, y) {
+  dcRuns = dcRuns.filter(r => { const mx=(r.x1+r.x2)/2, my=(r.y1+r.y2)/2; return Math.sqrt((mx-x)**2+(my-y)**2) > 30; });
+  syncDCToInputs(); redrawDCCanvas(); updateDCSummary();
+}
+
+function redrawDCCanvas() {
+  if (!dcCanvas || !dcCtx) return;
+  dcCtx.clearRect(0, 0, dcCanvas.width, dcCanvas.height);
+  dcCtx.strokeStyle = 'rgba(255,255,255,0.04)'; dcCtx.lineWidth = 0.5;
+  for (let x = 0; x < dcCanvas.width; x += 24) { dcCtx.beginPath(); dcCtx.moveTo(x,0); dcCtx.lineTo(x,dcCanvas.height); dcCtx.stroke(); }
+  for (let y = 0; y < dcCanvas.height; y += 24) { dcCtx.beginPath(); dcCtx.moveTo(0,y); dcCtx.lineTo(dcCanvas.width,y); dcCtx.stroke(); }
+  dcRuns.forEach(r => {
+    dcCtx.strokeStyle = '#E8850A'; dcCtx.lineWidth = 42; dcCtx.lineCap = 'round'; dcCtx.globalAlpha = 0.1;
+    dcCtx.beginPath(); dcCtx.moveTo(r.x1,r.y1); dcCtx.lineTo(r.x2,r.y2); dcCtx.stroke();
+    dcCtx.globalAlpha = 1; dcCtx.lineWidth = 2.5;
+    dcCtx.beginPath(); dcCtx.moveTo(r.x1,r.y1); dcCtx.lineTo(r.x2,r.y2); dcCtx.stroke();
+    dcCtx.fillStyle = '#E8850A'; dcCtx.font = '11px Outfit,sans-serif';
+    dcCtx.fillText(r.label+': '+r.inches+'"', (r.x1+r.x2)/2+4, (r.y1+r.y2)/2-9);
+  });
+  if (!dcRuns.length) {
+    dcCtx.fillStyle='rgba(232,133,10,0.2)'; dcCtx.font='13px Outfit,sans-serif'; dcCtx.textAlign='center';
+    dcCtx.fillText('Drag to sketch a run, or enter dimensions on the left',dcCanvas.width/2,dcCanvas.height/2);
+    dcCtx.textAlign='left';
+  }
+}
+
+// Map sketched runs onto the active shape's actual length/depth fields so calcDrawing() picks them up
+function syncDCToInputs() {
+  const fieldsByShape = {
+    straight: ['da-len'], island: ['da-len'],
+    lshape:   ['da-len','db-len'],
+    ushape:   ['da-len','db-len','dc-len'],
+    galley:   ['da-len','db-len'],
+    custom:   ['da-len','db-len','dc-len','dd-len'],
+  };
+  const fields = fieldsByShape[ctShape] || fieldsByShape.straight;
+  fields.forEach((fid,i) => {
+    const el = document.getElementById(fid);
+    if (el && dcRuns[i]) el.value = dcRuns[i].inches;
+  });
+  if (typeof drawCTPreview === 'function') drawCTPreview();
+  if (typeof calcDrawing === 'function') calcDrawing();
+}
+
+function updateDCSummary() {
+  const total = dcRuns.reduce((s,r) => s+r.inches, 0);
+  const el = document.getElementById('dc-runs-summary');
+  if (!el) return;
+  el.innerHTML = dcRuns.map(r =>
+    '<span style="font-size:11px;background:var(--ar);border:1px solid var(--ab);color:var(--a);padding:3px 10px;border-radius:12px">' + r.label + ': ' + r.inches + '" (' + (r.inches/12).toFixed(1) + ' LF)</span>'
+  ).join('') + (dcRuns.length ? '<span style="font-size:11px;font-weight:600;color:var(--a)"> Total: ' + (total/12).toFixed(1) + ' LF</span>' : '');
+}
+
+function setDCDrawTool(t, el) {
+  dcDrawTool = t;
+  document.querySelectorAll('#panel-draw .draw-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  dcCanvas && (dcCanvas.style.cursor = t === 'erase' ? 'not-allowed' : 'crosshair');
+}
+
+function clearDCCanvas() {
+  dcRuns = []; if(dcCanvas) redrawDCCanvas(); updateDCSummary();
+  if (typeof calcDrawing === 'function') calcDrawing();
+}
+
 // == DRAW PANEL ================================================
 function initDrawPanel() {
   selectDrawShape('straight');
@@ -4721,6 +4847,7 @@ function selectDrawShape(id) {
 
   buildEdgeAssignmentArea();
   drawCTPreview();
+  if (typeof initDCCanvas === 'function') initDCCanvas();
 }
 
 // Build edge assignment selectors
