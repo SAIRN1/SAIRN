@@ -308,8 +308,21 @@ textarea#userInput::placeholder{color:var(--muted)}
   font-family:'Outfit',sans-serif;font-size:13px;color:var(--text);
   outline:none;transition:border-color .15s;
 }
+/* FIX (Playwright verification): with appearance:auto, browsers in OS/browser
+   dark mode (e.g. Edge on Windows dark mode) render native <select> boxes
+   with a dark system background while page CSS keeps text dark -- the
+   closed dropdown becomes invisible until hover/focus reveals an OS
+   highlight color. Force a solid light background and disable native
+   theming so the page's own light design always wins. */
+.q-field select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-color:#FFFFFF;color:#0f1f3d;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23667' stroke-width='1.5' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;
+}
 .q-field select:focus,.q-field input:focus{border-color:var(--ab)}
-.q-field select option{background:#1A1A2E;color:#F0F0FF}
+.q-field select option{background:#FFFFFF;color:#0f1f3d}
 .q-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .q-three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 
