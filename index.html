@@ -4113,6 +4113,9 @@ st.textContent =
   '@keyframes profPulse{0%,100%{opacity:.4}50%{opacity:1}}';
 document.head.appendChild(st);
 
+window.openProfileModal  = function() { document.getElementById('sairn-profile-modal').classList.add('open'); };
+window.closeProfileModal = function() { document.getElementById('sairn-profile-modal').classList.remove('open'); };
+
 // Profile button
 var profBtn = document.createElement('div');
 profBtn.id = 'sairn-profile-btn';
@@ -4177,9 +4180,6 @@ modal.innerHTML =
   '<div class="spm-status">Your profile is stored locally on your device only. It is never sent to SAIRN servers. It is only used to personalize your Claude AI responses.</div>' +
   '</div>';
 document.body.appendChild(modal);
-
-window.openProfileModal  = function() { document.getElementById('sairn-profile-modal').classList.add('open'); };
-window.closeProfileModal = function() { document.getElementById('sairn-profile-modal').classList.remove('open'); };
 
 window.saveProfileData = function() {
   var fields = ['name','age','state','city','household','employment','income_range','debt_situation',
