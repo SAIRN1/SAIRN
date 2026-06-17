@@ -2342,6 +2342,15 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
         <div class="dm-card">
           <div class="dm-card-title">Countertop Shape</div>
+          <div style="margin-bottom:10px">
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">Describe your shape (or just click a button below) — e.g. "L shape with a 40 inch peninsula on the right," "U shape," "bar top," "companion piece"</label>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="dc-ai-shape-input" placeholder="I have an L shape..." onkeydown="if(event.key==='Enter')dcResolveShapeFromText()" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;font-family:Outfit,sans-serif;outline:none">
+              <button class="dm-btn primary" style="width:auto;padding:8px 14px;white-space:nowrap" onclick="dcResolveShapeFromText()">🧠 Set Shape</button>
+            </div>
+            <div id="dc-ai-shape-status" style="margin-top:6px;font-size:11px;color:var(--muted)"></div>
+            <div id="dc-ai-shape-sidepick" style="margin-top:6px;display:none;gap:6px"></div>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
             <button class="draw-btn" id="shbtn-straight" onclick="selectDrawShape('straight')">▬<br><span style="font-size:9px">Straight</span></button>
             <button class="draw-btn" id="shbtn-lshape"   onclick="selectDrawShape('lshape')">L<br><span style="font-size:9px">L-Shape</span></button>
@@ -2351,6 +2360,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn" id="shbtn-custom"   onclick="selectDrawShape('custom')">✏️<br><span style="font-size:9px">Custom</span></button>
           </div>
         </div>
+
 
         <div class="dm-card" id="dim-card-main">
           <div class="dm-card-title">Dimensions (inches)</div>
@@ -5345,6 +5355,104 @@ function initDrawPanel() {
 }
 
 // Shape selector
+// == AI SHAPE DESCRIPTION RESOLVER ============================================================
+// Lets the rep describe a countertop in plain language ("I have an L shape with a 40 inch
+// peninsula on the right," "bar top," "companion piece") instead of clicking a preset button.
+// The AI maps vocabulary onto the SAME preset system that already exists — it never invents new
+// geometry. Peninsula is the one case that needs a real behavior change: it's an L or U shape
+// where one leg is widened past the standard 25.5" depth (people sit at it), so resolving a
+// peninsula pre-fills that leg's depth field with the AI's suggested width instead of the
+// default. Companion piece and bar top both map straight onto Island/Straight respectively —
+// see the spec discussion this was built from. Fireplace has no preset at all; it routes
+// straight to Custom Draw with a status note, since fireplace surrounds vary too much job to job
+// to standardize.
+var dcPendingShapeResolution = null; // holds the parsed AI result while awaiting a left/right pick
+
+async function dcResolveShapeFromText() {
+  const input = document.getElementById('dc-ai-shape-input');
+  const status = document.getElementById('dc-ai-shape-status');
+  const text = (input.value||'').trim();
+  if (!text) { status.textContent = 'Type a description first.'; return; }
+  status.textContent = 'Reading your description...';
+  document.getElementById('dc-ai-shape-sidepick').style.display = 'none';
+
+  const prompt =
+    'A stone fabrication sales rep typed this description of a countertop job: "' + text + '"\n\n' +
+    'Map it to EXACTLY ONE of these shape types: straight, lshape, ushape, island, galley, custom.\n' +
+    'Vocabulary mapping rules:\n' +
+    '- "peninsula" almost always means an L-shape or U-shape where ONE leg is wider than the standard 25.5in counter depth (people sit at it, typically 36-48in wide). If they say "L shape with a peninsula" -> lshape. If they describe three runs / horseshoe -> ushape.\n' +
+    '- "companion piece" -> island (a separate, disconnected rectangle near the main counter).\n' +
+    '- "bar top" -> straight (standard 25.5in depth, separate run).\n' +
+    '- "fireplace" or "fireplace surround" -> custom (too job-specific to standardize, sales rep will hand-draw it).\n' +
+    '- "vanity" is not a shape by itself, just a depth -> if no other shape is mentioned alongside it, use straight.\n' +
+    'If the shape is ushape AND a peninsula/wide leg is mentioned but the rep did NOT say which side (left or right) it is on, set needsSide:true and side:null. For lshape, do NOT ask for a side -- L-shape only has two runs labeled A/B with no left/right convention, so side disambiguation is not useful there.\n' +
+    'If a width/depth number is given for the peninsula/wide leg, extract it as peninsulaDepthIn. If none given, omit peninsulaDepthIn entirely (do not guess a number).\n\n' +
+    'Respond with ONLY this exact JSON shape, no markdown fences, no other text:\n' +
+    '{"shape":"straight|lshape|ushape|island|galley|custom","needsSide":false,"side":"left|right|null","peninsulaDepthIn":null,"note":"one short plain-English sentence explaining what you set"}';
+
+  try {
+    const res = await fetch(SAIRN_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      app_id: APP_ID_LOCAL, is_demo:true, max_tokens:300, system: 'Respond with ONLY raw JSON. No markdown code fences, no preamble, no explanation outside the JSON object.', messages:[{role:'user', content: prompt}]
+    })});
+    const data = await res.json();
+    let raw = (data.content && data.content[0] && data.content[0].text) || '';
+    raw = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+
+    if (parsed.needsSide) {
+      dcPendingShapeResolution = parsed;
+      status.textContent = parsed.note || 'Which side is the wider/peninsula leg on?';
+      const pick = document.getElementById('dc-ai-shape-sidepick');
+      pick.style.display = 'flex';
+      pick.innerHTML =
+        '<button class="draw-btn" onclick="dcResolveShapeSide(\'left\')">⬅️ Left side</button>' +
+        '<button class="draw-btn" onclick="dcResolveShapeSide(\'right\')">➡️ Right side</button>';
+      return;
+    }
+    dcApplyResolvedShape(parsed);
+  } catch (e) {
+    status.textContent = 'Could not read that description — try a button below, or rephrase.';
+  }
+}
+
+function dcResolveShapeSide(side) {
+  if (!dcPendingShapeResolution) return;
+  const resolved = { ...dcPendingShapeResolution, side, needsSide:false };
+  dcPendingShapeResolution = null;
+  document.getElementById('dc-ai-shape-sidepick').style.display = 'none';
+  dcApplyResolvedShape(resolved);
+}
+
+// Applies a resolved {shape, side, peninsulaDepthIn, note} onto the existing preset system:
+// selects the right button (reusing selectDrawShape exactly as a manual click would), then if a
+// peninsula depth was specified, overrides the correct leg's depth field once the shape's input
+// fields exist in the DOM.
+function dcApplyResolvedShape(parsed) {
+  const status = document.getElementById('dc-ai-shape-status');
+  selectDrawShape(parsed.shape);
+
+  if (parsed.peninsulaDepthIn && parsed.shape === 'lshape') {
+    // L-shape only exposes "Run A" / "Run B" with no inherent left/right labeling shown to the
+    // rep (unlike U-shape, which explicitly labels Left/Back/Right). Guessing which one matches
+    // "left" or "right" here would risk silently widening the WRONG leg with no way for the rep
+    // to notice except by comparing against their own mental picture. Safer: apply to Run A (the
+    // longer/primary run, which is what reps describe first in practice) and say so explicitly
+    // in the status note so the rep can check the live preview and swap to Run B's depth field
+    // in two seconds if it's actually the other leg.
+    const el = document.getElementById('da-dep');
+    if (el) el.value = parsed.peninsulaDepthIn;
+    parsed.note = (parsed.note ? parsed.note + ' ' : '') + 'Applied the ' + parsed.peninsulaDepthIn + '" peninsula width to Run A\'s depth — check the preview, and if the peninsula is actually Run B, just change Run B\'s depth field instead.';
+  } else if (parsed.peninsulaDepthIn && parsed.shape === 'ushape') {
+    const targetField = (parsed.side === 'left') ? 'da-dep' : (parsed.side === 'right') ? 'dc-dep' : 'db-dep';
+    const el = document.getElementById(targetField);
+    if (el) el.value = parsed.peninsulaDepthIn;
+  }
+
+  drawCTPreview();
+  if (typeof calcDrawing === 'function') calcDrawing();
+  status.textContent = (parsed.note || 'Shape set.') + ' Now enter your sizes in the Dimensions panel.';
+}
+
 function selectDrawShape(id) {
   ctShape = id;
   ['straight','lshape','ushape','island','galley','custom'].forEach(s => {
