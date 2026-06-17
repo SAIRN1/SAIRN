@@ -2136,7 +2136,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <div class="q-field"><label>Island / Peninsula (inches)</label><input type="number" id="island" value="0" min="0" step="1" oninput="calc()"></div>
           </div>
           <div class="q-tab-panel" id="dim-draw">
-            <div class="note-box">Click and drag to draw each countertop run. Snaps to horizontal or vertical. Scale: 3px = 1 inch.</div>
+            <div class="note-box">Click and drag to draw each countertop run. Snaps to horizontal or vertical. Scale: 2px = 1 inch.</div>
             <div class="draw-toolbar">
               <button class="draw-btn active" id="tool-add" onclick="setDrawTool('add',this)">+ Add Run</button>
               <button class="draw-btn" id="tool-erase" onclick="setDrawTool('erase',this)">Erase</button>
@@ -2458,9 +2458,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn active" id="dc-tool-add" onclick="setDCDrawTool('add',this)">+ Add Run</button>
             <button class="draw-btn" id="dc-tool-erase" onclick="setDCDrawTool('erase',this)">Erase</button>
             <button class="draw-btn" onclick="clearDCCanvas()">Clear All</button>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Drag to draw · Click erase to remove · Scale: 3px = 1 inch</span>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Drag to draw · Click erase to remove · Scale: 2px = 1 inch</span>
           </div>
-          <canvas id="ct-canvas" width="640" height="300" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810;cursor:crosshair"></canvas>
+          <canvas id="ct-canvas" width="640" height="480" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810;cursor:crosshair"></canvas>
           <div id="dc-runs-summary" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
         </div>
 
@@ -4586,9 +4586,10 @@ var ktCanvas = null, ktCtx = null, ktDragging = false, ktDrawTool = 'draw';
 var ktDragStart = { x: 0, y: 0 };
 var ktRuns = [];
 var ctShape = 'straight';
-// Pixels-per-inch for freeform sketch tools (kt-canvas and ct-canvas). At 3px/inch,
-// a 10ft (120") run draws at 360px -- comfortably fills a 600-640px wide canvas.
-var DRAW_SCALE_PXPERIN = 3;
+// Pixels-per-inch for freeform sketch tools (kt-canvas and ct-canvas). At 2px/inch,
+// a 10ft (120") run draws at 240px, leaving room to sketch a full kitchen
+// (multiple runs/walls) on a typical 700-900px wide panel without clipping.
+var DRAW_SCALE_PXPERIN = 2;
 var lastCalc = { total: 0, totalLF: 0, impliedSF: 0, impliedPPSF: 0, mat: { name: '' }, proj: { name: '' }, tier: { label: '' } };
 var EDGE_COLORS = {
   polished:   { color: '#E8850A', label: 'Polished' },
@@ -4704,7 +4705,7 @@ function initDCCanvas() {
   if (!dcCanvas) return;
   dcCtx = dcCanvas.getContext('2d');
   dcCanvas.width = dcCanvas.offsetWidth || 640;
-  dcCanvas.height = 300;
+  dcCanvas.height = 480;
   dcRuns = [];
   redrawDCCanvas();
   dcCanvas.onmousedown = dcStartDraw;
