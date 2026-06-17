@@ -4560,9 +4560,9 @@ var PROJECTS = {
   kitchen_std:    { name: 'Kitchen — standard (straight runs)', depthIn: 25.5, comp: 1.00, min: 1800 },
   kitchen_l:      { name: 'Kitchen — L-shape or U-shape',       depthIn: 25.5, comp: 1.15, min: 2400 },
   kitchen_island: { name: 'Kitchen — with island',              depthIn: 25.5, comp: 1.20, min: 2800 },
-  bath_single:    { name: 'Bathroom — single vanity',           depthIn: 22,   comp: 1.00, min: 650 },
-  bath_double:    { name: 'Bathroom — double vanity',           depthIn: 22,   comp: 1.05, min: 1100 },
-  bath_master:    { name: 'Master bath — full',                 depthIn: 22,   comp: 1.15, min: 1600 },
+  bath_single:    { name: 'Bathroom — single vanity',           depthIn: 22.5, comp: 1.00, min: 650 },
+  bath_double:    { name: 'Bathroom — double vanity',           depthIn: 22.5, comp: 1.05, min: 1100 },
+  bath_master:    { name: 'Master bath — full',                 depthIn: 22.5, comp: 1.15, min: 1600 },
   laundry:        { name: 'Laundry room top',                   depthIn: 25.5, comp: 1.00, min: 500 },
   bar:            { name: 'Bar top / entertainment',            depthIn: 25.5, comp: 1.05, min: 900 },
   outdoor:        { name: 'Outdoor countertop',                  depthIn: 25.5, comp: 1.10, min: 1200 },
@@ -4856,12 +4856,36 @@ function selectDrawShape(id) {
     w.appendChild(l); w.appendChild(i); card.appendChild(w);
   };
 
-  if(id==='straight') { addNF('da-len','Length (A)',96); addNF('da-dep','Depth (A)',25); }
-  else if(id==='lshape') { addNF('da-len','Run A — Length',96); addNF('da-dep','Run A — Depth',25); addNF('db-len','Run B — Length',72); addNF('db-dep','Run B — Depth',25); }
-  else if(id==='ushape') { addNF('da-len','Left Run — Length',72); addNF('da-dep','Left Run — Depth',25); addNF('db-len','Back Run — Length',84); addNF('db-dep','Back Run — Depth',25); addNF('dc-len','Right Run — Length',72); addNF('dc-dep','Right Run — Depth',25); }
-  else if(id==='island') { addNF('da-len','Island Length',84); addNF('da-dep','Island Depth',42); }
-  else if(id==='galley') { addNF('da-len','Front Counter — Length',96); addNF('da-dep','Front Counter — Depth',25); addNF('db-len','Back Counter — Length',84); addNF('db-dep','Back Counter — Depth',25); }
-  else { addNF('da-len','Section A — Length',96); addNF('da-dep','Section A — Depth',25); addNF('db-len','Section B — Length',0); addNF('db-dep','Section B — Depth',0); addNF('dc-len','Section C — Length',0); addNF('dc-dep','Section C — Depth',0); addNF('dd-len','Section D — Length',0); addNF('dd-dep','Section D — Depth',0); }
+  // Depth fields get quick-select standard-depth presets (prevents drift/overlap
+  // when freeform-dragging a depth instead of typing the known industry standard).
+  const DEPTH_PRESETS = [
+    { label: 'Kitchen', value: 25.5 },
+    { label: 'Vanity',  value: 22.5 },
+  ];
+  const addDepthNF = (id, label, def) => {
+    const w = document.createElement('div'); w.className='dm-field';
+    const l = document.createElement('label'); l.textContent=label;
+    const presetRow = document.createElement('div');
+    presetRow.style.cssText='display:flex;gap:6px;margin-bottom:5px';
+    const i = document.createElement('input'); i.type='number'; i.id=id; i.placeholder='0'; i.step='0.5';
+    if(def) i.value=def;
+    i.onchange=i.oninput=()=>drawCTPreview();
+    DEPTH_PRESETS.forEach(p => {
+      const btn = document.createElement('button');
+      btn.type='button'; btn.textContent=p.label+' '+p.value+'"';
+      btn.style.cssText='font-size:10px;padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);cursor:pointer;white-space:nowrap';
+      btn.onclick=() => { i.value=p.value; drawCTPreview(); };
+      presetRow.appendChild(btn);
+    });
+    w.appendChild(l); w.appendChild(presetRow); w.appendChild(i); card.appendChild(w);
+  };
+
+  if(id==='straight') { addNF('da-len','Length (A)',96); addDepthNF('da-dep','Depth (A)',25.5); }
+  else if(id==='lshape') { addNF('da-len','Run A — Length',96); addDepthNF('da-dep','Run A — Depth',25.5); addNF('db-len','Run B — Length',72); addDepthNF('db-dep','Run B — Depth',25.5); }
+  else if(id==='ushape') { addNF('da-len','Left Run — Length',72); addDepthNF('da-dep','Left Run — Depth',25.5); addNF('db-len','Back Run — Length',84); addDepthNF('db-dep','Back Run — Depth',25.5); addNF('dc-len','Right Run — Length',72); addDepthNF('dc-dep','Right Run — Depth',25.5); }
+  else if(id==='island') { addNF('da-len','Island Length',84); addDepthNF('da-dep','Island Depth',42); }
+  else if(id==='galley') { addNF('da-len','Front Counter — Length',96); addDepthNF('da-dep','Front Counter — Depth',25.5); addNF('db-len','Back Counter — Length',84); addDepthNF('db-dep','Back Counter — Depth',25.5); }
+  else { addNF('da-len','Section A — Length',96); addDepthNF('da-dep','Section A — Depth',25.5); addNF('db-len','Section B — Length',0); addDepthNF('db-dep','Section B — Depth',0); addNF('dc-len','Section C — Length',0); addDepthNF('dc-dep','Section C — Depth',0); addNF('dd-len','Section D — Length',0); addDepthNF('dd-dep','Section D — Depth',0); }
 
   buildEdgeAssignmentArea();
   drawCTPreview();
