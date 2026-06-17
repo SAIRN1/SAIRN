@@ -5746,17 +5746,33 @@ function drawCTPreview() {
     const totL=Math.max(aL,(bD||25))+10, totD=aD+(bL||72)+10;
     const sc=Math.min((W-pad*2)/totL,(H-pad*2)/totD);
     const ox=pad, oy=pad;
-    // A run (horizontal)
+    // A run (horizontal, full width) and B run (vertical stub rising from A's left end). B's
+    // bottom edge exactly meets A's top edge and B's left edge aligns with A's left edge — so
+    // the two rects form a real L when their shared seam is left unbordered, instead of each
+    // rect drawing its own complete 4-sided border (which is what made this read as "two
+    // separate boxes" — same root cause and same fix pattern as the earlier U-shape bug).
     const ax=ox, ay=oy+(bL||0)*sc, aw=aL*sc, ah=aD*sc;
-    ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.fill();
-    colorEdge(ax,ay,ax+aw,ay,ea('A-Back (wall)','wall')); colorEdge(ax+aw,ay,ax+aw,ay+ah,ea('A-Left end','polished')); colorEdge(ax,ay+ah,ax+aw,ay+ah,ea('A-Front','polished')); colorEdge(ax,ay,ax,ay+ah,ea('A-Back (wall)','wall'));
+    const hasStub = bL && bD;
+    const bx=ox, by=oy, bw=(bD||25)*sc, bh=bL*sc;
+    ctx.fillStyle='rgba(232,133,10,0.1)';
+    ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.fill();
+    if (hasStub) { ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.fill(); }
     window._ctRects.push({key:'A', x:ax, y:ay, w:aw, h:ah});
-    // B run (vertical stub)
-    if(bL&&bD) {
-      const bx=ox, by=oy, bw=(bD||25)*sc, bh=bL*sc;
-      ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.fill();
-      colorEdge(bx,by,bx+bw,by,ea('B-Back (wall)','wall')); colorEdge(bx+bw,by,bx+bw,by+bh,ea('B-Front','polished')); colorEdge(bx,by,bx,by+bh,ea('B-End','wall'));
-      window._ctRects.push({key:'B', x:bx, y:by, w:bw, h:bh});
+    if (hasStub) window._ctRects.push({key:'B', x:bx, y:by, w:bw, h:bh});
+
+    if (hasStub) {
+      // One continuous outline, clockwise starting at B's top-left, around the whole L, back
+      // to start. The inner step where B meets A (B's bottom-right corner) is the only place
+      // the path turns inward — everywhere else it's a simple rectangle-ish perimeter.
+      colorEdge(bx,by, bx+bw,by, ea('B-Back (wall)','wall'));                    // B top (back wall)
+      colorEdge(bx+bw,by, bx+bw,ay, ea('B-Front','polished'));                   // B right side, down to A's top
+      colorEdge(bx+bw,ay, ax+aw,ay, ea('A-Back (wall)','wall'));                 // remainder of A's top (back wall), from B's right edge to A's right edge
+      colorEdge(ax+aw,ay, ax+aw,ay+ah, ea('A-Left end','polished'));             // A right end
+      colorEdge(ax+aw,ay+ah, ax,ay+ah, ea('A-Front','polished'));                // A front (bottom)
+      colorEdge(ax,ay+ah, ax,by, ea('B-Back (wall)','wall'));                    // left side, up through A and B's shared left edge, back to start
+    } else {
+      // No stub — just a plain straight run, bordered normally like the straight-shape branch.
+      colorEdge(ax,ay,ax+aw,ay,ea('A-Back (wall)','wall')); colorEdge(ax+aw,ay,ax+aw,ay+ah,ea('A-Left end','polished')); colorEdge(ax,ay+ah,ax+aw,ay+ah,ea('A-Front','polished')); colorEdge(ax,ay,ax,ay+ah,ea('A-Back (wall)','wall'));
     }
     if(getCBV('dh-wf-right')) { colorEdge(ax+aw,ay,ax+aw,ay+ah,'waterfall'); ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(ax+aw,ay,10,ah); ctx.fill(); }
     dimLabel(ax+aw/2, ay-12, aL+'"');
