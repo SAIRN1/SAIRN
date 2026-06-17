@@ -2135,7 +2135,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <div class="q-field"><label>Island / Peninsula (inches)</label><input type="number" id="island" value="0" min="0" step="1" oninput="calc()"></div>
           </div>
           <div class="q-tab-panel" id="dim-draw">
-            <div class="note-box">Click and drag to draw each countertop run. Snaps to horizontal or vertical. Scale: 1px = 0.5 inch.</div>
+            <div class="note-box">Click and drag to draw each countertop run. Snaps to horizontal or vertical. Scale: 3px = 1 inch.</div>
             <div class="draw-toolbar">
               <button class="draw-btn active" id="tool-add" onclick="setDrawTool('add',this)">+ Add Run</button>
               <button class="draw-btn" id="tool-erase" onclick="setDrawTool('erase',this)">Erase</button>
@@ -2457,7 +2457,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn active" id="dc-tool-add" onclick="setDCDrawTool('add',this)">+ Add Run</button>
             <button class="draw-btn" id="dc-tool-erase" onclick="setDCDrawTool('erase',this)">Erase</button>
             <button class="draw-btn" onclick="clearDCCanvas()">Clear All</button>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Drag to draw · Click erase to remove · Scale: 1px = 0.5 inch</span>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Drag to draw · Click erase to remove · Scale: 3px = 1 inch</span>
           </div>
           <canvas id="ct-canvas" width="640" height="300" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810;cursor:crosshair"></canvas>
           <div id="dc-runs-summary" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
@@ -4585,6 +4585,9 @@ var ktCanvas = null, ktCtx = null, ktDragging = false, ktDrawTool = 'draw';
 var ktDragStart = { x: 0, y: 0 };
 var ktRuns = [];
 var ctShape = 'straight';
+// Pixels-per-inch for freeform sketch tools (kt-canvas and ct-canvas). At 3px/inch,
+// a 10ft (120") run draws at 360px -- comfortably fills a 600-640px wide canvas.
+var DRAW_SCALE_PXPERIN = 3;
 var lastCalc = { total: 0, totalLF: 0, impliedSF: 0, impliedPPSF: 0, mat: { name: '' }, proj: { name: '' }, tier: { label: '' } };
 var EDGE_COLORS = {
   polished:   { color: '#E8850A', label: 'Polished' },
@@ -4624,7 +4627,7 @@ function ktMoveDraw(e) {
   ktCtx.globalAlpha = 1; ktCtx.lineWidth = 2.5; ktCtx.setLineDash([4,3]);
   ktCtx.beginPath(); ktCtx.moveTo(ktDragStart.x, ktDragStart.y); ktCtx.lineTo(ktDragStart.x+s.x, ktDragStart.y+s.y); ktCtx.stroke();
   ktCtx.setLineDash([]);
-  const len = Math.round(Math.sqrt(s.x**2+s.y**2)/0.5);
+  const len = Math.round(Math.sqrt(s.x**2+s.y**2)/DRAW_SCALE_PXPERIN);
   ktCtx.fillStyle = '#E8850A'; ktCtx.font = 'bold 11px Outfit,sans-serif'; ktCtx.fillText(len+'" / '+(len/12).toFixed(1)+'LF', ktDragStart.x+s.x+8, ktDragStart.y+s.y-5);
 }
 
@@ -4636,7 +4639,7 @@ function ktEndDraw(e) {
   const s = Math.abs(dx) > Math.abs(dy) ? {x:dx,y:0} : {x:0,y:dy};
   const lenPx = Math.sqrt(s.x**2+s.y**2);
   if (lenPx < 10) return;
-  const lenIn = Math.round(lenPx / 0.5);
+  const lenIn = Math.round(lenPx / DRAW_SCALE_PXPERIN);
   ktRuns.push({ x1:ktDragStart.x, y1:ktDragStart.y, x2:ktDragStart.x+s.x, y2:ktDragStart.y+s.y, inches:lenIn, label:'Run '+(ktRuns.length+1) });
   syncKTToInputs();
   redrawKTCanvas();
@@ -4725,7 +4728,7 @@ function dcMoveDraw(e) {
   dcCtx.globalAlpha = 1; dcCtx.lineWidth = 2.5; dcCtx.setLineDash([4,3]);
   dcCtx.beginPath(); dcCtx.moveTo(dcDragStart.x, dcDragStart.y); dcCtx.lineTo(dcDragStart.x+s.x, dcDragStart.y+s.y); dcCtx.stroke();
   dcCtx.setLineDash([]);
-  const len = Math.round(Math.sqrt(s.x**2+s.y**2)/0.5);
+  const len = Math.round(Math.sqrt(s.x**2+s.y**2)/DRAW_SCALE_PXPERIN);
   dcCtx.fillStyle = '#E8850A'; dcCtx.font = 'bold 11px Outfit,sans-serif'; dcCtx.fillText(len+'" / '+(len/12).toFixed(1)+'LF', dcDragStart.x+s.x+8, dcDragStart.y+s.y-5);
 }
 
@@ -4737,7 +4740,7 @@ function dcEndDraw(e) {
   const s = Math.abs(dx) > Math.abs(dy) ? {x:dx,y:0} : {x:0,y:dy};
   const lenPx = Math.sqrt(s.x**2+s.y**2);
   if (lenPx < 10) return;
-  const lenIn = Math.round(lenPx / 0.5);
+  const lenIn = Math.round(lenPx / DRAW_SCALE_PXPERIN);
   dcRuns.push({ x1:dcDragStart.x, y1:dcDragStart.y, x2:dcDragStart.x+s.x, y2:dcDragStart.y+s.y, inches:lenIn, label:'Run '+(dcRuns.length+1) });
   syncDCToInputs();
   redrawDCCanvas();
