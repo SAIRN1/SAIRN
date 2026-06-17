@@ -4787,7 +4787,17 @@ function initDCCanvas() {
 // own bounding box). The canvas render picks a scale + offset fresh every draw so the shape always
 // fits the panel — same approach the old preset math used, which is why presets can seed dcPoly
 // directly without any unit conversion beyond inches-to-pixels.
+// dcFrozenTransform: while a corner is being dragged or a new point is being aimed/dragged, the
+// view transform is held at whatever it was BEFORE that drag started, instead of recomputing
+// fresh from the polygon's current (mid-drag, possibly far-flung) bounding box. Without this,
+// moving one point can grow/shrink the bounding box and shift the scale, making every OTHER
+// point visually slide too — the same root cause as the preset-edge multi-stretch bug, fixed
+// here at the shared transform level instead of per drag-system.
+var dcFrozenTransform = null;
+function dcFreezeTransform() { dcFrozenTransform = dcGetTransform(); }
+function dcUnfreezeTransform() { dcFrozenTransform = null; }
 function dcGetTransform() {
+  if (dcFrozenTransform) return dcFrozenTransform;
   const W = dcCanvas.width, H = dcCanvas.height, pad = 48;
   if (!dcPoly.length) return { scale: DRAW_SCALE_PXPERIN, ox: pad, oy: pad };
   const xs = dcPoly.map(p=>p.x), ys = dcPoly.map(p=>p.y);
@@ -4821,6 +4831,13 @@ function dcPointNear(a, b, tolIn) { return Math.hypot(a.x-b.x, a.y-b.y) <= tolIn
 function setDCMode(mode) {
   dcMode = mode;
   dcEditPass = false;
+  // Defensive cleanup: if a drag was somehow interrupted (e.g. mode switched mid-drag) without
+  // reaching its normal end handler, this prevents the transform from staying stuck frozen,
+  // which would otherwise silently break all future rendering until a page reload.
+  dcUnfreezeTransform();
+  dcCornerDragging = null;
+  dcDrawDragging = false;
+  dcPresetEdgeDragging = null;
   document.querySelectorAll('.dc-mode-btn').forEach(b=>b.classList.remove('active'));
   const btn = document.getElementById('dc-mode-'+mode);
   if (btn) btn.classList.add('active');
@@ -4890,7 +4907,11 @@ function dcTryStartCornerDrag(px, py) {
   const rawIn = dcPxToIn(px, py);
   const tolIn = 14 / dcGetTransform().scale;
   for (let i=0;i<dcPoly.length;i++) {
-    if (dcPointNear(rawIn, dcPoly[i], tolIn)) { dcCornerDragging = i; dcDragOverlayTyped = null; return true; }
+    if (dcPointNear(rawIn, dcPoly[i], tolIn)) {
+      dcCornerDragging = i; dcDragOverlayTyped = null;
+      dcFreezeTransform(); // hold the view steady so other points don't visually shift while this one moves
+      return true;
+    }
   }
   return false;
 }
@@ -4930,6 +4951,7 @@ function dcCornerDragEnd(e) {
   dcHistory.push(JSON.parse(JSON.stringify(dcPoly)));
   dcPoly[i] = { x: Math.round(finalPt.x/GRID_SNAP_IN)*GRID_SNAP_IN, y: Math.round(finalPt.y/GRID_SNAP_IN)*GRID_SNAP_IN };
   dcCornerDragging = null;
+  dcUnfreezeTransform(); // now let the view refit properly, once, with the committed point in place
   dcHideDragOverlay();
   drawCTPreview();
   updateDCRunningTotals();
@@ -4990,7 +5012,19 @@ function dcTryStartPresetEdgeDrag(px, py) {
   const fieldId = isHorizontalEdge ? fields.depField : fields.lenField;
   const el = document.getElementById(fieldId);
   const startVal = el ? (parseFloat(el.value)||0) : 0;
-  dcPresetEdgeDragging = { rectKey:hit.rectKey, side:hit.side, fieldId, startVal, rect:hit.rect, isHorizontalEdge };
+  // Snapshot EVERY rect's current on-screen position/size, plus a still image of the canvas as
+  // it looks right now. All other shapes/rects on screen are frozen at this exact pixel layout
+  // for the duration of the drag — only the one rect being dragged gets visually stretched.
+  // This is the fix for "everything stretches in different directions while dragging one edge":
+  // the legacy renderer shares ONE scale factor across the whole preset shape (so changing any
+  // single dimension and calling drawCTPreview() recomputes that shared scale and re-lays-out
+  // every rect, even ones whose inch values never changed) — freezing the frame here means we
+  // don't call the full renderer at all until the drag ends, so nothing else can move.
+  const snapshotImg = dcCtx.getImageData(0, 0, dcCanvas.width, dcCanvas.height);
+  dcPresetEdgeDragging = {
+    rectKey:hit.rectKey, side:hit.side, fieldId, startVal, rect:{...hit.rect}, isHorizontalEdge,
+    snapshotImg, allRects: (window._ctRects||[]).map(r=>({...r}))
+  };
   dcDragOverlayTyped = null;
   return true;
 }
@@ -5000,9 +5034,7 @@ function dcPresetEdgeDragMove(e) {
   const scaleX = dcCanvas.width/rect.width, scaleY = dcCanvas.height/rect.height;
   const px = (e.clientX-rect.left)*scaleX, py = (e.clientY-rect.top)*scaleY;
   const d = dcPresetEdgeDragging;
-  // Pixels-to-inches uses the SAME scale the legacy renderer just used to lay out this rect —
-  // back it out from the rect's own w/h vs the field's current inch value rather than assuming
-  // DRAW_SCALE_PXPERIN, since every preset branch computes its own fit-to-canvas scale.
+  d._lastPx = px; d._lastPy = py; // remembered so the typed-override callback can redraw without a new mouse event
   const fields = dcPresetEdgeFieldFor(d.rectKey);
   const curLenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
   const curDepIn = parseFloat((document.getElementById(fields.depField)||{}).value) || 1;
@@ -5016,14 +5048,55 @@ function dcPresetEdgeDragMove(e) {
     const deltaPx = (d.side==='left') ? (d.rect.x - px) : (px - (d.rect.x + d.rect.w));
     liveValIn = Math.max(d.startVal + deltaPx/pxPerInX, 1);
   }
-  const resolvedIn = dcDragOverlayTyped != null ? dcDragOverlayTyped : liveValIn;
-  const fieldEl = document.getElementById(d.fieldId);
-  if (fieldEl) fieldEl.value = Math.round(resolvedIn*8)/8; // live-update the field as spec requires
-  drawCTPreview();
-  dcShowDragOverlay({x:px,y:py}, liveValIn, null);
+  dcRedrawPresetDragFrame(d, pxPerInX, pxPerInY, liveValIn);
+  dcShowDragOverlay({x:px,y:py}, liveValIn, (typedVal) => dcRedrawPresetDragFrame(d, pxPerInX, pxPerInY, typedVal != null ? typedVal : liveValIn));
+}
+// Draws the frozen-snapshot background plus the dragged rect's new size/position on top — used
+// both on mousemove AND when the rep types an exact value into the overlay without moving the
+// mouse, so the canvas always reflects whichever value (drag distance or typed override) is
+// currently in effect.
+function dcRedrawPresetDragFrame(d, pxPerInX, pxPerInY, valueIn) {
+  const resolvedIn = dcDragOverlayTyped != null ? dcDragOverlayTyped : valueIn;
+  dcCtx.putImageData(d.snapshotImg, 0, 0);
+  const newPxLen = (d.isHorizontalEdge ? d.rect.w : resolvedIn*pxPerInX);
+  const newPxDep = (d.isHorizontalEdge ? resolvedIn*pxPerInY : d.rect.h);
+  let nx = d.rect.x, ny = d.rect.y, nw = newPxLen, nh = newPxDep;
+  if (d.side==='left')  { nx = d.rect.x + d.rect.w - newPxLen; }
+  if (d.side==='top')   { ny = d.rect.y + d.rect.h - newPxDep; }
+  dcCtx.fillStyle='rgba(34,197,94,0.22)'; dcCtx.beginPath(); dcCtx.rect(nx,ny,nw,nh); dcCtx.fill();
+  dcCtx.strokeStyle='#16C762'; dcCtx.lineWidth=2; dcCtx.setLineDash([5,3]);
+  dcCtx.strokeRect(nx,ny,nw,nh);
+  dcCtx.setLineDash([]);
 }
 function dcPresetEdgeDragEnd(e) {
   if (!dcPresetEdgeDragging) return;
+  const d = dcPresetEdgeDragging;
+  const rect = dcCanvas.getBoundingClientRect();
+  const scaleX = dcCanvas.width/rect.width, scaleY = dcCanvas.height/rect.height;
+  const px = e ? (e.clientX-rect.left)*scaleX : null;
+  const py = e ? (e.clientY-rect.top)*scaleY : null;
+
+  // Only NOW — once the drag has actually ended — do we write the new value into the field and
+  // trigger the full re-render (which recomputes the shared scale and re-lays-out everything,
+  // correctly, exactly once, instead of on every single mousemove frame).
+  if (px !== null) {
+    const fields = dcPresetEdgeFieldFor(d.rectKey);
+    const curLenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
+    const curDepIn = parseFloat((document.getElementById(fields.depField)||{}).value) || 1;
+    const pxPerInX = d.rect.w / curLenIn, pxPerInY = d.rect.h / curDepIn;
+    let liveValIn;
+    if (d.isHorizontalEdge) {
+      const deltaPx = (d.side==='top') ? (d.rect.y - py) : (py - (d.rect.y + d.rect.h));
+      liveValIn = Math.max(d.startVal + deltaPx/pxPerInY, 1);
+    } else {
+      const deltaPx = (d.side==='left') ? (d.rect.x - px) : (px - (d.rect.x + d.rect.w));
+      liveValIn = Math.max(d.startVal + deltaPx/pxPerInX, 1);
+    }
+    const resolvedIn = dcDragOverlayTyped != null ? dcDragOverlayTyped : liveValIn;
+    const fieldEl = document.getElementById(d.fieldId);
+    if (fieldEl) fieldEl.value = Math.round(resolvedIn*8)/8;
+  }
+
   dcPresetEdgeDragging = null;
   dcHideDragOverlay();
   drawCTPreview();
@@ -5083,6 +5156,9 @@ function dcCanvasClick(e) {
   dcHoverAngleDeg = angleDeg;
   dcDrawDragging = true;
   dcDragOverlayTyped = null;
+  dcFreezeTransform(); // hold the view steady while aiming the new point — it doesn't exist in
+  // dcPoly yet, but the guide line/preview during aim could otherwise grow the bounding box and
+  // shift every already-placed point on screen, same root cause as the corner-drag bug above.
   drawCTPreview();
 }
 
@@ -5117,12 +5193,13 @@ function dcCanvasDrawDragEnd(e) {
   if (!dcDrawDragging) return;
   dcDrawDragging = false;
   dcHideDragOverlay();
-  if (dcHoverAngleDeg === null || !dcPoly.length) return;
+  if (dcHoverAngleDeg === null || !dcPoly.length) { dcUnfreezeTransform(); return; }
   const { px, py } = dcCanvasCoords(e);
   const from = dcPoly[dcPoly.length-1];
-  const rawIn = dcPxToIn(px, py);
+  const rawIn = dcPxToIn(px, py); // computed while STILL frozen, so the committed point matches exactly what the rep was looking at while dragging
   const { dist } = dcSnapDirection(from, rawIn);
   const lengthIn = dcResolveDragLength(dist);
+  dcUnfreezeTransform(); // now let dcCommitPoint's redraw correctly refit the view with the new point included
   if (lengthIn < 0.5) return; // treat a near-zero drag as "didn't mean to place a point"
   dcCommitPoint(from, dcHoverAngleDeg, lengthIn);
 }
