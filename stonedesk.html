@@ -3941,6 +3941,16 @@ const APP_ID_LOCAL = 'stonedesk';
 // switching modes once threw "chatHistory is not defined". Declared here so
 // it always exists as [] from first paint.
 let chatHistory = [];
+// FIX (Playwright verification): isTyping was never actually declared with
+// var/let -- it relied on sendMessage() being the first code to ever touch
+// it, which created an implicit global on first WRITE (isTyping = true).
+// That worked by accident as long as sendMessage() ran first. Once
+// sendToClaudeAndRender() could be called directly (e.g. from
+// getAIQuoteAdvice(), which checks "if (isTyping) return" as its very
+// first line), reading an undeclared identifier threw a ReferenceError
+// instead of silently working, since JS allows implicit-global writes but
+// never implicit-global reads.
+let isTyping = false;
 
 // == SYSTEM PROMPT ==============================================
 const SYSTEM = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
@@ -4172,6 +4182,20 @@ async function sendMessage() {
   chatHistory.push({ role:'user', content: text });
   input.value = '';
   input.style.height = 'auto';
+  await sendToClaudeAndRender();
+}
+
+// FIX (user-reported: "no response" from AI Quote Review): getAIQuoteAdvice()
+// (and any other caller that builds its own message via addMessage() +
+// chatHistory.push() rather than typing into the #userInput box) was calling
+// sendMessage() directly. sendMessage() reads from #userInput and immediately
+// returns if that field is empty -- which it always is for these callers,
+// since they never touch the input box. The fetch to the proxy never fired,
+// with zero error shown to the user (a silent no-op, not a thrown error).
+// This function holds the actual "call Claude, render the reply" logic so
+// any caller can use it regardless of how the message was constructed.
+async function sendToClaudeAndRender() {
+  if (isTyping) return;
   isTyping = true;
 
   // Show typing
@@ -4498,7 +4522,7 @@ async function getAIQuoteAdvice() {
   showPanel('ai');
   addMessage('user', 'Please review this quote and tell me if I am pricing it correctly: ' + context);
   chatHistory.push({ role:'user', content:'Please review this quote and give me specific feedback on pricing, margin, and anything I may have missed: ' + context });
-  await sendMessage();
+  await sendToClaudeAndRender();
 }
 
 // == KITCHEN DRAWING TOOL (in Quote Builder) ===================
@@ -5091,7 +5115,6 @@ function printDrawCutSheet() {
 <div id="sairn-lock-overlay" style="display:none"></div>
 <div id="sairn-memory-indicator" style="display:none"></div>
 <div id="sairn-memory-panel" style="display:none"></div>
-<div id="sairn-privacy-notice" style="display:none"></div>
 <div id="sairn-profile-btn" style="display:none"></div>
 <div id="sairn-suite-modal" style="display:none"></div>
 <div id="sairn-tone-bar" style="display:none"></div>
@@ -5198,9 +5221,15 @@ function printDrawCutSheet() {
 // June 2026 — SAIRN Technologies
 // ============================================================
 
-// Orphaned onclick stubs — privacy/lock/pricing system
-function saAcceptPrivacy(){ var el=document.getElementById('sairn-privacy-notice'); if(el)el.style.display='none'; }
-function saDeclinePrivacy(){ var el=document.getElementById('sairn-privacy-notice'); if(el)el.style.display='none'; }
+// FIX (discovered while investigating AI Quote Review click-blocking): these
+// stubs were silently overriding the REAL saAcceptPrivacy/saDeclinePrivacy
+// defined earlier (line ~1842), since plain function declarations later in
+// the same scope win with no warning. The stubs only hid the banner's DOM
+// element without ever setting the sairn_privacy_accepted localStorage flag
+// the real functions set -- so the banner reappeared on every single page
+// reload, and its position:fixed, full-width, z-index:99990 footprint could
+// sit directly over real buttons (including AI Quote Review) until
+// dismissed, silently blocking clicks on whatever was underneath it.
 function saUnlock(){ var el=document.getElementById('sairn-lock-overlay'); if(el)el.style.display='none'; }
 
 // SAIRI camera/doc/compare/profile — these are dynamically injected by SAIRI
@@ -7122,11 +7151,10 @@ async function generateFollowUps(aiResponse) {
 
         // Send the question
         var inp = document.getElementById('userInput');
-        if (inp) inp.value = q;
-        if (typeof addMsg === 'function') addMsg('user', q);
-        if (typeof messages !== 'undefined') messages.push({ role: 'user', content: q });
+        addMessage('user', q);
+        chatHistory.push({ role: 'user', content: q });
         if (inp) inp.value = '';
-        if (typeof sendMessage === 'function') sendMessage();
+        sendToClaudeAndRender();
       };
       row.appendChild(chip);
     });
@@ -8041,11 +8069,11 @@ function checkIncomingHandoff() {
   // Auto-send if context is specific enough
   if (ctx.autoSend && ctx.situation.length > 20) {
     setTimeout(function() {
-      if (typeof addMsg === 'function') addMsg('user', ctx.situation);
-      if (typeof messages !== 'undefined') messages.push({ role: 'user', content: ctx.situation });
+      addMessage('user', ctx.situation);
+      chatHistory.push({ role: 'user', content: ctx.situation });
       var inp2 = document.getElementById('userInput');
       if (inp2) inp2.value = '';
-      if (typeof sendMessage === 'function') sendMessage();
+      sendToClaudeAndRender();
     }, 800);
   }
 }
