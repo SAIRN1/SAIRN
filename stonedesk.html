@@ -194,7 +194,16 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
 
 /* == PANELS == */
 .panel{display:none;flex:1;overflow:hidden}
-.panel.active{display:flex;flex-direction:column}
+/* FIX (user-reported: "bottom of the page cut off"): .panel had
+   overflow:hidden with no scroll fallback. Panels that don't have their
+   own dedicated scrollable inner wrapper (History, Admin, Business,
+   Customers, Photos, Warranty, Integrations, Schedule, Inventory, Vendors,
+   Remakes, Executive, Comms, Templates -- 14 of 18 panels) silently clipped
+   any content taller than the viewport, with no way to scroll to it.
+   overflow-y:auto here is the safety net; panels with their own scrollable
+   wrapper (.messages-area, .quote-container) are unaffected since the
+   browser only shows a scrollbar on whichever element actually overflows. */
+.panel.active{display:flex;flex-direction:column;overflow-y:auto}
 
 /* == CHAT PANEL == */
 .chat-container{
@@ -283,6 +292,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .quote-container{
   display:grid;grid-template-columns:1.1fr 0.9fr;
   gap:20px;max-width:1300px;margin:0 auto;padding:20px;
+  overflow-y:auto;height:100%;
 }
 @media(max-width:900px){.quote-container{grid-template-columns:1fr}}
 .q-card{
