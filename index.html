@@ -499,6 +499,36 @@ function showSaveBar(content) {
   const bar = document.createElement('div');
   bar.id = 'sairn-save-bar';
   bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:slideUp .2s ease';
+
+  window.copyLastResponse = function() {
+    navigator.clipboard.writeText(content).then(function() {
+      const btn = bar.querySelector('button[onclick="copyLastResponse()"]');
+      if (btn) { const orig = btn.textContent; btn.textContent = '✓ Copied'; setTimeout(function(){ btn.textContent = orig; }, 1500); }
+    });
+  };
+
+  window.saveToLibrary = function() {
+    try {
+      const key = 'sairn_' + (typeof APP_NAME !== 'undefined' ? APP_NAME : 'type') + '_library';
+      const existingLib = JSON.parse(localStorage.getItem(key) || '[]');
+      existingLib.unshift({ id: Date.now(), content: content, savedAt: new Date().toISOString() });
+      localStorage.setItem(key, JSON.stringify(existingLib.slice(0, 200)));
+      const btn = bar.querySelector('button[onclick="saveToLibrary()"]');
+      if (btn) { const orig = btn.textContent; btn.textContent = '✓ Saved'; setTimeout(function(){ btn.textContent = orig; }, 1500); }
+    } catch(e) { /* localStorage unavailable — fail silently, button just won't confirm */ }
+  };
+
+  window.shareResponse = function() {
+    if (navigator.share) {
+      navigator.share({ text: content }).catch(function(){ /* user cancelled share sheet */ });
+    } else {
+      navigator.clipboard.writeText(content).then(function() {
+        const btn = bar.querySelector('button[onclick="shareResponse()"]');
+        if (btn) { const orig = btn.textContent; btn.textContent = '🔗 Copied to share'; setTimeout(function(){ btn.textContent = orig; }, 1500); }
+      });
+    }
+  };
+
   bar.innerHTML = `
     <button onclick="copyLastResponse()" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;color:#A78BFA;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>
     <button onclick="saveToLibrary()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:6px 12px;color:#34D399;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save</button>
@@ -2078,6 +2108,12 @@ function buildCalcPanel() {
   if (document.getElementById('sairn-calc-panel')) return;
 
   // Trigger button
+  function toggleCalcPanel() {
+    var panel = document.getElementById('sairn-calc-panel');
+    if (!panel) return;
+    panel.classList.toggle('open');
+  }
+
   var trigger = document.createElement('button');
   trigger.id = 'sairn-calc-trigger';
   trigger.textContent = cfg.triggerLabel;
@@ -2100,12 +2136,6 @@ function buildCalcPanel() {
 
   window.saircalcUpdate = updateCalcPanel;
   updateCalcPanel();
-}
-
-function toggleCalcPanel() {
-  var panel = document.getElementById('sairn-calc-panel');
-  if (!panel) return;
-  panel.classList.toggle('open');
 }
 
 function updateCalcPanel() {
@@ -2936,6 +2966,14 @@ style.textContent =
   '@keyframes smiPulse{0%,100%{opacity:.4}50%{opacity:1}}';
 document.head.appendChild(style);
 
+function showMemoryPanel() {
+  var panel = document.getElementById('sairn-memory-panel');
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  var content = document.getElementById('sairn-memory-content');
+  if (content && _sessionSummary) content.textContent = _sessionSummary;
+}
+
 var memIndicator = document.createElement('div');
 memIndicator.id = 'sairn-memory-indicator';
 memIndicator.innerHTML = '<span class="smi-dot"></span><span>Memory active</span>';
@@ -2954,14 +2992,6 @@ memPanel.innerHTML =
   '<div id="sairn-memory-content" style="font-size:12px;color:rgba(240,240,255,0.6);line-height:1.65;max-height:200px;overflow-y:auto">No memory built yet. Keep chatting and I\'ll start remembering what matters.</div>' +
   '<button onclick="clearSessionMemory()" style="margin-top:12px;width:100%;padding:7px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:7px;color:#EF4444;font-size:11px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif">Clear Memory</button>';
 document.body.appendChild(memPanel);
-
-function showMemoryPanel() {
-  var panel = document.getElementById('sairn-memory-panel');
-  if (!panel) return;
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-  var content = document.getElementById('sairn-memory-content');
-  if (content && _sessionSummary) content.textContent = _sessionSummary;
-}
 
 window.clearSessionMemory = function() {
   _sessionSummary = '';
