@@ -2455,14 +2455,44 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
         <div class="dm-card" style="flex-shrink:0">
           <div class="dm-card-title" style="margin-bottom:10px">Shape Preview — Color-Coded Edges Update Live</div>
+
           <div class="draw-toolbar">
-            <button class="draw-btn active" id="dc-tool-add" onclick="setDCDrawTool('add',this)">+ Add Run</button>
-            <button class="draw-btn" id="dc-tool-erase" onclick="setDCDrawTool('erase',this)">Erase</button>
-            <button class="draw-btn" onclick="clearDCCanvas()">Clear All</button>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Drag to draw · Click erase to remove · Scale: 2px = 1 inch</span>
+            <span style="font-size:10px;color:var(--muted);margin-right:2px">Mode:</span>
+            <button class="draw-btn dc-mode-btn active" id="dc-mode-preset" onclick="setDCMode('preset')">📐 Preset Shape</button>
+            <button class="draw-btn dc-mode-btn" id="dc-mode-draw" onclick="setDCMode('draw')">✏️ Custom Draw</button>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Custom Draw starts from your current preset — click a point, click a direction, type the exact length.</span>
           </div>
-          <canvas id="ct-canvas" width="640" height="480" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810;cursor:crosshair"></canvas>
-          <div id="dc-runs-summary" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
+
+          <div class="draw-toolbar" id="dc-draw-tools" style="margin-top:6px;display:none">
+            <button class="draw-btn" onclick="dcUndoPoint()">↶ Undo Point</button>
+            <button class="draw-btn" id="dc-insert-btn" onclick="setDCInsertMode(!dcInsertMode)">+ Insert Point on Edge</button>
+            <button class="draw-btn" id="dc-editpass-btn" onclick="setDCEditPass(!dcEditPass)">🎨 Assign Edge Types</button>
+            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcClearPoly()">Clear Shape</button>
+          </div>
+          <div id="dc-running-totals" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"></div>
+
+          <div class="draw-toolbar" style="margin-top:10px">
+            <span style="font-size:10px;color:var(--muted);margin-right:2px">Place:</span>
+            <button class="draw-btn draw-cutout-btn" id="dc-cutout-sink" onclick="setDCCutoutMode(!dcCutoutMode,'sink')">🚰 Sink</button>
+            <button class="draw-btn draw-cutout-btn" id="dc-cutout-cooktop" onclick="setDCCutoutMode(!dcCutoutMode,'cooktop')">🔥 Cooktop</button>
+            <button class="draw-btn draw-cutout-btn" id="dc-cutout-outlet" onclick="setDCCutoutMode(!dcCutoutMode,'outlet')">⚡ Outlet</button>
+            <button class="draw-btn draw-cutout-btn" id="dc-cutout-faucet" onclick="setDCCutoutMode(!dcCutoutMode,'faucet')">💧 Faucet</button>
+            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCCutouts()">Clear Cutouts</button>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click the spot · drag any marker to fine-tune</span>
+          </div>
+
+          <div class="draw-toolbar" style="margin-top:6px">
+            <span style="font-size:10px;color:var(--muted);margin-right:2px">Seams:</span>
+            <button class="draw-btn draw-seam-btn" id="dc-seam-standard" onclick="setDCSeamMode(!dcSeamMode,'standard')">▭ Standard</button>
+            <button class="draw-btn draw-seam-btn" id="dc-seam-euro" onclick="setDCSeamMode(!dcSeamMode,'euro')">▭ Euro Seam</button>
+            <button class="draw-btn draw-seam-btn" id="dc-seam-offset" onclick="setDCSeamMode(!dcSeamMode,'offset')">▭ Offset Seam</button>
+            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCSeams()">Clear Seams</button>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, drag across the counter — always stays square · drag a placed seam to move it</span>
+          </div>
+
+          <canvas id="ct-canvas" width="640" height="480" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810;cursor:crosshair;margin-top:8px"></canvas>
+          <div id="dc-cutout-list" style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap"></div>
+          <div id="dc-seam-list" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap"></div>
         </div>
 
         <!-- AI suggestion area -->
@@ -4697,10 +4727,23 @@ function clearKTCanvas() {
   calc();
 }
 
-// == DRAW-PANEL CANVAS (ct-canvas) — freeform sketch, mirrors kt-canvas pattern ==
-var dcCanvas = null, dcCtx = null, dcDragging = false, dcDrawTool = 'add';
-var dcDragStart = { x: 0, y: 0 };
-var dcRuns = [];
+// == DRAW-PANEL CANVAS (ct-canvas) — point-to-point polygon engine ==========================
+// Replaces the old "drag a line, length = mouse distance" sketch tool. Presets (straight/L/U/
+// galley/custom) still exist and are the fast path for the common shapes — selecting one seeds
+// dcPoly with that shape's exact corners (in inches, local space) so "Custom Draw" mode is really
+// just "edit the preset you already have," per spec. Every measurement is typed by the rep, never
+// inferred from mouse-drag distance, so the layout is always dimensionally exact.
+var dcCanvas = null, dcCtx = null;
+var dcMode = 'preset';        // 'preset' = show the active preset's rectangle math (legacy renderer) | 'draw' = polygon mode active
+var dcPoly = [];              // [{x,y}, ...] polygon points in inches, local coordinate space (not pixels)
+var dcPolyClosed = false;     // true once the rep has closed the loop back to the start point
+var dcPendingFrom = null;     // {x,y} the point we're drawing the NEXT segment from, while mid-draw
+var dcHoverAngleDeg = null;   // last snapped angle while aiming the next segment, shown as a guide line
+var dcHistory = [];           // undo stack — snapshots of dcPoly before each committed point
+var dcEdgeTypes = {};         // segment index -> edge type key (polished/wall/cabinet/appliance/waterfall/...), assigned in the post-draw pass
+var dcEditPass = false;       // true once the shape is closed and the rep is in the "click each edge to assign its type" pass
+var GRID_SNAP_IN = 1;         // grid snap: nearest inch
+var ANGLE_SNAP_DEG = 45;      // angle snap: nearest 45° increment (covers 0/45/90/135/180/...)
 
 function initDCCanvas() {
   dcCanvas = document.getElementById('ct-canvas');
@@ -4708,126 +4751,367 @@ function initDCCanvas() {
   dcCtx = dcCanvas.getContext('2d');
   dcCanvas.width = dcCanvas.offsetWidth || 640;
   dcCanvas.height = 480;
-  dcRuns = [];
-  dcCanvas.onmousedown = dcStartDraw;
-  dcCanvas.onmousemove = dcMoveDraw;
-  dcCanvas.onmouseup = dcEndDraw;
+  dcCanvas.onmousedown = dcCanvasClick;
+  dcCanvas.onmousemove = dcCanvasHover;
+  dcCanvas.oncontextmenu = e => e.preventDefault();
+  initDCCutoutEvents();
+  initDCSeamEvents();
   if (typeof drawCTPreview === 'function') drawCTPreview();
-  else redrawDCCanvas();
+  updateDCCutoutList();
+  updateDCSeamList();
 }
 
-function dcStartDraw(e) {
-  if (dcDrawTool === 'erase') { dcEraseAt(e.offsetX, e.offsetY); return; }
-  dcDragging = true;
-  dcDragStart = { x:e.offsetX, y:e.offsetY };
+// -- Coordinate helpers: dcPoly is stored in INCHES, local space (0,0 = top-left of the shape's
+// own bounding box). The canvas render picks a scale + offset fresh every draw so the shape always
+// fits the panel — same approach the old preset math used, which is why presets can seed dcPoly
+// directly without any unit conversion beyond inches-to-pixels.
+function dcGetTransform() {
+  const W = dcCanvas.width, H = dcCanvas.height, pad = 48;
+  if (!dcPoly.length) return { scale: DRAW_SCALE_PXPERIN, ox: pad, oy: pad };
+  const xs = dcPoly.map(p=>p.x), ys = dcPoly.map(p=>p.y);
+  const minX=Math.min(...xs,0), maxX=Math.max(...xs,1), minY=Math.min(...ys,0), maxY=Math.max(...ys,1);
+  const w = Math.max(maxX-minX, 12), h = Math.max(maxY-minY, 12);
+  const scale = Math.min((W-pad*2)/w, (H-pad*2)/h);
+  return { scale, ox: pad - minX*scale, oy: pad - minY*scale };
+}
+function dcInToPx(pt) { const t=dcGetTransform(); return { x: pt.x*t.scale+t.ox, y: pt.y*t.scale+t.oy }; }
+function dcPxToIn(px, py) { const t=dcGetTransform(); return { x: (px-t.ox)/t.scale, y: (py-t.oy)/t.scale }; }
+
+function dcCanvasCoords(e) {
+  const rect = dcCanvas.getBoundingClientRect();
+  const scaleX = dcCanvas.width/rect.width, scaleY = dcCanvas.height/rect.height;
+  return { px:(e.clientX-rect.left)*scaleX, py:(e.clientY-rect.top)*scaleY };
 }
 
-function dcMoveDraw(e) {
-  if (!dcDragging) return;
-  redrawDCCanvas();
-  const dx = e.offsetX - dcDragStart.x;
-  const dy = e.offsetY - dcDragStart.y;
-  const s = Math.abs(dx) > Math.abs(dy) ? {x:dx,y:0} : {x:0,y:dy};
-  dcCtx.strokeStyle = '#E8850A'; dcCtx.lineWidth = 42; dcCtx.lineCap = 'round'; dcCtx.globalAlpha = 0.12;
-  dcCtx.beginPath(); dcCtx.moveTo(dcDragStart.x, dcDragStart.y); dcCtx.lineTo(dcDragStart.x+s.x, dcDragStart.y+s.y); dcCtx.stroke();
-  dcCtx.globalAlpha = 1; dcCtx.lineWidth = 2.5; dcCtx.setLineDash([4,3]);
-  dcCtx.beginPath(); dcCtx.moveTo(dcDragStart.x, dcDragStart.y); dcCtx.lineTo(dcDragStart.x+s.x, dcDragStart.y+s.y); dcCtx.stroke();
-  dcCtx.setLineDash([]);
-  const len = Math.round(Math.sqrt(s.x**2+s.y**2)/DRAW_SCALE_PXPERIN);
-  dcCtx.fillStyle = '#E8850A'; dcCtx.font = 'bold 11px Outfit,sans-serif'; dcCtx.fillText(len+'" / '+(len/12).toFixed(1)+'LF', dcDragStart.x+s.x+8, dcDragStart.y+s.y-5);
+// Snap a candidate next-point to the nearest 45° increment from `from`, at whatever raw distance
+// the mouse is currently at — used only to preview/aim direction. The actual committed length
+// always comes from the typed measurement box, never from this distance.
+function dcSnapDirection(from, rawIn) {
+  const dx = rawIn.x - from.x, dy = rawIn.y - from.y;
+  const dist = Math.max(Math.hypot(dx,dy), 0.01);
+  let angle = Math.atan2(dy,dx) * 180/Math.PI;
+  angle = Math.round(angle/ANGLE_SNAP_DEG)*ANGLE_SNAP_DEG;
+  return { angleDeg: angle, dist };
 }
 
-function dcEndDraw(e) {
-  if (!dcDragging || !e) return;
-  dcDragging = false;
-  const dx = e.offsetX - dcDragStart.x;
-  const dy = e.offsetY - dcDragStart.y;
-  const s = Math.abs(dx) > Math.abs(dy) ? {x:dx,y:0} : {x:0,y:dy};
-  const lenPx = Math.sqrt(s.x**2+s.y**2);
-  if (lenPx < 10) return;
-  const lenIn = Math.round(lenPx / DRAW_SCALE_PXPERIN);
-  dcRuns.push({ x1:dcDragStart.x, y1:dcDragStart.y, x2:dcDragStart.x+s.x, y2:dcDragStart.y+s.y, inches:lenIn, label:'Run '+(dcRuns.length+1) });
-  syncDCToInputs();
-  updateDCSummary();
-}
+function dcPointNear(a, b, tolIn) { return Math.hypot(a.x-b.x, a.y-b.y) <= tolIn; }
 
-function dcEraseAt(x, y) {
-  dcRuns = dcRuns.filter(r => { const mx=(r.x1+r.x2)/2, my=(r.y1+r.y2)/2; return Math.sqrt((mx-x)**2+(my-y)**2) > 30; });
-  syncDCToInputs(); updateDCSummary();
-}
-
-function redrawDCCanvas() {
-  if (!dcCanvas || !dcCtx) return;
-  dcCtx.clearRect(0, 0, dcCanvas.width, dcCanvas.height);
-  dcCtx.strokeStyle = 'rgba(255,255,255,0.04)'; dcCtx.lineWidth = 0.5;
-  for (let x = 0; x < dcCanvas.width; x += 24) { dcCtx.beginPath(); dcCtx.moveTo(x,0); dcCtx.lineTo(x,dcCanvas.height); dcCtx.stroke(); }
-  for (let y = 0; y < dcCanvas.height; y += 24) { dcCtx.beginPath(); dcCtx.moveTo(0,y); dcCtx.lineTo(dcCanvas.width,y); dcCtx.stroke(); }
-  dcRuns.forEach(r => {
-    dcCtx.strokeStyle = '#E8850A'; dcCtx.lineWidth = 42; dcCtx.lineCap = 'round'; dcCtx.globalAlpha = 0.1;
-    dcCtx.beginPath(); dcCtx.moveTo(r.x1,r.y1); dcCtx.lineTo(r.x2,r.y2); dcCtx.stroke();
-    dcCtx.globalAlpha = 1; dcCtx.lineWidth = 2.5;
-    dcCtx.beginPath(); dcCtx.moveTo(r.x1,r.y1); dcCtx.lineTo(r.x2,r.y2); dcCtx.stroke();
-    dcCtx.fillStyle = '#E8850A'; dcCtx.font = '11px Outfit,sans-serif';
-    dcCtx.fillText(r.label+': '+r.inches+'"', (r.x1+r.x2)/2+4, (r.y1+r.y2)/2-9);
-  });
-  if (!dcRuns.length) {
-    dcCtx.fillStyle='rgba(232,133,10,0.2)'; dcCtx.font='13px Outfit,sans-serif'; dcCtx.textAlign='center';
-    dcCtx.fillText('Drag to sketch a run, or enter dimensions on the left',dcCanvas.width/2,dcCanvas.height/2);
-    dcCtx.textAlign='left';
+function setDCMode(mode) {
+  dcMode = mode;
+  dcEditPass = false;
+  document.querySelectorAll('.dc-mode-btn').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('dc-mode-'+mode);
+  if (btn) btn.classList.add('active');
+  const toolsRow = document.getElementById('dc-draw-tools');
+  if (toolsRow) toolsRow.style.display = (mode==='draw') ? 'flex' : 'none';
+  if (mode === 'draw' && !dcPoly.length) {
+    // Seed the polygon from whatever preset is currently active so "draw mode" continues
+    // the shape on screen instead of starting from a blank canvas.
+    dcSeedPolyFromPreset();
   }
+  dcRefreshMeasureBoxVisibility();
+  drawCTPreview();
+  updateDCRunningTotals();
 }
 
-// Map sketched runs onto the active shape's actual length/depth fields so calcDrawing() picks them up
-function syncDCToInputs() {
-  const fieldsByShape = {
-    straight: ['da-len'], island: ['da-len'],
-    lshape:   ['da-len','db-len'],
-    ushape:   ['da-len','db-len','dc-len'],
-    galley:   ['da-len','db-len'],
-    custom:   ['da-len','db-len','dc-len','dd-len'],
+// Builds dcPoly from the active preset's rectangle(s) so switching into point-to-point mode
+// edits the shape that's already on screen rather than discarding it.
+function dcSeedPolyFromPreset() {
+  const aL=gN('da-len'), aD=gN('da-dep'), bL=gN('db-len'), bD=gN('db-dep'), cL=gN('dc-len'), cD=gN('dc-dep');
+  let pts = [];
+  if (ctShape==='straight' || ctShape==='island') {
+    if (aL && aD) pts = [{x:0,y:0},{x:aL,y:0},{x:aL,y:aD},{x:0,y:aD}];
+  } else if (ctShape==='lshape') {
+    if (aL && aD) {
+      // Canonical L outline: A run is the long horizontal piece along the bottom; B run is the
+      // vertical stub rising from the left end of A. Six points, clockwise from top-left of the
+      // stub — matches the legacy ax/ay/bx/by rectangle layout used by the preset renderer.
+      const depB = bD||25.5, runBLen = bL||0;
+      const stubTop = Math.max(runBLen - aD, 0);
+      pts = [
+        {x:0, y:stubTop}, {x:depB, y:stubTop}, {x:depB, y:aD}, {x:aL, y:aD}, {x:aL, y:0}, {x:0, y:0}
+      ];
+    }
+  } else if (ctShape==='ushape') {
+    if (aL && aD && bL) {
+      const cLv=cL||aL, cDv=cD||aD, bDv=bD||25.5;
+      pts = [
+        {x:0,y:0}, {x:aD+bL+cDv,y:0}, {x:aD+bL+cDv,y:bDv+cLv}, {x:aD+bL,y:bDv+cLv}, {x:aD+bL,y:bDv},
+        {x:aD,y:bDv}, {x:aD,y:bDv+aL}, {x:0,y:bDv+aL}
+      ];
+    }
+  } else if (ctShape==='galley') {
+    if (aL && aD) pts = [{x:0,y:0},{x:aL,y:0},{x:aL,y:aD},{x:0,y:aD}]; // each piece is independent; seed with the front run
+  } else {
+    if (aL && aD) pts = [{x:0,y:0},{x:aL,y:0},{x:aL,y:aD},{x:0,y:aD}];
+  }
+  dcPoly = pts;
+  dcPolyClosed = pts.length > 0;
+  dcHistory = [];
+  dcEdgeTypes = {};
+}
+
+// -- Click handling: click point -> click direction -> measurement box -> exact point committed.
+function dcCanvasClick(e) {
+  if (dcMode !== 'draw') return;
+  const { px, py } = dcCanvasCoords(e);
+
+  // Insert-on-edge mode: clicking near an existing segment splits it with a new point there,
+  // instead of starting/continuing a fresh draw sequence.
+  if (dcInsertMode) { dcTryInsertAt(px, py); return; }
+
+  // Edit pass: clicking a segment opens the edge-type picker for that segment instead of drawing.
+  if (dcEditPass) { dcTryPickEdgeAt(px, py); return; }
+
+  // Cutout/seam tools take priority over polygon drawing while active (handled by their own
+  // mousedown listeners with stopPropagation in initDCCutoutEvents/initDCSeamEvents).
+
+  const rawIn = dcPxToIn(px, py);
+
+  if (!dcPoly.length) {
+    // First click of a brand-new shape: snap to grid and start.
+    const start = { x: Math.round(rawIn.x/GRID_SNAP_IN)*GRID_SNAP_IN, y: Math.round(rawIn.y/GRID_SNAP_IN)*GRID_SNAP_IN };
+    dcPoly = [start];
+    dcPendingFrom = start;
+    drawCTPreview();
+    return;
+  }
+
+  // Clicking back near the start point closes the shape.
+  const startPt = dcPoly[0];
+  if (dcPoly.length > 2 && dcPointNear(rawIn, startPt, 6/dcGetTransform().scale)) {
+    dcPolyClosed = true;
+    dcPendingFrom = null;
+    dcHoverAngleDeg = null;
+    drawCTPreview();
+    updateDCRunningTotals();
+    return;
+  }
+
+  // Otherwise this click sets the rough direction for the next segment — snap the angle, then
+  // open the measurement box so the rep types the exact length along that snapped direction.
+  const from = dcPoly[dcPoly.length-1];
+  const { angleDeg } = dcSnapDirection(from, rawIn);
+  dcHoverAngleDeg = angleDeg;
+  dcOpenMeasureBox(from, angleDeg);
+}
+
+function dcCanvasHover(e) {
+  if (dcMode !== 'draw' || !dcPoly.length || dcPolyClosed) return;
+  const { px, py } = dcCanvasCoords(e);
+  const rawIn = dcPxToIn(px, py);
+  const from = dcPoly[dcPoly.length-1];
+  const { angleDeg } = dcSnapDirection(from, rawIn);
+  dcHoverAngleDeg = angleDeg;
+  drawCTPreview();
+}
+
+// Opens a small inline measurement box anchored near the last point. The rep types the segment
+// length; Enter (or the Add button) commits the point at exactly that distance along the
+// already-snapped angle, then grid-snaps the resulting point so corners line up cleanly.
+function dcOpenMeasureBox(from, angleDeg) {
+  let box = document.getElementById('dc-measure-box');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'dc-measure-box';
+    box.style.cssText = 'position:absolute;z-index:50;background:#1A1410;border:1px solid #16C762;border-radius:8px;padding:8px;display:flex;gap:6px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,0.4)';
+    document.body.appendChild(box);
+  }
+  const rect = dcCanvas.getBoundingClientRect();
+  const fromPx = dcInToPx(from);
+  const dispScale = rect.width / dcCanvas.width;
+  box.style.left = (rect.left + fromPx.x*dispScale + 14) + 'px';
+  box.style.top = (rect.top + fromPx.y*dispScale - 40) + 'px';
+  box.innerHTML =
+    '<span style="font-size:10px;color:#9CA3AF">' + angleDeg + '&deg; &middot; length (in)</span>' +
+    '<input id="dc-measure-input" type="number" step="0.125" style="width:64px;background:#0A0E14;border:1px solid #333;border-radius:5px;padding:4px 6px;color:#fff;font-size:12px" autofocus>' +
+    '<button id="dc-measure-add" style="background:#16C762;color:#0A3D1F;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">Add</button>' +
+    '<button id="dc-measure-cancel" style="background:transparent;color:#9CA3AF;border:1px solid #333;border-radius:5px;padding:4px 8px;font-size:11px;cursor:pointer">Esc</button>';
+  box.style.display = 'flex';
+  const input = document.getElementById('dc-measure-input');
+  input.focus();
+  const commit = () => {
+    const len = parseFloat(input.value);
+    if (!len || len <= 0) return;
+    dcCommitPoint(from, angleDeg, len);
+    box.style.display = 'none';
   };
-  const fields = fieldsByShape[ctShape] || fieldsByShape.straight;
-  fields.forEach((fid,i) => {
-    const el = document.getElementById(fid);
-    if (el && dcRuns[i]) el.value = dcRuns[i].inches;
-  });
-  if (typeof drawCTPreview === 'function') drawCTPreview();
-  if (typeof calcDrawing === 'function') calcDrawing();
+  document.getElementById('dc-measure-add').onclick = commit;
+  document.getElementById('dc-measure-cancel').onclick = () => { box.style.display='none'; };
+  input.onkeydown = ev => { if (ev.key==='Enter') commit(); if (ev.key==='Escape') box.style.display='none'; };
 }
 
-function updateDCSummary() {
-  const total = dcRuns.reduce((s,r) => s+r.inches, 0);
-  const el = document.getElementById('dc-runs-summary');
+function dcRefreshMeasureBoxVisibility() {
+  const box = document.getElementById('dc-measure-box');
+  if (box) box.style.display = 'none';
+}
+
+// Commits a new point at an exact typed length along a snapped angle, then grid-snaps the
+// resulting coordinate so segment endpoints land on clean inch values.
+function dcCommitPoint(from, angleDeg, lengthIn) {
+  dcHistory.push(JSON.parse(JSON.stringify(dcPoly)));
+  const rad = angleDeg * Math.PI/180;
+  let nx = from.x + Math.cos(rad)*lengthIn;
+  let ny = from.y + Math.sin(rad)*lengthIn;
+  nx = Math.round(nx/GRID_SNAP_IN)*GRID_SNAP_IN;
+  ny = Math.round(ny/GRID_SNAP_IN)*GRID_SNAP_IN;
+  dcPoly.push({ x:nx, y:ny });
+  dcHoverAngleDeg = null;
+  drawCTPreview();
+  updateDCRunningTotals();
+}
+
+// Undo the last committed point (does not close/reopen the shape — only steps back a point).
+function dcUndoPoint() {
+  if (!dcHistory.length) {
+    if (dcPolyClosed) { dcPolyClosed = false; drawCTPreview(); updateDCRunningTotals(); }
+    return;
+  }
+  dcPoly = dcHistory.pop();
+  dcPolyClosed = false;
+  drawCTPreview();
+  updateDCRunningTotals();
+}
+
+function dcClearPoly() {
+  dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; dcEditPass = false;
+  dcCutouts = []; dcSeams = [];
+  drawCTPreview();
+  updateDCRunningTotals();
+  updateDCCutoutList();
+  updateDCSeamList();
+}
+
+// Mid-edge insertion: clicking an existing CLOSED segment (not in edit-pass, via a dedicated
+// button below) splits that edge by inserting a new point at the click location, grid-snapped.
+// Used for adding a jog/notch partway down a wall the rep already drew.
+var dcInsertMode = false;
+function setDCInsertMode(on) {
+  dcInsertMode = on;
+  const btn = document.getElementById('dc-insert-btn');
+  if (btn) btn.classList.toggle('active', on);
+}
+function dcTryInsertAt(px, py) {
+  if (!dcPolyClosed || dcPoly.length < 3) return false;
+  const rawIn = dcPxToIn(px, py);
+  let best = null, bestDist = Infinity;
+  for (let i=0;i<dcPoly.length;i++) {
+    const a = dcPoly[i], b = dcPoly[(i+1)%dcPoly.length];
+    const d = dcDistToSegment(rawIn, a, b);
+    if (d.dist < bestDist) { bestDist = d.dist; best = { i, point: d.point }; }
+  }
+  const tolIn = 10 / dcGetTransform().scale;
+  if (best && bestDist <= tolIn) {
+    dcHistory.push(JSON.parse(JSON.stringify(dcPoly)));
+    const snapped = { x: Math.round(best.point.x/GRID_SNAP_IN)*GRID_SNAP_IN, y: Math.round(best.point.y/GRID_SNAP_IN)*GRID_SNAP_IN };
+    dcPoly.splice(best.i+1, 0, snapped);
+    drawCTPreview();
+    updateDCRunningTotals();
+    setDCInsertMode(false);
+    return true;
+  }
+  return false;
+}
+function dcDistToSegment(p, a, b) {
+  const dx=b.x-a.x, dy=b.y-a.y, len2=dx*dx+dy*dy;
+  let t = len2 ? ((p.x-a.x)*dx+(p.y-a.y)*dy)/len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const point = { x:a.x+dx*t, y:a.y+dy*t };
+  return { dist: Math.hypot(p.x-point.x, p.y-point.y), point };
+}
+
+// -- Edge-type assignment pass: after the shape is closed, the rep clicks "Assign Edge Types"
+// then clicks each segment in turn to open the same polished/wall/cabinet/appliance/waterfall
+// picker used elsewhere in the app, applied per-segment-index this time instead of per-named-side.
+function setDCEditPass(on) {
+  if (on && (!dcPolyClosed || dcPoly.length < 3)) { on = false; }
+  dcEditPass = on;
+  const btn = document.getElementById('dc-editpass-btn');
+  if (btn) btn.classList.toggle('active', on);
+  drawCTPreview();
+}
+function dcTryPickEdgeAt(px, py) {
+  const rawIn = dcPxToIn(px, py);
+  let best = null, bestDist = Infinity;
+  for (let i=0;i<dcPoly.length;i++) {
+    const a = dcPoly[i], b = dcPoly[(i+1)%dcPoly.length];
+    const d = dcDistToSegment(rawIn, a, b);
+    if (d.dist < bestDist) { bestDist = d.dist; best = i; }
+  }
+  const tolIn = 10 / dcGetTransform().scale;
+  if (best === null || bestDist > tolIn) return;
+  dcOpenEdgeTypeMenu(best, px, py);
+}
+function dcOpenEdgeTypeMenu(segIdx, px, py) {
+  let menu = document.getElementById('dc-edge-menu');
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.id = 'dc-edge-menu';
+    menu.style.cssText = 'position:absolute;z-index:50;background:#1A1410;border:1px solid #16C762;border-radius:8px;padding:6px;box-shadow:0 4px 16px rgba(0,0,0,0.4)';
+    document.body.appendChild(menu);
+  }
+  const rect = dcCanvas.getBoundingClientRect();
+  const dispScale = rect.width / dcCanvas.width;
+  menu.style.left = (rect.left + px*dispScale + 10) + 'px';
+  menu.style.top = (rect.top + py*dispScale - 10) + 'px';
+  const types = ['polished','wall','cabinet','appliance','waterfall','splash','unfinished'];
+  menu.innerHTML = types.map(t =>
+    '<div onclick="dcSetEdgeType(' + segIdx + ',\'' + t + '\')" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;border-radius:5px;font-size:11px;color:#fff" onmouseover="this.style.background=\'rgba(255,255,255,0.08)\'" onmouseout="this.style.background=\'transparent\'">' +
+      '<span style="width:10px;height:10px;border-radius:3px;background:' + EDGE_COLORS[t].color + '"></span>' + EDGE_COLORS[t].label +
+    '</div>'
+  ).join('');
+  menu.style.display = 'block';
+  setTimeout(()=>{ document.addEventListener('click', dcCloseEdgeMenuOnce, { once:true, capture:true }); }, 0);
+}
+function dcCloseEdgeMenuOnce(e) {
+  const menu = document.getElementById('dc-edge-menu');
+  if (menu && !menu.contains(e.target)) menu.style.display = 'none';
+}
+function dcSetEdgeType(segIdx, type) {
+  dcEdgeTypes[segIdx] = type;
+  const menu = document.getElementById('dc-edge-menu');
+  if (menu) menu.style.display = 'none';
+  drawCTPreview();
+}
+
+// -- Live running totals while drawing: perimeter so far + a rough sqft estimate using the
+// shoelace formula (only meaningful once closed, but perimeter updates after every segment).
+function dcPolyPerimeter() {
+  if (dcPoly.length < 2) return 0;
+  let p = 0;
+  const n = dcPolyClosed ? dcPoly.length : dcPoly.length - 1;
+  for (let i=0;i<n;i++) { const a=dcPoly[i], b=dcPoly[(i+1)%dcPoly.length]; p += Math.hypot(b.x-a.x,b.y-a.y); }
+  return p;
+}
+function dcPolyAreaSqIn() {
+  if (!dcPolyClosed || dcPoly.length < 3) return 0;
+  let a = 0;
+  for (let i=0;i<dcPoly.length;i++) { const p1=dcPoly[i], p2=dcPoly[(i+1)%dcPoly.length]; a += p1.x*p2.y - p2.x*p1.y; }
+  return Math.abs(a)/2;
+}
+function updateDCRunningTotals() {
+  const el = document.getElementById('dc-running-totals');
   if (!el) return;
-  el.innerHTML = dcRuns.map(r =>
-    '<span style="font-size:11px;background:var(--ar);border:1px solid var(--ab);color:var(--a);padding:3px 10px;border-radius:12px">' + r.label + ': ' + r.inches + '" (' + (r.inches/12).toFixed(1) + ' LF)</span>'
-  ).join('') + (dcRuns.length ? '<span style="font-size:11px;font-weight:600;color:var(--a)"> Total: ' + (total/12).toFixed(1) + ' LF</span>' : '');
+  if (!dcPoly.length) { el.innerHTML = ''; return; }
+  const perIn = dcPolyPerimeter();
+  const sqIn = dcPolyAreaSqIn();
+  const seamDeductSqIn = 0; // seams don't change total material area, only piece count — handled in calcDrawing
+  el.innerHTML =
+    '<span style="font-size:11px;background:rgba(22,199,98,0.12);border:1px solid rgba(22,199,98,0.3);color:#16C762;padding:3px 10px;border-radius:12px">Perimeter: ' + (perIn/12).toFixed(1) + ' LF</span>' +
+    (dcPolyClosed ? '<span style="font-size:11px;background:rgba(22,199,98,0.12);border:1px solid rgba(22,199,98,0.3);color:#16C762;padding:3px 10px;border-radius:12px;margin-left:6px">Area: ' + (sqIn/144).toFixed(2) + ' sqft</span>' : '<span style="font-size:11px;color:var(--muted);margin-left:6px">Click near the start point to close the shape</span>');
 }
 
-function setDCDrawTool(t, el) {
-  dcDrawTool = t;
-  document.querySelectorAll('#panel-draw .draw-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  dcCanvas && (dcCanvas.style.cursor = t === 'erase' ? 'not-allowed' : 'crosshair');
+// When the polygon is closed, push its dimensions back into calcDrawing()'s pricing inputs by
+// treating the whole closed shape as one gross area (matches how custom/galley sections already
+// sum independently) — seams subsequently split this into priced pieces, not into less material.
+function dcSyncPolyToCalc() {
+  if (!dcPolyClosed) return;
+  // calcDrawing() reads da-len/da-dep etc; for an edited/custom polygon we instead stash the
+  // computed sqft directly so the pricing engine doesn't need to know the shape was hand-drawn.
+  window._dcPolySqFt = dcPolyAreaSqIn() / 144;
 }
 
-function clearDCCanvas() {
-  dcRuns = [];
-  const fieldsByShape = {
-    straight: ['da-len','da-dep'], island: ['da-len','da-dep'],
-    lshape:   ['da-len','da-dep','db-len','db-dep'],
-    ushape:   ['da-len','da-dep','db-len','db-dep','dc-len','dc-dep'],
-    galley:   ['da-len','da-dep','db-len','db-dep'],
-    custom:   ['da-len','da-dep','db-len','db-dep','dc-len','dc-dep','dd-len','dd-dep'],
-  };
-  (fieldsByShape[ctShape] || fieldsByShape.straight).forEach(fid => {
-    const el = document.getElementById(fid);
-    if (el) el.value = '';
-  });
-  updateDCSummary();
-  if (typeof drawCTPreview === 'function') drawCTPreview();
-  if (typeof calcDrawing === 'function') calcDrawing();
-}
+
 
 // == DRAW PANEL ================================================
 function initDrawPanel() {
@@ -4890,6 +5174,10 @@ function selectDrawShape(id) {
   else { addNF('da-len','Section A — Length',96); addDepthNF('da-dep','Section A — Depth',25.5); addNF('db-len','Section B — Length',0); addDepthNF('db-dep','Section B — Depth',0); addNF('dc-len','Section C — Length',0); addDepthNF('dc-dep','Section C — Depth',0); addNF('dd-len','Section D — Length',0); addDepthNF('dd-dep','Section D — Depth',0); }
 
   buildEdgeAssignmentArea();
+  // Switching presets invalidates any in-progress or completed hand-drawn polygon from a
+  // different preset — drop back to preset mode so the rep sees the new preset cleanly rather
+  // than a stale custom shape that no longer matches the selected dimensions.
+  if (dcMode === 'draw') { dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; setDCMode('preset'); }
   drawCTPreview();
   if (typeof initDCCanvas === 'function') initDCCanvas();
 }
@@ -4964,6 +5252,11 @@ function drawCTPreview() {
   const bL=gN('db-len'), bD=gN('db-dep');
   const cL=gN('dc-len'), cD=gN('dc-dep');
 
+  // Point-to-point custom draw mode renders entirely separately from the legacy preset
+  // rectangle math below — it has its own coordinate transform (dcGetTransform), its own
+  // edge-type lookup (dcEdgeTypes, by segment index), and its own cutout/seam overlays.
+  if (dcMode === 'draw') { drawDCPolygon(ctx, W, H); return; }
+
   // Draw shape fill + edges
   function drawRect(x,y,w,h,edgeMap) {
     // Fill
@@ -5005,6 +5298,11 @@ function drawCTPreview() {
     return edgeAssignments[label] || fallback;
   }
 
+  // Reset the placeable-rect registry used for sink/cutout click-placement + drag hit-testing
+  // in the legacy preset renderer. (Point-to-point draw mode has its own equivalent inside
+  // drawDCPolygon and returns before reaching this point.)
+  window._ctRects = [];
+
   if (ctShape==='straight' || ctShape==='island') {
     if(!aL||!aD) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const sc=Math.min((W-pad*3)/aL,(H-pad*3)/aD);
@@ -5018,6 +5316,7 @@ function drawCTPreview() {
     colorEdge(x+aL*sc,y,x+aL*sc,y+aD*sc,ea0.right);
     colorEdge(x,y+aD*sc,x+aL*sc,y+aD*sc,ea0.bottom);
     colorEdge(x,y,x,y+aD*sc,ea0.left);
+    window._ctRects.push({key:'A', x:x, y:y, w:aL*sc, h:aD*sc});
     // waterfall indicators
     if(getCBV('dh-wf-left')) { ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(x-12,y,12,aD*sc); ctx.fill(); colorEdge(x,y,x,y+aD*sc,'waterfall'); dimLabel(x-6,y-8,'WF'); }
     if(getCBV('dh-wf-right')) { ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(x+aL*sc,y,12,aD*sc); ctx.fill(); colorEdge(x+aL*sc,y,x+aL*sc,y+aD*sc,'waterfall'); dimLabel(x+aL*sc+6,y-8,'WF'); }
@@ -5041,34 +5340,48 @@ function drawCTPreview() {
     const ax=ox, ay=oy+(bL||0)*sc, aw=aL*sc, ah=aD*sc;
     ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.fill();
     colorEdge(ax,ay,ax+aw,ay,ea('A-Back (wall)','wall')); colorEdge(ax+aw,ay,ax+aw,ay+ah,ea('A-Left end','polished')); colorEdge(ax,ay+ah,ax+aw,ay+ah,ea('A-Front','polished')); colorEdge(ax,ay,ax,ay+ah,ea('A-Back (wall)','wall'));
+    window._ctRects.push({key:'A', x:ax, y:ay, w:aw, h:ah});
     // B run (vertical stub)
     if(bL&&bD) {
       const bx=ox, by=oy, bw=(bD||25)*sc, bh=bL*sc;
       ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.fill();
       colorEdge(bx,by,bx+bw,by,ea('B-Back (wall)','wall')); colorEdge(bx+bw,by,bx+bw,by+bh,ea('B-Front','polished')); colorEdge(bx,by,bx,by+bh,ea('B-End','wall'));
+      window._ctRects.push({key:'B', x:bx, y:by, w:bw, h:bh});
     }
     if(getCBV('dh-wf-right')) { colorEdge(ax+aw,ay,ax+aw,ay+ah,'waterfall'); ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(ax+aw,ay,10,ah); ctx.fill(); }
     dimLabel(ax+aw/2, ay-12, aL+'"');
 
   } else if(ctShape==='ushape') {
     if(!aL||!aD||!bL) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
-    const cLv=cL||aL, cDv=cD||aD;
-    const totW=aD+bL+cDv+20, totH=Math.max(aL,cLv)+bD+20;
+    const cLv=cL||aL, cDv=cD||aD, bDv=bD||25.5;
+    const totW=aD+bL+cDv+20, totH=Math.max(aL,cLv)+bDv+20;
     const sc=Math.min((W-pad*2)/totW,(H-pad*2)/Math.max(totH,80));
     const ox=pad, oy=pad;
-    const sections=[
-      {r:[ox,oy,aD*sc,aL*sc], front:ea('Left front','polished'), back:ea('Left back (wall)','wall'), end:ea('Left end','wall')},
-      {r:[ox+aD*sc,oy,bL*sc,(bD||25)*sc], front:ea('Back front','polished'), back:ea('Back wall','wall'), end:ea('Back wall','wall')},
-      {r:[ox+aD*sc+bL*sc,oy,cDv*sc,cLv*sc], front:ea('Right front','polished'), back:ea('Right back (wall)','wall'), end:ea('Right end','wall')},
-    ];
-    sections.forEach(s=>{
-      const r=s.r;
-      ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(r[0],r[1],r[2],r[3]); ctx.fill();
-      colorEdge(r[0],r[1],r[0]+r[2],r[1],s.back); colorEdge(r[0]+r[2],r[1],r[0]+r[2],r[1]+r[3],s.end);
-      colorEdge(r[0],r[1]+r[3],r[0]+r[2],r[1]+r[3],s.front); colorEdge(r[0],r[1],r[0],r[1]+r[3],s.back);
-    });
-    // Front edges
-    colorEdge(ox,oy+aD*sc,ox,(oy+(bD||25)*sc),ea('Left front','polished'));
+    // Back run sits at top spanning the full width; left/right legs run downward from its ends,
+    // sharing corners with it so the whole counter reads as one continuous U (same approach as
+    // the L-shape above) instead of three independently-outlined boxes.
+    const backW=aD*sc+bL*sc+cDv*sc, backH=bDv*sc;
+    const leftW=aD*sc, leftH=aL*sc;
+    const rightW=cDv*sc, rightH=cLv*sc;
+    const bx=ox, by=oy;
+    const lx=ox, ly=oy+backH;
+    const rx=ox+backW-rightW, ry=oy+backH;
+    ctx.fillStyle='rgba(232,133,10,0.1)';
+    ctx.beginPath(); ctx.rect(bx,by,backW,backH); ctx.fill();
+    ctx.beginPath(); ctx.rect(lx,ly,leftW,leftH); ctx.fill();
+    ctx.beginPath(); ctx.rect(rx,ry,rightW,rightH); ctx.fill();
+    window._ctRects.push({key:'Back', x:bx, y:by, w:backW, h:backH});
+    window._ctRects.push({key:'Left', x:lx, y:ly, w:leftW, h:leftH});
+    window._ctRects.push({key:'Right', x:rx, y:ry, w:rightW, h:rightH});
+    // Outline as one continuous polygon (clockwise from top-left, around the U, back to start)
+    colorEdge(lx,ly+leftH, lx,by, ea('Left back (wall)','wall'));                 // left leg outer (left wall)
+    colorEdge(lx,by, bx+backW,by, ea('Back wall','wall'));                       // back wall
+    colorEdge(bx+backW,by, rx+rightW,ry+rightH, ea('Right back (wall)','wall'));  // right leg outer (right wall)
+    colorEdge(rx+rightW,ry+rightH, rx,ry+rightH, ea('Right front','polished'));   // right leg front
+    colorEdge(rx,ry+rightH, rx,by+backH, ea('Right end','wall'));                // right leg inner end
+    colorEdge(rx,by+backH, lx+leftW,by+backH, ea('Back front','polished'));      // back run front (between the legs)
+    colorEdge(lx+leftW,by+backH, lx+leftW,ly+leftH, ea('Left end','wall'));      // left leg inner end
+    colorEdge(lx+leftW,ly+leftH, lx,ly+leftH, ea('Left front','polished'));      // left leg front
   } else {
     // galley or custom — draw all sections
     const galleyLabels=[{front:'Front counter front',back:'Front counter back'},{front:'Back counter front',back:'Back counter back'}];
@@ -5087,20 +5400,453 @@ function drawCTPreview() {
       ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(pad,cy,sl*sc,sd*sc); ctx.fill();
       colorEdge(pad,cy,pad+sl*sc,cy,backColor); colorEdge(pad,cy+sd*sc,pad+sl*sc,cy+sd*sc,frontColor);
       colorEdge(pad,cy,pad,cy+sd*sc,backColor); colorEdge(pad+sl*sc,cy,pad+sl*sc,cy+sd*sc,ea('Left end','unfinished'));
+      window._ctRects.push({key:s.lbl.front||('Section'+window._ctRects.length), x:pad, y:cy, w:sl*sc, h:sd*sc});
       cy+=sd*sc+8;
     });
   }
+
+  // Draw any sinks/cutouts/seams the rep or PM has placed on this layout
+  if (typeof renderDCCutouts === 'function') renderDCCutouts(ctx);
+  if (typeof renderDCSeams === 'function') renderDCSeams(ctx);
 
   // Label
   ctx.fillStyle='rgba(232,133,10,0.5)'; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='left';
   ctx.fillText(ctShape.toUpperCase()+' — COLOR-CODED EDGE PREVIEW', pad, H-10);
 }
 
+// == POLYGON RENDERER (point-to-point draw mode) =============================================
+function drawDCPolygon(ctx, W, H) {
+  window._ctRects = []; // polygon mode hit-tests cutouts against segments directly, not rects — kept empty/unused here
+  // Grid was already drawn by the caller before branching into this function.
+  if (!dcPoly.length) {
+    ctx.fillStyle='rgba(232,133,10,0.3)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Click to place your first point',W/2,H/2);
+    ctx.textAlign='left';
+    return;
+  }
+  const pts = dcPoly.map(dcInToPx);
+
+  // Fill (only meaningful once closed)
+  if (dcPolyClosed && pts.length>=3) {
+    ctx.fillStyle='rgba(232,133,10,0.12)';
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Segments — color-coded by assigned edge type if set, otherwise a neutral "unassigned" tone
+  // so it's visually obvious which edges still need a type during the post-draw pass.
+  const n = dcPolyClosed ? pts.length : pts.length-1;
+  for (let i=0;i<n;i++) {
+    const a=pts[i], b=pts[(i+1)%pts.length];
+    const type = dcEdgeTypes[i];
+    const color = type ? EDGE_COLORS[type].color : 'rgba(232,133,10,0.35)';
+    ctx.strokeStyle=color; ctx.lineWidth = (dcEditPass ? 7 : 5); ctx.lineCap='round';
+    ctx.shadowColor=color; ctx.shadowBlur = type ? 4 : 0;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.shadowBlur=0;
+    // Segment length label
+    const aIn=dcPoly[i], bIn=dcPoly[(i+1)%dcPoly.length];
+    const segLen = Math.hypot(bIn.x-aIn.x, bIn.y-aIn.y);
+    ctx.fillStyle='rgba(232,133,10,0.7)'; ctx.font='9px DM Mono,monospace'; ctx.textAlign='center';
+    ctx.fillText(Math.round(segLen)+'"', (a.x+b.x)/2, (a.y+b.y)/2 - 8);
+  }
+  ctx.textAlign='left';
+
+  // Point markers
+  pts.forEach((p,i) => {
+    ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2);
+    ctx.fillStyle = (i===0 && !dcPolyClosed) ? '#16C762' : '#E8850A';
+    ctx.fill();
+  });
+
+  // In-progress aim guide: from the last point toward the current snapped hover angle, so the
+  // rep can see the direction that'll be used before they click to open the measurement box.
+  if (!dcPolyClosed && dcHoverAngleDeg !== null && pts.length) {
+    const from = pts[pts.length-1];
+    const rad = dcHoverAngleDeg*Math.PI/180;
+    const guideLen = 60;
+    ctx.strokeStyle='rgba(22,199,98,0.5)'; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(from.x,from.y); ctx.lineTo(from.x+Math.cos(rad)*guideLen, from.y+Math.sin(rad)*guideLen); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Cutouts and seams render in the same local-inch space via dcInToPx, so they work identically
+  // whether the shape came from a preset or was hand-drawn.
+  if (typeof renderDCCutouts === 'function') renderDCCutouts(ctx);
+  if (typeof renderDCSeams === 'function') renderDCSeams(ctx);
+
+  ctx.fillStyle='rgba(232,133,10,0.5)'; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='left';
+  ctx.fillText('CUSTOM DRAW — ' + (dcPolyClosed?'CLOSED':'IN PROGRESS') + (dcEditPass?' — CLICK AN EDGE TO SET ITS TYPE':''), 10, H-10);
+}
+
+// == SINK / CUTOUT PLACEMENT — click to drop, drag to fine-tune, works on every shape ==
+// Each cutout is stored as a fraction (0-1) along and across whichever placeable rect (preset
+// mode, via window._ctRects) OR as a fraction along the nearest polygon segment (draw mode) —
+// resolved at render time via dcCutoutScreenPos so it stays correctly anchored even after
+// dimensions change or the shape is edited.
+var dcCutouts = [];          // {id, rectKey|segIdx, fracX, fracY (preset) or fracAlong (polygon), type, label, color}
+var dcCutoutMode = false;
+var dcCutoutType = 'sink';
+var dcDraggingCutout = null;
+var dcCutoutSeq = 0;
+
+const CUTOUT_STYLES = {
+  sink:    { label:'Sink',    color:'#60A5FA', icon:'S' },
+  cooktop: { label:'Cooktop', color:'#F87171', icon:'C' },
+  outlet:  { label:'Outlet',  color:'#FBBF24', icon:'O' },
+  faucet:  { label:'Faucet',  color:'#34D399', icon:'F' }
+};
+
+function setDCCutoutMode(on, type) {
+  dcCutoutMode = on;
+  if (type) dcCutoutType = type;
+  if (on) setDCInsertMode(false), setDCEditPass(false), setDCSeamMode(false);
+  document.querySelectorAll('.draw-cutout-btn').forEach(b => b.classList.remove('active'));
+  if (on) { const btn = document.getElementById('dc-cutout-' + dcCutoutType); if (btn) btn.classList.add('active'); }
+}
+
+// PRESET MODE hit-test: which registered rect a canvas point falls inside, by fraction.
+function dcHitRect(px, py) {
+  const rects = window._ctRects || [];
+  for (let i = rects.length - 1; i >= 0; i--) {
+    const r = rects[i];
+    if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) {
+      return { rectKey: r.key, fracX: (px - r.x) / r.w, fracY: (py - r.y) / r.h };
+    }
+  }
+  return null;
+}
+
+// DRAW MODE hit-test: which polygon segment is nearest a canvas point, and how far along it
+// (0-1) plus a perpendicular offset, so the cutout slides along/with the wall it's snapped to.
+function dcHitPolygonNear(px, py) {
+  if (!dcPoly.length) return null;
+  const rawIn = dcPxToIn(px, py);
+  const n = dcPolyClosed ? dcPoly.length : dcPoly.length-1;
+  let best = null, bestDist = Infinity;
+  for (let i=0;i<n;i++) {
+    const a=dcPoly[i], b=dcPoly[(i+1)%dcPoly.length];
+    const d = dcDistToSegment(rawIn, a, b);
+    if (d.dist < bestDist) { bestDist=d.dist; const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1; const t=((d.point.x-a.x)*dx+(d.point.y-a.y)*dy)/(len*len); best = { segIdx:i, fracAlong: Math.max(0,Math.min(1,t)) }; }
+  }
+  return best ? { ...best, dist: bestDist } : null;
+}
+
+function dcHitCutout(px, py) {
+  for (let i = dcCutouts.length - 1; i >= 0; i--) {
+    const c = dcCutouts[i];
+    if (c._lastPx == null) continue;
+    if (Math.hypot(px - c._lastPx, py - c._lastPy) <= 14) return c;
+  }
+  return null;
+}
+
+function dcCanvasPlaceOrDrag(e, phase) {
+  const cv = document.getElementById('ct-canvas');
+  if (!cv) return;
+  const rect = cv.getBoundingClientRect();
+  const scaleX = cv.width / rect.width, scaleY = cv.height / rect.height;
+  const px = (e.clientX - rect.left) * scaleX, py = (e.clientY - rect.top) * scaleY;
+
+  if (phase === 'down') {
+    const existing = dcHitCutout(px, py);
+    if (existing) { dcDraggingCutout = existing.id; return; }
+    if (!dcCutoutMode) return;
+    const style = CUTOUT_STYLES[dcCutoutType];
+    dcCutoutSeq++;
+    if (dcMode === 'draw') {
+      const hit = dcHitPolygonNear(px, py);
+      const tolIn = 14 / dcGetTransform().scale;
+      if (!hit || hit.dist > tolIn) return;
+      dcCutouts.push({ id:'co'+dcCutoutSeq, segIdx:hit.segIdx, fracAlong:hit.fracAlong, type:dcCutoutType, label:style.label+' '+dcCutoutSeq, color:style.color });
+    } else {
+      const hit = dcHitRect(px, py);
+      if (!hit) return;
+      dcCutouts.push({ id:'co'+dcCutoutSeq, rectKey:hit.rectKey, fracX:hit.fracX, fracY:hit.fracY, type:dcCutoutType, label:style.label+' '+dcCutoutSeq, color:style.color });
+    }
+    drawCTPreview();
+    updateDCCutoutList();
+    return;
+  }
+
+  if (phase === 'move') {
+    if (!dcDraggingCutout) return;
+    const c = dcCutouts.find(x => x.id === dcDraggingCutout);
+    if (!c) return;
+    if (dcMode === 'draw') {
+      const hit = dcHitPolygonNear(px, py);
+      if (hit) { c.segIdx = hit.segIdx; c.fracAlong = hit.fracAlong; delete c.rectKey; delete c.fracX; delete c.fracY; }
+    } else {
+      const hit = dcHitRect(px, py);
+      if (hit) { c.rectKey = hit.rectKey; c.fracX = hit.fracX; c.fracY = hit.fracY; delete c.segIdx; delete c.fracAlong; }
+    }
+    drawCTPreview();
+    return;
+  }
+
+  if (phase === 'up') { dcDraggingCutout = null; }
+}
+
+// Resolves a cutout's screen position for the CURRENT render — preset rects in W/H pixel space,
+// polygon segments via dcInToPx — called from inside renderDCCutouts each draw.
+function dcCutoutScreenPos(c) {
+  if (c.segIdx != null) {
+    const n = dcPoly.length; if (!n) return null;
+    const a = dcPoly[c.segIdx], b = dcPoly[(c.segIdx+1)%n];
+    if (!a || !b) return null;
+    const inPt = { x: a.x + (b.x-a.x)*c.fracAlong, y: a.y + (b.y-a.y)*c.fracAlong };
+    return dcInToPx(inPt);
+  }
+  const r = (window._ctRects||[]).find(rr => rr.key === c.rectKey);
+  if (!r) return null;
+  return { x: r.x + c.fracX*r.w, y: r.y + c.fracY*r.h };
+}
+
+function renderDCCutouts(ctx) {
+  dcCutouts.forEach(c => {
+    const p = dcCutoutScreenPos(c);
+    if (!p) { c._lastPx=null; c._lastPy=null; return; }
+    c._lastPx=p.x; c._lastPy=p.y;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(p.x,p.y,13,0,Math.PI*2);
+    ctx.fillStyle = c.color+'CC'; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke();
+    ctx.fillStyle='#0A0E14'; ctx.font='bold 11px Outfit,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(CUTOUT_STYLES[c.type].icon, p.x, p.y+1);
+    ctx.restore();
+    ctx.fillStyle=c.color; ctx.font='9px Outfit,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillText(c.label, p.x, p.y+24);
+  });
+}
+
+function updateDCCutoutList() {
+  const el = document.getElementById('dc-cutout-list');
+  if (!el) return;
+  if (!dcCutouts.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No sinks or cutouts placed yet — pick a type above, then click the spot on the layout.</span>'; return; }
+  el.innerHTML = dcCutouts.map(c =>
+    '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid '+c.color+'55;border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
+      '<span style="width:8px;height:8px;border-radius:50%;background:'+c.color+'"></span>'+c.label+
+      '<button onclick="dcRemoveCutout(\''+c.id+'\')" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0 0 0 4px">×</button>'+
+    '</span>'
+  ).join('');
+}
+function dcRemoveCutout(id) { dcCutouts = dcCutouts.filter(c => c.id !== id); drawCTPreview(); updateDCCutoutList(); }
+function clearDCCutouts() { dcCutouts = []; drawCTPreview(); updateDCCutoutList(); }
+
+// == UNIFIED POINTER ROUTER ===================================================================
+// dcCutoutMode and dcSeamMode (plus active drags of either) used to be handled by two SEPARATE
+// capture-phase listener sets, each calling stopPropagation() on its own mousedown/mousemove/
+// mouseup. That doesn't work: stopPropagation only blocks LATER phases/elements, not a second,
+// independently-registered listener on the SAME element/phase — confirmed by direct testing.
+// A click while the seam tool was active could therefore also be picked up by the cutout
+// listener (or vice versa). Fixed by routing every pointer event through exactly one decision
+// point that picks ONE handler — cutout, seam, or base polygon drawing — never more than one.
+function dcRouterDown(e) {
+  const { px, py } = dcCanvasCoords(e);
+  // An in-progress drag always wins, regardless of current tool selection, so letting go of a
+  // mouse button mid-drag elsewhere can't get hijacked by a newly-selected tool.
+  if (dcDraggingCutout) { dcCanvasPlaceOrDrag(e,'down'); return; }
+  if (dcDraggingSeam)   { dcSeamCanvasDown(e); return; }
+  // Existing markers/seams can always be grabbed to drag, even while a different placement
+  // tool is active — matches "drag any placed marker to fine-tune" from spec.
+  if (dcHitCutout(px,py))           { dcCanvasPlaceOrDrag(e,'down'); return; }
+  const seamHit = dcSeamHitTest(px,py);
+  if (seamHit)                      { dcSeamCanvasDown(e); return; }
+  // Otherwise exactly one placement tool can be active at a time (setDCCutoutMode/setDCSeamMode/
+  // setDCInsertMode/setDCEditPass all turn the others off), so checking each in turn is safe —
+  // at most one of these branches will ever be true.
+  if (dcCutoutMode) { dcCanvasPlaceOrDrag(e,'down'); return; }
+  if (dcSeamMode)   { dcSeamCanvasDown(e); return; }
+  // Nothing claimed the click — let it fall through to the base polygon click handler
+  // (dcCanvasClick, wired via the canvas's onmousedown property, which still fires normally
+  // since this router never calls stopPropagation).
+}
+function dcRouterMove(e) {
+  if (dcDraggingCutout) { dcCanvasPlaceOrDrag(e,'move'); return; }
+  if (dcDraggingSeam)   { dcSeamCanvasMove(e); return; }
+  if (dcSeamMode)       { dcSeamCanvasMove(e); return; } // shows the live drag-preview line
+}
+function dcRouterUp(e) {
+  if (dcDraggingCutout) { dcCanvasPlaceOrDrag(e,'up'); return; }
+  if (dcDraggingSeam || dcSeamMode) { dcSeamCanvasUp(e); return; }
+}
+
+function initDCCutoutEvents() {
+  const cv = document.getElementById('ct-canvas');
+  if (!cv || cv._routerWired) return;
+  cv._routerWired = true;
+  cv.addEventListener('mousedown', dcRouterDown, true);
+  cv.addEventListener('mousemove', dcRouterMove, true);
+  cv.addEventListener('mouseup', dcRouterUp, true);
+}
+function initDCSeamEvents() {
+  // No-op: the unified router above (wired once via initDCCutoutEvents) now handles both
+  // cutout and seam pointer events. Kept as a function so the existing initDCCanvas() call
+  // site doesn't need to change.
+}
+
+// == SEAM PLACEMENT — click-drag, square-snap by default, draggable, splits sqft for pricing ==
+// A seam is a straight cut line across the counter. By default it snaps to perfectly horizontal
+// or vertical (whichever the drag is closer to) so seams always read as clean square cuts unless
+// the rep deliberately picks a non-square seam type (Euro/offset), which still snaps square but
+// renders with a different dash pattern/label to flag the fabrication difference downstream.
+var dcSeams = [];           // {id, x1,y1,x2,y2 (inches, local space), type, label}
+var dcSeamMode = false;
+var dcSeamType = 'standard';
+var dcSeamDragStart = null;
+var dcDraggingSeam = null;  // {id, end:'1'|'2'|'whole', grabOffset:{x,y}} while dragging
+var dcSeamSeq = 0;
+
+const SEAM_TYPES = {
+  standard: { label:'Standard Seam',  dash:[8,5] },
+  euro:     { label:'Euro Seam',      dash:[2,3] },
+  offset:   { label:'Offset Seam',    dash:[10,3,2,3] }
+};
+
+function setDCSeamMode(on, type) {
+  dcSeamMode = on;
+  if (type) dcSeamType = type;
+  if (on) setDCInsertMode(false), setDCEditPass(false), setDCCutoutMode(false);
+  document.querySelectorAll('.draw-seam-btn').forEach(b => b.classList.remove('active'));
+  if (on) { const btn = document.getElementById('dc-seam-'+dcSeamType); if (btn) btn.classList.add('active'); }
+}
+
+function dcSeamHitTest(px, py) {
+  const tolPx = 10;
+  for (let i=dcSeams.length-1;i>=0;i--) {
+    const s = dcSeams[i];
+    const p1 = dcInToPx({x:s.x1,y:s.y1}), p2 = dcInToPx({x:s.x2,y:s.y2});
+    if (Math.hypot(px-p1.x,py-p1.y) <= tolPx) return { id:s.id, end:'1' };
+    if (Math.hypot(px-p2.x,py-p2.y) <= tolPx) return { id:s.id, end:'2' };
+    const distPx = dcDistPxToSegmentPx(px,py,p1,p2);
+    if (distPx <= tolPx) return { id:s.id, end:'whole' };
+  }
+  return null;
+}
+function dcDistPxToSegmentPx(px,py,a,b) {
+  const dx=b.x-a.x, dy=b.y-a.y, len2=dx*dx+dy*dy;
+  let t = len2 ? ((px-a.x)*dx+(py-a.y)*dy)/len2 : 0;
+  t = Math.max(0,Math.min(1,t));
+  return Math.hypot(px-(a.x+dx*t), py-(a.y+dy*t));
+}
+
+function dcSeamCanvasDown(e) {
+  if (!dcSeamMode && !dcDraggingSeam) return;
+  const { px, py } = dcCanvasCoords(e);
+  if (!dcSeamMode) {
+    const hit = dcSeamHitTest(px,py);
+    if (hit) { dcDraggingSeam = hit; }
+    return;
+  }
+  const startIn = dcPxToIn(px,py);
+  dcSeamDragStart = startIn;
+}
+function dcSeamCanvasMove(e) {
+  const { px, py } = dcCanvasCoords(e);
+  if (dcDraggingSeam) {
+    const moveIn = dcPxToIn(px,py);
+    const s = dcSeams.find(x=>x.id===dcDraggingSeam.id);
+    if (!s) return;
+    if (dcDraggingSeam.end==='1') { s.x1=moveIn.x; s.y1=moveIn.y; dcSquareSnapSeam(s,'1'); }
+    else if (dcDraggingSeam.end==='2') { s.x2=moveIn.x; s.y2=moveIn.y; dcSquareSnapSeam(s,'2'); }
+    else {
+      if (!dcDraggingSeam.last) dcDraggingSeam.last = moveIn;
+      const dx = moveIn.x-dcDraggingSeam.last.x, dy = moveIn.y-dcDraggingSeam.last.y;
+      s.x1+=dx; s.y1+=dy; s.x2+=dx; s.y2+=dy;
+      dcDraggingSeam.last = moveIn;
+    }
+    drawCTPreview();
+    return;
+  }
+  if (dcSeamMode && dcSeamDragStart) {
+    drawCTPreview();
+    const startPx = dcInToPx(dcSeamDragStart);
+    const previewEndIn = dcSeamSquarePoint(dcSeamDragStart, dcPxToIn(px,py));
+    const endPx = dcInToPx(previewEndIn);
+    dcCtx.strokeStyle='#A855F7'; dcCtx.lineWidth=2; dcCtx.setLineDash(SEAM_TYPES[dcSeamType].dash);
+    dcCtx.beginPath(); dcCtx.moveTo(startPx.x,startPx.y); dcCtx.lineTo(endPx.x,endPx.y); dcCtx.stroke();
+    dcCtx.setLineDash([]);
+  }
+}
+function dcSeamCanvasUp(e) {
+  if (dcDraggingSeam) { dcDraggingSeam=null; calcDrawing(); return; }
+  if (dcSeamMode && dcSeamDragStart) {
+    const { px, py } = dcCanvasCoords(e);
+    const endIn = dcSeamSquarePoint(dcSeamDragStart, dcPxToIn(px,py));
+    const lenIn = Math.hypot(endIn.x-dcSeamDragStart.x, endIn.y-dcSeamDragStart.y);
+    if (lenIn >= 3) {
+      dcSeamSeq++;
+      dcSeams.push({ id:'sm'+dcSeamSeq, x1:dcSeamDragStart.x, y1:dcSeamDragStart.y, x2:endIn.x, y2:endIn.y, type:dcSeamType, label:SEAM_TYPES[dcSeamType].label+' '+dcSeamSeq });
+      updateDCSeamList();
+      calcDrawing();
+    }
+    dcSeamDragStart = null;
+    drawCTPreview();
+  }
+}
+// Forces a seam to be perfectly horizontal or vertical (whichever the drag is closer to) —
+// "always stay square" per spec — regardless of which seam TYPE is selected; type only changes
+// the dash pattern/label to flag Euro/offset fabrication handling downstream, not the geometry.
+function dcSeamSquarePoint(from, raw) {
+  const dx = raw.x-from.x, dy = raw.y-from.y;
+  return Math.abs(dx) >= Math.abs(dy) ? { x:raw.x, y:from.y } : { x:from.x, y:raw.y };
+}
+function dcSquareSnapSeam(s, whichEnd) {
+  // After dragging one endpoint, re-square the seam against the OTHER (anchor) endpoint.
+  const anchor = whichEnd==='1' ? {x:s.x2,y:s.y2} : {x:s.x1,y:s.y1};
+  const moved  = whichEnd==='1' ? {x:s.x1,y:s.y1} : {x:s.x2,y:s.y2};
+  const sq = dcSeamSquarePoint(anchor, moved);
+  if (whichEnd==='1') { s.x1=sq.x; s.y1=sq.y; } else { s.x2=sq.x; s.y2=sq.y; }
+}
+
+function renderDCSeams(ctx) {
+  dcSeams.forEach(s => {
+    const p1 = dcInToPx({x:s.x1,y:s.y1}), p2 = dcInToPx({x:s.x2,y:s.y2});
+    ctx.strokeStyle='#A855F7'; ctx.lineWidth = (dcDraggingSeam && dcDraggingSeam.id===s.id) ? 3 : 2;
+    ctx.setLineDash(SEAM_TYPES[s.type].dash);
+    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#A855F7'; ctx.beginPath(); ctx.arc(p1.x,p1.y,4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p2.x,p2.y,4,0,Math.PI*2); ctx.fill();
+    ctx.font='9px Outfit,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(s.label, (p1.x+p2.x)/2, (p1.y+p2.y)/2 - 8);
+  });
+  ctx.textAlign='left';
+}
+
+function updateDCSeamList() {
+  const el = document.getElementById('dc-seam-list');
+  if (!el) return;
+  if (!dcSeams.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No seams placed — pick a seam type above, then drag across the counter to add one.</span>'; return; }
+  el.innerHTML = dcSeams.map(s =>
+    '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
+      '<span style="width:8px;height:8px;border-radius:50%;background:#A855F7"></span>'+s.label+
+      '<button onclick="dcRemoveSeam(\''+s.id+'\')" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0 0 0 4px">×</button>'+
+    '</span>'
+  ).join('');
+}
+function dcRemoveSeam(id) { dcSeams = dcSeams.filter(s=>s.id!==id); drawCTPreview(); updateDCSeamList(); calcDrawing(); }
+function clearDCSeams() { dcSeams = []; drawCTPreview(); updateDCSeamList(); calcDrawing(); }
+
+// Seam count feeds pricing: each seam = +1 piece (more fabrication/install labor) and the seam
+// LENGTH (polished seam edge, both sides) gets priced like any other polished edge. This is
+// additive to the existing edge-LF pricing in calcDrawing(), not a replacement for it.
+function dcSeamPricingSummary() {
+  const totalSeamLF = dcSeams.reduce((sum,s)=> sum + Math.hypot(s.x2-s.x1, s.y2-s.y1)/12, 0);
+  return { seamCount: dcSeams.length, pieceCount: dcSeams.length + 1, totalSeamLF: totalSeamLF };
+}
+
 // Calculate drawing
 function calcDrawing() {
   const aL=gN('da-len'),aD=gN('da-dep'),bL=gN('db-len'),bD=gN('db-dep'),cL=gN('dc-len'),cD=gN('dc-dep'),dL=gN('dd-len'),dD=gN('dd-dep');
   let gross=0;
-  if(ctShape==='straight'||ctShape==='island') gross=aL*aD;
+  if (dcMode === 'draw' && dcPolyClosed) {
+    // Custom hand-drawn shape: gross area comes straight from the polygon (shoelace formula),
+    // already computed/cached by dcSyncPolyToCalc whenever the shape changes.
+    dcSyncPolyToCalc();
+    gross = (window._dcPolySqFt || 0) * 144;
+  } else if(ctShape==='straight'||ctShape==='island') gross=aL*aD;
   else if(ctShape==='lshape'||ctShape==='galley') gross=(aL*aD)+(bL*bD);
   else if(ctShape==='ushape') gross=(aL*aD)+(bL*bD)+(cL*cD);
   else gross=(aL*aD)+(bL*bD)+(cL*cD)+(dL*dD);
@@ -5150,6 +5896,14 @@ function calcDrawing() {
   const slabs=Math.ceil(totalMat/50);
   const thh=(totalMat/50*4).toFixed(1);
 
+  // Seams: each one adds a fabrication piece (more labor/handling) and its full length is
+  // finished/polished edge on both sides of the cut, priced at the same edge_lf rate used
+  // elsewhere in the app's pricing settings — additive to the sqft pricing above, not a
+  // replacement for it.
+  const seamInfo = (typeof dcSeamPricingSummary === 'function') ? dcSeamPricingSummary() : {seamCount:0,pieceCount:1,totalSeamLF:0};
+  const edgeLfRate = parseFloat((document.getElementById('sairn-unit-edge_lf')||{}).value) || 18;
+  const seamEdgeCost = seamInfo.totalSeamLF * 2 * edgeLfRate; // both sides of every cut are finished edge
+
   const res=document.getElementById('ct-results');
   res.innerHTML='';
   const metrics=[
@@ -5161,6 +5915,7 @@ function calcDrawing() {
     {n:slabs,l:'Slabs Needed',s:'Estimated at 50 sqft per slab'},
     {n:thh+' hr',l:'Est. Labor (THH)',s:'Granite benchmark 4hr per 50sqft'},
     {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
+    {n:seamInfo.seamCount>0?seamInfo.pieceCount+' pieces':'1 piece',l:'Seams',s:seamInfo.seamCount>0?seamInfo.seamCount+' seam(s), '+seamInfo.totalSeamLF.toFixed(1)+' LF, +$'+seamEdgeCost.toFixed(0)+' polished edge':'No seams placed'},
   ];
   metrics.forEach(m=>{
     const card=document.createElement('div');
@@ -5224,7 +5979,9 @@ function printDrawCutSheet() {
   const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 
   let gross=0;
-  if(ctShape==='straight'||ctShape==='island') gross=aL*aD;
+  if (dcMode === 'draw' && dcPolyClosed) {
+    gross = (window._dcPolySqFt || 0) * 144;
+  } else if(ctShape==='straight'||ctShape==='island') gross=aL*aD;
   else if(ctShape==='lshape'||ctShape==='galley') gross=(aL*aD)+(bL*bD);
   else if(ctShape==='ushape') gross=(aL*aD)+(bL*bD)+(cL*cD);
   else gross=(aL*aD)+(bL*bD)+(cL*cD);
@@ -5263,6 +6020,14 @@ function printDrawCutSheet() {
   if(bL&&bD) win.document.write('<div class="row"><span class="rl">Section B</span><span class="rv">'+bL+'" \xd7 '+bD+'"</span></div>');
   if(cL&&cD) win.document.write('<div class="row"><span class="rl">Section C</span><span class="rv">'+cL+'" \xd7 '+cD+'"</span></div>');
   win.document.write('<div class="row"><span class="rl">Sink Cutout</span><span class="rv">'+sinkType+'</span></div><div class="row"><span class="rl">Cooktop</span><span class="rv">'+ctType+'</span></div>');
+  if (typeof dcSeams !== 'undefined' && dcSeams.length) {
+    const seamSummary = dcSeams.map(s => s.label + ' (' + (Math.hypot(s.x2-s.x1,s.y2-s.y1)/12).toFixed(1) + ' LF)').join(', ');
+    win.document.write('<div class="row"><span class="rl">Seams</span><span class="rv">'+dcSeams.length+' — '+seamSummary+'</span></div>');
+  }
+  if (typeof dcCutouts !== 'undefined' && dcCutouts.length) {
+    const cutoutSummary = dcCutouts.map(c => c.label).join(', ');
+    win.document.write('<div class="row"><span class="rl">Placed Cutouts</span><span class="rv">'+cutoutSummary+'</span></div>');
+  }
   if(wfCount>0) win.document.write('<div class="row"><span class="rl">Waterfall Legs</span><span class="rv">'+(wfLeft?'Left ':'')+(wfRight?'Right ':'')+' at '+wfHt+'"</span></div>');
   win.document.write('</div></div>');
 
