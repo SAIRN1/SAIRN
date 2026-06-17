@@ -702,21 +702,9 @@ async function callClaude(system, messages, maxTokens) {
 <!-- EMPLOYEES -->
 <div class="page" id="page-employees">
   <div class="ph">
-    <div><div class="ptitle">👤 Employees</div><div class="psub">Full employee roster and records</div></div>
+    <div><div class="ptitle">👤 Employees</div><div class="psub">Full employee roster with status and records</div></div>
     <div class="pacts"><button class="btn bp" onclick="nav('onboarding')">+ Onboard New</button></div>
   </div>
-  <div class="card">
-    <div class="ch"><div class="ct">Employee Roster</div>
-      <input class="fi" id="emp-search" placeholder="Search employees..." style="max-width:240px"
-             oninput="filterEmployees(this.value)"></div>
-    <div class="tw"><table id="emp-table">
-      <thead><tr><th>Name</th><th>Title</th><th>Dept</th><th>Status</th><th>Start Date</th><th>Pay Type</th><th>Action</th></tr></thead>
-      <tbody id="emp-tbody">
-        <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Loading employees...</td></tr>
-      </tbody>
-    </table></div>
-  </div></div>
-  <div class="page-sub">Full employee roster with status and records</div>
   <div class="toolbar">
     <input class="sbox" placeholder="Search employees..." oninput="ft(this,'emp-tbl')">
     <select class="btn btn-outline" onchange="ft(this,'emp-tbl','status')"><option value="">All Status</option><option>Active</option><option>On Leave</option><option>Terminated</option></select>
@@ -774,8 +762,7 @@ async function callClaude(system, messages, maxTokens) {
       <button class="btn bo bsm" onclick="aiOnboardChecklist()">🤖 AI Onboarding Checklist</button>
     </div>
     <div class="ai-bub" id="ob-ai-out" style="display:none;margin-top:12px"></div>
-  </div></div>
-  <div class="page-sub">New hire checklist and 7-day setup tracker</div>
+  </div>
   <div class="toolbar"><button class="btn btn-teal" onclick="openModal('m-new-hire')">+ Start Onboarding</button></div>
   <div class="card"><div class="card-body p0">
     <table class="dt"><thead><tr><th>Employee</th><th>Start Date</th><th>Day</th><th>Offer Letter</th><th>I-9</th><th>Direct Deposit</th><th>Benefits</th><th>System Access</th><th>Status</th></tr></thead><tbody>
@@ -817,8 +804,7 @@ async function callClaude(system, messages, maxTokens) {
       </tbody>
     </table></div>
     <div class="ai-bub" id="ats-ai-out" style="display:none;margin-top:12px"></div>
-  </div></div>
-  <div class="page-sub">Open positions, candidates, and pipeline</div>
+  </div>
   <div class="toolbar"><button class="btn btn-teal" onclick="openModal('m-new-job')">+ New Position</button><button class="btn btn-outline" onclick="askAI('Review my current hiring pipeline. Which candidates should I move forward this week?')">AI Pipeline Review</button></div>
   <div class="card"><div class="card-body p0">
     <table class="dt"><thead><tr><th>Position</th><th>Dept</th><th>Applicants</th><th>Stage</th><th>Target Start</th><th>Status</th></tr></thead><tbody>
@@ -866,8 +852,7 @@ async function callClaude(system, messages, maxTokens) {
   <div class="card">
     <div class="ch"><div class="ct">🤖 Org Intelligence</div><button class="btn bo bsm" onclick="runOrgIntel()">Analyze</button></div>
     <div class="ai-bub" id="org-ai-out" style="display:none"></div>
-  </div></div>
-  <div class="page-sub">Company structure and reporting lines</div>
+  </div>
   <div class="ai-flag">&#x1F916; Ask AI to analyze your org structure, identify gaps, or suggest restructuring as you grow.</div>
   <div class="card"><div class="card-body" style="text-align:center;padding:32px;">
     <div style="display:inline-block;background:#14B8A6;color:#fff;border-radius:10px;padding:12px 24px;font-weight:700;margin-bottom:24px;">Owner / Founder</div>
