@@ -2460,7 +2460,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <span style="font-size:10px;color:var(--muted);margin-right:2px">Mode:</span>
             <button class="draw-btn dc-mode-btn active" id="dc-mode-preset" onclick="setDCMode('preset')">📐 Preset Shape</button>
             <button class="draw-btn dc-mode-btn" id="dc-mode-draw" onclick="setDCMode('draw')">✏️ Custom Draw</button>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Custom Draw starts from your current preset — click a point, click a direction, type the exact length.</span>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px" id="dc-mode-hint">In Preset Shape, drag any edge of the drawing to stretch it — type to set the exact length while dragging. Switch to Custom Draw for irregular shapes: click and drag toward the next point (snaps to 45°), type to set the exact length while dragging, release to place it. Click near the start to close the shape, drag any corner once closed.</span>
           </div>
 
           <div class="draw-toolbar" id="dc-draw-tools" style="margin-top:6px;display:none">
@@ -4756,6 +4756,18 @@ function initDCCanvas() {
   dcCanvas.oncontextmenu = e => e.preventDefault();
   initDCCutoutEvents();
   initDCSeamEvents();
+  // Document-level mouseup (not canvas-level) so a drag that ends outside the canvas bounds —
+  // easy to do when stretching a long measurement near the panel edge — still gets caught and
+  // committed instead of leaving the drag stuck active. Guarded so it only wires once per canvas
+  // lifetime, same pattern as the router below.
+  if (!dcCanvas._mouseupWired) {
+    dcCanvas._mouseupWired = true;
+    document.addEventListener('mouseup', e => {
+      if (dcDrawDragging) { dcCanvasDrawDragEnd(e); return; }
+      if (dcCornerDragging) { dcCornerDragEnd(e); return; }
+      if (dcPresetEdgeDragging) { dcPresetEdgeDragEnd(e); return; }
+    });
+  }
   if (typeof drawCTPreview === 'function') drawCTPreview();
   updateDCCutoutList();
   updateDCSeamList();
@@ -4852,9 +4864,169 @@ function dcSeedPolyFromPreset() {
 }
 
 // -- Click handling: click point -> click direction -> measurement box -> exact point committed.
-function dcCanvasClick(e) {
-  if (dcMode !== 'draw') return;
+// dcDrawDragging tracks an in-progress "place the next point" drag: mousedown starts it (or
+// places the very first point of a brand-new shape, or closes the shape if near the start),
+// mousemove updates the live length overlay, mouseup commits the point at the resolved length
+// (typed override if the rep typed one mid-drag, otherwise the live mouse-derived distance).
+var dcDrawDragging = false;
+
+// == CORNER DRAGGING (case 1) — after a custom-draw shape is closed, grab any point and drag it
+// to a new position; the live overlay shows the length of whichever adjoining segment changed
+// most, and typing overrides that segment's exact length while keeping the drag direction.
+var dcCornerDragging = null; // index into dcPoly of the point being dragged, or null
+
+function dcTryStartCornerDrag(px, py) {
+  if (!dcPolyClosed || dcPoly.length < 3) return false;
+  const rawIn = dcPxToIn(px, py);
+  const tolIn = 14 / dcGetTransform().scale;
+  for (let i=0;i<dcPoly.length;i++) {
+    if (dcPointNear(rawIn, dcPoly[i], tolIn)) { dcCornerDragging = i; dcDragOverlayTyped = null; return true; }
+  }
+  return false;
+}
+function dcCornerDragMove(e) {
+  if (dcCornerDragging === null) return;
   const { px, py } = dcCanvasCoords(e);
+  const rawIn = dcPxToIn(px, py);
+  const i = dcCornerDragging;
+  const prev = dcPoly[(i-1+dcPoly.length)%dcPoly.length];
+  const next = dcPoly[(i+1)%dcPoly.length];
+  // Live-preview the drag without committing yet, so the rep can see the shape update before
+  // releasing — but don't grid-snap until mouseup, so the drag feels smooth while in motion.
+  const preview = dcPoly.slice();
+  preview[i] = { x: rawIn.x, y: rawIn.y };
+  const savedPoly = dcPoly; dcPoly = preview; drawCTPreview(); dcPoly = savedPoly;
+  // Overlay shows the length of the segment from `prev` to the dragged point (the one most
+  // directly under the rep's cursor) — typing here overrides that segment's length, sliding
+  // the dragged point along the line from `prev` through the current mouse position.
+  const segLen = Math.hypot(rawIn.x-prev.x, rawIn.y-prev.y);
+  dcShowDragOverlay(dcInToPx(rawIn), segLen, null);
+}
+function dcCornerDragEnd(e) {
+  if (dcCornerDragging === null) return;
+  const i = dcCornerDragging;
+  const { px, py } = dcCanvasCoords(e);
+  const rawIn = dcPxToIn(px, py);
+  const prev = dcPoly[(i-1+dcPoly.length)%dcPoly.length];
+  let finalPt;
+  if (dcDragOverlayTyped != null) {
+    // Typed override: keep the drag's DIRECTION from prev->mouse, but force the length.
+    const angle = Math.atan2(rawIn.y-prev.y, rawIn.x-prev.x);
+    const len = Math.max(dcDragOverlayTyped, 0.5);
+    finalPt = { x: prev.x+Math.cos(angle)*len, y: prev.y+Math.sin(angle)*len };
+  } else {
+    finalPt = rawIn;
+  }
+  dcHistory.push(JSON.parse(JSON.stringify(dcPoly)));
+  dcPoly[i] = { x: Math.round(finalPt.x/GRID_SNAP_IN)*GRID_SNAP_IN, y: Math.round(finalPt.y/GRID_SNAP_IN)*GRID_SNAP_IN };
+  dcCornerDragging = null;
+  dcHideDragOverlay();
+  drawCTPreview();
+  updateDCRunningTotals();
+  calcDrawing();
+}
+
+// == PRESET EDGE DRAGGING (case 3) — on straight/L/U/galley/custom PRESET shapes (not Custom
+// Draw mode), drag any edge of the rectangle preview directly to stretch it, instead of typing
+// into the Length/Depth input fields. Reuses the same window._ctRects registry the legacy
+// renderer already populates for cutout placement, so no shape-specific hit-testing is needed —
+// works identically across every preset shape including the U-shape's three sections.
+var dcPresetEdgeDragging = null; // {rectKey, side: 'top'|'right'|'bottom'|'left', startPx, startVal}
+
+// Maps a rect key + which side was grabbed to the input field that controls that dimension, and
+// whether dragging that side changes the field's WIDTH-axis (len) or HEIGHT-axis (dep) value.
+// top/bottom edges run horizontally on screen, so dragging them vertically changes depth; left/
+// right edges run vertically on screen, so dragging them horizontally changes length.
+const PRESET_EDGE_FIELD_MAP = {
+  A:     { lenField:'da-len', depField:'da-dep' },
+  B:     { lenField:'db-len', depField:'db-dep' },
+  Left:  { lenField:'da-len', depField:'da-dep' },   // U-shape Left Run
+  Back:  { lenField:'db-len', depField:'db-dep' },   // U-shape Back Run
+  Right: { lenField:'dc-len', depField:'dc-dep' },   // U-shape Right Run
+};
+function dcPresetEdgeFieldFor(rectKey) {
+  if (PRESET_EDGE_FIELD_MAP[rectKey]) return PRESET_EDGE_FIELD_MAP[rectKey];
+  // Galley/custom sections register dynamic keys (front-edge label or "SectionN") — fall back
+  // to da/db/dc/dd in registration order, matching how those branches build window._ctRects.
+  const order = ['da-len','db-len','dc-len','dd-len'];
+  const idx = (window._ctRects||[]).findIndex(r=>r.key===rectKey);
+  const lf = order[idx] || 'da-len';
+  return { lenField: lf, depField: lf.replace('-len','-dep') };
+}
+
+// Hit-tests the four edges of every registered rect within a tolerance band, returns the
+// closest one within range so a click near a rectangle's border grabs that edge for dragging.
+function dcHitPresetEdge(px, py) {
+  const rects = window._ctRects || [];
+  const tol = 9;
+  let best = null, bestDist = Infinity;
+  rects.forEach(r => {
+    const candidates = [
+      { side:'top',    dist:Math.abs(py-r.y),       inRange: px>=r.x-tol && px<=r.x+r.w+tol },
+      { side:'bottom', dist:Math.abs(py-(r.y+r.h)), inRange: px>=r.x-tol && px<=r.x+r.w+tol },
+      { side:'left',   dist:Math.abs(px-r.x),       inRange: py>=r.y-tol && py<=r.y+r.h+tol },
+      { side:'right',  dist:Math.abs(px-(r.x+r.w)), inRange: py>=r.y-tol && py<=r.y+r.h+tol },
+    ];
+    candidates.forEach(c => { if (c.inRange && c.dist<=tol && c.dist<bestDist) { bestDist=c.dist; best={rectKey:r.key, side:c.side, rect:r}; } });
+  });
+  return best;
+}
+function dcTryStartPresetEdgeDrag(px, py) {
+  if (dcMode !== 'preset') return false;
+  const hit = dcHitPresetEdge(px, py);
+  if (!hit) return false;
+  const fields = dcPresetEdgeFieldFor(hit.rectKey);
+  const isHorizontalEdge = (hit.side==='top' || hit.side==='bottom');
+  const fieldId = isHorizontalEdge ? fields.depField : fields.lenField;
+  const el = document.getElementById(fieldId);
+  const startVal = el ? (parseFloat(el.value)||0) : 0;
+  dcPresetEdgeDragging = { rectKey:hit.rectKey, side:hit.side, fieldId, startVal, rect:hit.rect, isHorizontalEdge };
+  dcDragOverlayTyped = null;
+  return true;
+}
+function dcPresetEdgeDragMove(e) {
+  if (!dcPresetEdgeDragging) return;
+  const rect = dcCanvas.getBoundingClientRect();
+  const scaleX = dcCanvas.width/rect.width, scaleY = dcCanvas.height/rect.height;
+  const px = (e.clientX-rect.left)*scaleX, py = (e.clientY-rect.top)*scaleY;
+  const d = dcPresetEdgeDragging;
+  // Pixels-to-inches uses the SAME scale the legacy renderer just used to lay out this rect —
+  // back it out from the rect's own w/h vs the field's current inch value rather than assuming
+  // DRAW_SCALE_PXPERIN, since every preset branch computes its own fit-to-canvas scale.
+  const fields = dcPresetEdgeFieldFor(d.rectKey);
+  const curLenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
+  const curDepIn = parseFloat((document.getElementById(fields.depField)||{}).value) || 1;
+  const pxPerInX = d.rect.w / curLenIn, pxPerInY = d.rect.h / curDepIn;
+
+  let liveValIn;
+  if (d.isHorizontalEdge) {
+    const deltaPx = (d.side==='top') ? (d.rect.y - py) : (py - (d.rect.y + d.rect.h));
+    liveValIn = Math.max(d.startVal + deltaPx/pxPerInY, 1);
+  } else {
+    const deltaPx = (d.side==='left') ? (d.rect.x - px) : (px - (d.rect.x + d.rect.w));
+    liveValIn = Math.max(d.startVal + deltaPx/pxPerInX, 1);
+  }
+  const resolvedIn = dcDragOverlayTyped != null ? dcDragOverlayTyped : liveValIn;
+  const fieldEl = document.getElementById(d.fieldId);
+  if (fieldEl) fieldEl.value = Math.round(resolvedIn*8)/8; // live-update the field as spec requires
+  drawCTPreview();
+  dcShowDragOverlay({x:px,y:py}, liveValIn, null);
+}
+function dcPresetEdgeDragEnd(e) {
+  if (!dcPresetEdgeDragging) return;
+  dcPresetEdgeDragging = null;
+  dcHideDragOverlay();
+  drawCTPreview();
+  calcDrawing();
+}
+
+function dcCanvasClick(e) {
+  const { px, py } = dcCanvasCoords(e);
+
+  // Preset edge dragging (case 3) works in PRESET mode, checked before the draw-mode gate below
+  // since Custom Draw and Preset Shape are mutually exclusive view states.
+  if (dcMode === 'preset') { dcTryStartPresetEdgeDrag(px, py); return; }
+  if (dcMode !== 'draw') return;
 
   // Insert-on-edge mode: clicking near an existing segment splits it with a new point there,
   // instead of starting/continuing a fresh draw sequence.
@@ -4863,13 +5035,18 @@ function dcCanvasClick(e) {
   // Edit pass: clicking a segment opens the edge-type picker for that segment instead of drawing.
   if (dcEditPass) { dcTryPickEdgeAt(px, py); return; }
 
-  // Cutout/seam tools take priority over polygon drawing while active (handled by their own
-  // mousedown listeners with stopPropagation in initDCCutoutEvents/initDCSeamEvents).
+  // Existing closed-shape corner drag (case 1, "drag any point to resize") takes priority over
+  // starting a new segment.
+  if (dcTryStartCornerDrag(px, py)) return;
+
+  // Cutout/seam tools take priority over polygon drawing while active (handled by the unified
+  // router in dcRouterDown, which runs before this onmousedown-property handler).
 
   const rawIn = dcPxToIn(px, py);
 
   if (!dcPoly.length) {
-    // First click of a brand-new shape: snap to grid and start.
+    // First click of a brand-new shape: snap to grid and start. No drag needed for the very
+    // first point since there's no prior point to measure a direction/length from yet.
     const start = { x: Math.round(rawIn.x/GRID_SNAP_IN)*GRID_SNAP_IN, y: Math.round(rawIn.y/GRID_SNAP_IN)*GRID_SNAP_IN };
     dcPoly = [start];
     dcPendingFrom = start;
@@ -4888,62 +5065,110 @@ function dcCanvasClick(e) {
     return;
   }
 
-  // Otherwise this click sets the rough direction for the next segment — snap the angle, then
-  // open the measurement box so the rep types the exact length along that snapped direction.
+  // Otherwise this mousedown STARTS a drag for the next segment: angle snaps to the nearest 45°
+  // immediately so the direction reads clean from the first pixel of movement, and the live
+  // overlay (with a typeable override) tracks length until mouseup commits the point.
   const from = dcPoly[dcPoly.length-1];
   const { angleDeg } = dcSnapDirection(from, rawIn);
   dcHoverAngleDeg = angleDeg;
-  dcOpenMeasureBox(from, angleDeg);
+  dcDrawDragging = true;
+  dcDragOverlayTyped = null;
+  drawCTPreview();
 }
 
 function dcCanvasHover(e) {
-  if (dcMode !== 'draw' || !dcPoly.length || dcPolyClosed) return;
+  if (dcPresetEdgeDragging) { dcPresetEdgeDragMove(e); return; }
+  if (dcMode !== 'draw') return;
+  if (dcCornerDragging !== null) { dcCornerDragMove(e); return; }
+  if (!dcPoly.length || dcPolyClosed) return;
   const { px, py } = dcCanvasCoords(e);
   const rawIn = dcPxToIn(px, py);
   const from = dcPoly[dcPoly.length-1];
+
+  if (dcDrawDragging) {
+    // Re-derive the angle continuously while dragging so the rep can sweep through different
+    // 45° directions before settling, exactly like aiming before committing.
+    const { angleDeg, dist } = dcSnapDirection(from, rawIn);
+    dcHoverAngleDeg = angleDeg;
+    drawCTPreview();
+    const fromPx = dcInToPx(from);
+    dcShowDragOverlay(fromPx, dist, null);
+    return;
+  }
+
   const { angleDeg } = dcSnapDirection(from, rawIn);
   dcHoverAngleDeg = angleDeg;
   drawCTPreview();
 }
 
-// Opens a small inline measurement box anchored near the last point. The rep types the segment
-// length; Enter (or the Add button) commits the point at exactly that distance along the
-// already-snapped angle, then grid-snaps the resulting point so corners line up cleanly.
-function dcOpenMeasureBox(from, angleDeg) {
-  let box = document.getElementById('dc-measure-box');
+// Commits the in-progress drag-to-place-next-point at mouseup, using the typed override if the
+// rep entered one, otherwise the live mouse distance — both grid/eighth-inch snapped.
+function dcCanvasDrawDragEnd(e) {
+  if (!dcDrawDragging) return;
+  dcDrawDragging = false;
+  dcHideDragOverlay();
+  if (dcHoverAngleDeg === null || !dcPoly.length) return;
+  const { px, py } = dcCanvasCoords(e);
+  const from = dcPoly[dcPoly.length-1];
+  const rawIn = dcPxToIn(px, py);
+  const { dist } = dcSnapDirection(from, rawIn);
+  const lengthIn = dcResolveDragLength(dist);
+  if (lengthIn < 0.5) return; // treat a near-zero drag as "didn't mean to place a point"
+  dcCommitPoint(from, dcHoverAngleDeg, lengthIn);
+}
+
+// == LIVE DRAG-NUMBER OVERLAY ==================================================================
+// One small floating box, reused by all three "click, drag, stretch" features below (custom-draw
+// point placement, dragging an existing closed-shape corner, dragging a preset rectangle's edge).
+// It tracks the cursor while a drag is active, shows the live computed length, and lets the rep
+// type an exact override at any point mid-drag — typing always wins over the mouse position.
+var dcDragOverlayTyped = null; // numeric override the rep typed mid-drag, or null if just dragging freely
+function dcShowDragOverlay(anchorPx, liveLengthIn, onType) {
+  let box = document.getElementById('dc-drag-overlay');
   if (!box) {
     box = document.createElement('div');
-    box.id = 'dc-measure-box';
-    box.style.cssText = 'position:absolute;z-index:50;background:#1A1410;border:1px solid #16C762;border-radius:8px;padding:8px;display:flex;gap:6px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,0.4)';
+    box.id = 'dc-drag-overlay';
+    box.style.cssText = 'position:absolute;z-index:60;background:#1A1410;border:1px solid #16C762;border-radius:8px;padding:6px 8px;display:flex;gap:6px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,0.4);pointer-events:auto';
     document.body.appendChild(box);
   }
   const rect = dcCanvas.getBoundingClientRect();
-  const fromPx = dcInToPx(from);
   const dispScale = rect.width / dcCanvas.width;
-  box.style.left = (rect.left + fromPx.x*dispScale + 14) + 'px';
-  box.style.top = (rect.top + fromPx.y*dispScale - 40) + 'px';
-  box.innerHTML =
-    '<span style="font-size:10px;color:#9CA3AF">' + angleDeg + '&deg; &middot; length (in)</span>' +
-    '<input id="dc-measure-input" type="number" step="0.125" style="width:64px;background:#0A0E14;border:1px solid #333;border-radius:5px;padding:4px 6px;color:#fff;font-size:12px" autofocus>' +
-    '<button id="dc-measure-add" style="background:#16C762;color:#0A3D1F;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">Add</button>' +
-    '<button id="dc-measure-cancel" style="background:transparent;color:#9CA3AF;border:1px solid #333;border-radius:5px;padding:4px 8px;font-size:11px;cursor:pointer">Esc</button>';
+  box.style.left = (rect.left + anchorPx.x*dispScale + 14) + 'px';
+  box.style.top = (rect.top + anchorPx.y*dispScale - 36) + 'px';
+  const displayVal = dcDragOverlayTyped != null ? dcDragOverlayTyped : Math.round(liveLengthIn*10)/10;
+  // Rebuild only if not already focused, so typing isn't interrupted by every mousemove redraw.
+  const existingInput = document.getElementById('dc-drag-input');
+  if (!existingInput || document.activeElement !== existingInput) {
+    box.innerHTML = '<input id="dc-drag-input" type="number" step="0.125" value="' + displayVal + '" style="width:60px;background:#0A0E14;border:1px solid #333;border-radius:5px;padding:3px 5px;color:#fff;font-size:12px">' +
+      '<span style="font-size:10px;color:#9CA3AF">in</span>';
+    const inp = document.getElementById('dc-drag-input');
+    inp.oninput = () => { const v = parseFloat(inp.value); dcDragOverlayTyped = (v>0) ? v : null; if (onType) onType(dcDragOverlayTyped); };
+  } else {
+    existingInput.value = displayVal;
+  }
   box.style.display = 'flex';
-  const input = document.getElementById('dc-measure-input');
-  input.focus();
-  const commit = () => {
-    const len = parseFloat(input.value);
-    if (!len || len <= 0) return;
-    dcCommitPoint(from, angleDeg, len);
-    box.style.display = 'none';
-  };
-  document.getElementById('dc-measure-add').onclick = commit;
-  document.getElementById('dc-measure-cancel').onclick = () => { box.style.display='none'; };
-  input.onkeydown = ev => { if (ev.key==='Enter') commit(); if (ev.key==='Escape') box.style.display='none'; };
+}
+function dcHideDragOverlay() {
+  const box = document.getElementById('dc-drag-overlay');
+  if (box) box.style.display = 'none';
+  dcDragOverlayTyped = null;
+}
+// Resolves the length to actually use for a drag-commit: typed override wins, otherwise the
+// live mouse-derived distance, grid-snapped either way so results land on clean inch values.
+function dcResolveDragLength(liveLengthIn) {
+  const raw = dcDragOverlayTyped != null ? dcDragOverlayTyped : liveLengthIn;
+  return Math.max(Math.round(raw/0.125)*0.125, 0.125); // snap to nearest 1/8" — finer than the
+  // 1" grid snap used for click-placement, since a drag is inherently a more deliberate, precise
+  // action than a rough click-to-aim.
 }
 
+// Hides any stray floating UI (drag overlay, edge-type menu) left open from a previous mode —
+// called whenever the rep switches between Preset/Custom Draw or changes shape, so leftover
+// popups from mid-interaction don't linger on screen after the context changes.
 function dcRefreshMeasureBoxVisibility() {
-  const box = document.getElementById('dc-measure-box');
-  if (box) box.style.display = 'none';
+  dcHideDragOverlay();
+  const menu = document.getElementById('dc-edge-menu');
+  if (menu) menu.style.display = 'none';
 }
 
 // Commits a new point at an exact typed length along a snapped angle, then grid-snaps the
