@@ -4707,10 +4707,11 @@ function initDCCanvas() {
   dcCanvas.width = dcCanvas.offsetWidth || 640;
   dcCanvas.height = 480;
   dcRuns = [];
-  redrawDCCanvas();
   dcCanvas.onmousedown = dcStartDraw;
   dcCanvas.onmousemove = dcMoveDraw;
   dcCanvas.onmouseup = dcEndDraw;
+  if (typeof drawCTPreview === 'function') drawCTPreview();
+  else redrawDCCanvas();
 }
 
 function dcStartDraw(e) {
@@ -4745,13 +4746,12 @@ function dcEndDraw(e) {
   const lenIn = Math.round(lenPx / DRAW_SCALE_PXPERIN);
   dcRuns.push({ x1:dcDragStart.x, y1:dcDragStart.y, x2:dcDragStart.x+s.x, y2:dcDragStart.y+s.y, inches:lenIn, label:'Run '+(dcRuns.length+1) });
   syncDCToInputs();
-  redrawDCCanvas();
   updateDCSummary();
 }
 
 function dcEraseAt(x, y) {
   dcRuns = dcRuns.filter(r => { const mx=(r.x1+r.x2)/2, my=(r.y1+r.y2)/2; return Math.sqrt((mx-x)**2+(my-y)**2) > 30; });
-  syncDCToInputs(); redrawDCCanvas(); updateDCSummary();
+  syncDCToInputs(); updateDCSummary();
 }
 
 function redrawDCCanvas() {
@@ -4810,7 +4810,20 @@ function setDCDrawTool(t, el) {
 }
 
 function clearDCCanvas() {
-  dcRuns = []; if(dcCanvas) redrawDCCanvas(); updateDCSummary();
+  dcRuns = [];
+  const fieldsByShape = {
+    straight: ['da-len','da-dep'], island: ['da-len','da-dep'],
+    lshape:   ['da-len','da-dep','db-len','db-dep'],
+    ushape:   ['da-len','da-dep','db-len','db-dep','dc-len','dc-dep'],
+    galley:   ['da-len','da-dep','db-len','db-dep'],
+    custom:   ['da-len','da-dep','db-len','db-dep','dc-len','dc-dep','dd-len','dd-dep'],
+  };
+  (fieldsByShape[ctShape] || fieldsByShape.straight).forEach(fid => {
+    const el = document.getElementById(fid);
+    if (el) el.value = '';
+  });
+  updateDCSummary();
+  if (typeof drawCTPreview === 'function') drawCTPreview();
   if (typeof calcDrawing === 'function') calcDrawing();
 }
 
@@ -4994,7 +5007,7 @@ function drawCTPreview() {
     dimLabel(x+aL*sc+24, y+aD*sc/2, aD+'"');
 
   } else if(ctShape==='lshape') {
-    if(!aL||!aD) return;
+    if(!aL||!aD) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const totL=Math.max(aL,(bD||25))+10, totD=aD+(bL||72)+10;
     const sc=Math.min((W-pad*2)/totL,(H-pad*2)/totD);
     const ox=pad, oy=pad;
@@ -5012,7 +5025,7 @@ function drawCTPreview() {
     dimLabel(ax+aw/2, ay-12, aL+'"');
 
   } else if(ctShape==='ushape') {
-    if(!aL||!aD||!bL) return;
+    if(!aL||!aD||!bL) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const cLv=cL||aL, cDv=cD||aD;
     const totW=aD+bL+cDv+20, totH=Math.max(aL,cLv)+bD+20;
     const sc=Math.min((W-pad*2)/totW,(H-pad*2)/Math.max(totH,80));
@@ -5037,7 +5050,7 @@ function drawCTPreview() {
     const labelSet = ctShape==='galley' ? galleyLabels : customLabels;
     const rawSecs=[[aL,aD],[bL,bD],[cL,cD],[gN('dd-len'),gN('dd-dep')]];
     const secs = rawSecs.map((s,i)=>({dims:s, lbl:labelSet[i]||{front:null,back:null}})).filter(s=>s.dims[0]&&s.dims[1]);
-    if(!secs.length) return;
+    if(!secs.length) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const maxL=Math.max.apply(null,secs.map(s=>s.dims[0]));
     const totD=secs.reduce((a,s)=>a+s.dims[1]+8,0);
     const sc=Math.min((W-pad*2)/maxL,(H-pad*2)/totD);
