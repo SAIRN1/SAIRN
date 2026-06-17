@@ -4958,19 +4958,25 @@ function drawCTPreview() {
     ctx.fillText(txt,x,y);
   }
 
+  // Read the user's actual edge-type selection (set via the Edge Assignment dropdowns).
+  // Falls back to the given default if that edge hasn't been assigned yet.
+  function ea(label, fallback) {
+    return edgeAssignments[label] || fallback;
+  }
+
   if (ctShape==='straight' || ctShape==='island') {
     if(!aL||!aD) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const sc=Math.min((W-pad*3)/aL,(H-pad*3)/aD);
     const x=(W-aL*sc)/2, y=(H-aD*sc)/2;
     ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(x,y,aL*sc,aD*sc); ctx.fill();
-    // color edges
-    const ea = ctShape==='straight'
-      ? {top:'wall',right:'unfinished',bottom:'polished',left:'unfinished'}
-      : {top:'polished',right:'polished',bottom:'polished',left:'polished'};
-    colorEdge(x,y,x+aL*sc,y,ea.top);
-    colorEdge(x+aL*sc,y,x+aL*sc,y+aD*sc,ea.right);
-    colorEdge(x,y+aD*sc,x+aL*sc,y+aD*sc,ea.bottom);
-    colorEdge(x,y,x,y+aD*sc,ea.left);
+    // color edges — pull from user's Edge Assignment selections, default to prior hardcoded behavior
+    const ea0 = ctShape==='straight'
+      ? {top:ea('Back (wall/cabinet)','wall'),right:ea('Right end','unfinished'),bottom:ea('Front (exposed)','polished'),left:ea('Left end','unfinished')}
+      : {top:ea('Back (exposed)','polished'),right:ea('Right end','polished'),bottom:ea('Front (exposed)','polished'),left:ea('Left end','polished')};
+    colorEdge(x,y,x+aL*sc,y,ea0.top);
+    colorEdge(x+aL*sc,y,x+aL*sc,y+aD*sc,ea0.right);
+    colorEdge(x,y+aD*sc,x+aL*sc,y+aD*sc,ea0.bottom);
+    colorEdge(x,y,x,y+aD*sc,ea0.left);
     // waterfall indicators
     if(getCBV('dh-wf-left')) { ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(x-12,y,12,aD*sc); ctx.fill(); colorEdge(x,y,x,y+aD*sc,'waterfall'); dimLabel(x-6,y-8,'WF'); }
     if(getCBV('dh-wf-right')) { ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(x+aL*sc,y,12,aD*sc); ctx.fill(); colorEdge(x+aL*sc,y,x+aL*sc,y+aD*sc,'waterfall'); dimLabel(x+aL*sc+6,y-8,'WF'); }
@@ -4993,12 +4999,12 @@ function drawCTPreview() {
     // A run (horizontal)
     const ax=ox, ay=oy+(bL||0)*sc, aw=aL*sc, ah=aD*sc;
     ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.fill();
-    colorEdge(ax,ay,ax+aw,ay,'wall'); colorEdge(ax+aw,ay,ax+aw,ay+ah,'polished'); colorEdge(ax,ay+ah,ax+aw,ay+ah,'polished'); colorEdge(ax,ay,ax,ay+ah,'wall');
+    colorEdge(ax,ay,ax+aw,ay,ea('A-Back (wall)','wall')); colorEdge(ax+aw,ay,ax+aw,ay+ah,ea('A-Left end','polished')); colorEdge(ax,ay+ah,ax+aw,ay+ah,ea('A-Front','polished')); colorEdge(ax,ay,ax,ay+ah,ea('A-Back (wall)','wall'));
     // B run (vertical stub)
     if(bL&&bD) {
       const bx=ox, by=oy, bw=(bD||25)*sc, bh=bL*sc;
       ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.fill();
-      colorEdge(bx,by,bx+bw,by,'wall'); colorEdge(bx+bw,by,bx+bw,by+bh,'polished'); colorEdge(bx,by,bx,by+bh,'wall');
+      colorEdge(bx,by,bx+bw,by,ea('B-Back (wall)','wall')); colorEdge(bx+bw,by,bx+bw,by+bh,ea('B-Front','polished')); colorEdge(bx,by,bx,by+bh,ea('B-End','wall'));
     }
     if(getCBV('dh-wf-right')) { colorEdge(ax+aw,ay,ax+aw,ay+ah,'waterfall'); ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(ax+aw,ay,10,ah); ctx.fill(); }
     dimLabel(ax+aw/2, ay-12, aL+'"');
@@ -5009,26 +5015,38 @@ function drawCTPreview() {
     const totW=aD+bL+cDv+20, totH=Math.max(aL,cLv)+bD+20;
     const sc=Math.min((W-pad*2)/totW,(H-pad*2)/Math.max(totH,80));
     const ox=pad, oy=pad;
-    [[ox,oy,aD*sc,aL*sc],[ox+aD*sc,oy,bL*sc,(bD||25)*sc],[ox+aD*sc+bL*sc,oy,cDv*sc,cLv*sc]].forEach(r=>{
+    const sections=[
+      {r:[ox,oy,aD*sc,aL*sc], front:ea('Left front','polished'), back:ea('Left back (wall)','wall'), end:ea('Left end','wall')},
+      {r:[ox+aD*sc,oy,bL*sc,(bD||25)*sc], front:ea('Back front','polished'), back:ea('Back wall','wall'), end:ea('Back wall','wall')},
+      {r:[ox+aD*sc+bL*sc,oy,cDv*sc,cLv*sc], front:ea('Right front','polished'), back:ea('Right back (wall)','wall'), end:ea('Right end','wall')},
+    ];
+    sections.forEach(s=>{
+      const r=s.r;
       ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(r[0],r[1],r[2],r[3]); ctx.fill();
-      colorEdge(r[0],r[1],r[0]+r[2],r[1],'wall'); colorEdge(r[0]+r[2],r[1],r[0]+r[2],r[1]+r[3],'wall');
-      colorEdge(r[0],r[1]+r[3],r[0]+r[2],r[1]+r[3],'polished'); colorEdge(r[0],r[1],r[0],r[1]+r[3],'wall');
+      colorEdge(r[0],r[1],r[0]+r[2],r[1],s.back); colorEdge(r[0]+r[2],r[1],r[0]+r[2],r[1]+r[3],s.end);
+      colorEdge(r[0],r[1]+r[3],r[0]+r[2],r[1]+r[3],s.front); colorEdge(r[0],r[1],r[0],r[1]+r[3],s.back);
     });
     // Front edges
-    colorEdge(ox,oy+aD*sc,ox,(oy+(bD||25)*sc),'polished');
+    colorEdge(ox,oy+aD*sc,ox,(oy+(bD||25)*sc),ea('Left front','polished'));
   } else {
     // galley or custom — draw all sections
-    const secs=[[aL,aD],[bL,bD],[cL,cD],[gN('dd-len'),gN('dd-dep')]].filter(s=>s[0]&&s[1]);
+    const galleyLabels=[{front:'Front counter front',back:'Front counter back'},{front:'Back counter front',back:'Back counter back'}];
+    const customLabels=[{front:'Section A front',back:'Section A back'},{front:'Section B front',back:'Section B back'},{front:'Section C front',back:null},{front:null,back:null}];
+    const labelSet = ctShape==='galley' ? galleyLabels : customLabels;
+    const rawSecs=[[aL,aD],[bL,bD],[cL,cD],[gN('dd-len'),gN('dd-dep')]];
+    const secs = rawSecs.map((s,i)=>({dims:s, lbl:labelSet[i]||{front:null,back:null}})).filter(s=>s.dims[0]&&s.dims[1]);
     if(!secs.length) return;
-    const maxL=Math.max.apply(null,secs.map(s=>s[0]));
-    const totD=secs.reduce((a,s)=>a+s[1]+8,0);
+    const maxL=Math.max.apply(null,secs.map(s=>s.dims[0]));
+    const totD=secs.reduce((a,s)=>a+s.dims[1]+8,0);
     const sc=Math.min((W-pad*2)/maxL,(H-pad*2)/totD);
     let cy=pad;
     secs.forEach(s=>{
-      ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(pad,cy,s[0]*sc,s[1]*sc); ctx.fill();
-      colorEdge(pad,cy,pad+s[0]*sc,cy,'wall'); colorEdge(pad,cy+s[1]*sc,pad+s[0]*sc,cy+s[1]*sc,'polished');
-      colorEdge(pad,cy,pad,cy+s[1]*sc,'wall'); colorEdge(pad+s[0]*sc,cy,pad+s[0]*sc,cy+s[1]*sc,'unfinished');
-      cy+=s[1]*sc+8;
+      const [sl,sd]=s.dims;
+      const frontColor = ea(s.lbl.front,'polished'), backColor = ea(s.lbl.back,'wall');
+      ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(pad,cy,sl*sc,sd*sc); ctx.fill();
+      colorEdge(pad,cy,pad+sl*sc,cy,backColor); colorEdge(pad,cy+sd*sc,pad+sl*sc,cy+sd*sc,frontColor);
+      colorEdge(pad,cy,pad,cy+sd*sc,backColor); colorEdge(pad+sl*sc,cy,pad+sl*sc,cy+sd*sc,ea('Left end','unfinished'));
+      cy+=sd*sc+8;
     });
   }
 
