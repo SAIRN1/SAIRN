@@ -1644,7 +1644,7 @@ async function callClaude(system, messages, maxTokens) {
         </div>
 
         <div style="font-size:13px;font-weight:700;color:var(--teal-dark);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);">Ohio Municipal / Local Income Tax (RITA)</div>
-        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#0F766E;margin-bottom:14px;">
+        <div style="background:#F0FDFA;border:1px solid #99F6E4;border-radius:8px;padding:10px 14px;font-size:12px;color:#0F766E;margin-bottom:14px;">
           &#x2139;&#xFE0F; Ohio has <strong>600+ municipal tax districts</strong>. Tax is based on where the employee <strong>works</strong> (employer withholding obligation) and where they <strong>live</strong> (residence credit may apply). Most Ohio cities use <strong>RITA</strong> (Regional Income Tax Agency) or CCA for collection. Rates range from 0% to 3%.
         </div>
         <div class="form-grid">
@@ -1999,10 +1999,10 @@ var PROXY    = 'https://sairn.vercel.app/api/claude';
 var BRIDGE   = 'https://sairn.vercel.app/api/bridge';
 var NET_URL  = 'https://sairn.vercel.app/api/network'; // SAIRN Intelligence Network
 
-// ── callClaude: the one function all AI calls use ────────────
+// -- callClaude: the one function all AI calls use ------------
 
 
-// ── learnFromResponse: extract and store business intelligence ─
+// -- learnFromResponse: extract and store business intelligence -
 function learnFromResponse(question, answer) {
   try {
     // Extract key facts from Claude's responses about the business
@@ -2028,7 +2028,7 @@ function learnFromResponse(question, answer) {
   } catch(e) { /* never crash on learning */ }
 }
 
-// ── sendToNetwork: post to SAIRN Bridge (non-blocking) ────────
+// -- sendToNetwork: post to SAIRN Bridge (non-blocking) --------
 function sendToNetwork(data) {
   fetch(BRIDGE, {
     method: 'POST',
@@ -2037,7 +2037,7 @@ function sendToNetwork(data) {
   }).catch(function() { /* silent — network is optional */ });
 }
 
-// ── getBusinessContext: read everything we know ────────────────
+// -- getBusinessContext: read everything we know ----------------
 function getBusinessContext() {
   try {
     var profile = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
@@ -2054,7 +2054,7 @@ function getBusinessContext() {
   } catch(e) { return {}; }
 }
 
-// ── saveBusinessFact: remember key facts ──────────────────────
+// -- saveBusinessFact: remember key facts ----------------------
 function saveBusinessFact(fact) {
   try {
     var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
@@ -4041,6 +4041,81 @@ function saveScannedDoc() {
 }
 </script>
 
+<script>
+/* === PEOPLE WING AI FUNCTIONS === */
+
+async function runBizIntel(){
+  var el=document.getElementById('biz-intel-out');if(!el)return;
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Pulling intelligence brief...';
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  var biz=JSON.parse(localStorage.getItem(APP_ID+'_biz_profile')||'{}');
+  try{
+    var r=await callClaude('You are the SAIRNbiz People Intelligence Engine. Give a short, scannable dashboard brief: headcount summary, any urgent HR flags (compliance, onboarding gaps, open reqs), and one recommended action for today. Keep it under 120 words.',
+      [{role:'user',content:'Business: '+(biz.name||'this company')+'. Employees on file: '+JSON.stringify(emps)+'. Give today\'s People intelligence brief.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Could not load intelligence brief. Check connection and try again.';}
+}
+
+function saveNewEmployee(){
+  var fname=document.getElementById('ob-fname').value.trim();
+  var lname=document.getElementById('ob-lname').value.trim();
+  if(!fname||!lname){if(typeof showToast==='function')showToast('First and last name are required.');return;}
+  var emp={
+    fname:fname,
+    lname:lname,
+    title:document.getElementById('ob-title').value.trim(),
+    dept:document.getElementById('ob-dept').value.trim(),
+    start:document.getElementById('ob-start').value,
+    payType:document.getElementById('ob-pay-type').value,
+    rate:document.getElementById('ob-rate').value,
+    email:document.getElementById('ob-email').value.trim(),
+    status:'Active'
+  };
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  emps.push(emp);
+  localStorage.setItem('sairnbiz_employees',JSON.stringify(emps));
+  if(typeof showToast==='function')showToast('Employee record created for '+fname+' '+lname+'.');
+  ['ob-fname','ob-lname','ob-title','ob-dept','ob-start','ob-rate','ob-email'].forEach(function(id){
+    var f=document.getElementById(id);if(f)f.value='';
+  });
+}
+
+async function aiOnboardChecklist(){
+  var el=document.getElementById('ob-ai-out');if(!el)return;
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Building onboarding checklist...';
+  var title=document.getElementById('ob-title')?document.getElementById('ob-title').value:'';
+  var dept=document.getElementById('ob-dept')?document.getElementById('ob-dept').value:'';
+  try{
+    var r=await callClaude('You are an HR onboarding specialist. Build a concise, role-specific onboarding checklist (8-10 items) covering paperwork, systems access, training, and first-week milestones.',
+      [{role:'user',content:'New hire role: '+(title||'employee')+' in '+(dept||'the company')+'. Build their onboarding checklist.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Could not build checklist. Check connection and try again.';}
+}
+
+async function aiScreenCandidates(){
+  var el=document.getElementById('ats-ai-out');if(!el)return;
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Screening candidates...';
+  try{
+    var r=await callClaude('You are an AI recruiting screener. Review the open positions and applicant pipeline and provide: top 3 candidates to prioritize, any red flags, and recommended next interview steps.',
+      [{role:'user',content:'Open positions: Office Manager (12 applications, screening stage), Sales Rep (8 applications, interviewing), Field Tech (4 applications, new). Screen and prioritize.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Screening failed. Check connection and try again.';}
+}
+
+async function runOrgIntel(){
+  var el=document.getElementById('org-ai-out');if(!el)return;
+  el.style.display='block';
+  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing org structure...';
+  var emps=JSON.parse(localStorage.getItem('sairnbiz_employees')||'[]');
+  try{
+    var r=await callClaude('You are an organizational design consultant. Analyze this company org structure for gaps, span-of-control issues, and restructuring suggestions as the company grows.',
+      [{role:'user',content:'Current roster: '+JSON.stringify(emps)+'. Structure: Owner/Founder over Operations Manager (Crew Leads x3, Technicians x8) and Sales. Analyze the org structure.'}]);
+    el.textContent=r;
+  }catch(e){el.textContent='Org analysis failed. Check connection and try again.';}
+}
+</script>
 <script>
 async function runPayrollAI(){
   var el=document.getElementById('payroll-ai-out');if(!el)return;
