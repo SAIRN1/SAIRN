@@ -2364,10 +2364,11 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
           </div>
           <div id="edge-assignment-area"></div>
           <div class="edge-legend" id="edge-legend">
-            <div class="edge-key"><div class="edge-swatch" style="background:#E8850A"></div>Polished exposed</div>
-            <div class="edge-key"><div class="edge-swatch" style="background:#6B7280"></div>Wall / cabinet</div>
-            <div class="edge-key"><div class="edge-swatch" style="background:#EA580C"></div>Appliance / range</div>
-            <div class="edge-key"><div class="edge-swatch" style="background:#16C762"></div>Waterfall</div>
+            <div class="edge-key"><div class="edge-swatch" style="background:#22C55E"></div>Polished exposed</div>
+            <div class="edge-key"><div class="edge-swatch" style="background:#EAB308"></div>Wall</div>
+            <div class="edge-key"><div class="edge-swatch" style="background:#DC2626"></div>Cabinet</div>
+            <div class="edge-key"><div class="edge-swatch" style="background:#3B82F6"></div>Appliance / range</div>
+            <div class="edge-key"><div class="edge-swatch" style="background:#F97316"></div>Waterfall</div>
             <div class="edge-key"><div class="edge-swatch" style="background:#A855F7"></div>Splash attach</div>
             <div class="edge-key"><div class="edge-swatch" style="background:#9CA3AF"></div>Unfinished / mitered</div>
           </div>
@@ -4592,10 +4593,11 @@ var ctShape = 'straight';
 var DRAW_SCALE_PXPERIN = 2;
 var lastCalc = { total: 0, totalLF: 0, impliedSF: 0, impliedPPSF: 0, mat: { name: '' }, proj: { name: '' }, tier: { label: '' } };
 var EDGE_COLORS = {
-  polished:   { color: '#E8850A', label: 'Polished' },
-  wall:       { color: '#6B7280', label: 'Wall/Cabinet' },
-  appliance:  { color: '#EA580C', label: 'Appliance' },
-  waterfall:  { color: '#16C762', label: 'Waterfall' },
+  polished:   { color: '#22C55E', label: 'Polished' },
+  wall:       { color: '#EAB308', label: 'Wall' },
+  cabinet:    { color: '#DC2626', label: 'Cabinet' },
+  appliance:  { color: '#3B82F6', label: 'Appliance' },
+  waterfall:  { color: '#F97316', label: 'Waterfall' },
   splash:     { color: '#A855F7', label: 'Splash Attach' },
   unfinished: { color: '#9CA3AF', label: 'Unfinished' }
 };
@@ -4899,7 +4901,7 @@ function buildEdgeAssignmentArea() {
   area.innerHTML = '';
 
   const shapeEdges = {
-    straight: ['Front (exposed)','Back (wall/cabinet)','Left end','Right end'],
+    straight: ['Front (exposed)','Back (wall)','Left end','Right end'],
     lshape:   ['A-Front','A-Back (wall)','A-Left end','B-Front','B-Back (wall)','B-End','Corner (inside)'],
     ushape:   ['Left front','Back front','Right front','Left back (wall)','Back wall','Right back (wall)','Left end','Right end'],
     island:   ['Front (exposed)','Back (exposed)','Left end','Right end'],
@@ -4916,8 +4918,8 @@ function buildEdgeAssignmentArea() {
     lbl.textContent = edgeName;
     const sel = document.createElement('select');
     sel.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:10px;font-family:Outfit,sans-serif;outline:none;flex-shrink:0';
-    const types = ['polished','wall','appliance','waterfall','splash','unfinished'];
-    const labels = ['Polished','Wall/Cabinet','Appliance','Waterfall','Splash Attach','Unfinished'];
+    const types = ['polished','wall','cabinet','appliance','waterfall','splash','unfinished'];
+    const labels = ['Polished','Wall','Cabinet','Appliance','Waterfall','Splash Attach','Unfinished'];
     types.forEach((t,i) => {
       const o = document.createElement('option'); o.value=t; o.textContent=labels[i]; sel.appendChild(o);
     });
@@ -5010,7 +5012,7 @@ function drawCTPreview() {
     ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(x,y,aL*sc,aD*sc); ctx.fill();
     // color edges — pull from user's Edge Assignment selections, default to prior hardcoded behavior
     const ea0 = ctShape==='straight'
-      ? {top:ea('Back (wall/cabinet)','wall'),right:ea('Right end','unfinished'),bottom:ea('Front (exposed)','polished'),left:ea('Left end','unfinished')}
+      ? {top:ea('Back (wall)','wall'),right:ea('Right end','unfinished'),bottom:ea('Front (exposed)','polished'),left:ea('Left end','unfinished')}
       : {top:ea('Back (exposed)','polished'),right:ea('Right end','polished'),bottom:ea('Front (exposed)','polished'),left:ea('Left end','polished')};
     colorEdge(x,y,x+aL*sc,y,ea0.top);
     colorEdge(x+aL*sc,y,x+aL*sc,y+aD*sc,ea0.right);
