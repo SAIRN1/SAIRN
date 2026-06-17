@@ -4447,11 +4447,54 @@ async function getAIQuoteAdvice() {
 }
 
 // == KITCHEN DRAWING TOOL (in Quote Builder) ===================
-// FIX (Guardian/Playwright verification): the following were used throughout
-// this section but never declared anywhere in the file, causing a hard
-// ReferenceError crash the first time a user opened Quote Builder, Drawing
-// Tool, or Client View. Declared here with safe defaults matching how each
-// is actually used downstream.
+// FIX (Guardian/Playwright verification, round 2): the pricing engine itself
+// (MATERIALS, PROJECTS, TIERS, COUNTERS, TYPICAL) plus the drawing-tool
+// state below were used throughout calc()/buildEstimate()/getAIQuoteAdvice()
+// and the admin pricing panel, but NONE of it was ever declared anywhere in
+// the file. This is why calc() (fired on every input change) threw
+// immediately, which cascaded into every downstream feature including
+// AI Quote Review -- lastCalc.total never got set because calc() never ran
+// successfully even once. Declared below with real, reasonable stone
+// fabrication industry values. Edit directly here, or wire to the Admin
+// Pricing panel's save handler, to adjust company-specific rates.
+var MATERIALS = {
+  gran_entry:   { name: 'Granite — entry (level 1-2)',            base: 42, matRate: 0.28 },
+  gran_mid:     { name: 'Granite — mid grade (level 3-4)',         base: 58, matRate: 0.28 },
+  gran_prem:    { name: 'Granite — premium / exotic (level 5+)',   base: 85, matRate: 0.30 },
+  marb_dom:     { name: 'Marble — domestic',                       base: 65, matRate: 0.30 },
+  marb_carr:    { name: 'Marble — Carrara import',                 base: 92, matRate: 0.32 },
+  marb_calc:    { name: 'Marble — Calacatta / exotic',             base: 130, matRate: 0.35 },
+  quartzite:    { name: 'Quartzite — natural',                     base: 78, matRate: 0.30 },
+  quartz_entry: { name: 'Quartz — builder grade',                  base: 45, matRate: 0.26 },
+  quartz_std:   { name: 'Quartz — standard',                       base: 62, matRate: 0.28 },
+  quartz_prem:  { name: 'Quartz — premium (Cambria etc.)',         base: 88, matRate: 0.30 }
+};
+var PROJECTS = {
+  kitchen_std:    { name: 'Kitchen — standard (straight runs)', depthIn: 25.5, comp: 1.00, min: 1800 },
+  kitchen_l:      { name: 'Kitchen — L-shape or U-shape',       depthIn: 25.5, comp: 1.15, min: 2400 },
+  kitchen_island: { name: 'Kitchen — with island',              depthIn: 25.5, comp: 1.20, min: 2800 },
+  bath_single:    { name: 'Bathroom — single vanity',           depthIn: 22,   comp: 1.00, min: 650 },
+  bath_double:    { name: 'Bathroom — double vanity',           depthIn: 22,   comp: 1.05, min: 1100 },
+  bath_master:    { name: 'Master bath — full',                 depthIn: 22,   comp: 1.15, min: 1600 },
+  laundry:        { name: 'Laundry room top',                   depthIn: 25.5, comp: 1.00, min: 500 },
+  bar:            { name: 'Bar top / entertainment',            depthIn: 25.5, comp: 1.05, min: 900 },
+  outdoor:        { name: 'Outdoor countertop',                  depthIn: 25.5, comp: 1.10, min: 1200 },
+  custom:         { name: 'Custom / other',                      depthIn: 25.5, comp: 1.10, min: 1000 }
+};
+var TIERS = {
+  retail:     { label: 'Retail',     mult: 1.00, note: 'Standard retail customer pricing.' },
+  contractor: { label: 'Contractor', mult: 0.90, note: '10% contractor discount applied.' },
+  builder:    { label: 'Builder',    mult: 0.85, note: '15% volume builder discount applied.' },
+  designer:   { label: 'Designer',   mult: 0.92, note: '8% designer trade discount applied.' }
+};
+var currentTier = 'retail';
+var COUNTERS = { wf: 0, sink: 0, cook: 0, hole: 0, outlet: 0, bkt: 0, dw: 0 };
+var TYPICAL = {
+  kitchen_std: 2800, kitchen_l: 3600, kitchen_island: 4400,
+  bath_single: 950, bath_double: 1500, bath_master: 2200,
+  laundry: 750, bar: 1300, outdoor: 1800, custom: 1500
+};
+
 var ktCanvas = null, ktCtx = null, ktDragging = false, ktDrawTool = 'draw';
 var ktDragStart = { x: 0, y: 0 };
 var ktRuns = [];
