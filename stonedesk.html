@@ -13407,7 +13407,17 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     // Show app
     var app = document.getElementById('app');
     if (app) {
-      app.style.cssText = 'display:block!important;visibility:visible!important;opacity:1!important;height:100vh!important;overflow:hidden!important';
+      // FIX (user-reported: "no scroll at all" after the .panel.active
+      // overflow-y:auto fix): this line forced #app to display:block (not
+      // flex) and overflow:hidden!important at exactly 100vh tall via an
+      // inline !important style -- that beat both #app.visible{display:
+      // flex} and the panel-level scroll fix, since #app itself was
+      // clipping everything before any panel had a chance to scroll.
+      // display:flex (matching #app.visible's original intent) lets
+      // .panel{flex:1} correctly cap each panel's height to the remaining
+      // viewport space, which is what actually makes overflow-y:auto on
+      // .panel.active functional.
+      app.style.cssText = 'display:flex!important;visibility:visible!important;opacity:1!important;height:100vh!important';
       app.classList.add('visible');
     }
     // Show sidebar + topbar explicitly
