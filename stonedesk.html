@@ -4447,6 +4447,25 @@ async function getAIQuoteAdvice() {
 }
 
 // == KITCHEN DRAWING TOOL (in Quote Builder) ===================
+// FIX (Guardian/Playwright verification): the following were used throughout
+// this section but never declared anywhere in the file, causing a hard
+// ReferenceError crash the first time a user opened Quote Builder, Drawing
+// Tool, or Client View. Declared here with safe defaults matching how each
+// is actually used downstream.
+var ktCanvas = null, ktCtx = null, ktDragging = false, ktDrawTool = 'draw';
+var ktDragStart = { x: 0, y: 0 };
+var ktRuns = [];
+var ctShape = 'straight';
+var lastCalc = { total: 0, totalLF: 0, impliedSF: 0, impliedPPSF: 0, mat: { name: '' }, proj: { name: '' }, tier: { label: '' } };
+var EDGE_COLORS = {
+  polished:   { color: '#E8850A', label: 'Polished' },
+  wall:       { color: '#6B7280', label: 'Wall/Cabinet' },
+  appliance:  { color: '#3B82F6', label: 'Appliance' },
+  waterfall:  { color: '#16C762', label: 'Waterfall' },
+  splash:     { color: '#A855F7', label: 'Splash Attach' },
+  unfinished: { color: '#9CA3AF', label: 'Unfinished' }
+};
+
 function initKTCanvas() {
   ktCanvas = document.getElementById('kt-canvas');
   if (!ktCanvas) return;
