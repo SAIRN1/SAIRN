@@ -1972,6 +1972,19 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 <div class="alert-bar" id="alert-bar"></div>
 
   <div class="panel active" id="panel-ai">
+    <div id="sairn-weather-bar" style="background:linear-gradient(135deg,#F0FEF6,#DCFCE7);
+      border:1.5px solid #BBF7D0;border-radius:9px;padding:13px 18px;
+      display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+      <span style="font-size:30px" id="sairn-wx-icon">⛅</span>
+      <div>
+        <div style="font-size:22px;font-weight:800;color:#111827" id="sairn-wx-temp">--°F</div>
+        <div style="font-size:12px;color:#4B5563" id="sairn-wx-desc">Loading weather...</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:13px;font-weight:700;color:#16A34A" id="sairn-wx-status">Checking...</div>
+        <div style="font-size:11px;color:#6B7280">Crew go/no-go</div>
+      </div>
+    </div>
     <div class="mode-bar" id="mode-bar">
       <button class="mode-btn active" onclick="setMode('general')"><span class="mode-icon">🧠</span><span class="mode-label">AI Shop</span></button>
       <button class="mode-btn" onclick="setMode('thh')"><span class="mode-icon">📐</span><span class="mode-label">THH Capacity</span></button>
@@ -5307,19 +5320,7 @@ console.log('StoneDesk Patch v1.1 loaded — all 18 panels verified and fixed');
 <div class="sairn-toast-msg" id="sairn-toast"></div>
 
 
-<div id="sairn-weather-bar" style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);
-  border:1.5px solid #BFDBFE;border-radius:9px;padding:13px 18px;
-  display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-  <span style="font-size:30px" id="sairn-wx-icon">⛅</span>
-  <div>
-    <div style="font-size:22px;font-weight:800;color:#111827" id="sairn-wx-temp">--°F</div>
-    <div style="font-size:12px;color:#4B5563" id="sairn-wx-desc">Loading weather...</div>
-  </div>
-  <div style="margin-left:auto;text-align:right">
-    <div style="font-size:13px;font-weight:700;color:#16A34A" id="sairn-wx-status">Checking...</div>
-    <div style="font-size:11px;color:#6B7280">Crew go/no-go</div>
-  </div>
-</div>
+
 
 <!-- ===== FIELD QUOTE MODAL ===== -->
 <div class="sairn-modal-overlay" id="sairn-fq-modal">
