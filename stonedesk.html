@@ -831,6 +831,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .fm-person-color-6{background:#be185d}
 .fm-person-color-7{background:#65a30d}
 .fm-reopt-banner{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600;background:rgba(27,58,107,0.08);border:1.5px solid var(--a);color:var(--a)}
+.fm-insight{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;color:var(--text);background:var(--stone);border:1px solid var(--border)}
 
 
 /* == EXEC SUITE & COMMS ====================================== */
@@ -3269,6 +3270,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
           <button class="q-btn primary" onclick="fmOptimizeDay()">⚡ Optimize Route</button>
         </div>
         <div class="fm-summary" id="fm-day-summary"></div>
+        <div id="fm-day-insight"></div>
         <div class="fm-map-container" id="fm-map-container">
           <div class="fm-map-placeholder">Map loads once today's stops are set.</div>
         </div>
@@ -4231,13 +4233,19 @@ function fmDistinctPeople(){
 function fmGetOrderedStops(person, dateStr){
   var all=fmAllStopsForDate(dateStr).filter(function(s){ return s.person===person; });
   var key=person+'|'+dateStr;
-  var orderIds=sdFieldOrder[key];
+  var rec=sdFieldOrder[key];
+  var orderIds=Array.isArray(rec)?rec:(rec&&rec.order)||null; // back-compat with the old plain-array shape
   if(!orderIds || !orderIds.length) return all;
   var byId={}; all.forEach(function(s){ byId[s.id]=s; });
   var ordered=[]; orderIds.forEach(function(id){ if(byId[id]){ ordered.push(byId[id]); delete byId[id]; } });
   // anything new since the last optimize (not yet in the saved order) goes at the end
   Object.keys(byId).forEach(function(id){ ordered.push(byId[id]); });
   return ordered;
+}
+
+function fmGetDayInsight(person, dateStr){
+  var rec=sdFieldOrder[person+'|'+dateStr];
+  return (rec && !Array.isArray(rec) && rec.insight) || '';
 }
 
 function fmSwitchTab(tab){
@@ -4279,6 +4287,9 @@ function fmRenderMyDay(){
     '<div class="fm-summary-pill"><b>'+notDone+'</b> remaining</div>'+
     '<div class="fm-summary-pill"><b>'+done+'</b> done</div>'
   );
+
+  var insight=fmGetDayInsight(person, dateStr);
+  sv('fm-day-insight', insight?('<div class="fm-insight"><span>🧠</span><span>'+escHtml(insight)+'</span></div>'):'');
 
   if(!stops.length){
     sv('fm-stop-list','<div style="text-align:center;color:var(--muted);padding:32px">No stops for '+escHtml(person||'this person')+' on this day.</div>');
@@ -4411,15 +4422,48 @@ function fmRunOptimize(person, dateStr, silent){
       if(!order || order.length!==notDone.length) return;
       var reordered=order.map(function(i){return notDone[i];});
       var finalOrder=done.concat(reordered);
-      sdFieldOrder[person+'|'+dateStr]=finalOrder.map(function(s){return s.id;});
+      var key=person+'|'+dateStr;
+      sdFieldOrder[key]={order:finalOrder.map(function(s){return s.id;}), insight:''};
       saveFM();
       fmRefreshCurrentView(person, dateStr);
       if(silent){
         var savedMin=data.savedMinutes;
         fmShowReoptBanner(escHtml(person)+'\'s route updated'+(savedMin?' -- saves ~'+savedMin+' min':'')+'.');
       }
+      fmGenerateDaySummary(person, dateStr, finalOrder);
     })
     .catch(function(){ if(!silent) alert('Could not optimize route -- check the Maps API key is configured.'); });
+}
+
+// Claude reasons over the already-optimized stop list to surface one practical,
+// specific observation (a tight stretch, a long drive, a scheduling risk) --
+// it never computes the order itself, just comments on it. Runs after the
+// order is saved so the route displays immediately; the insight fills in
+// a moment later without blocking anything.
+function fmGenerateDaySummary(person, dateStr, orderedStops){
+  var key=person+'|'+dateStr;
+  if(orderedStops.length<2) return;
+  var listText=orderedStops.map(function(s,i){
+    return (i+1)+'. '+(FM_TYPE_LABELS[s.type]||s.type)+' -- '+s.address+(s.status==='done'?' (already done)':'');
+  }).join('\n');
+  var prompt='Today\'s field stops for '+person+', in visiting order:\n'+listText+
+    '\n\nGive ONE short, specific, practical sentence a dispatcher would actually find useful -- ' +
+    'flag a notably long drive, a tight back-to-back stretch, or just confirm the day looks efficient. ' +
+    'No greeting, no filler, plain text only, under 25 words.';
+  fetch(SAIRN_API, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    app_id: APP_ID_LOCAL, is_demo:true, max_tokens:80, system:'You are a terse, practical dispatcher assistant for a stone fabrication shop.', messages:[{role:'user', content: prompt}]
+  })})
+    .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
+    .then(function(data){
+      var text=(data.content && data.content[0] && data.content[0].text || '').trim();
+      if(!text) return;
+      var rec=sdFieldOrder[key];
+      if(!rec || Array.isArray(rec)) return; // order got replaced/cleared since this call started
+      rec.insight=text;
+      saveFM();
+      fmRefreshCurrentView(person, dateStr);
+    })
+    .catch(function(){ /* insight is a nice-to-have, fail silently */ });
 }
 
 function fmShowReoptBanner(msg){
