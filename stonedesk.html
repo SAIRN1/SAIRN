@@ -2495,12 +2495,19 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
           </div>
           <div id="dc-running-totals" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"></div>
 
-          <div class="draw-toolbar" style="margin-top:10px">
+          <div class="draw-toolbar" style="margin-top:10px;position:relative">
             <span style="font-size:10px;color:var(--muted);margin-right:2px">Place:</span>
             <button class="draw-btn draw-cutout-btn" id="dc-cutout-sink" onclick="setDCCutoutMode(!dcCutoutMode,'sink')">🚰 Sink</button>
             <button class="draw-btn draw-cutout-btn" id="dc-cutout-cooktop" onclick="setDCCutoutMode(!dcCutoutMode,'cooktop')">🔥 Cooktop</button>
             <button class="draw-btn draw-cutout-btn" id="dc-cutout-outlet" onclick="setDCCutoutMode(!dcCutoutMode,'outlet')">⚡ Outlet</button>
             <button class="draw-btn draw-cutout-btn" id="dc-cutout-faucet" onclick="setDCCutoutMode(!dcCutoutMode,'faucet')">💧 Faucet</button>
+            <button class="draw-btn" id="dc-drainboard-btn" onclick="dcToggleDrainboardMenu()">🌊 Drainboard ▾</button>
+            <div id="dc-drainboard-menu" style="display:none;position:absolute;z-index:20;margin-top:4px;top:100%;background:#0E1420;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,0.4);display:none;flex-direction:column;gap:2px;min-width:140px">
+              <button class="draw-btn" style="width:100%;text-align:left" onclick="dcAttachDrainboard('left')">Left</button>
+              <button class="draw-btn" style="width:100%;text-align:left" onclick="dcAttachDrainboard('right')">Right</button>
+              <button class="draw-btn" style="width:100%;text-align:left" onclick="dcAttachDrainboard('both')">Both</button>
+              <button class="draw-btn" style="width:100%;text-align:left;background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcRemoveDrainboardsForActiveSink()">Remove</button>
+            </div>
             <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCCutouts()">Clear Cutouts</button>
             <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click the spot · drag any marker to fine-tune</span>
           </div>
@@ -2523,14 +2530,6 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <label for="dc-sink-integrated" style="font-size:11px;color:var(--text);cursor:pointer">Integrated (carved from same stone, no separate sink purchase)</label>
             <span style="font-size:10px;color:var(--muted)">— natural stone integrated sinks run $1,200-$2,000+ over a standard cutout depending on bowl count; carved from the same slab, bonded with no mounting clips, requires 3/8" min. wall thickness</span>
           </div>
-          <div class="draw-toolbar" id="dc-drainboard-attach-row" style="margin-top:6px;display:none;align-items:center;gap:6px">
-            <span style="font-size:10px;color:var(--muted);margin-right:2px">Drainboard for <b id="dc-drainboard-attach-sinkname" style="color:var(--text)">—</b>:</span>
-            <button class="draw-btn" onclick="dcAttachDrainboard('left')">⟵ Left</button>
-            <button class="draw-btn" onclick="dcAttachDrainboard('right')">Right ⟶</button>
-            <button class="draw-btn" onclick="dcAttachDrainboard('both')">Both Sides</button>
-            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcRemoveDrainboardsForActiveSink()">Remove</button>
-          </div>
-          <div style="margin-top:4px;font-size:10px;color:var(--muted)" id="dc-drainboard-hint">Place a kitchen sink first — the Drainboard buttons will appear here automatically.</div>
           <div id="dc-drainboard-warning" style="display:none;margin-top:6px;font-size:10px;color:#F59E0B;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;padding:6px 10px">⚠️ Drainboard grooves are difficult or not recommended on quartz/porcelain (hard to restore polish in the machined area) — confirm material compatibility before quoting.</div>
 
           <div class="draw-toolbar" style="margin-top:6px">
@@ -6287,26 +6286,40 @@ function dcHitCutout(px, py) {
   return null;
 }
 
-// Refreshes the Drainboard attach-row visibility/label every time the cutout list changes —
-// driven entirely by whether an eligible sink exists on the drawing, never by a click/selection
-// step. Called from updateDCCutoutList() so it stays in sync automatically on every placement,
-// drag-reposition, or removal.
-function dcRefreshDrainboardRow() {
-  const sink = dcActiveDrainboardSink();
-  const row = document.getElementById('dc-drainboard-attach-row');
-  const hint = document.getElementById('dc-drainboard-hint');
-  const nameEl = document.getElementById('dc-drainboard-attach-sinkname');
+// The Drainboard button + dropdown is ALWAYS visible in the Place toolbar — no click-to-select
+// step, no waiting for a row to appear. Opening the menu just shows Left/Right/Both/Remove;
+// picking one resolves the active sink at that moment. If no eligible sink exists yet, the
+// button still opens but each action below no-ops with no console error.
+function dcToggleDrainboardMenu() {
+  const menu = document.getElementById('dc-drainboard-menu');
+  if (!menu) return;
+  const showing = menu.style.display === 'flex';
+  menu.style.display = showing ? 'none' : 'flex';
+  if (!showing) {
+    setTimeout(()=>{ document.addEventListener('click', dcCloseDrainboardMenuOnce, { once:true, capture:true }); }, 0);
+  }
+}
+function dcCloseDrainboardMenuOnce(e) {
+  const menu = document.getElementById('dc-drainboard-menu');
+  const btn = document.getElementById('dc-drainboard-btn');
+  if (menu && !menu.contains(e.target) && e.target !== btn) menu.style.display = 'none';
+}
+function dcCloseDrainboardMenu() {
+  const menu = document.getElementById('dc-drainboard-menu');
+  if (menu) menu.style.display = 'none';
+}
+// Shows/hides the material-compatibility warning based on whether any drainboard is currently
+// placed — called from updateDCCutoutList() so it stays in sync on every placement/removal.
+function dcRefreshDrainboardWarning() {
   const warning = document.getElementById('dc-drainboard-warning');
-  if (row) row.style.display = sink ? 'flex' : 'none';
-  if (hint) hint.style.display = sink ? 'none' : 'block';
-  if (nameEl && sink) nameEl.textContent = sink.label;
-  if (warning) warning.style.display = sink ? 'block' : 'none';
+  if (warning) warning.style.display = dcCutouts.some(c => c.type === 'drainboard') ? 'block' : 'none';
 }
 
 // Creates ONE drainboard record per side, attached to the active (most recently placed eligible)
 // sink. "Both" calls this twice (left then right) rather than creating a separate wider shape —
 // each side is priced individually as its own record, matching how shops actually quote it.
 function dcAttachDrainboard(side) {
+  dcCloseDrainboardMenu();
   const sink = dcActiveDrainboardSink();
   if (!sink) return;
   if (side === 'both') { dcAttachDrainboard('left'); dcAttachDrainboard('right'); return; }
@@ -6327,6 +6340,7 @@ function dcAttachDrainboard(side) {
 }
 
 function dcRemoveDrainboardsForActiveSink() {
+  dcCloseDrainboardMenu();
   const sink = dcActiveDrainboardSink();
   if (!sink) return;
   dcCutouts = dcCutouts.filter(c => !(c.type === 'drainboard' && c.attachedToSinkId === sink.id));
@@ -6550,9 +6564,9 @@ function renderDCCutouts(ctx) {
 
 // Draws one drainboard: a footprint (10in left-right x sink-depth front-back for standard
 // kitchen sinks, 6in x 15in for the smaller Bar/Prep sink) sitting flush against one side of a
-// placed sink. Grooves run HORIZONTALLY across the narrow dimension, sloping toward the sink,
-// since the board sits beside the sink (not above/below it) — water needs to travel sideways
-// into the sink, not front-to-back.
+// placed sink. Grooves run VERTICALLY (front-to-back, parallel to the narrow edge touching the
+// sink) — this is the correct real-world orientation: water runs the long way down the slab and
+// drains off the inner (sink-side) edge, not across the narrow width.
 function dcDrawDrainboardShape(ctx, c, p) {
   const scale = dcCurrentScalePxPerIn(c);
   const sink = dcCutouts.find(s => s.id === c.attachedToSinkId);
@@ -6566,31 +6580,33 @@ function dcDrawDrainboardShape(ctx, c, p) {
   dcRoundRectPath(ctx, x0, y0, wPx, dPx, Math.min(wPx,dPx)*0.06);
   ctx.fill(); ctx.stroke();
 
-  // Parallel HORIZONTAL groove lines running across the narrow width, each sloping slightly
-  // toward the sink side so the direction of drainage reads correctly at a glance.
-  const margin = wPx * 0.12;
+  // Parallel VERTICAL groove lines running front-to-back, each angled slightly so the inner
+  // (sink-side) end sits lower — visually reads as "slopes down toward the sink."
+  const margin = dPx * 0.08;
   for (let i=0;i<DRAINBOARD_GROOVE_COUNT;i++) {
-    const gy = y0 + dPx*((i+0.5)/DRAINBOARD_GROOVE_COUNT);
-    const slope = towardSink * dPx * 0.04;
+    const gx = x0 + wPx*((i+0.5)/DRAINBOARD_GROOVE_COUNT);
+    const slope = towardSink * wPx * 0.06;
     ctx.strokeStyle = c.color+'AA'; ctx.lineWidth = Math.max(1, scale*0.18);
-    ctx.beginPath(); ctx.moveTo(x0+margin, gy - slope); ctx.lineTo(x0+wPx-margin, gy + slope); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx, y0+margin); ctx.lineTo(gx + slope, y0+dPx-margin); ctx.stroke();
   }
 
-  // Flow-direction arrow at the vertical center, pointing sideways toward the attached sink.
-  const ax = towardSink > 0 ? x0 + wPx - margin*0.6 : x0 + margin*0.6, ay = p.y;
+  // Flow-direction arrow at the horizontal center, pointing sideways toward the attached sink
+  // (sits on the inner edge — the edge nearest the sink — since that's the side water drains off).
+  const innerEdgeX = towardSink > 0 ? x0 + wPx - margin*0.8 : x0 + margin*0.8;
+  const ax = innerEdgeX, ay = p.y;
   const arrowLen = Math.min(wPx,dPx)*0.22;
   ctx.strokeStyle = c.color; ctx.fillStyle = c.color; ctx.lineWidth = Math.max(1.5, scale*0.15);
-  ctx.beginPath(); ctx.moveTo(ax, ay - arrowLen); ctx.lineTo(ax, ay + arrowLen); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ax - towardSink*arrowLen, ay); ctx.lineTo(ax + towardSink*arrowLen, ay); ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(ax, ay + arrowLen);
-  ctx.lineTo(ax - arrowLen*0.35, ay + (arrowLen-arrowLen*0.5));
-  ctx.lineTo(ax + arrowLen*0.35, ay + (arrowLen-arrowLen*0.5));
+  ctx.moveTo(ax + towardSink*arrowLen, ay);
+  ctx.lineTo(ax + towardSink*(arrowLen-arrowLen*0.5), ay - arrowLen*0.35);
+  ctx.lineTo(ax + towardSink*(arrowLen-arrowLen*0.5), ay + arrowLen*0.35);
   ctx.closePath(); ctx.fill();
   ctx.restore();
 }
 
 function updateDCCutoutList() {
-  dcRefreshDrainboardRow();
+  dcRefreshDrainboardWarning();
   const el = document.getElementById('dc-cutout-list');
   if (!el) return;
   if (!dcCutouts.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No sinks or cutouts placed yet — pick a type above, then click the spot on the layout.</span>'; return; }
