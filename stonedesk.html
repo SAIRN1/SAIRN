@@ -2528,9 +2528,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn" onclick="dcAttachDrainboard('left')">⟵ Left</button>
             <button class="draw-btn" onclick="dcAttachDrainboard('right')">Right ⟶</button>
             <button class="draw-btn" onclick="dcAttachDrainboard('both')">Both Sides</button>
-            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcRemoveDrainboardsForSelectedSink()">Remove</button>
+            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcRemoveDrainboardsForActiveSink()">Remove</button>
           </div>
-          <div style="margin-top:4px;font-size:10px;color:var(--muted)" id="dc-drainboard-hint">Drainboards attach to a placed sink — click a sink on the drawing to select it, then choose Left / Right / Both above.</div>
+          <div style="margin-top:4px;font-size:10px;color:var(--muted)" id="dc-drainboard-hint">Place a kitchen sink first — the Drainboard buttons will appear here automatically.</div>
           <div id="dc-drainboard-warning" style="display:none;margin-top:6px;font-size:10px;color:#F59E0B;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;padding:6px 10px">⚠️ Drainboard grooves are difficult or not recommended on quartz/porcelain (hard to restore polish in the machined area) — confirm material compatibility before quoting.</div>
 
           <div class="draw-toolbar" style="margin-top:6px">
@@ -6145,16 +6145,32 @@ const CUTOUT_STYLES = {
 };
 
 // Drainboard configuration — a sloped/grooved section attached directly to an already-placed
-// sink (NOT an independently placed item). Fixed size matching the sink's depth: 10in wide x
-// 19in deep. Grooves always orient toward the attached sink since the drainboard's position is
-// derived as an offset from that sink, never given its own independent placement. "Both" sides
-// is two separate single-side attachment records (left + right), each priced individually —
-// there is no separate wider "double" shape. Pricing researched from real fabricator quotes
-// ($350-500 for a sloped drainboard depression), defaulted to $375/side, editable in the admin
-// Unit Pricing panel like every other line item in this app.
-const DRAINBOARD_WIDTH_IN = 10;
+// sink (NOT an independently placed item, NOT click-selected). Once any eligible sink is on the
+// drawing, the Left/Right/Both buttons appear automatically and act on the most recently placed
+// eligible sink — no canvas click/selection step at all. Standard kitchen sinks get a 10in x
+// 19in drainboard (matches kitchen sink depth); Bar/Prep sinks get a smaller 6in x 15in board
+// (matches Bar/Prep depth) since the sink itself is smaller. "Both" sides is two separate
+// single-side attachment records (left + right), each priced individually — there is no separate
+// wider "double" shape. Pricing researched from real fabricator quotes ($350-500 for a sloped
+// drainboard depression), defaulted to $375/side, editable in the admin Unit Pricing panel like
+// every other line item in this app.
+const DRAINBOARD_ELIGIBLE_SHAPES = new Set(['single', 'double5050', 'double6040', 'double4060', 'farmhouse', 'barPrep']);
+const DRAINBOARD_WIDTH_BY_SHAPE = { barPrep: 6 }; // anything not listed here uses the 10in kitchen default
+const DRAINBOARD_DEFAULT_WIDTH_IN = 10;
 const DRAINBOARD_GROOVE_COUNT = 5;
-var dcSelectedSinkId = null; // currently selected placed sink, set by clicking it on the canvas
+function dcDrainboardWidthForSink(sink) {
+  return (sink && DRAINBOARD_WIDTH_BY_SHAPE[sink.sinkShape]) || DRAINBOARD_DEFAULT_WIDTH_IN;
+}
+// Returns the most recently placed eligible sink (last one in dcCutouts matching the eligible
+// set) — this is the sink Left/Right/Both act on, resolved fresh every call rather than stored,
+// so it always reflects whatever sink was placed most recently with zero selection step needed.
+function dcActiveDrainboardSink() {
+  for (let i = dcCutouts.length - 1; i >= 0; i--) {
+    const c = dcCutouts[i];
+    if (c.type === 'sink' && DRAINBOARD_ELIGIBLE_SHAPES.has(c.sinkShape)) return c;
+  }
+  return null;
+}
 // Material compatibility note researched from fabricator/manufacturer sources: many shops won't
 // cut drainboard grooves into quartz at all (polish is very hard to restore in the machined
 // area), and even where approved (e.g. Caesarstone) it's typically only on 20/30mm quartz, not
@@ -6219,8 +6235,6 @@ function setDCCutoutMode(on, type) {
   if (on) { const btn = document.getElementById('dc-cutout-' + dcCutoutType); if (btn) btn.classList.add('active'); }
   const sinkPicker = document.getElementById('dc-sinkshape-picker');
   if (sinkPicker) sinkPicker.style.display = (on && dcCutoutType==='sink') ? 'flex' : 'none';
-  const dbWarning = document.getElementById('dc-drainboard-warning');
-  if (dbWarning) dbWarning.style.display = (on && dcCutoutType==='sink') ? 'block' : (dcSelectedSinkId ? 'block' : 'none');
   dcUpdateIntegratedRowVisibility();
 }
 
@@ -6273,51 +6287,37 @@ function dcHitCutout(px, py) {
   return null;
 }
 
-// Sink SELECTION (distinct from drag) — clicking an already-placed sink when no placement tool
-// is active selects it for drainboard attachment, without disturbing the existing sink
-// reposition-drag behavior. Uses the same click-vs-drag distance threshold pattern as seam click
-// detection: a mousedown/mouseup pair that moved less than the threshold counts as a click, not
-// a drag-start, so a quick click-to-select doesn't fight with click-and-hold-to-drag.
-var dcSinkSelectDownPx = null, dcSinkSelectDownPy = null;
-const DC_CLICK_VS_DRAG_THRESHOLD_PX = 6;
-
-function dcTrySelectSinkAt(px, py) {
-  const hit = dcHitCutout(px, py);
-  if (hit && hit.type === 'sink') { dcSetSelectedSink(hit.id); return true; }
-  return false;
-}
-
-function dcSetSelectedSink(sinkId) {
-  dcSelectedSinkId = sinkId;
+// Refreshes the Drainboard attach-row visibility/label every time the cutout list changes —
+// driven entirely by whether an eligible sink exists on the drawing, never by a click/selection
+// step. Called from updateDCCutoutList() so it stays in sync automatically on every placement,
+// drag-reposition, or removal.
+function dcRefreshDrainboardRow() {
+  const sink = dcActiveDrainboardSink();
   const row = document.getElementById('dc-drainboard-attach-row');
   const hint = document.getElementById('dc-drainboard-hint');
   const nameEl = document.getElementById('dc-drainboard-attach-sinkname');
   const warning = document.getElementById('dc-drainboard-warning');
-  const sink = dcCutouts.find(c => c.id === sinkId);
   if (row) row.style.display = sink ? 'flex' : 'none';
   if (hint) hint.style.display = sink ? 'none' : 'block';
   if (nameEl && sink) nameEl.textContent = sink.label;
   if (warning) warning.style.display = sink ? 'block' : 'none';
 }
 
-function dcClearSelectedSink() { dcSetSelectedSink(null); }
-
-// Creates ONE drainboard record per side, attached to the currently selected sink. "Both" calls
-// this twice (left then right) rather than creating a separate wider shape — each side is priced
-// individually as its own record, matching how shops actually quote it per spec.
+// Creates ONE drainboard record per side, attached to the active (most recently placed eligible)
+// sink. "Both" calls this twice (left then right) rather than creating a separate wider shape —
+// each side is priced individually as its own record, matching how shops actually quote it.
 function dcAttachDrainboard(side) {
-  if (!dcSelectedSinkId) return;
-  const sink = dcCutouts.find(c => c.id === dcSelectedSinkId);
+  const sink = dcActiveDrainboardSink();
   if (!sink) return;
   if (side === 'both') { dcAttachDrainboard('left'); dcAttachDrainboard('right'); return; }
   // Replace any existing drainboard already attached on that exact side of this sink, so
-  // re-clicking Left doesn't stack duplicate records on the same side.
-  dcCutouts = dcCutouts.filter(c => !(c.type === 'drainboard' && c.attachedToSinkId === dcSelectedSinkId && c.side === side));
+  // pressing Left again doesn't stack duplicate records on the same side.
+  dcCutouts = dcCutouts.filter(c => !(c.type === 'drainboard' && c.attachedToSinkId === sink.id && c.side === side));
   dcCutoutSeq++;
   dcCutouts.push({
     id: 'co' + dcCutoutSeq,
     type: 'drainboard',
-    attachedToSinkId: dcSelectedSinkId,
+    attachedToSinkId: sink.id,
     side,
     label: 'Drainboard (' + side + ') ' + dcCutoutSeq,
     color: CUTOUT_STYLES.drainboard.color
@@ -6326,9 +6326,10 @@ function dcAttachDrainboard(side) {
   updateDCCutoutList();
 }
 
-function dcRemoveDrainboardsForSelectedSink() {
-  if (!dcSelectedSinkId) return;
-  dcCutouts = dcCutouts.filter(c => !(c.type === 'drainboard' && c.attachedToSinkId === dcSelectedSinkId));
+function dcRemoveDrainboardsForActiveSink() {
+  const sink = dcActiveDrainboardSink();
+  if (!sink) return;
+  dcCutouts = dcCutouts.filter(c => !(c.type === 'drainboard' && c.attachedToSinkId === sink.id));
   drawCTPreview();
   updateDCCutoutList();
 }
@@ -6342,14 +6343,7 @@ function dcCanvasPlaceOrDrag(e, phase) {
 
   if (phase === 'down') {
     const existing = dcHitCutout(px, py);
-    if (existing) {
-      // A sink can be selected (for drainboard attachment) AND still dragged — selection is
-      // decided on mouseup by whether the pointer moved past the click-vs-drag threshold, so
-      // the drag path below is untouched and a quick click still selects.
-      dcSinkSelectDownPx = px; dcSinkSelectDownPy = py;
-      dcDraggingCutout = existing.id;
-      return;
-    }
+    if (existing) { dcDraggingCutout = existing.id; return; }
     if (!dcCutoutMode) return;
     const style = CUTOUT_STYLES[dcCutoutType];
     dcCutoutSeq++;
@@ -6386,18 +6380,7 @@ function dcCanvasPlaceOrDrag(e, phase) {
     return;
   }
 
-  if (phase === 'up') {
-    if (dcDraggingCutout && dcSinkSelectDownPx != null) {
-      const moved = Math.hypot(px - dcSinkSelectDownPx, py - dcSinkSelectDownPy);
-      const c = dcCutouts.find(x => x.id === dcDraggingCutout);
-      if (moved < DC_CLICK_VS_DRAG_THRESHOLD_PX) {
-        if (c && c.type === 'sink') { dcSetSelectedSink(c.id); }
-        else { dcClearSelectedSink(); }
-      }
-    }
-    dcSinkSelectDownPx = null; dcSinkSelectDownPy = null;
-    dcDraggingCutout = null;
-  }
+  if (phase === 'up') { dcDraggingCutout = null; }
 }
 
 // Resolves a cutout's screen position for the CURRENT render — preset rects in W/H pixel space,
@@ -6411,7 +6394,7 @@ function dcCutoutScreenPos(c) {
     const sinkShapeDef = SINK_SHAPES[sink.sinkShape] || SINK_SHAPES.single;
     const scale = dcCurrentScalePxPerIn(sink);
     const sinkHalfWPx = (sinkShapeDef.wIn * scale) / 2;
-    const dbHalfWPx = (DRAINBOARD_WIDTH_IN * scale) / 2;
+    const dbHalfWPx = (dcDrainboardWidthForSink(sink) * scale) / 2;
     const offsetPx = sinkHalfWPx + dbHalfWPx;
     return { x: sinkP.x + (c.side === 'left' ? -offsetPx : offsetPx), y: sinkP.y };
   }
@@ -6565,15 +6548,16 @@ function renderDCCutouts(ctx) {
   });
 }
 
-// Draws one drainboard: a fixed 10in (left-right) x 19in (front-back, matches sink depth)
-// footprint sitting flush against one side of a placed sink. Grooves run HORIZONTALLY across
-// the narrow 10in dimension, sloping toward the sink, since the board sits beside the sink
-// (not above/below it) — water needs to travel sideways into the sink, not front-to-back.
+// Draws one drainboard: a footprint (10in left-right x sink-depth front-back for standard
+// kitchen sinks, 6in x 15in for the smaller Bar/Prep sink) sitting flush against one side of a
+// placed sink. Grooves run HORIZONTALLY across the narrow dimension, sloping toward the sink,
+// since the board sits beside the sink (not above/below it) — water needs to travel sideways
+// into the sink, not front-to-back.
 function dcDrawDrainboardShape(ctx, c, p) {
   const scale = dcCurrentScalePxPerIn(c);
   const sink = dcCutouts.find(s => s.id === c.attachedToSinkId);
   const dIn = sink ? (SINK_SHAPES[sink.sinkShape]||SINK_SHAPES.single).dIn : 19;
-  const wPx = DRAINBOARD_WIDTH_IN * scale, dPx = dIn * scale;
+  const wPx = dcDrainboardWidthForSink(sink) * scale, dPx = dIn * scale;
   const x0 = p.x - wPx/2, y0 = p.y - dPx/2;
   const towardSink = c.side === 'left' ? 1 : -1; // left-attached board's sink is to its right (+x), right-attached's sink is to its left (-x)
 
@@ -6606,6 +6590,7 @@ function dcDrawDrainboardShape(ctx, c, p) {
 }
 
 function updateDCCutoutList() {
+  dcRefreshDrainboardRow();
   const el = document.getElementById('dc-cutout-list');
   if (!el) return;
   if (!dcCutouts.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No sinks or cutouts placed yet — pick a type above, then click the spot on the layout.</span>'; return; }
@@ -6620,10 +6605,9 @@ function dcRemoveCutout(id) {
   // Removing a sink also removes any drainboards attached to it — they have no meaning without
   // the sink they're derived from, and would otherwise become invisible orphan records.
   dcCutouts = dcCutouts.filter(c => c.id !== id && c.attachedToSinkId !== id);
-  if (dcSelectedSinkId === id) dcClearSelectedSink();
   drawCTPreview(); updateDCCutoutList();
 }
-function clearDCCutouts() { dcCutouts = []; dcClearSelectedSink(); drawCTPreview(); updateDCCutoutList(); }
+function clearDCCutouts() { dcCutouts = []; drawCTPreview(); updateDCCutoutList(); }
 
 // == UNIFIED POINTER ROUTER ===================================================================
 // dcCutoutMode and dcSeamMode (plus active drags of either) used to be handled by two SEPARATE
