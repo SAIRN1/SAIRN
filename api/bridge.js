@@ -56,7 +56,15 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const url = new URL(req.url, 'https://sairn.vercel.app');
-  const action = url.pathname.replace('/api/bridge', '').replace(/^\//, '') || 'status';
+  // FIX: there's no vercel.json rewrite for /api/bridge/* sub-paths -- a flat
+  // api/bridge.js file only matches /api/bridge exactly on Vercel, so the
+  // path-based action below (used by push/pull/context/csv/clear) actually
+  // 404s before this file ever runs, unless called as literally /api/bridge.
+  // New actions use a query param instead so they don't depend on a rewrite
+  // that doesn't exist; not touching the pre-existing actions' calling
+  // convention since other apps may already call them some other way.
+  const pathAction = url.pathname.replace('/api/bridge', '').replace(/^\//, '');
+  const action = pathAction || url.searchParams.get('action') || 'status';
   const shopId  = url.searchParams.get('shop') || (req.body && req.body.shopId) || null;
   const type    = url.searchParams.get('type') || 'all';
 
@@ -72,8 +80,8 @@ export default async function handler(req, res) {
         context: 'GET  /api/bridge/context?shop=SHOPID — SAIRNhr shop context for AI',
         csv: 'GET  /api/bridge/csv?shop=SHOPID&type=jobs|payroll — download CSV',
         clear: 'POST /api/bridge/clear — clear shop data (auth required)',
-        'maps-optimize': 'POST /api/bridge/maps-optimize { addresses: string[] } — Field Map route ordering',
-        'maps-static': 'POST /api/bridge/maps-static { addresses: string[] } — Field Map preview image'
+        'maps-optimize': 'POST /api/bridge?action=maps-optimize { addresses: string[] } — Field Map route ordering',
+        'maps-static': 'POST /api/bridge?action=maps-static { addresses: string[] } — Field Map preview image'
       }
     });
   }
