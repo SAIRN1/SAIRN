@@ -2505,6 +2505,11 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-farmhouse" onclick="setDCSinkShape('farmhouse')">Farmhouse / Apron</button>
             <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-barPrep" onclick="setDCSinkShape('barPrep')">Bar / Prep</button>
           </div>
+          <div class="draw-toolbar" id="dc-sink-integrated-row" style="margin-top:6px;display:none;align-items:center;gap:6px">
+            <input type="checkbox" id="dc-sink-integrated" onchange="dcToggleSinkIntegrated()">
+            <label for="dc-sink-integrated" style="font-size:11px;color:var(--text);cursor:pointer">Integrated (carved from same stone, no separate sink purchase)</label>
+            <span style="font-size:10px;color:var(--muted)">— natural stone integrated sinks run $1,200-$2,000+ over a standard cutout depending on bowl count; carved from the same slab, bonded with no mounting clips, requires 3/8" min. wall thickness</span>
+          </div>
           <div class="draw-toolbar" id="dc-drainboardshape-picker" style="margin-top:6px;display:none">
             <span style="font-size:10px;color:var(--muted);margin-right:2px">Drainboard:</span>
             <button class="draw-btn dc-drainboardshape-btn active" id="dc-drainboardshape-single" onclick="setDCDrainboardShape('single')">Single-Sided</button>
@@ -6044,11 +6049,32 @@ const SINK_SHAPES = {
 };
 var dcSinkShapeKey = 'single'; // currently selected sink configuration, set via the picker
 
+// Only single-bowl, 50/50 double, and farmhouse/apron are realistic configurations for a
+// carved/integrated stone basin per the research this was built from (four-panel-plus-bottom
+// construction from the same slab) — the other shapes (vessel, small square, bar/prep, the
+// uneven 60/40 and 40/60 doubles) either don't make sense as carved basins or aren't a
+// configuration fabricators commonly offer integrated, so the toggle only appears for those three.
+const SHAPES_SUPPORTING_INTEGRATED = new Set(['single', 'double5050', 'farmhouse']);
+var dcSinkIntegrated = false;
+
+function dcUpdateIntegratedRowVisibility() {
+  const row = document.getElementById('dc-sink-integrated-row');
+  if (!row) return;
+  const show = dcCutoutMode && dcCutoutType === 'sink' && SHAPES_SUPPORTING_INTEGRATED.has(dcSinkShapeKey);
+  row.style.display = show ? 'flex' : 'none';
+  if (!show) { dcSinkIntegrated = false; const cb = document.getElementById('dc-sink-integrated'); if (cb) cb.checked = false; }
+}
+function dcToggleSinkIntegrated() {
+  const cb = document.getElementById('dc-sink-integrated');
+  dcSinkIntegrated = cb ? cb.checked : false;
+}
+
 function setDCSinkShape(key) {
   dcSinkShapeKey = key;
   document.querySelectorAll('.dc-sinkshape-btn').forEach(b=>b.classList.remove('active'));
   const btn = document.getElementById('dc-sinkshape-'+key);
   if (btn) btn.classList.add('active');
+  dcUpdateIntegratedRowVisibility();
 }
 
 function setDCCutoutMode(on, type) {
@@ -6063,6 +6089,7 @@ function setDCCutoutMode(on, type) {
   if (dbPicker) dbPicker.style.display = (on && dcCutoutType==='drainboard') ? 'flex' : 'none';
   const dbWarning = document.getElementById('dc-drainboard-warning');
   if (dbWarning) dbWarning.style.display = (on && dcCutoutType==='drainboard') ? 'block' : 'none';
+  dcUpdateIntegratedRowVisibility();
 }
 
 // PRESET MODE hit-test: which registered rect a canvas point falls inside, by fraction.
@@ -6128,16 +6155,17 @@ function dcCanvasPlaceOrDrag(e, phase) {
     dcCutoutSeq++;
     const sinkShape = dcCutoutType === 'sink' ? dcSinkShapeKey : null;
     const drainboardShape = dcCutoutType === 'drainboard' ? dcDrainboardShapeKey : null;
-    const itemLabel = sinkShape ? SINK_SHAPES[sinkShape].label : drainboardShape ? DRAINBOARD_SHAPES[drainboardShape].label : style.label;
+    const integrated = (dcCutoutType === 'sink' && dcSinkIntegrated && SHAPES_SUPPORTING_INTEGRATED.has(dcSinkShapeKey)) ? true : false;
+    const itemLabel = sinkShape ? (integrated ? 'Integrated ' : '') + SINK_SHAPES[sinkShape].label : drainboardShape ? DRAINBOARD_SHAPES[drainboardShape].label : style.label;
     if (dcMode === 'draw') {
       const hit = dcHitPolygonNear(px, py);
       const tolIn = 14 / dcGetTransform().scale;
       if (!hit || hit.dist > tolIn) return;
-      dcCutouts.push({ id:'co'+dcCutoutSeq, segIdx:hit.segIdx, fracAlong:hit.fracAlong, type:dcCutoutType, sinkShape, drainboardShape, label:itemLabel+' '+dcCutoutSeq, color:style.color });
+      dcCutouts.push({ id:'co'+dcCutoutSeq, segIdx:hit.segIdx, fracAlong:hit.fracAlong, type:dcCutoutType, sinkShape, drainboardShape, integrated, label:itemLabel+' '+dcCutoutSeq, color:style.color });
     } else {
       const hit = dcHitRect(px, py);
       if (!hit) return;
-      dcCutouts.push({ id:'co'+dcCutoutSeq, rectKey:hit.rectKey, fracX:hit.fracX, fracY:hit.fracY, type:dcCutoutType, sinkShape, drainboardShape, label:itemLabel+' '+dcCutoutSeq, color:style.color });
+      dcCutouts.push({ id:'co'+dcCutoutSeq, rectKey:hit.rectKey, fracX:hit.fracX, fracY:hit.fracY, type:dcCutoutType, sinkShape, drainboardShape, integrated, label:itemLabel+' '+dcCutoutSeq, color:style.color });
     }
     drawCTPreview();
     updateDCCutoutList();
@@ -6200,10 +6228,15 @@ function dcDrawSinkShape(ctx, c, p) {
   const scale = dcCurrentScalePxPerIn(c);
   const wPx = shapeDef.wIn * scale, dPx = shapeDef.dIn * scale;
   const x0 = p.x - wPx/2, y0 = p.y - dPx/2;
+  // Integrated sinks are carved from the same stone as the counter (no separate fixture, no
+  // visible material change), so they render with a neutral stone-gray fill instead of the
+  // bright blue used for a standard cutout marker — visually distinct so a printed cut sheet or
+  // quick glance at the drawing immediately reads "this is stone, not a purchased sink."
+  const drawColor = c.integrated ? '#8B8378' : c.color;
 
   ctx.save();
   // Counter cutout outline (the basin footprint)
-  ctx.lineWidth = 2; ctx.strokeStyle = c.color; ctx.fillStyle = c.color+'33';
+  ctx.lineWidth = 2; ctx.strokeStyle = drawColor; ctx.fillStyle = c.integrated ? '#8B837833' : c.color+'33';
   if (shapeDef.round) {
     ctx.beginPath(); ctx.ellipse(p.x, p.y, wPx/2, dPx/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   } else if (shapeDef.oval) {
@@ -6215,13 +6248,13 @@ function dcDrawSinkShape(ctx, c, p) {
   // Apron/farmhouse front panel — a thicker accent line along the front (bottom) edge showing
   // the exposed apron face, distinguishing it visually from a plain undermount rectangle.
   if (shapeDef.apron) {
-    ctx.lineWidth = 5; ctx.strokeStyle = c.color;
+    ctx.lineWidth = 5; ctx.strokeStyle = drawColor;
     ctx.beginPath(); ctx.moveTo(x0+4, y0+dPx-2); ctx.lineTo(x0+wPx-4, y0+dPx-2); ctx.stroke();
   }
   // Vessel sinks sit ON TOP of the counter rather than being cut into it — drawn with a dashed
   // outline instead of solid, to visually flag "this is a surface-mount footprint, not a cutout."
   if (shapeDef.vessel) {
-    ctx.setLineDash([4,3]); ctx.lineWidth=1.5; ctx.strokeStyle=c.color;
+    ctx.setLineDash([4,3]); ctx.lineWidth=1.5; ctx.strokeStyle=drawColor;
     if (shapeDef.round || shapeDef.oval) { ctx.beginPath(); ctx.ellipse(p.x,p.y,wPx/2-3,dPx/2-3,0,0,Math.PI*2); ctx.stroke(); }
     ctx.setLineDash([]);
   }
@@ -6231,17 +6264,28 @@ function dcDrawSinkShape(ctx, c, p) {
   shapeDef.bowls.forEach((b, i) => {
     const bx = x0 + b.x*wPx, by = y0 + b.y*dPx, bw = b.w*wPx, bh = b.h*dPx;
     const inset = Math.min(wPx,dPx)*0.08;
-    ctx.fillStyle = c.color+'22';
+    ctx.fillStyle = c.integrated ? '#8B837822' : c.color+'22';
     dcRoundRectPath(ctx, bx+inset, by+inset, bw-inset*2, bh-inset*2, Math.min(bw,bh)*0.1);
     ctx.fill();
+    // Integrated sinks are fabricated as four wall panels plus a bottom, bonded together from
+    // the same slab — drawn as faint seam lines just inside each bowl's basin walls, since
+    // that's a real, visible fabrication detail on the finished piece (per the researched
+    // construction method), distinct from a standard sink's smooth single-piece basin.
+    if (c.integrated) {
+      ctx.strokeStyle = '#8B837866'; ctx.lineWidth = 0.75; ctx.setLineDash([2,2]);
+      const seamInset = inset + Math.min(bw,bh)*0.12;
+      dcRoundRectPath(ctx, bx+seamInset, by+seamInset, bw-seamInset*2, bh-seamInset*2, Math.min(bw,bh)*0.06);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     // Drain marker — small circle near the back-center of each bowl
-    ctx.fillStyle = c.color+'88';
+    ctx.fillStyle = c.integrated ? '#8B837888' : c.color+'88';
     ctx.beginPath(); ctx.arc(bx+bw/2, by+bh*0.35, Math.max(2,scale*0.6), 0, Math.PI*2); ctx.fill();
   });
   if (shapeDef.bowls.length > 1) {
     // Divider line at the midpoint between the two bowls
     const dividerX = x0 + (shapeDef.bowls[0].x + shapeDef.bowls[0].w + shapeDef.bowls[1].x)/2 * wPx;
-    ctx.strokeStyle = c.color; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = drawColor; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(dividerX, y0+3); ctx.lineTo(dividerX, y0+dPx-3); ctx.stroke();
   }
 
@@ -6647,6 +6691,24 @@ function dcDrainboardPricingSummary() {
   return { count: placed.length, singleCount, doubleCount, totalCost };
 }
 
+// Sums placed sinks flagged as integrated (carved from the same stone, no separate fixture
+// purchase) and prices the PREMIUM over a standard cutout from the editable admin Unit Pricing
+// fields. Defaults ($1,500 single bowl, $2,200 double bowl/farmhouse) come from researched
+// natural-stone integrated sink pricing — a standard guide put the integrated premium at
+// $400-2,000 depending on material/style, while a fabrication-detail source noted natural
+// stone integrated basins (four-panel-plus-bottom construction, bonded from the same slab) run
+// more expensive than quartz due to less forgiving cutting/bonding, which is why this defaults
+// toward the upper end of that broader range rather than the low end.
+function dcIntegratedSinkPricingSummary() {
+  const placed = dcCutouts.filter(c => c.type === 'sink' && c.integrated);
+  const singleBowlCount = placed.filter(c => c.sinkShape === 'single').length;
+  const multiBowlCount = placed.filter(c => c.sinkShape === 'double5050' || c.sinkShape === 'farmhouse').length;
+  const singleRate = parseFloat((document.getElementById('sairn-unit-integrated_single')||{}).value) || 1500;
+  const doubleRate = parseFloat((document.getElementById('sairn-unit-integrated_double')||{}).value) || 2200;
+  const totalCost = singleBowlCount*singleRate + multiBowlCount*doubleRate;
+  return { count: placed.length, singleBowlCount, multiBowlCount, totalCost };
+}
+
 // Calculate drawing
 function calcDrawing() {
   const aL=gN('da-len'),aD=gN('da-dep'),bL=gN('db-len'),bD=gN('db-dep'),cL=gN('dc-len'),cD=gN('dc-dep'),dL=gN('dd-len'),dD=gN('dd-dep');
@@ -6714,6 +6776,7 @@ function calcDrawing() {
   const edgeLfRate = parseFloat((document.getElementById('sairn-unit-edge_lf')||{}).value) || 18;
   const seamEdgeCost = seamInfo.totalSeamLF * 2 * edgeLfRate; // both sides of every cut are finished edge
   const drainboardInfo = (typeof dcDrainboardPricingSummary === 'function') ? dcDrainboardPricingSummary() : {count:0,singleCount:0,doubleCount:0,totalCost:0};
+  const integratedInfo = (typeof dcIntegratedSinkPricingSummary === 'function') ? dcIntegratedSinkPricingSummary() : {count:0,singleBowlCount:0,multiBowlCount:0,totalCost:0};
 
   const res=document.getElementById('ct-results');
   res.innerHTML='';
@@ -6728,6 +6791,7 @@ function calcDrawing() {
     {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
     {n:seamInfo.seamCount>0?seamInfo.pieceCount+' pieces':'1 piece',l:'Seams',s:seamInfo.seamCount>0?seamInfo.seamCount+' seam(s), '+seamInfo.totalSeamLF.toFixed(1)+' LF, +$'+seamEdgeCost.toFixed(0)+' polished edge':'No seams placed'},
     {n:drainboardInfo.count>0?'$'+drainboardInfo.totalCost.toFixed(0):'None',l:'Drainboard(s)',s:drainboardInfo.count>0?(drainboardInfo.singleCount>0?drainboardInfo.singleCount+' single-sided ':'')+(drainboardInfo.doubleCount>0?drainboardInfo.doubleCount+' double-sided':''):'No drainboards placed'},
+    {n:integratedInfo.count>0?'+$'+integratedInfo.totalCost.toFixed(0):'None',l:'Integrated Sink Premium',s:integratedInfo.count>0?'Carved from same stone, no separate fixture — '+integratedInfo.count+' sink(s)':'No integrated sinks placed'},
   ];
   metrics.forEach(m=>{
     const card=document.createElement('div');
@@ -7363,6 +7427,12 @@ console.log('StoneDesk Patch v1.1 loaded — all 18 panels verified and fixed');
 </div><div class="sairn-form-grp">
   <label class="sairn-form-lbl">Drainboard, double-sided (each)</label>
   <input class="sairn-form-inp" id="sairn-unit-drainboard_double" value="475" type="number" step="0.01">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">Integrated sink, single bowl (premium over standard cutout)</label>
+  <input class="sairn-form-inp" id="sairn-unit-integrated_single" value="1500" type="number" step="0.01">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">Integrated sink, double bowl or farmhouse (premium over standard cutout)</label>
+  <input class="sairn-form-inp" id="sairn-unit-integrated_double" value="2200" type="number" step="0.01">
 </div>
   <button class="sairn-btn sairn-btn-primary" style="width:100%" onclick="sairnSavePricing()">
     💾 Save Pricing — All Field Quotes Use These Rates
