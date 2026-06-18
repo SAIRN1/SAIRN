@@ -4322,7 +4322,7 @@ function fmRenderMap(containerId, stops){
   var addrs=stops.map(function(s){return s.address;}).filter(Boolean);
   if(!addrs.length){ el.innerHTML='<div class="fm-map-placeholder">No addresses to map yet.</div>'; return; }
   el.innerHTML='<div class="fm-map-placeholder">Loading map...</div>';
-  fetch(FM_API+'/maps-static', {method:'POST', headers:{'Content-Type':'application/json'},
+  fetch(FM_API+'?action=maps-static', {method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({addresses:addrs})})
     .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
     .then(function(data){ if(data.imageUrl) el.innerHTML='<img src="'+data.imageUrl+'" alt="Route map">'; else el.innerHTML='<div class="fm-map-placeholder">Map unavailable.</div>'; })
@@ -4403,7 +4403,7 @@ function fmRunOptimize(person, dateStr, silent){
     return;
   }
   var addrs=notDone.map(function(s){return s.address;});
-  fetch(FM_API+'/maps-optimize', {method:'POST', headers:{'Content-Type':'application/json'},
+  fetch(FM_API+'?action=maps-optimize', {method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({addresses:addrs})})
     .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
     .then(function(data){
