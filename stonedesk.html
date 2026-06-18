@@ -4119,11 +4119,18 @@ async function dbLoadAll(){
   await Promise.all([dbLoadQuoteHistory(),dbLoadSettings(),dbLoadBizData()]);
   console.log('DB data loaded');
 }
-async function doLogout() {
-  try{await fetch('https://fabricor-production.up.railway.app/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){}
+// BUGFIX (June 2026 audit): this used to be `async function doLogout()` that AWAITED a fetch to
+// fabricor-production.up.railway.app/api/auth/logout before doing anything else -- that backend
+// was already replaced platform-wide (PIN auth no longer goes through Railway at all), so the
+// call always fails, but the rep was still stuck looking at a blank in-between screen (neither
+// the app nor the login screen) for however long the browser took to give up on that dead host --
+// instant on localhost, potentially much longer on a real network with no CORS short-circuit.
+// Showing the login screen first and firing the legacy call in the background (never awaited,
+// errors swallowed) makes Sign Out instant regardless of that host's state.
+function doLogout() {
+  try { fetch('https://fabricor-production.up.railway.app/api/auth/logout', {method:'POST', credentials:'include'}).catch(()=>{}); } catch(e) {}
   currentUser = null;
   document.getElementById('auth-screen').style.display='flex';
-  document.getElementById('app').classList.remove('visible');
   document.getElementById('app').classList.remove('visible');
   document.body.classList.remove('is-admin');
   document.body.classList.remove('is-exec');
@@ -4159,9 +4166,16 @@ function showPanel(id) {
     if (pageIds[id]) return;
   }
   document.getElementById('panel-' + id).classList.add('active');
-  const navMap = { ai:0, quote:1, draw:2, history:3, business:4, schedule:5, inventory:6, vendors:7, customers:8, photos:9, warranty:10, remakes:11, executive:12, comms:13, integrations:14, admin:15 };
+  // BUGFIX (June 2026 audit): the old navMap below was a hardcoded {label:buttonIndex} table that
+  // went stale the moment Templates/Doc Scanner/Check Register/SAIRN Suite buttons were inserted
+  // into the topbar after "integrations" without anyone updating the indices that follow --
+  // navMap.admin:15 pointed at the Templates button's actual position (19), so opening Admin
+  // visually highlighted Templates instead. Matching each button's own onclick attribute instead
+  // of trusting a position number makes this immune to the nav bar ever being reordered or
+  // extended again.
   const btns = document.querySelectorAll('.topbar-nav .nav-btn');
-  if (navMap[id] !== undefined) btns[navMap[id]].classList.add('active');
+  const target = Array.from(btns).find(b => (b.getAttribute('onclick')||'').indexOf("showPanel('" + id + "')") !== -1);
+  if (target) target.classList.add('active');
   if (id === 'client') buildEstimate();
   if (id === 'draw') { initDrawPanel(); initDCCanvas(); }
   if (id === 'quote') initKTCanvas();
@@ -4787,7 +4801,7 @@ var ANGLE_SNAP_DEG = 45;      // angle snap: nearest 45° increment (covers 0/45
 function initDCCanvas() {
   dcCanvas = document.getElementById('ct-canvas');
   if (!dcCanvas) return;
-  dcCtx = dcCanvas.getContext('2d');
+  dcCtx = dcCanvas.getContext('2d', { willReadFrequently: true });
   dcCanvas.width = dcCanvas.offsetWidth || 640;
   dcCanvas.height = 480;
   dcCanvas.onmousedown = dcCanvasClick;
@@ -4803,7 +4817,13 @@ function initDCCanvas() {
     dcCanvas._mouseupWired = true;
     document.addEventListener('mouseup', e => {
       if (dcDrawDragging) { dcCanvasDrawDragEnd(e); return; }
-      if (dcCornerDragging) { dcCornerDragEnd(e); return; }
+      // BUGFIX (June 2026 audit): dcCornerDragging holds the dragged point's array INDEX, and
+      // index 0 is falsy in JS -- the old truthy check below silently no-op'd on mouseup
+      // whenever the rep dragged the FIRST corner of a closed custom shape, leaving the drag
+      // (and the frozen transform) stuck forever: that corner then chased the mouse on every
+      // later hover with no button held, and "Clear Shape" afterward threw an uncaught
+      // TypeError. Must compare to null, not truthiness.
+      if (dcCornerDragging !== null) { dcCornerDragEnd(e); return; }
       if (dcPresetEdgeDragging) { dcPresetEdgeDragEnd(e); return; }
     });
   }
@@ -5354,6 +5374,12 @@ function dcUndoPoint() {
 function dcClearPoly() {
   dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; dcEditPass = false;
   dcCutouts = []; dcSeams = [];
+  // Defensive (June 2026 audit): also reset drag state here, not just on mode switch -- a
+  // stuck dcCornerDragging index (see the mouseup-handler fix above) previously survived a
+  // Clear Shape click and crashed the very next mousemove inside dcCornerDragMove, since
+  // dcPoly[(i-1+dcPoly.length)%dcPoly.length] hits dcPoly[NaN] once the polygon is empty.
+  dcCornerDragging = null; dcDrawDragging = false; dcPresetEdgeDragging = null;
+  dcUnfreezeTransform();
   drawCTPreview();
   updateDCRunningTotals();
   updateDCCutoutList();
@@ -5713,7 +5739,13 @@ function getCBV(id) { const e=document.getElementById(id); return e ? e.checked 
 function drawCTPreview() {
   const cv = document.getElementById('ct-canvas');
   if (!cv) return;
-  const ctx = cv.getContext('2d');
+  // PERF NIT (June 2026 audit): this is the actual FIRST getContext('2d') call ever made on
+  // ct-canvas (drawCTPreview runs before initDCCanvas's own dcCtx=...getContext('2d') call, via
+  // initDrawPanel -> selectDrawShape -> drawCTPreview), and browsers only honor context-creation
+  // options on that very first call -- preset-edge dragging's getImageData/putImageData snapshot
+  // freeze made Chrome log a "readback without willReadFrequently" warning because that option
+  // was never set here. Not user-visible at this canvas size, but free to fix at the source.
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
   const W=cv.width, H=cv.height;
   ctx.clearRect(0,0,W,H);
 
@@ -5796,8 +5828,15 @@ function drawCTPreview() {
     if(getCBV('dh-wf-left')) { ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(x-12,y,12,aD*sc); ctx.fill(); colorEdge(x,y,x,y+aD*sc,'waterfall'); dimLabel(x-6,y-8,'WF'); }
     if(getCBV('dh-wf-right')) { ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(x+aL*sc,y,12,aD*sc); ctx.fill(); colorEdge(x+aL*sc,y,x+aL*sc,y+aD*sc,'waterfall'); dimLabel(x+aL*sc+6,y-8,'WF'); }
     // sink indicator
+    // BUGFIX (June 2026 audit): this generic placeholder box reads only the legacy dropdown and
+    // sits at a fixed default position, independent of wherever a real sink was actually drawn --
+    // once a real sink cutout exists for this rect (rendered later by renderDCCutouts), showing
+    // this too produced a confusing second/phantom "SINK" box wherever the dropdown said one
+    // existed, even if that didn't match where the real one was placed. Suppress it once a real
+    // one exists; it still helps as a placeholder before the rep has drawn anything.
     const sinkType = document.getElementById('draw-sink') ? document.getElementById('draw-sink').value : 'None';
-    if(sinkType !== 'None') {
+    const hasRealSinkA = (typeof dcCutouts !== 'undefined') && dcCutouts.some(c => c.type === 'sink' && c.rectKey === 'A');
+    if(sinkType !== 'None' && !hasRealSinkA) {
       ctx.fillStyle='rgba(96,165,250,0.2)'; ctx.strokeStyle='rgba(96,165,250,0.5)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
       const sw=aL*sc*0.25, sh=aD*sc*0.6;
       ctx.beginPath(); ctx.rect(x+aL*sc/2-sw/2, y+aD*sc*0.2, sw, sh); ctx.fill(); ctx.stroke();
@@ -6772,6 +6811,27 @@ function dcIntegratedSinkPricingSummary() {
   return { count: placed.length, singleBowlCount, multiBowlCount, totalCost };
 }
 
+// BUGFIX (June 2026 audit): the Draw panel had two completely disconnected "what sink is this"
+// inputs -- the legacy #draw-sink dropdown (the ONLY thing calcDrawing/printDrawCutSheet read
+// for the sink-cutout square-footage deduction) and this canvas-based sink picker (the one that
+// actually renders the cutout and drives drainboard attachment). They never synced, so a rep
+// could draw a Farmhouse sink on the canvas and the Net Sqft math would still silently assume
+// whatever the dropdown happened to say (often "None"). This sums the REAL footprint of every
+// sink actually placed on the canvas from its true SINK_SHAPES wIn x dIn, approximating
+// round/oval bowls as an ellipse (pi/4 * w * d) rather than their full bounding rectangle.
+// calcDrawing()/printDrawCutSheet() now prefer this over the dropdown whenever a sink has
+// actually been drawn, and only fall back to the dropdown's flat table when none has.
+function dcSinkAreaDeductionSqIn() {
+  const placed = dcCutouts.filter(c => c.type === 'sink');
+  let totalSqIn = 0;
+  placed.forEach(c => {
+    const cfg = SINK_SHAPES[c.sinkShape];
+    if (!cfg) return;
+    totalSqIn += cfg.wIn * cfg.dIn * ((cfg.round || cfg.oval) ? (Math.PI/4) : 1);
+  });
+  return { count: placed.length, totalSqIn };
+}
+
 // Calculate drawing
 function calcDrawing() {
   const aL=gN('da-len'),aD=gN('da-dep'),bL=gN('db-len'),bD=gN('db-dep'),cL=gN('dc-len'),cD=gN('dc-dep'),dL=gN('dd-len'),dD=gN('dd-dep');
@@ -6789,12 +6849,21 @@ function calcDrawing() {
   const sinkDeduct={
     'None':0,'Undermount Single Bowl':432,'Undermount Double Bowl':720,
     'Drop-in Single Bowl':380,'Drop-in Double Bowl':648,'Farmhouse / Apron Front':504,
-    'Bar Sink -- Small Single':196,'Prep Sink -- Mini':168,
+    // BUGFIX (June 2026 audit): these two keys used a plain double-hyphen while the actual
+    // <option> text in the dropdown uses an em dash (—) -- the mismatch meant this lookup
+    // always returned undefined for these exact two sink types, silently applying a $0/0sqin
+    // deduction instead of 196/168. Must match the literal em dash used in the HTML.
+    'Bar Sink — Small Single':196,'Prep Sink — Mini':168,
   };
   const ctDeduct={'No Cooktop Cutout':0,'Cooktop 24in':336,'Cooktop 30in':420,'Cooktop 36in':504,'Cooktop 48in':672};
   const sinkVal=document.getElementById('draw-sink').value;
   const ctVal=document.getElementById('draw-cooktop').value;
-  const netSqIn=Math.max(gross-(sinkDeduct[sinkVal]||0)-(ctDeduct[ctVal]||0),0);
+  // BUGFIX (June 2026 audit): prefer whatever sink(s) were actually drawn on the canvas (real
+  // SINK_SHAPES dimensions, also what drives the drainboard) over the disconnected legacy
+  // dropdown above -- only fall back to the dropdown's flat table when no sink has been drawn.
+  const sinkAreaInfo = (typeof dcSinkAreaDeductionSqIn === 'function') ? dcSinkAreaDeductionSqIn() : {count:0,totalSqIn:0};
+  const sinkDeductSqIn = sinkAreaInfo.count > 0 ? sinkAreaInfo.totalSqIn : (sinkDeduct[sinkVal]||0);
+  const netSqIn=Math.max(gross-sinkDeductSqIn-(ctDeduct[ctVal]||0),0);
   const grossSqFt=gross/144, netSqFt=netSqIn/144;
 
   // Splash
@@ -6925,9 +6994,17 @@ function printDrawCutSheet() {
   else if(ctShape==='ushape') gross=(aL*aD)+(bL*bD)+(cL*cD);
   else gross=(aL*aD)+(bL*bD)+(cL*cD);
 
-  const sinkDeduct={'None':0,'Undermount Single Bowl':432,'Undermount Double Bowl':720,'Drop-in Single Bowl':380,'Drop-in Double Bowl':648,'Farmhouse / Apron Front':504,'Bar Sink -- Small Single':196,'Prep Sink -- Mini':168};
+  // BUGFIX (June 2026 audit): mirrors the same fix applied to calcDrawing() -- this used to be a
+  // second, separate copy of the sink deduction table with the same two problems: (1) the em-dash
+  // mismatch on Bar Sink / Prep Sink silently zeroing their deduction, and (2) never reading the
+  // real canvas-drawn sink at all, so the PRINTED cut sheet's net sqft could disagree with what's
+  // shown on screen. Both fixed identically here so the document a fabricator actually cuts from
+  // matches the calculator.
+  const sinkDeduct={'None':0,'Undermount Single Bowl':432,'Undermount Double Bowl':720,'Drop-in Single Bowl':380,'Drop-in Double Bowl':648,'Farmhouse / Apron Front':504,'Bar Sink — Small Single':196,'Prep Sink — Mini':168};
   const ctDeduct={'No Cooktop Cutout':0,'Cooktop 24in':336,'Cooktop 30in':420,'Cooktop 36in':504,'Cooktop 48in':672};
-  const netSqFt=Math.max(gross-(sinkDeduct[sinkType]||0)-(ctDeduct[ctType]||0),0)/144;
+  const sinkAreaInfo2 = (typeof dcSinkAreaDeductionSqIn === 'function') ? dcSinkAreaDeductionSqIn() : {count:0,totalSqIn:0};
+  const sinkDeductSqIn2 = sinkAreaInfo2.count > 0 ? sinkAreaInfo2.totalSqIn : (sinkDeduct[sinkType]||0);
+  const netSqFt=Math.max(gross-sinkDeductSqIn2-(ctDeduct[ctType]||0),0)/144;
   const grossSqFt=gross/144;
   const splLen=gN('dh-splashlen'),custHt=gN('dh-splashht');
   let splHt=4;
@@ -6958,7 +7035,13 @@ function printDrawCutSheet() {
   if(aL&&aD) win.document.write('<div class="row"><span class="rl">Section A</span><span class="rv">'+aL+'" \xd7 '+aD+'"</span></div>');
   if(bL&&bD) win.document.write('<div class="row"><span class="rl">Section B</span><span class="rv">'+bL+'" \xd7 '+bD+'"</span></div>');
   if(cL&&cD) win.document.write('<div class="row"><span class="rl">Section C</span><span class="rv">'+cL+'" \xd7 '+cD+'"</span></div>');
-  win.document.write('<div class="row"><span class="rl">Sink Cutout</span><span class="rv">'+sinkType+'</span></div><div class="row"><span class="rl">Cooktop</span><span class="rv">'+ctType+'</span></div>');
+  // BUGFIX (June 2026 audit): show the real drawn sink's name when one exists on the canvas --
+  // previously this always showed the legacy dropdown's value even when it said "None" while a
+  // real sink (and its deduction) was sitting right there in the Placed Cutouts row below,
+  // which read as a self-contradicting document.
+  const placedSinkLabels = (typeof dcCutouts !== 'undefined') ? dcCutouts.filter(c => c.type === 'sink').map(c => c.label).join(', ') : '';
+  const sinkDisplayVal = placedSinkLabels || sinkType;
+  win.document.write('<div class="row"><span class="rl">Sink Cutout</span><span class="rv">'+sinkDisplayVal+'</span></div><div class="row"><span class="rl">Cooktop</span><span class="rv">'+ctType+'</span></div>');
   if (typeof dcSeams !== 'undefined' && dcSeams.length) {
     const seamSummary = dcSeams.map(s => s.label + ' (' + (Math.hypot(s.x2-s.x1,s.y2-s.y1)/12).toFixed(1) + ' LF)').join(', ');
     win.document.write('<div class="row"><span class="rl">Seams</span><span class="rv">'+dcSeams.length+' — '+seamSummary+'</span></div>');
@@ -15356,6 +15439,18 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     if (tavtr) tavtr.textContent = ROLE_INITS[currentRole] || currentRole.substring(0,2).toUpperCase();
     if (trole) trole.textContent = ROLE_LABELS[currentRole] || currentRole;
     if (uc)    uc.textContent    = ROLE_LABELS[currentRole] || currentRole;
+    // BUGFIX (June 2026 audit): body.is-admin was never added anywhere in this controller,
+    // which permanently hid the admin-only nav buttons (Admin, Integrations) for every role,
+    // including Owner -- the gating CSS (body.is-admin .nav-btn.admin-only) had nothing to ever
+    // satisfy it. Owner and Manager(admin) both get full back-office access; Sales/Install do
+    // not. This also reuses applyExecRole() (previously dead code, never called by anything),
+    // which is what the Remakes/Executive exec-only buttons depend on.
+    if (currentRole === 'owner' || currentRole === 'admin') {
+      document.body.classList.add('is-admin');
+      if (typeof applyExecRole === 'function') { try { applyExecRole({ role: 'admin' }); } catch(e) {} }
+    } else {
+      document.body.classList.remove('is-admin');
+    }
     // Fire any post-login inits
     ['dbLoadAll','loadFormulas','watchAllTables','initAI','loadPricing',
      'renderSuite','loadLastSync','loadWeather'].forEach(function(fn) {
