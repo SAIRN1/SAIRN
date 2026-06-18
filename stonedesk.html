@@ -2004,6 +2004,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <button class="nav-btn" onclick="showPanel('slabs')">🪨 Slabs</button>
       <button class="nav-btn" onclick="showPanel('vendors')">🛒 Vendors</button>
       <button class="nav-btn" onclick="showPanel('customers')">👥 Customers</button>
+      <button class="nav-btn" onclick="showPanel('intake')">📋 Intake</button>
       <button class="nav-btn" onclick="showPanel('photos')">📷 Photos</button>
       <button class="nav-btn" onclick="showPanel('warranty')">🛡️ Warranty</button>
       <button class="nav-btn exec-only" onclick="showPanel('remakes')">🔄 Remakes</button>
@@ -2961,6 +2962,54 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
+
+  <!-- == CUSTOMERS PANEL == -->
+  <!-- == INTAKE PANEL == -->
+  <div class="panel" id="panel-intake">
+    <div style="padding:20px;max-width:1000px;margin:0 auto">
+
+      <!-- Share link bar -->
+      <div style="background:linear-gradient(135deg,#F0FEF6,#DCFCE7);border:1.5px solid #BBF7D0;border-radius:12px;padding:14px 18px;margin-bottom:20px">
+        <div style="font-size:14px;font-weight:800;color:#0A3D1F;margin-bottom:4px">📋 Client Pre-Visit Intake</div>
+        <div style="font-size:12px;color:#166534;margin-bottom:12px">Send clients this link before their appointment. They fill out their project info, upload photos, and you arrive fully prepared.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="intake-link-field" readonly style="flex:1;min-width:200px;background:#fff;border:1px solid #BBF7D0;border-radius:8px;padding:8px 12px;font-size:12px;color:#374151;font-family:monospace" value="">
+          <button class="q-btn primary" onclick="intakeCopyLink()" style="white-space:nowrap">📋 Copy Link</button>
+          <button class="q-btn" onclick="intakeShareLink()" style="white-space:nowrap">📤 Share</button>
+        </div>
+        <div style="font-size:11px;color:#6B7280;margin-top:8px">The link auto-includes your shop name. Clients open it on any phone or computer — no app needed.</div>
+      </div>
+
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+        <div class="kpi"><div class="kpi-val" style="color:#16C762" id="int-kpi-new">0</div><div class="kpi-label">New — Needs Review</div></div>
+        <div class="kpi"><div class="kpi-val" id="int-kpi-total">0</div><div class="kpi-label">Total Submissions</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="int-kpi-accepted">0</div><div class="kpi-label">Accepted → Jobs</div></div>
+        <div class="kpi"><div class="kpi-val" id="int-kpi-photos">0</div><div class="kpi-label">With Photos</div></div>
+      </div>
+
+      <!-- Filter tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="vendor-tab active" id="inttab-pending" onclick="intakeSetTab('pending',this)">🟡 Pending</button>
+        <button class="vendor-tab" id="inttab-accepted" onclick="intakeSetTab('accepted',this)">✅ Accepted</button>
+        <button class="vendor-tab" id="inttab-all" onclick="intakeSetTab('all',this)">All</button>
+        <button class="q-btn" onclick="intakeRefresh()" style="margin-left:auto">🔄 Refresh</button>
+      </div>
+
+      <div id="intake-list"></div>
+    </div>
+
+    <!-- Claude photo analysis modal -->
+    <div id="intake-analyze-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--bg);border-radius:14px;padding:22px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto">
+        <div style="font-size:15px;font-weight:800;margin-bottom:4px">🧠 Claude Analysis</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Claude is reading the kitchen photo and estimating the layout.</div>
+        <div id="intake-analyze-result"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap" id="intake-analyze-actions"></div>
+        <button class="q-btn" style="margin-top:10px;width:100%" onclick="document.getElementById('intake-analyze-modal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- == CUSTOMERS PANEL == -->
   <div class="panel" id="panel-customers">
@@ -4967,6 +5016,7 @@ function showPanel(id) {
   if (id === 'quote') initKTCanvas();
   if (id === 'fieldmap') fmSwitchTab(fmCurrentTab);
   if (id === 'slabs') slabInit();
+  if (id === 'intake') intakeInit();
 }
 
 // == MODE ======================================================
@@ -17186,4 +17236,313 @@ function qbPickSlab(id){
 }
 </script>
 
+
+<script>
+// ============================================================
+// INTAKE MODULE
+// Fetches pre-visit client submissions from Supabase, renders
+// them as cards, lets reps analyze photos with Claude, accept
+// a submission into a Customer + Job, and load the estimated
+// dimensions straight into the Drawing Tool.
+// ============================================================
+
+var _intakeLoaded = false;
+var intakeSubmissions = [];
+var intakeCurrentTab = 'pending';
+var INTAKE_TABLE = 'intake_submissions';
+var INTAKE_FORM_URL = 'https://sairn.vercel.app/stonedesk-intake';
+
+function intakeInit() {
+  intakeBuildLink();
+  if (!_intakeLoaded) { intakeRefresh(); _intakeLoaded = true; }
+}
+
+function intakeBuildLink() {
+  var lf = document.getElementById('intake-link-field');
+  if (!lf) return;
+  var shop = (typeof _sdBizProfile !== 'undefined' && _sdBizProfile && _sdBizProfile.company_name)
+    ? _sdBizProfile.company_name : 'StoneDesk';
+  var url = INTAKE_FORM_URL + '?shop=' + encodeURIComponent(shop) + '&lic=' + encodeURIComponent(slabLicKey());
+  lf.value = url;
+}
+
+function intakeCopyLink() {
+  var lf = document.getElementById('intake-link-field');
+  if (!lf) return;
+  navigator.clipboard.writeText(lf.value).catch(function(){});
+  if (typeof showToast === 'function') showToast('Intake link copied!');
+}
+
+function intakeShareLink() {
+  var lf = document.getElementById('intake-link-field');
+  if (!lf) return;
+  var text = "Hi! Before your appointment, please take 2 minutes to fill out this quick project form so we can arrive fully prepared: " + lf.value;
+  if (navigator.share) navigator.share({ title: 'Project Intake', text: text });
+  else { navigator.clipboard.writeText(text); if (typeof showToast === 'function') showToast('Share text copied!'); }
+}
+
+async function intakeRefresh() {
+  var listEl = document.getElementById('intake-list');
+  if (listEl) listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0">Loading submissions...</div>';
+  var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
+  if (!sb) {
+    intakeSubmissions = JSON.parse(localStorage.getItem('sd_intake') || '[]');
+    intakeRender(); return;
+  }
+  try {
+    var res = await sb.from(INTAKE_TABLE).select('*').order('created_at', { ascending: false }).limit(100);
+    if (res.error) throw res.error;
+    intakeSubmissions = res.data || [];
+    localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions));
+  } catch(e) {
+    intakeSubmissions = JSON.parse(localStorage.getItem('sd_intake') || '[]');
+  }
+  intakeRender();
+}
+
+function intakeSetTab(tab, el) {
+  intakeCurrentTab = tab;
+  document.querySelectorAll('#panel-intake .vendor-tab').forEach(function(b){ b.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  intakeRender();
+}
+
+function intakeRender() {
+  var list = intakeSubmissions;
+  var filtered = list.filter(function(s) {
+    if (intakeCurrentTab === 'pending')  return s.status === 'pending';
+    if (intakeCurrentTab === 'accepted') return s.status === 'accepted';
+    return true;
+  });
+
+  // KPIs
+  var sv = function(id, v) { var el = document.getElementById(id); if(el) el.textContent = v; };
+  sv('int-kpi-new',      list.filter(function(s){ return s.status==='pending'; }).length);
+  sv('int-kpi-total',    list.length);
+  sv('int-kpi-accepted', list.filter(function(s){ return s.status==='accepted'; }).length);
+  sv('int-kpi-photos',   list.filter(function(s){ return s.photo_base64||s.photo_count>0; }).length);
+
+  var el = document.getElementById('intake-list');
+  if (!el) return;
+  if (!filtered.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">' +
+      (intakeCurrentTab==='pending' ? 'No pending submissions yet. Share the intake link with your next client.' : 'No submissions here yet.') +
+      '</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(intakeCardHtml).join('');
+}
+
+function intakeCardHtml(s) {
+  var date = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
+  var time = s.created_at ? new Date(s.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+  var hasPhoto = s.photo_base64 || s.photo_count > 0;
+  var photoHtml = s.photo_base64
+    ? '<img src="'+s.photo_base64+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0">'
+    : (hasPhoto ? '<div style="width:80px;height:80px;border-radius:8px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📷</div>' : '');
+  var statusBadge = s.status === 'accepted'
+    ? '<span style="background:#DCFCE7;color:#166534;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px">ACCEPTED</span>'
+    : '<span style="background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px">PENDING</span>';
+  var analysisNote = s.claude_analysis
+    ? '<div style="font-size:11px;color:var(--a);margin-top:6px;padding:6px 10px;background:var(--stone);border-radius:8px">🧠 Claude: '+escHtml((s.claude_analysis.summary||'').slice(0,120))+'</div>'
+    : '';
+  var btns = '';
+  if (s.status === 'pending') {
+    btns += '<button class="q-btn primary" style="font-size:11px;padding:5px 10px" onclick="intakeAccept(\'' + s.id + '\')">✓ Accept → Create Job</button>';
+  }
+  if (hasPhoto) {
+    btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px" onclick="intakeAnalyzePhoto(\'' + s.id + '\')">🧠 Analyze Photo</button>';
+  }
+  if (s.claude_analysis) {
+    btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px" onclick="intakeLoadToDraw(\'' + s.id + '\')">📐 Load into Drawing</button>';
+  }
+  btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px;background:rgba(220,38,38,.08);color:#dc2626" onclick="intakeDismiss(\'' + s.id + '\')">✕</button>';
+
+  return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">' +
+    '<div style="display:flex;gap:12px;align-items:flex-start">' +
+      photoHtml +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">' +
+          '<span style="font-size:14px;font-weight:800">'+escHtml(s.client_name||'(unnamed)')+'</span>'+
+          statusBadge +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+
+          (s.client_phone ? '📞 '+escHtml(s.client_phone)+' &nbsp;' : '')+
+          (s.client_email ? '✉️ '+escHtml(s.client_email)+' &nbsp;' : '')+
+          (s.client_role  ? '· '+escHtml(s.client_role) : '')+
+        '</div>' +
+        '<div style="font-size:12px;color:var(--text);margin-bottom:4px">'+
+          (s.project_type ? '🏠 '+escHtml(s.project_type.charAt(0).toUpperCase()+s.project_type.slice(1))+' &nbsp;' : '')+
+          (s.shape        ? '· '+escHtml(s.shape)+' &nbsp;' : '')+
+          (s.rough_run_a_ft ? '· ~'+s.rough_run_a_ft+'ft run &nbsp;' : '')+
+          (s.sink_count   ? '· '+s.sink_count+' sink(s)' : '')+
+        '</div>' +
+        (s.notes ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+escHtml(s.notes.slice(0,140))+(s.notes.length>140?'…':'')+'</div>' : '')+
+        analysisNote +
+        '<div style="font-size:10px;color:var(--muted);margin-top:6px">Submitted '+date+' at '+time+'</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">'+btns+'</div>' +
+  '</div>';
+}
+
+async function intakeAccept(id) {
+  var s = intakeSubmissions.find(function(x){ return x.id === id; });
+  if (!s) return;
+
+  // Create customer record
+  if (typeof sdCustomers !== 'undefined') {
+    var existing = sdCustomers.find(function(c){ return c.name && c.name.toLowerCase() === (s.client_name||'').toLowerCase(); });
+    if (!existing) {
+      var cust = {
+        id: 'C'+Date.now(), name: s.client_name, phone: s.client_phone, email: s.client_email,
+        project: s.project_type ? (s.project_type.charAt(0).toUpperCase()+s.project_type.slice(1)+' Countertops') : 'Kitchen Countertops',
+        quote: 0, status: 'quoted', notes: s.notes || '', createdAt: new Date().toISOString()
+      };
+      sdCustomers.unshift(cust);
+      if (typeof sdSave3 === 'function') sdSave3();
+    }
+  }
+
+  // Create job record in schedule
+  if (typeof sdJobs !== 'undefined') {
+    var runAin = (s.rough_run_a_ft || 10) * 12;
+    var job = {
+      id: 'JOB'+Date.now(), customer: s.client_name,
+      jobNum: 'J-'+Date.now().toString().slice(-5),
+      material: '', templateDate: new Date().toISOString().split('T')[0],
+      targetDate: '', stage: 'templated',
+      sqft: Math.round((runAin * 25.5) / 144),
+      installer: '', address: '', volume: 'normal',
+      notes: (s.notes||'') + (s.notes?' | ':'') + 'Intake: '+s.project_type+', '+s.shape+', ~'+s.rough_run_a_ft+'ft',
+      reservedSlabId: null, createdAt: new Date().toISOString(), installedAt: null,
+      intakeId: id
+    };
+    sdJobs.unshift(job);
+    if (typeof saveSD4 === 'function') saveSD4();
+  }
+
+  // Mark accepted in Supabase
+  s.status = 'accepted';
+  var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
+  if (sb) { try { await sb.from(INTAKE_TABLE).update({status:'accepted'}).eq('id', id); } catch(e){} }
+  localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions));
+
+  intakeRender();
+  if (typeof showToast === 'function') showToast('Customer + Job created from intake!');
+}
+
+async function intakeDismiss(id) {
+  if (!confirm('Remove this submission?')) return;
+  intakeSubmissions = intakeSubmissions.filter(function(x){ return x.id !== id; });
+  var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
+  if (sb) { try { await sb.from(INTAKE_TABLE).delete().eq('id', id); } catch(e){} }
+  localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions));
+  intakeRender();
+}
+
+async function intakeAnalyzePhoto(id) {
+  var s = intakeSubmissions.find(function(x){ return x.id === id; });
+  if (!s || !s.photo_base64) return;
+  var modal = document.getElementById('intake-analyze-modal');
+  var resultEl = document.getElementById('intake-analyze-result');
+  var actionsEl = document.getElementById('intake-analyze-actions');
+  modal.style.display = 'flex';
+  resultEl.innerHTML = '<div style="color:var(--muted);font-size:13px">Claude is reading the kitchen photo...</div>';
+  actionsEl.innerHTML = '';
+
+  try {
+    var prompt = 'You are analyzing a kitchen photo for a stone countertop fabrication company. ' +
+      'Look at this image and estimate:\n' +
+      '1. Countertop shape (straight/lshape/ushape/island/galley/custom)\n' +
+      '2. Approximate length of the longest run in inches\n' +
+      '3. Approximate length of the second run (if L or U shape) in inches\n' +
+      '4. Number of sink cutouts you can see or infer\n' +
+      '5. Any cooktop/range visible\n' +
+      '6. One short sentence summary for the sales rep\n' +
+      'Respond ONLY with raw JSON:\n' +
+      '{"shape":"lshape","runA_in":144,"runB_in":96,"sinkCount":1,"hasCooktop":false,"summary":"L-shape kitchen, approximately 12ft main run with an 8ft return, single undermount sink visible."}';
+
+    var res = await fetch(SAIRN_API, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        app_id: APP_ID_LOCAL, is_demo: true, max_tokens: 400,
+        system: 'Respond with ONLY raw JSON. No markdown fences.',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: s.photo_base64.split(',')[1] || s.photo_base64 }},
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+    var data = await res.json();
+    var raw = (data.content && data.content[0] && data.content[0].text) || '';
+    raw = raw.replace(/```json|```/g,'').trim();
+    var analysis = JSON.parse(raw);
+
+    // Save analysis back to submission
+    s.claude_analysis = analysis;
+    var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
+    if (sb) { try { await sb.from(INTAKE_TABLE).update({claude_analysis: analysis}).eq('id', id); } catch(e){} }
+    localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions));
+
+    resultEl.innerHTML =
+      '<img src="'+s.photo_base64+'" style="width:100%;border-radius:10px;margin-bottom:12px">'+
+      '<div style="font-size:13px;line-height:1.7">'+
+        '<b>Shape:</b> '+escHtml(analysis.shape||'?')+'<br>'+
+        '<b>Main run:</b> '+(analysis.runA_in||'?')+' in ('+(Math.round((analysis.runA_in||0)/12*10)/10)+' ft)<br>'+
+        (analysis.runB_in ? '<b>Return run:</b> '+analysis.runB_in+' in ('+(Math.round((analysis.runB_in||0)/12*10)/10)+' ft)<br>' : '')+
+        '<b>Sinks:</b> '+(analysis.sinkCount||0)+'<br>'+
+        '<b>Cooktop:</b> '+(analysis.hasCooktop?'Yes — allow cutout':'Not visible')+'<br>'+
+        '<div style="margin-top:10px;padding:10px;background:var(--stone);border-radius:8px;font-size:12px;color:var(--a)">'+
+          '🧠 '+escHtml(analysis.summary||'')+'</div>'+
+      '</div>';
+
+    actionsEl.innerHTML =
+      '<button class="q-btn primary" style="font-size:12px" onclick="intakeLoadToDraw(\'' + id + '\');document.getElementById(\'intake-analyze-modal\').style.display=\'none\'">'+
+        '📐 Load into Drawing Tool</button>'+
+      '<button class="q-btn" style="font-size:12px" onclick="intakeAccept(\'' + id + '\')">✓ Accept → Create Job</button>';
+
+    intakeRender();
+  } catch(e) {
+    resultEl.innerHTML = '<div style="color:#dc2626;font-size:13px">Could not analyze photo — '+(s.photo_base64?'check API connection.':'no photo available.')+'<br><small>'+escHtml(String(e).slice(0,100))+'</small></div>';
+  }
+}
+
+function intakeLoadToDraw(id) {
+  var s = intakeSubmissions.find(function(x){ return x.id === id; });
+  if (!s) return;
+  var a = s.claude_analysis;
+
+  // Navigate to Draw panel
+  showPanel('draw');
+
+  // Set shape
+  var shape = (a && a.shape) ? a.shape : (s.shape && s.shape !== 'unsure' ? s.shape : 'straight');
+  if (typeof selectDrawShape === 'function') selectDrawShape(shape);
+
+  // Set dimensions
+  setTimeout(function() {
+    var runAin = (a && a.runA_in) ? a.runA_in : (s.rough_run_a_ft || 10) * 12;
+    var runBin = (a && a.runB_in) ? a.runB_in : 0;
+    var fields = [
+      ['da-len', Math.round(runAin)],
+      ['db-len', Math.round(runBin)],
+      ['da-dep', 25], ['db-dep', 25],
+    ];
+    fields.forEach(function(f) {
+      var el = document.getElementById(f[0]);
+      if (el) { el.value = f[1]; var ev = new Event('input'); el.dispatchEvent(ev); }
+    });
+    // Pre-fill job name
+    var nameEl = document.getElementById('draw-job-name');
+    if (nameEl && !nameEl.value) nameEl.value = (s.client_name||'') + (s.project_type ? ' — '+s.project_type : '');
+
+    if (typeof drawCTPreview === 'function') drawCTPreview();
+    if (typeof showToast === 'function') showToast('Drawing loaded from client intake!');
+  }, 300);
+}
+</script>
 </body></html>
