@@ -2351,6 +2351,20 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <div id="dc-ai-shape-status" style="margin-top:6px;font-size:11px;color:var(--muted)"></div>
             <div id="dc-ai-shape-sidepick" style="margin-top:6px;display:none;gap:6px"></div>
           </div>
+          <div style="margin-bottom:10px;border-top:1px solid var(--border);padding-top:10px">
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">Or take/upload a photo — a hand-drawn sketch on paper, or a real photo of the kitchen/bath — AI reads the layout and draws it for you to confirm</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="file" id="dc-sketch-file-input" accept="image/*" capture="environment" style="display:none" onchange="dcHandleSketchFileSelected(event)">
+              <button class="dm-btn primary" style="width:auto;padding:8px 14px;white-space:nowrap" onclick="document.getElementById('dc-sketch-file-input').click()">📷 Photo / Upload Sketch</button>
+              <span id="dc-sketch-filename" style="font-size:11px;color:var(--muted)"></span>
+            </div>
+            <div id="dc-sketch-status" style="margin-top:6px;font-size:11px;color:var(--muted)"></div>
+            <div id="dc-sketch-confirm-row" style="margin-top:8px;display:none;gap:6px;flex-wrap:wrap">
+              <button class="draw-btn" style="background:rgba(52,211,153,0.12);border-color:rgba(52,211,153,0.3);color:#34D399" onclick="dcConfirmSketchShape()">✅ Looks Right — Use This Shape</button>
+              <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcDiscardSketchShape()">❌ Discard, Try Again</button>
+              <span style="font-size:10px;color:var(--muted);width:100%">AI-read shapes are a starting point — verify dimensions before pricing. Once confirmed, drag any point/edge to correct it just like a manually drawn shape.</span>
+            </div>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
             <button class="draw-btn" id="shbtn-straight" onclick="selectDrawShape('straight')">▬<br><span style="font-size:9px">Straight</span></button>
             <button class="draw-btn" id="shbtn-lshape"   onclick="selectDrawShape('lshape')">L<br><span style="font-size:9px">L-Shape</span></button>
@@ -5593,6 +5607,132 @@ function dcApplyResolvedShape(parsed) {
   drawCTPreview();
   if (typeof calcDrawing === 'function') calcDrawing();
   status.textContent = (parsed.note || 'Shape set.') + ' Now enter your sizes in the Dimensions panel.';
+}
+
+// == SKETCH / PHOTO TO DRAWING =================================================================
+// Lets a rep photograph (or upload) EITHER a hand-drawn sketch OR a real photo of an existing
+// kitchen/bath, and have Claude read the counter layout directly into the Custom Draw polygon —
+// the same dcPoly/dcPolyClosed structure used by every other shape in this tool, so once it's
+// seeded the rep marks edges, drags points to correct it, and prices it exactly like any
+// hand-drawn shape. Per spec: AI auto-detects shape + dimensions and seeds the polygon directly,
+// then asks the rep to explicitly confirm before treating it as the live shape (no silent
+// auto-apply) — landing in dcSketchPendingPoly until confirmed, so a bad read never overwrites a
+// shape the rep was already working on.
+var dcSketchBase64 = null;
+var dcSketchMime = null;
+var dcSketchPendingPoly = null; // {points, note} awaiting confirm/discard
+var dcPolyBeforeSketch = null;  // snapshot of whatever was on the canvas before, restored on discard
+
+function dcHandleSketchFileSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('dc-sketch-status');
+  const nameEl = document.getElementById('dc-sketch-filename');
+  if (nameEl) nameEl.textContent = file.name;
+  dcSketchMime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    dcSketchBase64 = e.target.result.split(',')[1];
+    dcResolveShapeFromPhoto();
+  };
+  reader.onerror = function() { if (status) status.textContent = 'Could not read that file — try a different photo.'; };
+  reader.readAsDataURL(file);
+}
+
+async function dcResolveShapeFromPhoto() {
+  const status = document.getElementById('dc-sketch-status');
+  if (!dcSketchBase64) { if (status) status.textContent = 'No photo loaded.'; return; }
+  if (status) status.textContent = 'Reading the photo — this can take a few seconds...';
+  document.getElementById('dc-sketch-confirm-row').style.display = 'none';
+
+  // Asks for a closed polygon in INCHES, relative to an arbitrary (0,0) origin — exactly the
+  // same coordinate convention dcPoly already uses for hand-drawn Custom Draw shapes, so the
+  // result drops straight into the existing renderer/edge-marking/pricing pipeline with zero
+  // special-casing once accepted.
+  const prompt =
+    'You are the StoneDesk Stone Intelligence Engine reading a photo of a countertop layout. ' +
+    'This may be a hand-drawn sketch on paper (napkin, notepad, whiteboard) OR a real photo of an existing kitchen/bath countertop. Figure out which it is and read it accordingly.\n\n' +
+    'Your job: identify the countertop footprint as a CLOSED POLYGON and output its corner points in INCHES, ' +
+    'walking the perimeter in order (clockwise or counter-clockwise, either is fine, just consistent), starting from an arbitrary (0,0) origin at one corner.\n\n' +
+    'Rules:\n' +
+    '- If dimensions are written on the sketch, use those exact numbers.\n' +
+    '- If no dimensions are given but it is a real photo, estimate realistic dimensions from context (standard counter depth is ~25.5in, standard upper cabinet/counter height context, visible appliances like a 30in range as a size reference).\n' +
+    '- Simple rectangle (straight run or island) = 4 points. L-shape = 6 points. U-shape = 8 points. Only output MORE points than that if the actual shape is genuinely irregular (an angled wall, a curved section, more than 3 runs) — do not add unnecessary points to a simple shape.\n' +
+    '- Each point must be a 90-degree turn from the last UNLESS the sketch clearly shows an angled or curved section.\n' +
+    '- If the photo is unreadable, too blurry, or does not appear to show a countertop layout at all, set "readable":false and explain why in "note" instead of guessing a shape.\n\n' +
+    'Respond with ONLY this exact JSON shape, no markdown fences, no other text:\n' +
+    '{"readable":true,"points":[{"x":0,"y":0},{"x":96,"y":0},{"x":96,"y":25.5},{"x":0,"y":25.5}],"note":"one short plain-English sentence describing what you read and what (if anything) you estimated vs. read directly"}';
+
+  try {
+    const res = await fetch(SAIRN_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      app_id: APP_ID_LOCAL, is_demo:true, max_tokens:1000,
+      system: 'Respond with ONLY raw JSON. No markdown code fences, no preamble, no explanation outside the JSON object.',
+      messages: [{ role:'user', content: [
+        { type:'image', source:{ type:'base64', media_type: dcSketchMime, data: dcSketchBase64 } },
+        { type:'text', text: prompt }
+      ]}]
+    })});
+    const data = await res.json();
+    let raw = (data.content && data.content[0] && data.content[0].text) || '';
+    raw = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+
+    if (!parsed.readable || !Array.isArray(parsed.points) || parsed.points.length < 3) {
+      if (status) status.textContent = parsed.note || 'Could not make out a countertop layout in that photo — try a clearer shot or a different angle.';
+      return;
+    }
+
+    // Stage the result for confirmation rather than applying immediately — snapshot whatever
+    // shape currently exists so "Discard" can restore it exactly, then preview the AI's read
+    // shape live on the canvas so the rep can actually SEE it before deciding.
+    dcPolyBeforeSketch = { poly: JSON.parse(JSON.stringify(dcPoly)), closed: dcPolyClosed, mode: dcMode };
+    dcSketchPendingPoly = parsed;
+    setDCMode('draw');
+    dcPoly = parsed.points;
+    dcPolyClosed = true;
+    dcHistory = [];
+    dcEdgeTypes = {};
+    drawCTPreview();
+    if (typeof calcDrawing === 'function') calcDrawing();
+
+    if (status) status.textContent = (parsed.note || 'Shape read from photo.') + ' Review the preview below.';
+    document.getElementById('dc-sketch-confirm-row').style.display = 'flex';
+  } catch (e) {
+    if (status) status.textContent = 'Could not read that photo — try a clearer shot, better lighting, or rephrase what you need.';
+  }
+}
+
+function dcConfirmSketchShape() {
+  // The shape is already live in dcPoly (staged during the read) — confirming just clears the
+  // pending/undo state and hands control back to the normal Custom Draw workflow: drag any
+  // point or edge to correct it, mark edges, then price it exactly like a hand-drawn shape.
+  dcSketchPendingPoly = null;
+  dcPolyBeforeSketch = null;
+  document.getElementById('dc-sketch-confirm-row').style.display = 'none';
+  const status = document.getElementById('dc-sketch-status');
+  if (status) status.textContent = 'Shape confirmed — drag any point to adjust, then mark edges below.';
+}
+
+function dcDiscardSketchShape() {
+  if (dcPolyBeforeSketch) {
+    dcPoly = dcPolyBeforeSketch.poly;
+    dcPolyClosed = dcPolyBeforeSketch.closed;
+    setDCMode(dcPolyBeforeSketch.mode);
+  } else {
+    dcPoly = []; dcPolyClosed = false;
+  }
+  dcSketchPendingPoly = null;
+  dcPolyBeforeSketch = null;
+  dcSketchBase64 = null; dcSketchMime = null;
+  const fileInput = document.getElementById('dc-sketch-file-input');
+  if (fileInput) fileInput.value = '';
+  const nameEl = document.getElementById('dc-sketch-filename');
+  if (nameEl) nameEl.textContent = '';
+  document.getElementById('dc-sketch-confirm-row').style.display = 'none';
+  const status = document.getElementById('dc-sketch-status');
+  if (status) status.textContent = 'Discarded — take another photo, or use the buttons/text above.';
+  drawCTPreview();
+  if (typeof calcDrawing === 'function') calcDrawing();
 }
 
 function selectDrawShape(id) {
