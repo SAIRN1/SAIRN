@@ -4063,7 +4063,6 @@ function doRegister()    {} // stub — registration handled via Admin PIN setup
 
 
 // Safety stubs for missing functions
-function openProfileModal(){console.log('Profile modal not yet built');}
 var quoteCounter = parseInt(localStorage.getItem('quoteCounter')||'0');
 var edgeAssignments = {};
 
@@ -7091,7 +7090,6 @@ function printDrawCutSheet() {
 <div id="sairn-lock-overlay" style="display:none"></div>
 <div id="sairn-memory-indicator" style="display:none"></div>
 <div id="sairn-memory-panel" style="display:none"></div>
-<div id="sairn-profile-btn" style="display:none"></div>
 <div id="sairn-tone-bar" style="display:none"></div>
 <div id="sairn-tone-tooltip" style="display:none"></div>
 <div id="sairn-voice-btn" style="display:none"></div>
@@ -7217,10 +7215,8 @@ if(typeof clearSessionMemory === 'undefined') window.clearSessionMemory = functi
 if(typeof closeCamera === 'undefined') window.closeCamera = function(){ var el=document.getElementById('sairn-cam-modal'); if(el)el.style.display='none'; };
 if(typeof closeCompare === 'undefined') window.closeCompare = function(){ var el=document.getElementById('sairn-compare-modal'); if(el)el.style.display='none'; };
 if(typeof closeDocModal === 'undefined') window.closeDocModal = function(){ var el=document.getElementById('sairn-doc-modal'); if(el)el.style.display='none'; };
-if(typeof closeProfileModal === 'undefined') window.closeProfileModal = function(){ var el=document.getElementById('sairn-profile-modal'); if(el)el.style.display='none'; };
 if(typeof retakePhoto === 'undefined') window.retakePhoto = function(){ if(typeof capturePhoto==='function') capturePhoto(); };
 if(typeof runComparison === 'undefined') window.runComparison = function(){ console.log('SAIRI comparison - initializing...'); };
-if(typeof saveProfileData === 'undefined') window.saveProfileData = function(){ var el=document.getElementById('sairn-profile-modal'); if(el)el.style.display='none'; };
 if(typeof selectCamPrompt === 'undefined') window.selectCamPrompt = function(p){ if(typeof setMode==='function') setMode('general'); };
 if(typeof selectDocPrompt === 'undefined') window.selectDocPrompt = function(p){ if(typeof setMode==='function') setMode('general'); };
 if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){ console.log('Camera tab:',t); };
@@ -10340,215 +10336,6 @@ setTimeout(injectCompareButton, 800);
 })();
 
 </script>
-
-<!-- SAIRN INTELLIGENCE PROFILE -->
-<script>
-// ================================================================
-// SAIRN FEATURE 10 — SAIRN INTELLIGENCE PROFILE
-// THE MOAT. Cross-cell persistent context.
-// User fills out once — every app gets smarter forever.
-// Health, money, legal, home, senior — all share context.
-// Built by Michael L. Dibert · SAIRN Technologies™
-// ================================================================
-(function() {
-'use strict';
-if (window._saircProfileInstalled) return;
-window._saircProfileInstalled = true;
-
-var PROFILE_KEY = 'sairn_intelligence_profile';
-var APP_COLOR = '#16C762';
-
-// Default profile structure
-var DEFAULT_PROFILE = {
-  name: '', age: '', state: '', city: '',
-  household: '', income_range: '', employment: '',
-  health_conditions: '', medications: '', insurance: '',
-  financial_goals: '', debt_situation: '', credit_range: '',
-  homeowner: '', home_value: '', mortgage: '',
-  education_level: '', learning_style: '',
-  languages: '', language_goals: '',
-  family_situation: '', dependents: '',
-  completed: false,
-  updated: '',
-};
-
-function loadProfile() {
-  try { return Object.assign({}, DEFAULT_PROFILE, JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); }
-  catch(e) { return Object.assign({}, DEFAULT_PROFILE); }
-}
-function saveProfile(p) {
-  p.updated = new Date().toISOString();
-  p.completed = true;
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
-}
-
-var profile = loadProfile();
-
-// CSS
-var st = document.createElement('style');
-st.textContent =
-  '#sairn-profile-modal{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9998;display:none;flex-direction:column;overflow:hidden}' +
-  '#sairn-profile-modal.open{display:flex}' +
-  '.spm-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(0,0,0,0.7);border-bottom:1px solid rgba(99,102,241,0.2);flex-shrink:0}' +
-  '.spm-body{flex:1;overflow-y:auto;padding:24px;max-width:760px;margin:0 auto;width:100%}' +
-  '.spm-section{margin-bottom:24px}' +
-  '.spm-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#16C762;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(99,102,241,0.2)}' +
-  '.spm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}' +
-  '.spm-field label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.4);display:block;margin-bottom:4px}' +
-  '.spm-field input,.spm-field select,.spm-field textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F0F0FF;font-size:13px;font-family:Outfit,sans-serif;outline:none;box-sizing:border-box}' +
-  '.spm-field select option{background:#0A0A20;color:#F0F0FF}' +
-  '.spm-save-btn{width:100%;padding:14px;background:#16C762;border:none;border-radius:12px;color:#fff;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;letter-spacing:.3px}' +
-  '.spm-status{font-size:11px;color:rgba(240,240,255,0.3);text-align:center;margin-top:10px;line-height:1.6}' +
-  '#sairn-profile-btn{position:fixed;top:68px;left:16px;z-index:799;display:flex;align-items:center;gap:6px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:100px;padding:5px 12px;font-size:10px;font-weight:600;color:rgba(99,102,241,0.9);cursor:pointer;transition:all .2s}' +
-  '#sairn-profile-btn:hover{background:rgba(99,102,241,0.18)}' +
-  '.spb-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}' +
-  '.spb-dot.complete{background:#4ADE80}' +
-  '.spb-dot.incomplete{background:#16C762;animation:profPulse 2s ease-in-out infinite}' +
-  '@keyframes profPulse{0%,100%{opacity:.4}50%{opacity:1}}';
-document.head.appendChild(st);
-
-// Profile button
-var profBtn = document.createElement('div');
-profBtn.id = 'sairn-profile-btn';
-profBtn.innerHTML = '<span class="spb-dot ' + (profile.completed ? 'complete' : 'incomplete') + '"></span><span id="spb-label">' + (profile.completed ? '✓ Your Profile' : 'Set Up Profile') + '</span>';
-profBtn.onclick = openProfileModal;
-document.body.appendChild(profBtn);
-
-function sel(id, label, opts, val) {
-  return '<div class="spm-field"><label>' + label + '</label><select id="spm-' + id + '">' +
-    opts.map(function(o){ return '<option' + (o===val?' selected':'') + '>' + o + '</option>'; }).join('') + '</select></div>';
-}
-function inp(id, label, ph, val) {
-  return '<div class="spm-field"><label>' + label + '</label><input type="text" id="spm-' + id + '" placeholder="' + ph + '" value="' + (val||'') + '"></div>';
-}
-
-// Build modal
-var modal = document.createElement('div');
-modal.id = 'sairn-profile-modal';
-modal.innerHTML =
-  '<div class="spm-hdr">' +
-  '<div><div style="font-size:15px;font-weight:700;color:#F0F0FF">🧠 SAIRN Intelligence Profile</div>' +
-  '<div style="font-size:11px;color:rgba(240,240,255,0.4);margin-top:2px">Fill in once — every SAIRN app gets smarter for you, forever</div></div>' +
-  '<button onclick="closeProfileModal()" style="background:none;border:none;color:rgba(240,240,255,0.5);font-size:26px;cursor:pointer;line-height:1">×</button>' +
-  '</div>' +
-  '<div class="spm-body">' +
-
-  '<div class="spm-section"><div class="spm-section-title">👤 About You</div>' +
-  '<div class="spm-grid">' +
-  inp('name', 'First Name (optional)', 'e.g. Michael', profile.name) +
-  inp('age', 'Age', 'e.g. 58', profile.age) +
-  sel('state', 'State', ['— Select State —','Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'], profile.state) +
-  inp('city', 'City', 'e.g. Columbus', profile.city) +
-  sel('household', 'Household', ['— Select —','Single, no dependents','Single parent','Married no children','Married with children','Retired couple','Living with family'], profile.household) +
-  sel('employment', 'Employment', ['— Select —','Full-time employed','Part-time employed','Self-employed','Business owner','Retired','Student','Unemployed / searching','Stay at home'], profile.employment) +
-  '</div></div>' +
-
-  '<div class="spm-section"><div class="spm-section-title">💰 Financial Context</div>' +
-  '<div class="spm-grid">' +
-  sel('income_range', 'Annual Household Income', ['— Select —','Under $30,000','$30,000-$50,000','$50,000-$75,000','$75,000-$100,000','$100,000-$150,000','$150,000-$250,000','Over $250,000','Prefer not to say'], profile.income_range) +
-  sel('debt_situation', 'Debt Situation', ['— Select —','Debt-free','Minimal debt — under $10K','Moderate debt — $10K-$50K','Significant debt — $50K-$100K','High debt — over $100K','In process of paying off'], profile.debt_situation) +
-  sel('credit_range', 'Credit Score Range', ['— Select —','Excellent (740+)','Good (670-739)','Fair (580-669)','Poor (under 580)','Not sure'], profile.credit_range) +
-  inp('financial_goals', 'Top Financial Goal', 'e.g. pay off debt, buy a home, retire early', profile.financial_goals) +
-  '</div></div>' +
-
-  '<div class="spm-section"><div class="spm-section-title">❤️ Health Context</div>' +
-  '<div class="spm-grid">' +
-  inp('health_conditions', 'Known Health Conditions (if any)', 'e.g. diabetes, hypertension — or none', profile.health_conditions) +
-  inp('medications', 'Current Medications (if any)', 'e.g. metformin, lisinopril — or none', profile.medications) +
-  sel('insurance', 'Health Insurance', ['— Select —','Employer-sponsored','Medicare','Medicaid','Marketplace/ACA','Military/VA','Uninsured','Other'], profile.insurance) +
-  sel('homeowner', 'Housing', ['— Select —','Own my home — paid off','Own my home — with mortgage','Renting','Living with family','Other'], profile.homeowner) +
-  '</div></div>' +
-
-  '<div class="spm-section"><div class="spm-section-title">📚 Learning & Language</div>' +
-  '<div class="spm-grid">' +
-  sel('education_level', 'Education Level', ['— Select —','High school diploma/GED','Some college','Associate degree','Bachelor\'s degree','Graduate degree','Professional degree (JD/MD)','Doctorate'], profile.education_level) +
-  sel('learning_style', 'Learning Style', ['— Select —','Visual — diagrams and examples','Detailed — thorough explanations','Simple — plain language please','Practical — just tell me what to do','Expert — I have professional knowledge'], profile.learning_style) +
-  inp('languages', 'Languages I Speak', 'e.g. English, Spanish', profile.languages) +
-  inp('language_goals', 'Languages I\'m Learning', 'e.g. French (beginner)', profile.language_goals) +
-  '</div></div>' +
-
-  '<button class="spm-save-btn" onclick="saveProfileData()">🧠 Save My Profile — Make Every App Smarter →</button>' +
-  '<div class="spm-status">Your profile is stored locally on your device only. It is never sent to SAIRN servers. It is only used to personalize your Claude AI responses.</div>' +
-  '</div>';
-document.body.appendChild(modal);
-
-window.openProfileModal  = function() { document.getElementById('sairn-profile-modal').classList.add('open'); };
-window.closeProfileModal = function() { document.getElementById('sairn-profile-modal').classList.remove('open'); };
-
-window.saveProfileData = function() {
-  var fields = ['name','age','state','city','household','employment','income_range','debt_situation',
-                'credit_range','financial_goals','health_conditions','medications','insurance',
-                'homeowner','education_level','learning_style','languages','language_goals'];
-  fields.forEach(function(f) {
-    var el = document.getElementById('spm-' + f);
-    if (el) profile[f] = el.value;
-  });
-  saveProfile(profile);
-
-  // Update button
-  var dot = profBtn.querySelector('.spb-dot');
-  var lbl = document.getElementById('spb-label');
-  if (dot) { dot.classList.remove('incomplete'); dot.classList.add('complete'); }
-  if (lbl) lbl.textContent = '✓ Your Profile';
-
-  closeProfileModal();
-
-  // Flash confirmation
-  var flag = document.createElement('div');
-  flag.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;color:#4ADE80;z-index:9999';
-  flag.textContent = '✓ Profile saved — all SAIRN apps are now personalized to you';
-  document.body.appendChild(flag);
-  setTimeout(function(){ flag.remove(); }, 3500);
-};
-
-// Inject profile context into every Claude call
-if (!window._saircProfileFetchPatched) {
-  window._saircProfileFetchPatched = true;
-  var _orig = window.fetch;
-  window.fetch = async function(url, opts) {
-    if (url && url.includes('sairn.vercel.app/api/claude') && opts && opts.body && profile.completed) {
-      try {
-        var body = JSON.parse(opts.body);
-        if (body.system && !body.system.includes('USER PROFILE')) {
-          var ctx = [];
-          if (profile.name)            ctx.push('Name: ' + profile.name);
-          if (profile.age)             ctx.push('Age: ' + profile.age);
-          if (profile.state)           ctx.push('State: ' + profile.state);
-          if (profile.employment)      ctx.push('Employment: ' + profile.employment);
-          if (profile.income_range)    ctx.push('Income range: ' + profile.income_range);
-          if (profile.health_conditions && profile.health_conditions !== 'none') ctx.push('Health conditions: ' + profile.health_conditions);
-          if (profile.medications && profile.medications !== 'none') ctx.push('Medications: ' + profile.medications);
-          if (profile.debt_situation)  ctx.push('Debt situation: ' + profile.debt_situation);
-          if (profile.homeowner)       ctx.push('Housing: ' + profile.homeowner);
-          if (profile.learning_style)  ctx.push('Learning style: ' + profile.learning_style);
-          if (profile.languages)       ctx.push('Languages: ' + profile.languages);
-          if (ctx.length > 0) {
-            body.system = 'USER PROFILE (use this to personalize every response):\n' + ctx.join(' · ') + '\n\nTailor your response to this specific person based on their profile.\n\n---\n\n' + body.system;
-            opts = Object.assign({}, opts, { body: JSON.stringify(body) });
-          }
-        }
-      } catch(e) {}
-    }
-    return _orig.apply(this, arguments);
-  };
-}
-
-// Show profile setup prompt if not completed (after 30 seconds, first visit)
-if (!profile.completed) {
-  setTimeout(function() {
-    var tip = document.createElement('div');
-    tip.style.cssText = 'position:fixed;bottom:90px;left:16px;z-index:900;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:12px 16px;max-width:280px;cursor:pointer';
-    tip.innerHTML = '<div style="font-size:12px;font-weight:600;color:#16C762;margin-bottom:4px">🧠 Set up your profile</div><div style="font-size:11px;color:rgba(240,240,255,0.5);line-height:1.5">Fill in once and every SAIRN app personalizes to you automatically.</div>';
-    tip.onclick = function(){ tip.remove(); openProfileModal(); };
-    document.body.appendChild(tip);
-    setTimeout(function(){ if (tip.parentNode) tip.remove(); }, 12000);
-  }, 30000);
-}
-
-})();
-
-</script>
-
 <!-- SAIRN STREAMING RESPONSES -->
 <script>
 // ================================================================
@@ -10646,7 +10433,7 @@ function installStreamingHook() {
       try {
         var testOpts = { body: patchedBody };
         // Tone patch
-        if (window._saircToneFetchPatched || window._saircMemoryInstalled || window._saircProfileInstalled) {
+        if (window._saircToneFetchPatched || window._saircMemoryInstalled) {
           var fakeUrl = 'https://sairn.vercel.app/api/claude';
           // Simulate the patches by building the final system
           var patches = [];
@@ -10662,20 +10449,6 @@ function installStreamingHook() {
 
           var mem = localStorage.getItem('sairn_session_memory_' + (window.APP_ID || 'type'));
           if (mem) patches.push('SESSION MEMORY:\n' + mem);
-
-          try {
-            var prof = JSON.parse(localStorage.getItem('sairn_intelligence_profile') || '{}');
-            if (prof.completed) {
-              var ctx = [];
-              if (prof.name)  ctx.push('Name: ' + prof.name);
-              if (prof.age)   ctx.push('Age: ' + prof.age);
-              if (prof.state) ctx.push('State: ' + prof.state);
-              if (prof.income_range) ctx.push('Income: ' + prof.income_range);
-              if (prof.health_conditions) ctx.push('Health: ' + prof.health_conditions);
-              if (prof.learning_style) ctx.push('Learning style: ' + prof.learning_style);
-              if (ctx.length) patches.push('USER PROFILE: ' + ctx.join(' · '));
-            }
-          } catch(e) {}
 
           if (patches.length) {
             body.system = patches.join('\n\n') + '\n\n---\n\n' + systemPrompt;
@@ -11981,8 +11754,7 @@ document.addEventListener('click', function(e) {
 // == PERSONALIZATION PANEL ==================================
 var st = document.createElement('style');
 st.textContent =
-  '#sairn-pers-panel{position:fixed;top:100px;left:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:280px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}' +
-  '#sairn-profile-btn{top:68px}';
+  '#sairn-pers-panel{position:fixed;top:100px;left:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:280px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}';
 document.head.appendChild(st);
 
 // Show personalization status next to profile button on click
