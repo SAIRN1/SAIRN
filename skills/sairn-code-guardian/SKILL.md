@@ -1048,3 +1048,183 @@ Checks 1-8 are exact pattern matches with very low false-positive rates. Checks 
 - **Check 13** initially used leading-whitespace as its "is this top-level" signal (deliberately copying Check 10's approach) and produced 13 false positives on StoneDesk alone — every `var` sitting inside a column-0-indented `(function(){ ... })();` "install once" IIFE wrapper looked top-level by indentation but is genuinely scoped to its own IIFE, never colliding with anything outside it. The fix was the OPPOSITE of Check 10's: switch TO real brace-depth tracking, which is safe here specifically because Check 13 only ever runs on a file that has already passed Check 9 (no syntax errors to desync the counter) — the exact precondition that made brace-depth tracking unsafe for Check 10 doesn't apply to Check 13.
 
 If a future finding from Checks 9-13 looks wrong, the right move is the same one used here: verify against the actual source at the cited line number, and if it's a genuine new false-positive class, fix the detection logic and document the fix inline the way the four above are documented — don't just suppress the finding silently.
+
+---
+
+## New Learnings — June 18 2026 Session
+
+### CHECK 20 — Modal/Overlay Containment Trap
+
+**Discovered:** Slab Inventory modals (Reserve, Consume, QR Label, Quote Builder picker) were placed inside `<div class="panel" id="panel-slabs">`. `.panel` has `display:none` when inactive, so any modal inside it is also hidden — even when triggered from a different panel (e.g. the Quote Builder calling `slabOpenReserve()`).
+
+**Rule:** Fixed-position overlays and modals (z-index:3000+) MUST be direct children of `<body>` or placed outside all `.panel` divs. They cannot be nested inside a panel that may be `display:none`.
+
+**Scan for:**
+```python
+def check_modal_containment(content):
+    # Find fixed-position divs nested inside .panel divs
+    # Simple heuristic: position:fixed inside a <div class="panel"
+    import re
+    findings = []
+    in_panel = False
+    panel_depth = 0
+    for i, line in enumerate(content.splitlines(), 1):
+        if 'class="panel"' in line or "class='panel'" in line:
+            in_panel = True; panel_depth = 0
+        if in_panel:
+            panel_depth += line.count('<div') - line.count('</div')
+            if 'position:fixed' in line or 'position: fixed' in line:
+                findings.append((i, 'MODAL INSIDE PANEL — will be hidden when panel inactive', line.strip()[:80]))
+            if panel_depth <= 0 and '</div>' in line:
+                in_panel = False
+    return findings
+```
+
+**Auto-fix:** Move the modal div to just before `</body>`. Add a comment: `<!-- Modal outside panel intentionally — position:fixed overlays must not be inside .panel divs -->`.
+
+---
+
+### CHECK 21 — .page vs .panel Navigation System Conflict
+
+**Discovered:** StoneDesk uses TWO separate navigation systems that must never be confused:
+- `.panel` divs controlled by `showPanel(id)` — these are the main content panels
+- `.page` divs controlled by `showPage(id)` — used for doc-scan and check-register (field-quote too)
+
+`showPanel()` explicitly delegates `.page` divs to `showPage()` and returns early. Calling `showPanel('check-register')` or `showPanel('doc-scan')` works — but the reverse (calling `showPage()` for a `.panel` item) does NOT. Similarly, sidebar buttons must call `showPanel()` not `showPage()` for `.panel` items.
+
+**Scan for:**
+```python
+PAGE_IDS = ['doc-scan', 'check-register', 'field-quote']
+PANEL_IDS = ['ai', 'quote', 'draw', 'slabs', 'intake', 'customers', 'schedule', 'fieldmap', 'inventory', 'vendors', 'photos', 'warranty', 'business', 'comms', 'template', 'integrations', 'admin', 'executive', 'remakes']
+
+def check_nav_system(content):
+    findings = []
+    for pid in PAGE_IDS:
+        if f"showPanel('{pid}')" in content:
+            findings.append(f"showPanel('{pid}') called — '{pid}' is a .page div, must use showPage()")
+    for pid in PANEL_IDS:
+        if f"showPage('{pid}')" in content:
+            findings.append(f"showPage('{pid}') called — '{pid}' is a .panel div, must use showPanel()")
+    return findings
+```
+
+---
+
+### CHECK 22 — Duplicate Function Override (crSave/saveQuote pattern)
+
+**Discovered:** StoneDesk had 5 duplicate `function crSave()` declarations and 2 duplicate `function saveQuote()` declarations. JavaScript silently keeps only the LAST declaration. The last one was always the broken stub (no `crRender()` call, no state update). Both bugs caused silent data loss — saves appeared to work but register never updated.
+
+**Extended from Check 10:** Check 10 catches load-bearing name collisions. This check specifically targets the "stub at end overrides real implementation" pattern common in SAIRN single-file apps where new features add stubs and old implementations survive.
+
+**Auto-fix rule:** When N>1 copies exist and only 1 calls `crRender`/`renderHistory`/updates DOM state, keep the one that does real work, remove all stubs. Add a `// cr stubs removed — real implementation at line N` comment.
+
+---
+
+### DEPLOYMENT SECTION — Vercel + GitHub CDN Cache Rules (PERMANENT)
+
+These rules must be verified at the START of every deploy verification step.
+
+**Rule 1 — raw.githubusercontent.com IS cached by CDN.** Never use it in `sync.bat` or `bootstrap.bat` for pulling files. Always use the GitHub API Content endpoint:
+```
+curl -H "Accept: application/vnd.github.raw" -o FILE https://api.github.com/repos/SAIRN1/SAIRN/contents/FILE
+```
+
+**Rule 2 — curl display size IS correct.** `943.1k` in curl output = `943.1 × 1024 = 965,734 bytes`. Our 965,829-byte file shows as `943.2k` rounded. Never assume a download is stale based on the displayed k-size alone — verify byte count if suspicious.
+
+**Rule 3 — bootstrap.bat pulls sync.bat via API, sync.bat pulls all app files via API.** This two-stage approach ensures both scripts are always fresh. bootstrap.bat must NEVER use raw.githubusercontent.com even for sync.bat itself.
+
+**Rule 4 — sync.bat must list ALL deployed files.** Current canonical list:
+```batch
+curl -H "Accept: application/vnd.github.raw" -o stonedesk.html https://api.github.com/repos/SAIRN1/SAIRN/contents/stonedesk.html
+curl -H "Accept: application/vnd.github.raw" -o stonedesk-intake.html https://api.github.com/repos/SAIRN1/SAIRN/contents/stonedesk-intake.html
+curl -H "Accept: application/vnd.github.raw" -o sairnbiz.html https://api.github.com/repos/SAIRN1/SAIRN/contents/sairnbiz.html
+```
+When a new file is added to the deployment, add a line to sync.bat IN THE SAME COMMIT.
+
+**Rule 5 — Deploy verification.** Always use `curl -s -L` (follows redirects) not bare `curl` when verifying live URLs. Vercel 308-redirects `.html` → extensionless path.
+
+**Rule 6 — Hard refresh for browser cache.** After a successful deploy, if the app appears unchanged, tell Michael: **Ctrl + Shift + R** (hard refresh). Never assume a deploy failed based on visual appearance alone.
+
+---
+
+### BRIDGE ARCHITECTURE — Permanent Rules (v2.0, June 2026)
+
+**Bridge endpoint:** `https://sairn.vercel.app/api/bridge`
+
+**v2.0 data types (push/pull):**
+- `jobs` — completed/active jobs with revenue, cost, labor
+- `employees` — team roster
+- `payroll` — payroll periods
+- `invoices` — AR invoices AND check register entries (type:'check')
+- `slabs` — slab inventory records
+- `customers` — customer records
+- `expenses` — shop expenses from StoneDesk expense logger
+- `financialSummary` — monthly P&L snapshot
+
+**Critical architectural rule:** Bridge uses in-memory store as fallback + Supabase `bridge_data` table for persistence. In-memory data is wiped on every Vercel cold start. If Supabase `bridge_data` table does not exist, data will be lost between function instances. Always create the table before relying on the bridge for real data.
+
+**Supabase table DDL:**
+```sql
+create table if not exists bridge_data (
+  shop_id text primary key,
+  data jsonb not null default '{}',
+  updated_at timestamptz default now()
+);
+alter table bridge_data enable row level security;
+create policy "service full access" on bridge_data using (true) with check (true);
+```
+
+**SAIRNbiz bridge sync:** `sairnSyncAll()` PUSHES employees/payroll/checks/financialSummary TO the bridge AND PULLS jobs/slabs/customers/expenses FROM the bridge. Both directions happen on every "Sync All Apps" click and on DOMContentLoaded (pull only, non-blocking).
+
+**StoneDesk expense logger:** Replaces the old Check Register in StoneDesk. Logs payee/amount/category/memo, pushes as `invoices` type:'expense' to bridge. Check writing and GL posting happens in SAIRNbiz → Money wing → Check Register.
+
+---
+
+### SIDEBAR NAVIGATION — StoneDesk Layout Rules (June 2026)
+
+StoneDesk was migrated from a horizontal topbar nav to a left sidebar in June 2026. Key structural rules:
+
+**HTML structure:**
+```html
+<div id="app">
+  <div class="topbar"><!-- brand + user info only --></div>
+  <div class="app-body">
+    <nav class="sidebar" id="app-sidebar"><!-- sidebar buttons --></nav>
+    <div class="panel-wrap"><!-- all .panel and .page divs --></div>
+  </div>
+</div>
+```
+
+**Navigation:** Sidebar buttons call `sbNav(id)` which calls `showPanel(id)` and syncs the active highlight. `showPanel()` is still patched by `sbNav()` so any internal call to `showPanel()` also updates the sidebar highlight.
+
+**Collapsed state:** `.sidebar.collapsed` hides `.sb-text` and `.sb-label`, reduces width to 52px (icons only). Toggle via `sbToggle()`.
+
+**Sidebar groups (as of June 2026):**
+- SALES: AI Shop, Quote Builder, Drawing Tool, History, Customers, Intake
+- OPERATIONS: Schedule, Field Map, Remakes (exec-only), Photos, Warranty
+- INVENTORY: Shop Supplies, Slabs, Vendors
+- BUSINESS: Business, Comms, Executive (exec-only), Templates, Doc Scanner, Check Register
+- ADMIN (admin-only): Integrations, Admin, SAIRN Suite
+
+**CSS classes:** `.sb-btn`, `.sb-icon`, `.sb-text`, `.sb-label`, `.sb-section`, `.sb-admin` (hidden unless `body.is-admin`), `.sb-exec` (hidden unless `body.is-exec`).
+
+---
+
+### CLIENT INTAKE PORTAL — StoneDesk Tier 1 (June 2026)
+
+**URL:** `sairn.vercel.app/stonedesk-intake?shop=SHOPNAME&rep=REPNAME&lic=LICENSEKEY`
+**File:** `stonedesk-intake.html` (separate file, deployed alongside stonedesk.html)
+
+**Flow:**
+1. Rep shares intake URL with client (via text/email from Intake panel → "Share" button)
+2. Client fills 3-step form: About You → Project Details → Photos
+3. Submission saved to Supabase `intake_submissions` table
+4. Rep opens StoneDesk → Intake nav item → sees pending cards
+5. Rep clicks "Analyze Photo" → Claude vision reads kitchen photo → estimates layout
+6. Rep clicks "Load into Drawing Tool" → Draw panel opens with shape/dimensions pre-seeded
+7. Rep clicks "Accept → Create Job" → Customer + Schedule job created automatically
+
+**Supabase table:** `intake_submissions` — created with separate SQL in June 2026 session. Must exist for submissions to save.
+
+**Key functions:** `intakeInit()`, `intakeRefresh()`, `intakeAccept(id)`, `intakeAnalyzePhoto(id)`, `intakeLoadToDraw(id)`, `intakeDismiss(id)`.
+
