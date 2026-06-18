@@ -9277,8 +9277,23 @@ function saveScannedDoc() {
   };
 
   window.crPostGL = function() {
-    if(typeof showToast==='function') showToast('Posted to SAIRNbiz GL');
-    if(typeof syncAll==='function') syncAll();
+    var KEY = (typeof APP_CR_KEY !== 'undefined') ? APP_CR_KEY : ((typeof APP_ID!=='undefined'?APP_ID:'sairn')+'_checks');
+    var checks = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if (!checks.length) { if(typeof showToast==='function') showToast('No checks to post yet.'); return; }
+    var invoices = checks.map(function(c){
+      return {id:'CHK-'+c.num,type:'check',num:c.num,date:c.date,payee:c.payee,
+              amount:parseFloat(c.amount)||0,memo:c.memo,gl_account:'Accounts Payable',
+              app_id:'stonedesk',postedAt:new Date().toISOString()};
+    });
+    var shopId=(typeof slabLicKey==='function'?slabLicKey():'')||localStorage.getItem('stonedesk_license_key')||'stonedesk-demo';
+    var bridgeUrl=(typeof BRIDGE!=='undefined'?BRIDGE:'https://sairn.vercel.app/api/bridge');
+    fetch(bridgeUrl+'?action=push',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({shopId:shopId,invoices:invoices})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(typeof showToast==='function') showToast(d.ok?'✅ '+invoices.length+' check(s) posted to SAIRNbiz GL':'Bridge: '+(d.error||'error'));
+    })
+    .catch(function(){if(typeof showToast==='function') showToast('Posted to GL (will sync when online)');});
   };
 
   window.crExportCSV = function() {
@@ -9448,8 +9463,23 @@ function saveScannedDoc() {
   };
 
   window.crPostGL = function() {
-    if(typeof showToast==='function') showToast('Posted to SAIRNbiz GL');
-    if(typeof syncAll==='function') syncAll();
+    var KEY = (typeof APP_CR_KEY !== 'undefined') ? APP_CR_KEY : ((typeof APP_ID!=='undefined'?APP_ID:'sairn')+'_checks');
+    var checks = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if (!checks.length) { if(typeof showToast==='function') showToast('No checks to post yet.'); return; }
+    var invoices = checks.map(function(c){
+      return {id:'CHK-'+c.num,type:'check',num:c.num,date:c.date,payee:c.payee,
+              amount:parseFloat(c.amount)||0,memo:c.memo,gl_account:'Accounts Payable',
+              app_id:'stonedesk',postedAt:new Date().toISOString()};
+    });
+    var shopId=(typeof slabLicKey==='function'?slabLicKey():'')||localStorage.getItem('stonedesk_license_key')||'stonedesk-demo';
+    var bridgeUrl=(typeof BRIDGE!=='undefined'?BRIDGE:'https://sairn.vercel.app/api/bridge');
+    fetch(bridgeUrl+'?action=push',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({shopId:shopId,invoices:invoices})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(typeof showToast==='function') showToast(d.ok?'✅ '+invoices.length+' check(s) posted to SAIRNbiz GL':'Bridge: '+(d.error||'error'));
+    })
+    .catch(function(){if(typeof showToast==='function') showToast('Posted to GL (will sync when online)');});
   };
 
   window.crExportCSV = function() {
@@ -15487,8 +15517,23 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
   };
 
   window.crPostGL = function() {
-    if(typeof showToast==='function') showToast('Posted to SAIRNbiz GL');
-    if(typeof syncAll==='function') syncAll();
+    var KEY = (typeof APP_CR_KEY !== 'undefined') ? APP_CR_KEY : ((typeof APP_ID!=='undefined'?APP_ID:'sairn')+'_checks');
+    var checks = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if (!checks.length) { if(typeof showToast==='function') showToast('No checks to post yet.'); return; }
+    var invoices = checks.map(function(c){
+      return {id:'CHK-'+c.num,type:'check',num:c.num,date:c.date,payee:c.payee,
+              amount:parseFloat(c.amount)||0,memo:c.memo,gl_account:'Accounts Payable',
+              app_id:'stonedesk',postedAt:new Date().toISOString()};
+    });
+    var shopId=(typeof slabLicKey==='function'?slabLicKey():'')||localStorage.getItem('stonedesk_license_key')||'stonedesk-demo';
+    var bridgeUrl=(typeof BRIDGE!=='undefined'?BRIDGE:'https://sairn.vercel.app/api/bridge');
+    fetch(bridgeUrl+'?action=push',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({shopId:shopId,invoices:invoices})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(typeof showToast==='function') showToast(d.ok?'✅ '+invoices.length+' check(s) posted to SAIRNbiz GL':'Bridge: '+(d.error||'error'));
+    })
+    .catch(function(){if(typeof showToast==='function') showToast('Posted to GL (will sync when online)');});
   };
 
   window.crExportCSV = function() {
@@ -16650,8 +16695,23 @@ function saveScannedDoc() {
   };
 
   window.crPostGL = function() {
-    if(typeof showToast==='function') showToast('Posted to SAIRNbiz GL');
-    if(typeof syncAll==='function') syncAll();
+    var KEY = (typeof APP_CR_KEY !== 'undefined') ? APP_CR_KEY : ((typeof APP_ID!=='undefined'?APP_ID:'sairn')+'_checks');
+    var checks = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if (!checks.length) { if(typeof showToast==='function') showToast('No checks to post yet.'); return; }
+    var invoices = checks.map(function(c){
+      return {id:'CHK-'+c.num,type:'check',num:c.num,date:c.date,payee:c.payee,
+              amount:parseFloat(c.amount)||0,memo:c.memo,gl_account:'Accounts Payable',
+              app_id:'stonedesk',postedAt:new Date().toISOString()};
+    });
+    var shopId=(typeof slabLicKey==='function'?slabLicKey():'')||localStorage.getItem('stonedesk_license_key')||'stonedesk-demo';
+    var bridgeUrl=(typeof BRIDGE!=='undefined'?BRIDGE:'https://sairn.vercel.app/api/bridge');
+    fetch(bridgeUrl+'?action=push',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({shopId:shopId,invoices:invoices})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(typeof showToast==='function') showToast(d.ok?'✅ '+invoices.length+' check(s) posted to SAIRNbiz GL':'Bridge: '+(d.error||'error'));
+    })
+    .catch(function(){if(typeof showToast==='function') showToast('Posted to GL (will sync when online)');});
   };
 
   window.crExportCSV = function() {
