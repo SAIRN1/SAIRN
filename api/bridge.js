@@ -71,7 +71,9 @@ export default async function handler(req, res) {
         pull: 'GET  /api/bridge/pull?shop=SHOPID&type=jobs|employees|payroll|invoices|all',
         context: 'GET  /api/bridge/context?shop=SHOPID — SAIRNhr shop context for AI',
         csv: 'GET  /api/bridge/csv?shop=SHOPID&type=jobs|payroll — download CSV',
-        clear: 'POST /api/bridge/clear — clear shop data (auth required)'
+        clear: 'POST /api/bridge/clear — clear shop data (auth required)',
+        'maps-optimize': 'POST /api/bridge/maps-optimize { addresses: string[] } — Field Map route ordering',
+        'maps-static': 'POST /api/bridge/maps-static { addresses: string[] } — Field Map preview image'
       }
     });
   }
@@ -242,6 +244,108 @@ Last synced: ${data.updatedAt || 'not yet synced'}
     if (!shopId) return res.status(400).json({ error: 'shopId required' });
     store.delete(shopId);
     return res.status(200).json({ ok: true, message: 'Shop data cleared' });
+  }
+
+  // ── MAPS-OPTIMIZE (Field Map -- StoneDesk route ordering) ────
+  // Server-side only: GOOGLE_MAPS_API_KEY never reaches the browser.
+  // Uses the standard (always-available) Route Matrix endpoint rather than
+  // the experimental optimizeWaypointOrder feature, which Google gates
+  // behind a manual Support enablement request -- a nearest-neighbor
+  // ordering computed from real drive times is solid and doesn't depend
+  // on a feature that might not be turned on for this project.
+  if (action === 'maps-optimize' && req.method === 'POST') {
+    const { addresses } = req.body || {};
+    if (!Array.isArray(addresses) || addresses.length < 2) {
+      return res.status(400).json({ error: 'addresses (array, 2+) required' });
+    }
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      return res.status(500).json({ error: 'GOOGLE_MAPS_API_KEY not configured' });
+    }
+    try {
+      const points = addresses.map(a => ({ waypoint: { address: a } }));
+      const matrixRes = await fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': process.env.GOOGLE_MAPS_API_KEY,
+          'X-Goog-FieldMask': 'originIndex,destinationIndex,duration,condition'
+        },
+        body: JSON.stringify({ origins: points, destinations: points, travelMode: 'DRIVE' })
+      });
+      if (!matrixRes.ok) {
+        return res.status(502).json({ error: 'Route Matrix request failed', status: matrixRes.status });
+      }
+      const elements = await matrixRes.json();
+
+      const n = addresses.length;
+      const dur = Array.from({ length: n }, () => Array(n).fill(Infinity));
+      elements.forEach(e => {
+        if (e.condition === 'ROUTE_EXISTS' && e.duration) {
+          dur[e.originIndex][e.destinationIndex] = parseInt(String(e.duration).replace('s', ''), 10) || Infinity;
+        }
+      });
+
+      // Nearest-neighbor heuristic starting from stop 0 (the day's first stop)
+      const visited = new Set([0]);
+      const order = [0];
+      let totalOptimized = 0;
+      while (order.length < n) {
+        const last = order[order.length - 1];
+        let bestNext = -1, bestDur = Infinity;
+        for (let j = 0; j < n; j++) {
+          if (!visited.has(j) && dur[last][j] < bestDur) { bestDur = dur[last][j]; bestNext = j; }
+        }
+        if (bestNext === -1) { // unreachable pair -- fall back to first unvisited
+          bestNext = [...Array(n).keys()].find(j => !visited.has(j));
+          bestDur = 0;
+        }
+        order.push(bestNext);
+        visited.add(bestNext);
+        totalOptimized += isFinite(bestDur) ? bestDur : 0;
+      }
+
+      // Original (as-given) order total, for the "saves X minutes" figure
+      let totalOriginal = 0;
+      for (let i = 0; i < n - 1; i++) {
+        const d = dur[i][i + 1];
+        totalOriginal += isFinite(d) ? d : 0;
+      }
+
+      const savedMinutes = Math.max(0, Math.round((totalOriginal - totalOptimized) / 60));
+      return res.status(200).json({ ok: true, order, savedMinutes });
+    } catch (err) {
+      return res.status(502).json({ error: 'maps-optimize failed', detail: String(err) });
+    }
+  }
+
+  // ── MAPS-STATIC (Field Map -- route preview image) ────────────
+  // Fetches the image server-side and returns it as a data URL so the
+  // API key never appears in any URL the browser sees or could copy.
+  if (action === 'maps-static' && req.method === 'POST') {
+    const { addresses } = req.body || {};
+    if (!Array.isArray(addresses) || !addresses.length) {
+      return res.status(400).json({ error: 'addresses (array) required' });
+    }
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      return res.status(500).json({ error: 'GOOGLE_MAPS_API_KEY not configured' });
+    }
+    try {
+      const labels = 'ABCDEFGHIJ';
+      const markerParams = addresses.slice(0, 10).map((a, i) =>
+        'markers=' + encodeURIComponent('color:0x1B3A6B|label:' + labels[i] + '|' + a)
+      ).join('&');
+      const mapUrl = 'https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2'
+        + '&' + markerParams + '&key=' + process.env.GOOGLE_MAPS_API_KEY;
+      const imgRes = await fetch(mapUrl);
+      if (!imgRes.ok) {
+        return res.status(502).json({ error: 'Static Maps request failed', status: imgRes.status });
+      }
+      const buf = Buffer.from(await imgRes.arrayBuffer());
+      const contentType = imgRes.headers.get('content-type') || 'image/png';
+      return res.status(200).json({ ok: true, imageUrl: 'data:' + contentType + ';base64,' + buf.toString('base64') });
+    } catch (err) {
+      return res.status(502).json({ error: 'maps-static failed', detail: String(err) });
+    }
   }
 
   return res.status(404).json({ error: 'Unknown bridge action: ' + action });
