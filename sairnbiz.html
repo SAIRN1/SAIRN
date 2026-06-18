@@ -714,14 +714,7 @@ async function callClaude(system, messages, maxTokens) {
     <button class="btn btn-outline" onclick="askAI('Analyze my current headcount. Any roles I am missing or overstaffed on?')">AI Analyze</button>
   </div>
   <div class="card"><div class="card-body p0">
-    <table class="dt" id="emp-tbl"><thead><tr><th>Name</th><th>Role</th><th>Dept</th><th>Start Date</th><th>Pay Rate</th><th>Type</th><th>Status</th><th>Action</th></tr></thead><tbody>
-      <tr><td><strong>Maria Santos</strong></td><td>Caregiver Lead</td><td>Operations</td><td>Mar 2022</td><td>$22/hr</td><td>Hourly</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-sm btn-teal" onclick="openModal('m-emp-detail')">View</button></td></tr>
-      <tr><td><strong>Dave Kim</strong></td><td>Installer</td><td>Operations</td><td>Jan 2023</td><td>$28/hr</td><td>Hourly</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-sm btn-teal" onclick="openModal('m-emp-detail')">View</button></td></tr>
-      <tr><td><strong>Sarah Thompson</strong></td><td>Sales Rep</td><td>Sales</td><td>Jun 2023</td><td>$52K + comm</td><td>Salary</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-sm btn-teal" onclick="openModal('m-emp-detail')">View</button></td></tr>
-      <tr><td><strong>Tom Davis</strong></td><td>Field Tech</td><td>Operations</td><td>Jun 2025</td><td>$24/hr</td><td>Hourly</td><td><span class="badge badge-amber">Onboarding</span></td><td><button class="btn btn-sm btn-teal" onclick="openModal('m-emp-detail')">View</button></td></tr>
-      <tr><td><strong>Bob Evans</strong></td><td>Office Admin</td><td>Admin</td><td>Sep 2021</td><td>$48K</td><td>Salary</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-sm btn-teal" onclick="openModal('m-emp-detail')">View</button></td></tr>
-      <tr><td><strong>Carlos Rivera</strong></td><td>Crew Lead</td><td>Operations</td><td>Feb 2020</td><td>$32/hr</td><td>Hourly</td><td><span class="badge badge-amber">On Leave</span></td><td><button class="btn btn-sm btn-teal" onclick="openModal('m-emp-detail')">View</button></td></tr>
-    </tbody></table>
+    <table class="dt" id="emp-tbl"><thead><tr><th>Name</th><th>Role</th><th>Dept</th><th>Start Date</th><th>Pay Rate</th><th>Type</th><th>Status</th><th>Action</th></tr></thead><tbody id="emp-tbody"></tbody></table>
   </div></div>
 </div>
 
@@ -895,38 +888,7 @@ async function callClaude(system, messages, maxTokens) {
   <th>Employee</th><th>Type</th><th>Reg Hrs</th><th>OT Hrs</th><th>Gross Pay</th>
   <th>Federal</th><th>State</th><th>FICA SS</th><th>Medicare</th><th>Health Ins</th><th>401k</th>
   <th>Total Deductions</th><th>Net Pay</th>
-</tr></thead><tbody>
-  <tr>
-    <td><strong>Maria Santos</strong></td><td>Hourly $22</td><td>80</td><td>4</td><td>$1,892</td>
-    <td>$340</td><td>$66</td><td>$117</td><td>$27</td><td>$90</td><td>$57</td>
-    <td>$697</td><td><strong>$1,195</strong></td>
-  </tr>
-  <tr>
-    <td><strong>Dave Kim</strong></td><td>Hourly $28</td><td>80</td><td>0</td><td>$2,240</td>
-    <td>$403</td><td>$78</td><td>$139</td><td>$32</td><td>$90</td><td>$67</td>
-    <td>$809</td><td><strong>$1,431</strong></td>
-  </tr>
-  <tr>
-    <td><strong>Sarah Thompson</strong></td><td>Salary $52K</td><td>80</td><td>0</td><td>$2,167</td>
-    <td>$390</td><td>$76</td><td>$134</td><td>$31</td><td>$90</td><td>$65</td>
-    <td>$786</td><td><strong>$1,381</strong></td>
-  </tr>
-  <tr>
-    <td><strong>Bob Evans</strong></td><td>Salary $48K</td><td>80</td><td>0</td><td>$2,000</td>
-    <td>$360</td><td>$70</td><td>$124</td><td>$29</td><td>$90</td><td>$60</td>
-    <td>$733</td><td><strong>$1,267</strong></td>
-  </tr>
-  <tr>
-    <td><strong>Carlos Rivera</strong></td><td>Hourly $32</td><td>0</td><td>0</td><td>$0</td>
-    <td>$0</td><td>$0</td><td>$0</td><td>$0</td><td>$0</td><td>$0</td>
-    <td>$0</td><td><strong style="color:var(--muted)">On Leave</strong></td>
-  </tr>
-  <tr class="ttr">
-    <td colspan="4"><strong>Period Totals</strong></td><td><strong>$8,299</strong></td>
-    <td><strong>$1,493</strong></td><td><strong>$290</strong></td><td><strong>$514</strong></td><td><strong>$119</strong></td><td><strong>$270</strong></td><td><strong>$249</strong></td>
-    <td><strong>$3,025</strong></td><td><strong>$5,274</strong></td>
-  </tr>
-</tbody></table>
+</tr></thead><tbody id="pay-tbody"></tbody></table>
 <div style="margin-top:12px;background:#F8FAFC;border-radius:8px;padding:12px 16px;font-size:12px;color:var(--muted);display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;">
   <div><strong style="color:var(--text);">Federal (18%)</strong><br>Based on W-4 withholding</div>
   <div><strong style="color:var(--text);">Ohio State (3.5%)</strong><br>State income tax</div>
@@ -962,12 +924,7 @@ async function callClaude(system, messages, maxTokens) {
   <div class="page-sub">Time off requests, balances, and approvals</div>
   <div class="toolbar"><button class="btn btn-teal" onclick="openModal('m-pto')">+ Log PTO</button><button class="btn btn-outline" onclick="exportCSV('pto-tbl','sairnbiz-pto')">Export CSV</button></div>
   <div class="card"><div class="card-body p0">
-    <table class="dt" id="pto-tbl"><thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Balance After</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead><tbody>
-      <tr><td>Maria Santos</td><td>Vacation</td><td>Jun 25–27</td><td>3</td><td>7 days left</td><td>Jun 12</td><td><span class="badge badge-amber">Pending</span></td><td><button class="btn btn-sm btn-teal" onclick="approvePTO(this)">Approve</button></td></tr>
-      <tr><td>Dave Kim</td><td>Personal</td><td>Jun 20</td><td>1</td><td>9 days left</td><td>Jun 13</td><td><span class="badge badge-amber">Pending</span></td><td><button class="btn btn-sm btn-teal" onclick="approvePTO(this)">Approve</button></td></tr>
-      <tr><td>Bob Evans</td><td>Vacation</td><td>Jul 4–7</td><td>2</td><td>6 days left</td><td>Jun 14</td><td><span class="badge badge-amber">Pending</span></td><td><button class="btn btn-sm btn-teal" onclick="approvePTO(this)">Approve</button></td></tr>
-      <tr><td>Sarah Thompson</td><td>Sick</td><td>Jun 10</td><td>1</td><td>4 days left</td><td>Jun 10</td><td><span class="badge badge-green">Approved</span></td><td></td></tr>
-    </tbody></table>
+    <table class="dt" id="pto-tbl"><thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Balance After</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead><tbody id="pto-tbody"></tbody></table>
   </div></div>
 </div>
 
@@ -977,11 +934,7 @@ async function callClaude(system, messages, maxTokens) {
   <div class="page-sub">Health, dental, vision, and 401(k) enrollment</div>
   <div class="toolbar"><button class="btn btn-outline" onclick="askAI('Analyze my benefits offering. What should I add to stay competitive for recruiting?')">AI Benefits Audit</button></div>
   <div class="card"><div class="card-body p0">
-    <table class="dt"><thead><tr><th>Employee</th><th>Health</th><th>Dental</th><th>Vision</th><th>401k %</th><th>Enrolled</th></tr></thead><tbody>
-      <tr><td>Maria Santos</td><td><span class="badge badge-green">Blue Cross PPO</span></td><td><span class="badge badge-green">Delta</span></td><td><span class="badge badge-green">VSP</span></td><td>4%</td><td><span class="badge badge-green">Complete</span></td></tr>
-      <tr><td>Dave Kim</td><td><span class="badge badge-green">Blue Cross PPO</span></td><td><span class="badge badge-green">Delta</span></td><td><span class="badge badge-amber">Waived</span></td><td>3%</td><td><span class="badge badge-green">Complete</span></td></tr>
-      <tr><td>Tom Davis</td><td><span class="badge badge-red">Not Enrolled</span></td><td><span class="badge badge-red">Not Enrolled</span></td><td><span class="badge badge-red">Not Enrolled</span></td><td>0%</td><td><span class="badge badge-amber">30-day window open</span></td></tr>
-    </tbody></table>
+    <table class="dt" id="ben-tbl"><thead><tr><th>Employee</th><th>Health</th><th>Dental</th><th>Vision</th><th>401k %</th><th>Enrolled</th></tr></thead><tbody id="ben-tbody"></tbody></table>
   </div></div>
 </div>
 
@@ -991,12 +944,7 @@ async function callClaude(system, messages, maxTokens) {
   <div class="page-sub">Employment eligibility verification tracking</div>
   <div class="flag-warn">&#x26A0;&#xFE0F; Carlos R. work authorization expires Jun 28. Re-verification required immediately.</div>
   <div class="card" style="margin-top:14px;"><div class="card-body p0">
-    <table class="dt"><thead><tr><th>Employee</th><th>Section 1</th><th>Section 2</th><th>Doc Type</th><th>Expiration</th><th>Status</th></tr></thead><tbody>
-      <tr><td>Maria Santos</td><td><span class="badge badge-green">Complete</span></td><td><span class="badge badge-green">Complete</span></td><td>US Passport</td><td>N/A</td><td><span class="badge badge-green">Verified</span></td></tr>
-      <tr><td>Dave Kim</td><td><span class="badge badge-green">Complete</span></td><td><span class="badge badge-green">Complete</span></td><td>Driver License + SS Card</td><td>N/A</td><td><span class="badge badge-green">Verified</span></td></tr>
-      <tr><td>Tom Davis</td><td><span class="badge badge-green">Complete</span></td><td><span class="badge badge-amber">Pending</span></td><td>Pending doc review</td><td>—</td><td><span class="badge badge-amber">In Progress</span></td></tr>
-      <tr><td>Carlos Rivera</td><td><span class="badge badge-green">Complete</span></td><td><span class="badge badge-green">Complete</span></td><td>EAD Card</td><td><strong style="color:var(--red)">Jun 28, 2025</strong></td><td><span class="badge badge-red">Re-verify Now</span></td></tr>
-    </tbody></table>
+    <table class="dt" id="i9-tbl"><thead><tr><th>Employee</th><th>Section 1</th><th>Section 2</th><th>Doc Type</th><th>Expiration</th><th>Status</th></tr></thead><tbody id="i9-tbody"></tbody></table>
   </div></div>
 </div>
 
@@ -1018,12 +966,7 @@ async function callClaude(system, messages, maxTokens) {
   <div class="page-sub">Required training, certifications, and completion tracking</div>
   <div class="toolbar"><button class="btn btn-teal" onclick="openModal('m-training')">+ Assign Training</button></div>
   <div class="card"><div class="card-body p0">
-    <table class="dt"><thead><tr><th>Employee</th><th>Training</th><th>Required By</th><th>Completed</th><th>Status</th></tr></thead><tbody>
-      <tr><td>Tom Davis</td><td>Safety Orientation</td><td>Jun 21</td><td>—</td><td><span class="badge badge-red">Not Started</span></td></tr>
-      <tr><td>Tom Davis</td><td>Company Handbook</td><td>Jun 21</td><td>—</td><td><span class="badge badge-red">Not Started</span></td></tr>
-      <tr><td>Dave Kim</td><td>OSHA 10</td><td>Jul 1</td><td>—</td><td><span class="badge badge-amber">In Progress</span></td></tr>
-      <tr><td>All Staff</td><td>Annual Safety Review</td><td>Jun 30</td><td>3 of 5</td><td><span class="badge badge-amber">In Progress</span></td></tr>
-    </tbody></table>
+    <table class="dt" id="lms-tbl"><thead><tr><th>Employee</th><th>Training</th><th>Required By</th><th>Completed</th><th>Status</th></tr></thead><tbody id="lms-tbody"></tbody></table>
   </div></div>
 </div>
 
@@ -1601,7 +1544,7 @@ async function callClaude(system, messages, maxTokens) {
 <div class="modal-overlay" id="m-emp-detail">
   <div class="modal-box" style="width:680px;">
     <div class="modal-header">
-      <div class="modal-title">Employee Record — Maria Santos</div>
+      <div class="modal-title" id="emp-detail-title">Employee Record</div>
       <button class="modal-close" onclick="closeModal('m-emp-detail')">&#x2715;</button>
     </div>
     <div class="modal-body">
@@ -1611,6 +1554,7 @@ async function callClaude(system, messages, maxTokens) {
         <button class="emp-tab active" onclick="empTab(this,'et-info')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid var(--teal);color:var(--teal-dark);margin-bottom:-2px;">Personal Info</button>
         <button class="emp-tab" onclick="empTab(this,'et-tax')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">W-4 &amp; Tax</button>
         <button class="emp-tab" onclick="empTab(this,'et-pay')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">Pay &amp; Benefits</button>
+        <button class="emp-tab" onclick="empTab(this,'et-training')" style="padding:8px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s">Training</button>
         <button class="emp-tab" onclick="empTab(this,'et-history')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">History</button>
       </div>
 
@@ -1631,6 +1575,14 @@ async function callClaude(system, messages, maxTokens) {
           <div class="fg"><label>Role / Title</label><input type="text" value="Caregiver Lead"></div>
           <div class="fg"><label>Manager</label><input type="text" value="Owner"></div>
           <div class="fg"><label>Employment Status</label><select><option selected>Active</option><option>On Leave</option><option>Terminated</option></select></div>
+        </div>
+      </div>
+
+      <!-- TAB TRAINING -->
+      <div id="et-training" class="emp-tab-panel" style="display:none;">
+        <div id="et-training-body" style="font-size:13px;color:var(--muted);padding:12px 0">No training records yet.</div>
+        <div style="margin-top:14px">
+          <button class="btn bp bsm" onclick="empAddTraining()">+ Add Training</button>
         </div>
       </div>
 
@@ -1850,10 +1802,7 @@ async function callClaude(system, messages, maxTokens) {
         <button class="btn btn-outline" onclick="askAI('Generate a complete employee profile for Maria Santos. Include withholding analysis, benefit costs to the company, YTD deductions, and any recommendations.')">AI Full Profile Report</button>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('m-emp-detail')">Cancel</button>
-      <button class="btn btn-teal" onclick="closeModal('m-emp-detail');showToast('Employee record saved')">Save All Changes</button>
-    </div>
+    <div class="modal-footer"><button class="btn bp bsm" id="emp-detail-goto" onclick="empGotoProfile()">👤 Go to Full Profile</button><button class="btn btn-outline" onclick="closeModal('m-emp-detail')">Close</button></div>
   </div>
 </div>
 
@@ -2122,6 +2071,7 @@ function doLogin() {
     watchAllTables();
     _aih = loadAIHistory();
     initAIQuickBtns();
+    empInit();
     showToast('Welcome back!');
     nav('p-dash');
   } else {
@@ -3400,7 +3350,302 @@ function doPrintStubs() {
 
   var stubHTML = stubs.map(mkStub).join('');
   var printBtn = '<div class="no-print"><button class="btn-p" onclick="window.print()">&#x1F5A8; Print / Save as PDF</button><button class="btn-c" onclick="window.close()">Close</button></div>';
-  var full = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pay Stubs — '+co+'</title><style>'+css+'</style></head><body>'+printBtn+stubHTML+'</body></html>';
+  var full = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pay Stubs — '+co+'</title><style>'+css+'</style></head><body>'+printBtn+stubHTML+'
+<script>
+// ============================================================
+// SAIRN EMPLOYEE DATA LAYER -- sairnbiz.html
+// Single source of truth for all People wing pages.
+// Key: sairnbiz_employees  (localStorage, array of empObj)
+// empObj schema at bottom of this block.
+// ============================================================
+'use strict';
+
+var EMP_KEY = 'sairnbiz_employees';
+var _empDetailId = null; // currently open employee in modal
+
+// ---- SEED DATA (demo, matches Pinnacle Stone & Design) ----
+var EMP_SEED = [
+  { id:'e001', fname:'Maria',   lname:'Santos',   role:'Caregiver Lead', dept:'Operations', start:'2022-03-01', payType:'Hourly', rate:22,  email:'maria.santos@pinnaclesd.com', phone:'(440) 555-8801', status:'Active',  manager:'Owner',
+    health:'Blue Cross PPO', dental:'Delta Dental', vision:'VSP', k401:3,
+    i9s1:'Complete', i9s2:'Complete', i9doc:'Passport', i9exp:null,
+    ptoDaysTotal:15, ptoDaysUsed:8,
+    training:[ {name:'Safety Orientation',reqBy:'2026-06-21',done:'2026-01-10',status:'Complete'},
+               {name:'Annual Safety Review',reqBy:'2026-06-30',done:null,status:'Complete'} ] },
+  { id:'e002', fname:'Dave',    lname:'Kim',      role:'Installer',      dept:'Operations', start:'2023-01-15', payType:'Hourly', rate:28,  email:'dave.kim@pinnaclesd.com',    phone:'(440) 555-9102', status:'Active',  manager:'Carlos Rivera',
+    health:'Blue Cross PPO', dental:'Delta Dental', vision:'VSP', k401:4,
+    i9s1:'Complete', i9s2:'Complete', i9doc:'US Passport', i9exp:null,
+    ptoDaysTotal:12, ptoDaysUsed:3,
+    training:[ {name:'OSHA 10',reqBy:'2026-07-01',done:null,status:'In Progress'},
+               {name:'Annual Safety Review',reqBy:'2026-06-30',done:null,status:'In Progress'} ] },
+  { id:'e003', fname:'Sarah',   lname:'Thompson', role:'Sales Rep',       dept:'Sales',      start:'2023-06-01', payType:'Salary', rate:52000, email:'sarah.t@pinnaclesd.com',   phone:'(440) 555-7743', status:'Active',  manager:'Owner',
+    health:'Blue Cross PPO', dental:'Delta Dental', vision:'Not Enrolled', k401:5,
+    i9s1:'Complete', i9s2:'Complete', i9doc:'Driver License + SS Card', i9exp:null,
+    ptoDaysTotal:12, ptoDaysUsed:1,
+    training:[ {name:'Annual Safety Review',reqBy:'2026-06-30',done:null,status:'Pending'} ] },
+  { id:'e004', fname:'Tom',     lname:'Davis',    role:'Field Tech',      dept:'Operations', start:'2025-06-01', payType:'Hourly', rate:24,  email:'tom.davis@pinnaclesd.com',   phone:'(440) 555-4421', status:'Active',  manager:'Carlos Rivera',
+    health:'Not Enrolled', dental:'Not Enrolled', vision:'Not Enrolled', k401:0,
+    i9s1:'Complete', i9s2:'Pending', i9doc:'Pending', i9exp:null,
+    ptoDaysTotal:5, ptoDaysUsed:0,
+    training:[ {name:'Safety Orientation',reqBy:'2026-06-21',done:null,status:'Pending'},
+               {name:'Company Handbook',reqBy:'2026-06-21',done:null,status:'Pending'},
+               {name:'Annual Safety Review',reqBy:'2026-06-30',done:null,status:'Pending'} ] },
+  { id:'e005', fname:'Bob',     lname:'Evans',    role:'Office Admin',    dept:'Admin',      start:'2021-09-01', payType:'Salary', rate:48000, email:'bob.evans@pinnaclesd.com', phone:'(440) 555-3310', status:'Active',  manager:'Owner',
+    health:'Blue Cross PPO', dental:'Delta Dental', vision:'VSP', k401:3,
+    i9s1:'Complete', i9s2:'Complete', i9doc:'US Passport', i9exp:null,
+    ptoDaysTotal:15, ptoDaysUsed:6,
+    training:[ {name:'Annual Safety Review',reqBy:'2026-06-30',done:null,status:'Pending'} ] },
+  { id:'e006', fname:'Carlos',  lname:'Rivera',   role:'Crew Lead',       dept:'Operations', start:'2020-02-01', payType:'Hourly', rate:32,  email:'carlos.r@pinnaclesd.com',    phone:'(440) 555-2289', status:'Active',  manager:'Owner',
+    health:'Blue Cross PPO', dental:'Not Enrolled', vision:'Not Enrolled', k401:2,
+    i9s1:'Complete', i9s2:'Complete', i9doc:'EAD Card', i9exp:'2026-06-28',
+    ptoDaysTotal:20, ptoDaysUsed:4,
+    training:[ {name:'Annual Safety Review',reqBy:'2026-06-30',done:null,status:'Complete'} ] }
+];
+
+// ---- CRUD ----
+function empAll() {
+  try { return JSON.parse(localStorage.getItem(EMP_KEY) || '[]'); } catch(e) { return []; }
+}
+function empGet(id) { return empAll().find(function(e){ return e.id === id; }) || null; }
+function empSave(emp) {
+  var list = empAll();
+  var idx = list.findIndex(function(e){ return e.id === emp.id; });
+  if (idx >= 0) list[idx] = emp; else list.push(emp);
+  localStorage.setItem(EMP_KEY, JSON.stringify(list));
+}
+function empMakeId() { return 'e' + Date.now(); }
+
+function empInit() {
+  var existing = empAll();
+  if (!existing.length) {
+    localStorage.setItem(EMP_KEY, JSON.stringify(EMP_SEED));
+  }
+  empRenderAll();
+}
+
+// ---- RENDER ALL TABLES ----
+function empRenderAll() {
+  empRenderEmp();
+  empRenderPay();
+  empRenderPTO();
+  empRenderLMS();
+  empRenderBenefits();
+  empRenderI9();
+}
+
+function empNameCell(e) {
+  return '<strong style="cursor:pointer;color:var(--a);text-decoration:underline dotted" onclick="empOpenDetail(\'' + e.id + '\')">' + e.fname + ' ' + e.lname + '</strong>';
+}
+
+function badgeHtml(text, color) {
+  var colors = { green:'badge-green', red:'badge-red', amber:'badge-amber', blue:'badge-blue', gray:'badge badge-gray' };
+  return '<span class="badge ' + (colors[color]||'badge-gray') + '">' + text + '</span>';
+}
+
+function empPayLabel(e) {
+  if (e.payType === 'Salary') return 'Salary $' + (e.rate/1000).toFixed(0) + 'K';
+  return 'Hourly $' + e.rate;
+}
+
+function empRenderEmp() {
+  var tb = document.getElementById('emp-tbody'); if (!tb) return;
+  var list = empAll().filter(function(e){ return e.status !== 'Terminated'; });
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">No employees yet — use Onboarding to add your first.</td></tr>'; return; }
+  tb.innerHTML = list.map(function(e) {
+    var statusBadge = e.status === 'Active' ? badgeHtml('Active','green') : badgeHtml(e.status,'amber');
+    return '<tr><td>' + empNameCell(e) + '</td><td>' + (e.role||'—') + '</td><td>' + (e.dept||'—') + '</td><td>' + (e.start ? e.start.slice(0,7).replace('-','/') : '—') + '</td><td>' + empPayLabel(e) + '</td><td>' + statusBadge + '</td></tr>';
+  }).join('');
+}
+
+function empRenderPay() {
+  var tb = document.getElementById('pay-tbody'); if (!tb) return;
+  var list = empAll().filter(function(e){ return e.status === 'Active'; });
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--muted)">No active employees.</td></tr>'; return; }
+  tb.innerHTML = list.map(function(e) {
+    var isHourly = e.payType === 'Hourly';
+    var regHrs = 80;
+    var otHrs = (e.id === 'e001') ? 4 : 0;
+    var regPay = isHourly ? e.rate * regHrs : e.rate / 26;
+    var otPay = isHourly ? e.rate * 1.5 * otHrs : 0;
+    var gross = Math.round(regPay + otPay);
+    var fed = Math.round(gross * 0.18);
+    var state = Math.round(gross * 0.035);
+    var ficaSS = Math.round(gross * 0.062);
+    var medicare = Math.round(gross * 0.0145);
+    var health = 90;
+    var k401 = Math.round(gross * ((e.k401||0)/100));
+    var totalDed = fed + state + ficaSS + medicare + health + k401;
+    var net = gross - totalDed;
+    return '<tr><td>' + empNameCell(e) + '</td><td>' + empPayLabel(e) + '</td><td>' + regHrs + '</td><td>' + otHrs + '</td><td>$' + gross.toLocaleString() + '</td>' +
+      '<td>$' + fed + '</td><td>$' + state + '</td><td>$' + ficaSS + '</td><td>$' + medicare + '</td><td>$' + health + '</td><td>$' + k401 + '</td>' +
+      '<td>$' + totalDed.toLocaleString() + '</td><td><strong>$' + net.toLocaleString() + '</strong></td></tr>';
+  }).join('');
+}
+
+function empRenderPTO() {
+  var tb = document.getElementById('pto-tbody'); if (!tb) return;
+  var list = empAll().filter(function(e){ return e.status === 'Active'; });
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No employees.</td></tr>'; return; }
+  tb.innerHTML = list.map(function(e) {
+    var remaining = (e.ptoDaysTotal||0) - (e.ptoDaysUsed||0);
+    var statusBadge = remaining > 5 ? badgeHtml('OK','green') : remaining > 0 ? badgeHtml('Low','amber') : badgeHtml('Exhausted','red');
+    return '<tr><td>' + empNameCell(e) + '</td><td>' + (e.ptoDaysTotal||0) + ' days</td><td>' + (e.ptoDaysUsed||0) + ' used</td><td>' + remaining + ' left</td><td>' + statusBadge + '</td></tr>';
+  }).join('');
+}
+
+function empRenderLMS() {
+  var tb = document.getElementById('lms-tbody'); if (!tb) return;
+  var list = empAll().filter(function(e){ return e.status !== 'Terminated'; });
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No employees.</td></tr>'; return; }
+  var rows = [];
+  list.forEach(function(e) {
+    var trainings = e.training || [];
+    if (!trainings.length) {
+      rows.push('<tr><td>' + empNameCell(e) + '</td><td colspan="4" style="color:var(--muted)">No training assigned</td></tr>');
+    } else {
+      trainings.forEach(function(t, ti) {
+        var statusColor = t.status === 'Complete' ? 'green' : t.status === 'In Progress' ? 'amber' : 'red';
+        rows.push('<tr><td>' + (ti === 0 ? empNameCell(e) : '') + '</td><td>' + t.name + '</td><td>' + (t.reqBy||'—') + '</td><td>' + (t.done||'—') + '</td><td>' + badgeHtml(t.status, statusColor) + '</td></tr>');
+      });
+    }
+  });
+  tb.innerHTML = rows.join('');
+}
+
+function empRenderBenefits() {
+  var tb = document.getElementById('ben-tbody'); if (!tb) return;
+  var list = empAll().filter(function(e){ return e.status === 'Active'; });
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No active employees.</td></tr>'; return; }
+  tb.innerHTML = list.map(function(e) {
+    function benBadge(val) { return val && val !== 'Not Enrolled' ? badgeHtml(val,'green') : badgeHtml('Not Enrolled','red'); }
+    return '<tr><td>' + empNameCell(e) + '</td><td>' + benBadge(e.health) + '</td><td>' + benBadge(e.dental) + '</td><td>' + benBadge(e.vision) + '</td><td>' + (e.k401||0) + '%</td></tr>';
+  }).join('');
+}
+
+function empRenderI9() {
+  var tb = document.getElementById('i9-tbody'); if (!tb) return;
+  var list = empAll().filter(function(e){ return e.status !== 'Terminated'; });
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">No employees.</td></tr>'; return; }
+  tb.innerHTML = list.map(function(e) {
+    var s1Badge = badgeHtml(e.i9s1||'Pending', e.i9s1==='Complete'?'green':'red');
+    var s2Badge = badgeHtml(e.i9s2||'Pending', e.i9s2==='Complete'?'green':'red');
+    var expiring = e.i9exp && new Date(e.i9exp) < new Date(Date.now() + 60*24*3600*1000);
+    var expBadge = e.i9exp ? badgeHtml(e.i9exp, expiring?'red':'green') : badgeHtml('N/A','green');
+    return '<tr><td>' + empNameCell(e) + '</td><td>' + s1Badge + '</td><td>' + s2Badge + '</td><td>' + (e.i9doc||'—') + '</td><td>' + expBadge + '</td><td>' + badgeHtml('Verified','green') + '</td></tr>';
+  }).join('');
+}
+
+// ---- EMPLOYEE DETAIL MODAL ----
+function empOpenDetail(id) {
+  var e = empGet(id);
+  if (!e) return;
+  _empDetailId = id;
+  // Set title
+  var titleEl = document.getElementById('emp-detail-title');
+  if (titleEl) titleEl.textContent = 'Employee — ' + e.fname + ' ' + e.lname;
+  // Populate Info tab fields
+  var fields = {
+    'et-fn': e.fname + ' ' + e.lname,
+    'et-role': e.role || '',
+    'et-dept': e.dept || '',
+    'et-start': e.start || '',
+    'et-email': e.email || '',
+    'et-phone': e.phone || '',
+    'et-rate': e.payType === 'Salary' ? '$' + (e.rate||0).toLocaleString() + '/yr' : '$' + (e.rate||0) + '/hr',
+    'et-status': e.status || 'Active',
+    'et-manager': e.manager || '—'
+  };
+  Object.keys(fields).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { if (el.tagName === 'INPUT' || el.tagName === 'SELECT') el.value = fields[id]; else el.textContent = fields[id]; }
+  });
+  // Populate Training tab
+  var trBody = document.getElementById('et-training-body');
+  if (trBody) {
+    var trainings = e.training || [];
+    if (!trainings.length) {
+      trBody.innerHTML = '<div style="color:var(--muted);padding:12px 0">No training records yet.</div>';
+    } else {
+      trBody.innerHTML = '<table class="dt" style="margin-top:8px"><thead><tr><th>Training</th><th>Required By</th><th>Completed</th><th>Status</th></tr></thead><tbody>' +
+        trainings.map(function(t) {
+          var sc = t.status==='Complete'?'badge-green':t.status==='In Progress'?'badge-amber':'badge-red';
+          return '<tr><td>' + t.name + '</td><td>' + (t.reqBy||'—') + '</td><td>' + (t.done||'—') + '</td><td><span class="badge '+sc+'">'+t.status+'</span></td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+  }
+  // Switch to Info tab
+  document.querySelectorAll('.emp-tab').forEach(function(b){ b.style.color='var(--muted)'; b.style.borderBottomColor='transparent'; });
+  document.querySelectorAll('.emp-tab-panel').forEach(function(p){ p.style.display='none'; });
+  var infoTab = document.querySelector('.emp-tab');
+  var infoPanel = document.getElementById('et-info');
+  if (infoTab) { infoTab.style.color='var(--a)'; infoTab.style.borderBottomColor='var(--a)'; }
+  if (infoPanel) infoPanel.style.display='block';
+  openModal('m-emp-detail');
+}
+
+function empGotoProfile() {
+  closeModal('m-emp-detail');
+  nav('employees');
+  // Highlight the row
+  setTimeout(function() {
+    var rows = document.querySelectorAll('#emp-tbody tr');
+    rows.forEach(function(r){ r.style.background=''; });
+    if (_empDetailId) {
+      var e = empGet(_empDetailId);
+      if (e) {
+        rows.forEach(function(r) {
+          if (r.textContent.includes(e.fname + ' ' + e.lname)) {
+            r.style.background = 'rgba(20,184,166,0.08)';
+            r.scrollIntoView({ behavior:'smooth', block:'center' });
+          }
+        });
+      }
+    }
+  }, 100);
+}
+
+function empAddTraining() {
+  var name = prompt('Training name:'); if (!name) return;
+  var reqBy = prompt('Required by date (YYYY-MM-DD):') || '';
+  var e = empGet(_empDetailId); if (!e) return;
+  if (!e.training) e.training = [];
+  e.training.push({ name:name, reqBy:reqBy, done:null, status:'Pending' });
+  empSave(e);
+  empOpenDetail(_empDetailId);
+  empRenderAll();
+}
+
+// Upgrade saveNewEmployee to assign an id and training array
+(function patchSave() {
+  var orig = window.saveNewEmployee;
+  window.saveNewEmployee = function() {
+    var fname = document.getElementById('ob-fname').value.trim();
+    var lname = document.getElementById('ob-lname').value.trim();
+    if (!fname || !lname) { if (typeof showToast==='function') showToast('First and last name are required.'); return; }
+    var emp = {
+      id: empMakeId(),
+      fname: fname, lname: lname,
+      role: (document.getElementById('ob-title')||{}).value || '',
+      dept: (document.getElementById('ob-dept')||{}).value || '',
+      start: (document.getElementById('ob-start')||{}).value || '',
+      payType: (document.getElementById('ob-pay-type')||{}).value || 'Hourly',
+      rate: parseFloat((document.getElementById('ob-rate')||{}).value) || 0,
+      email: (document.getElementById('ob-email')||{}).value || '',
+      status: 'Active', manager: '', phone: '',
+      health:'Not Enrolled', dental:'Not Enrolled', vision:'Not Enrolled', k401:0,
+      i9s1:'Pending', i9s2:'Pending', i9doc:'Pending', i9exp:null,
+      ptoDaysTotal:10, ptoDaysUsed:0, training:[]
+    };
+    empSave(emp);
+    if (typeof showToast==='function') showToast('Employee record created for ' + fname + ' ' + lname + '.');
+    ['ob-fname','ob-lname','ob-title','ob-dept','ob-start','ob-rate','ob-email'].forEach(function(id){
+      var f=document.getElementById(id); if(f) f.value='';
+    });
+    empRenderAll();
+  };
+})();
+</script>
+
+</body></html>';
 
   var w = window.open('', '_blank', 'width=820,height=900');
   if (!w) { showToast('Allow pop-ups for this site then try again.'); return; }
@@ -4176,6 +4421,7 @@ function saveNewEmployee(){
   ['ob-fname','ob-lname','ob-title','ob-dept','ob-start','ob-rate','ob-email'].forEach(function(id){
     var f=document.getElementById(id);if(f)f.value='';
   });
+  empRenderAll();
 }
 
 async function aiOnboardChecklist(){
