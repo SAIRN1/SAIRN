@@ -2175,6 +2175,13 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <div class="q-tab active" onclick="switchDimTab('manual',this)">Manual Entry</div>
             <div class="q-tab" onclick="switchDimTab('draw',this)">Drawing Tool</div>
           </div>
+          <!-- Import from Draw Panel -->
+          <div id="qb-draw-import-bar" style="background:linear-gradient(135deg,#F0FEF6,#DCFCE7);border:1px solid #BBF7D0;border-radius:8px;padding:9px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div style="font-size:12px;color:#166534"><b>📐 Drawing Tool import ready</b> — pull measurements from your current drawing directly into this quote.</div>
+            <button class="q-btn primary" style="font-size:12px;padding:6px 14px;white-space:nowrap" onclick="qbImportFromDraw()">Import Drawing →</button>
+          </div>
+          <div id="qb-draw-import-none" style="display:none;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:9px 14px;margin-bottom:10px;font-size:12px;color:#92400E">No drawing found yet — go to <b>Drawing Tool</b> in the nav, draw your shape, then come back here and click Import.</div>
+          <div id="qb-draw-import-result" style="display:none;background:#DCFCE7;border:1px solid #BBF7D0;border-radius:8px;padding:9px 14px;margin-bottom:10px;font-size:12px;color:#166534"></div>
           <div class="q-tab-panel active" id="dim-manual">
             <div class="note-box">Enter run lengths in inches. Standard depth 25.5" used automatically.</div>
             <div class="q-two">
@@ -3370,6 +3377,21 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   <!-- == INVENTORY PANEL == -->
   <div class="panel" id="panel-inventory">
     <div style="padding:20px;max-width:1100px;margin:0 auto">
+
+      <!-- UNIVERSAL INVENTORY IMPORTER -->
+      <div style="background:linear-gradient(135deg,#F0FEF6,#DCFCE7);border:1.5px solid #BBF7D0;border-radius:12px;padding:16px 20px;margin-bottom:20px">
+        <div style="font-size:14px;font-weight:800;margin-bottom:4px">📥 Import Your Existing Inventory</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Upload any CSV, Excel-exported CSV, or spreadsheet. Claude will read it, map columns automatically, and add everything to the right category. Works for shop consumables, slabs, tools — anything.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <label style="display:inline-flex;align-items:center;gap:8px;background:#16C762;color:#fff;font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer">
+            📂 Choose File
+            <input type="file" id="inv-upload-input" accept=".csv,.xlsx,.xls,.txt" style="display:none" onchange="invHandleUpload(event)">
+          </label>
+          <div style="font-size:12px;color:var(--muted)" id="inv-upload-filename">No file chosen</div>
+        </div>
+        <div id="inv-upload-result" style="margin-top:12px"></div>
+      </div>
+
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <h2 style="font-size:20px;font-weight:800;color:var(--text)">📦 Shop Inventory</h2>
         <div style="display:flex;gap:8px">
@@ -5153,6 +5175,157 @@ function setTier(t, el) {
   el.classList.add('active');
   document.getElementById('tier-note').textContent = TIERS[t].note;
   calc();
+}
+
+// == DRAW → QUOTE BUILDER IMPORT ==============================
+// Reads the live Drawing Tool state and populates the Quote
+// Builder Step 3 dimensions (and optionally Steps 1/2) so the
+// rep never has to re-enter numbers they already drew.
+function qbImportFromDraw() {
+  var noneEl   = document.getElementById('qb-draw-import-none');
+  var barEl    = document.getElementById('qb-draw-import-bar');
+  var resultEl = document.getElementById('qb-draw-import-result');
+
+  // Check whether the Draw panel has any actual data
+  var hasPreset  = typeof ctShape !== 'undefined' && ctShape && ctShape !== 'straight';
+  var hasCustom  = typeof dcPolyClosed !== 'undefined' && dcPolyClosed && typeof dcPoly !== 'undefined' && dcPoly.length >= 3;
+  var hasRunA    = typeof gN === 'function' && gN('da-len') > 0;
+
+  if (!hasPreset && !hasCustom && !hasRunA) {
+    if(barEl)    barEl.style.display    = 'none';
+    if(noneEl)   noneEl.style.display   = 'block';
+    if(resultEl) resultEl.style.display = 'none';
+    return;
+  }
+
+  // ── 1) Resolve what sqft / runs we know ────────────────────
+  var g       = typeof gN === 'function' ? gN : function(){ return 0; };
+  var shape   = (typeof ctShape !== 'undefined') ? ctShape : 'straight';
+  var aL = g('da-len'), aD = g('da-dep') || 25.5;
+  var bL = g('db-len'), bD = g('db-dep') || 25.5;
+  var cL = g('dc-len'), cD = g('dc-dep') || 25.5;
+  var dL = g('dd-len'), dD = g('dd-dep') || 25.5;
+
+  // For a closed custom polygon, use the computed area as the total,
+  // split back into equivalent runA so calc() can work with it.
+  var isCustom = (typeof dcMode !== 'undefined' && dcMode === 'draw' && hasCustom);
+  var customSqFt = 0;
+  if (isCustom) {
+    if (typeof dcSyncPolyToCalc === 'function') dcSyncPolyToCalc();
+    customSqFt = window._dcPolySqFt || 0;
+  }
+
+  // ── 2) Map shape to Quote Builder project-type ──────────────
+  var projMap = {
+    straight: 'kitchen_std',
+    island:   'kitchen_island',
+    lshape:   'kitchen_l',
+    ushape:   'kitchen_l',
+    galley:   'kitchen_std',
+    custom:   'kitchen_std',
+  };
+  var projType = projMap[shape] || 'kitchen_std';
+
+  // ── 3) Populate the Quote Builder fields ────────────────────
+  // Project type
+  var ptEl = document.getElementById('project-type');
+  if (ptEl) { ptEl.value = projType; }
+
+  // Runs — for a custom poly we express it as a single Run A
+  // with depth 1 and runA = sqft*144 / 25.5 so the sqft comes
+  // out right. We also expose the true sqft in the note below.
+  if (isCustom && customSqFt > 0) {
+    // Express custom sqft as equivalent single straight run at 25.5" depth
+    var equivLen = Math.round((customSqFt * 144) / 25.5);
+    setV('runA', equivLen);
+    setV('runB', 0); setV('runC', 0); setV('runD', 0); setV('island', 0);
+  } else {
+    // Preset shape — map runs directly
+    setV('runA', Math.round(aL));
+    setV('runB', Math.round(bL));
+    setV('runC', Math.round(cL));
+    setV('runD', Math.round(dL));
+    // Island is its own run in the draw panel (island shape -> runA is just the island rect)
+    setV('island', shape === 'island' ? Math.round(aL) : 0);
+  }
+
+  // Pull material from the Draw panel if filled in
+  var drawMat = (document.getElementById('draw-material') || {}).value || '';
+  if (drawMat) {
+    var matEl = document.getElementById('material');
+    if (matEl) {
+      // Try to auto-select the closest material grade
+      var ml = drawMat.toLowerCase();
+      if      (ml.includes('calacatta') || ml.includes('exotic') || ml.includes('level 5')) matEl.value = 'marb_calc';
+      else if (ml.includes('carrara'))                                                       matEl.value = 'marb_carr';
+      else if (ml.includes('marble'))                                                        matEl.value = 'marb_dom';
+      else if (ml.includes('quartzite'))                                                     matEl.value = 'quartzite';
+      else if (ml.includes('cambria') || ml.includes('premium quartz'))                      matEl.value = 'quartz_prem';
+      else if (ml.includes('quartz'))                                                        matEl.value = 'quartz_std';
+      else if (ml.includes('level 5') || ml.includes('premium') || ml.includes('exotic'))   matEl.value = 'gran_prem';
+      else if (ml.includes('level 3') || ml.includes('mid'))                                 matEl.value = 'gran_mid';
+      else if (ml.includes('granite'))                                                        matEl.value = 'gran_mid';
+    }
+  }
+
+  // Pull customer name from the Draw panel
+  var drawName = (document.getElementById('draw-job-name') || {}).value || '';
+  if (drawName) {
+    var nameEl = document.getElementById('client-name');
+    if (nameEl && !nameEl.value) nameEl.value = drawName;
+  }
+
+  // Pull sink from Draw panel's sink selector
+  var drawSink = (document.getElementById('draw-sink') || {}).value || 'None';
+  var sinkEl   = document.getElementById('sink');
+  if (sinkEl && drawSink && drawSink !== 'None') {
+    // Map draw panel sink values to quote builder sink options where possible
+    var sinkOpts = Array.from(sinkEl.options).map(function(o){return o.value;});
+    var match = sinkOpts.find(function(v){ return drawSink.toLowerCase().includes(v.toLowerCase()); });
+    if (match) sinkEl.value = match;
+  }
+
+  // Trigger recalc
+  if (typeof calc === 'function') calc();
+
+  // ── 4) Feedback ─────────────────────────────────────────────
+  var summary = [];
+  if (isCustom && customSqFt > 0) {
+    summary.push('Custom shape: ' + customSqFt.toFixed(1) + ' sqft gross');
+  } else {
+    if (aL) summary.push('Run A: ' + Math.round(aL) + '"');
+    if (bL) summary.push('Run B: ' + Math.round(bL) + '"');
+    if (cL) summary.push('Run C: ' + Math.round(cL) + '"');
+    if (dL) summary.push('Run D: ' + Math.round(dL) + '"');
+  }
+  if (drawMat) summary.push('Material: ' + drawMat);
+  if (drawName) summary.push('Job: ' + drawName);
+
+  if(barEl)    barEl.style.display    = 'none';
+  if(noneEl)   noneEl.style.display   = 'none';
+  if(resultEl) {
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '✅ <b>Drawing imported:</b> ' + summary.join(' · ') +
+      ' — <a href="#" onclick="qbResetDrawImport();return false;" style="color:#166534">undo</a>';
+  }
+
+  // Switch to Manual Entry tab so the rep can see / tweak the values
+  var manualTab = document.querySelector('#panel-quote .q-tabs .q-tab');
+  if (manualTab) switchDimTab('manual', manualTab);
+}
+
+function qbResetDrawImport() {
+  var barEl    = document.getElementById('qb-draw-import-bar');
+  var resultEl = document.getElementById('qb-draw-import-result');
+  if(barEl)    barEl.style.display    = '';
+  if(resultEl) resultEl.style.display = 'none';
+  setV('runA', 96); setV('runB', 72); setV('runC', 0); setV('runD', 0); setV('island', 0);
+  if (typeof calc === 'function') calc();
+}
+
+function setV(id, val) {
+  var el = document.getElementById(id);
+  if (el) { el.value = val; }
 }
 
 // == DIM TABS =================================================
@@ -13925,6 +14098,67 @@ var DEFAULT_INVENTORY=[
   {id:'inv013',name:'4" Cup Wheel — Double Row',cat:'tooling',vendor:'gmr',qty:3,min:2,unit:'each',cost:34.99,reorderQty:4,sku:'GMR-CW-45D'},
   {id:'inv014',name:'Super Glue — Medium Grade',cat:'adhesives',vendor:'braxton',qty:10,min:6,unit:'tube',cost:14.99,reorderQty:12,sku:'BB-SG-MED'},
   {id:'inv015',name:'N95 Disposable Respirators',cat:'safety',vendor:'gmr',qty:15,min:10,unit:'each',cost:1.25,reorderQty:40,sku:'GMR-RS-N95'},
+  // ── EXPANDED CATALOG ── BB Industries/Braxton-Bragg, GranQuartz, GMR ──
+  // Blades
+  {id:'inv101',name:'14" Segmented Granite Blade — Silent Core',cat:'blades',vendor:'granquartz',qty:2,min:2,unit:'each',cost:112.00,reorderQty:3,sku:'GQ-BL-14SC'},
+  {id:'inv102',name:'14" Marble Bridge Saw Blade',cat:'blades',vendor:'braxton',qty:2,min:1,unit:'each',cost:98.00,reorderQty:2,sku:'BB-BL-14M'},
+  {id:'inv103',name:'14" Quartzite Blade — Premium Bond',cat:'blades',vendor:'granquartz',qty:1,min:1,unit:'each',cost:135.00,reorderQty:2,sku:'GQ-BL-14QZ'},
+  {id:'inv104',name:'10" Wet Saw Blade — Tile & Stone',cat:'blades',vendor:'braxton',qty:3,min:2,unit:'each',cost:54.99,reorderQty:4,sku:'BB-BL-10T'},
+  {id:'inv105',name:'4.5" Turbo Blade — Angle Grinder',cat:'blades',vendor:'gmr',qty:5,min:4,unit:'each',cost:18.99,reorderQty:10,sku:'GMR-BL-4T'},
+  // Polishing Pads
+  {id:'inv201',name:'Wet Polishing Pads 4" 7-Step Granite',cat:'abrasives',vendor:'granquartz',qty:2,min:2,unit:'set',cost:64.99,reorderQty:3,sku:'GQ-PP-4WG7'},
+  {id:'inv202',name:'Dry Polishing Pads 4" 3-Step Granite',cat:'abrasives',vendor:'braxton',qty:2,min:2,unit:'set',cost:49.99,reorderQty:3,sku:'BB-PP-4DG3'},
+  {id:'inv203',name:'Weha Quartz Polishing Pads 4" 7-Step',cat:'abrasives',vendor:'granquartz',qty:1,min:1,unit:'set',cost:79.99,reorderQty:2,sku:'GQ-WH-QZ7'},
+  {id:'inv204',name:'Alpha Hand Polishing Pad Kit — 7pc',cat:'abrasives',vendor:'granquartz',qty:2,min:1,unit:'kit',cost:44.99,reorderQty:3,sku:'GQ-AL-HPK7'},
+  {id:'inv205',name:'5" 7-Step Wet Pad Set — Marble',cat:'abrasives',vendor:'braxton',qty:2,min:2,unit:'set',cost:68.00,reorderQty:3,sku:'BB-PP-5WM7'},
+  {id:'inv206',name:'Sanding Discs 60-220 Grit Assortment 50pc',cat:'abrasives',vendor:'braxton',qty:50,min:20,unit:'each',cost:0.89,reorderQty:100,sku:'BB-SD-ASST'},
+  // Tooling
+  {id:'inv301',name:'4.5" Turbo Cup Wheel — Granite',cat:'tooling',vendor:'granquartz',qty:2,min:2,unit:'each',cost:42.99,reorderQty:3,sku:'GQ-TCW-4G'},
+  {id:'inv302',name:'5" Zero Tolerance Grinding Wheel',cat:'tooling',vendor:'braxton',qty:2,min:1,unit:'each',cost:38.50,reorderQty:3,sku:'BB-ZT-5GW'},
+  {id:'inv303',name:'1-3/8" Dry Core Bit — Sink Knockout',cat:'tooling',vendor:'granquartz',qty:2,min:1,unit:'each',cost:28.99,reorderQty:3,sku:'GQ-DC-138'},
+  {id:'inv304',name:'1-3/8" Wet Core Bit — Granite/Quartz',cat:'tooling',vendor:'braxton',qty:2,min:1,unit:'each',cost:32.99,reorderQty:3,sku:'BB-WC-138'},
+  {id:'inv305',name:'2" Core Bit Set — 4pc Wet/Dry Combo',cat:'tooling',vendor:'granquartz',qty:1,min:1,unit:'set',cost:69.99,reorderQty:2,sku:'GQ-CB-4SET'},
+  {id:'inv306',name:'CNC Profile Wheel — Bullnose 3cm',cat:'tooling',vendor:'granquartz',qty:2,min:1,unit:'each',cost:185.00,reorderQty:2,sku:'GQ-CNC-BN3'},
+  {id:'inv307',name:'CNC Profile Wheel — Eased Edge 3cm',cat:'tooling',vendor:'braxton',qty:2,min:1,unit:'each',cost:175.00,reorderQty:2,sku:'BB-CNC-EE3'},
+  {id:'inv308',name:'CNC Finger Bit — 23mm 5-Segment Cobalt',cat:'tooling',vendor:'braxton',qty:3,min:2,unit:'each',cost:62.00,reorderQty:4,sku:'BB-CNC-23F'},
+  {id:'inv309',name:'CNC Vacuum Pod — 140mm',cat:'tooling',vendor:'granquartz',qty:4,min:2,unit:'each',cost:24.99,reorderQty:6,sku:'GQ-VP-140'},
+  {id:'inv310',name:'Grinder Pad Holder — 4" Hook & Loop',cat:'tooling',vendor:'braxton',qty:4,min:2,unit:'each',cost:8.99,reorderQty:6,sku:'BB-GPH-4HL'},
+  {id:'inv311',name:'Grinder Pad Holder — 5" Hook & Loop',cat:'tooling',vendor:'braxton',qty:3,min:2,unit:'each',cost:9.99,reorderQty:6,sku:'BB-GPH-5HL'},
+  // Adhesives extended
+  {id:'inv401',name:'Color Epoxy — Black',cat:'adhesives',vendor:'gmr',qty:4,min:4,unit:'each',cost:18.99,reorderQty:12,sku:'GMR-EP-BLK'},
+  {id:'inv402',name:'Color Epoxy — Brown/Mocha',cat:'adhesives',vendor:'gmr',qty:4,min:4,unit:'each',cost:18.99,reorderQty:12,sku:'GMR-EP-BRN'},
+  {id:'inv403',name:'Nitro Construction Adhesive — Cartridge',cat:'adhesives',vendor:'granquartz',qty:12,min:6,unit:'tube',cost:19.50,reorderQty:24,sku:'GQ-NI-CTG'},
+  {id:'inv404',name:'Polyester Adhesive — Knife Grade',cat:'adhesives',vendor:'braxton',qty:6,min:4,unit:'cartridge',cost:22.99,reorderQty:12,sku:'BB-PA-KG'},
+  {id:'inv405',name:'Polyester Adhesive — Flowing Grade',cat:'adhesives',vendor:'braxton',qty:6,min:4,unit:'cartridge',cost:22.99,reorderQty:12,sku:'BB-PA-FL'},
+  {id:'inv406',name:'Stone Epoxy — Clear 2-Part 250ml',cat:'adhesives',vendor:'granquartz',qty:4,min:2,unit:'kit',cost:28.99,reorderQty:6,sku:'GQ-SE-CLR'},
+  {id:'inv407',name:'Silicone Caulk — White',cat:'adhesives',vendor:'gmr',qty:8,min:6,unit:'tube',cost:8.99,reorderQty:24,sku:'GMR-SI-WHT'},
+  {id:'inv408',name:'Silicone Caulk — Almond/Bisque',cat:'adhesives',vendor:'granquartz',qty:6,min:4,unit:'tube',cost:9.49,reorderQty:12,sku:'GQ-SI-ALM'},
+  {id:'inv409',name:'Vinyl Ester Adhesive — Gray',cat:'adhesives',vendor:'braxton',qty:4,min:2,unit:'cartridge',cost:31.99,reorderQty:6,sku:'BB-VE-GRY'},
+  // Chemicals extended
+  {id:'inv501',name:'Penetrating Stone Sealer — 1 Gallon',cat:'chemicals',vendor:'granquartz',qty:2,min:1,unit:'gallon',cost:52.99,reorderQty:4,sku:'GQ-SS-1G'},
+  {id:'inv502',name:'Penetrating Stone Sealer — 1 Quart',cat:'chemicals',vendor:'granquartz',qty:4,min:2,unit:'quart',cost:18.99,reorderQty:8,sku:'GQ-SS-1Q'},
+  {id:'inv503',name:'Color Enhancing Sealer — 1 Quart',cat:'chemicals',vendor:'braxton',qty:3,min:2,unit:'quart',cost:22.99,reorderQty:6,sku:'BB-CE-1Q'},
+  {id:'inv504',name:'DryTreat Stain Proof Sealer — 1L',cat:'chemicals',vendor:'braxton',qty:2,min:1,unit:'liter',cost:64.99,reorderQty:3,sku:'BB-DT-1L'},
+  {id:'inv505',name:'Stone Cleaner Daily Use — 1 Gallon',cat:'chemicals',vendor:'granquartz',qty:3,min:2,unit:'gallon',cost:28.99,reorderQty:6,sku:'GQ-SC-1G'},
+  {id:'inv506',name:'Granite & Quartz Polish Cream — 32oz',cat:'chemicals',vendor:'granquartz',qty:4,min:2,unit:'each',cost:16.99,reorderQty:8,sku:'GQ-PC-32'},
+  {id:'inv507',name:'Stripper / Residue Remover — 1 Quart',cat:'chemicals',vendor:'braxton',qty:2,min:1,unit:'quart',cost:19.99,reorderQty:4,sku:'BB-SR-1Q'},
+  {id:'inv508',name:'Denatured Alcohol — 1 Quart',cat:'chemicals',vendor:'braxton',qty:4,min:2,unit:'quart',cost:12.49,reorderQty:8,sku:'BB-DA-1Q'},
+  {id:'inv509',name:'Epoxy Pigments — 8-Color Set',cat:'chemicals',vendor:'granquartz',qty:2,min:1,unit:'set',cost:24.99,reorderQty:3,sku:'GQ-PIG-8'},
+  // Safety extended
+  {id:'inv601',name:'Half-Face Respirator — Full Reusable',cat:'safety',vendor:'granquartz',qty:3,min:2,unit:'each',cost:39.99,reorderQty:4,sku:'GQ-RS-HF'},
+  {id:'inv602',name:'Safety Glasses — Anti-Fog',cat:'safety',vendor:'braxton',qty:12,min:8,unit:'each',cost:3.49,reorderQty:24,sku:'BB-SG-AF'},
+  {id:'inv603',name:'Cut-Resistant Gloves — L',cat:'safety',vendor:'granquartz',qty:8,min:4,unit:'pair',cost:12.99,reorderQty:12,sku:'GQ-GL-CR-L'},
+  {id:'inv604',name:'Stone Fabrication Apron — 18oz',cat:'safety',vendor:'braxton',qty:4,min:2,unit:'each',cost:28.99,reorderQty:4,sku:'BB-AP-18'},
+  {id:'inv605',name:'Ear Protection — Foam Plugs 200ct',cat:'safety',vendor:'granquartz',qty:2,min:1,unit:'box',cost:12.99,reorderQty:3,sku:'GQ-EP-200'},
+  {id:'inv606',name:'First Aid Kit — Shop 50pc',cat:'safety',vendor:'braxton',qty:2,min:1,unit:'each',cost:22.99,reorderQty:2,sku:'BB-FA-50'},
+  // Hardware extended
+  {id:'inv701',name:'Seam Setter / Seam Phantom Kit',cat:'hardware',vendor:'granquartz',qty:2,min:1,unit:'kit',cost:149.99,reorderQty:2,sku:'GQ-SS-KIT'},
+  {id:'inv702',name:'Blue Tape — 2" 60yd Roll',cat:'hardware',vendor:'gmr',qty:10,min:6,unit:'roll',cost:6.49,reorderQty:24,sku:'GMR-BT-260'},
+  {id:'inv703',name:'Composite Shims — Mixed 50pc',cat:'hardware',vendor:'braxton',qty:100,min:50,unit:'each',cost:0.19,reorderQty:200,sku:'BB-SH-50'},
+  {id:'inv704',name:'Sink Clips — U-Clip 50pc',cat:'hardware',vendor:'granquartz',qty:50,min:24,unit:'each',cost:0.85,reorderQty:100,sku:'GQ-SC-U50'},
+  {id:'inv705',name:'Faucet Drilling Template Set',cat:'hardware',vendor:'braxton',qty:3,min:2,unit:'each',cost:24.99,reorderQty:4,sku:'BB-FD-TMP'},
+  {id:'inv706',name:'Spray Bottle — Chemical Resistant 32oz',cat:'hardware',vendor:'granquartz',qty:8,min:4,unit:'each',cost:4.99,reorderQty:12,sku:'GQ-SB-32'},
+  {id:'inv707',name:'Cable Pull Handles — Stainless 4pk',cat:'hardware',vendor:'braxton',qty:8,min:4,unit:'pack',cost:12.99,reorderQty:12,sku:'BB-CPH-4PK'},
 ];
 
 function invLevelColor(item){
