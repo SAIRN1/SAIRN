@@ -123,12 +123,13 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 /* == APP SHELL == */
 #app{display:none;min-height:100vh;flex-direction:column}
 #app.visible{display:flex}
+.app-body{display:flex;flex:1;overflow:hidden;min-height:0}
 
 /* == TOPBAR == */
 .topbar{
   background:#1A1410;border-bottom:1px solid rgba(232,133,10,0.3);
-  padding:0 20px;display:flex;align-items:center;
-  justify-content:space-between;height:52px;flex-shrink:0;min-width:0;
+  padding:0 16px;display:flex;align-items:center;
+  justify-content:space-between;height:48px;flex-shrink:0;min-width:0;
 }
 .topbar-brand{
   display:flex;align-items:center;gap:10px;flex-shrink:0;
@@ -147,7 +148,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .topbar-name em{font-style:normal;color:#FDB347;}
 .topbar-name em{font-style:normal;color:var(--a);}
 
-.topbar-nav{display:flex;gap:2px}
+.topbar-nav{display:none}
 .nav-btn{
   padding:6px 14px;border-radius:6px;border:none;
   background:transparent;color:rgba(245,240,232,.6);
@@ -173,6 +174,54 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
 }
 .topbar-logout:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
 
+
+/* == LEFT SIDEBAR == */
+.sidebar{
+  width:220px;flex-shrink:0;background:#1A1410;
+  display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;
+  border-right:1px solid rgba(232,133,10,0.2);
+  transition:width .2s ease;
+}
+.sidebar.collapsed{width:52px}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+
+.sb-section{padding:8px 0}
+.sb-section:not(:last-child){border-bottom:1px solid rgba(255,255,255,0.06)}
+.sb-label{
+  font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(255,255,255,0.25);padding:6px 16px 4px;white-space:nowrap;overflow:hidden;
+}
+.sidebar.collapsed .sb-label{opacity:0}
+.sb-btn{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:8px 14px;border:none;background:transparent;
+  color:rgba(245,240,232,.6);font-family:'Outfit',sans-serif;
+  font-size:12px;font-weight:500;cursor:pointer;
+  transition:all .15s;white-space:nowrap;text-align:left;
+  border-radius:0;overflow:hidden;
+}
+.sb-btn:hover{color:#fff;background:rgba(255,255,255,0.06)}
+.sb-btn.active{color:var(--a);background:rgba(232,133,10,0.12);border-right:2px solid var(--a)}
+.sb-icon{font-size:15px;flex-shrink:0;width:22px;text-align:center}
+.sb-text{flex:1;overflow:hidden;text-overflow:ellipsis}
+.sidebar.collapsed .sb-text,.sidebar.collapsed .sb-label{display:none}
+
+.sb-toggle{
+  margin-top:auto;padding:10px 14px;border:none;background:transparent;
+  color:rgba(255,255,255,0.3);cursor:pointer;display:flex;align-items:center;
+  gap:8px;font-size:12px;font-family:'Outfit',sans-serif;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+.sb-toggle:hover{color:rgba(255,255,255,0.6)}
+
+.sb-admin{display:none}
+body.is-admin .sb-admin{display:flex}
+.sb-exec{display:none}
+body.is-exec .sb-exec{display:flex}
+
+/* Panels now live in the .app-body row */
+.panel-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 /* == MODE BAR == */
 .mode-bar{
   display:flex;gap:6px;padding:12px 16px;
@@ -1992,36 +2041,67 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
       <div class="topbar-name"><span style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px">S</span><span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85)">tone</span><span style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px">D</span><span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85)">esk</span><sup style="font-size:9px;color:rgba(255,255,255,0.6);vertical-align:super;margin-left:1px">™</sup></div>
     </div>
-    <div class="topbar-nav">
-      <button class="nav-btn active" onclick="showPanel('ai')"     >AI Shop</button>
-      <button class="nav-btn"        onclick="showPanel('quote')"  >Quote Builder</button>
-      <button class="nav-btn"        onclick="showPanel('draw')"   >Drawing Tool</button>
-      <button class="nav-btn"        onclick="showPanel('history')">History</button>
-      <button class="nav-btn" onclick="showPanel('business')">Business</button>
-      <button class="nav-btn" onclick="showPanel('schedule')">📅 Schedule</button>
-      <button class="nav-btn" onclick="showPanel('fieldmap')">🗺️ Field Map</button>
-      <button class="nav-btn" onclick="showPanel('inventory')">📦 Inventory</button>
-      <button class="nav-btn" onclick="showPanel('slabs')">🪨 Slabs</button>
-      <button class="nav-btn" onclick="showPanel('vendors')">🛒 Vendors</button>
-      <button class="nav-btn" onclick="showPanel('customers')">👥 Customers</button>
-      <button class="nav-btn" onclick="showPanel('intake')">📋 Intake</button>
-      <button class="nav-btn" onclick="showPanel('photos')">📷 Photos</button>
-      <button class="nav-btn" onclick="showPanel('warranty')">🛡️ Warranty</button>
-      <button class="nav-btn exec-only" onclick="showPanel('remakes')">🔄 Remakes</button>
-      <button class="nav-btn exec-only" onclick="showPanel('executive')">👔 Executive</button>
-      <button class="nav-btn" onclick="showPanel('comms')">💬 Comms</button>
-      <button class="nav-btn admin-only" onclick="showPanel('integrations')">🔗 Integrations</button>
-      <button class="nav-btn" onclick="showPanel('template')">&#128208; Templates</button>
-      <button class="nav-btn" onclick="showPanel('doc-scan')">📄 Doc Scanner</button>
-      <button class="nav-btn" onclick="showPanel('check-register')">📄 Check Register</button>
-      <button class="nav-btn" onclick="window.sairnOpenSuite()">🔗 SAIRN Suite</button>
-      <button class="nav-btn admin-only" onclick="showPanel('admin')">Admin</button>
-    </div>
+    <div class="topbar-nav"><!-- nav hidden; sidebar below --></div>
     <div class="topbar-right">
       <span id="role-badge-display" class="role-badge sales"></span><span id="user-label">Sales</span>
       <button class="topbar-logout" onclick="doLogout()">Sign out</button>
     </div>
   </div>
+
+  <!-- LEFT SIDEBAR -->
+  <div class="app-body">
+  <nav class="sidebar" id="app-sidebar">
+
+    <div class="sb-section">
+      <div class="sb-label">Sales</div>
+      <button class="sb-btn active" id="sb-ai"       onclick="sbNav('ai')">      <span class="sb-icon">🧠</span><span class="sb-text">AI Shop</span></button>
+      <button class="sb-btn"        id="sb-quote"    onclick="sbNav('quote')">   <span class="sb-icon">💲</span><span class="sb-text">Quote Builder</span></button>
+      <button class="sb-btn"        id="sb-draw"     onclick="sbNav('draw')">    <span class="sb-icon">✏️</span><span class="sb-text">Drawing Tool</span></button>
+      <button class="sb-btn"        id="sb-history"  onclick="sbNav('history')"> <span class="sb-icon">📜</span><span class="sb-text">History</span></button>
+      <button class="sb-btn"        id="sb-customers" onclick="sbNav('customers')"><span class="sb-icon">👥</span><span class="sb-text">Customers</span></button>
+      <button class="sb-btn"        id="sb-intake"   onclick="sbNav('intake')">  <span class="sb-icon">📋</span><span class="sb-text">Intake</span></button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Operations</div>
+      <button class="sb-btn" id="sb-schedule"  onclick="sbNav('schedule')"> <span class="sb-icon">📅</span><span class="sb-text">Schedule</span></button>
+      <button class="sb-btn" id="sb-fieldmap"  onclick="sbNav('fieldmap')"> <span class="sb-icon">🗺️</span><span class="sb-text">Field Map</span></button>
+      <button class="sb-btn sb-exec" id="sb-remakes" onclick="sbNav('remakes')"><span class="sb-icon">🔄</span><span class="sb-text">Remakes</span></button>
+      <button class="sb-btn" id="sb-photos"    onclick="sbNav('photos')">   <span class="sb-icon">📷</span><span class="sb-text">Photos</span></button>
+      <button class="sb-btn" id="sb-warranty"  onclick="sbNav('warranty')"> <span class="sb-icon">🛡️</span><span class="sb-text">Warranty</span></button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Inventory</div>
+      <button class="sb-btn" id="sb-inventory" onclick="sbNav('inventory')"><span class="sb-icon">📦</span><span class="sb-text">Shop Supplies</span></button>
+      <button class="sb-btn" id="sb-slabs"     onclick="sbNav('slabs')">    <span class="sb-icon">🪨</span><span class="sb-text">Slabs</span></button>
+      <button class="sb-btn" id="sb-vendors"   onclick="sbNav('vendors')">  <span class="sb-icon">🛒</span><span class="sb-text">Vendors</span></button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Business</div>
+      <button class="sb-btn" id="sb-business"  onclick="sbNav('business')"> <span class="sb-icon">📊</span><span class="sb-text">Business</span></button>
+      <button class="sb-btn" id="sb-comms"     onclick="sbNav('comms')">    <span class="sb-icon">💬</span><span class="sb-text">Comms</span></button>
+      <button class="sb-btn sb-exec" id="sb-executive" onclick="sbNav('executive')"><span class="sb-icon">👔</span><span class="sb-text">Executive</span></button>
+      <button class="sb-btn" id="sb-template"  onclick="sbNav('template')"> <span class="sb-icon">📄</span><span class="sb-text">Templates</span></button>
+      <button class="sb-btn" id="sb-doc-scan"  onclick="sbNav('doc-scan')"> <span class="sb-icon">🔍</span><span class="sb-text">Doc Scanner</span></button>
+      <button class="sb-btn" id="sb-check-register" onclick="sbNav('check-register')"><span class="sb-icon">🏦</span><span class="sb-text">Check Register</span></button>
+    </div>
+
+    <div class="sb-section sb-admin">
+      <div class="sb-label">Admin</div>
+      <button class="sb-btn sb-admin" id="sb-integrations" onclick="sbNav('integrations')"><span class="sb-icon">🔗</span><span class="sb-text">Integrations</span></button>
+      <button class="sb-btn sb-admin" id="sb-admin"        onclick="sbNav('admin')">       <span class="sb-icon">⚙️</span><span class="sb-text">Admin</span></button>
+      <button class="sb-btn"          onclick="window.sairnOpenSuite()">                    <span class="sb-icon">🔗</span><span class="sb-text">SAIRN Suite</span></button>
+    </div>
+
+    <button class="sb-toggle" id="sb-collapse-btn" onclick="sbToggle()">
+      <span id="sb-collapse-icon">◀</span>
+      <span class="sb-text" id="sb-collapse-label">Collapse</span>
+    </button>
+  </nav>
+
+  <div class="panel-wrap">
 
   <!-- == AI PANEL (full StoneDesk AI chat) == -->
   
@@ -16106,7 +16186,8 @@ document.addEventListener('DOMContentLoaded', function() {
       <button class="btn bo bsm" onclick="window.print()">🖨️ Print Signed Copy</button>
     </div>
   </div>
-</div>
+</div><!-- /panel-wrap -->
+</div><!-- /app-body -->
 
 <script>
 // Field Quote JS for stonedesk
@@ -17544,5 +17625,57 @@ function intakeLoadToDraw(id) {
     if (typeof showToast === 'function') showToast('Drawing loaded from client intake!');
   }, 300);
 }
+</script>
+
+<script>
+// ============================================================
+// SIDEBAR NAVIGATION
+// sbNav() is the primary navigation trigger. showPanel() still
+// works everywhere internally — sbNav just wraps it and syncs
+// the sidebar highlight.
+// ============================================================
+
+var _sbCollapsed = false;
+
+function sbNav(id) {
+  showPanel(id);
+  // Highlight correct sidebar button
+  document.querySelectorAll('.sb-btn').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('sb-'+id);
+  if (btn) btn.classList.add('active');
+}
+
+function sbToggle() {
+  _sbCollapsed = !_sbCollapsed;
+  var sidebar = document.getElementById('app-sidebar');
+  if (_sbCollapsed) {
+    sidebar.classList.add('collapsed');
+    document.getElementById('sb-collapse-icon').textContent = '▶';
+  } else {
+    sidebar.classList.remove('collapsed');
+    document.getElementById('sb-collapse-icon').textContent = '◀';
+  }
+}
+
+// Patch showPanel so the sidebar stays in sync when panels are
+// opened from anywhere (intake accept → schedule, draw import, etc.)
+(function() {
+  var _origShowPanel = window.showPanel;
+  window.showPanel = function(id) {
+    _origShowPanel(id);
+    document.querySelectorAll('.sb-btn').forEach(function(b){ b.classList.remove('active'); });
+    var btn = document.getElementById('sb-'+id);
+    if (btn) btn.classList.add('active');
+  };
+})();
+
+// Make #app fill the viewport height for the sidebar layout
+document.addEventListener('DOMContentLoaded', function() {
+  var app = document.getElementById('app');
+  if (app) {
+    app.style.height = '100vh';
+    app.style.overflow = 'hidden';
+  }
+});
 </script>
 </body></html>
