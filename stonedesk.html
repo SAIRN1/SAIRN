@@ -5761,15 +5761,28 @@ function drawCTPreview() {
     if (hasStub) window._ctRects.push({key:'B', x:bx, y:by, w:bw, h:bh});
 
     if (hasStub) {
-      // One continuous outline, clockwise starting at B's top-left, around the whole L, back
-      // to start. The inner step where B meets A (B's bottom-right corner) is the only place
-      // the path turns inward — everywhere else it's a simple rectangle-ish perimeter.
+      // One continuous outline, clockwise starting at B's top-left, around the whole L, back to
+      // start. Each segment is mapped to EXACTLY ONE of the 7 labels the Edge Assignment dropdown
+      // actually lists for lshape (A-Front, A-Back (wall), A-Left end, B-Front, B-Back (wall),
+      // B-End, Corner (inside)) — the previous version reused 'B-Back (wall)' for two different
+      // segments and never referenced B-Front/B-End/Corner at all, so picking those did nothing
+      // and picking B-Back (wall) painted two unrelated edges at once. Fixed to a clean 1:1 map.
       colorEdge(bx,by, bx+bw,by, ea('B-Back (wall)','wall'));                    // B top (back wall)
-      colorEdge(bx+bw,by, bx+bw,ay, ea('B-Front','polished'));                   // B right side, down to A's top
+      colorEdge(bx+bw,by, bx+bw,ay, ea('B-Front','polished'));                   // B right side, down to A's top — this is B's exposed front face
       colorEdge(bx+bw,ay, ax+aw,ay, ea('A-Back (wall)','wall'));                 // remainder of A's top (back wall), from B's right edge to A's right edge
-      colorEdge(ax+aw,ay, ax+aw,ay+ah, ea('A-Left end','polished'));             // A right end
-      colorEdge(ax+aw,ay+ah, ax,ay+ah, ea('A-Front','polished'));                // A front (bottom)
-      colorEdge(ax,ay+ah, ax,by, ea('B-Back (wall)','wall'));                    // left side, up through A and B's shared left edge, back to start
+      colorEdge(ax+aw,ay, ax+aw,ay+ah, ea('A-Left end','polished'));             // A right end (note: dropdown label says "Left end" but this is the run's far end from the corner — matches the legacy straight-shape convention this was copied from)
+      colorEdge(ax+aw,ay+ah, ax,ay+ah, ea('A-Front','polished'));                // A front (the long exposed front edge)
+      colorEdge(ax,ay+ah, ax,by, ea('B-End','wall'));                            // the shared left side running through both A and B — this is B's far end, distinct from B's "Front" (its right side)
+      // "Corner (inside)" has no separate physical segment of its own in this layout (the inside
+      // corner is a single point where B meets A, not an edge with length) — but the dropdown
+      // still lists it as an option in case the rep wants to flag special corner treatment
+      // (e.g. a radius or backsplash detail at the inside corner). Drawn as a small marker dot
+      // so picking a color for it is visible, rather than silently doing nothing.
+      const cornerColor = ea('Corner (inside)', null);
+      if (cornerColor) {
+        ctx.fillStyle = EDGE_COLORS[cornerColor].color;
+        ctx.beginPath(); ctx.arc(bx+bw, ay, 5, 0, Math.PI*2); ctx.fill();
+      }
     } else {
       // No stub — just a plain straight run, bordered normally like the straight-shape branch.
       colorEdge(ax,ay,ax+aw,ay,ea('A-Back (wall)','wall')); colorEdge(ax+aw,ay,ax+aw,ay+ah,ea('A-Left end','polished')); colorEdge(ax,ay+ah,ax+aw,ay+ah,ea('A-Front','polished')); colorEdge(ax,ay,ax,ay+ah,ea('A-Back (wall)','wall'));
