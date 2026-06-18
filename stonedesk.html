@@ -6408,9 +6408,7 @@ function dcCutoutScreenPos(c) {
     const sinkShapeDef = SINK_SHAPES[sink.sinkShape] || SINK_SHAPES.single;
     const scale = dcCurrentScalePxPerIn(sink);
     const sinkHalfWPx = (sinkShapeDef.wIn * scale) / 2;
-    // Board now lies on its long side (dIn, matching sink depth) horizontally, so that's its
-    // horizontal half-extent from center — not the short "width" dimension anymore.
-    const dbHalfWPx = (sinkShapeDef.dIn * scale) / 2;
+    const dbHalfWPx = (dcDrainboardWidthForSink(sink) * scale) / 2;
     const offsetPx = sinkHalfWPx + dbHalfWPx;
     return { x: sinkP.x + (c.side === 'left' ? -offsetPx : offsetPx), y: sinkP.y };
   }
@@ -6573,33 +6571,33 @@ function dcDrawDrainboardShape(ctx, c, p) {
   const scale = dcCurrentScalePxPerIn(c);
   const sink = dcCutouts.find(s => s.id === c.attachedToSinkId);
   const dIn = sink ? (SINK_SHAPES[sink.sinkShape]||SINK_SHAPES.single).dIn : 19;
-  // Board lies on its LONG side: long dimension (dIn, matches sink depth) runs horizontally
-  // (3-to-9 on a clock), short dimension (board "width" — 10in kitchen / 6in barPrep) runs
-  // vertically and is the edge that touches the sink.
-  const longPx = dIn * scale, shortPx = dcDrainboardWidthForSink(sink) * scale;
-  const x0 = p.x - longPx/2, y0 = p.y - shortPx/2;
+  // Board footprint: narrow width (10in kitchen / 6in barPrep) horizontal, FULL sink depth
+  // vertical — sits flush beside the sink at the same front-to-back depth, like a continuation
+  // of the counter. Confirmed against real stone-fabricator reference photos.
+  const wPx = dcDrainboardWidthForSink(sink) * scale, dPx = dIn * scale;
+  const x0 = p.x - wPx/2, y0 = p.y - dPx/2;
   const towardSink = c.side === 'left' ? 1 : -1; // left-attached board's sink is to its right (+x), right-attached's sink is to its left (-x)
 
   ctx.save();
   ctx.lineWidth = 2; ctx.strokeStyle = c.color; ctx.fillStyle = c.color+'1A';
-  dcRoundRectPath(ctx, x0, y0, longPx, shortPx, Math.min(longPx,shortPx)*0.06);
+  dcRoundRectPath(ctx, x0, y0, wPx, dPx, Math.min(wPx,dPx)*0.06);
   ctx.fill(); ctx.stroke();
 
-  // Parallel HORIZONTAL groove lines running the long way (left-right), each angled slightly so
-  // the inner (sink-side) end sits offset — visually reads as "slopes toward the sink."
-  const margin = longPx * 0.08;
+  // Parallel HORIZONTAL groove lines running left-right (the short way, 3-to-9 on a clock),
+  // each spanning nearly the full width and stacked front-to-back down the board's depth.
+  // This is the orientation real drainboard grooves use: water sheets sideways into the basin.
+  const marginV = dPx * 0.06, marginH = wPx * 0.1;
   for (let i=0;i<DRAINBOARD_GROOVE_COUNT;i++) {
-    const gy = y0 + shortPx*((i+0.5)/DRAINBOARD_GROOVE_COUNT);
-    const slope = towardSink * shortPx * 0.06;
+    const gy = y0 + marginV + (dPx-2*marginV)*(i/(DRAINBOARD_GROOVE_COUNT-1));
     ctx.strokeStyle = c.color+'AA'; ctx.lineWidth = Math.max(1, scale*0.18);
-    ctx.beginPath(); ctx.moveTo(x0+margin, gy); ctx.lineTo(x0+longPx-margin, gy + slope); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0+marginH, gy); ctx.lineTo(x0+wPx-marginH, gy); ctx.stroke();
   }
 
-  // Flow-direction arrow at the vertical center, pointing sideways toward the attached sink
-  // (sits on the inner edge — the edge nearest the sink — since that's the side water drains off).
-  const innerEdgeX = towardSink > 0 ? x0 + longPx - margin*0.8 : x0 + margin*0.8;
+  // Flow-direction arrow at vertical center, pointing sideways toward the attached sink (the
+  // inner edge — nearest the sink — is where water sheets off).
+  const innerEdgeX = towardSink > 0 ? x0 + wPx - marginH*0.6 : x0 + marginH*0.6;
   const ax = innerEdgeX, ay = p.y;
-  const arrowLen = Math.min(longPx,shortPx)*0.32;
+  const arrowLen = Math.min(wPx,dPx)*0.28;
   ctx.strokeStyle = c.color; ctx.fillStyle = c.color; ctx.lineWidth = Math.max(1.5, scale*0.15);
   ctx.beginPath(); ctx.moveTo(ax - towardSink*arrowLen, ay); ctx.lineTo(ax + towardSink*arrowLen, ay); ctx.stroke();
   ctx.beginPath();
