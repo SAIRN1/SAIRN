@@ -6565,40 +6565,42 @@ function renderDCCutouts(ctx) {
   });
 }
 
-// Draws one drainboard: a fixed 10in x 19in footprint of parallel sloped grooves (runnels),
-// attached to one side of a placed sink, with a directional flow-arrow pointing back toward
-// that sink — since position is always derived as an offset from the sink, the grooves and
-// arrow always read as draining toward it correctly with no separate orientation step needed.
+// Draws one drainboard: a fixed 10in (left-right) x 19in (front-back, matches sink depth)
+// footprint sitting flush against one side of a placed sink. Grooves run HORIZONTALLY across
+// the narrow 10in dimension, sloping toward the sink, since the board sits beside the sink
+// (not above/below it) — water needs to travel sideways into the sink, not front-to-back.
 function dcDrawDrainboardShape(ctx, c, p) {
   const scale = dcCurrentScalePxPerIn(c);
   const sink = dcCutouts.find(s => s.id === c.attachedToSinkId);
   const dIn = sink ? (SINK_SHAPES[sink.sinkShape]||SINK_SHAPES.single).dIn : 19;
   const wPx = DRAINBOARD_WIDTH_IN * scale, dPx = dIn * scale;
   const x0 = p.x - wPx/2, y0 = p.y - dPx/2;
-  const towardSink = c.side === 'left' ? 1 : -1; // left-attached board points right (toward sink), right-attached points left
+  const towardSink = c.side === 'left' ? 1 : -1; // left-attached board's sink is to its right (+x), right-attached's sink is to its left (-x)
 
   ctx.save();
   ctx.lineWidth = 2; ctx.strokeStyle = c.color; ctx.fillStyle = c.color+'1A';
   dcRoundRectPath(ctx, x0, y0, wPx, dPx, Math.min(wPx,dPx)*0.06);
   ctx.fill(); ctx.stroke();
 
-  // Parallel groove lines, sloped slightly toward the sink side.
-  const margin = dPx * 0.1;
+  // Parallel HORIZONTAL groove lines running across the narrow width, each sloping slightly
+  // toward the sink side so the direction of drainage reads correctly at a glance.
+  const margin = wPx * 0.12;
   for (let i=0;i<DRAINBOARD_GROOVE_COUNT;i++) {
-    const gx = x0 + wPx*((i+0.5)/DRAINBOARD_GROOVE_COUNT);
-    const slope = towardSink * wPx * 0.025;
+    const gy = y0 + dPx*((i+0.5)/DRAINBOARD_GROOVE_COUNT);
+    const slope = towardSink * dPx * 0.04;
     ctx.strokeStyle = c.color+'AA'; ctx.lineWidth = Math.max(1, scale*0.18);
-    ctx.beginPath(); ctx.moveTo(gx - slope, y0+margin); ctx.lineTo(gx + slope, y0+dPx-margin); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0+margin, gy - slope); ctx.lineTo(x0+wPx-margin, gy + slope); ctx.stroke();
   }
 
-  // Flow-direction arrow at the bottom-center, pointing toward the attached sink.
-  const ax = p.x, ay = y0 + dPx - margin*0.6, arrowLen = Math.min(wPx,dPx)*0.18;
+  // Flow-direction arrow at the vertical center, pointing sideways toward the attached sink.
+  const ax = towardSink > 0 ? x0 + wPx - margin*0.6 : x0 + margin*0.6, ay = p.y;
+  const arrowLen = Math.min(wPx,dPx)*0.22;
   ctx.strokeStyle = c.color; ctx.fillStyle = c.color; ctx.lineWidth = Math.max(1.5, scale*0.15);
-  ctx.beginPath(); ctx.moveTo(ax - towardSink*arrowLen, ay); ctx.lineTo(ax + towardSink*arrowLen, ay); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ax, ay - arrowLen); ctx.lineTo(ax, ay + arrowLen); ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(ax + towardSink*arrowLen, ay);
-  ctx.lineTo(ax + towardSink*(arrowLen-arrowLen*0.5), ay - arrowLen*0.35);
-  ctx.lineTo(ax + towardSink*(arrowLen-arrowLen*0.5), ay + arrowLen*0.35);
+  ctx.moveTo(ax, ay + arrowLen);
+  ctx.lineTo(ax - arrowLen*0.35, ay + (arrowLen-arrowLen*0.5));
+  ctx.lineTo(ax + arrowLen*0.35, ay + (arrowLen-arrowLen*0.5));
   ctx.closePath(); ctx.fill();
   ctx.restore();
 }
