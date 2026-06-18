@@ -4262,9 +4262,14 @@ function fmPopulatePersonSelect(){
   var sel=document.getElementById('fm-person-select'); if(!sel) return;
   var people=fmDistinctPeople();
   var prevVal=sel.value;
-  var defaultName=(typeof currentUser!=='undefined'&&currentUser&&currentUser.name)?currentUser.name:people[0];
+  if(!people.length){
+    sel.innerHTML='<option value="">No crew names yet</option>';
+    sel.value=''; sel.disabled=true;
+    return;
+  }
+  sel.disabled=false;
   sel.innerHTML=people.map(function(p){ return '<option value="'+escHtml(p)+'">'+escHtml(p)+'</option>'; }).join('');
-  sel.value=people.indexOf(prevVal)!==-1?prevVal:(defaultName||'');
+  sel.value=people.indexOf(prevVal)!==-1?prevVal:people[0];
 }
 
 function fmEnsureDateDefault(inputId){
@@ -4279,6 +4284,14 @@ function fmRenderMyDay(){
   var dateStr=document.getElementById('fm-date-select').value;
   var stops=fmGetOrderedStops(person, dateStr);
   var sv=(id,html)=>{var el=document.getElementById(id);if(el)el.innerHTML=html;};
+
+  if(!fmDistinctPeople().length){
+    sv('fm-day-summary','');
+    sv('fm-day-insight','');
+    sv('fm-stop-list','<div style="text-align:center;color:var(--muted);padding:32px;max-width:480px;margin:0 auto">No crew names yet. Field Map pulls names from the <b>Installer</b> field on a Job, <b>Assigned To</b> on a Remake, or you can click <b>+ Add Stop</b> above and type a name directly.</div>');
+    sv('fm-map-container','<div class="fm-map-placeholder">No stops to map yet.</div>');
+    return;
+  }
 
   var notDone=stops.filter(function(s){return s.status!=='done';}).length;
   var done=stops.length-notDone;
