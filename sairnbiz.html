@@ -1346,6 +1346,10 @@ async function callClaude(system, messages, maxTokens) {
 <!-- CHECK REGISTER -->
 <div class="page" id="page-check-reg">
   <div class="page-title">Check Register</div>
+  <div id="sairnbiz-bridge-expenses" style="display:none;background:#F0FEF6;border:1px solid #BBF7D0;border-radius:10px;padding:12px 16px;margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;color:#0F766E;margin-bottom:6px">📥 Expenses from StoneDesk</div>
+    <div style="font-size:11px;color:#6B7280">Run Sync to see expenses sent from StoneDesk.</div>
+  </div>
   <div class="page-sub">Full history of all checks written</div>
   <div class="toolbar"><button class="btn btn-outline" onclick="exportCSV('creg-tbl','sairnbiz-check-register')">Export CSV</button></div>
   <div class="card"><div class="card-body p0">
@@ -3666,6 +3670,8 @@ const SAIRN_APP_ID    = 'sairnbiz';
 const SAIRN_PROXY     = 'https://sairn.vercel.app/api/claude';
 const SAIRN_BRIDGE    = 'https://sairn.vercel.app/api/bridge';
 
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 // ---- STATE ----
 let _fqStep      = 1;
 let _fqTrade     = 'hr-consulting';
@@ -3849,24 +3855,97 @@ window.sairnClearSig = function() {
 
 // ---- BRIDGE SYNC ----
 window.sairnSyncAll = async function() {
-  sairnToast('Syncing all connected apps...');
+  sairnToast('Syncing with bridge...');
+  var shopId = localStorage.getItem('sairnbiz_license_key') || localStorage.getItem('sairn_license_key_sairnbiz') || 'sairnbiz-demo';
+
+  // Gather real local data to push UP to the bridge
+  var employees = JSON.parse(localStorage.getItem('sairnbiz_employees') || '[]');
+  var payroll   = JSON.parse(localStorage.getItem('sairnbiz_payroll')   || '[]');
+  var checks    = JSON.parse(localStorage.getItem('sairnbiz_checks')    || '[]');
+  var invoices  = JSON.parse(localStorage.getItem('sairnbiz_invoices')  || '[]');
+
+  // Merge check register into invoices for bridge
+  checks.forEach(function(c) {
+    if (!invoices.find(function(i){return i.id==='CHK-'+c.num;})) {
+      invoices.push({id:'CHK-'+c.num,type:'check',num:c.num,date:c.date,payee:c.payee,
+        amount:parseFloat(c.amount)||0,memo:c.memo,gl_account:'Accounts Payable',app_id:'sairnbiz'});
+    }
+  });
+
   try {
-    await fetch(SAIRN_BRIDGE, {
+    // PUSH: send SAIRNbiz data to bridge
+    await fetch(SAIRN_BRIDGE+'?action=push', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from:SAIRN_APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})
+      body:JSON.stringify({shopId:shopId, employees:employees, payroll:payroll, invoices:invoices,
+        financialSummary:{
+          shopName: localStorage.getItem('sairnbiz_company_name') || 'Stone Shop',
+          monthlyRevenue: parseFloat(localStorage.getItem('sairnbiz_monthly_revenue')||'0'),
+          monthlyExpenses: parseFloat(localStorage.getItem('sairnbiz_monthly_expenses')||'0'),
+          netIncome: parseFloat(localStorage.getItem('sairnbiz_net_income')||'0'),
+          updatedAt: new Date().toISOString()
+        }
+      })
     });
+
+    // PULL: get latest data from StoneDesk (jobs, slabs, customers, expenses from StoneDesk)
+    var pullRes = await fetch(SAIRN_BRIDGE+'?action=pull&shop='+encodeURIComponent(shopId)+'&type=all');
+    if (pullRes.ok) {
+      var pulled = await pullRes.json();
+      if (pulled.ok) {
+        // Store StoneDesk data in SAIRNbiz localStorage for display
+        if (pulled.jobs    && pulled.jobs.length)    localStorage.setItem('sairnbiz_bridge_jobs',    JSON.stringify(pulled.jobs));
+        if (pulled.slabs   && pulled.slabs.length)   localStorage.setItem('sairnbiz_bridge_slabs',   JSON.stringify(pulled.slabs));
+        if (pulled.customers && pulled.customers.length) localStorage.setItem('sairnbiz_bridge_customers', JSON.stringify(pulled.customers));
+        if (pulled.expenses && pulled.expenses.length)  localStorage.setItem('sairnbiz_bridge_expenses',  JSON.stringify(pulled.expenses));
+        sairnRenderBridgeData(pulled);
+      }
+    }
+
     const ts = new Date().toLocaleTimeString();
     const el = document.getElementById('sairn-last-sync');
     if (el) el.textContent = 'Last sync: '+ts;
-    sairnToast('All apps synced');
+    sairnToast('Bridge synced ✓ — '+employees.length+' employees, '+invoices.length+' invoices pushed');
   } catch(e) {
-    sairnToast('Bridge offline -- will retry');
+    console.warn('Bridge sync error:', e);
+    sairnToast('Saved locally — bridge will sync when online');
+  }
+};
+
+// Render data pulled from StoneDesk into the SAIRNbiz Money dashboard
+window.sairnRenderBridgeData = function(data) {
+  // Update expense log in Check Register with StoneDesk expenses
+  var expEl = document.getElementById('sairnbiz-bridge-expenses');
+  if (expEl && data.expenses && data.expenses.length) {
+    expEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:#0F766E;margin-bottom:6px">📥 From StoneDesk ('+data.expenses.length+' expense(s))</div>'+
+      data.expenses.map(function(e){
+        return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #E5E7EB;font-size:12px">'+
+          '<span><b>'+escHtml(e.payee||'')+'</b> — '+escHtml(e.memo||'')+'</span>'+
+          '<span>$'+parseFloat(e.amount||0).toLocaleString('en-US',{minimumFractionDigits:2})+'</span></div>';
+      }).join('');
+    expEl.style.display = 'block';
+  }
+
+  // Update job count on Money dashboard
+  var jobEl = document.getElementById('sairnbiz-bridge-jobs');
+  if (jobEl && data.jobs) {
+    jobEl.textContent = data.jobs.length + ' jobs synced from StoneDesk';
   }
 };
 
 window.sairnExportCSV = function() {
   sairnToast('CSV export ready');
 };
+
+// Auto-pull bridge data on load (non-blocking)
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    var shopId = localStorage.getItem('sairnbiz_license_key') || localStorage.getItem('sairn_license_key_sairnbiz') || 'sairnbiz-demo';
+    fetch('https://sairn.vercel.app/api/bridge?action=pull&shop='+encodeURIComponent(shopId)+'&type=all')
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d.ok && typeof sairnRenderBridgeData==='function') sairnRenderBridgeData(d); })
+      .catch(function(){});
+  }, 1500);
+});
 
 // ---- PRICING ----
 function sairnGetPricing() {
