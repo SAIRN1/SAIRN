@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Intake — StoneDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:#F8FAF9;color:#111827;min-height:100vh}
+
+/* ── Header ── */
+.hdr{background:#0A3D1F;padding:16px 20px;display:flex;align-items:center;gap:12px}
+.hdr-logo{width:40px;height:40px;background:#16C762;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;flex-shrink:0}
+.hdr-title{color:#fff;font-size:17px;font-weight:800}
+.hdr-sub{color:#5CFF9D;font-size:12px;margin-top:1px}
+
+/* ── Progress bar ── */
+.progress-wrap{background:#fff;border-bottom:1px solid #E5E7EB;padding:16px 20px}
+.progress-steps{display:flex;gap:0;counter-reset:step}
+.step-pill{flex:1;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#9CA3AF;position:relative}
+.step-pill::after{content:'';flex:1;height:2px;background:#E5E7EB;margin:0 4px}
+.step-pill:last-child::after{display:none}
+.step-pill.active{color:#16C762}
+.step-pill.done{color:#16C762}
+.step-num{width:22px;height:22px;border-radius:50%;border:2px solid #E5E7EB;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;background:#fff}
+.step-pill.active .step-num{border-color:#16C762;color:#16C762}
+.step-pill.done .step-num{border-color:#16C762;background:#16C762;color:#fff}
+
+/* ── Container ── */
+.container{max-width:560px;margin:0 auto;padding:20px 16px 60px}
+
+/* ── Cards ── */
+.card{background:#fff;border-radius:16px;border:1px solid #E5E7EB;padding:22px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.card-title{font-size:15px;font-weight:800;color:#0A3D1F;margin-bottom:4px}
+.card-sub{font-size:12px;color:#6B7280;margin-bottom:18px;line-height:1.5}
+
+/* ── Fields ── */
+.field{margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px}
+label .req{color:#16C762}
+input[type=text],input[type=tel],input[type=email],input[type=number],select,textarea{
+  width:100%;background:#F9FAFB;border:1.5px solid #E5E7EB;border-radius:10px;
+  padding:11px 13px;font-size:14px;font-family:'Outfit',sans-serif;color:#111827;
+  outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:#16C762}
+textarea{resize:vertical;min-height:80px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── Project type pills ── */
+.proj-pills{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.proj-pill{background:#F9FAFB;border:2px solid #E5E7EB;border-radius:12px;padding:12px 10px;
+  text-align:center;cursor:pointer;transition:all .15s;user-select:none}
+.proj-pill.selected{background:#F0FEF6;border-color:#16C762;color:#0A3D1F}
+.proj-pill .pill-icon{font-size:22px;display:block;margin-bottom:4px}
+.proj-pill .pill-label{font-size:12px;font-weight:700}
+
+/* ── Counter/slider ── */
+.counter-row{display:flex;align-items:center;gap:12px;margin-top:6px}
+.count-btn{width:36px;height:36px;border-radius:50%;border:2px solid #16C762;background:#fff;
+  font-size:20px;font-weight:700;color:#16C762;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;transition:all .15s}
+.count-btn:hover{background:#16C762;color:#fff}
+.count-val{font-size:22px;font-weight:800;color:#0A3D1F;min-width:32px;text-align:center}
+
+/* ── Photo upload ── */
+.photo-zone{border:2px dashed #BBF7D0;border-radius:14px;padding:28px 20px;text-align:center;
+  cursor:pointer;transition:all .2s;background:#F0FEF6}
+.photo-zone:hover,.photo-zone.over{border-color:#16C762;background:#DCFCE7}
+.photo-zone .pz-icon{font-size:36px;margin-bottom:8px}
+.photo-zone .pz-title{font-size:14px;font-weight:700;color:#0A3D1F;margin-bottom:4px}
+.photo-zone .pz-sub{font-size:12px;color:#6B7280}
+.photo-previews{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.photo-thumb{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-thumb .rm{position:absolute;top:4px;right:4px;width:20px;height:20px;background:rgba(0,0,0,.55);
+  color:#fff;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* ── Submit button ── */
+.btn-primary{width:100%;background:#16C762;color:#fff;border:none;border-radius:12px;
+  padding:15px;font-size:15px;font-weight:800;font-family:'Outfit',sans-serif;cursor:pointer;
+  transition:opacity .15s;margin-top:8px}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-back{background:none;border:2px solid #E5E7EB;border-radius:12px;padding:13px;
+  font-size:14px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;
+  color:#374151;transition:all .15s;margin-top:8px;width:100%}
+.btn-back:hover{border-color:#16C762;color:#16C762}
+
+/* ── Thank you ── */
+.thankyou{text-align:center;padding:40px 20px}
+.ty-icon{font-size:60px;margin-bottom:16px}
+.ty-title{font-size:22px;font-weight:800;color:#0A3D1F;margin-bottom:8px}
+.ty-sub{font-size:14px;color:#6B7280;line-height:1.6;margin-bottom:24px}
+.ty-steps{text-align:left;background:#F0FEF6;border-radius:14px;padding:16px 18px}
+.ty-step{display:flex;gap:10px;font-size:13px;color:#374151;margin-bottom:10px;align-items:flex-start}
+.ty-step:last-child{margin-bottom:0}
+.ty-step .n{background:#16C762;color:#fff;width:20px;height:20px;border-radius:50%;
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+/* ── Note box ── */
+.note{background:#F0FEF6;border:1px solid #BBF7D0;border-radius:10px;padding:10px 13px;
+  font-size:12px;color:#166534;margin-bottom:14px;line-height:1.5}
+
+/* ── Spinner ── */
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">S</div>
+  <div>
+    <div class="hdr-title" id="hdr-shop">StoneDesk</div>
+    <div class="hdr-sub">Project Intake Form</div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-steps">
+    <div class="step-pill active" id="spill-1"><span class="step-num">1</span>About You</div>
+    <div class="step-pill" id="spill-2"><span class="step-num">2</span>Your Project</div>
+    <div class="step-pill" id="spill-3"><span class="step-num">3</span>Photos</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- STEP 1: About You -->
+  <div id="step-1">
+    <div class="card">
+      <div class="card-title">Welcome! 👋</div>
+      <div class="card-sub">Your <span id="shop-name-inline">fabricator</span> sent you this quick form. It takes about 2 minutes and helps us arrive at your appointment fully prepared — with your project already mapped out before we walk in the door.</div>
+
+      <div class="field">
+        <label>Your Full Name <span class="req">*</span></label>
+        <input type="text" id="i-name" placeholder="e.g. Sarah Johnson" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>Phone Number <span class="req">*</span></label>
+        <input type="tel" id="i-phone" placeholder="614-555-0100" autocomplete="tel">
+      </div>
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="i-email" placeholder="sarah@email.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Are you a homeowner, builder, or designer?</label>
+        <select id="i-role">
+          <option value="homeowner">Homeowner</option>
+          <option value="builder">Builder / Contractor</option>
+          <option value="designer">Interior Designer</option>
+          <option value="architect">Architect</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="goStep(2)">Next: Your Project →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Project Details -->
+  <div id="step-2" style="display:none">
+    <div class="card">
+      <div class="card-title">Tell us about your project</div>
+      <div class="card-sub">Don't worry about being exact — rough estimates help us prepare. We'll take precise measurements at your appointment.</div>
+
+      <div class="field">
+        <label>What type of project is this?</label>
+        <div class="proj-pills" id="proj-pills">
+          <div class="proj-pill selected" data-val="kitchen" onclick="selectProj(this)">
+            <span class="pill-icon">🍳</span><span class="pill-label">Kitchen</span>
+          </div>
+          <div class="proj-pill" data-val="bathroom" onclick="selectProj(this)">
+            <span class="pill-icon">🚿</span><span class="pill-label">Bathroom Vanity</span>
+          </div>
+          <div class="proj-pill" data-val="bar" onclick="selectProj(this)">
+            <span class="pill-icon">🥂</span><span class="pill-label">Bar / Entertainment</span>
+          </div>
+          <div class="proj-pill" data-val="outdoor" onclick="selectProj(this)">
+            <span class="pill-icon">🌿</span><span class="pill-label">Outdoor</span>
+          </div>
+          <div class="proj-pill" data-val="fireplace" onclick="selectProj(this)">
+            <span class="pill-icon">🔥</span><span class="pill-label">Fireplace Surround</span>
+          </div>
+          <div class="proj-pill" data-val="other" onclick="selectProj(this)">
+            <span class="pill-icon">✨</span><span class="pill-label">Other</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Roughly, what is the longest counter run? (feet)</label>
+        <div class="counter-row">
+          <button class="count-btn" onclick="adj('i-runa',-1)">−</button>
+          <div class="count-val" id="i-runa-display">10</div>
+          <button class="count-btn" onclick="adj('i-runa',1)">+</button>
+          <input type="hidden" id="i-runa" value="10">
+          <span style="font-size:12px;color:#6B7280">feet</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Do you have an L-shape, U-shape, or island?</label>
+        <select id="i-shape">
+          <option value="straight">Just a straight run</option>
+          <option value="lshape">L-shape (two connected runs)</option>
+          <option value="ushape">U-shape (three runs / horseshoe)</option>
+          <option value="island">Kitchen island (separate piece)</option>
+          <option value="island_l">L-shape + island</option>
+          <option value="unsure">Not sure</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>How many sink cutouts?</label>
+        <div class="counter-row">
+          <button class="count-btn" onclick="adj('i-sinks',-1)">−</button>
+          <div class="count-val" id="i-sinks-display">1</div>
+          <button class="count-btn" onclick="adj('i-sinks',1)">+</button>
+          <input type="hidden" id="i-sinks" value="1">
+          <span style="font-size:12px;color:#6B7280">sink(s)</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Any additional details or special requests?</label>
+        <textarea id="i-notes" placeholder="e.g. We have a farmhouse sink, need a pot filler hole, waterfall edge on the island, prefer light veiny marble..."></textarea>
+      </div>
+
+      <button class="btn-primary" onclick="goStep(3)">Next: Add Photos →</button>
+      <button class="btn-back" onclick="goStep(1)">← Back</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Photos -->
+  <div id="step-3" style="display:none">
+    <div class="card">
+      <div class="card-title">Add photos <span style="font-weight:400;font-size:13px;color:#6B7280">(optional but super helpful)</span></div>
+      <div class="card-sub">Photos of your existing kitchen, a rough sketch, or even a Pinterest inspiration image help us understand your vision and prep your layout before we arrive.</div>
+
+      <div class="note">📸 Tip: a photo from the corner of your kitchen showing all the counter runs is worth a thousand words. Don't overthink it — a phone photo is perfect.</div>
+
+      <div class="photo-zone" id="photo-zone"
+        onclick="document.getElementById('photo-input').click()"
+        ondragover="photoDrag(event,true)" ondragleave="photoDrag(event,false)" ondrop="photoDrop(event)">
+        <div class="pz-icon">📷</div>
+        <div class="pz-title">Tap to add photos</div>
+        <div class="pz-sub">or drag & drop · up to 5 photos · any format</div>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="photoSelect(event)">
+      <div class="photo-previews" id="photo-previews"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Anything else?</div>
+      <div class="field">
+        <label>Best time to reach you</label>
+        <select id="i-contact-time">
+          <option value="anytime">Anytime</option>
+          <option value="morning">Morning (8am–12pm)</option>
+          <option value="afternoon">Afternoon (12pm–5pm)</option>
+          <option value="evening">Evening (5pm–8pm)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Preferred contact method</label>
+        <select id="i-contact-method">
+          <option value="text">Text message</option>
+          <option value="call">Phone call</option>
+          <option value="email">Email</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="submit-btn" onclick="submitIntake()">✓ Submit My Project Info</button>
+    <button class="btn-back" onclick="goStep(2)">← Back</button>
+  </div>
+
+  <!-- THANK YOU -->
+  <div id="step-done" style="display:none">
+    <div class="card thankyou">
+      <div class="ty-icon">🎉</div>
+      <div class="ty-title">You're all set!</div>
+      <div class="ty-sub">Your information has been sent to <span id="ty-shop">your fabricator</span>. Here's what happens next:</div>
+      <div class="ty-steps">
+        <div class="ty-step"><div class="n">1</div><div>Your sales rep reviews your project details and photos.</div></div>
+        <div class="ty-step"><div class="n">2</div><div>We map out your countertop layout using your dimensions — before we even arrive.</div></div>
+        <div class="ty-step"><div class="n">3</div><div>At your appointment we'll have slab options ready that fit your exact project.</div></div>
+        <div class="ty-step"><div class="n">4</div><div>We walk in prepared — you get a same-day quote and layout.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Config from URL params ──────────────────────────────────
+var params = new URLSearchParams(location.search);
+var SHOP_NAME = params.get('shop') || 'Your Fabricator';
+var REP_NAME  = params.get('rep')  || '';
+var LICENSE   = params.get('lic')  || '';
+
+var SD_URL = 'https://ejrlrrkvhtllxbbypdjb.supabase.co';
+var SD_KEY = 'sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
+
+document.getElementById('hdr-shop').textContent = SHOP_NAME;
+document.getElementById('shop-name-inline').textContent = SHOP_NAME;
+document.getElementById('ty-shop').textContent = SHOP_NAME;
+
+// ── State ───────────────────────────────────────────────────
+var currentStep = 1;
+var projectType = 'kitchen';
+var photos = []; // [{dataUrl, name}]
+
+// ── Step nav ────────────────────────────────────────────────
+function goStep(n) {
+  if (n > 1 && !validate(currentStep)) return;
+  currentStep = n;
+  ['step-1','step-2','step-3','step-done'].forEach(function(id){
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('step-'+n).style.display = 'block';
+  ['spill-1','spill-2','spill-3'].forEach(function(id, i){
+    var el = document.getElementById(id);
+    el.className = 'step-pill' + (i+1 < n ? ' done' : i+1 === n ? ' active' : '');
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function validate(step) {
+  if (step === 1) {
+    var name = document.getElementById('i-name').value.trim();
+    var phone = document.getElementById('i-phone').value.trim();
+    if (!name) { alert('Please enter your name.'); return false; }
+    if (!phone) { alert('Please enter your phone number.'); return false; }
+  }
+  return true;
+}
+
+// ── Project type pills ──────────────────────────────────────
+function selectProj(el) {
+  document.querySelectorAll('.proj-pill').forEach(function(p){ p.classList.remove('selected'); });
+  el.classList.add('selected');
+  projectType = el.getAttribute('data-val');
+}
+
+// ── Counter adjuster ────────────────────────────────────────
+function adj(id, delta) {
+  var input = document.getElementById(id);
+  var val = parseInt(input.value) + delta;
+  val = Math.max(0, Math.min(50, val));
+  input.value = val;
+  document.getElementById(id+'-display').textContent = val;
+}
+
+// ── Photo handling ──────────────────────────────────────────
+function photoDrag(e, over) { e.preventDefault(); document.getElementById('photo-zone').classList.toggle('over', over); }
+function photoDrop(e) { e.preventDefault(); photoDrag(e, false); photoSelect({target:{files: e.dataTransfer.files}}); }
+
+function photoSelect(e) {
+  var files = Array.from(e.target.files || []);
+  files.slice(0, 5 - photos.length).forEach(function(file) {
+    var img = new Image();
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      img.onload = function() {
+        var maxW = 1200;
+        var scale = Math.min(1, maxW / img.width);
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+        photos.push({ dataUrl: dataUrl, name: file.name });
+        renderPhotoThumbs();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderPhotoThumbs() {
+  var zone = document.getElementById('photo-zone');
+  zone.style.display = photos.length >= 5 ? 'none' : '';
+  document.getElementById('photo-previews').innerHTML = photos.map(function(p, i) {
+    return '<div class="photo-thumb"><img src="'+p.dataUrl+'"><div class="rm" onclick="removePhoto('+i+')">✕</div></div>';
+  }).join('');
+}
+
+function removePhoto(i) { photos.splice(i, 1); renderPhotoThumbs(); }
+
+// ── Submit ───────────────────────────────────────────────────
+async function submitIntake() {
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Sending...';
+
+  var payload = {
+    shop_name:      SHOP_NAME,
+    rep_name:       REP_NAME,
+    license_key:    LICENSE,
+    client_name:    document.getElementById('i-name').value.trim(),
+    client_phone:   document.getElementById('i-phone').value.trim(),
+    client_email:   document.getElementById('i-email').value.trim(),
+    client_role:    document.getElementById('i-role').value,
+    project_type:   projectType,
+    rough_run_a_ft: parseInt(document.getElementById('i-runa').value) || 10,
+    shape:          document.getElementById('i-shape').value,
+    sink_count:     parseInt(document.getElementById('i-sinks').value) || 0,
+    notes:          document.getElementById('i-notes').value.trim(),
+    contact_time:   document.getElementById('i-contact-time').value,
+    contact_method: document.getElementById('i-contact-method').value,
+    photo_count:    photos.length,
+    photo_base64:   photos.length ? photos[0].dataUrl : null,
+    photo_base64_2: photos.length > 1 ? photos[1].dataUrl : null,
+    photo_base64_3: photos.length > 2 ? photos[2].dataUrl : null,
+    status:         'pending',
+    created_at:     new Date().toISOString()
+  };
+
+  var ok = false;
+  try {
+    if (typeof supabase !== 'undefined') {
+      var sb = supabase.createClient(SD_URL, SD_KEY);
+      var res = await sb.from('intake_submissions').insert([payload]);
+      ok = !res.error;
+      if (res.error) console.warn('Supabase error:', res.error.message);
+    }
+  } catch(e) { console.warn('Supabase unavailable:', e); }
+
+  // Show thank you regardless — submission saved or rep is polling separately
+  document.getElementById('step-3').style.display = 'none';
+  document.getElementById('step-done').style.display = 'block';
+  ['spill-1','spill-2','spill-3'].forEach(function(el){
+    document.getElementById(el).className = 'step-pill done';
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
