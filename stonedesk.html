@@ -2497,7 +2497,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn draw-seam-btn" id="dc-seam-euro" onclick="setDCSeamMode(!dcSeamMode,'euro')">▭ Euro Seam</button>
             <button class="draw-btn draw-seam-btn" id="dc-seam-offset" onclick="setDCSeamMode(!dcSeamMode,'offset')">▭ Offset Seam</button>
             <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCSeams()">Clear Seams</button>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, drag across the counter — always stays square · drag a placed seam to move it</span>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click one spot on the drawing — a full seam auto-extends edge-to-edge through that point. Drag instead for a custom length. Drag a placed seam to move it.</span>
           </div>
 
           <canvas id="ct-canvas" width="640" height="480" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810;cursor:crosshair;margin-top:8px"></canvas>
@@ -6162,15 +6162,21 @@ function initDCSeamEvents() {
   // site doesn't need to change.
 }
 
-// == SEAM PLACEMENT — click-drag, square-snap by default, draggable, splits sqft for pricing ==
-// A seam is a straight cut line across the counter. By default it snaps to perfectly horizontal
-// or vertical (whichever the drag is closer to) so seams always read as clean square cuts unless
-// the rep deliberately picks a non-square seam type (Euro/offset), which still snaps square but
-// renders with a different dash pattern/label to flag the fabrication difference downstream.
+// == SEAM PLACEMENT — click-to-place (auto-extends edge-to-edge), or drag for a custom length ==
+// A seam is a straight cut line across the counter. The PRIMARY interaction is a single click:
+// pick a seam type, click one point on the drawing, and a full edge-to-edge line auto-extends
+// through that point — direction (horizontal or vertical) is chosen automatically based on
+// which extent of that section is narrower, since that's the dimension a real seam realistically
+// runs across. Dragging a meaningful distance instead of just clicking still works as a fallback
+// for a custom, shorter-than-full-width/depth seam. By default every seam snaps to perfectly
+// horizontal or vertical ("always stay square" per spec) regardless of which seam TYPE is picked;
+// type only changes the dash pattern/label to flag Euro/offset fabrication handling downstream.
 var dcSeams = [];           // {id, x1,y1,x2,y2 (inches, local space), type, label}
 var dcSeamMode = false;
 var dcSeamType = 'standard';
 var dcSeamDragStart = null;
+var dcSeamDownPx = null;    // {px,py} canvas pixel position at mousedown, used to tell a click apart from a real drag
+var SEAM_CLICK_THRESHOLD_PX = 6; // movement below this distance counts as "just a click," not a drag
 var dcDraggingSeam = null;  // {id, end:'1'|'2'|'whole', grabOffset:{x,y}} while dragging
 var dcSeamSeq = 0;
 
@@ -6217,7 +6223,46 @@ function dcSeamCanvasDown(e) {
   }
   const startIn = dcPxToIn(px,py);
   dcSeamDragStart = startIn;
+  dcSeamDownPx = { px, py }; // remembered so mouseup can tell a click apart from a real drag
 }
+
+// Finds the full edge-to-edge bounds (in inches, local space) of whichever section a point
+// falls inside — a registered preset rect (straight/L/U/galley run) in Preset mode, or the
+// custom-draw polygon's bounding box in Custom Draw mode. Used by click-to-place to know how
+// far the auto-extended seam line should run.
+function dcSeamFindSectionBounds(rawIn, px, py) {
+  if (dcMode === 'draw' && dcPoly.length >= 3) {
+    const xs = dcPoly.map(p=>p.x), ys = dcPoly.map(p=>p.y);
+    return { minX:Math.min(...xs), maxX:Math.max(...xs), minY:Math.min(...ys), maxY:Math.max(...ys) };
+  }
+  const hit = dcHitRect(px, py);
+  if (hit) {
+    const r = (window._ctRects||[]).find(rr => rr.key === hit.rectKey);
+    if (r) {
+      const tl = dcPxToIn(r.x, r.y), br = dcPxToIn(r.x+r.w, r.y+r.h);
+      return { minX:Math.min(tl.x,br.x), maxX:Math.max(tl.x,br.x), minY:Math.min(tl.y,br.y), maxY:Math.max(tl.y,br.y) };
+    }
+  }
+  return null;
+}
+
+// Builds a full edge-to-edge seam line through a single clicked point: picks whichever
+// direction (horizontal or vertical) is the section's NARROWER extent — e.g. a 25.5in-deep,
+// 96in-long counter run gets a vertical seam line spanning the 25.5in depth, since that's the
+// short dimension a real seam cut would run across — then runs the line fully from one edge of
+// that section to the other through the click point.
+function dcSeamAutoExtend(rawIn, bounds) {
+  const widthIn = bounds.maxX - bounds.minX, heightIn = bounds.maxY - bounds.minY;
+  if (heightIn <= widthIn) {
+    // Section is wider than it is deep (the normal case for a counter run) — seam runs
+    // vertically (top to bottom) through the click's x position, spanning the full depth.
+    return { x1: rawIn.x, y1: bounds.minY, x2: rawIn.x, y2: bounds.maxY };
+  } else {
+    // Section is taller than it is wide — seam runs horizontally through the click's y position.
+    return { x1: bounds.minX, y1: rawIn.y, x2: bounds.maxX, y2: rawIn.y };
+  }
+}
+
 function dcSeamCanvasMove(e) {
   const { px, py } = dcCanvasCoords(e);
   if (dcDraggingSeam) {
@@ -6236,7 +6281,24 @@ function dcSeamCanvasMove(e) {
     return;
   }
   if (dcSeamMode && dcSeamDragStart) {
+    // Only show the manual drag-preview line once the rep has actually moved a meaningful
+    // distance from the down-point — below that threshold this is still a "click," and the
+    // auto-extend preview (the full edge-to-edge line through the current point) is shown
+    // instead, so the rep sees exactly what a single click would place before they commit.
+    const movedPx = dcSeamDownPx ? Math.hypot(px-dcSeamDownPx.px, py-dcSeamDownPx.py) : 0;
     drawCTPreview();
+    if (movedPx < SEAM_CLICK_THRESHOLD_PX) {
+      const rawIn = dcPxToIn(px,py);
+      const bounds = dcSeamFindSectionBounds(rawIn, px, py);
+      if (bounds) {
+        const line = dcSeamAutoExtend(rawIn, bounds);
+        const p1 = dcInToPx({x:line.x1,y:line.y1}), p2 = dcInToPx({x:line.x2,y:line.y2});
+        dcCtx.strokeStyle='#A855F7'; dcCtx.lineWidth=2; dcCtx.setLineDash(SEAM_TYPES[dcSeamType].dash);
+        dcCtx.beginPath(); dcCtx.moveTo(p1.x,p1.y); dcCtx.lineTo(p2.x,p2.y); dcCtx.stroke();
+        dcCtx.setLineDash([]);
+      }
+      return;
+    }
     const startPx = dcInToPx(dcSeamDragStart);
     const previewEndIn = dcSeamSquarePoint(dcSeamDragStart, dcPxToIn(px,py));
     const endPx = dcInToPx(previewEndIn);
@@ -6249,15 +6311,35 @@ function dcSeamCanvasUp(e) {
   if (dcDraggingSeam) { dcDraggingSeam=null; calcDrawing(); return; }
   if (dcSeamMode && dcSeamDragStart) {
     const { px, py } = dcCanvasCoords(e);
-    const endIn = dcSeamSquarePoint(dcSeamDragStart, dcPxToIn(px,py));
-    const lenIn = Math.hypot(endIn.x-dcSeamDragStart.x, endIn.y-dcSeamDragStart.y);
-    if (lenIn >= 3) {
-      dcSeamSeq++;
-      dcSeams.push({ id:'sm'+dcSeamSeq, x1:dcSeamDragStart.x, y1:dcSeamDragStart.y, x2:endIn.x, y2:endIn.y, type:dcSeamType, label:SEAM_TYPES[dcSeamType].label+' '+dcSeamSeq });
-      updateDCSeamList();
-      calcDrawing();
+    const movedPx = dcSeamDownPx ? Math.hypot(px-dcSeamDownPx.px, py-dcSeamDownPx.py) : 0;
+
+    if (movedPx < SEAM_CLICK_THRESHOLD_PX) {
+      // This was a CLICK, not a drag — per spec, a single click auto-extends a full edge-to-edge
+      // seam through that point, no dragging required. Picks direction from whichever extent of
+      // the clicked section is narrower (dcSeamAutoExtend), then places it immediately.
+      const rawIn = dcPxToIn(px,py);
+      const bounds = dcSeamFindSectionBounds(rawIn, px, py);
+      if (bounds) {
+        const line = dcSeamAutoExtend(rawIn, bounds);
+        dcSeamSeq++;
+        dcSeams.push({ id:'sm'+dcSeamSeq, x1:line.x1, y1:line.y1, x2:line.x2, y2:line.y2, type:dcSeamType, label:SEAM_TYPES[dcSeamType].label+' '+dcSeamSeq });
+        updateDCSeamList();
+        calcDrawing();
+      }
+    } else {
+      // A real drag still works too, for the rare case the rep wants a custom-length seam
+      // rather than the full edge-to-edge default — same behavior as before this change.
+      const endIn = dcSeamSquarePoint(dcSeamDragStart, dcPxToIn(px,py));
+      const lenIn = Math.hypot(endIn.x-dcSeamDragStart.x, endIn.y-dcSeamDragStart.y);
+      if (lenIn >= 3) {
+        dcSeamSeq++;
+        dcSeams.push({ id:'sm'+dcSeamSeq, x1:dcSeamDragStart.x, y1:dcSeamDragStart.y, x2:endIn.x, y2:endIn.y, type:dcSeamType, label:SEAM_TYPES[dcSeamType].label+' '+dcSeamSeq });
+        updateDCSeamList();
+        calcDrawing();
+      }
     }
     dcSeamDragStart = null;
+    dcSeamDownPx = null;
     drawCTPreview();
   }
 }
@@ -6294,7 +6376,7 @@ function renderDCSeams(ctx) {
 function updateDCSeamList() {
   const el = document.getElementById('dc-seam-list');
   if (!el) return;
-  if (!dcSeams.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No seams placed — pick a seam type above, then drag across the counter to add one.</span>'; return; }
+  if (!dcSeams.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No seams placed — pick a seam type above, then click one spot on the drawing to add one.</span>'; return; }
   el.innerHTML = dcSeams.map(s =>
     '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
       '<span style="width:8px;height:8px;border-radius:50%;background:#A855F7"></span>'+s.label+
