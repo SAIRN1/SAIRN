@@ -797,6 +797,41 @@ textarea#userInput::placeholder{color:var(--muted)}
 .reorder-dot.yellow{background:#ca8a04}
 .reorder-dot.green{background:#16a34a}
 
+/* == FIELD MAP / ROUTE OPTIMIZER ================================ */
+.fm-tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.fm-tab{padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px}
+.fm-tab.active{color:var(--a);border-bottom-color:var(--a)}
+.fm-tab:hover{color:var(--text)}
+.fm-view{display:none}
+.fm-view.active{display:block}
+.fm-summary{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.fm-summary-pill{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.fm-summary-pill b{color:var(--text);font-size:14px}
+.fm-map-container{background:var(--stone);border:1px solid var(--border);border-radius:12px;min-height:280px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.fm-map-container img{width:100%;height:100%;object-fit:cover;display:block}
+.fm-map-placeholder{color:var(--muted);font-size:13px;text-align:center;padding:20px}
+.fm-stop-card{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;border-left:4px solid var(--border)}
+.fm-stop-card.not-started{border-left-color:var(--border)}
+.fm-stop-card.in-progress{border-left-color:var(--a)}
+.fm-stop-card.done{border-left-color:#16a34a;opacity:.65}
+.fm-stop-order{min-width:30px;height:30px;border-radius:50%;background:var(--stone);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--a);flex-shrink:0}
+.fm-stop-type-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.fm-stop-type-badge.template{background:rgba(27,58,107,0.1);color:var(--a)}
+.fm-stop-type-badge.install{background:rgba(22,163,74,0.12);color:#16a34a}
+.fm-stop-type-badge.sales{background:rgba(202,138,4,0.12);color:#ca8a04}
+.fm-stop-type-badge.repair{background:rgba(220,38,38,0.1);color:#dc2626}
+.fm-stop-type-badge.other{background:rgba(100,100,100,0.1);color:var(--muted)}
+.fm-person-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;color:#fff;display:inline-flex;align-items:center;gap:5px}
+.fm-person-color-0{background:#1B3A6B}
+.fm-person-color-1{background:#16a34a}
+.fm-person-color-2{background:#ca8a04}
+.fm-person-color-3{background:#9333ea}
+.fm-person-color-4{background:#dc2626}
+.fm-person-color-5{background:#0891b2}
+.fm-person-color-6{background:#be185d}
+.fm-person-color-7{background:#65a30d}
+.fm-reopt-banner{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600;background:rgba(27,58,107,0.08);border:1.5px solid var(--a);color:var(--a)}
+
 
 /* == EXEC SUITE & COMMS ====================================== */
 .exec-only{display:none}
@@ -1956,6 +1991,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <button class="nav-btn"        onclick="showPanel('history')">History</button>
       <button class="nav-btn" onclick="showPanel('business')">Business</button>
       <button class="nav-btn" onclick="showPanel('schedule')">📅 Schedule</button>
+      <button class="nav-btn" onclick="showPanel('fieldmap')">🗺️ Field Map</button>
       <button class="nav-btn" onclick="showPanel('inventory')">📦 Inventory</button>
       <button class="nav-btn" onclick="showPanel('vendors')">🛒 Vendors</button>
       <button class="nav-btn" onclick="showPanel('customers')">👥 Customers</button>
@@ -3172,6 +3208,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
           </div>
           <div class="fg"><label>Sqft</label><input id="sj-sqft" type="number" placeholder="0"></div>
           <div class="fg"><label>Installer</label><input id="sj-installer" placeholder="Crew name"></div>
+          <div class="fg" style="grid-column:span 2"><label>Job Site Address</label><input id="sj-address" placeholder="Street, City, State"></div>
           <div class="fg"><label>Volume Note</label>
             <select id="sj-volume">
               <option value="normal">Normal — Target 10 days</option>
@@ -3206,6 +3243,75 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         </select>
       </div>
       <div id="sched-list"></div>
+    </div>
+  </div>
+
+  <!-- == FIELD MAP / ROUTE OPTIMIZER == -->
+  <div class="panel" id="panel-fieldmap">
+    <div style="padding:20px;max-width:1100px;margin:0 auto">
+      <div id="fm-alerts-zone"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">🗺️ Field Map</h2>
+        <button class="q-btn primary" onclick="fmAddStop()">+ Add Stop</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:18px">Template visits, installs, sales calls, repairs, and callbacks — one map, always optimized. Routes re-order automatically when a stop is cancelled or rescheduled.</p>
+
+      <div class="fm-tabs">
+        <button class="fm-tab active" id="fm-tab-myday" onclick="fmSwitchTab('myday')">My Day</button>
+        <button class="fm-tab exec-only" id="fm-tab-overview" onclick="fmSwitchTab('overview')">Overview — All Crews</button>
+      </div>
+
+      <!-- MY DAY -->
+      <div class="fm-view active" id="fm-view-myday">
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <select id="fm-person-select" onchange="fmRenderMyDay()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none"></select>
+          <input id="fm-date-select" type="date" onchange="fmRenderMyDay()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <button class="q-btn primary" onclick="fmOptimizeDay()">⚡ Optimize Route</button>
+        </div>
+        <div class="fm-summary" id="fm-day-summary"></div>
+        <div class="fm-map-container" id="fm-map-container">
+          <div class="fm-map-placeholder">Map loads once today's stops are set.</div>
+        </div>
+        <div id="fm-stop-list"></div>
+      </div>
+
+      <!-- OVERVIEW (exec-only) -->
+      <div class="fm-view" id="fm-view-overview">
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <input id="fm-overview-date" type="date" onchange="fmRenderOverview()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+        </div>
+        <div class="fm-map-container" id="fm-overview-map-container">
+          <div class="fm-map-placeholder">Map loads once stops exist for the selected day.</div>
+        </div>
+        <div id="fm-overview-legend" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+        <div id="fm-overview-list"></div>
+      </div>
+
+      <!-- ADD / EDIT STOP -->
+      <div id="fm-form" style="display:none;background:var(--card);border:1px solid var(--a);border-radius:12px;padding:18px;margin-top:16px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">New Stop</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="fg"><label>Assigned To</label><input id="fm-s-person" placeholder="Name"></div>
+          <div class="fg"><label>Type</label>
+            <select id="fm-s-type">
+              <option value="template">Template</option>
+              <option value="install">Install</option>
+              <option value="sales">Sales Visit</option>
+              <option value="repair">Repair / Callback</option>
+              <option value="other">Other Appointment</option>
+            </select>
+          </div>
+          <div class="fg"><label>Date</label><input id="fm-s-date" type="date"></div>
+          <div class="fg"><label>Time (optional)</label><input id="fm-s-time" type="time"></div>
+          <div class="fg" style="grid-column:span 2"><label>Address</label><input id="fm-s-address" placeholder="Street, City, State"></div>
+          <div class="fg"><label>Customer / Job (optional)</label><input id="fm-s-customer" placeholder="Name or job #"></div>
+        </div>
+        <div class="fg"><label>Notes</label><textarea id="fm-s-notes" style="width:100%;height:50px;resize:vertical" placeholder="Gate code, special instructions..."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="q-btn primary" onclick="fmSaveStop()">Save Stop</button>
+          <button class="q-btn" onclick="document.getElementById('fm-form').style.display='none'">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -3392,6 +3498,8 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             </select>
           </div>
           <div class="fg"><label>Sqft</label><input id="rm-sqft" type="number" placeholder="0" min="0"></div>
+          <div class="fg" style="grid-column:span 2"><label>Customer Address</label><input id="rm-address" placeholder="Street, City, State"></div>
+          <div class="fg"><label>Scheduled Visit Date</label><input id="rm-visitdate" type="date"></div>
         </div>
         <div class="fg"><label>Notes / Description</label><textarea id="rm-notes" style="width:100%;height:50px;resize:vertical" placeholder="What happened, what needs to be redone..."></textarea></div>
         <div style="display:flex;gap:10px;margin-top:4px">
@@ -4064,6 +4172,311 @@ function doRegister()    {} // stub — registration handled via Admin PIN setup
 
 // Safety stubs for missing functions
 var quoteCounter = parseInt(localStorage.getItem('quoteCounter')||'0');
+// == FIELD MAP / ROUTE OPTIMIZER =================================
+var FM_API = 'https://sairn.vercel.app/api/bridge';
+var sdFieldStops = [];   // manual stops only -- owner/manager appts, anything not tied to a job/remake
+var sdFieldOrder = {};   // key 'person|date' -> ordered array of stop ids (optimization memory)
+var fmCurrentTab = 'myday';
+
+function loadFM(){
+  try{ sdFieldStops = JSON.parse(localStorage.getItem('sd_field_stops')||'[]'); }catch(e){}
+  try{ sdFieldOrder = JSON.parse(localStorage.getItem('sd_field_order')||'{}'); }catch(e){}
+}
+function saveFM(){
+  localStorage.setItem('sd_field_stops', JSON.stringify(sdFieldStops));
+  localStorage.setItem('sd_field_order', JSON.stringify(sdFieldOrder));
+}
+
+var FM_TYPE_LABELS = {template:'Template',install:'Install',sales:'Sales Visit',repair:'Repair / Callback',other:'Other'};
+
+// Pulls every job/remake/manual record that's a field visit on this date,
+// normalized to one common shape. Derived stops (job/remake) are read-only
+// here -- their status comes FROM the source record, never written back,
+// so there's exactly one place that owns "is this job templated/installed".
+function fmAllStopsForDate(dateStr){
+  var stops=[];
+  (sdJobs||[]).forEach(function(j){
+    if(!j.address) return;
+    if(j.templateDate===dateStr){
+      stops.push({id:'job-t-'+j.id, sourceType:'job', sourceId:j.id, type:'template', person:(j.installer||'').trim()||'Unassigned',
+        address:j.address, customer:j.customer, date:dateStr, status:(j.stage&&j.stage!=='templated')?'done':'not-started', notes:j.notes||''});
+    }
+    if(j.targetDate===dateStr){
+      stops.push({id:'job-i-'+j.id, sourceType:'job', sourceId:j.id, type:'install', person:(j.installer||'').trim()||'Unassigned',
+        address:j.address, customer:j.customer, date:dateStr, status:(j.stage==='installed')?'done':'not-started', notes:j.notes||''});
+    }
+  });
+  (sdRemakes||[]).forEach(function(r){
+    if(!r.address || !r.visitDate || r.visitDate!==dateStr) return;
+    stops.push({id:'rm-'+r.id, sourceType:'remake', sourceId:r.id, type:'repair', person:(r.assignedTo||'').trim()||'Unassigned',
+      address:r.address, customer:r.customer, date:dateStr, status:(r.status==='complete')?'done':'not-started', notes:r.notes||''});
+  });
+  (sdFieldStops||[]).forEach(function(s){
+    if(s.date!==dateStr) return;
+    stops.push({id:'manual-'+s.id, sourceType:'manual', sourceId:s.id, type:s.type||'other', person:(s.person||'').trim()||'Unassigned',
+      address:s.address, customer:s.customer||'', date:dateStr, status:s.status||'not-started', notes:s.notes||''});
+  });
+  return stops;
+}
+
+function fmDistinctPeople(){
+  var names={};
+  (sdJobs||[]).forEach(function(j){ if(j.installer&&j.installer.trim()) names[j.installer.trim()]=1; });
+  (sdRemakes||[]).forEach(function(r){ if(r.assignedTo&&r.assignedTo.trim()) names[r.assignedTo.trim()]=1; });
+  (sdFieldStops||[]).forEach(function(s){ if(s.person&&s.person.trim()) names[s.person.trim()]=1; });
+  if(typeof currentUser!=='undefined'&&currentUser&&currentUser.name) names[currentUser.name]=1;
+  return Object.keys(names).sort();
+}
+
+function fmGetOrderedStops(person, dateStr){
+  var all=fmAllStopsForDate(dateStr).filter(function(s){ return s.person===person; });
+  var key=person+'|'+dateStr;
+  var orderIds=sdFieldOrder[key];
+  if(!orderIds || !orderIds.length) return all;
+  var byId={}; all.forEach(function(s){ byId[s.id]=s; });
+  var ordered=[]; orderIds.forEach(function(id){ if(byId[id]){ ordered.push(byId[id]); delete byId[id]; } });
+  // anything new since the last optimize (not yet in the saved order) goes at the end
+  Object.keys(byId).forEach(function(id){ ordered.push(byId[id]); });
+  return ordered;
+}
+
+function fmSwitchTab(tab){
+  fmCurrentTab=tab;
+  document.querySelectorAll('.fm-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.fm-view').forEach(function(v){ v.classList.remove('active'); });
+  var btn=document.getElementById('fm-tab-'+tab); if(btn) btn.classList.add('active');
+  var view=document.getElementById('fm-view-'+tab); if(view) view.classList.add('active');
+  if(tab==='myday') fmRenderMyDay();
+  if(tab==='overview') fmRenderOverview();
+}
+
+function fmPopulatePersonSelect(){
+  var sel=document.getElementById('fm-person-select'); if(!sel) return;
+  var people=fmDistinctPeople();
+  var prevVal=sel.value;
+  var defaultName=(typeof currentUser!=='undefined'&&currentUser&&currentUser.name)?currentUser.name:people[0];
+  sel.innerHTML=people.map(function(p){ return '<option value="'+escHtml(p)+'">'+escHtml(p)+'</option>'; }).join('');
+  sel.value=people.indexOf(prevVal)!==-1?prevVal:(defaultName||'');
+}
+
+function fmEnsureDateDefault(inputId){
+  var el=document.getElementById(inputId);
+  if(el && !el.value) el.value=new Date().toISOString().split('T')[0];
+}
+
+function fmRenderMyDay(){
+  fmPopulatePersonSelect();
+  fmEnsureDateDefault('fm-date-select');
+  var person=document.getElementById('fm-person-select').value;
+  var dateStr=document.getElementById('fm-date-select').value;
+  var stops=fmGetOrderedStops(person, dateStr);
+  var sv=(id,html)=>{var el=document.getElementById(id);if(el)el.innerHTML=html;};
+
+  var notDone=stops.filter(function(s){return s.status!=='done';}).length;
+  var done=stops.length-notDone;
+  sv('fm-day-summary',
+    '<div class="fm-summary-pill"><b>'+stops.length+'</b> stops</div>'+
+    '<div class="fm-summary-pill"><b>'+notDone+'</b> remaining</div>'+
+    '<div class="fm-summary-pill"><b>'+done+'</b> done</div>'
+  );
+
+  if(!stops.length){
+    sv('fm-stop-list','<div style="text-align:center;color:var(--muted);padding:32px">No stops for '+escHtml(person||'this person')+' on this day.</div>');
+    sv('fm-map-container','<div class="fm-map-placeholder">No stops to map yet.</div>');
+    return;
+  }
+
+  sv('fm-stop-list', stops.map(function(s,i){ return fmStopCardHtml(s,i+1); }).join(''));
+  fmRenderMap('fm-map-container', stops);
+}
+
+function fmStopCardHtml(s, orderNum){
+  var canEditStatus = s.sourceType==='manual';
+  var statusControls = '';
+  if(canEditStatus){
+    statusControls =
+      '<select onchange="fmMarkStopStatus(\''+s.sourceId+'\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
+        ['not-started','in-progress','done'].map(function(v){ return '<option value="'+v+'"'+(s.status===v?' selected':'')+'>'+(v==='not-started'?'Not Started':v==='in-progress'?'In Progress':'Done')+'</option>'; }).join('')+
+      '</select>'+
+      '<button onclick="fmDeleteStop(\''+s.sourceId+'\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>';
+  } else {
+    statusControls = '<div style="font-size:10px;color:var(--muted);text-align:right">status from '+(s.sourceType==='job'?'Schedule':'Remakes')+'</div>';
+  }
+  return '<div class="fm-stop-card '+s.status+'">'+
+    '<div class="fm-stop-order">'+orderNum+'</div>'+
+    '<div style="flex:1;min-width:0">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap">'+
+        '<span style="font-size:14px;font-weight:700;color:var(--text)">'+escHtml(s.customer||'(no customer)')+'</span>'+
+        '<span class="fm-stop-type-badge '+s.type+'">'+(FM_TYPE_LABELS[s.type]||s.type)+'</span>'+
+        (s.status==='done'?'<span style="font-size:11px;color:#16a34a;font-weight:700">✓ Done</span>':'')+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--muted)">'+escHtml(s.address)+'</div>'+
+      (s.notes?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+escHtml(s.notes)+'</div>':'')+
+    '</div>'+
+    '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+statusControls+'</div>'+
+  '</div>';
+}
+
+function fmRenderMap(containerId, stops){
+  var el=document.getElementById(containerId); if(!el) return;
+  var addrs=stops.map(function(s){return s.address;}).filter(Boolean);
+  if(!addrs.length){ el.innerHTML='<div class="fm-map-placeholder">No addresses to map yet.</div>'; return; }
+  el.innerHTML='<div class="fm-map-placeholder">Loading map...</div>';
+  fetch(FM_API+'/maps-static', {method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({addresses:addrs})})
+    .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
+    .then(function(data){ if(data.imageUrl) el.innerHTML='<img src="'+data.imageUrl+'" alt="Route map">'; else el.innerHTML='<div class="fm-map-placeholder">Map unavailable.</div>'; })
+    .catch(function(){ el.innerHTML='<div class="fm-map-placeholder">Map unavailable -- check GOOGLE_MAPS_API_KEY is set.</div>'; });
+}
+
+function fmMarkStopStatus(manualId, status){
+  var s=sdFieldStops.find(function(x){return x.id===manualId;});
+  if(!s) return;
+  s.status=status;
+  saveFM();
+  fmRenderMyDay();
+}
+
+function fmDeleteStop(manualId){
+  var s=sdFieldStops.find(function(x){return x.id===manualId;});
+  if(!s) return;
+  var person=s.person, dateStr=s.date;
+  sdFieldStops=sdFieldStops.filter(function(x){return x.id!==manualId;});
+  saveFM();
+  fmRefreshCurrentView(person, dateStr);
+  fmAutoReoptimize(person, dateStr);
+}
+
+function fmAddStop(){
+  document.getElementById('fm-form').style.display='block';
+  fmEnsureDateDefault('fm-date-select');
+  document.getElementById('fm-s-date').value=document.getElementById('fm-date-select').value||new Date().toISOString().split('T')[0];
+  if(typeof currentUser!=='undefined'&&currentUser&&currentUser.name) document.getElementById('fm-s-person').value=currentUser.name;
+  document.getElementById('fm-form').scrollIntoView({behavior:'smooth'});
+}
+
+function fmSaveStop(){
+  var person=document.getElementById('fm-s-person').value.trim();
+  var address=document.getElementById('fm-s-address').value.trim();
+  var dateStr=document.getElementById('fm-s-date').value;
+  if(!person||!address||!dateStr){ alert('Person, address, and date are required'); return; }
+  var stop={
+    id:'FS'+Date.now(),
+    person:person,
+    type:document.getElementById('fm-s-type').value,
+    date:dateStr,
+    time:document.getElementById('fm-s-time').value||'',
+    address:address,
+    customer:document.getElementById('fm-s-customer').value.trim(),
+    notes:document.getElementById('fm-s-notes').value.trim(),
+    status:'not-started',
+    createdAt:new Date().toISOString()
+  };
+  sdFieldStops.push(stop);
+  saveFM();
+  document.getElementById('fm-form').style.display='none';
+  fmRefreshCurrentView(person, dateStr);
+  fmAutoReoptimize(person, dateStr);
+}
+
+// Re-optimizes a person's remaining (not-done) stops for a day and applies it
+// immediately, surfacing a banner rather than a confirm step -- matches the
+// existing urgency-banner pattern used in Schedule/Remakes.
+function fmAutoReoptimize(person, dateStr){
+  fmRunOptimize(person, dateStr, true);
+}
+
+function fmOptimizeDay(){
+  fmPopulatePersonSelect();
+  fmEnsureDateDefault('fm-date-select');
+  var person=document.getElementById('fm-person-select').value;
+  var dateStr=document.getElementById('fm-date-select').value;
+  fmRunOptimize(person, dateStr, false);
+}
+
+function fmRunOptimize(person, dateStr, silent){
+  var stops=fmGetOrderedStops(person, dateStr);
+  var notDone=stops.filter(function(s){return s.status!=='done';});
+  var done=stops.filter(function(s){return s.status==='done';});
+  if(notDone.length<2){
+    fmRefreshCurrentView(person, dateStr);
+    return;
+  }
+  var addrs=notDone.map(function(s){return s.address;});
+  fetch(FM_API+'/maps-optimize', {method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({addresses:addrs})})
+    .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
+    .then(function(data){
+      var order=data.order; // array of original indices in optimal order
+      if(!order || order.length!==notDone.length) return;
+      var reordered=order.map(function(i){return notDone[i];});
+      var finalOrder=done.concat(reordered);
+      sdFieldOrder[person+'|'+dateStr]=finalOrder.map(function(s){return s.id;});
+      saveFM();
+      fmRefreshCurrentView(person, dateStr);
+      if(silent){
+        var savedMin=data.savedMinutes;
+        fmShowReoptBanner(escHtml(person)+'\'s route updated'+(savedMin?' -- saves ~'+savedMin+' min':'')+'.');
+      }
+    })
+    .catch(function(){ if(!silent) alert('Could not optimize route -- check the Maps API key is configured.'); });
+}
+
+function fmShowReoptBanner(msg){
+  var zone=document.getElementById('fm-alerts-zone'); if(!zone) return;
+  zone.innerHTML='<div class="fm-reopt-banner"><span>🗺️</span><span>'+msg+'</span></div>';
+  setTimeout(function(){ if(zone.innerHTML.indexOf(msg)!==-1) zone.innerHTML=''; }, 8000);
+}
+
+// Re-renders whichever Field Map view is currently on screen, if any --
+// used so adding/removing a stop is visible immediately, independent of
+// whether an optimize call also happens to run on top of it.
+function fmRefreshCurrentView(person, dateStr){
+  var panel=document.getElementById('panel-fieldmap');
+  if(!panel || !panel.classList.contains('active')) return;
+  if(fmCurrentTab==='myday' && document.getElementById('fm-person-select') &&
+     document.getElementById('fm-date-select').value===dateStr){
+    fmRenderMyDay();
+  } else if(fmCurrentTab==='overview' && document.getElementById('fm-overview-date') &&
+     document.getElementById('fm-overview-date').value===dateStr){
+    fmRenderOverview();
+  }
+}
+
+function fmRenderOverview(){
+  fmEnsureDateDefault('fm-overview-date');
+  var dateStr=document.getElementById('fm-overview-date').value;
+  var allStops=fmAllStopsForDate(dateStr);
+  var people=Array.from(new Set(allStops.map(function(s){return s.person;}))).sort();
+  var sv=(id,html)=>{var el=document.getElementById(id);if(el)el.innerHTML=html;};
+
+  if(!people.length){
+    sv('fm-overview-legend','');
+    sv('fm-overview-list','<div style="text-align:center;color:var(--muted);padding:32px">No stops scheduled for this day yet.</div>');
+    sv('fm-overview-map-container','<div class="fm-map-placeholder">No stops to map yet.</div>');
+    return;
+  }
+
+  sv('fm-overview-legend', people.map(function(p,i){
+    return '<span class="fm-person-pill fm-person-color-'+(i%8)+'">'+escHtml(p)+'</span>';
+  }).join(''));
+
+  var html='';
+  people.forEach(function(p,i){
+    var stops=fmGetOrderedStops(p, dateStr);
+    html+='<div style="margin-bottom:18px">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="fm-person-pill fm-person-color-'+(i%8)+'">'+escHtml(p)+'</span><span style="font-size:12px;color:var(--muted)">'+stops.length+' stop'+(stops.length===1?'':'s')+'</span></div>'+
+      stops.map(function(s,idx){ return fmStopCardHtml(s, idx+1); }).join('') +
+    '</div>';
+  });
+  sv('fm-overview-list', html);
+  fmRenderMap('fm-overview-map-container', allStops);
+}
+
+// == INIT FIELD MAP ===============================================
+(function initFM(){
+  loadFM();
+})();
 var edgeAssignments = {};
 
 // == RAILWAY DB SYNC ===========================================
@@ -4178,6 +4591,7 @@ function showPanel(id) {
   if (id === 'client') buildEstimate();
   if (id === 'draw') { initDrawPanel(); initDCCanvas(); }
   if (id === 'quote') initKTCanvas();
+  if (id === 'fieldmap') fmSwitchTab(fmCurrentTab);
 }
 
 // == MODE ======================================================
@@ -12958,6 +13372,7 @@ function schedSave(){
     stage:document.getElementById('sj-stage').value,
     sqft:parseFloat(document.getElementById('sj-sqft').value)||0,
     installer:document.getElementById('sj-installer').value.trim(),
+    address:document.getElementById('sj-address').value.trim(),
     volume:document.getElementById('sj-volume').value,
     notes:document.getElementById('sj-notes').value.trim(),
     createdAt:new Date().toISOString(),
@@ -12966,6 +13381,10 @@ function schedSave(){
   sdJobs.unshift(job);saveSD4();
   document.getElementById('sched-form').style.display='none';
   renderSchedule();runSchedAlerts();
+  if(typeof fmAutoReoptimize==='function' && job.address && job.installer){
+    if(job.templateDate) fmAutoReoptimize(job.installer.trim(), job.templateDate);
+    if(job.targetDate && job.targetDate!==job.templateDate) fmAutoReoptimize(job.installer.trim(), job.targetDate);
+  }
 }
 
 function schedDaysFromTemplate(job){
@@ -12992,8 +13411,13 @@ function schedUpdateStage(id,stage){
 
 function schedDelete(id){
   if(!confirm('Delete this job?')) return;
+  var job=sdJobs.find(x=>x.id===id);
   sdJobs=sdJobs.filter(x=>x.id!==id);
   saveSD4();renderSchedule();runSchedAlerts();
+  if(typeof fmAutoReoptimize==='function' && job && job.address && job.installer){
+    if(job.templateDate) fmAutoReoptimize(job.installer.trim(), job.templateDate);
+    if(job.targetDate && job.targetDate!==job.templateDate) fmAutoReoptimize(job.installer.trim(), job.targetDate);
+  }
 }
 
 function renderSchedule(){
@@ -13483,6 +13907,8 @@ function remakeSave(){
     startTime:document.getElementById('rm-start').value?new Date(document.getElementById('rm-start').value).toISOString():new Date().toISOString(),
     priority:document.getElementById('rm-priority').value,
     sqft:parseFloat(document.getElementById('rm-sqft').value)||0,
+    address:document.getElementById('rm-address').value.trim(),
+    visitDate:document.getElementById('rm-visitdate').value,
     notes:document.getElementById('rm-notes').value.trim(),
     status:'open',
     approvedExtension:false,
@@ -13495,6 +13921,9 @@ function remakeSave(){
   saveSD5();
   document.getElementById('remake-form').style.display='none';
   renderRemakes();runRemakeAlerts();
+  if(typeof fmAutoReoptimize==='function' && r.address && r.visitDate && r.assignedTo){
+    fmAutoReoptimize(r.assignedTo.trim(), r.visitDate);
+  }
 }
 
 function remakeApprove(id){
@@ -13516,8 +13945,12 @@ function remakeComplete(id){
 
 function remakeDelete(id){
   if(!confirm('Delete this record?')) return;
+  var r=sdRemakes.find(x=>x.id===id);
   sdRemakes=sdRemakes.filter(x=>x.id!==id);
   saveSD5();renderRemakes();
+  if(typeof fmAutoReoptimize==='function' && r && r.address && r.visitDate && r.assignedTo){
+    fmAutoReoptimize(r.assignedTo.trim(), r.visitDate);
+  }
 }
 
 function renderRemakes(){
