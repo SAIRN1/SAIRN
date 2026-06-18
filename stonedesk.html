@@ -2490,6 +2490,20 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCCutouts()">Clear Cutouts</button>
             <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click the spot · drag any marker to fine-tune</span>
           </div>
+          <div class="draw-toolbar" id="dc-sinkshape-picker" style="margin-top:6px;display:none">
+            <span style="font-size:10px;color:var(--muted);margin-right:2px">Sink shape:</span>
+            <button class="draw-btn dc-sinkshape-btn active" id="dc-sinkshape-single" onclick="setDCSinkShape('single')">Single Bowl</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-double5050" onclick="setDCSinkShape('double5050')">50/50 Double</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-double6040" onclick="setDCSinkShape('double6040')">60/40 Double</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-double4060" onclick="setDCSinkShape('double4060')">40/60 Double</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-smallSquare" onclick="setDCSinkShape('smallSquare')">Small Square</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-round" onclick="setDCSinkShape('round')">Round</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-oval" onclick="setDCSinkShape('oval')">Oval</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-vesselRound" onclick="setDCSinkShape('vesselRound')">Vessel (Round)</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-vesselOval" onclick="setDCSinkShape('vesselOval')">Vessel (Oval)</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-farmhouse" onclick="setDCSinkShape('farmhouse')">Farmhouse / Apron</button>
+            <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-barPrep" onclick="setDCSinkShape('barPrep')">Bar / Prep</button>
+          </div>
 
           <div class="draw-toolbar" style="margin-top:6px">
             <span style="font-size:10px;color:var(--muted);margin-right:2px">Seams:</span>
@@ -5975,12 +5989,42 @@ const CUTOUT_STYLES = {
   faucet:  { label:'Faucet',  color:'#34D399', icon:'F' }
 };
 
+// Real-world sink shapes — each placed sink stores a `sinkShape` key from this list (set via
+// the configuration picker next to the Place: Sink button) so it renders as an actual
+// recognizable outline sized to real dimensions, instead of a generic colored dot. Dimensions
+// are typical industry sizes in inches; bowls/divider/drain/faucet-hole are drawn proportionally
+// inside that footprint at render time (dcDrawSinkShape), so the same shape definition works at
+// any canvas scale.
+const SINK_SHAPES = {
+  single:      { label:'Single Bowl',        wIn:32, dIn:19, bowls:[{x:0,y:0,w:1,h:1}] },
+  double5050:  { label:'50/50 Double',       wIn:33, dIn:19, bowls:[{x:0,y:0,w:0.48,h:1},{x:0.52,y:0,w:0.48,h:1}] },
+  double6040:  { label:'60/40 Double',       wIn:33, dIn:19, bowls:[{x:0,y:0,w:0.58,h:1},{x:0.62,y:0,w:0.38,h:1}] },
+  double4060:  { label:'40/60 Double',       wIn:33, dIn:19, bowls:[{x:0,y:0,w:0.38,h:1},{x:0.42,y:0,w:0.58,h:1}] },
+  smallSquare: { label:'Small Square',       wIn:16, dIn:16, bowls:[{x:0,y:0,w:1,h:1}] },
+  round:       { label:'Round',              wIn:18, dIn:18, bowls:[{x:0,y:0,w:1,h:1}], round:true },
+  oval:        { label:'Oval',               wIn:20, dIn:16, bowls:[{x:0,y:0,w:1,h:1}], oval:true },
+  vesselRound: { label:'Vessel (Round)',     wIn:16, dIn:16, bowls:[{x:0,y:0,w:1,h:1}], round:true, vessel:true },
+  vesselOval:  { label:'Vessel (Oval)',      wIn:19, dIn:14, bowls:[{x:0,y:0,w:1,h:1}], oval:true, vessel:true },
+  farmhouse:   { label:'Farmhouse / Apron',  wIn:33, dIn:20, bowls:[{x:0,y:0,w:1,h:1}], apron:true },
+  barPrep:     { label:'Bar / Prep (Single)',wIn:15, dIn:15, bowls:[{x:0,y:0,w:1,h:1}] },
+};
+var dcSinkShapeKey = 'single'; // currently selected sink configuration, set via the picker
+
+function setDCSinkShape(key) {
+  dcSinkShapeKey = key;
+  document.querySelectorAll('.dc-sinkshape-btn').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('dc-sinkshape-'+key);
+  if (btn) btn.classList.add('active');
+}
+
 function setDCCutoutMode(on, type) {
   dcCutoutMode = on;
   if (type) dcCutoutType = type;
   if (on) setDCInsertMode(false), setDCEditPass(false), setDCSeamMode(false);
   document.querySelectorAll('.draw-cutout-btn').forEach(b => b.classList.remove('active'));
   if (on) { const btn = document.getElementById('dc-cutout-' + dcCutoutType); if (btn) btn.classList.add('active'); }
+  const picker = document.getElementById('dc-sinkshape-picker');
+  if (picker) picker.style.display = (on && dcCutoutType==='sink') ? 'flex' : 'none';
 }
 
 // PRESET MODE hit-test: which registered rect a canvas point falls inside, by fraction.
@@ -6014,7 +6058,16 @@ function dcHitCutout(px, py) {
   for (let i = dcCutouts.length - 1; i >= 0; i--) {
     const c = dcCutouts[i];
     if (c._lastPx == null) continue;
-    if (Math.hypot(px - c._lastPx, py - c._lastPy) <= 14) return c;
+    // Sinks render at real proportional size (up to ~33in wide for double bowls), so the
+    // grab-radius needs to roughly match the actual rendered footprint rather than the small
+    // fixed 14px used for the simple cooktop/outlet/faucet dot markers — otherwise a large sink
+    // would be visually obvious but hard to actually click-and-drag from most of its own area.
+    let radius = 14;
+    if (c.type === 'sink' && c.sinkShape && SINK_SHAPES[c.sinkShape]) {
+      const scale = dcCurrentScalePxPerIn(c);
+      radius = Math.max(14, (Math.max(SINK_SHAPES[c.sinkShape].wIn, SINK_SHAPES[c.sinkShape].dIn) * scale) / 2);
+    }
+    if (Math.hypot(px - c._lastPx, py - c._lastPy) <= radius) return c;
   }
   return null;
 }
@@ -6032,15 +6085,17 @@ function dcCanvasPlaceOrDrag(e, phase) {
     if (!dcCutoutMode) return;
     const style = CUTOUT_STYLES[dcCutoutType];
     dcCutoutSeq++;
+    const sinkShape = dcCutoutType === 'sink' ? dcSinkShapeKey : null;
+    const sinkLabel = sinkShape ? SINK_SHAPES[sinkShape].label : style.label;
     if (dcMode === 'draw') {
       const hit = dcHitPolygonNear(px, py);
       const tolIn = 14 / dcGetTransform().scale;
       if (!hit || hit.dist > tolIn) return;
-      dcCutouts.push({ id:'co'+dcCutoutSeq, segIdx:hit.segIdx, fracAlong:hit.fracAlong, type:dcCutoutType, label:style.label+' '+dcCutoutSeq, color:style.color });
+      dcCutouts.push({ id:'co'+dcCutoutSeq, segIdx:hit.segIdx, fracAlong:hit.fracAlong, type:dcCutoutType, sinkShape, label:sinkLabel+' '+dcCutoutSeq, color:style.color });
     } else {
       const hit = dcHitRect(px, py);
       if (!hit) return;
-      dcCutouts.push({ id:'co'+dcCutoutSeq, rectKey:hit.rectKey, fracX:hit.fracX, fracY:hit.fracY, type:dcCutoutType, label:style.label+' '+dcCutoutSeq, color:style.color });
+      dcCutouts.push({ id:'co'+dcCutoutSeq, rectKey:hit.rectKey, fracX:hit.fracX, fracY:hit.fracY, type:dcCutoutType, sinkShape, label:sinkLabel+' '+dcCutoutSeq, color:style.color });
     }
     drawCTPreview();
     updateDCCutoutList();
@@ -6080,11 +6135,104 @@ function dcCutoutScreenPos(c) {
   return { x: r.x + c.fracX*r.w, y: r.y + c.fracY*r.h };
 }
 
+// Returns the current pixels-per-inch scale regardless of mode, so sink shapes render at
+// correct real-world proportions whether the shape came from a preset or Custom Draw. In draw
+// mode this is just the polygon transform's scale; in preset mode there's no single global
+// scale variable exposed, so it's derived from whichever rect the cutout is sitting on (its
+// pixel width divided by its known inch length, read back from the Length/Depth fields).
+function dcCurrentScalePxPerIn(c) {
+  if (dcMode === 'draw') return dcGetTransform().scale;
+  const r = (window._ctRects||[]).find(rr => rr.key === c.rectKey);
+  if (!r) return DRAW_SCALE_PXPERIN;
+  const fields = dcPresetEdgeFieldFor(c.rectKey);
+  const lenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
+  return r.w / lenIn;
+}
+
+// Draws one realistic sink outline at point p (canvas px), oriented along whichever axis the
+// section runs (so a sink sitting on a vertical wall segment in Custom Draw mode still reads as
+// "facing" the right way) — for the preset/legacy renderer sinks are always drawn with their
+// long axis horizontal, matching how the dimension fields are entered (length x depth).
+function dcDrawSinkShape(ctx, c, p) {
+  const shapeDef = SINK_SHAPES[c.sinkShape] || SINK_SHAPES.single;
+  const scale = dcCurrentScalePxPerIn(c);
+  const wPx = shapeDef.wIn * scale, dPx = shapeDef.dIn * scale;
+  const x0 = p.x - wPx/2, y0 = p.y - dPx/2;
+
+  ctx.save();
+  // Counter cutout outline (the basin footprint)
+  ctx.lineWidth = 2; ctx.strokeStyle = c.color; ctx.fillStyle = c.color+'33';
+  if (shapeDef.round) {
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, wPx/2, dPx/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  } else if (shapeDef.oval) {
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, wPx/2, dPx/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  } else {
+    const r = Math.min(wPx,dPx)*0.12; // slightly rounded corners read more like a real sink than sharp ones
+    dcRoundRectPath(ctx, x0, y0, wPx, dPx, r); ctx.fill(); ctx.stroke();
+  }
+  // Apron/farmhouse front panel — a thicker accent line along the front (bottom) edge showing
+  // the exposed apron face, distinguishing it visually from a plain undermount rectangle.
+  if (shapeDef.apron) {
+    ctx.lineWidth = 5; ctx.strokeStyle = c.color;
+    ctx.beginPath(); ctx.moveTo(x0+4, y0+dPx-2); ctx.lineTo(x0+wPx-4, y0+dPx-2); ctx.stroke();
+  }
+  // Vessel sinks sit ON TOP of the counter rather than being cut into it — drawn with a dashed
+  // outline instead of solid, to visually flag "this is a surface-mount footprint, not a cutout."
+  if (shapeDef.vessel) {
+    ctx.setLineDash([4,3]); ctx.lineWidth=1.5; ctx.strokeStyle=c.color;
+    if (shapeDef.round || shapeDef.oval) { ctx.beginPath(); ctx.ellipse(p.x,p.y,wPx/2-3,dPx/2-3,0,0,Math.PI*2); ctx.stroke(); }
+    ctx.setLineDash([]);
+  }
+
+  // Bowl divisions (drawn inside the footprint, per shapeDef.bowls fractional layout) — basin
+  // shading plus a divider line between bowls for double-bowl configurations.
+  shapeDef.bowls.forEach((b, i) => {
+    const bx = x0 + b.x*wPx, by = y0 + b.y*dPx, bw = b.w*wPx, bh = b.h*dPx;
+    const inset = Math.min(wPx,dPx)*0.08;
+    ctx.fillStyle = c.color+'22';
+    dcRoundRectPath(ctx, bx+inset, by+inset, bw-inset*2, bh-inset*2, Math.min(bw,bh)*0.1);
+    ctx.fill();
+    // Drain marker — small circle near the back-center of each bowl
+    ctx.fillStyle = c.color+'88';
+    ctx.beginPath(); ctx.arc(bx+bw/2, by+bh*0.35, Math.max(2,scale*0.6), 0, Math.PI*2); ctx.fill();
+  });
+  if (shapeDef.bowls.length > 1) {
+    // Divider line at the midpoint between the two bowls
+    const dividerX = x0 + (shapeDef.bowls[0].x + shapeDef.bowls[0].w + shapeDef.bowls[1].x)/2 * wPx;
+    ctx.strokeStyle = c.color; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(dividerX, y0+3); ctx.lineTo(dividerX, y0+dPx-3); ctx.stroke();
+  }
+
+  // Faucet hole marker — a small ring centered just behind the sink (matches the "Place: Faucet"
+  // marker style so the two read as a consistent visual language for deck-mounted hardware).
+  ctx.strokeStyle = '#34D399'; ctx.lineWidth = 1.5; ctx.fillStyle = '#34D39933';
+  ctx.beginPath(); ctx.arc(p.x, y0-7, 4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// Small helper since canvas has no built-in roundRect in every target environment.
+function dcRoundRectPath(ctx, x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, Math.min(w,h)/2));
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
 function renderDCCutouts(ctx) {
   dcCutouts.forEach(c => {
     const p = dcCutoutScreenPos(c);
     if (!p) { c._lastPx=null; c._lastPy=null; return; }
     c._lastPx=p.x; c._lastPy=p.y;
+    if (c.type === 'sink' && c.sinkShape) {
+      dcDrawSinkShape(ctx, c, p);
+      ctx.fillStyle=c.color; ctx.font='9px Outfit,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+      ctx.fillText(c.label, p.x, p.y + (SINK_SHAPES[c.sinkShape].dIn*dcCurrentScalePxPerIn(c))/2 + 14);
+      return;
+    }
     ctx.save();
     ctx.beginPath(); ctx.arc(p.x,p.y,13,0,Math.PI*2);
     ctx.fillStyle = c.color+'CC'; ctx.fill();
