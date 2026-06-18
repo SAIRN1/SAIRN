@@ -2001,6 +2001,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <button class="nav-btn" onclick="showPanel('schedule')">📅 Schedule</button>
       <button class="nav-btn" onclick="showPanel('fieldmap')">🗺️ Field Map</button>
       <button class="nav-btn" onclick="showPanel('inventory')">📦 Inventory</button>
+      <button class="nav-btn" onclick="showPanel('slabs')">🪨 Slabs</button>
       <button class="nav-btn" onclick="showPanel('vendors')">🛒 Vendors</button>
       <button class="nav-btn" onclick="showPanel('customers')">👥 Customers</button>
       <button class="nav-btn" onclick="showPanel('photos')">📷 Photos</button>
@@ -2139,6 +2140,10 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
                 <option value="quartz_prem">Quartz — premium (Cambria etc.)</option>
               </optgroup>
             </select>
+          </div>
+          <div class="q-field">
+            <button class="q-btn" type="button" onclick="qbOpenSlabPicker()">📦 Reserve a Slab from Inventory (optional)</button>
+            <div id="qb-slab-chip" style="margin-top:8px;font-size:12px"></div>
           </div>
           <div class="q-two">
             <div class="q-field">
@@ -3406,6 +3411,137 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
+  <!-- == SLAB INVENTORY == -->
+  <div class="panel" id="panel-slabs">
+    <div style="padding:20px;max-width:1300px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">🪨 Slab Inventory</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="q-btn" onclick="slabImportClick()">📥 Import CSV</button>
+          <button class="q-btn" onclick="slabExportCsv()">📤 Export CSV</button>
+          <button class="q-btn primary" onclick="slabOpenForm()">+ Add Slab</button>
+        </div>
+        <input type="file" id="slab-csv-input" accept=".csv" style="display:none" onchange="slabImportCsv(event)">
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Every slab tracked as its own piece — photo, lot, dimensions, and value. Consumed slabs are never deleted, just marked used, so you keep a full history. Remnants are tracked automatically when you cut a slab.</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="vendor-tab active" id="slabtab-all" onclick="slabSetTab('all',this)">All</button>
+        <button class="vendor-tab" id="slabtab-instock" onclick="slabSetTab('in-stock',this)">In Stock</button>
+        <button class="vendor-tab" id="slabtab-reserved" onclick="slabSetTab('reserved',this)">Reserved</button>
+        <button class="vendor-tab" id="slabtab-remnants" onclick="slabSetTab('remnant',this)">Remnants</button>
+        <button class="vendor-tab" id="slabtab-consumed" onclick="slabSetTab('consumed',this)">Consumed</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi"><div class="kpi-val" id="slab-kpi-count">0</div><div class="kpi-label">Slabs In Stock</div></div>
+        <div class="kpi"><div class="kpi-val" id="slab-kpi-sqft">0</div><div class="kpi-label">Usable Sqft In Stock</div></div>
+        <div class="kpi"><div class="kpi-val" id="slab-kpi-value">$0</div><div class="kpi-label">Inventory Value</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#dc2626" id="slab-kpi-low">0</div><div class="kpi-label">Materials Running Low</div></div>
+      </div>
+
+      <div id="slab-low-stock-banner"></div>
+
+      <!-- Claude Smart Finder -->
+      <div style="background:var(--card);border:1px solid var(--a);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">🧠 Smart Slab Finder</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="slab-finder-input" placeholder="e.g. need something light gray and veiny for a 9ft island, budget around $2500" style="flex:1;min-width:240px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')slabRunFinder()">
+          <button class="q-btn primary" onclick="slabRunFinder()">Find Slabs</button>
+        </div>
+        <div id="slab-finder-result" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Filters -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <select id="slab-f-material" onchange="slabRender()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text)">
+          <option value="">All materials</option>
+          <option value="granite">Granite</option>
+          <option value="quartzite">Quartzite</option>
+          <option value="quartz">Engineered Quartz</option>
+          <option value="marble">Marble</option>
+          <option value="porcelain">Porcelain</option>
+          <option value="soapstone">Soapstone</option>
+          <option value="dolomite">Dolomite</option>
+          <option value="other">Other</option>
+        </select>
+        <input type="text" id="slab-f-search" placeholder="Search color, lot #, supplier..." oninput="slabRender()" style="flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text)">
+        <input type="number" id="slab-f-minsqft" placeholder="Min sqft" oninput="slabRender()" style="width:100px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text)">
+      </div>
+
+      <div id="slab-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px"></div>
+    </div>
+  </div>
+
+  <!-- SLAB MODALS -- intentionally OUTSIDE panel-slabs (a .panel has display:none
+       unless active) so they can be triggered as overlays from any panel, e.g.
+       the Quote Builder's "Reserve a Slab" picker. -->
+
+  <!-- ADD / EDIT SLAB FORM -->
+  <div id="slab-form" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg);border-radius:14px;padding:22px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto">
+      <div style="font-size:15px;font-weight:800;margin-bottom:14px" id="slab-form-title">Add Slab</div>
+      <input type="hidden" id="sl-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="fg"><label>Material</label>
+          <select id="sl-material">
+            <option value="granite">Granite</option>
+            <option value="quartzite">Quartzite</option>
+            <option value="quartz">Engineered Quartz</option>
+            <option value="marble">Marble</option>
+            <option value="porcelain">Porcelain</option>
+            <option value="soapstone">Soapstone</option>
+            <option value="dolomite">Dolomite</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="fg"><label>Color / Pattern Name</label><input id="sl-color" placeholder="e.g. Calacatta Gold"></div>
+        <div class="fg"><label>Supplier</label><input id="sl-supplier" placeholder="e.g. GMR Stone"></div>
+        <div class="fg"><label>Lot / Block #</label><input id="sl-lot" placeholder="Optional"></div>
+        <div class="fg"><label>Thickness</label>
+          <select id="sl-thickness"><option value="2cm">2cm</option><option value="3cm" selected>3cm</option><option value="1.2cm">1.2cm</option><option value="other">Other</option></select>
+        </div>
+        <div class="fg"><label>Finish</label>
+          <select id="sl-finish"><option value="polished">Polished</option><option value="honed">Honed</option><option value="leathered">Leathered</option><option value="brushed">Brushed</option></select>
+        </div>
+        <div class="fg"><label>Length (in)</label><input id="sl-length" type="number" step="0.1" placeholder="e.g. 126"></div>
+        <div class="fg"><label>Width (in)</label><input id="sl-width" type="number" step="0.1" placeholder="e.g. 65"></div>
+        <div class="fg"><label>Cost per Sqft ($)</label><input id="sl-cost" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="fg"><label>Yard Location</label><input id="sl-location" placeholder="e.g. Rack 3, Bay B"></div>
+        <div class="fg"><label>External Barcode / Serial #</label><input id="sl-barcode" placeholder="From SlabSmith / Horus, optional"></div>
+        <div class="fg"><label><input type="checkbox" id="sl-consignment" style="width:auto;margin-right:6px">Consignment slab</label></div>
+      </div>
+      <div class="fg" style="margin-top:6px"><label>Notes</label><input id="sl-notes" placeholder="Optional"></div>
+      <div class="fg" style="margin-top:6px">
+        <label>Photo</label>
+        <input type="file" id="sl-photo-input" accept="image/*" onchange="slabPhotoSelected(event)">
+        <div id="sl-photo-preview" style="margin-top:8px"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="q-btn primary" onclick="slabSave()">Save Slab</button>
+        <button class="q-btn" onclick="slabCloseForm()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSUME / RESERVE / QUOTE-PICKER MODAL (shared) -->
+  <div id="slab-action-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg);border-radius:14px;padding:22px;max-width:440px;width:100%" id="slab-action-modal-body"></div>
+  </div>
+
+  <!-- QR LABEL -->
+  <div id="slab-qr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:14px;padding:24px;max-width:320px;width:100%;text-align:center">
+      <div id="slab-qr-render" style="display:flex;justify-content:center;margin-bottom:10px"></div>
+      <div id="slab-qr-label" style="font-size:13px;font-weight:700;color:#111;margin-bottom:14px"></div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="q-btn primary" onclick="window.print()">🖨️ Print Label</button>
+        <button class="q-btn" onclick="document.getElementById('slab-qr-modal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
+
   <!-- == VENDORS PANEL == -->
   <div class="panel" id="panel-vendors">
     <div style="padding:20px;max-width:1100px;margin:0 auto">
@@ -4208,6 +4344,14 @@ function doRegister()    {} // stub — registration handled via Admin PIN setup
 
 // Safety stubs for missing functions
 var quoteCounter = parseInt(localStorage.getItem('quoteCounter')||'0');
+// BUGFIX (slab inventory audit, June 2026): quoteHistory and currentQuoteNum were
+// referenced throughout (saveQuote, renderHistory, dbLoadQuoteHistory, the client
+// estimate view) but never actually declared anywhere -- the very first read inside
+// saveQuote() threw "ReferenceError: ... is not defined" and silently broke Save
+// Quote on every fresh page load, before this fix. Restored from localStorage so
+// history survives a refresh, same local-first pattern as everything else here.
+var quoteHistory = (function(){ try{ return JSON.parse(localStorage.getItem('stonedesk_quote_history')||'[]'); }catch(e){ return []; } })();
+var currentQuoteNum = 'Q-' + quoteCounter;
 // == FIELD MAP / ROUTE OPTIMIZER =================================
 var FM_API = 'https://sairn.vercel.app/api/bridge';
 var sdFieldStops = [];   // manual stops only -- owner/manager appts, anything not tied to a job/remake
@@ -4781,6 +4925,7 @@ function showPanel(id) {
   if (id === 'draw') { initDrawPanel(); initDCCanvas(); }
   if (id === 'quote') initKTCanvas();
   if (id === 'fieldmap') fmSwitchTab(fmCurrentTab);
+  if (id === 'slabs') slabInit();
 }
 
 // == MODE ======================================================
@@ -5124,10 +5269,28 @@ function saveQuote() {
     total: lastCalc.total,
     date: new Date().toLocaleDateString(),
   };
+  if (typeof qbReservedSlabId !== 'undefined' && qbReservedSlabId) {
+    q.reservedSlabId = qbReservedSlabId;
+    if (typeof sdSlabs !== 'undefined') {
+      var rs = sdSlabs.find(function(x){ return x.id === qbReservedSlabId; });
+      if (rs) {
+        rs.status = 'reserved';
+        rs.reservedFor = q.client;
+        if (typeof saveSlabs === 'function') saveSlabs();
+        if (typeof slabSyncOne === 'function') slabSyncOne(rs);
+        if (typeof slabRender === 'function') slabRender();
+      }
+    }
+    qbReservedSlabId = null;
+    var chip = document.getElementById('qb-slab-chip');
+    if (chip) chip.innerHTML = '';
+  }
   quoteHistory.unshift(q);
+  localStorage.setItem('stonedesk_quote_history', JSON.stringify(quoteHistory));
   renderHistory();
   dbSaveQuoteHistory();
   currentQuoteNum = 'Q-' + (quoteCounter++);
+  localStorage.setItem('quoteCounter', String(quoteCounter));
   document.getElementById('quote-num').value = currentQuoteNum;
   // Flash confirmation
   const btn = document.querySelector('[onclick="saveQuote()"]');
@@ -15215,6 +15378,7 @@ window.saDebounce = function(func, wait) {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <script>
 // === STONEDESK SUPABASE + AI MEMORY ENGINE ===
 // Mirrors SAIRNbiz pattern — Business Profile + AI Memory + cross-device sync
@@ -15564,7 +15728,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 margin-bottom:12px;max-height:320px;overflow-y:auto" id="fq-quote-out"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn bp" onclick="fqStep(5)">Get Signature →</button>
-      <button class="btn bo bsm" onclick="saveQuote()">💾 Save</button>
+      <button class="btn bo bsm" onclick="fqSaveQuote()">💾 Save</button>
     </div>
   </div>
   <!-- Step 5: Signature -->
@@ -15684,7 +15848,7 @@ function fqShare() {
   if(navigator.share) navigator.share({title:'Quote',text:fqQuoteTxt}).catch(function(){});
   else { navigator.clipboard.writeText(fqQuoteTxt); if(typeof showToast==='function') showToast('Quote copied!'); }
 }
-function saveQuote() {
+function fqSaveQuote() {
   var key='stonedesk_quotes';
   var q=JSON.parse(localStorage.getItem(key)||'[]');
   q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});
@@ -15692,7 +15856,7 @@ function saveQuote() {
   if(typeof showToast==='function') showToast('Quote saved');
 }
 function fqClose() {
-  saveQuote();
+  fqSaveQuote();
   if(typeof showToast==='function') showToast('Signed quote saved');
   fqStep(1); fqImg64=null; fqConvo=[]; fqQuoteTxt='';
   var ta=document.getElementById('fq-answers'); if(ta) ta.value='';
@@ -16123,6 +16287,535 @@ function saveScannedDoc() {
 function crSave(){var KEY=(typeof APP_ID!=="undefined"?APP_ID:"sairn")+"_checks";var num=parseInt(localStorage.getItem(KEY+"_num")||"1001");var entry={num:num++,date:new Date().toLocaleDateString(),payee:document.getElementById("cr-payee")?.value||"",amount:document.getElementById("cr-amount")?.value||"0",memo:document.getElementById("cr-memo")?.value||""};var arr=JSON.parse(localStorage.getItem(KEY)||"[]");arr.unshift(entry);localStorage.setItem(KEY,JSON.stringify(arr));localStorage.setItem(KEY+"_num",String(num));if(typeof showToast==="function")showToast("Check #"+entry.num+" saved");}
 function crPostGL(){if(typeof showToast==="function")showToast("Posted to GL");}
 function crUpdate(){}
+</script>
+
+<script>
+// ============================================================
+// SLAB INVENTORY MODULE
+// Every slab is its own record, never deleted -- only marked
+// consumed. Remnants are auto-created sub-records when a slab
+// is consumed with leftover material. Cost basis is cost/sqft x
+// usable sqft, matching the industry-standard valuation rule
+// (value automatically drops when a slab becomes a remnant).
+// Local-first (sd_slabs in localStorage), Supabase is a best-
+// effort cross-device sync layer on top -- the module works
+// fully offline/without it.
+// ============================================================
+var sdSlabs = [];
+var slabCurrentTab = 'all';
+var _slabPendingPhoto = null; // {dataUrl} staged until Save is clicked
+var _slabLoaded = false;
+
+function slabInit(){
+  if(!_slabLoaded){ loadSlabs(); _slabLoaded=true; }
+  slabRender();
+}
+
+function loadSlabs(){
+  try{ sdSlabs = JSON.parse(localStorage.getItem('sd_slabs')||'[]'); }catch(e){ sdSlabs=[]; }
+  slabSyncFromSupabase();
+}
+
+function saveSlabs(){
+  localStorage.setItem('sd_slabs', JSON.stringify(sdSlabs));
+}
+
+function slabLicKey(){
+  return localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+}
+
+async function slabSyncFromSupabase(){
+  if(typeof getSDSupabase!=='function') return;
+  var sb=getSDSupabase(); if(!sb) return;
+  var lic=slabLicKey(); if(!lic) return;
+  try{
+    var res=await sb.from('slabs').select('*').eq('license_key',lic);
+    if(!res.error && res.data && res.data.length){
+      var byId={}; sdSlabs.forEach(function(s){byId[s.id]=s;});
+      res.data.forEach(function(s){byId[s.id]=s;});
+      sdSlabs=Object.values(byId);
+      saveSlabs();
+      slabRender();
+    }
+  }catch(e){}
+}
+
+async function slabSyncOne(slab){
+  if(typeof getSDSupabase!=='function') return;
+  var sb=getSDSupabase(); if(!sb) return;
+  var lic=slabLicKey(); if(!lic) return;
+  try{
+    await sb.from('slabs').upsert(Object.assign({}, slab, {license_key:lic, app_id:'stonedesk'}), {onConflict:'id'});
+  }catch(e){}
+}
+
+function slabValue(s){
+  var sqft = (s.usableSqft!=null) ? s.usableSqft : slabSqft(s.lengthIn, s.widthIn);
+  return Math.round((sqft * (s.costPerSqft||0)) * 100)/100;
+}
+function slabSqft(lengthIn, widthIn){
+  return Math.round(((lengthIn||0)*(widthIn||0)/144) * 100)/100;
+}
+
+function slabSetTab(tab, el){
+  slabCurrentTab=tab;
+  document.querySelectorAll('#panel-slabs .vendor-tab').forEach(function(b){b.classList.remove('active');});
+  if(el) el.classList.add('active');
+  slabRender();
+}
+
+function slabOpenForm(id){
+  _slabPendingPhoto=null;
+  document.getElementById('sl-id').value='';
+  ['sl-color','sl-supplier','sl-lot','sl-length','sl-width','sl-cost','sl-location','sl-barcode','sl-notes'].forEach(function(f){document.getElementById(f).value='';});
+  document.getElementById('sl-material').value='granite';
+  document.getElementById('sl-thickness').value='3cm';
+  document.getElementById('sl-finish').value='polished';
+  document.getElementById('sl-consignment').checked=false;
+  document.getElementById('sl-photo-preview').innerHTML='';
+  document.getElementById('slab-form-title').textContent='Add Slab';
+  if(id){
+    var s=sdSlabs.find(function(x){return x.id===id;});
+    if(s){
+      document.getElementById('sl-id').value=s.id;
+      document.getElementById('sl-material').value=s.material||'granite';
+      document.getElementById('sl-color').value=s.colorName||'';
+      document.getElementById('sl-supplier').value=s.supplier||'';
+      document.getElementById('sl-lot').value=s.lotNumber||'';
+      document.getElementById('sl-thickness').value=s.thickness||'3cm';
+      document.getElementById('sl-finish').value=s.finish||'polished';
+      document.getElementById('sl-length').value=s.lengthIn||'';
+      document.getElementById('sl-width').value=s.widthIn||'';
+      document.getElementById('sl-cost').value=s.costPerSqft||'';
+      document.getElementById('sl-location').value=s.yardLocation||'';
+      document.getElementById('sl-barcode').value=s.externalBarcode||'';
+      document.getElementById('sl-consignment').checked=!!s.consignment;
+      document.getElementById('sl-notes').value=s.notes||'';
+      document.getElementById('slab-form-title').textContent='Edit Slab';
+      if(s.photoUrl){
+        document.getElementById('sl-photo-preview').innerHTML='<img src="'+s.photoUrl+'" style="max-width:160px;border-radius:8px">';
+        _slabPendingPhoto={dataUrl:s.photoUrl, keep:true};
+      }
+    }
+  }
+  document.getElementById('slab-form').style.display='flex';
+}
+function slabCloseForm(){ document.getElementById('slab-form').style.display='none'; }
+
+function slabPhotoSelected(e){
+  var file=e.target.files && e.target.files[0]; if(!file) return;
+  var img=new Image();
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    img.onload=function(){
+      var maxW=640;
+      var scale=Math.min(1, maxW/img.width);
+      var canvas=document.createElement('canvas');
+      canvas.width=Math.round(img.width*scale);
+      canvas.height=Math.round(img.height*scale);
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      var dataUrl=canvas.toDataURL('image/jpeg', 0.75);
+      _slabPendingPhoto={dataUrl:dataUrl, keep:false};
+      document.getElementById('sl-photo-preview').innerHTML='<img src="'+dataUrl+'" style="max-width:160px;border-radius:8px">';
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function slabUploadPhotoIfPossible(dataUrl, slabId){
+  if(typeof getSDSupabase!=='function') return dataUrl;
+  var sb=getSDSupabase(); if(!sb) return dataUrl;
+  try{
+    var res=await fetch(dataUrl); var blob=await res.blob();
+    var path=slabLicKey()+'/'+slabId+'.jpg';
+    var up=await sb.storage.from('slab-photos').upload(path, blob, {upsert:true, contentType:'image/jpeg'});
+    if(up.error) return dataUrl;
+    var pub=sb.storage.from('slab-photos').getPublicUrl(path);
+    return (pub && pub.data && pub.data.publicUrl) ? pub.data.publicUrl : dataUrl;
+  }catch(e){ return dataUrl; }
+}
+
+async function slabSave(){
+  var id=document.getElementById('sl-id').value || ('SLAB'+Date.now());
+  var lengthIn=parseFloat(document.getElementById('sl-length').value)||0;
+  var widthIn=parseFloat(document.getElementById('sl-width').value)||0;
+  var existing=sdSlabs.find(function(x){return x.id===id;});
+  var s=existing || {id:id, status:'in-stock', isRemnant:false, parentSlabId:null, createdAt:new Date().toISOString()};
+  s.material=document.getElementById('sl-material').value;
+  s.colorName=document.getElementById('sl-color').value.trim();
+  s.supplier=document.getElementById('sl-supplier').value.trim();
+  s.lotNumber=document.getElementById('sl-lot').value.trim();
+  s.thickness=document.getElementById('sl-thickness').value;
+  s.finish=document.getElementById('sl-finish').value;
+  s.lengthIn=lengthIn; s.widthIn=widthIn;
+  s.totalSqft=slabSqft(lengthIn,widthIn);
+  if(s.usableSqft==null) s.usableSqft=s.totalSqft;
+  s.costPerSqft=parseFloat(document.getElementById('sl-cost').value)||0;
+  s.yardLocation=document.getElementById('sl-location').value.trim();
+  s.externalBarcode=document.getElementById('sl-barcode').value.trim();
+  s.consignment=document.getElementById('sl-consignment').checked;
+  s.notes=document.getElementById('sl-notes').value.trim();
+
+  if(!existing) sdSlabs.unshift(s);
+  saveSlabs();
+  slabCloseForm();
+  slabRender();
+
+  if(_slabPendingPhoto && !_slabPendingPhoto.keep){
+    var finalUrl=await slabUploadPhotoIfPossible(_slabPendingPhoto.dataUrl, id);
+    s.photoUrl=finalUrl;
+    saveSlabs();
+    slabRender();
+  }
+  slabSyncOne(s);
+}
+
+function slabDelete(id){
+  if(!confirm('Delete this slab record entirely? Consumed slabs should be marked Consumed instead, not deleted -- this removes it from history.')) return;
+  sdSlabs=sdSlabs.filter(function(s){return s.id!==id;});
+  saveSlabs(); slabRender();
+}
+
+function slabMaterialLabel(m){
+  return {granite:'Granite',quartzite:'Quartzite',quartz:'Engineered Quartz',marble:'Marble',porcelain:'Porcelain',soapstone:'Soapstone',dolomite:'Dolomite',other:'Other'}[m] || m;
+}
+function slabStatusBadge(s){
+  if(s.status==='consumed') return '<span style="background:#E5E7EB;color:#374151;font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px">CONSUMED</span>';
+  if(s.status==='reserved') return '<span style="background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px">RESERVED'+(s.reservedFor?' — '+escHtml(s.reservedFor):'')+'</span>';
+  return '<span style="background:#DCFCE7;color:#166534;font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px">IN STOCK</span>';
+}
+
+function slabFilteredList(){
+  var mat=document.getElementById('slab-f-material').value;
+  var search=(document.getElementById('slab-f-search').value||'').toLowerCase();
+  var minSqft=parseFloat(document.getElementById('slab-f-minsqft').value)||0;
+  return sdSlabs.filter(function(s){
+    if(slabCurrentTab==='in-stock' && s.status!=='in-stock') return false;
+    if(slabCurrentTab==='reserved' && s.status!=='reserved') return false;
+    if(slabCurrentTab==='remnant' && !s.isRemnant) return false;
+    if(slabCurrentTab==='consumed' && s.status!=='consumed') return false;
+    if(mat && s.material!==mat) return false;
+    if(minSqft && (s.usableSqft||0) < minSqft) return false;
+    if(search){
+      var hay=[s.colorName,s.supplier,s.lotNumber,s.externalBarcode].join(' ').toLowerCase();
+      if(hay.indexOf(search)===-1) return false;
+    }
+    return true;
+  });
+}
+
+function slabRender(){
+  if(!_slabLoaded){ loadSlabs(); _slabLoaded=true; }
+  var list=slabFilteredList();
+  var grid=document.getElementById('slab-grid');
+  if(!list.length){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px">No slabs match. Add one, or adjust the filters above.</div>';
+  } else {
+    grid.innerHTML=list.map(slabCardHtml).join('');
+  }
+  slabRenderKpis();
+  slabRenderLowStock();
+}
+
+function slabCardHtml(s){
+  var photo=s.photoUrl ? '<img src="'+s.photoUrl+'" style="width:100%;height:130px;object-fit:cover;border-radius:8px 8px 0 0">'
+    : '<div style="width:100%;height:130px;background:var(--stone);border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:30px">🪨</div>';
+  var actions='';
+  if(s.status==='in-stock'){
+    actions='<button class="q-btn" style="font-size:11px;padding:5px 8px" onclick="slabOpenReserve(\''+s.id+'\')">Reserve</button>'+
+      '<button class="q-btn" style="font-size:11px;padding:5px 8px" onclick="slabOpenConsume(\''+s.id+'\')">Consume</button>';
+  } else if(s.status==='reserved'){
+    actions='<button class="q-btn" style="font-size:11px;padding:5px 8px" onclick="slabReturnToStock(\''+s.id+'\')">Return to Stock</button>'+
+      '<button class="q-btn" style="font-size:11px;padding:5px 8px" onclick="slabOpenConsume(\''+s.id+'\')">Consume</button>';
+  }
+  actions+='<button class="q-btn" style="font-size:11px;padding:5px 8px" onclick="slabShowQR(\''+s.id+'\')">QR Label</button>'+
+    '<button class="q-btn" style="font-size:11px;padding:5px 8px" onclick="slabOpenForm(\''+s.id+'\')">Edit</button>';
+  return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden">'+
+    photo+
+    '<div style="padding:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px">'+
+        '<div style="font-weight:700;font-size:13px">'+escHtml(s.colorName||'(unnamed)')+'</div>'+
+        (s.isRemnant?'<span style="font-size:9px;font-weight:700;color:var(--a);background:var(--stone);padding:2px 6px;border-radius:100px;white-space:nowrap">REMNANT</span>':'')+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+slabMaterialLabel(s.material)+' · '+s.thickness+' · '+(s.lengthIn||0)+'in × '+(s.widthIn||0)+'in</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+(s.usableSqft||0)+' usable sqft · $'+slabValue(s).toLocaleString()+'</div>'+
+      '<div style="margin-bottom:8px">'+slabStatusBadge(s)+'</div>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">'+actions+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function slabRenderKpis(){
+  var inStock=sdSlabs.filter(function(s){return s.status==='in-stock';});
+  var sqft=inStock.reduce(function(a,s){return a+(s.usableSqft||0);},0);
+  var val=inStock.reduce(function(a,s){return a+slabValue(s);},0);
+  document.getElementById('slab-kpi-count').textContent=inStock.length;
+  document.getElementById('slab-kpi-sqft').textContent=Math.round(sqft).toLocaleString();
+  document.getElementById('slab-kpi-value').textContent='$'+Math.round(val).toLocaleString();
+  document.getElementById('slab-kpi-low').textContent=slabLowStockGroups().length;
+}
+
+function slabLowStockGroups(threshold){
+  threshold = threshold || 2;
+  var groups={};
+  sdSlabs.filter(function(s){return s.status==='in-stock';}).forEach(function(s){
+    var key=s.material+'|'+(s.colorName||'').toLowerCase();
+    groups[key]=(groups[key]||0)+1;
+  });
+  var low=[];
+  Object.keys(groups).forEach(function(k){
+    if(groups[k]<threshold){
+      var parts=k.split('|');
+      low.push({material:parts[0], color:parts[1], count:groups[k]});
+    }
+  });
+  return low;
+}
+
+function slabRenderLowStock(){
+  var low=slabLowStockGroups();
+  var el=document.getElementById('slab-low-stock-banner');
+  if(!low.length){ el.innerHTML=''; return; }
+  el.innerHTML='<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#991B1B">'+
+    '<b>Running low:</b> '+low.map(function(g){return slabMaterialLabel(g.material)+(g.color?' — '+escHtml(g.color):'')+' ('+g.count+' left)';}).join(', ')+
+  '</div>';
+}
+
+// -- RESERVE / RETURN / CONSUME (+ remnant generation) --------
+function slabOpenReserve(id){
+  var s=sdSlabs.find(function(x){return x.id===id;}); if(!s) return;
+  document.getElementById('slab-action-modal-body').innerHTML=
+    '<div style="font-size:14px;font-weight:700;margin-bottom:12px">Reserve '+escHtml(s.colorName||'slab')+'</div>'+
+    '<div class="fg"><label>Reserved For (customer / job)</label><input id="slab-reserve-for" placeholder="e.g. Johnson Residence"></div>'+
+    '<div style="display:flex;gap:10px;margin-top:14px">'+
+      '<button class="q-btn primary" onclick="slabConfirmReserve(\''+id+'\')">Reserve</button>'+
+      '<button class="q-btn" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Cancel</button>'+
+    '</div>';
+  document.getElementById('slab-action-modal').style.display='flex';
+}
+function slabConfirmReserve(id){
+  var s=sdSlabs.find(function(x){return x.id===id;}); if(!s) return;
+  s.status='reserved';
+  s.reservedFor=document.getElementById('slab-reserve-for').value.trim()||'(unnamed)';
+  saveSlabs(); slabSyncOne(s); slabRender();
+  document.getElementById('slab-action-modal').style.display='none';
+}
+function slabReturnToStock(id){
+  var s=sdSlabs.find(function(x){return x.id===id;}); if(!s) return;
+  s.status='in-stock'; s.reservedFor=null;
+  saveSlabs(); slabSyncOne(s); slabRender();
+}
+
+function slabOpenConsume(id){
+  var s=sdSlabs.find(function(x){return x.id===id;}); if(!s) return;
+  document.getElementById('slab-action-modal-body').innerHTML=
+    '<div style="font-size:14px;font-weight:700;margin-bottom:12px">Consume '+escHtml(s.colorName||'slab')+'</div>'+
+    '<div class="fg"><label>Yield % (optional)</label><input id="slab-consume-yield" type="number" placeholder="e.g. 78"></div>'+
+    '<div class="fg"><label><input type="checkbox" id="slab-consume-remnant-cb" style="width:auto;margin-right:6px" onchange="document.getElementById(\'slab-remnant-fields\').style.display=this.checked?\'grid\':\'none\'">Leftover remnant to keep?</label></div>'+
+    '<div id="slab-remnant-fields" style="display:none;grid-template-columns:1fr 1fr;gap:10px">'+
+      '<div class="fg"><label>Remnant Length (in)</label><input id="slab-remnant-l" type="number" step="0.1"></div>'+
+      '<div class="fg"><label>Remnant Width (in)</label><input id="slab-remnant-w" type="number" step="0.1"></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:10px;margin-top:14px">'+
+      '<button class="q-btn primary" onclick="slabConfirmConsume(\''+id+'\')">Confirm Consumed</button>'+
+      '<button class="q-btn" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Cancel</button>'+
+    '</div>';
+  document.getElementById('slab-action-modal').style.display='flex';
+}
+function slabConfirmConsume(id){
+  var s=sdSlabs.find(function(x){return x.id===id;}); if(!s) return;
+  s.status='consumed'; s.consumedAt=new Date().toISOString();
+  var yieldPct=parseFloat(document.getElementById('slab-consume-yield').value);
+  if(!isNaN(yieldPct)) s.yieldPercent=yieldPct;
+  var makeRemnant=document.getElementById('slab-consume-remnant-cb').checked;
+  if(makeRemnant){
+    var rl=parseFloat(document.getElementById('slab-remnant-l').value)||0;
+    var rw=parseFloat(document.getElementById('slab-remnant-w').value)||0;
+    if(rl>0 && rw>0){
+      var remnant={
+        id:'SLAB'+Date.now()+'R', material:s.material, colorName:s.colorName, supplier:s.supplier,
+        lotNumber:(s.lotNumber||'')+' (remnant)', thickness:s.thickness, finish:s.finish,
+        lengthIn:rl, widthIn:rw, totalSqft:slabSqft(rl,rw), usableSqft:slabSqft(rl,rw),
+        costPerSqft:s.costPerSqft, yardLocation:s.yardLocation, externalBarcode:'',
+        consignment:s.consignment, notes:'Remnant of '+s.id,
+        status:'in-stock', isRemnant:true, parentSlabId:s.id, createdAt:new Date().toISOString()
+      };
+      sdSlabs.unshift(remnant);
+      slabSyncOne(remnant);
+    }
+  }
+  saveSlabs(); slabSyncOne(s); slabRender();
+  document.getElementById('slab-action-modal').style.display='none';
+}
+
+// -- QR LABEL ---------------------------------------------------
+function slabShowQR(id){
+  var s=sdSlabs.find(function(x){return x.id===id;}); if(!s) return;
+  document.getElementById('slab-qr-render').innerHTML='';
+  if(typeof QRCode!=='undefined'){
+    new QRCode(document.getElementById('slab-qr-render'), {text:id, width:180, height:180});
+  } else {
+    document.getElementById('slab-qr-render').innerHTML='<div style="color:#991B1B;font-size:12px">QR library still loading -- try again in a second.</div>';
+  }
+  document.getElementById('slab-qr-label').textContent=slabMaterialLabel(s.material)+' — '+(s.colorName||'')+' — '+(s.lengthIn||0)+'in × '+(s.widthIn||0)+'in — '+id;
+  document.getElementById('slab-qr-modal').style.display='flex';
+}
+
+// -- CSV IMPORT / EXPORT (for bringing in SlabSmith / Horus exports) --
+function slabExportCsv(){
+  var headers=['id','material','colorName','supplier','lotNumber','thickness','finish','lengthIn','widthIn','usableSqft','costPerSqft','status','reservedFor','isRemnant','externalBarcode','yardLocation','consignment','notes'];
+  var rows=[headers.join(',')];
+  sdSlabs.forEach(function(s){
+    rows.push(headers.map(function(h){
+      var v=s[h]; if(v==null) v='';
+      v=String(v).replace(/"/g,'""');
+      return /[,"\n]/.test(v) ? '"'+v+'"' : v;
+    }).join(','));
+  });
+  var blob=new Blob([rows.join('\n')], {type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='slab_inventory_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+}
+function slabImportClick(){ document.getElementById('slab-csv-input').click(); }
+function slabParseCsvLine(line){
+  var out=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(inQ){
+      if(c==='"' && line[i+1]==='"'){cur+='"';i++;}
+      else if(c==='"'){inQ=false;}
+      else cur+=c;
+    } else {
+      if(c==='"') inQ=true;
+      else if(c===','){out.push(cur);cur='';}
+      else cur+=c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+function slabImportCsv(event){
+  var file=event.target.files && event.target.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim().length;});
+    if(lines.length<2){ alert('CSV looks empty.'); return; }
+    var headers=slabParseCsvLine(lines[0]).map(function(h){return h.trim().toLowerCase();});
+    var map={
+      material:['material','material type'], colorname:['colorname','color','color name','color/pattern','pattern'],
+      supplier:['supplier','vendor'], lotnumber:['lotnumber','lot','lot #','lot number','block #'],
+      thickness:['thickness'], finish:['finish'],
+      lengthin:['lengthin','length','length (in)','length_in'], widthin:['widthin','width','width (in)','width_in'],
+      costpersqft:['costpersqft','cost per sqft','cost/sqft','cost'], externalbarcode:['externalbarcode','barcode','serial','serial #','sku'],
+      yardlocation:['yardlocation','location','yard location']
+    };
+    function findCol(key){
+      var aliases=map[key]||[key];
+      for(var i=0;i<headers.length;i++){ if(aliases.indexOf(headers[i])!==-1) return i; }
+      return -1;
+    }
+    var idx={material:findCol('material'),colorName:findCol('colorname'),supplier:findCol('supplier'),lotNumber:findCol('lotnumber'),
+      thickness:findCol('thickness'),finish:findCol('finish'),lengthIn:findCol('lengthin'),widthIn:findCol('widthin'),
+      costPerSqft:findCol('costpersqft'),externalBarcode:findCol('externalbarcode'),yardLocation:findCol('yardlocation')};
+    var imported=0;
+    for(var r=1;r<lines.length;r++){
+      var cols=slabParseCsvLine(lines[r]);
+      var matRaw=(idx.material>=0?cols[idx.material]:'').toLowerCase();
+      var matKey=['granite','quartzite','quartz','marble','porcelain','soapstone','dolomite'].find(function(m){return matRaw.indexOf(m)!==-1;}) || 'other';
+      var lengthIn=parseFloat(idx.lengthIn>=0?cols[idx.lengthIn]:0)||0;
+      var widthIn=parseFloat(idx.widthIn>=0?cols[idx.widthIn]:0)||0;
+      var s={
+        id:'SLAB'+Date.now()+'_'+r, material:matKey,
+        colorName: idx.colorName>=0?cols[idx.colorName]:'',
+        supplier: idx.supplier>=0?cols[idx.supplier]:'',
+        lotNumber: idx.lotNumber>=0?cols[idx.lotNumber]:'',
+        thickness: (idx.thickness>=0?cols[idx.thickness]:'')||'3cm',
+        finish: (idx.finish>=0?cols[idx.finish]:'')||'polished',
+        lengthIn:lengthIn, widthIn:widthIn, totalSqft:slabSqft(lengthIn,widthIn), usableSqft:slabSqft(lengthIn,widthIn),
+        costPerSqft: parseFloat(idx.costPerSqft>=0?cols[idx.costPerSqft]:0)||0,
+        externalBarcode: idx.externalBarcode>=0?cols[idx.externalBarcode]:'',
+        yardLocation: idx.yardLocation>=0?cols[idx.yardLocation]:'',
+        status:'in-stock', isRemnant:false, parentSlabId:null, consignment:false, notes:'Imported from CSV',
+        createdAt:new Date().toISOString()
+      };
+      sdSlabs.unshift(s);
+      imported++;
+    }
+    saveSlabs(); slabRender();
+    if(typeof showToast==='function') showToast(imported+' slabs imported');
+    else alert(imported+' slabs imported');
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+// -- CLAUDE SMART FINDER ----------------------------------------
+async function slabRunFinder(){
+  var q=(document.getElementById('slab-finder-input').value||'').trim();
+  var resultEl=document.getElementById('slab-finder-result');
+  if(!q){ resultEl.innerHTML='<div style="color:var(--muted);font-size:12px">Type what you need first.</div>'; return; }
+  var available=sdSlabs.filter(function(s){return s.status==='in-stock';});
+  if(!available.length){ resultEl.innerHTML='<div style="color:var(--muted);font-size:12px">No in-stock slabs to search yet.</div>'; return; }
+  resultEl.innerHTML='<div style="color:var(--muted);font-size:12px">Thinking...</div>';
+  var listText=available.map(function(s){
+    return s.id+': '+slabMaterialLabel(s.material)+' "'+(s.colorName||'unnamed')+'" '+s.thickness+' '+s.finish+', '+(s.usableSqft||0)+' usable sqft, $'+slabValue(s)+' total value, supplier '+(s.supplier||'unknown');
+  }).join('\n');
+  var prompt='A stone fabrication sales rep needs a slab for this job: "'+q+'"\n\nHere is the current in-stock inventory:\n'+listText+
+    '\n\nPick the 1-3 best matching slabs by id. Respond with ONLY this exact JSON, no markdown fences, no other text:\n'+
+    '{"matches":[{"id":"SLAB...","reason":"one short plain sentence why this fits"}]}';
+  try{
+    var res=await fetch(SAIRN_API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      app_id: APP_ID_LOCAL, is_demo:true, max_tokens:400, system:'Respond with ONLY raw JSON. No markdown code fences, no preamble.', messages:[{role:'user', content:prompt}]
+    })});
+    var data=await res.json();
+    var raw=(data.content && data.content[0] && data.content[0].text) || '';
+    raw=raw.replace(/```json|```/g,'').trim();
+    var parsed=JSON.parse(raw);
+    if(!parsed.matches || !parsed.matches.length){ resultEl.innerHTML='<div style="color:var(--muted);font-size:12px">No good match found in current stock.</div>'; return; }
+    resultEl.innerHTML=parsed.matches.map(function(m){
+      var s=sdSlabs.find(function(x){return x.id===m.id;});
+      if(!s) return '';
+      return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">'+
+        '<div><b>'+escHtml(s.colorName||'')+'</b> — '+slabMaterialLabel(s.material)+', '+(s.usableSqft||0)+' sqft<br><span style="color:var(--muted);font-size:11px">'+escHtml(m.reason||'')+'</span></div>'+
+        '<button class="q-btn primary" style="font-size:11px;padding:5px 8px;white-space:nowrap" onclick="slabOpenReserve(\''+s.id+'\')">Reserve</button>'+
+      '</div>';
+    }).join('');
+  }catch(e){
+    resultEl.innerHTML='<div style="color:#991B1B;font-size:12px">Could not reach the finder right now -- try the filters above instead.</div>';
+  }
+}
+
+// -- QUOTE BUILDER TIE-IN -----------------------------------------
+var qbReservedSlabId = null;
+function qbOpenSlabPicker(){
+  if(!_slabLoaded){ loadSlabs(); _slabLoaded=true; }
+  var available=sdSlabs.filter(function(s){return s.status==='in-stock';});
+  var body=document.getElementById('slab-action-modal-body');
+  if(!available.length){
+    body.innerHTML='<div style="font-size:13px;color:var(--muted)">No in-stock slabs yet. Add some in the Slabs tab.</div><button class="q-btn" style="margin-top:12px" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Close</button>';
+  } else {
+    body.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:12px">Pick a Slab for this Quote</div>'+
+      '<div style="max-height:320px;overflow-y:auto">'+available.map(function(s){
+        return '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+          '<div style="font-size:12px"><b>'+escHtml(s.colorName||'')+'</b> — '+slabMaterialLabel(s.material)+', '+(s.usableSqft||0)+' sqft</div>'+
+          '<button class="q-btn primary" style="font-size:11px;padding:4px 8px" onclick="qbPickSlab(\''+s.id+'\')">Pick</button>'+
+        '</div>';
+      }).join('')+'</div>'+
+      '<button class="q-btn" style="margin-top:12px" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Close</button>';
+  }
+  document.getElementById('slab-action-modal').style.display='flex';
+}
+function qbPickSlab(id){
+  qbReservedSlabId=id;
+  var s=sdSlabs.find(function(x){return x.id===id;});
+  var chip=document.getElementById('qb-slab-chip');
+  if(chip && s) chip.innerHTML='📦 Reserved: <b>'+escHtml(s.colorName||'')+'</b> ('+slabMaterialLabel(s.material)+') <a href="#" onclick="qbReservedSlabId=null;document.getElementById(\'qb-slab-chip\').innerHTML=\'\';return false;" style="margin-left:6px;color:var(--muted)">remove</a>';
+  document.getElementById('slab-action-modal').style.display='none';
+}
 </script>
 
 </body></html>
