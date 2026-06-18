@@ -4991,15 +4991,52 @@ function dcPresetEdgeFieldFor(rectKey) {
 function dcHitPresetEdge(px, py) {
   const rects = window._ctRects || [];
   const tol = 9;
-  let best = null, bestDist = Infinity;
+  const allCandidates = [];
   rects.forEach(r => {
     const candidates = [
-      { side:'top',    dist:Math.abs(py-r.y),       inRange: px>=r.x-tol && px<=r.x+r.w+tol },
-      { side:'bottom', dist:Math.abs(py-(r.y+r.h)), inRange: px>=r.x-tol && px<=r.x+r.w+tol },
-      { side:'left',   dist:Math.abs(px-r.x),       inRange: py>=r.y-tol && py<=r.y+r.h+tol },
-      { side:'right',  dist:Math.abs(px-(r.x+r.w)), inRange: py>=r.y-tol && py<=r.y+r.h+tol },
+      { side:'top',    dist:Math.abs(py-r.y),       inRange: px>=r.x-tol && px<=r.x+r.w+tol, lineY:r.y },
+      { side:'bottom', dist:Math.abs(py-(r.y+r.h)), inRange: px>=r.x-tol && px<=r.x+r.w+tol, lineY:r.y+r.h },
+      { side:'left',   dist:Math.abs(px-r.x),       inRange: py>=r.y-tol && py<=r.y+r.h+tol, lineX:r.x },
+      { side:'right',  dist:Math.abs(px-(r.x+r.w)), inRange: py>=r.y-tol && py<=r.y+r.h+tol, lineX:r.x+r.w },
     ];
-    candidates.forEach(c => { if (c.inRange && c.dist<=tol && c.dist<bestDist) { bestDist=c.dist; best={rectKey:r.key, side:c.side, rect:r}; } });
+    candidates.forEach(c => { if (c.inRange && c.dist<=tol) allCandidates.push({rectKey:r.key, side:c.side, rect:r, dist:c.dist, lineX:c.lineX, lineY:c.lineY}); });
+  });
+
+  // Two different rects can share the exact same boundary line (e.g. an L-shape's A-top
+  // coincides with B-bottom, since that's the seam where the two runs meet). Naively picking
+  // whichever rect happened to win a tie-break there produced "drag one way, behaves like the
+  // opposite" — the rep would sometimes grab A, sometimes B, with no visual way to tell which,
+  // since both candidates sit at distance zero. BUT not every coincident line is meaningless:
+  // in a U-shape, Left's outer wall and Back's left edge also coincide, yet BOTH are genuine,
+  // distinct, meaningful drag targets (Left's depth vs Back's depth) that a rep should be able
+  // to grab. The distinguishing test: is the click also within the OTHER rect's perpendicular
+  // span (meaning the two rects fully overlap along that line, so there's truly no way to tell
+  // them apart), or does the click sit in a region only ONE of the two rects actually occupies
+  // (meaning the rep is clearly closer to one rect's body than the other's, even though the
+  // boundary LINE is shared)? Only the former is truly ambiguous and gets excluded.
+  function trulyAmbiguous(c) {
+    return allCandidates.some(o => {
+      if (o.rectKey === c.rectKey) return false;
+      const sameLine = (c.lineY!=null && o.lineY!=null && Math.abs(c.lineY-o.lineY)<0.5) ||
+                        (c.lineX!=null && o.lineX!=null && Math.abs(c.lineX-o.lineX)<0.5);
+      if (!sameLine) return false;
+      // Same line — now check whether the two rects' bodies actually overlap in the OTHER axis
+      // at this exact point. If c is a horizontal edge (top/bottom), compare x-spans; if
+      // vertical (left/right), compare y-spans.
+      if (c.side==='top' || c.side==='bottom') {
+        const overlapStart = Math.max(c.rect.x, o.rect.x), overlapEnd = Math.min(c.rect.x+c.rect.w, o.rect.x+o.rect.w);
+        return overlapEnd - overlapStart > 4; // meaningful overlap, not just touching at a corner
+      } else {
+        const overlapStart = Math.max(c.rect.y, o.rect.y), overlapEnd = Math.min(c.rect.y+c.rect.h, o.rect.y+o.rect.h);
+        return overlapEnd - overlapStart > 4;
+      }
+    });
+  }
+
+  let best = null, bestDist = Infinity;
+  allCandidates.forEach(c => {
+    if (trulyAmbiguous(c)) return;
+    if (c.dist < bestDist) { bestDist = c.dist; best = { rectKey:c.rectKey, side:c.side, rect:c.rect }; }
   });
   return best;
 }
