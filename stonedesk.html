@@ -2028,6 +2028,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 <div class="alert-bar" id="alert-bar"></div>
 
   <div class="panel active" id="panel-ai">
+    <div id="slab-dash-alert" style="display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:9px;padding:10px 16px;margin-bottom:10px;font-size:12px;color:#991B1B;cursor:pointer" onclick="showPanel('slabs')">
+      🪨 <b>Slab Inventory Alert:</b> <span id="slab-dash-alert-text"></span> — <u>Tap to view Slabs</u>
+    </div>
     <div id="sairn-weather-bar" style="background:linear-gradient(135deg,#F0FEF6,#DCFCE7);
       border:1.5px solid #BBF7D0;border-radius:9px;padding:13px 18px;
       display:flex;align-items:center;gap:14px;margin-bottom:14px;">
@@ -3229,6 +3232,14 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
               <option value="rush">Rush Job — 5-7 days</option>
             </select>
           </div>
+          <div class="fg" style="grid-column:span 3">
+            <label>Reserved Slab (optional)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="q-btn" type="button" onclick="schedOpenSlabPicker()" style="font-size:12px">🪨 Pick from Slab Inventory</button>
+              <span id="sj-slab-chip" style="font-size:12px;color:var(--a)"></span>
+            </div>
+            <input type="hidden" id="sj-slab-id">
+          </div>
         </div>
         <div class="fg"><label>Notes</label><textarea id="sj-notes" style="width:100%;height:50px;resize:vertical" placeholder="Sink cutouts, edge profile, special instructions..."></textarea></div>
         <div style="display:flex;gap:10px;margin-top:4px">
@@ -3674,6 +3685,14 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
           <div class="fg"><label>Scheduled Visit Date</label><input id="rm-visitdate" type="date"></div>
         </div>
         <div class="fg"><label>Notes / Description</label><textarea id="rm-notes" style="width:100%;height:50px;resize:vertical" placeholder="What happened, what needs to be redone..."></textarea></div>
+        <div class="fg">
+          <label>Slab Needed (optional)</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="q-btn" type="button" onclick="remakeOpenSlabPicker()" style="font-size:12px">🪨 Pick from Slab Inventory</button>
+            <span id="rm-slab-chip" style="font-size:12px;color:var(--a)"></span>
+          </div>
+          <input type="hidden" id="rm-slab-id">
+        </div>
         <div style="display:flex;gap:10px;margin-top:4px">
           <button class="q-btn primary" onclick="remakeSave()">Log Item</button>
           <button class="q-btn" onclick="document.getElementById('remake-form').style.display='none'">Cancel</button>
@@ -13264,6 +13283,7 @@ function renderCustomers() {
         '<span>📅 Added '+new Date(c.createdAt).toLocaleDateString()+'</span>' +
       '</div>' +
       (c.notes ? '<div style="font-size:12px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">'+escHtml(c.notes)+'</div>' : '') +
+      (typeof sdSlabs!=='undefined'?(function(){var s=sdSlabs.find(function(x){return (x.status==='reserved'||x.status==='in-stock')&&x.reservedFor&&x.reservedFor.toLowerCase()===c.name.toLowerCase();});return s?'<div style="font-size:11px;margin-top:6px;padding:4px 10px;background:var(--stone);border-radius:20px;display:inline-block">🪨 <b>'+escHtml(s.colorName||'Slab')+'</b> '+escHtml(slabMaterialLabel(s.material))+' — '+(s.usableSqft||0)+' sqft — <span style="color:#92400E;font-weight:700">'+s.status.toUpperCase()+'</span></div>':'';})():'') +
       '</div>';
   }).join('');
 }
@@ -13727,9 +13747,17 @@ function schedSave(){
     address:document.getElementById('sj-address').value.trim(),
     volume:document.getElementById('sj-volume').value,
     notes:document.getElementById('sj-notes').value.trim(),
+    reservedSlabId:document.getElementById('sj-slab-id').value||null,
     createdAt:new Date().toISOString(),
     installedAt:null
   };
+  // If a slab was picked, mark it reserved in slab inventory immediately
+  if(job.reservedSlabId && typeof sdSlabs!=='undefined'){
+    var rs=sdSlabs.find(function(s){return s.id===job.reservedSlabId;});
+    if(rs){ rs.status='reserved'; rs.reservedFor=name; if(typeof saveSlabs==='function') saveSlabs(); if(typeof slabSyncOne==='function') slabSyncOne(rs); }
+  }
+  document.getElementById('sj-slab-id').value='';
+  document.getElementById('sj-slab-chip').textContent='';
   sdJobs.unshift(job);saveSD4();
   document.getElementById('sched-form').style.display='none';
   renderSchedule();runSchedAlerts();
@@ -13757,8 +13785,34 @@ function schedUpdateStage(id,stage){
   var j=sdJobs.find(x=>x.id===id);
   if(!j) return;
   j.stage=stage;
-  if(stage==='installed') j.installedAt=new Date().toISOString();
+  if(stage==='installed'){
+    j.installedAt=new Date().toISOString();
+    // Auto-consume any linked slab
+    if(j.reservedSlabId && typeof sdSlabs!=='undefined'){
+      var s=sdSlabs.find(function(x){return x.id===j.reservedSlabId;});
+      if(s && s.status!=='consumed') schedPromptConsumeSlab(s, j);
+    }
+  }
   saveSD4();renderSchedule();runSchedAlerts();
+}
+
+function schedPromptConsumeSlab(slab, job){
+  var body=document.getElementById('slab-action-modal-body');
+  if(!body){ slabOpenConsume(slab.id); return; }
+  body.innerHTML=
+    '<div style="font-size:14px;font-weight:700;margin-bottom:6px">🪨 Consume Slab for '+escHtml(job.customer)+'?</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">'+escHtml(slab.colorName||'Slab')+' — '+escHtml(slabMaterialLabel(slab.material))+', '+(slab.usableSqft||0)+' sqft was reserved for this job. Mark it consumed now?</div>'+
+    '<div class="fg"><label>Yield % (optional)</label><input id="slab-consume-yield" type="number" placeholder="e.g. 78"></div>'+
+    '<div class="fg"><label><input type="checkbox" id="slab-consume-remnant-cb" style="width:auto;margin-right:6px" onchange="document.getElementById(\'slab-remnant-fields\').style.display=this.checked?\'grid\':\'none\'">Leftover remnant to keep?</label></div>'+
+    '<div id="slab-remnant-fields" style="display:none;grid-template-columns:1fr 1fr;gap:10px">'+
+      '<div class="fg"><label>Remnant Length (in)</label><input id="slab-remnant-l" type="number" step="0.1"></div>'+
+      '<div class="fg"><label>Remnant Width (in)</label><input id="slab-remnant-w" type="number" step="0.1"></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:10px;margin-top:14px">'+
+      '<button class="q-btn primary" onclick="slabConfirmConsume(\''+slab.id+'\')">Yes — Consume It</button>'+
+      '<button class="q-btn" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Skip</button>'+
+    '</div>';
+  document.getElementById('slab-action-modal').style.display='flex';
 }
 
 function schedDelete(id){
@@ -13806,6 +13860,7 @@ function renderSchedule(){
         '</div>' +
         (urg!=='done'?'<div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>':'') +
         (j.notes?'<div style="font-size:11px;color:var(--muted);margin-top:4px">'+escHtml(j.notes)+'</div>':'') +
+        (j.reservedSlabId&&typeof sdSlabs!=='undefined'?(function(){var s=sdSlabs.find(function(x){return x.id===j.reservedSlabId;});return s?'<div style="font-size:11px;margin-top:5px;padding:3px 8px;background:var(--stone);border-radius:20px;display:inline-block">🪨 Slab: <b>'+escHtml(s.colorName||'')+'</b> — <span style="color:'+(s.status==='consumed'?'#6B7280':s.status==='reserved'?'#92400E':'#166534')+'">'+s.status.toUpperCase()+'</span></div>':'';})():'') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
         '<select onchange="schedUpdateStage(\'' + j.id + '\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
@@ -14262,6 +14317,7 @@ function remakeSave(){
     address:document.getElementById('rm-address').value.trim(),
     visitDate:document.getElementById('rm-visitdate').value,
     notes:document.getElementById('rm-notes').value.trim(),
+    reservedSlabId:document.getElementById('rm-slab-id').value||null,
     status:'open',
     approvedExtension:false,
     approvedBy:'',
@@ -14269,6 +14325,13 @@ function remakeSave(){
     completedAt:'',
     createdAt:new Date().toISOString()
   };
+  // Reserve the slab immediately if one was picked
+  if(r.reservedSlabId && typeof sdSlabs!=='undefined'){
+    var rs=sdSlabs.find(function(s){return s.id===r.reservedSlabId;});
+    if(rs){ rs.status='reserved'; rs.reservedFor=cust+' (remake)'; if(typeof saveSlabs==='function') saveSlabs(); if(typeof slabSyncOne==='function') slabSyncOne(rs); }
+  }
+  document.getElementById('rm-slab-id').value='';
+  document.getElementById('rm-slab-chip').textContent='';
   sdRemakes.unshift(r);
   saveSD5();
   document.getElementById('remake-form').style.display='none';
@@ -14293,6 +14356,11 @@ function remakeComplete(id){
   r.status='complete';
   r.completedAt=new Date().toISOString();
   saveSD5();renderRemakes();runRemakeAlerts();renderExecContent();
+  // Auto-consume linked slab
+  if(r.reservedSlabId && typeof sdSlabs!=='undefined'){
+    var s=sdSlabs.find(function(x){return x.id===r.reservedSlabId;});
+    if(s && s.status!=='consumed') schedPromptConsumeSlab(s, {customer:r.customer});
+  }
 }
 
 function remakeDelete(id){
@@ -15565,6 +15633,8 @@ function sendNetworkInsight(insightType, pattern) {
 document.addEventListener('DOMContentLoaded', function() {
   loadSDProfile();
   loadSDMemories();
+  // Load slab data on boot so dashboard low-stock alert is live from first screen
+  if(typeof loadSlabs==='function'){ loadSlabs(); _slabLoaded=true; }
   // SAIRN Intelligence Network: fetch cached cross-business patterns.
   // Defined further below in this same script block -- no cross-tag timing risk.
   loadNetworkIntelligence();
@@ -16313,6 +16383,7 @@ function slabInit(){
 
 function loadSlabs(){
   try{ sdSlabs = JSON.parse(localStorage.getItem('sd_slabs')||'[]'); }catch(e){ sdSlabs=[]; }
+  slabUpdateDashAlert();
   slabSyncFromSupabase();
 }
 
@@ -16517,6 +16588,7 @@ function slabRender(){
   }
   slabRenderKpis();
   slabRenderLowStock();
+  slabUpdateDashAlert();
 }
 
 function slabCardHtml(s){
@@ -16789,7 +16861,69 @@ async function slabRunFinder(){
   }
 }
 
-// -- QUOTE BUILDER TIE-IN -----------------------------------------
+// -- SCHEDULE SLAB PICKER (reuses the action modal) --------------
+function schedOpenSlabPicker(){
+  if(!_slabLoaded){ loadSlabs(); _slabLoaded=true; }
+  var available=sdSlabs.filter(function(s){return s.status==='in-stock';});
+  var body=document.getElementById('slab-action-modal-body');
+  body.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:12px">Pick a Slab for this Job</div>'+
+    (available.length?
+      '<div style="max-height:300px;overflow-y:auto">'+available.map(function(s){
+        return '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+          '<div style="font-size:12px"><b>'+escHtml(s.colorName||'')+'</b> — '+slabMaterialLabel(s.material)+', '+(s.usableSqft||0)+' sqft</div>'+
+          '<button class="q-btn primary" style="font-size:11px;padding:4px 8px" onclick="schedPickSlab(\''+s.id+'\')">Pick</button>'+
+        '</div>';
+      }).join('')+'</div>':
+      '<div style="font-size:13px;color:var(--muted)">No in-stock slabs yet.</div>')+
+    '<button class="q-btn" style="margin-top:12px" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Close</button>';
+  document.getElementById('slab-action-modal').style.display='flex';
+}
+function schedPickSlab(id){
+  var s=sdSlabs.find(function(x){return x.id===id;});
+  if(!s) return;
+  document.getElementById('sj-slab-id').value=id;
+  document.getElementById('sj-slab-chip').textContent='🪨 '+escHtml(s.colorName||'Slab')+' — '+slabMaterialLabel(s.material)+', '+(s.usableSqft||0)+' sqft';
+  document.getElementById('slab-action-modal').style.display='none';
+}
+
+// -- REMAKE SLAB PICKER -----------------------------------------
+function remakeOpenSlabPicker(){
+  if(!_slabLoaded){ loadSlabs(); _slabLoaded=true; }
+  var available=sdSlabs.filter(function(s){return s.status==='in-stock';});
+  var body=document.getElementById('slab-action-modal-body');
+  body.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:12px">Pick a Slab for this Remake</div>'+
+    (available.length?
+      '<div style="max-height:300px;overflow-y:auto">'+available.map(function(s){
+        return '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+          '<div style="font-size:12px"><b>'+escHtml(s.colorName||'')+'</b> — '+slabMaterialLabel(s.material)+', '+(s.usableSqft||0)+' sqft</div>'+
+          '<button class="q-btn primary" style="font-size:11px;padding:4px 8px" onclick="remakePickSlab(\''+s.id+'\')">Pick</button>'+
+        '</div>';
+      }).join('')+'</div>':
+      '<div style="font-size:13px;color:var(--muted)">No in-stock slabs yet.</div>')+
+    '<button class="q-btn" style="margin-top:12px" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Close</button>';
+  document.getElementById('slab-action-modal').style.display='flex';
+}
+function remakePickSlab(id){
+  var s=sdSlabs.find(function(x){return x.id===id;});
+  if(!s) return;
+  document.getElementById('rm-slab-id').value=id;
+  document.getElementById('rm-slab-chip').textContent='🪨 '+escHtml(s.colorName||'Slab')+' — '+slabMaterialLabel(s.material)+', '+(s.usableSqft||0)+' sqft';
+  document.getElementById('slab-action-modal').style.display='none';
+}
+
+// -- DASHBOARD LOW-STOCK ALERT ----------------------------------
+// Called on slabInit, slabRender, and any status change so the
+// main AI panel always reflects real inventory state.
+function slabUpdateDashAlert(){
+  var low=slabLowStockGroups();
+  var el=document.getElementById('slab-dash-alert');
+  var txt=document.getElementById('slab-dash-alert-text');
+  if(!el) return;
+  if(!low.length){ el.style.display='none'; return; }
+  var names=low.map(function(g){return slabMaterialLabel(g.material)+(g.color?' — '+g.color:'')+' ('+g.count+' left)';}).join(', ');
+  if(txt) txt.textContent=names;
+  el.style.display='block';
+}
 var qbReservedSlabId = null;
 function qbOpenSlabPicker(){
   if(!_slabLoaded){ loadSlabs(); _slabLoaded=true; }
