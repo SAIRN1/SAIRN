@@ -832,6 +832,13 @@ textarea#userInput::placeholder{color:var(--muted)}
 .fm-person-color-7{background:#65a30d}
 .fm-reopt-banner{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600;background:rgba(27,58,107,0.08);border:1.5px solid var(--a);color:var(--a)}
 .fm-insight{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;color:var(--text);background:var(--stone);border:1px solid var(--border)}
+.fm-range-btn{padding:7px 14px;font-size:12px;font-weight:600;border-radius:100px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer}
+.fm-range-btn:hover{border-color:var(--a);color:var(--a)}
+.fm-pipe-day-group{margin-bottom:18px}
+.fm-pipe-day-header{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.fm-pipe-row{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;background:var(--card);border:1px solid var(--border);margin-bottom:6px;font-size:13px}
+.fm-pipe-row .fm-pipe-badge{font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:100px;background:var(--stone);color:var(--muted);white-space:nowrap}
+.fm-pipe-row .fm-pipe-person{color:var(--muted);font-size:12px;margin-left:auto;white-space:nowrap}
 
 
 /* == EXEC SUITE & COMMS ====================================== */
@@ -3259,6 +3266,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
       <div class="fm-tabs">
         <button class="fm-tab active" id="fm-tab-myday" onclick="fmSwitchTab('myday')">My Day</button>
+        <button class="fm-tab" id="fm-tab-pipeline" onclick="fmSwitchTab('pipeline')">Pipeline</button>
         <button class="fm-tab exec-only" id="fm-tab-overview" onclick="fmSwitchTab('overview')">Overview — All Crews</button>
       </div>
 
@@ -3275,6 +3283,32 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
           <div class="fm-map-placeholder">Map loads once today's stops are set.</div>
         </div>
         <div id="fm-stop-list"></div>
+      </div>
+
+      <!-- PIPELINE (upcoming work across a date range, all roles) -->
+      <div class="fm-view" id="fm-view-pipeline">
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="fm-range-btn" onclick="fmSetPipelineRange(7)">Next 7 days</button>
+          <button class="fm-range-btn" onclick="fmSetPipelineRange(30)">Next 30 days</button>
+          <button class="fm-range-btn" onclick="fmSetPipelineRange(90)">Next 90 days</button>
+          <button class="fm-range-btn" onclick="fmSetPipelineRange(182)">Next 6 months</button>
+          <button class="fm-range-btn" onclick="fmSetPipelineRange(365)">Next year</button>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <input id="fm-pipe-start" type="date" onchange="fmRenderPipeline()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <span style="color:var(--muted);font-size:12px">to</span>
+          <input id="fm-pipe-end" type="date" onchange="fmRenderPipeline()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <select id="fm-pipe-person" onchange="fmRenderPipeline()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none"><option value="">All crew</option></select>
+          <select id="fm-pipe-type" onchange="fmRenderPipeline()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+            <option value="">All types</option>
+            <option value="template">Template</option>
+            <option value="install">Install</option>
+            <option value="repair">Repair / Callback</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="fm-summary" id="fm-pipe-summary"></div>
+        <div id="fm-pipe-list"></div>
       </div>
 
       <!-- OVERVIEW (exec-only) -->
@@ -4222,12 +4256,106 @@ function fmAllStopsForDate(dateStr){
 }
 
 function fmDistinctPeople(){
-  var names={};
-  (sdJobs||[]).forEach(function(j){ if(j.installer&&j.installer.trim()) names[j.installer.trim()]=1; });
-  (sdRemakes||[]).forEach(function(r){ if(r.assignedTo&&r.assignedTo.trim()) names[r.assignedTo.trim()]=1; });
-  (sdFieldStops||[]).forEach(function(s){ if(s.person&&s.person.trim()) names[s.person.trim()]=1; });
-  if(typeof currentUser!=='undefined'&&currentUser&&currentUser.name) names[currentUser.name]=1;
-  return Object.keys(names).sort();
+  var names={}, hasUnassigned=false;
+  (sdJobs||[]).forEach(function(j){
+    if(!j.address || !(j.templateDate||j.targetDate)) return;
+    if(j.installer&&j.installer.trim()) names[j.installer.trim()]=1; else hasUnassigned=true;
+  });
+  (sdRemakes||[]).forEach(function(r){
+    if(!r.address || !r.visitDate) return;
+    if(r.assignedTo&&r.assignedTo.trim()) names[r.assignedTo.trim()]=1; else hasUnassigned=true;
+  });
+  (sdFieldStops||[]).forEach(function(s){
+    if(s.person&&s.person.trim()) names[s.person.trim()]=1; else hasUnassigned=true;
+  });
+  var list=Object.keys(names).sort();
+  if(hasUnassigned) list.push('Unassigned');
+  return list;
+}
+
+function fmDateAddDays(dateStr, days){
+  var p=dateStr.split('-').map(Number);
+  var d=new Date(p[0], p[1]-1, p[2]);
+  d.setDate(d.getDate()+days);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function fmDateRangeList(startStr, endStr){
+  var out=[], cur=startStr, guard=0;
+  while(cur<=endStr && guard<800){ out.push(cur); cur=fmDateAddDays(cur,1); guard++; }
+  return out;
+}
+
+function fmAllStopsInRange(startStr, endStr){
+  var out=[];
+  fmDateRangeList(startStr, endStr).forEach(function(d){ out=out.concat(fmAllStopsForDate(d)); });
+  return out;
+}
+
+function fmEnsurePipelineDateDefaults(){
+  var s=document.getElementById('fm-pipe-start'), e=document.getElementById('fm-pipe-end');
+  if(s && !s.value) s.value=new Date().toISOString().split('T')[0];
+  if(e && !e.value) e.value=fmDateAddDays(s.value, 7);
+}
+
+function fmSetPipelineRange(days){
+  var today=new Date().toISOString().split('T')[0];
+  document.getElementById('fm-pipe-start').value=today;
+  document.getElementById('fm-pipe-end').value=fmDateAddDays(today, days);
+  fmRenderPipeline();
+}
+
+function fmPopulatePipelinePersonSelect(){
+  var sel=document.getElementById('fm-pipe-person'); if(!sel) return;
+  var people=fmDistinctPeople();
+  var prevVal=sel.value;
+  sel.innerHTML='<option value="">All crew</option>'+people.map(function(p){ return '<option value="'+escHtml(p)+'">'+escHtml(p)+'</option>'; }).join('');
+  sel.value=(prevVal===''||people.indexOf(prevVal)!==-1)?prevVal:'';
+}
+
+function fmRenderPipeline(){
+  fmEnsurePipelineDateDefaults();
+  fmPopulatePipelinePersonSelect();
+  var startStr=document.getElementById('fm-pipe-start').value;
+  var endStr=document.getElementById('fm-pipe-end').value;
+  var personFilter=document.getElementById('fm-pipe-person').value;
+  var typeFilter=document.getElementById('fm-pipe-type').value;
+  var sv=(id,html)=>{var el=document.getElementById(id);if(el)el.innerHTML=html;};
+
+  if(!startStr || !endStr || endStr<startStr){
+    sv('fm-pipe-summary','');
+    sv('fm-pipe-list','<div style="text-align:center;color:var(--muted);padding:32px">Pick a valid date range above.</div>');
+    return;
+  }
+
+  var stops=fmAllStopsInRange(startStr, endStr);
+  if(personFilter) stops=stops.filter(function(s){ return s.person===personFilter; });
+  if(typeFilter) stops=stops.filter(function(s){ return s.type===typeFilter; });
+
+  sv('fm-pipe-summary', '<div class="fm-summary-pill"><b>'+stops.length+'</b> scheduled stops</div>');
+
+  if(!stops.length){
+    sv('fm-pipe-list','<div style="text-align:center;color:var(--muted);padding:32px">Nothing scheduled in this range yet. Check the job/remake has an address, and a date in this window.</div>');
+    return;
+  }
+
+  var byDate={};
+  stops.forEach(function(s){ (byDate[s.date]=byDate[s.date]||[]).push(s); });
+  var dates=Object.keys(byDate).sort();
+  var typeLabels={template:'Template', install:'Install', repair:'Repair / Callback', other:'Other'};
+  sv('fm-pipe-list', dates.map(function(d){
+    var dObj=new Date(d+'T00:00:00');
+    var label=dObj.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric', year:'numeric'});
+    var rows=byDate[d].map(function(s){
+      return '<div class="fm-pipe-row">'+
+        '<span class="fm-pipe-badge">'+(typeLabels[s.type]||s.type)+'</span>'+
+        '<span>'+escHtml(s.customer||'(no customer)')+'</span>'+
+        '<span style="color:var(--muted)">'+escHtml(s.address||'')+'</span>'+
+        '<span class="fm-pipe-person">'+escHtml(s.person)+'</span>'+
+      '</div>';
+    }).join('');
+    return '<div class="fm-pipe-day-group"><div class="fm-pipe-day-header">'+label+'</div>'+rows+'</div>';
+  }).join(''));
 }
 
 function fmGetOrderedStops(person, dateStr){
@@ -4255,6 +4383,7 @@ function fmSwitchTab(tab){
   var btn=document.getElementById('fm-tab-'+tab); if(btn) btn.classList.add('active');
   var view=document.getElementById('fm-view-'+tab); if(view) view.classList.add('active');
   if(tab==='myday') fmRenderMyDay();
+  if(tab==='pipeline') fmRenderPipeline();
   if(tab==='overview') fmRenderOverview();
 }
 
@@ -4497,6 +4626,9 @@ function fmRefreshCurrentView(person, dateStr){
   } else if(fmCurrentTab==='overview' && document.getElementById('fm-overview-date') &&
      document.getElementById('fm-overview-date').value===dateStr){
     fmRenderOverview();
+  } else if(fmCurrentTab==='pipeline' && document.getElementById('fm-pipe-start')){
+    var s=document.getElementById('fm-pipe-start').value, e=document.getElementById('fm-pipe-end').value;
+    if(s && e && dateStr>=s && dateStr<=e) fmRenderPipeline();
   }
 }
 
