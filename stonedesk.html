@@ -2487,6 +2487,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn draw-cutout-btn" id="dc-cutout-cooktop" onclick="setDCCutoutMode(!dcCutoutMode,'cooktop')">🔥 Cooktop</button>
             <button class="draw-btn draw-cutout-btn" id="dc-cutout-outlet" onclick="setDCCutoutMode(!dcCutoutMode,'outlet')">⚡ Outlet</button>
             <button class="draw-btn draw-cutout-btn" id="dc-cutout-faucet" onclick="setDCCutoutMode(!dcCutoutMode,'faucet')">💧 Faucet</button>
+            <button class="draw-btn draw-cutout-btn" id="dc-cutout-drainboard" onclick="setDCCutoutMode(!dcCutoutMode,'drainboard')">🌊 Drainboard</button>
             <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCCutouts()">Clear Cutouts</button>
             <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click the spot · drag any marker to fine-tune</span>
           </div>
@@ -2504,6 +2505,12 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-farmhouse" onclick="setDCSinkShape('farmhouse')">Farmhouse / Apron</button>
             <button class="draw-btn dc-sinkshape-btn" id="dc-sinkshape-barPrep" onclick="setDCSinkShape('barPrep')">Bar / Prep</button>
           </div>
+          <div class="draw-toolbar" id="dc-drainboardshape-picker" style="margin-top:6px;display:none">
+            <span style="font-size:10px;color:var(--muted);margin-right:2px">Drainboard:</span>
+            <button class="draw-btn dc-drainboardshape-btn active" id="dc-drainboardshape-single" onclick="setDCDrainboardShape('single')">Single-Sided</button>
+            <button class="draw-btn dc-drainboardshape-btn" id="dc-drainboardshape-double" onclick="setDCDrainboardShape('double')">Double-Sided</button>
+          </div>
+          <div id="dc-drainboard-warning" style="display:none;margin-top:6px;font-size:10px;color:#F59E0B;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;padding:6px 10px">⚠️ Drainboard grooves are difficult or not recommended on quartz/porcelain (hard to restore polish in the machined area) — confirm material compatibility before quoting.</div>
 
           <div class="draw-toolbar" style="margin-top:6px">
             <span style="font-size:10px;color:var(--muted);margin-right:2px">Seams:</span>
@@ -5983,11 +5990,38 @@ var dcDraggingCutout = null;
 var dcCutoutSeq = 0;
 
 const CUTOUT_STYLES = {
-  sink:    { label:'Sink',    color:'#60A5FA', icon:'S' },
-  cooktop: { label:'Cooktop', color:'#F87171', icon:'C' },
-  outlet:  { label:'Outlet',  color:'#FBBF24', icon:'O' },
-  faucet:  { label:'Faucet',  color:'#34D399', icon:'F' }
+  sink:       { label:'Sink',       color:'#60A5FA', icon:'S' },
+  cooktop:    { label:'Cooktop',    color:'#F87171', icon:'C' },
+  outlet:     { label:'Outlet',     color:'#FBBF24', icon:'O' },
+  faucet:     { label:'Faucet',     color:'#34D399', icon:'F' },
+  drainboard: { label:'Drainboard', color:'#06B6D4', icon:'D' }
 };
+
+// Drainboard configurations — a sloped/grooved section machined into the counter next to a
+// sink, NOT a sink attribute (placed as its own separate item per spec). Single-sided runs
+// grooves on one side of where it's placed; double-sided mirrors grooves on both sides, sized
+// roughly to fit alongside a standard sink. Pricing researched from real fabricator quotes:
+// a typical sloped drainboard depression runs $350-$500, with per-groove/runnel pricing varying
+// widely ($200-300 total up to $200+ per individual groove) — defaulted here to the $350-500
+// "whole drainboard" pricing model since that's the more common way shops actually quote it,
+// editable in the admin Unit Pricing panel like every other line item in this app.
+const DRAINBOARD_SHAPES = {
+  single: { label:'Single-Sided', wIn:14, dIn:19, grooveCount:5, doubleSided:false },
+  double: { label:'Double-Sided', wIn:28, dIn:19, grooveCount:5, doubleSided:true },
+};
+var dcDrainboardShapeKey = 'single';
+function setDCDrainboardShape(key) {
+  dcDrainboardShapeKey = key;
+  document.querySelectorAll('.dc-drainboardshape-btn').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('dc-drainboardshape-'+key);
+  if (btn) btn.classList.add('active');
+}
+// Material compatibility note researched from fabricator/manufacturer sources: many shops won't
+// cut drainboard grooves into quartz at all (polish is very hard to restore in the machined
+// area), and even where approved (e.g. Caesarstone) it's typically only on 20/30mm quartz, not
+// thinner slabs or porcelain. Surfaced as a warning rather than a hard block, since StoneDesk
+// supports many materials and the rep should be able to override with the customer informed.
+const DRAINBOARD_MATERIAL_WARNING = 'Drainboard grooves are difficult or not recommended on quartz/porcelain (hard to restore polish in the machined area) — confirm material compatibility with your fabricator before quoting.';
 
 // Real-world sink shapes — each placed sink stores a `sinkShape` key from this list (set via
 // the configuration picker next to the Place: Sink button) so it renders as an actual
@@ -6023,8 +6057,12 @@ function setDCCutoutMode(on, type) {
   if (on) setDCInsertMode(false), setDCEditPass(false), setDCSeamMode(false);
   document.querySelectorAll('.draw-cutout-btn').forEach(b => b.classList.remove('active'));
   if (on) { const btn = document.getElementById('dc-cutout-' + dcCutoutType); if (btn) btn.classList.add('active'); }
-  const picker = document.getElementById('dc-sinkshape-picker');
-  if (picker) picker.style.display = (on && dcCutoutType==='sink') ? 'flex' : 'none';
+  const sinkPicker = document.getElementById('dc-sinkshape-picker');
+  if (sinkPicker) sinkPicker.style.display = (on && dcCutoutType==='sink') ? 'flex' : 'none';
+  const dbPicker = document.getElementById('dc-drainboardshape-picker');
+  if (dbPicker) dbPicker.style.display = (on && dcCutoutType==='drainboard') ? 'flex' : 'none';
+  const dbWarning = document.getElementById('dc-drainboard-warning');
+  if (dbWarning) dbWarning.style.display = (on && dcCutoutType==='drainboard') ? 'block' : 'none';
 }
 
 // PRESET MODE hit-test: which registered rect a canvas point falls inside, by fraction.
@@ -6066,6 +6104,9 @@ function dcHitCutout(px, py) {
     if (c.type === 'sink' && c.sinkShape && SINK_SHAPES[c.sinkShape]) {
       const scale = dcCurrentScalePxPerIn(c);
       radius = Math.max(14, (Math.max(SINK_SHAPES[c.sinkShape].wIn, SINK_SHAPES[c.sinkShape].dIn) * scale) / 2);
+    } else if (c.type === 'drainboard' && c.drainboardShape && DRAINBOARD_SHAPES[c.drainboardShape]) {
+      const scale = dcCurrentScalePxPerIn(c);
+      radius = Math.max(14, (Math.max(DRAINBOARD_SHAPES[c.drainboardShape].wIn, DRAINBOARD_SHAPES[c.drainboardShape].dIn) * scale) / 2);
     }
     if (Math.hypot(px - c._lastPx, py - c._lastPy) <= radius) return c;
   }
@@ -6086,16 +6127,17 @@ function dcCanvasPlaceOrDrag(e, phase) {
     const style = CUTOUT_STYLES[dcCutoutType];
     dcCutoutSeq++;
     const sinkShape = dcCutoutType === 'sink' ? dcSinkShapeKey : null;
-    const sinkLabel = sinkShape ? SINK_SHAPES[sinkShape].label : style.label;
+    const drainboardShape = dcCutoutType === 'drainboard' ? dcDrainboardShapeKey : null;
+    const itemLabel = sinkShape ? SINK_SHAPES[sinkShape].label : drainboardShape ? DRAINBOARD_SHAPES[drainboardShape].label : style.label;
     if (dcMode === 'draw') {
       const hit = dcHitPolygonNear(px, py);
       const tolIn = 14 / dcGetTransform().scale;
       if (!hit || hit.dist > tolIn) return;
-      dcCutouts.push({ id:'co'+dcCutoutSeq, segIdx:hit.segIdx, fracAlong:hit.fracAlong, type:dcCutoutType, sinkShape, label:sinkLabel+' '+dcCutoutSeq, color:style.color });
+      dcCutouts.push({ id:'co'+dcCutoutSeq, segIdx:hit.segIdx, fracAlong:hit.fracAlong, type:dcCutoutType, sinkShape, drainboardShape, label:itemLabel+' '+dcCutoutSeq, color:style.color });
     } else {
       const hit = dcHitRect(px, py);
       if (!hit) return;
-      dcCutouts.push({ id:'co'+dcCutoutSeq, rectKey:hit.rectKey, fracX:hit.fracX, fracY:hit.fracY, type:dcCutoutType, sinkShape, label:sinkLabel+' '+dcCutoutSeq, color:style.color });
+      dcCutouts.push({ id:'co'+dcCutoutSeq, rectKey:hit.rectKey, fracX:hit.fracX, fracY:hit.fracY, type:dcCutoutType, sinkShape, drainboardShape, label:itemLabel+' '+dcCutoutSeq, color:style.color });
     }
     drawCTPreview();
     updateDCCutoutList();
@@ -6233,6 +6275,12 @@ function renderDCCutouts(ctx) {
       ctx.fillText(c.label, p.x, p.y + (SINK_SHAPES[c.sinkShape].dIn*dcCurrentScalePxPerIn(c))/2 + 14);
       return;
     }
+    if (c.type === 'drainboard' && c.drainboardShape) {
+      dcDrawDrainboardShape(ctx, c, p);
+      ctx.fillStyle=c.color; ctx.font='9px Outfit,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+      ctx.fillText(c.label, p.x, p.y + (DRAINBOARD_SHAPES[c.drainboardShape].dIn*dcCurrentScalePxPerIn(c))/2 + 14);
+      return;
+    }
     ctx.save();
     ctx.beginPath(); ctx.arc(p.x,p.y,13,0,Math.PI*2);
     ctx.fillStyle = c.color+'CC'; ctx.fill();
@@ -6243,6 +6291,46 @@ function renderDCCutouts(ctx) {
     ctx.fillStyle=c.color; ctx.font='9px Outfit,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
     ctx.fillText(c.label, p.x, p.y+24);
   });
+}
+
+// Draws a realistic drainboard: a footprint of parallel sloped grooves (runnels) running across
+// the section, optionally mirrored on both sides for a double-sided configuration. Single-sided
+// sits on one side of where it's placed; double-sided draws grooves flanking both sides of a
+// (visually implied, not separately placed) sink gap in the middle.
+function dcDrawDrainboardShape(ctx, c, p) {
+  const shapeDef = DRAINBOARD_SHAPES[c.drainboardShape] || DRAINBOARD_SHAPES.single;
+  const scale = dcCurrentScalePxPerIn(c);
+  const wPx = shapeDef.wIn * scale, dPx = shapeDef.dIn * scale;
+  const x0 = p.x - wPx/2, y0 = p.y - dPx/2;
+
+  ctx.save();
+  ctx.lineWidth = 2; ctx.strokeStyle = c.color; ctx.fillStyle = c.color+'1A';
+  dcRoundRectPath(ctx, x0, y0, wPx, dPx, Math.min(wPx,dPx)*0.06);
+  ctx.fill(); ctx.stroke();
+
+  // Draws one set of parallel groove lines within a sub-region of the footprint.
+  function drawGrooves(gx0, gw) {
+    const n = shapeDef.grooveCount;
+    const margin = dPx * 0.1;
+    for (let i=0;i<n;i++) {
+      const gx = gx0 + gw*((i+0.5)/n);
+      ctx.strokeStyle = c.color+'AA'; ctx.lineWidth = Math.max(1, scale*0.18);
+      ctx.beginPath(); ctx.moveTo(gx, y0+margin); ctx.lineTo(gx, y0+dPx-margin); ctx.stroke();
+    }
+  }
+
+  if (shapeDef.doubleSided) {
+    // Two groove fields with a gap in the middle (where the sink sits when placed alongside).
+    const half = wPx/2, gap = wPx*0.06;
+    drawGrooves(x0, half-gap/2);
+    drawGrooves(x0+half+gap/2, half-gap/2);
+    ctx.strokeStyle = c.color; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(p.x, y0+3); ctx.lineTo(p.x, y0+dPx-3); ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    drawGrooves(x0, wPx);
+  }
+  ctx.restore();
 }
 
 function updateDCCutoutList() {
@@ -6544,6 +6632,21 @@ function dcSeamPricingSummary() {
   return { seamCount: dcSeams.length, pieceCount: dcSeams.length + 1, totalSeamLF: totalSeamLF };
 }
 
+// Sums placed drainboard cutouts by configuration (single/double-sided) and prices them from
+// the editable admin Unit Pricing fields — same pattern as dcSeamPricingSummary above. Defaults
+// ($375 single, $475 double) come from researched fabricator pricing: a typical sloped
+// drainboard depression runs $350-500 per the sources this was built from; double-sided is
+// priced higher since it's roughly double the groove-machining work of a single-sided run.
+function dcDrainboardPricingSummary() {
+  const placed = dcCutouts.filter(c => c.type === 'drainboard');
+  const singleCount = placed.filter(c => c.drainboardShape === 'single').length;
+  const doubleCount = placed.filter(c => c.drainboardShape === 'double').length;
+  const singleRate = parseFloat((document.getElementById('sairn-unit-drainboard_single')||{}).value) || 375;
+  const doubleRate = parseFloat((document.getElementById('sairn-unit-drainboard_double')||{}).value) || 475;
+  const totalCost = singleCount*singleRate + doubleCount*doubleRate;
+  return { count: placed.length, singleCount, doubleCount, totalCost };
+}
+
 // Calculate drawing
 function calcDrawing() {
   const aL=gN('da-len'),aD=gN('da-dep'),bL=gN('db-len'),bD=gN('db-dep'),cL=gN('dc-len'),cD=gN('dc-dep'),dL=gN('dd-len'),dD=gN('dd-dep');
@@ -6610,6 +6713,7 @@ function calcDrawing() {
   const seamInfo = (typeof dcSeamPricingSummary === 'function') ? dcSeamPricingSummary() : {seamCount:0,pieceCount:1,totalSeamLF:0};
   const edgeLfRate = parseFloat((document.getElementById('sairn-unit-edge_lf')||{}).value) || 18;
   const seamEdgeCost = seamInfo.totalSeamLF * 2 * edgeLfRate; // both sides of every cut are finished edge
+  const drainboardInfo = (typeof dcDrainboardPricingSummary === 'function') ? dcDrainboardPricingSummary() : {count:0,singleCount:0,doubleCount:0,totalCost:0};
 
   const res=document.getElementById('ct-results');
   res.innerHTML='';
@@ -6623,6 +6727,7 @@ function calcDrawing() {
     {n:thh+' hr',l:'Est. Labor (THH)',s:'Granite benchmark 4hr per 50sqft'},
     {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
     {n:seamInfo.seamCount>0?seamInfo.pieceCount+' pieces':'1 piece',l:'Seams',s:seamInfo.seamCount>0?seamInfo.seamCount+' seam(s), '+seamInfo.totalSeamLF.toFixed(1)+' LF, +$'+seamEdgeCost.toFixed(0)+' polished edge':'No seams placed'},
+    {n:drainboardInfo.count>0?'$'+drainboardInfo.totalCost.toFixed(0):'None',l:'Drainboard(s)',s:drainboardInfo.count>0?(drainboardInfo.singleCount>0?drainboardInfo.singleCount+' single-sided ':'')+(drainboardInfo.doubleCount>0?drainboardInfo.doubleCount+' double-sided':''):'No drainboards placed'},
   ];
   metrics.forEach(m=>{
     const card=document.createElement('div');
@@ -7252,6 +7357,12 @@ console.log('StoneDesk Patch v1.1 loaded — all 18 panels verified and fixed');
 </div><div class="sairn-form-grp">
   <label class="sairn-form-lbl">Cooktop cutout (each)</label>
   <input class="sairn-form-inp" id="sairn-unit-cooktop_cutout" value="125" type="number" step="0.01">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">Drainboard, single-sided (each)</label>
+  <input class="sairn-form-inp" id="sairn-unit-drainboard_single" value="375" type="number" step="0.01">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">Drainboard, double-sided (each)</label>
+  <input class="sairn-form-inp" id="sairn-unit-drainboard_double" value="475" type="number" step="0.01">
 </div>
   <button class="sairn-btn sairn-btn-primary" style="width:100%" onclick="sairnSavePricing()">
     💾 Save Pricing — All Field Quotes Use These Rates
