@@ -6583,32 +6583,18 @@ function dcDrawDrainboardShape(ctx, c, p) {
   dcRoundRectPath(ctx, x0, y0, wPx, dPx, Math.min(wPx,dPx)*0.06);
   ctx.fill(); ctx.stroke();
 
-  // Parallel LENGTHWISE groove lines running front-to-back (the long way down the board),
-  // each spanning nearly the full depth. Water travels the LENGTH of each groove and exits
-  // sideways at the sink-side edge into the basin — NOT across the short width, which would
-  // drain off the far edge onto the floor instead of into the sink.
-  const marginV = dPx * 0.06, marginH = wPx * 0.12;
+  // Parallel HORIZONTAL groove lines running left-right, parallel to the counter's long
+  // polished edge — stacked top-to-bottom down the board's depth. Each groove's tip on the
+  // sink-facing side lands EXACTLY on the board/sink boundary (zero margin there) so water
+  // travels the groove and drains directly into the sink at that point. Margin is kept only
+  // on the outer (far) edge, away from the sink.
+  const marginV = dPx * 0.08, marginOuter = wPx * 0.12;
+  const sinkEdgeX = towardSink > 0 ? x0 + wPx : x0;
+  const outerEdgeX = towardSink > 0 ? x0 + marginOuter : x0 + wPx - marginOuter;
   for (let i=0;i<DRAINBOARD_GROOVE_COUNT;i++) {
-    const gx = x0 + marginH + (wPx-2*marginH)*(i/(DRAINBOARD_GROOVE_COUNT-1));
+    const gy = y0 + marginV + (dPx-2*marginV)*(i/(DRAINBOARD_GROOVE_COUNT-1));
     ctx.strokeStyle = c.color+'AA'; ctx.lineWidth = Math.max(1, scale*0.18);
-    ctx.beginPath(); ctx.moveTo(gx, y0+marginV); ctx.lineTo(gx, y0+dPx-marginV); ctx.stroke();
-  }
-
-  // Flow-direction arrows along the sink-side (inner) edge, spanning the depth — this is where
-  // the lengthwise grooves terminate and water sheets sideways into the basin.
-  const innerEdgeX = towardSink > 0 ? x0 + wPx : x0;
-  const arrowLen = wPx * 0.4;
-  ctx.strokeStyle = c.color; ctx.fillStyle = c.color; ctx.lineWidth = Math.max(1.5, scale*0.15);
-  for (let i=0;i<3;i++) {
-    const ay = y0 + dPx*((i+0.5)/3*0.7 + 0.15);
-    const ax = innerEdgeX;
-    const tipX = ax + towardSink*arrowLen*0.4;
-    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(tipX, ay); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(tipX, ay);
-    ctx.lineTo(tipX - towardSink*6, ay-5);
-    ctx.lineTo(tipX - towardSink*6, ay+5);
-    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(outerEdgeX, gy); ctx.lineTo(sinkEdgeX, gy); ctx.stroke();
   }
   ctx.restore();
 }
