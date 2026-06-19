@@ -24,7 +24,7 @@ const KNOWN_APP_TYPES = new Set([
   'sairnbiz'
 ]);
 
-// ── SCRUB GATE ──────────────────────────────────────────────────
+// -- SCRUB GATE --------------------------------------------------
 // Returns { clean: string } on pass, or { reject: reason } on fail.
 // This is intentionally conservative -- when in doubt, reject rather than
 // risk a leak. A rejected insight is just a missed learning opportunity;
@@ -115,7 +115,7 @@ export default async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── POST: an app reports an anonymized pattern ──────────────
+  // -- POST: an app reports an anonymized pattern --------------
   if (req.method === 'POST') {
     const { app, type, pattern, context, outcome, score, source_id } = req.body || {};
 
@@ -179,7 +179,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // ── GET: an app requests intelligence for its vertical ──────
+  // -- GET: an app requests intelligence for its vertical ------
   if (req.method === 'GET') {
     const { app } = req.query;
     if (!app || !KNOWN_APP_TYPES.has(app)) {
