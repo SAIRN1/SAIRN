@@ -79,12 +79,12 @@
       "destination": "/sairnvet.html"
     },
     {
-      "source": "/sairnfuneral",
-      "destination": "/sairnfuneral.html"
+      "source": "/sairnlegacy",
+      "destination": "/sairnlegacy.html"
     },
     {
-      "source": "/funeral",
-      "destination": "/sairnfuneral.html"
+      "source": "/legacy",
+      "destination": "/sairnlegacy.html"
     },
     {
       "source": "/sairnmechanical",
