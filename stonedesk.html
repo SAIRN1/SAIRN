@@ -2058,6 +2058,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       <button class="sb-btn"        id="sb-quote"    onclick="sbNav('quote')">   <span class="sb-icon">💲</span><span class="sb-text">Quote Builder</span></button>
       <button class="sb-btn"        id="sb-draw"     onclick="sbNav('draw')">    <span class="sb-icon">✏️</span><span class="sb-text">Drawing Tool</span></button>
       <button class="sb-btn"        id="sb-history"  onclick="sbNav('history')"> <span class="sb-icon">📜</span><span class="sb-text">History</span></button>
+      <button class="sb-btn"        id="sb-invoices" onclick="sbNav('invoices')"><span class="sb-icon">🧾</span><span class="sb-text">Invoices</span></button>
       <button class="sb-btn"        id="sb-customers" onclick="sbNav('customers')"><span class="sb-icon">👥</span><span class="sb-text">Customers</span></button>
       <button class="sb-btn"        id="sb-intake"   onclick="sbNav('intake')">  <span class="sb-icon">📋</span><span class="sb-text">Intake</span></button>
     </div>
@@ -2124,6 +2125,23 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         <div style="font-size:13px;font-weight:700;color:#16A34A" id="sairn-wx-status">Checking...</div>
         <div style="font-size:11px;color:#6B7280">Crew go/no-go</div>
       </div>
+    </div>
+    <!-- AI Dashboard KPIs -->
+    <div id="ai-dash-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
+      <div class="kpi" style="cursor:pointer" onclick="sbNav('quote')"><div class="kpi-val" style="color:#16C762;font-size:18px" id="ai-kpi-quotes">—</div><div class="kpi-label">Open Quotes</div></div>
+      <div class="kpi" style="cursor:pointer" onclick="sbNav('schedule')"><div class="kpi-val" style="color:#f97316;font-size:18px" id="ai-kpi-jobs">—</div><div class="kpi-label">Jobs This Week</div></div>
+      <div class="kpi" style="cursor:pointer" onclick="sbNav('invoices')"><div class="kpi-val" style="color:#dc2626;font-size:18px" id="ai-kpi-unpaid">—</div><div class="kpi-label">Unpaid Invoices</div></div>
+      <div class="kpi" style="cursor:pointer" onclick="sbNav('slabs')"><div class="kpi-val" style="color:#7c3aed;font-size:18px" id="ai-kpi-slabs">—</div><div class="kpi-label">Slabs In Stock</div></div>
+      <div class="kpi" style="cursor:pointer" onclick="sbNav('remakes')"><div class="kpi-val" style="color:#ca8a04;font-size:18px" id="ai-kpi-remakes">—</div><div class="kpi-label">Open Remakes</div></div>
+    </div>
+    <!-- Quick action prompts -->
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="ai-quick-prompts">
+      <button class="vendor-tab" onclick="aiQuickPrompt('What jobs are scheduled this week and is the crew ready?')">📅 This week</button>
+      <button class="vendor-tab" onclick="aiQuickPrompt('Which open quotes are over 7 days old and need follow-up?')">📞 Quote follow-up</button>
+      <button class="vendor-tab" onclick="aiQuickPrompt('What slabs are running low and what should I order?')">🪨 Reorder slabs</button>
+      <button class="vendor-tab" onclick="aiQuickPrompt('Summarize my unpaid invoices and accounts receivable.')">💰 A/R status</button>
+      <button class="vendor-tab" onclick="aiQuickPrompt('What remakes do I have open and what is causing them?')">🔄 Remake report</button>
+      <button class="vendor-tab" onclick="aiQuickPrompt('Give me a daily shop briefing — weather, schedule, flags, and priorities.')">🧠 Daily briefing</button>
     </div>
     <div class="mode-bar" id="mode-bar">
       <button class="mode-btn active" onclick="setMode('general')"><span class="mode-icon">🧠</span><span class="mode-label">AI Shop</span></button>
@@ -2696,17 +2714,40 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
   <!-- == HISTORY PANEL == -->
   <div class="panel" id="panel-history">
-    <div class="hist-container">
-      <div class="hist-title">Quote History</div>
-      <div class="q-card">
-        <div class="hist-row hdr">
-          <span>Quote #</span><span>Client</span><span>Project</span><span>Total</span><span>Date</span>
+    <div style="padding:20px;max-width:1100px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text)">📜 Quote History</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="q-btn" onclick="histExportCSV()">📤 Export CSV</button>
+          <button class="q-btn primary" onclick="sbNav('quote')">+ New Quote</button>
         </div>
-        <div id="history-list">
-          <div style="color:var(--muted);padding:20px;text-align:center;font-size:13px">
-            No saved quotes yet. Build and save a quote to see it here.
-          </div>
-        </div>
+      </div>
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi"><div class="kpi-val" id="hist-kpi-total">0</div><div class="kpi-label">Total Quotes</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16C762" id="hist-kpi-open">0</div><div class="kpi-label">Open</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="hist-kpi-approved">0</div><div class="kpi-label">Approved</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16C762;font-size:16px" id="hist-kpi-value">$0</div><div class="kpi-label">Total Pipeline</div></div>
+      </div>
+      <!-- Search + filter -->
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <input id="hist-search" placeholder="🔍 Search by client, project, quote #..." style="flex:1;min-width:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" oninput="histRender()">
+        <select id="hist-filter-status" onchange="histRender()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <option value="">All Status</option>
+          <option value="Open">Open</option>
+          <option value="Approved">Approved</option>
+          <option value="Declined">Declined</option>
+        </select>
+        <select id="hist-sort" onchange="histRender()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="highest">Highest Value</option>
+          <option value="lowest">Lowest Value</option>
+        </select>
+      </div>
+      <!-- List -->
+      <div id="history-list">
+        <div style="color:var(--muted);padding:32px;text-align:center;font-size:13px">No saved quotes yet. Build and save a quote to see it here.</div>
       </div>
     </div>
   </div>
@@ -4092,6 +4133,85 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
 
+  <!-- == INVOICES PANEL == -->
+  <div class="panel" id="panel-invoices">
+    <div style="padding:20px;max-width:1100px;margin:0 auto">
+
+      <!-- KPI row -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px">
+        <div class="kpi"><div class="kpi-val" id="inv2-total">0</div><div class="kpi-label">Total Invoices</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#dc2626" id="inv2-unpaid">0</div><div class="kpi-label">Unpaid</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#ca8a04" id="inv2-partial">0</div><div class="kpi-label">Partial</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="inv2-paid">0</div><div class="kpi-label">Paid</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#16C762" id="inv2-ar">$0</div><div class="kpi-label">A/R Outstanding</div></div>
+      </div>
+
+      <!-- Actions bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🧾 Invoices</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="q-btn primary" onclick="invCreateNew()">+ New Invoice</button>
+          <button class="q-btn" onclick="invFromQuote()">📋 From Quote</button>
+          <button class="q-btn" onclick="invExportCSV()">📤 Export CSV</button>
+          <button class="q-btn" onclick="invAskClaude()">🧠 AR Summary</button>
+        </div>
+      </div>
+
+      <!-- Filter tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <button class="vendor-tab active" id="invtab2-all" onclick="invSetFilter('all',this)">All</button>
+        <button class="vendor-tab" id="invtab2-unpaid" onclick="invSetFilter('Unpaid',this)">🔴 Unpaid</button>
+        <button class="vendor-tab" id="invtab2-partial" onclick="invSetFilter('Partial',this)">🟡 Partial</button>
+        <button class="vendor-tab" id="invtab2-paid" onclick="invSetFilter('Paid',this)">✅ Paid</button>
+        <button class="vendor-tab" id="invtab2-overdue" onclick="invSetFilter('Overdue',this)">⚠️ Overdue</button>
+        <input id="inv2-search" placeholder="🔍 Search invoices..." style="margin-left:auto;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;min-width:200px" oninput="invRender()">
+      </div>
+
+      <!-- New invoice form -->
+      <div id="inv2-form" style="display:none;background:var(--card);border:1.5px solid var(--a);border-radius:14px;padding:20px;margin-bottom:20px">
+        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:16px">New Invoice</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="fg"><label>Customer Name</label><input id="inv2-cust" placeholder="Full name"></div>
+          <div class="fg"><label>Invoice #</label><input id="inv2-num" placeholder="INV-2026-001"></div>
+          <div class="fg"><label>Invoice Date</label><input id="inv2-date" type="date"></div>
+          <div class="fg"><label>Due Date</label><input id="inv2-due" type="date"></div>
+          <div class="fg"><label>Project / Description</label><input id="inv2-desc" placeholder="Kitchen countertops — 3 slabs"></div>
+          <div class="fg"><label>Amount ($)</label><input id="inv2-amount" type="number" placeholder="0.00" step="0.01" oninput="invCalcBalance()"></div>
+          <div class="fg"><label>Deposit Paid ($)</label><input id="inv2-deposit" type="number" placeholder="0.00" step="0.01" oninput="invCalcBalance()"></div>
+          <div class="fg"><label>Balance Due</label><input id="inv2-balance" readonly style="background:var(--surface-2);font-weight:700;color:#dc2626"></div>
+          <div class="fg"><label>Payment Method</label>
+            <select id="inv2-method">
+              <option value="">— Select —</option>
+              <option>Cash</option><option>Check</option><option>Credit Card</option><option>Zelle</option><option>ACH / Wire</option><option>Financing</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label>Notes</label><textarea id="inv2-notes" style="width:100%;height:56px;resize:vertical" placeholder="Payment terms, special instructions, etc."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="q-btn primary" onclick="invSave()">Save Invoice</button>
+          <button class="q-btn" style="background:#16C762;color:#fff;border-color:#16C762" onclick="invSaveAndPrint()">💾 Save & Print</button>
+          <button class="q-btn" onclick="document.getElementById('inv2-form').style.display='none'">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Invoice list -->
+      <div id="inv2-list"></div>
+
+      <!-- Print modal -->
+      <div id="inv2-print-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:center;justify-content:center;padding:20px">
+        <div style="background:#fff;border-radius:14px;padding:28px;max-width:680px;width:100%;max-height:92vh;overflow-y:auto">
+          <div id="inv2-print-content"></div>
+          <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+            <button class="q-btn primary" onclick="window.print()">🖨️ Print / PDF</button>
+            <button class="q-btn" onclick="invMarkPaid(window._invPrintId)">✅ Mark Paid</button>
+            <button class="q-btn" onclick="document.getElementById('inv2-print-modal').style.display='none'">Close</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <div id="panel-template" class="panel">
     <div style="padding:20px;max-width:1100px;margin:0 auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
@@ -4448,6 +4568,404 @@ function tmUpdateKPIs(){
 var _tmOrigShow=typeof showPanel==='function'?showPanel:null;
 
 
+
+// ==================================================================
+// STONEDESK ENHANCEMENTS — Session 18
+// Invoices, AI Dashboard, History v2
+// ==================================================================
+
+// ── INVOICE ENGINE ─────────────────────────────────────────────
+var sd_invoices = JSON.parse(localStorage.getItem('sd_invoices') || '[]');
+
+function invSaveStore() {
+  localStorage.setItem('sd_invoices', JSON.stringify(sd_invoices));
+  invUpdateKPIs();
+  invRender();
+}
+
+function invCalcBalance() {
+  var amt = parseFloat(document.getElementById('inv2-amount').value) || 0;
+  var dep = parseFloat(document.getElementById('inv2-deposit').value) || 0;
+  var bal = Math.max(0, amt - dep);
+  document.getElementById('inv2-balance').value = '$' + bal.toFixed(2);
+}
+
+function invGenNum() {
+  var yr = new Date().getFullYear();
+  var seq = (sd_invoices.length + 1).toString().padStart(3, '0');
+  return 'INV-' + yr + '-' + seq;
+}
+
+function invCreateNew() {
+  var form = document.getElementById('inv2-form');
+  form.style.display = 'block';
+  document.getElementById('inv2-num').value = invGenNum();
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('inv2-date').value = today;
+  var due = new Date(); due.setDate(due.getDate() + 30);
+  document.getElementById('inv2-due').value = due.toISOString().split('T')[0];
+  document.getElementById('inv2-cust').value = '';
+  document.getElementById('inv2-amount').value = '';
+  document.getElementById('inv2-deposit').value = '';
+  document.getElementById('inv2-balance').value = '';
+  document.getElementById('inv2-desc').value = '';
+  document.getElementById('inv2-notes').value = '';
+  form.scrollIntoView({ behavior: 'smooth' });
+}
+
+function invFromQuote() {
+  var qs = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
+  if (!qs.length) { notify('No saved quotes found. Save a quote first.', 'warn'); return; }
+  var last = qs[qs.length - 1];
+  document.getElementById('inv2-form').style.display = 'block';
+  document.getElementById('inv2-num').value = invGenNum();
+  document.getElementById('inv2-cust').value = last.client || '';
+  document.getElementById('inv2-desc').value = (last.project || '') + (last.quoteNum ? ' — Quote #' + last.quoteNum : '');
+  document.getElementById('inv2-amount').value = (last.total || '').toString().replace(/[^0-9.]/g, '');
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('inv2-date').value = today;
+  var due = new Date(); due.setDate(due.getDate() + 30);
+  document.getElementById('inv2-due').value = due.toISOString().split('T')[0];
+  invCalcBalance();
+  notify('Quote loaded into invoice form', '');
+}
+
+function invSave() {
+  var cust = document.getElementById('inv2-cust').value.trim();
+  var amt = parseFloat(document.getElementById('inv2-amount').value) || 0;
+  if (!cust || !amt) { notify('Customer name and amount required', 'warn'); return; }
+  var dep = parseFloat(document.getElementById('inv2-deposit').value) || 0;
+  var inv = {
+    id: 'INV-' + Date.now(),
+    num: document.getElementById('inv2-num').value.trim() || invGenNum(),
+    customer: cust,
+    desc: document.getElementById('inv2-desc').value.trim(),
+    amount: amt,
+    deposit: dep,
+    balance: Math.max(0, amt - dep),
+    date: document.getElementById('inv2-date').value,
+    due: document.getElementById('inv2-due').value,
+    method: document.getElementById('inv2-method').value,
+    notes: document.getElementById('inv2-notes').value.trim(),
+    status: dep >= amt ? 'Paid' : dep > 0 ? 'Partial' : 'Unpaid',
+    created: new Date().toISOString(),
+    payments: dep > 0 ? [{ amount: dep, date: new Date().toISOString().split('T')[0], method: document.getElementById('inv2-method').value, note: 'Deposit' }] : []
+  };
+  sd_invoices.unshift(inv);
+  invSaveStore();
+  document.getElementById('inv2-form').style.display = 'none';
+  notify('Invoice ' + inv.num + ' saved', '');
+}
+
+function invSaveAndPrint() {
+  invSave();
+  if (sd_invoices.length) invPrint(sd_invoices[0].id);
+}
+
+function invMarkPaid(id) {
+  var inv = sd_invoices.find(function(i) { return i.id === id; });
+  if (!inv) return;
+  inv.status = 'Paid';
+  inv.balance = 0;
+  inv.payments = inv.payments || [];
+  inv.payments.push({ amount: inv.balance, date: new Date().toISOString().split('T')[0], method: 'Manual', note: 'Marked paid' });
+  invSaveStore();
+  document.getElementById('inv2-print-modal').style.display = 'none';
+  notify('Invoice marked as Paid', '');
+}
+
+function invDelete(id) {
+  if (!confirm('Delete this invoice?')) return;
+  sd_invoices = sd_invoices.filter(function(i) { return i.id !== id; });
+  invSaveStore();
+}
+
+function invPrint(id) {
+  var inv = sd_invoices.find(function(i) { return i.id === id; });
+  if (!inv) return;
+  window._invPrintId = id;
+  var shop = localStorage.getItem('sd_shop_name') || 'Stone Fabrication Shop';
+  var statusColor = inv.status === 'Paid' ? '#16a34a' : inv.status === 'Partial' ? '#ca8a04' : '#dc2626';
+  document.getElementById('inv2-print-content').innerHTML =
+    '<div style="font-family:Outfit,sans-serif;color:#111">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">' +
+      '<div><div style="font-size:24px;font-weight:900;color:#0A3D1F">' + shop + '</div>' +
+      '<div style="font-size:13px;color:#6B7280;margin-top:4px">Professional Stone Fabrication</div></div>' +
+      '<div style="text-align:right"><div style="font-size:22px;font-weight:800;color:#111">INVOICE</div>' +
+      '<div style="font-size:14px;color:#6B7280">' + inv.num + '</div>' +
+      '<div style="margin-top:6px;display:inline-block;background:' + statusColor + ';color:#fff;padding:3px 12px;border-radius:100px;font-size:12px;font-weight:700">' + inv.status + '</div></div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">' +
+      '<div style="background:#F0FEF6;border-radius:10px;padding:14px">' +
+        '<div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-bottom:6px">Bill To</div>' +
+        '<div style="font-size:15px;font-weight:700">' + inv.customer + '</div>' +
+        (inv.desc ? '<div style="font-size:13px;color:#374151;margin-top:4px">' + inv.desc + '</div>' : '') +
+      '</div>' +
+      '<div style="background:#F9FAFB;border-radius:10px;padding:14px">' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:#6B7280">Invoice Date</span><span style="font-size:13px;font-weight:600">' + inv.date + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:#6B7280">Due Date</span><span style="font-size:13px;font-weight:600;color:#dc2626">' + inv.due + '</span></div>' +
+        (inv.method ? '<div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:#6B7280">Payment Method</span><span style="font-size:13px;font-weight:600">' + inv.method + '</span></div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div style="border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;margin-bottom:20px">' +
+      '<div style="display:grid;grid-template-columns:1fr 120px;padding:10px 16px;background:#F3F4F6;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase">' +
+        '<span>Description</span><span style="text-align:right">Amount</span></div>' +
+      '<div style="padding:14px 16px;display:grid;grid-template-columns:1fr 120px">' +
+        '<span style="font-size:14px">' + (inv.desc || 'Stone fabrication services') + '</span>' +
+        '<span style="font-size:14px;font-weight:700;text-align:right">$' + inv.amount.toFixed(2) + '</span></div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:flex-end">' +
+      '<div style="width:260px">' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;color:#6B7280">Subtotal</span><span style="font-size:13px">$' + inv.amount.toFixed(2) + '</span></div>' +
+        (inv.deposit > 0 ? '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;color:#6B7280">Deposit Paid</span><span style="font-size:13px;color:#16a34a">-$' + inv.deposit.toFixed(2) + '</span></div>' : '') +
+        '<div style="display:flex;justify-content:space-between;padding-top:10px;border-top:2px solid #111;margin-top:6px"><span style="font-size:15px;font-weight:800">Balance Due</span><span style="font-size:18px;font-weight:900;color:' + statusColor + '">$' + inv.balance.toFixed(2) + '</span></div>' +
+      '</div>' +
+    '</div>' +
+    (inv.notes ? '<div style="margin-top:20px;background:#F9FAFB;border-radius:10px;padding:14px"><div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-bottom:6px">Notes</div><div style="font-size:13px">' + inv.notes + '</div></div>' : '') +
+    '<div style="margin-top:28px;border-top:1px solid #E5E7EB;padding-top:14px;text-align:center;font-size:12px;color:#9CA3AF">Thank you for your business · ' + shop + '</div>' +
+    '</div>';
+  document.getElementById('inv2-print-modal').style.display = 'flex';
+}
+
+var _invFilter = 'all';
+function invSetFilter(f, btn) {
+  _invFilter = f;
+  document.querySelectorAll('[id^="invtab2-"]').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  invRender();
+}
+
+function invRender() {
+  var list = document.getElementById('inv2-list');
+  if (!list) return;
+  var srch = (document.getElementById('inv2-search') ? document.getElementById('inv2-search').value : '').toLowerCase();
+  var today = new Date().toISOString().split('T')[0];
+  var filtered = sd_invoices.filter(function(inv) {
+    if (_invFilter === 'Overdue') return inv.status !== 'Paid' && inv.due && inv.due < today;
+    if (_invFilter !== 'all' && inv.status !== _invFilter) return false;
+    if (srch && !(inv.customer.toLowerCase().includes(srch) || inv.num.toLowerCase().includes(srch) || (inv.desc||'').toLowerCase().includes(srch))) return false;
+    return true;
+  });
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">🧾</div><div style="font-size:15px;font-weight:700">No invoices found</div><div style="font-size:13px;margin-top:6px">Create your first invoice above.</div></div>';
+    return;
+  }
+  var statusColors = { Paid: '#16a34a', Partial: '#ca8a04', Unpaid: '#dc2626' };
+  list.innerHTML = filtered.map(function(inv) {
+    var sc = statusColors[inv.status] || '#6B7280';
+    var overdue = inv.status !== 'Paid' && inv.due && inv.due < today;
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:180px">' +
+        '<div style="font-size:14px;font-weight:800;color:var(--text)">' + inv.customer + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + inv.num + (inv.desc ? ' · ' + inv.desc : '') + '</div>' +
+        (overdue ? '<div style="font-size:11px;color:#dc2626;font-weight:700;margin-top:3px">⚠️ OVERDUE since ' + inv.due + '</div>' : '') +
+      '</div>' +
+      '<div style="text-align:center;min-width:90px">' +
+        '<div style="font-size:15px;font-weight:800;color:var(--text)">$' + inv.amount.toFixed(2) + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">Total</div>' +
+      '</div>' +
+      '<div style="text-align:center;min-width:90px">' +
+        '<div style="font-size:15px;font-weight:800;color:' + sc + '">$' + inv.balance.toFixed(2) + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">Balance</div>' +
+      '</div>' +
+      '<div style="text-align:center;min-width:70px">' +
+        '<div style="background:' + sc + ';color:#fff;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;display:inline-block">' + inv.status + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:3px">Due ' + inv.due + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="q-btn" onclick="invPrint('' + inv.id + '')" title="View & Print">🖨️</button>' +
+        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid('' + inv.id + '')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
+        '<button class="q-btn" onclick="invDelete('' + inv.id + '')" title="Delete" style="color:#dc2626">🗑️</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function invUpdateKPIs() {
+  var today = new Date().toISOString().split('T')[0];
+  var total = sd_invoices.length;
+  var unpaid = sd_invoices.filter(function(i) { return i.status === 'Unpaid'; }).length;
+  var partial = sd_invoices.filter(function(i) { return i.status === 'Partial'; }).length;
+  var paid = sd_invoices.filter(function(i) { return i.status === 'Paid'; }).length;
+  var ar = sd_invoices.filter(function(i) { return i.status !== 'Paid'; }).reduce(function(s, i) { return s + (i.balance || 0); }, 0);
+  function s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  s('inv2-total', total); s('inv2-unpaid', unpaid); s('inv2-partial', partial); s('inv2-paid', paid);
+  s('inv2-ar', '$' + ar.toFixed(2));
+  // Update AI dash KPI
+  s('ai-kpi-unpaid', unpaid || '0');
+}
+
+function invExportCSV() {
+  if (!sd_invoices.length) { notify('No invoices to export', 'warn'); return; }
+  var rows = [['Invoice #','Customer','Description','Amount','Deposit','Balance','Status','Date','Due Date','Method']];
+  sd_invoices.forEach(function(i) {
+    rows.push([i.num, i.customer, i.desc, i.amount, i.deposit, i.balance, i.status, i.date, i.due, i.method]);
+  });
+  var csv = rows.map(function(r) { return r.map(function(c) { return '"' + (c||'') + '"'; }).join(','); }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'stonedesk-invoices-' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+}
+
+function invAskClaude() {
+  var ar = sd_invoices.filter(function(i) { return i.status !== 'Paid'; });
+  if (!ar.length) { notify('No outstanding invoices', ''); return; }
+  var summary = ar.map(function(i) { return i.customer + ' owes $' + i.balance.toFixed(2) + ' (due ' + i.due + ', status: ' + i.status + ')'; }).join('; ');
+  sbNav('ai');
+  setTimeout(function() {
+    var input = document.getElementById('userInput');
+    if (input) { input.value = 'Here is my outstanding A/R: ' + summary + '. Who should I follow up with first and what should I say?'; input.focus(); sendMessage(); }
+  }, 400);
+}
+
+// ── AI DASHBOARD KPI LOADER ────────────────────────────────────
+function aiLoadDashKPIs() {
+  try {
+    var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
+    var openQ = quotes.filter(function(q) { return (!q.status || q.status === 'Open'); }).length;
+    var el = document.getElementById('ai-kpi-quotes'); if (el) el.textContent = openQ;
+  } catch(e) {}
+  try {
+    var jobs = JSON.parse(localStorage.getItem('sd_jobs') || '[]');
+    var now = new Date(); var weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 7);
+    var weekJobs = jobs.filter(function(j) { var d = new Date(j.date||j.installDate||''); return d >= now && d <= weekEnd; }).length;
+    var el2 = document.getElementById('ai-kpi-jobs'); if (el2) el2.textContent = weekJobs;
+  } catch(e) {}
+  try {
+    var unpaid = sd_invoices.filter(function(i) { return i.status !== 'Paid'; }).length;
+    var el3 = document.getElementById('ai-kpi-unpaid'); if (el3) el3.textContent = unpaid;
+  } catch(e) {}
+  try {
+    var slabs = JSON.parse(localStorage.getItem('sd_slabs') || '[]');
+    var inStock = slabs.filter(function(s) { return s.status === 'in-stock'; }).length;
+    var el4 = document.getElementById('ai-kpi-slabs'); if (el4) el4.textContent = inStock;
+  } catch(e) {}
+  try {
+    var remakes = JSON.parse(localStorage.getItem('sd_remakes') || '[]');
+    var openR = remakes.filter(function(r) { return r.status !== 'resolved'; }).length;
+    var el5 = document.getElementById('ai-kpi-remakes'); if (el5) el5.textContent = openR;
+  } catch(e) {}
+}
+
+function aiQuickPrompt(text) {
+  var input = document.getElementById('userInput');
+  if (!input) return;
+  input.value = text;
+  sendMessage();
+}
+
+// ── HISTORY v2 ─────────────────────────────────────────────────
+function histRender() {
+  var list = document.getElementById('history-list');
+  if (!list) return;
+  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
+  var srch = (document.getElementById('hist-search') ? document.getElementById('hist-search').value : '').toLowerCase();
+  var statusFilter = document.getElementById('hist-filter-status') ? document.getElementById('hist-filter-status').value : '';
+  var sort = document.getElementById('hist-sort') ? document.getElementById('hist-sort').value : 'newest';
+
+  var filtered = quotes.filter(function(q) {
+    if (statusFilter && (q.status || 'Open') !== statusFilter) return false;
+    if (srch && !((q.client||'').toLowerCase().includes(srch) || (q.project||'').toLowerCase().includes(srch) || (q.quoteNum||'').toString().includes(srch))) return false;
+    return true;
+  });
+
+  filtered.sort(function(a, b) {
+    if (sort === 'newest') return new Date(b.date||0) - new Date(a.date||0);
+    if (sort === 'oldest') return new Date(a.date||0) - new Date(b.date||0);
+    var av = parseFloat((a.total||'0').toString().replace(/[^0-9.]/g,'')) || 0;
+    var bv = parseFloat((b.total||'0').toString().replace(/[^0-9.]/g,'')) || 0;
+    return sort === 'highest' ? bv - av : av - bv;
+  });
+
+  // Update KPIs
+  var totalVal = quotes.reduce(function(s,q){return s+(parseFloat((q.total||'0').toString().replace(/[^0-9.]/g,''))||0);},0);
+  function sk(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
+  sk('hist-kpi-total', quotes.length);
+  sk('hist-kpi-open', quotes.filter(function(q){return (!q.status||q.status==='Open');}).length);
+  sk('hist-kpi-approved', quotes.filter(function(q){return q.status==='Approved';}).length);
+  sk('hist-kpi-value', '$' + totalVal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">📜</div><div style="font-size:15px;font-weight:700">No quotes found</div></div>';
+    return;
+  }
+
+  var statusColors = { Open: '#16C762', Approved: '#16a34a', Declined: '#dc2626' };
+  list.innerHTML = filtered.map(function(q, idx) {
+    var st = q.status || 'Open';
+    var sc = statusColors[st] || '#6B7280';
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+      '<div style="font-size:13px;font-weight:800;color:var(--muted);min-width:60px">#' + (q.quoteNum || (idx+1)) + '</div>' +
+      '<div style="flex:1;min-width:140px"><div style="font-size:14px;font-weight:700;color:var(--text)">' + (q.client||'—') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted)">' + (q.project||'') + '</div></div>' +
+      '<div style="font-size:15px;font-weight:800;color:var(--text);min-width:80px;text-align:right">' + (q.total||'—') + '</div>' +
+      '<div style="min-width:70px;text-align:center"><div style="background:' + sc + ';color:#fff;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;display:inline-block">' + st + '</div></div>' +
+      '<div style="font-size:12px;color:var(--muted);min-width:80px">' + (q.date||'') + '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="q-btn" onclick="histReopen(' + idx + ')" title="Reopen in Quote Builder">↩ Reopen</button>' +
+        '<button class="q-btn" onclick="histMakeInvoice(' + idx + ')" title="Create Invoice from this quote" style="color:#16C762">🧾</button>' +
+        '<button class="q-btn" onclick="histDelete(' + idx + ')" title="Delete" style="color:#dc2626">🗑️</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function histReopen(idx) {
+  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
+  var q = quotes[idx]; if (!q) return;
+  // Seed quote builder fields
+  if (q.client) { var el = document.getElementById('client'); if(el) el.value = q.client; }
+  if (q.project) { var el2 = document.getElementById('projectType'); if(el2) el2.value = q.project; }
+  sbNav('quote');
+  notify('Quote loaded into Quote Builder', '');
+}
+
+function histMakeInvoice(idx) {
+  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
+  var q = quotes[idx]; if (!q) return;
+  sbNav('invoices');
+  setTimeout(function() {
+    invCreateNew();
+    document.getElementById('inv2-cust').value = q.client || '';
+    document.getElementById('inv2-desc').value = (q.project||'') + (q.quoteNum ? ' — Quote #' + q.quoteNum : '');
+    document.getElementById('inv2-amount').value = (q.total||'').toString().replace(/[^0-9.]/g,'');
+    invCalcBalance();
+  }, 300);
+}
+
+function histDelete(idx) {
+  if (!confirm('Delete this quote from history?')) return;
+  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
+  quotes.splice(idx, 1);
+  localStorage.setItem('stonedesk_quote_history', JSON.stringify(quotes));
+  histRender();
+}
+
+function histExportCSV() {
+  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
+  if (!quotes.length) { notify('No quotes to export', 'warn'); return; }
+  var rows = [['Quote #','Client','Project','Total','Status','Date']];
+  quotes.forEach(function(q,i){ rows.push([q.quoteNum||i+1, q.client, q.project, q.total, q.status||'Open', q.date]); });
+  var csv = rows.map(function(r){return r.map(function(c){return '"'+(c||'')+'"';}).join(',');}).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'stonedesk-quotes-' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+}
+
+// ── INIT ON PANEL SHOW ─────────────────────────────────────────
+(function() {
+  var _origSP = window.showPanel;
+  window.showPanel = function(id) {
+    if (_origSP) _origSP(id);
+    if (id === 'invoices') { invUpdateKPIs(); invRender(); }
+    if (id === 'history') { histRender(); }
+    if (id === 'ai') { aiLoadDashKPIs(); }
+  };
+  // Init on load
+  setTimeout(function() { invUpdateKPIs(); histRender(); aiLoadDashKPIs(); }, 800);
+})();
 
 // ==================================================================
 // FABRICOR — STONE SHOP INTELLIGENCE PLATFORM
