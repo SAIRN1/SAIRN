@@ -607,11 +607,12 @@ function learnFromResponse(question, answer) {
 
 // -- sendToNetwork: post to SAIRN Bridge (non-blocking) --------
 function sendToNetwork(data) {
-  fetch(BRIDGE, {
+  var shopId = localStorage.getItem(APP_ID+'_license_key') || localStorage.getItem('sairn_license_key_'+APP_ID) || APP_ID+'-demo';
+  fetch(BRIDGE+'?action=push', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: APP_ID, to: 'network', type: 'learn', payload: data })
-  }).catch(function() { /* silent — network is optional */ });
+    body: JSON.stringify({ shopId: shopId, app: APP_ID, timestamp: new Date().toISOString(), payload: data })
+  }).catch(function() { /* silent -- network is optional */ });
 }
 
 // -- getBusinessContext: read everything we know ----------------
@@ -647,7 +648,7 @@ window.learnFromResponse  = learnFromResponse;
 <script>
 var PINS={"partner": "1234", "associate": "2345", "paralegal": "3456", "staff": "4567"};
 var curRole='';
-function selRole(r){curRole=r;document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('sel');});var el=document.getElementById('r-'+r);if(el)el.classList.add('sel');document.getElementById('p0').focus();var fEl=document.getElementById('ni-formula');if(fEl)fEl.style.display=(r==='paralegal'||r==='staff')?'none':'';}
+// selRole: active implementation is in the login IIFE below; it sets both currentRole and window.curRole
 function pi(i){var v=document.getElementById('p'+i).value;if(v&&i<3)document.getElementById('p'+(i+1)).focus();}
 function pk(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();if(e.key==='Enter')doLogin();}
 function getPin(){return ['p0','p1','p2','p3'].map(function(id){return document.getElementById(id).value;}).join('');}
@@ -1920,9 +1921,10 @@ window.sairnClearSig = function() {
 window.sairnSyncAll = async function() {
   sairnToast('Syncing all connected apps...');
   try {
-    await fetch(SAIRN_BRIDGE, {
+    var shopId = localStorage.getItem(SAIRN_APP_ID+'_license_key') || localStorage.getItem('sairn_license_key_'+SAIRN_APP_ID) || SAIRN_APP_ID+'-demo';
+    await fetch(SAIRN_BRIDGE+'?action=push', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from:SAIRN_APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})
+      body:JSON.stringify({shopId:shopId, app:SAIRN_APP_ID, timestamp:new Date().toISOString()})
     });
     const ts = new Date().toLocaleTimeString();
     const el = document.getElementById('sairn-last-sync');
@@ -2569,8 +2571,10 @@ async function runIntel() {
     if (el) el.classList.add('active');
     if (typeof elOrRoleName === 'string') {
       currentRole = elOrRoleName;
+      window.curRole = elOrRoleName;
     } else if (el) {
       currentRole = el.dataset.role || el.getAttribute('data-role') || currentRole;
+      window.curRole = currentRole;
     }
     var p0 = document.getElementById('p0');
     if (p0) { p0.focus(); }
