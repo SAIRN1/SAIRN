@@ -704,21 +704,7 @@ const ROLE_INITS={
   'tech':'VE','front':'FR'
 };
 
-function selRole(btn){document.querySelectorAll('.rb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentRole=btn.dataset.role;}
-function doLogin(){
-  const pin=document.getElementById('pin-in').value;
-  const stored=JSON.parse(localStorage.getItem(APP_ID+'_pins')||JSON.stringify(PINS));
-  if(stored[currentRole]!==pin){const e=document.getElementById('lerr');e.style.display='block';document.getElementById('pin-in').value='';setTimeout(()=>e.style.display='none',3000);return;}
-  document.getElementById('login').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('tavtr').textContent=ROLE_INITS[currentRole];
-  document.getElementById('trole').textContent=ROLE_LABELS[currentRole];
-  initSig();loadPricing();renderRangeBars();loadLastSync();loadWeather();
-  const checks=JSON.parse(localStorage.getItem(APP_ID+'_checks')||'[]');
-  if(checks.length)renderCR(checks);
-  const dateEl=document.getElementById('cr-date');if(dateEl)dateEl.value=new Date().toISOString().split('T')[0];
-  showPage('dashboard');
-}
+// selRole, doLogin: active implementations are in the login IIFE below
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
@@ -860,8 +846,9 @@ function loadPricing(){
 async function syncAll(){
   showToast('Syncing all connected apps...');
   try{
-    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from:APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})});
+    var shopId=localStorage.getItem(APP_ID+'_license_key')||localStorage.getItem('sairn_license_key_'+APP_ID)||APP_ID+'-demo';
+    await fetch(BRIDGE+'?action=push',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({shopId:shopId,app:APP_ID,timestamp:new Date().toISOString()})});
     const ts=new Date().toLocaleTimeString();
     document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);
     try{localStorage.setItem(APP_ID+'_last_sync',ts);}catch(e){}
@@ -923,7 +910,6 @@ function renderRangeBars(){
     }
   });
 }
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.style.opacity='0',3000);}
 function loadWeather(){}
 document.addEventListener('DOMContentLoaded',function(){
   const pi=document.getElementById('pin-in');if(pi)pi.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
