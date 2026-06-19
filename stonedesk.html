@@ -15237,11 +15237,16 @@ document.addEventListener('DOMContentLoaded',function(){
 // == SAIRN BRIDGE SYNC =====================================================
 async function syncToSAIRNBridge() {
   try {
-    await fetch('https://sairn.vercel.app/api/bridge', {
+    var shopId = (typeof slabLicKey === 'function' ? slabLicKey() : '') ||
+                 localStorage.getItem('stonedesk_license_key') || 'stonedesk-demo';
+    var body = { shopId: shopId };
+    if (window.sd_jobs      && window.sd_jobs.length)      body.jobs      = window.sd_jobs;
+    if (window.sd_invoices  && window.sd_invoices.length)  body.invoices  = window.sd_invoices;
+    if (window.sd_team      && window.sd_team.length)      body.employees = window.sd_team;
+    await fetch('https://sairn.vercel.app/api/bridge?action=push', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({app_id:"stonedesk",is_demo:true,app: APP_ID || 'sairnapp', is_demo: true,
-        data: {timestamp: new Date().toISOString(), synced: true}})
+      body: JSON.stringify(body)
     });
     notify('Synced to SAIRN Bridge', 'success');
   } catch(e) { notify('Bridge sync queued', 'info'); }
@@ -15551,27 +15556,29 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
 <script>
 // SAIRNdesign Bridge — Golden Rule 2 (Construction apps)
 function syncToSAIRNdesign() {
-  var payload = {
-    source_app: 'stonedesk',
-    target_app: 'sairndesign',
-    data_type: 'design_sync',
-    payload: {
-      timestamp: new Date().toISOString(),
-      project: document.title || 'StoneDesk Project',
-      app: 'StoneDesk'
-    }
-  };
-  fetch('https://sairn.vercel.app/api/bridge', {
+  var shopId = (typeof slabLicKey === 'function' ? slabLicKey() : '') ||
+               localStorage.getItem('stonedesk_license_key') || 'stonedesk-demo';
+  var jobs = (window.sd_jobs || []).map(function(j) {
+    return {
+      id:           j.id,
+      jobName:      j.jobName  || j.name,
+      stage:        j.stage,
+      stoneType:    j.stoneType,
+      totalSqft:    j.totalSqft,
+      customerName: j.customerName
+    };
+  });
+  fetch('https://sairn.vercel.app/api/bridge?action=push', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  }).then(function(r) {
-    if (r.ok) {
-      alert('Synced to SAIRNdesign successfully.');
-    }
-  }).catch(function(e) {
-    console.log('Bridge sync:', e.message);
-  });
+    body: JSON.stringify({ shopId: shopId, jobs: jobs })
+  }).then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) notify('Synced to SAIRNdesign', 'success');
+    })
+    .catch(function(e) {
+      console.log('Bridge sync:', e.message);
+    });
 }
 </script>
 
