@@ -483,7 +483,7 @@ async function callClaude(system, messages, maxTokens) {
     <input type="password" class="auth-input" id="pin-in" maxlength="4" placeholder="&bull;&bull;&bull;&bull;"
       oninput="this.value=this.value.replace(/\D/g,'')" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="auth-btn" onclick="doLogin()">Enter SAIRNscape</button>
-    <div class="auth-error" id="auth-err"></div>
+    <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
 
@@ -2025,10 +2025,10 @@ var PROXY    = 'https://sairn.vercel.app/api/claude';
 var BRIDGE   = 'https://sairn.vercel.app/api/bridge';
 var NET_URL  = 'https://sairn.vercel.app/api/network'; // SAIRN Intelligence Network
 
-// ── callClaude: the one function all AI calls use ────────────
+// -- callClaude: the one function all AI calls use ------------
 
 
-// ── learnFromResponse: extract and store business intelligence ─
+// -- learnFromResponse: extract and store business intelligence -
 function learnFromResponse(question, answer) {
   try {
     // Extract key facts from Claude's responses about the business
@@ -2054,16 +2054,17 @@ function learnFromResponse(question, answer) {
   } catch(e) { /* never crash on learning */ }
 }
 
-// ── sendToNetwork: post to SAIRN Bridge (non-blocking) ────────
+// -- sendToNetwork: post to SAIRN Bridge (non-blocking) --------
 function sendToNetwork(data) {
-  fetch(BRIDGE, {
+  var shopId = localStorage.getItem(APP_ID+'_license_key') || localStorage.getItem('sairn_license_key_'+APP_ID) || APP_ID+'-demo';
+  fetch(BRIDGE+'?action=push', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: APP_ID, to: 'network', type: 'learn', payload: data })
-  }).catch(function() { /* silent — network is optional */ });
+    body: JSON.stringify({ shopId: shopId, app: APP_ID, timestamp: new Date().toISOString(), payload: data })
+  }).catch(function() { /* silent -- network is optional */ });
 }
 
-// ── getBusinessContext: read everything we know ────────────────
+// -- getBusinessContext: read everything we know ----------------
 function getBusinessContext() {
   try {
     var profile = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
@@ -2080,7 +2081,7 @@ function getBusinessContext() {
   } catch(e) { return {}; }
 }
 
-// ── saveBusinessFact: remember key facts ──────────────────────
+// -- saveBusinessFact: remember key facts ----------------------
 function saveBusinessFact(fact) {
   try {
     var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
@@ -2105,19 +2106,17 @@ var userPIN = '1234';
 // ============================================================
 // AUTH
 // ============================================================
-function selRole(r) {
-  currentRole = r;
-  document.getElementById('role-user').classList.toggle('active', r === 'user');
-  document.getElementById('role-admin').classList.toggle('active', r === 'admin');
-}
+// selRole: active implementation is in the login IIFE below
 
 
 
 function saveAdminPins() {
   var ap = document.getElementById('adm-pin').value;
   var up = document.getElementById('usr-pin').value;
-  if (ap && ap.length === 4) adminPIN = ap;
-  if (up && up.length === 4) userPIN = up;
+  var current = JSON.parse(localStorage.getItem(APP_ID + '_pins') || '{"user":"1234","admin":"2345"}');
+  if (ap && ap.length === 4) current.admin = ap;
+  if (up && up.length === 4) current.user  = up;
+  localStorage.setItem(APP_ID + '_pins', JSON.stringify(current));
   flag('info', 'PINs updated successfully.');
 }
 
@@ -3128,9 +3127,10 @@ window.sairnClearSig = function() {
 window.sairnSyncAll = async function() {
   sairnToast('Syncing all connected apps...');
   try {
-    await fetch(SAIRN_BRIDGE, {
+    var shopId = localStorage.getItem(SAIRN_APP_ID+'_license_key') || localStorage.getItem('sairn_license_key_'+SAIRN_APP_ID) || SAIRN_APP_ID+'-demo';
+    await fetch(SAIRN_BRIDGE+'?action=push', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from:SAIRN_APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})
+      body:JSON.stringify({shopId:shopId, app:SAIRN_APP_ID, timestamp:new Date().toISOString()})
     });
     const ts = new Date().toLocaleTimeString();
     const el = document.getElementById('sairn-last-sync');
