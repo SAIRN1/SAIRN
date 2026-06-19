@@ -1226,8 +1226,9 @@ function renderSuite(){
 async function syncAll(){
   showToast('Syncing all connected apps...');
   try{
-    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from:APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})});
+    var shopId=localStorage.getItem(APP_ID+'_license_key')||localStorage.getItem('sairn_license_key_'+APP_ID)||APP_ID+'-demo';
+    await fetch(BRIDGE+'?action=push',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({shopId:shopId,app:APP_ID,timestamp:new Date().toISOString()})});
     const ts=new Date().toLocaleTimeString();
     document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);
     try{localStorage.setItem('sd_last_sync',ts);}catch(e){}
@@ -1333,11 +1334,7 @@ function saveDoc(){
 }
 
 // ---- TOAST ----
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.style.opacity='1';
-  clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.style.opacity='0',3000);
-}
+// showToast: defined at top of file (line 246) -- do not redefine here
 
 // ---- INIT ----
 document.addEventListener('DOMContentLoaded',()=>{
