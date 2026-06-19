@@ -16,6 +16,7 @@ function setCors(res, req) {
   const allowed = [
     'https://sairn.vercel.app',
     'https://stonedesk.io',
+    'https://fabricor-production.up.railway.app',
     'http://localhost:3000',
     'http://localhost:5173'
   ];
@@ -26,10 +27,10 @@ function setCors(res, req) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Shop-Id');
 }
 
-// Verify shop ownership via PIN (for HTML apps) or JWT (for SDK)
+// Verify shop exists. Returns { shop } on success or { error } on failure.
+// Used by all write endpoints that operate on an existing shop.
 async function getShop(req) {
   const shopId = req.headers['x-shop-id'] || req.body?.shop_id || req.query?.shop_id;
-  const pin    = req.body?.pin || req.headers['x-shop-pin'];
 
   if (!shopId) return { error: 'shop_id required' };
 
@@ -43,6 +44,14 @@ async function getShop(req) {
   return { shop };
 }
 
+// Guard for admin-only endpoints (create_shop) that have no existing shop_id.
+// Set SAIRN_INTERNAL_KEY in Vercel to enforce; skips when env var not configured.
+function checkInternalKey(req) {
+  const configured = process.env.SAIRN_INTERNAL_KEY;
+  if (!configured) return true;
+  return req.headers['x-sairn-key'] === configured;
+}
+
 export default async function handler(req, res) {
   setCors(res, req);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -51,9 +60,10 @@ export default async function handler(req, res) {
   if (!action) return res.status(400).json({ error: 'action required' });
 
   try {
-    // ── SHOP MANAGEMENT ─────────────────────────────────────────
+    // -- SHOP MANAGEMENT -----------------------------------------
 
     if (action === 'create_shop') {
+      if (!checkInternalKey(req)) return res.status(401).json({ error: 'Missing or invalid X-SAIRN-Key header' });
       const { app_id, shop_name, owner_email, plan = 'starter' } = req.body;
       if (!app_id || !shop_name || !owner_email) {
         return res.status(400).json({ error: 'app_id, shop_name, owner_email required' });
@@ -90,7 +100,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, dashboard: data });
     }
 
-    // ── CUSTOMERS ───────────────────────────────────────────────
+    // -- CUSTOMERS -----------------------------------------------
 
     if (action === 'get_customers') {
       const { shop_id, search, limit = 50, offset = 0 } = req.query;
@@ -98,7 +108,8 @@ export default async function handler(req, res) {
       
       let q = supabase.from('customers').select('*').eq('shop_id', shop_id);
       if (search) {
-        q = q.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,company_name.ilike.%${search}%,phone.ilike.%${search}%`);
+        const s = String(search).replace(/[^a-zA-Z0-9 @._\-]/g, '').slice(0, 100);
+        q = q.or(`first_name.ilike.%${s}%,last_name.ilike.%${s}%,company_name.ilike.%${s}%,phone.ilike.%${s}%`);
       }
       q = q.order('updated_at', { ascending: false }).range(+offset, +offset + +limit - 1);
       const { data, error, count } = await q;
@@ -120,7 +131,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, customer: result.data });
     }
 
-    // ── JOBS ────────────────────────────────────────────────────
+    // -- JOBS ----------------------------------------------------
 
     if (action === 'get_jobs') {
       const { shop_id, status, date, tech_id, limit = 100, offset = 0 } = req.query;
@@ -171,7 +182,11 @@ export default async function handler(req, res) {
     }
 
     if (action === 'update_job_status') {
-      const { shop_id, job_id, status, notes } = req.body;
+      const { job_id, status, notes } = req.body;
+      if (!job_id || !status) return res.status(400).json({ error: 'job_id and status required' });
+      const { shop, error: shopErr } = await getShop(req);
+      if (shopErr) return res.status(400).json({ error: shopErr });
+      const shop_id = shop.id;
       const updates = { status };
       if (status === 'in_progress' && !req.body.started_at) updates.started_at = new Date().toISOString();
       if (status === 'complete') updates.completed_at = new Date().toISOString();
@@ -183,7 +198,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, job: data });
     }
 
-    // ── INVOICES ────────────────────────────────────────────────
+    // -- INVOICES ------------------------------------------------
 
     if (action === 'get_invoices') {
       const { shop_id, status, customer_id, limit = 50, offset = 0 } = req.query;
@@ -235,7 +250,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, invoice: data });
     }
 
-    // ── PARTS / INVENTORY ────────────────────────────────────────
+    // -- PARTS / INVENTORY ----------------------------------------
 
     if (action === 'get_parts') {
       const { shop_id, low_stock } = req.query;
@@ -251,7 +266,10 @@ export default async function handler(req, res) {
     }
 
     if (action === 'save_part') {
-      const { shop_id, id, ...fields } = req.body;
+      const { shop, error: shopErr } = await getShop(req);
+      if (shopErr) return res.status(400).json({ error: shopErr });
+      const shop_id = shop.id;
+      const { id, ...fields } = req.body;
       let result;
       if (id) {
         result = await supabase.from('parts').update(fields).eq('id', id).eq('shop_id', shop_id).select().single();
@@ -262,7 +280,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, part: result.data });
     }
 
-    // ── SLABS (StoneDesk) ────────────────────────────────────────
+    // -- SLABS (StoneDesk) ----------------------------------------
 
     if (action === 'get_slabs') {
       const { shop_id, status, material } = req.query;
@@ -279,7 +297,10 @@ export default async function handler(req, res) {
     }
 
     if (action === 'save_slab') {
-      const { shop_id, id, ...fields } = req.body;
+      const { shop, error: shopErr } = await getShop(req);
+      if (shopErr) return res.status(400).json({ error: shopErr });
+      const shop_id = shop.id;
+      const { id, ...fields } = req.body;
       let result;
       if (id) {
         result = await supabase.from('slabs').update(fields).eq('id', id).eq('shop_id', shop_id).select().single();
@@ -290,7 +311,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, slab: result.data });
     }
 
-    // ── PROJECTS (SAIRNbuild) ────────────────────────────────────
+    // -- PROJECTS (SAIRNbuild) ------------------------------------
 
     if (action === 'get_projects') {
       const { shop_id, status } = req.query;
@@ -308,7 +329,10 @@ export default async function handler(req, res) {
     }
 
     if (action === 'save_project') {
-      const { shop_id, id, ...fields } = req.body;
+      const { shop, error: shopErr } = await getShop(req);
+      if (shopErr) return res.status(400).json({ error: shopErr });
+      const shop_id = shop.id;
+      const { id, ...fields } = req.body;
       let result;
       if (id) {
         result = await supabase.from('projects').update(fields).eq('id', id).eq('shop_id', shop_id).select().single();
@@ -319,7 +343,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, project: result.data });
     }
 
-    // ── GL ENTRIES ───────────────────────────────────────────────
+    // -- GL ENTRIES -----------------------------------------------
 
     if (action === 'get_gl') {
       const { shop_id, month, posted } = req.query;
@@ -345,7 +369,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, posted: data.length });
     }
 
-    // ── SHOP USERS (TECHS) ───────────────────────────────────────
+    // -- SHOP USERS (TECHS) ---------------------------------------
 
     if (action === 'get_techs') {
       const { shop_id } = req.query;
@@ -358,7 +382,10 @@ export default async function handler(req, res) {
     }
 
     if (action === 'save_tech') {
-      const { shop_id, id, ...fields } = req.body;
+      const { shop, error: shopErr } = await getShop(req);
+      if (shopErr) return res.status(400).json({ error: shopErr });
+      const shop_id = shop.id;
+      const { id, ...fields } = req.body;
       let result;
       if (id) {
         result = await supabase.from('shop_users').update(fields).eq('id', id).eq('shop_id', shop_id).select().single();
@@ -369,7 +396,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, tech: result.data });
     }
 
-    // ── REPORTS ─────────────────────────────────────────────────
+    // -- REPORTS -------------------------------------------------
 
     if (action === 'revenue_by_period') {
       const { shop_id, period = 'month' } = req.query;
