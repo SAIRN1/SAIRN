@@ -5328,7 +5328,7 @@ function qbImportFromDraw() {
     return;
   }
 
-  // ── 1) Resolve what sqft / runs we know ────────────────────
+  // -- 1) Resolve what sqft / runs we know --------------------
   var g       = typeof gN === 'function' ? gN : function(){ return 0; };
   var shape   = (typeof ctShape !== 'undefined') ? ctShape : 'straight';
   var aL = g('da-len'), aD = g('da-dep') || 25.5;
@@ -5345,7 +5345,7 @@ function qbImportFromDraw() {
     customSqFt = window._dcPolySqFt || 0;
   }
 
-  // ── 2) Map shape to Quote Builder project-type ──────────────
+  // -- 2) Map shape to Quote Builder project-type --------------
   var projMap = {
     straight: 'kitchen_std',
     island:   'kitchen_island',
@@ -5356,7 +5356,7 @@ function qbImportFromDraw() {
   };
   var projType = projMap[shape] || 'kitchen_std';
 
-  // ── 3) Populate the Quote Builder fields ────────────────────
+  // -- 3) Populate the Quote Builder fields --------------------
   // Project type
   var ptEl = document.getElementById('project-type');
   if (ptEl) { ptEl.value = projType; }
@@ -5418,7 +5418,7 @@ function qbImportFromDraw() {
   // Trigger recalc
   if (typeof calc === 'function') calc();
 
-  // ── 4) Feedback ─────────────────────────────────────────────
+  // -- 4) Feedback ---------------------------------------------
   var summary = [];
   if (isCustom && customSqFt > 0) {
     summary.push('Custom shape: ' + customSqFt.toFixed(1) + ' sqft gross');
@@ -14115,7 +14115,7 @@ var DEFAULT_INVENTORY=[
   {id:'inv013',name:'4" Cup Wheel — Double Row',cat:'tooling',vendor:'gmr',qty:3,min:2,unit:'each',cost:34.99,reorderQty:4,sku:'GMR-CW-45D'},
   {id:'inv014',name:'Super Glue — Medium Grade',cat:'adhesives',vendor:'braxton',qty:10,min:6,unit:'tube',cost:14.99,reorderQty:12,sku:'BB-SG-MED'},
   {id:'inv015',name:'N95 Disposable Respirators',cat:'safety',vendor:'gmr',qty:15,min:10,unit:'each',cost:1.25,reorderQty:40,sku:'GMR-RS-N95'},
-  // ── EXPANDED CATALOG ── BB Industries/Braxton-Bragg, GranQuartz, GMR ──
+  // -- EXPANDED CATALOG -- BB Industries/Braxton-Bragg, GranQuartz, GMR --
   // Blades
   {id:'inv101',name:'14" Segmented Granite Blade — Silent Core',cat:'blades',vendor:'granquartz',qty:2,min:2,unit:'each',cost:112.00,reorderQty:3,sku:'GQ-BL-14SC'},
   {id:'inv102',name:'14" Marble Bridge Saw Blade',cat:'blades',vendor:'braxton',qty:2,min:1,unit:'each',cost:98.00,reorderQty:2,sku:'BB-BL-14M'},
