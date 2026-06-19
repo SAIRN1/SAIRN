@@ -13,10 +13,27 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+function setCors(res, origin) {
+  const allowed = [
+    'https://sairn.vercel.app',
+    'https://stonedesk.io',
+    'https://fabricor-production.up.railway.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ];
+  const o = allowed.includes(origin) ? origin : 'https://sairn.vercel.app';
+  res.setHeader('Access-Control-Allow-Origin', o);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-SAIRN-Key');
+}
+
+// Returns true if the request carries a valid X-SAIRN-Key header.
+// Skips check when SAIRN_INTERNAL_KEY env var is not yet configured (fail-open
+// during rollout) -- set the env var in Vercel to start enforcing.
+function checkInternalKey(req) {
+  const configured = process.env.SAIRN_INTERNAL_KEY;
+  if (!configured) return true;
+  return req.headers['x-sairn-key'] === configured;
 }
 
 // ================================================================
@@ -100,6 +117,7 @@ async function handleQuickBooks(req, res, action) {
   }
 
   if (req.method === 'GET' && action === 'sync') {
+    if (!checkInternalKey(req)) return res.status(401).json({ error: 'Missing or invalid X-SAIRN-Key header' });
     const { shop_id, resource } = req.query;
     if (!shop_id || !resource) return res.status(400).json({ error: 'shop_id and resource required' });
     const ALLOWED = new Set(['Customer', 'Employee', 'Invoice', 'JournalEntry', 'Vendor', 'Bill']);
@@ -122,6 +140,7 @@ async function handleQuickBooks(req, res, action) {
   }
 
   if (req.method === 'POST' && action === 'disconnect') {
+    if (!checkInternalKey(req)) return res.status(401).json({ error: 'Missing or invalid X-SAIRN-Key header' });
     const { shop_id } = req.body || {};
     if (!shop_id) return res.status(400).json({ error: 'shop_id required' });
     await supabase.from('qb_connections').delete().eq('shop_id', shop_id);
@@ -221,6 +240,7 @@ async function handleGusto(req, res, action) {
   }
 
   if (req.method === 'GET' && action === 'sync') {
+    if (!checkInternalKey(req)) return res.status(401).json({ error: 'Missing or invalid X-SAIRN-Key header' });
     const { shop_id, resource } = req.query;
     if (!shop_id || !resource) return res.status(400).json({ error: 'shop_id and resource required' });
     const ALLOWED = new Set(['employees', 'payrolls', 'pay_schedules']);
@@ -241,6 +261,7 @@ async function handleGusto(req, res, action) {
   }
 
   if (req.method === 'POST' && action === 'disconnect') {
+    if (!checkInternalKey(req)) return res.status(401).json({ error: 'Missing or invalid X-SAIRN-Key header' });
     const { shop_id } = req.body || {};
     if (!shop_id) return res.status(400).json({ error: 'shop_id required' });
     await supabase.from('gusto_connections').delete().eq('shop_id', shop_id);
@@ -261,7 +282,7 @@ async function handleGusto(req, res, action) {
 // ENTRY POINT
 // ================================================================
 export default async function handler(req, res) {
-  setCors(res);
+  setCors(res, req.headers.origin || '');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { provider, action } = req.query;
