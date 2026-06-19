@@ -3178,10 +3178,10 @@ async function callClaude(system, messages, maxTokens) {
 
 var NET_URL  = 'https://sairn.vercel.app/api/network'; // SAIRN Intelligence Network
 
-// ── callClaude: the one function all AI calls use ────────────
+// -- callClaude: the one function all AI calls use ------------
 
 
-// ── learnFromResponse: extract and store business intelligence ─
+// -- learnFromResponse: extract and store business intelligence -
 function learnFromResponse(question, answer) {
   try {
     // Extract key facts from Claude's responses about the business
@@ -3207,16 +3207,17 @@ function learnFromResponse(question, answer) {
   } catch(e) { /* never crash on learning */ }
 }
 
-// ── sendToNetwork: post to SAIRN Bridge (non-blocking) ────────
+// -- sendToNetwork: post to SAIRN Bridge (non-blocking) --------
 function sendToNetwork(data) {
-  fetch(BRIDGE, {
+  var shopId = localStorage.getItem(APP_ID+'_license_key') || localStorage.getItem('sairn_license_key_'+APP_ID) || APP_ID+'-demo';
+  fetch(BRIDGE+'?action=push', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: APP_ID, to: 'network', type: 'learn', payload: data })
-  }).catch(function() { /* silent — network is optional */ });
+    body: JSON.stringify({ shopId: shopId, app: APP_ID, timestamp: new Date().toISOString(), payload: data })
+  }).catch(function() { /* silent -- network is optional */ });
 }
 
-// ── getBusinessContext: read everything we know ────────────────
+// -- getBusinessContext: read everything we know ----------------
 function getBusinessContext() {
   try {
     var profile = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
@@ -3233,7 +3234,7 @@ function getBusinessContext() {
   } catch(e) { return {}; }
 }
 
-// ── saveBusinessFact: remember key facts ──────────────────────
+// -- saveBusinessFact: remember key facts ----------------------
 function saveBusinessFact(fact) {
   try {
     var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
@@ -3280,42 +3281,10 @@ const DEFAULT_PINS = { owner:'1234', admin:'2345', manager:'3456', sales:'4567' 
 // ============================================================
 // LOGIN
 // ============================================================
-function selectRole(btn) {
-  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentRole = btn.dataset.role;
-}
+// selectRole, doLogin: active implementations are in the login IIFE below
 
 function handlePinInput(input) {
   if (input.value.length === 4) doLogin();
-}
-
-function doLogin() {
-  const pin   = document.getElementById('pin-input').value;
-  const pins  = JSON.parse(localStorage.getItem('sairnbuild_pins') || JSON.stringify(DEFAULT_PINS));
-  const valid = pins[currentRole] === pin;
-
-  if (!valid) {
-    const err = document.getElementById('login-error');
-    err.style.display = 'block';
-    document.getElementById('pin-input').value = '';
-    setTimeout(() => err.style.display = 'none', 3000);
-    return;
-  }
-
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-shell').style.display    = 'block';
-
-  const roleLabels = { owner:'Owner', admin:'Admin', manager:'Manager', sales:'Sales Rep' };
-  const initials   = { owner:'OW', admin:'AD', manager:'MG', sales:'SR' };
-  document.getElementById('user-role-label').textContent   = roleLabels[currentRole];
-  document.getElementById('user-initials').textContent     = initials[currentRole];
-
-  applyRoleGates();
-  initSignatureCanvas();
-  detectBlueprintMode();
-  loadPricingParamsIntoForm();
-  showPage('dashboard');
 }
 
 function applyRoleGates() {
@@ -4116,15 +4085,11 @@ function loadPricingParamsIntoForm() {
 async function syncAllSuite() {
   showToast('Syncing all connected apps...');
   try {
-    await fetch(BRIDGE_URL, {
+    var shopId = localStorage.getItem(APP_ID+'_license_key') || localStorage.getItem('sairn_license_key_'+APP_ID) || APP_ID+'-demo';
+    await fetch(BRIDGE_URL+'?action=push', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({app_id:"sairnbuild",is_demo:true,
-        from:      APP_ID,
-        to:        'all',
-        type:      'full-sync',
-        timestamp: new Date().toISOString()
-      })
+      body:    JSON.stringify({ shopId: shopId, app: APP_ID, timestamp: new Date().toISOString() })
     });
     showToast('All apps synced successfully');
   } catch(e) {
@@ -4141,33 +4106,7 @@ async function syncAllSuite() {
 // ============================================================
 // UTILITY
 // ============================================================
-function showToast(msg) {
-  let toast = document.getElementById('sairn-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'sairn-toast';
-    Object.assign(toast.style, {
-      position:     'fixed',
-      bottom:       '24px',
-      left:         '50%',
-      transform:    'translateX(-50%)',
-      background:   '#1F2937',
-      color:        '#FFFFFF',
-      padding:      '10px 20px',
-      borderRadius: '8px',
-      fontSize:     '14px',
-      fontWeight:   '600',
-      zIndex:       '1000',
-      boxShadow:    '0 4px 12px rgba(0,0,0,0.2)',
-      transition:   'opacity 0.3s'
-    });
-    document.body.appendChild(toast);
-  }
-  toast.textContent = msg;
-  toast.style.opacity = '1';
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.style.opacity = '0', 3000);
-}
+// showToast: defined at top of file (line 1027) -- do not redefine here
 
 // ============================================================
 // INIT -- runs on page load
