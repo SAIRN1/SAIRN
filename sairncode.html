@@ -736,8 +736,7 @@ const ROLE_INITS={
   'biller':'BI','admin':'AD'
 };
 
-function selRole(btn){document.querySelectorAll('.rb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentRole=btn.dataset.role;}
-// doLogin and showPage: see active implementations further below
+// doLogin, showPage, selRole: see active implementations further below
 // (window.doLogin / window.showPage exports). Original inline versions
 // removed June 2026 -- fully superseded, see Guardian Check 10 history.
 function openFQ(){showPage('field-quote');fqStep(1);}
@@ -874,8 +873,9 @@ function loadPricing(){
 async function syncAll(){
   showToast('Syncing all connected apps...');
   try{
-    await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from:APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})});
+    var shopId=localStorage.getItem(APP_ID+'_license_key')||localStorage.getItem('sairn_license_key_'+APP_ID)||APP_ID+'-demo';
+    await fetch(BRIDGE+'?action=push',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({shopId:shopId,app:APP_ID,timestamp:new Date().toISOString()})});
     const ts=new Date().toLocaleTimeString();
     document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);
     try{localStorage.setItem(APP_ID+'_last_sync',ts);}catch(e){}
@@ -930,14 +930,14 @@ Plain ASCII formatting only.`,
 function saveDoc(){showToast('Document saved');}
 function renderRangeBars(){
   const rb=document.getElementById('report-ranges');if(!rb)return;
-  const data=[('Encounters Today', '47', '↑ 8 from yesterday'), ('Coding Queue', '12', '⚠️ 3 urgent'), ('Claims Submitted', '$84,200', 'This week'), ('Denial Rate', '4.2%', '↓ Industry avg 8%')];
+  const data=[['Encounters Today','47','8 from yesterday'],['Coding Queue','12','3 urgent'],['Claims Submitted','$84,200','This week'],['Denial Rate','4.2%','Industry avg 8%']];
   data.forEach(function(s){
-    if(typeof s[1]==='number'&&s[1]<=100){
-      rb.innerHTML+='<div class="rng-wrap"><div class="rng-lbl"><span>'+s[0]+'</span><span>'+s[1]+'</span></div><div class="rng-track"><div class="rng-fill" style="width:'+s[1]+'%"></div></div></div>';
+    var num=parseFloat(s[1]);
+    if(!isNaN(num)&&num<=100){
+      rb.innerHTML+='<div class="rng-wrap"><div class="rng-lbl"><span>'+s[0]+'</span><span>'+s[1]+'</span></div><div class="rng-track"><div class="rng-fill" style="width:'+num+'%"></div></div></div>';
     }
   });
 }
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.style.opacity='0',3000);}
 function loadWeather(){}
 document.addEventListener('DOMContentLoaded',function(){
   const pi=document.getElementById('pin-in');if(pi)pi.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
