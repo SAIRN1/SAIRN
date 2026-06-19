@@ -654,7 +654,8 @@ function pk(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&
 function getPin(){return ['p0','p1','p2','p3'].map(function(id){return document.getElementById(id).value;}).join('');}
 function doLogin(){
   if(!curRole){document.getElementById('le').textContent='Select a role.';return;}
-  if(getPin()===PINS[curRole]){
+  var activePins = (typeof getPins === 'function') ? getPins() : PINS;
+  if(getPin()===activePins[curRole]){
     document.getElementById('ls').style.display='none';
     document.getElementById('app').style.display='block';
     document.getElementById('uc').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);
@@ -2581,6 +2582,7 @@ async function runIntel() {
     var pinEl = findPinInput();
     if (pinEl) { pinEl.value = ''; pinEl.focus(); }
   }
+  window.getPins        = getPins;
   window.selRole        = selRole;
   window.sdSelRole      = selRole;
   window.selectRole     = selRole;
