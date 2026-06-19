@@ -994,41 +994,8 @@ const SUITE_APPS = [
 ];
 
 // ---- AUTH ----
-function selRole(btn) {
-  document.querySelectorAll('.rb').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentRole = btn.dataset.role;
-}
-function doLogin() {
-  const pin = document.getElementById('pin-in').value;
-  const stored = JSON.parse(localStorage.getItem('sd_pins') || JSON.stringify(PINS));
-  if (stored[currentRole] !== pin) {
-    const e = document.getElementById('lerr'); e.style.display='block';
-    document.getElementById('pin-in').value='';
-    setTimeout(() => e.style.display='none', 3000); return;
-  }
-  document.getElementById('login').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('tavtr').textContent = INITS[currentRole];
-  document.getElementById('trole').textContent = ROLES[currentRole];
-  initSig(); loadPricing(); renderSuite(); loadLastSync();
-  showPage('dashboard');
-  // Populate dashboard range bars
-  const rb = document.getElementById('proj-ranges');
-  if (rb) {
-    rb.innerHTML = '';
-    [['Morandi Residence',72],['Peterson Office',90],['Johnson Living',40],['Rivera Pool',15]].forEach(([n,v]) => {
-      rb.innerHTML += '<div class="rng-wrap"><div class="rng-lbl"><span>'+n+'</span><span>'+v+'%</span></div>'
-        +'<div class="rng-track"><div class="rng-fill" style="width:'+v+'%"></div></div></div>';
-    });
-  }
-  // Restore check history
-  const checks = JSON.parse(localStorage.getItem('sd_checks') || '[]');
-  if (checks.length) renderCR(checks);
-  // Set date on check register
-  const dateEl = document.getElementById('cr-date');
-  if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-}
+// selRole, doLogin: active implementations are in the login IIFE below;
+// they use APP_ID+'_pins' for localStorage and window.selRole / window.doLogin exports.
 
 // ---- NAV ----
 function showPage(id) {
