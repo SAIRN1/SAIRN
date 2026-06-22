@@ -27706,8 +27706,7 @@ function taxExport(){
     var out=document.getElementById('emp-ai-out');
     out.style.display='block';out.textContent='Analyzing team...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this stone fabrication team structure and recommend staffing improvements or training priorities:
-'+JSON.stringify(d.map(function(x){return {name:x.name,role:x.role,dept:x.dept,certs:x.certs};}))}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this stone fabrication team structure and recommend staffing improvements or training priorities:\n'+JSON.stringify(d.map(function(x){return {name:x.name,role:x.role,dept:x.dept,certs:x.certs};}))}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 HR Insight:</strong><br>'+(r.content||r.completion||'').replace(/
 /g,'<br>');
