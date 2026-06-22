@@ -1307,6 +1307,12 @@ body.is-exec .exec-only-block{display:block}
 </head>
 <body>
 <script>
+// Global utility functions - must be defined before use
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+window.escHtml = escHtml;
+
 /* ============================================================
    SAIRN CLAUDE ENGINE — stonedesk
    Single definition. Loaded first. Works everywhere.
