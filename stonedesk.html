@@ -3790,8 +3790,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Qualify this stone fabrication lead: '+type+', material preference: '+mat+', budget: '+budget+'. Rate the lead quality, suggest next steps, and recommend the right product tier.'}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Lead Qualification:</strong><br>'+(r.content||r.completion||'').replace(/
-/g,'<br>');
+      out.innerHTML='<strong>🤖 Lead Qualification:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdIntakePrint=function(){
