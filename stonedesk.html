@@ -26660,8 +26660,7 @@ function taxExport(){
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Recommend sintered stone / porcelain products for a stone fabrication company serving luxury residential clients. Compare Neolith, Dekton, Lapitec. Include sales talking points vs natural stone.'}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Product Recommendations:</strong><br>'+(r.content||r.completion||'').replace(/
-/g,'<br>');
+      out.innerHTML='<strong>🤖 Product Recommendations:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdSintPrint=function(){
