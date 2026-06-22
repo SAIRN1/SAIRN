@@ -3790,7 +3790,8 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Qualify this stone fabrication lead: '+type+', material preference: '+mat+', budget: '+budget+'. Rate the lead quality, suggest next steps, and recommend the right product tier.'}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Lead Qualification:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Lead Qualification:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdIntakePrint=function(){
@@ -4271,9 +4272,11 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     var out=document.getElementById('integ-ai-out');
     out.style.display='block';out.textContent='Analyzing integrations...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these software integrations for a stone fabrication company and recommend additional apps that would improve operations:\n'+JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these software integrations for a stone fabrication company and recommend additional apps that would improve operations:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Integration Recommendations:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Integration Recommendations:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdIntegPrint=function(){
@@ -5047,9 +5050,11 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     var out=document.getElementById('rm-ai-out');
     out.style.display='block';out.textContent='Analyzing remakes...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these remake records for a stone fabrication company. Identify root causes, recommend preventive measures, and estimate annual cost savings from prevention:\n'+JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these remake records for a stone fabrication company. Identify root causes, recommend preventive measures, and estimate annual cost savings from prevention:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Root Cause Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Root Cause Analysis:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdRMPrint=function(){
@@ -5310,9 +5315,9 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     install:`'Hi [Name],\n\nYour installation is scheduled for [Date] between [Time]. Our crew will arrive with all materials needed.\n\nPinnacle Stone & Design — (555) 847-3200`,
     complete:`'Hi [Name],\n\nYour project is complete! Thank you for trusting Pinnacle Stone & Design. Enjoy your new stone surfaces!\n\nIf you have any questions, call us at (555) 847-3200.`,
     balance:`'Hi [Name],\n\nA balance of $[Amount] is due for your project. Please call (555) 847-3200 or visit pinnaclesd.com to pay.\n\nThank you!`,
-    review:`'Hi [Name],\n\nWe hope you\'re loving your new countertops! Would you mind leaving us a Google review? It helps other homeowners find us.
+    review:`'Hi [Name],\n\nWe hope you`re loving your new countertops! Would you mind leaving us a Google review? It helps other homeowners find us.
 
-Thank you! — Pinnacle Stone & Design'`,
+Thank you! — Pinnacle Stone & Design'
   };
   var SEED=[
     {type:'Email to Customer',to:'Marcus Webb',subj:'Thank you for your business!',body:'Your Calacatta Gold installation is complete. Please review our care guide.',date:'2024-06-14 10:30',sent:true},
@@ -6469,9 +6474,9 @@ function invRender() {
         '<div style="font-size:11px;color:var(--muted);margin-top:3px">Due ' + inv.due + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<button class="q-btn" onclick="invPrint(\'' + inv.id + '\')" title="View & Print">🖨️</button>' +
-        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid(\'' + inv.id + '\')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
-        '<button class="q-btn" onclick="invDelete(\'' + inv.id + '\')" title="Delete" style="color:#dc2626">🗑️</button>' +
+        '<button class="q-btn" onclick="invPrint('' + inv.id + '')" title="View & Print">🖨️</button>' +
+        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid('' + inv.id + '')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
+        '<button class="q-btn" onclick="invDelete('' + inv.id + '')" title="Delete" style="color:#dc2626">🗑️</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -16127,7 +16132,7 @@ function custOpenDetail(id) {
     '</div>'+
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Job Status</div>'+
-      '<select onchange="custUpdateStatus(\'' + id + '\',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
+      '<select onchange="custUpdateStatus(\" +id+'',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
       ['quoted','approved','templated','fabricating','scheduled','complete'].map(function(s){return '<option value="'+s+'"'+(c.status===s?' selected':'')+'>'+statusLabels[s]+'</option>';}).join('')+
       '</select>'+
     '</div>'+
@@ -18144,7 +18149,7 @@ function vendorShowCompareModal(product, comparisons) {
           '<div style="font-size:16px;font-weight:900;color:#fff">' + escHtml(product.name) + '</div>' +
           '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px">SKU: ' + product.sku + ' &middot; ' + comparisons.length + ' vendor' + (comparisons.length!==1?'s':'') + ' compared</div>' +
         '</div>' +
-        '<button onclick="document.getElementById(\'vendor-compare-modal\').style.display=\'none\'" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer">&#10005;</button>' +
+        '<button onclick="document.getElementById('vendor-compare-modal').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer">&#10005;</button>' +
       '</div>' +
       // Savings banner
       (maxSaving > 0 ? '<div style="background:#FEF3C7;border-bottom:1px solid #FCD34D;padding:10px 24px;font-size:13px;font-weight:700;color:#92400E">&#128722; Maximum savings opportunity: <span style="color:#15803D;font-size:15px">$'+maxSaving.toFixed(2)+'</span> per unit by choosing '+lowest.vendorName+'</div>' : '') +
@@ -18191,7 +18196,7 @@ function vendorShowCompareModal(product, comparisons) {
         '</div>' +
         // Quick add to cart from best vendor
         '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">' +
-          '<button onclick="document.getElementById(\'vendor-compare-modal\').style.display=\'none\'" class="q-btn">Close</button>' +
+          '<button onclick="document.getElementById('vendor-compare-modal').style.display='none'" class="q-btn">Close</button>' +
           '<button onclick="cartAdd(' + comparisons[0].vendorKey + ',' + comparisons[0].product.id + ',1);document.getElementById(' + '\'vendor-compare-modal\'' + ').style.display=' + '\'none\'' + ';" class="q-btn primary">&#10133; Add Best Price to Cart</button>' +
         '</div>' +
       '</div>' +
@@ -18213,16 +18218,26 @@ function vendorClaudeAnalyze(product, comparisons) {
   var priceList = comparisons.map(function(c,i){
     var neg = c.negotiatedPrice!==undefined?' (negotiated from $'+c.catalogPrice.toFixed(2)+')':'';
     return (i+1)+'. '+c.vendorName+': $'+c.effectivePrice.toFixed(2)+neg+' — '+c.product.sku+(c.matchType==='similar'?' (similar item)':'');
-  }).join('\n');
+  }).join('
+');
 
   var negotiatedCount = comparisons.filter(function(c){return c.negotiatedPrice!==undefined;}).length;
 
   var prompt =
-    'You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.\n\n' +
-    'PRODUCT: ' + product.name + ' (SKU: ' + product.sku + ')\n' +
-    'INVENTORY: ' + invContext + '\n' +
-    'VENDOR PRICES (sorted lowest to highest effective price):\n' + priceList + '\n\n' +
-    (negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already factored in above.\n\n' : '') +
+    'You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.
+
+' +
+    'PRODUCT: ' + product.name + ' (SKU: ' + product.sku + ')
+' +
+    'INVENTORY: ' + invContext + '
+' +
+    'VENDOR PRICES (sorted lowest to highest effective price):
+' + priceList + '
+
+' +
+    (negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already factored in above.
+
+' : '') +
     'Tell the shop owner: (1) which vendor to order from and exactly why, (2) if they should buy in bulk now or just reorder qty, (3) any red flags or opportunities they should know about. Be specific with dollar amounts. Do not hedge.';
 
   fetch('https://sairn.vercel.app/api/claude', {
@@ -18234,7 +18249,8 @@ function vendorClaudeAnalyze(product, comparisons) {
   }).then(function(r){return r.json();})
   .then(function(d){
     var txt = d.content&&d.content[0]&&d.content[0].text ? d.content[0].text : 'Analysis unavailable.';
-    if(resultEl) resultEl.innerHTML = txt.replace(/\n/g,'<br>');
+    if(resultEl) resultEl.innerHTML = txt.replace(/
+/g,'<br>');
   })
   .catch(function(){
     if(resultEl) resultEl.innerHTML = 'Claude analysis unavailable. Review pricing above and order from the lowest-cost vendor.';
@@ -18435,8 +18451,13 @@ function pmAIMapCSV() {
     body: JSON.stringify({
       app_id:'stonedesk', is_demo:true,
       messages:[{role:'user', content:
-        'Extract SKU/price pairs from this vendor quote. Our known SKUs: '+allSKUs.slice(0,50).join(', ')+'...\n\n' +
-        'Vendor quote:\n'+raw+'\n\n' +
+        'Extract SKU/price pairs from this vendor quote. Our known SKUs: '+allSKUs.slice(0,50).join(', ')+'...
+
+' +
+        'Vendor quote:
+'+raw+'
+
+' +
         'Return ONLY a CSV in format: SKU,Price — one per line, no headers, no other text. ' +
         'Match product names to our SKUs where possible. Only include lines you are confident about.'
       }]
@@ -18624,7 +18645,7 @@ var _origPlaceOrder = vendorPlaceOrder;
 vendorPlaceOrder = function() {
   // Record order in history before placing
   var allProducts=[];
-  Object.values(VENDORS).forEach(function(v){v.products.forEach(function(p){allProducts.push(Object.assign({},p,{vendor:v.name,vendorKey:Object.keys(VENDORS).find(function(k){return VENDORS[k]===v;})}));});});
+  Object.values(VENDORS).forEach(function(v){v.products.forEach(function(p){allProducts.push(Object.assign({},p,{vendor:v.name,vendorKey:Object.keys(VENDORS).find(function(k){return VENDORS[k]===v;})});});});
   var items=Object.entries(sdCart).map(function(e){
     var id=e[0],qty=e[1];
     var p=allProducts.find(function(x){return x.id===id;});
@@ -18772,7 +18793,7 @@ function safetyRenderChecklist() {
   // Check if today already submitted
   var today=new Date().toISOString().split('T')[0];
   var todaySub=sdSafetyData.checklists.find(function(c){return c.date===today;});
-  el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today\'s checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +
+  el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today's checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +
     DAILY_CHECKLIST.map(function(item){
       var checked=todaySub&&todaySub.completed.includes(item.id);
       return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">' +
@@ -18787,7 +18808,7 @@ function safetyRenderChecklist() {
 function safetySubmitChecklist() {
   var today=new Date().toISOString().split('T')[0];
   var existing=sdSafetyData.checklists.find(function(c){return c.date===today;});
-  if(existing){notify('Today\'s checklist already submitted','warn');return;}
+  if(existing){notify('Today's checklist already submitted','warn');return;}
   var completed=[];
   var failed=[];
   DAILY_CHECKLIST.forEach(function(item){
@@ -18796,7 +18817,13 @@ function safetySubmitChecklist() {
     else if(item.critical) failed.push(item.label);
   });
   if(failed.length){
-    if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:\n\n'+failed.slice(0,3).join('\n')+(failed.length>3?'\n...and '+(failed.length-3)+' more':'')+'\n\nSubmit anyway? This will be logged.')){return;}
+    if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:
+
+'+failed.slice(0,3).join('
+')+(failed.length>3?'
+...and '+(failed.length-3)+' more':'')+'
+
+Submit anyway? This will be logged.')){return;}
   }
   sdSafetyData.checklists.unshift({id:'CL'+Date.now(),date:today,ts:new Date().toISOString(),completed:completed,failed:failed,score:Math.round(completed.length/DAILY_CHECKLIST.length*100)});
   if(sdSafetyData.checklists.length>365) sdSafetyData.checklists=sdSafetyData.checklists.slice(0,365);
@@ -18968,7 +18995,7 @@ function safetyAskClaude(topic) {
     var input=document.getElementById('userInput');
     if(input){
       var q = topic==='stop act' ?
-        'Explain exactly what I need to do to comply with California\'s STOP Act silica safety law as a stone fabrication shop owner. The annual attestation deadline is July 1, 2026. Give me a step-by-step checklist of what I need to do TODAY.' :
+        'Explain exactly what I need to do to comply with California's STOP Act silica safety law as a stone fabrication shop owner. The annual attestation deadline is July 1, 2026. Give me a step-by-step checklist of what I need to do TODAY.' :
         'I run a stone countertop fabrication shop. Give me a complete safety briefing: (1) Top 5 OSHA violations in stone shops and how to avoid them, (2) Silica dust exposure controls I must have, (3) What documentation OSHA will ask for if they inspect me, (4) Quick wins I can implement this week.';
       input.value=q;sendMessage();
     }
@@ -19423,7 +19450,7 @@ function finAIJobAdvice(){
   sbNav('ai');
   setTimeout(function(){
     var input=document.getElementById('userInput');
-    if(input){input.value='My stone fabrication job for '+cust+' is quoted at $'+quote.toLocaleString()+' with a '+margin+'% gross margin. Industry average for stone countertop fabrication is 35-45% gross margin. Am I priced right? What should I change — raise the quote, reduce material cost, cut labor hours, or reduce consumables? Give me 3 specific actions to improve this job\'s profitability.';sendMessage();}
+    if(input){input.value='My stone fabrication job for '+cust+' is quoted at $'+quote.toLocaleString()+' with a '+margin+'% gross margin. Industry average for stone countertop fabrication is 35-45% gross margin. Am I priced right? What should I change — raise the quote, reduce material cost, cut labor hours, or reduce consumables? Give me 3 specific actions to improve this job's profitability.';sendMessage();}
   },400);
 }
 
@@ -23146,7 +23173,9 @@ function esigPrintApproval(){
   win.document.write('<p style="font-size:13px;line-height:1.7">By signing this agreement, the client authorizes the fabrication shop to begin sourcing materials and scheduling installation upon receipt of the deposit. The deposit is non-refundable once material has been cut. The balance is due on or before the day of installation.</p>');
   win.document.write('<div style="margin-top:40px"><span class="sig-line">Client Signature &amp; Date</span><span class="sig-line">Shop Representative</span></div>');
   win.document.write('<div class="ftr">'+shopName+' · Project Approval Form · Generated by StoneDesk™</div>');
-  win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script>
+
+</body></html>');
   win.document.close();
 }
 
@@ -23409,7 +23438,7 @@ function miSignals(data){
     else if(pc<-5)sigs.push({cls:'red',icon:'&#127968;',t:'Permits down '+Math.abs(pc).toFixed(1)+'% — new construction pipeline thinning. Shift to remodel and existing homeowner marketing.'});
   }
   sigs.push({cls:'yellow',icon:'&#127757;',t:'Tariff watch: India quartz (50%) and Brazil granite (50%) cost pressure ongoing. Lead with domestic materials in price-sensitive bids.'});
-  sigs.push({cls:'blue',icon:'&#128204;',t:'Remodel market historically outperforms new construction when mortgage rates are elevated. Existing homeowners can\'t move — they renovate.'});
+  sigs.push({cls:'blue',icon:'&#128204;',t:'Remodel market historically outperforms new construction when mortgage rates are elevated. Existing homeowners can't move — they renovate.'});
   return sigs;
 }
 
@@ -23566,7 +23595,9 @@ function miSaveBriefing(){
 function miPrintBriefing(){
   var c=document.getElementById('mi-briefing-content');if(!c)return;
   var w=window.open('','_blank');
-  w.document.write('<html><head><title>SAIRN Market Briefing</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}p{margin-bottom:14px}</style></head><body><h1>&#128225; SAIRN Market Intelligence Briefing</h1><p style="color:#64748b">' + new Date().toLocaleString()+'</p>'+c.innerHTML+'</body></html>');
+  w.document.write('<html><head><title>SAIRN Market Briefing</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}p{margin-bottom:14px}</style></head><body><h1>&#128225; SAIRN Market Intelligence Briefing</h1><p style="color:#64748b">' + new Date().toLocaleString()+'</p>'+c.innerHTML+'
+
+</body></html>');
   w.document.close();w.print();
 }
 
@@ -23663,7 +23694,9 @@ function shPrint(){
   var q=SH_STATE.history.length?SH_STATE.history[0].q:'';
   var a=document.getElementById('sh-answer-text');if(!a)return;
   var w=window.open('','_blank');
-  w.document.write('<html><head><title>Ask Stonehead</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}blockquote{background:#F0FEF6;border-left:4px solid #16C762;padding:12px 16px;margin:0 0 16px;border-radius:0 8px 8px 0}p{margin-bottom:14px}</style></head><body><h1>&#129694; Ask Stonehead</h1><blockquote><strong>Question:</strong> '+q+'</blockquote>'+a.innerHTML+'<hr style="margin:32px 0;border:none;border-top:1px solid #e2e8f0"><p style="font-size:11px;color:#94a3b8">StoneDesk Stone Hub &mdash; Powered by SAIRN Technologies</p></body></html>');
+  w.document.write('<html><head><title>Ask Stonehead</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}blockquote{background:#F0FEF6;border-left:4px solid #16C762;padding:12px 16px;margin:0 0 16px;border-radius:0 8px 8px 0}p{margin-bottom:14px}</style></head><body><h1>&#129694; Ask Stonehead</h1><blockquote><strong>Question:</strong> '+q+'</blockquote>'+a.innerHTML+'<hr style="margin:32px 0;border:none;border-top:1px solid #e2e8f0"><p style="font-size:11px;color:#94a3b8">StoneDesk Stone Hub &mdash; Powered by SAIRN Technologies</p>
+
+</body></html>');
   w.document.close();w.print();
 }
 
@@ -24957,7 +24990,7 @@ function bbExport(){
 
 // -- Missing export + AI functions ------------------------------
 function crmExport(){var rows=[['Name','Phone','Email','Project','Value','Source','Stage','Date']].concat(crmLeads.map(function(l){return[l.name,l.phone,l.email,l.project,l.value,l.source,l.stage,new Date(l.createdAt).toLocaleDateString()];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Leads_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-async function crmAIBriefing(){var el=document.getElementById('crm-ai-result');if(!el){el=document.createElement('div');el.id='crm-ai-result';document.getElementById('panel-crm').querySelector('.panel>div,div').appendChild(el);}if(!crmLeads.length){showToast('Add leads first');return;}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing pipeline...</div>';var won=crmLeads.filter(function(l){return l.stage==='won';});var open=crmLeads.filter(function(l){return !['won','lost'].includes(l.stage);});var val=open.reduce(function(s,l){return s+l.value;},0);var txt=await sdClaude('You are a B2B sales coach for a stone fabrication shop.','Pipeline: '+crmLeads.length+' leads. Open: '+open.length+' ($'+val.toLocaleString()+'). Won: '+won.length+'. Stages: '+JSON.stringify(Object.fromEntries(Object.entries(crmLeads.reduce(function(a,l){a[l.stage]=(a[l.stage]||0)+1;return a;},{})))'.\nGive: (1) Pipeline health score, (2) Top 2 leads to close this week, (3) One action to improve conversion.',600);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Pipeline Briefing</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
+async function crmAIBriefing(){var el=document.getElementById('crm-ai-result');if(!el){el=document.createElement('div');el.id='crm-ai-result';document.getElementById('panel-crm').querySelector('.panel>div,div').appendChild(el);}if(!crmLeads.length){showToast('Add leads first');return;}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing pipeline...</div>';var won=crmLeads.filter(function(l){return l.stage==='won';});var open=crmLeads.filter(function(l){return !['won','lost'].includes(l.stage);});var val=open.reduce(function(s,l){return s+l.value;},0);var txt=await sdClaude('You are a B2B sales coach for a stone fabrication shop.','Pipeline: '+crmLeads.length+' leads. Open: '+open.length+' ($'+val.toLocaleString()+'). Won: '+won.length+'. Stages: '+JSON.stringify(Object.fromEntries(Object.entries(crmLeads.reduce(function(a,l){a[l.stage]=(a[l.stage]||0)+1;return a;},{}))));'. Give: (1) Pipeline health score, (2) Top 2 leads to close this week, (3) One action to improve conversion.',600);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Pipeline Briefing</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
 
 async function tsAIAnalysis(){var el=document.getElementById('ts-ai-result');if(!el){el=document.createElement('div');el.id='ts-ai-result';var p=document.getElementById('panel-timesheet');if(p)p.querySelector('div').appendChild(el);}if(!tsEntries.length){showToast('Log time entries first');return;}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing labor...</div>';var byEmp={};tsEntries.forEach(function(e){byEmp[e.employee]=(byEmp[e.employee]||0)+((e.duration||0)/3600000);});var byTask={};tsEntries.forEach(function(e){byTask[e.task]=(byTask[e.task]||0)+((e.duration||0)/3600000);});var txt=await sdClaude('You are a stone shop operations analyst.','Total entries: '+tsEntries.length+'. Hours by employee: '+JSON.stringify(Object.fromEntries(Object.entries(byEmp).map(function(e){return[e[0],e[1].toFixed(1)];})))+'. Hours by task: '+JSON.stringify(Object.fromEntries(Object.entries(byTask).map(function(e){return[e[0],e[1].toFixed(1)];})))+'. Give: (1) Who is most productive, (2) Where labor hours are going, (3) One efficiency improvement.',600);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Labor Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
 
