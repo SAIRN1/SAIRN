@@ -26864,8 +26864,7 @@ function taxExport(){
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Provide vein matching guidance for '+style+' layout using '+slabs+' slabs of '+stone+' for '+sqft+' sq ft. Description: '+desc+'. Include slab orientation, cut sequence, seam placement, and waste optimization tips.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||'';
-      out.innerHTML=txt.replace(/
-/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      out.innerHTML=txt.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
       var d=load();d.push({proj:proj,stone:stone,style:style,date:new Date().toISOString().slice(0,10)});
       save(d);updateKPIs();
     }).catch(function(){
