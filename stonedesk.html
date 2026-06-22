@@ -29728,8 +29728,7 @@ async function sdRunEmailScan() {
       var isHigh=result.toLowerCase().includes('high')||result.toLowerCase().includes('critical');
       out.style.background=isHigh?'#fef2f2':'#f0fdf4';
       out.style.border='1px solid '+(isHigh?'#fca5a5':'#86efac');
-      out.innerHTML='<strong>🤖 Security Analysis:</strong><br>'+result.replace(/
-/g,'<br>');
+      out.innerHTML='<strong>🤖 Security Analysis:</strong><br>'+result.replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdEmailAI=function(){
