@@ -18234,8 +18234,7 @@ function vendorClaudeAnalyze(product, comparisons) {
   }).then(function(r){return r.json();})
   .then(function(d){
     var txt = d.content&&d.content[0]&&d.content[0].text ? d.content[0].text : 'Analysis unavailable.';
-    if(resultEl) resultEl.innerHTML = txt.replace(/
-/g,'<br>');
+    if(resultEl) resultEl.innerHTML = txt.replace(/\n/g,'<br>');
   })
   .catch(function(){
     if(resultEl) resultEl.innerHTML = 'Claude analysis unavailable. Review pricing above and order from the lowest-cost vendor.';
