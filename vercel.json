@@ -1,5 +1,8 @@
 {
-  "buildCommand": "mkdir -p dist && cp stonedesk.html dist/index.html",
+  "buildCommand": "mkdir -p dist && cp stonedesk.html dist/index.html && cp stonedesk.html dist/stonedesk.html",
   "outputDirectory": "dist",
-  "public": true
+  "public": true,
+  "routes": [
+    { "src": "/stonedesk$", "dest": "/stonedesk.html" }
+  ]
 }
