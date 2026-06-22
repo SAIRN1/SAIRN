@@ -25702,8 +25702,7 @@ function taxExport(){
     var out=document.getElementById('jc-ai-out');
     out.style.display='block';out.textContent='Analyzing job costs...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these job costs for a stone fabrication company and identify margin improvement opportunities:
-'+JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these job costs for a stone fabrication company and identify margin improvement opportunities:\n'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 Cost Analysis:</strong><br>'+(r.content||r.completion||'').replace(/
 /g,'<br>');
