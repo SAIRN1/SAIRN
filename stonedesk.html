@@ -6469,9 +6469,9 @@ function invRender() {
         '<div style="font-size:11px;color:var(--muted);margin-top:3px">Due ' + inv.due + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<button class="q-btn" onclick="invPrint('' + inv.id + '')" title="View & Print">🖨️</button>' +
-        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid('' + inv.id + '')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
-        '<button class="q-btn" onclick="invDelete('' + inv.id + '')" title="Delete" style="color:#dc2626">🗑️</button>' +
+        '<button class="q-btn" onclick="invPrint(\'' + inv.id + '\')" title="View & Print">🖨️</button>' +
+        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid(\'' + inv.id + '\')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
+        '<button class="q-btn" onclick="invDelete(\'' + inv.id + '\')" title="Delete" style="color:#dc2626">🗑️</button>' +
       '</div>' +
     '</div>';
   }).join('');
