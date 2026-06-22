@@ -25560,8 +25560,7 @@ function taxExport(){
     var out=document.getElementById('crm-ai-out');
     out.style.display='block';out.textContent='Analyzing leads...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this sales pipeline for a stone fabrication company and recommend follow-up actions for each lead stage:
-'+JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this sales pipeline for a stone fabrication company and recommend follow-up actions for each lead stage:\n'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 CRM Strategy:</strong><br>'+(r.content||r.completion||'').replace(/
 /g,'<br>');
