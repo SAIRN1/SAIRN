@@ -28692,8 +28692,7 @@ function taxExport(){
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Create a waste reduction plan for a stone fabrication shop based on this waste log. Include nesting optimization, remnant reuse strategies, and sustainability initiatives:\n'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Waste Reduction Plan:</strong><br>'+(r.content||r.completion||'').replace(/
-/g,'<br>');
+      out.innerHTML='<strong>🤖 Waste Reduction Plan:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdWastePrint=function(){
