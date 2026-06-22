@@ -28994,8 +28994,7 @@ function taxExport(){
     var out=document.getElementById('ap-ai-out');
     out.style.display='block';out.textContent='Analyzing cash flow...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this AP data and recommend cash flow management and payment prioritization:
-'+JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this AP data and recommend cash flow management and payment prioritization:\n'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 Cash Flow Analysis:</strong><br>'+(r.content||r.completion||'').replace(/
 /g,'<br>');
