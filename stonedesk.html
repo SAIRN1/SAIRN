@@ -28571,8 +28571,7 @@ function taxExport(){
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Summarize these company bulletins and flag action items:\n'+d.map(function(x){return x.cat+': '+x.title+' — '+x.body;}).join('\n')}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 AI Summary:</strong><br>'+(r.content||r.completion||'Done').replace(/
-/g,'<br>');
+      out.innerHTML='<strong>🤖 AI Summary:</strong><br>'+(r.content||r.completion||'Done').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable in demo.';});
   };
   window.sdBulletinPrint=function(){
