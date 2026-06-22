@@ -26534,8 +26534,7 @@ function taxExport(){
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Generate a detailed stone fabrication quote for: '+type+'. Tier: '+tier+'. Description: '+desc+'. Include line items for material, fabrication, installation, edge work, cutouts. Give total estimate range.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||'Quote generated.';
-      out.innerHTML=txt.replace(/
-/g,'<br>');
+      out.innerHTML=txt.replace(/\n/g,'<br>');
       var amt=parseInt((txt.match(/\$[\d,]+/)||['$0'])[0].replace(/[$,]/g,''))||2500;
       var d=load();
       d.push({id:Date.now(),customer:cust,type:type,tier:tier,amount:amt,date:new Date().toISOString().slice(0,10),accepted:false});
