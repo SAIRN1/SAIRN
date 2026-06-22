@@ -29122,8 +29122,7 @@ function taxExport(){
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Give a quick tax overview for a stone fabrication company with $'+ytd.toLocaleString()+' YTD sales tax collected. Cover: estimated annual liability, quarterly payment schedule, 1099 obligations, and top 3 deductions to maximize.'}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Tax Summary:</strong><br>'+(r.content||r.completion||'').replace(/
-/g,'<br>');
+      out.innerHTML='<strong>🤖 Tax Summary:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdTaxAdd1099=function(){alert('1099 contractor tracking — contact your accountant to add contractor records.');};
