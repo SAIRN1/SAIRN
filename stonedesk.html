@@ -16127,7 +16127,7 @@ function custOpenDetail(id) {
     '</div>'+
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Job Status</div>'+
-      '<select onchange="custUpdateStatus(\" +id+'',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
+      '<select onchange="custUpdateStatus(\'' + id + '\',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
       ['quoted','approved','templated','fabricating','scheduled','complete'].map(function(s){return '<option value="'+s+'"'+(c.status===s?' selected':'')+'>'+statusLabels[s]+'</option>';}).join('')+
       '</select>'+
     '</div>'+
