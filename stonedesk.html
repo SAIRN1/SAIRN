@@ -3195,8 +3195,8 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     var out=document.getElementById('hist-ai-out');
     out.style.display='block';out.textContent='Analyzing quote history...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this quote history and give win rate trends, top opportunities, and recommendations:' +
-JSON.stringify(d.slice(0,20))}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this quote history and give win rate trends, top opportunities, and recommendations:
+'+JSON.stringify(d.slice(0,20))}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 Quote Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
@@ -3791,7 +3791,8 @@ JSON.stringify(d.slice(0,20))}]})
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Qualify this stone fabrication lead: '+type+', material preference: '+mat+', budget: '+budget+'. Rate the lead quality, suggest next steps, and recommend the right product tier.'}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Lead Qualification:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Lead Qualification:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdIntakePrint=function(){
@@ -4272,10 +4273,11 @@ JSON.stringify(d.slice(0,20))}]})
     var out=document.getElementById('integ-ai-out');
     out.style.display='block';out.textContent='Analyzing integrations...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these software integrations for a stone fabrication company and recommend additional apps that would improve operations:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these software integrations for a stone fabrication company and recommend additional apps that would improve operations:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Integration Recommendations:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Integration Recommendations:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdIntegPrint=function(){
@@ -5049,10 +5051,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('rm-ai-out');
     out.style.display='block';out.textContent='Analyzing remakes...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these remake records for a stone fabrication company. Identify root causes, recommend preventive measures, and estimate annual cost savings from prevention:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these remake records for a stone fabrication company. Identify root causes, recommend preventive measures, and estimate annual cost savings from prevention:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Root Cause Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Root Cause Analysis:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdRMPrint=function(){
@@ -5309,11 +5312,13 @@ JSON.stringify(d)}]})
 <script>
 (function(){
   var TPLS={
-    quote:'Hi [Name],\n\nFollowing up on the quote we sent for your [project]. Do you have any questions or would you like to schedule a showroom visit?\n\nBest,\nPinnacle Stone & Design',
-    install:'Hi [Name],\n\nYour installation is scheduled for [Date] between [Time]. Our crew will arrive with all materials needed.\n\nPinnacle Stone & Design — (555) 847-3200',
-    complete:'Hi [Name],\n\nYour project is complete! Thank you for trusting Pinnacle Stone & Design. Enjoy your new stone surfaces!\n\nIf you have any questions, call us at (555) 847-3200.',
-    balance:'Hi [Name],\n\nA balance of $[Amount] is due for your project. Please call (555) 847-3200 or visit pinnaclesd.com to pay.\n\nThank you!',
-    review:'Hi [Name],\n\nWe hope you\'re loving your new countertops! Would you mind leaving us a Google review? It helps other homeowners find us.\n\nThank you! — Pinnacle Stone & Design'
+    quote:`'Hi [Name],\n\nFollowing up on the quote we sent for your [project]. Do you have any questions or would you like to schedule a showroom visit?\n\nBest,\nPinnacle Stone & Design`,
+    install:`'Hi [Name],\n\nYour installation is scheduled for [Date] between [Time]. Our crew will arrive with all materials needed.\n\nPinnacle Stone & Design — (555) 847-3200`,
+    complete:`'Hi [Name],\n\nYour project is complete! Thank you for trusting Pinnacle Stone & Design. Enjoy your new stone surfaces!\n\nIf you have any questions, call us at (555) 847-3200.`,
+    balance:`'Hi [Name],\n\nA balance of $[Amount] is due for your project. Please call (555) 847-3200 or visit pinnaclesd.com to pay.\n\nThank you!`,
+    review:`'Hi [Name],\n\nWe hope you`re loving your new countertops! Would you mind leaving us a Google review? It helps other homeowners find us.
+
+Thank you! — Pinnacle Stone & Design'
   };
   var SEED=[
     {type:'Email to Customer',to:'Marcus Webb',subj:'Thank you for your business!',body:'Your Calacatta Gold installation is complete. Please review our care guide.',date:'2024-06-14 10:30',sent:true},
@@ -10383,7 +10388,7 @@ function printDrawCutSheet() {
   if(notes) win.document.write('<div class="sec-t" style="margin-bottom:6px">Notes</div><div class="notes-box">'+notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>');
   win.document.write('<div class="sig-row"><div class="sig">Estimator &amp; Date</div><div class="sig">Customer Approval &amp; Date</div><div class="sig">Fabricator Sign-Off</div><div class="sig">Installer Sign-Off</div></div>');
   win.document.write('<div class="ftr"><div>'+shopName+' — Fabrication Cut Sheet — Internal Use Only</div><div>Generated by StoneDesk AI \xb7 sairn.vercel.app/stonedesk</div></div>');
-  win.document.write('<script>window.onload=function(){window.print();}</script>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script>');
 }
 </script>
 
@@ -11906,7 +11911,7 @@ function printSOP(p, shopName) {
   p.duties.forEach(d=>win.document.write('<li>'+d+'</li>'));
   win.document.write('</ul><div style="margin-top:32px"><span class="sig">Employee Name (print)</span><span class="sig">Signature &amp; Date</span><span class="sig">Supervisor Sign-Off</span></div>');
   win.document.write('<div class="ftr"><span>'+shopName+' — Standard Operating Procedures — Confidential</span><span>StoneDesk AI by SAIRN Technologies™</span></div>');
-  win.document.write('<script>window.onload=function(){window.print();}</script>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script>');
 }
 </script>
 
@@ -12031,7 +12036,7 @@ function printAllSOPs(positions, shopName) {
     p.duties.forEach(d=>win.document.write('<li>'+d+'</li>'));
     win.document.write('</ul><div style="margin-top:20px"><span class="sig">Employee Name</span><span class="sig">Signature &amp; Date</span></div>');
   });
-  win.document.write('<script>window.onload=function(){window.print();}</script>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script>');
 }
 </script>
 
@@ -18192,7 +18197,7 @@ function vendorShowCompareModal(product, comparisons) {
         '</div>' +
         // Quick add to cart from best vendor
         '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">' +
-          '<button onclick="document.getElementById(\'vendor-compare-modal\').style.display=\'none\'" class="q-btn">Close</button>' +
+          '<button onclick="document.getElementById('vendor-compare-modal').style.display='none'" class="q-btn">Close</button>' +
           '<button onclick="cartAdd(' + comparisons[0].vendorKey + ',' + comparisons[0].product.id + ',1);document.getElementById(' + '\'vendor-compare-modal\'' + ').style.display=' + '\'none\'' + ';" class="q-btn primary">&#10133; Add Best Price to Cart</button>' +
         '</div>' +
       '</div>' +
@@ -18214,18 +18219,27 @@ function vendorClaudeAnalyze(product, comparisons) {
   var priceList = comparisons.map(function(c,i){
     var neg = c.negotiatedPrice!==undefined?' (negotiated from $'+c.catalogPrice.toFixed(2)+')':'';
     return (i+1)+'. '+c.vendorName+': $'+c.effectivePrice.toFixed(2)+neg+' — '+c.product.sku+(c.matchType==='similar'?' (similar item)':'');
-  }).join('\n');
+  }).join('
+');
 
   var negotiatedCount = comparisons.filter(function(c){return c.negotiatedPrice!==undefined;}).length;
 
-  var prompt = `You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.
+  var prompt =
+    'You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.
 
-PRODUCT: ${product.name} (SKU: ${product.sku})
-INVENTORY: ${invContext}
-VENDOR PRICES (sorted lowest to highest effective price):
-${priceList}
+' +
+    'PRODUCT: ' + product.name + ' (SKU: ' + product.sku + ')
+' +
+    'INVENTORY: ' + invContext + '
+' +
+    'VENDOR PRICES (sorted lowest to highest effective price):
+' + priceList + '
 
-${negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already factored in above.\n\n' : ''}Tell the shop owner: (1) which vendor to order from and exactly why, (2) if they should buy in bulk now or just reorder qty, (3) any red flags or opportunities they should know about. Be specific with dollar amounts. Do not hedge.`;
+' +
+    (negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already factored in above.
+
+' : '') +
+    'Tell the shop owner: (1) which vendor to order from and exactly why, (2) if they should buy in bulk now or just reorder qty, (3) any red flags or opportunities they should know about. Be specific with dollar amounts. Do not hedge.';
 
   fetch('https://sairn.vercel.app/api/claude', {
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -18236,7 +18250,8 @@ ${negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already
   }).then(function(r){return r.json();})
   .then(function(d){
     var txt = d.content&&d.content[0]&&d.content[0].text ? d.content[0].text : 'Analysis unavailable.';
-    if(resultEl) resultEl.innerHTML = txt.replace(/\n/g,'<br>');
+    if(resultEl) resultEl.innerHTML = txt.replace(/
+/g,'<br>');
   })
   .catch(function(){
     if(resultEl) resultEl.innerHTML = 'Claude analysis unavailable. Review pricing above and order from the lowest-cost vendor.';
@@ -18437,9 +18452,10 @@ function pmAIMapCSV() {
     body: JSON.stringify({
       app_id:'stonedesk', is_demo:true,
       messages:[{role:'user', content:
-        `Extract SKU/price pairs from this vendor quote. Our known SKUs: ${allSKUs.slice(0,50).join(', ')}...
+        'Extract SKU/price pairs from this vendor quote. Our known SKUs: '+allSKUs.slice(0,50).join(', ')+'...
 
-Vendor quote:
+' +
+        'Vendor quote:
 '+raw+'
 
 ' +
@@ -18804,7 +18820,9 @@ function safetySubmitChecklist() {
   if(failed.length){
     if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:
 
-'+failed.slice(0,3).join('\n')+(failed.length>3?'\n...and '+(failed.length-3)+' more':'')+'
+'+failed.slice(0,3).join('
+')+(failed.length>3?'
+...and '+(failed.length-3)+' more':'')+'
 
 Submit anyway? This will be logged.')){return;}
   }
@@ -23156,7 +23174,9 @@ function esigPrintApproval(){
   win.document.write('<p style="font-size:13px;line-height:1.7">By signing this agreement, the client authorizes the fabrication shop to begin sourcing materials and scheduling installation upon receipt of the deposit. The deposit is non-refundable once material has been cut. The balance is due on or before the day of installation.</p>');
   win.document.write('<div style="margin-top:40px"><span class="sig-line">Client Signature &amp; Date</span><span class="sig-line">Shop Representative</span></div>');
   win.document.write('<div class="ftr">'+shopName+' · Project Approval Form · Generated by StoneDesk™</div>');
-  win.document.write('<script>window.onload=function(){window.print();}<\/script>\n</body></html>');
+  win.document.write('<script>window.onload=function(){window.print();}<\/script>
+
+</body></html>');
   win.document.close();
 }
 
@@ -23419,7 +23439,7 @@ function miSignals(data){
     else if(pc<-5)sigs.push({cls:'red',icon:'&#127968;',t:'Permits down '+Math.abs(pc).toFixed(1)+'% — new construction pipeline thinning. Shift to remodel and existing homeowner marketing.'});
   }
   sigs.push({cls:'yellow',icon:'&#127757;',t:'Tariff watch: India quartz (50%) and Brazil granite (50%) cost pressure ongoing. Lead with domestic materials in price-sensitive bids.'});
-  sigs.push({cls:'blue',icon:'&#128204;',t:'Remodel market historically outperforms new construction when mortgage rates are elevated. Existing homeowners can't move — they renovate.'});
+  sigs.push({cls:'blue',icon:'&#128204;',t:'Remodel market historically outperforms new construction when mortgage rates are elevated. Existing homeowners can\'t move — they renovate.'});
   return sigs;
 }
 
@@ -23576,9 +23596,7 @@ function miSaveBriefing(){
 function miPrintBriefing(){
   var c=document.getElementById('mi-briefing-content');if(!c)return;
   var w=window.open('','_blank');
-  w.document.write('<html><head><title>SAIRN Market Briefing</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}p{margin-bottom:14px}</style></head><body><h1>&#128225; SAIRN Market Intelligence Briefing</h1><p style="color:#64748b">' + new Date().toLocaleString()+'</p>'+c.innerHTML+'
-
-</body></html>');
+  w.document.write('<html><head><title>SAIRN Market Briefing</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}p{margin-bottom:14px}</style></head><body><h1>&#128225; SAIRN Market Intelligence Briefing</h1><p style="color:#64748b">' + new Date().toLocaleString()+'</p>'+c.innerHTML+'</body></html>');
   w.document.close();w.print();
 }
 
@@ -23675,9 +23693,7 @@ function shPrint(){
   var q=SH_STATE.history.length?SH_STATE.history[0].q:'';
   var a=document.getElementById('sh-answer-text');if(!a)return;
   var w=window.open('','_blank');
-  w.document.write('<html><head><title>Ask Stonehead</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}blockquote{background:#F0FEF6;border-left:4px solid #16C762;padding:12px 16px;margin:0 0 16px;border-radius:0 8px 8px 0}p{margin-bottom:14px}</style></head><body><h1>&#129694; Ask Stonehead</h1><blockquote><strong>Question:</strong> '+q+'</blockquote>'+a.innerHTML+'<hr style="margin:32px 0;border:none;border-top:1px solid #e2e8f0"><p style="font-size:11px;color:#94a3b8">StoneDesk Stone Hub &mdash; Powered by SAIRN Technologies</p>
-
-</body></html>');
+  w.document.write('<html><head><title>Ask Stonehead</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}blockquote{background:#F0FEF6;border-left:4px solid #16C762;padding:12px 16px;margin:0 0 16px;border-radius:0 8px 8px 0}p{margin-bottom:14px}</style></head><body><h1>&#129694; Ask Stonehead</h1><blockquote><strong>Question:</strong> '+q+'</blockquote>'+a.innerHTML+'<hr style="margin:32px 0;border:none;border-top:1px solid #e2e8f0"><p style="font-size:11px;color:#94a3b8">StoneDesk Stone Hub &mdash; Powered by SAIRN Technologies</p></body></html>');
   w.document.close();w.print();
 }
 
@@ -25554,10 +25570,11 @@ function taxExport(){
     var out=document.getElementById('crm-ai-out');
     out.style.display='block';out.textContent='Analyzing leads...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this sales pipeline for a stone fabrication company and recommend follow-up actions for each lead stage:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this sales pipeline for a stone fabrication company and recommend follow-up actions for each lead stage:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 CRM Strategy:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 CRM Strategy:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdCRMPrint=function(){
@@ -25697,10 +25714,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('jc-ai-out');
     out.style.display='block';out.textContent='Analyzing job costs...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these job costs for a stone fabrication company and identify margin improvement opportunities:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these job costs for a stone fabrication company and identify margin improvement opportunities:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Cost Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Cost Analysis:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdJCPrint=function(){
@@ -25822,10 +25840,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('ts-ai-out');
     out.style.display='block';out.textContent='Analyzing labor...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this timesheet data and identify overtime risks, productivity patterns, and labor cost optimization opportunities:' +
-JSON.stringify(d.slice(-30))}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this timesheet data and identify overtime risks, productivity patterns, and labor cost optimization opportunities:
+'+JSON.stringify(d.slice(-30))}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Labor Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Labor Analysis:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdTSPrint=function(){
@@ -26068,7 +26087,8 @@ JSON.stringify(d.slice(-30))}]})
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these purchase orders and flag any risks or opportunities: '+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 PO Review:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 PO Review:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdPOPrint=function(){
@@ -26180,7 +26200,8 @@ JSON.stringify(d.slice(-30))}]})
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these material receiving issues and recommend actions: '+JSON.stringify(issues)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Inspection Notes:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Inspection Notes:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdRecvPrint=function(){
@@ -26297,10 +26318,11 @@ JSON.stringify(d.slice(-30))}]})
     var out=document.getElementById('mfst-ai-out');
     out.style.display='block';out.textContent='Optimizing route...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Optimize this installation manifest for a stone fabrication crew and suggest the most efficient routing order:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Optimize this installation manifest for a stone fabrication crew and suggest the most efficient routing order:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Optimized Route:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Optimized Route:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdManifestPrint=function(){
@@ -26532,7 +26554,8 @@ JSON.stringify(d)}]})
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Generate a detailed stone fabrication quote for: '+type+'. Tier: '+tier+'. Description: '+desc+'. Include line items for material, fabrication, installation, edge work, cutouts. Give total estimate range.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||'Quote generated.';
-      out.innerHTML=txt.replace(/\n/g,'<br>');
+      out.innerHTML=txt.replace(/
+/g,'<br>');
       var amt=parseInt((txt.match(/\$[\d,]+/)||['$0'])[0].replace(/[$,]/g,''))||2500;
       var d=load();
       d.push({id:Date.now(),customer:cust,type:type,tier:tier,amount:amt,date:new Date().toISOString().slice(0,10),accepted:false});
@@ -26658,7 +26681,8 @@ JSON.stringify(d)}]})
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Recommend sintered stone / porcelain products for a stone fabrication company serving luxury residential clients. Compare Neolith, Dekton, Lapitec. Include sales talking points vs natural stone.'}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Product Recommendations:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Product Recommendations:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdSintPrint=function(){
@@ -26747,7 +26771,8 @@ JSON.stringify(d)}]})
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Create a comprehensive stone care guide for a customer who just had '+stone+' installed as '+use+'. Include: daily cleaning, stain removal, sealing schedule, what to avoid, long-term maintenance. Format for easy reading.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||'Guide generated.';
-      out.innerHTML=txt.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      out.innerHTML=txt.replace(/
+/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
       try{
         var d=JSON.parse(localStorage.getItem('sd_care_guides')||'[]');
         d.push({stone:stone,customer:cust,use:use,date:new Date().toISOString().slice(0,10),guide:txt});
@@ -26862,7 +26887,8 @@ JSON.stringify(d)}]})
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Provide vein matching guidance for '+style+' layout using '+slabs+' slabs of '+stone+' for '+sqft+' sq ft. Description: '+desc+'. Include slab orientation, cut sequence, seam placement, and waste optimization tips.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||'';
-      out.innerHTML=txt.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      out.innerHTML=txt.replace(/
+/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
       var d=load();d.push({proj:proj,stone:stone,style:style,date:new Date().toISOString().slice(0,10)});
       save(d);updateKPIs();
     }).catch(function(){
@@ -26970,7 +26996,8 @@ JSON.stringify(d)}]})
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Provide seam placement advice for: '+mat+' in a '+loc+'. Slab size: '+w+'"x'+l+'". Notes: '+notes+'. Recommend optimal seam location, direction, and technique. Include adhesive color matching tips.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||'';
-      out.innerHTML=txt.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      out.innerHTML=txt.replace(/
+/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
       var d=load();
       d.push({job:job,mat:mat,loc:loc,date:new Date().toISOString().slice(0,10),remake:false});
       save(d);updateKPIs();
@@ -27209,10 +27236,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('con-ai-out');
     out.style.display='block';out.textContent='Analyzing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this contractor client list and recommend growth strategies and which relationships to prioritize:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this contractor client list and recommend growth strategies and which relationships to prioritize:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Contractor Strategy:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Contractor Strategy:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdConPrint=function(){
@@ -27348,10 +27376,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('ref-ai-out');
     out.style.display='block';out.textContent='Analyzing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this referral program data and recommend strategies to increase referrals and conversion rate:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this referral program data and recommend strategies to increase referrals and conversion rate:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Referral Strategy:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Referral Strategy:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdRefPrint=function(){
@@ -27471,10 +27500,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('pi-ai-out');
     out.style.display='block';out.textContent='Analyzing pricing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this stone fabricator pricing data and recommend strategy:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this stone fabricator pricing data and recommend strategy:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Pricing Strategy:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Pricing Strategy:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdPIPrint=function(){
@@ -27585,10 +27615,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('eq-ai-out');
     out.style.display='block';out.textContent='Analyzing maintenance...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this equipment list for a stone fabrication shop and create a prioritized maintenance schedule and flag downtime risks:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this equipment list for a stone fabrication shop and create a prioritized maintenance schedule and flag downtime risks:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Maintenance Plan:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Maintenance Plan:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdEqPrint=function(){
@@ -27708,10 +27739,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('emp-ai-out');
     out.style.display='block';out.textContent='Analyzing team...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this stone fabrication team structure and recommend staffing improvements or training priorities:' +
-JSON.stringify(d.map(function(x){return {name:x.name,role:x.role,dept:x.dept,certs:x.certs};}))}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this stone fabrication team structure and recommend staffing improvements or training priorities:
+'+JSON.stringify(d.map(function(x){return {name:x.name,role:x.role,dept:x.dept,certs:x.certs};}))}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 HR Insight:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 HR Insight:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdEmpPrint=function(){
@@ -27829,10 +27861,11 @@ JSON.stringify(d.map(function(x){return {name:x.name,role:x.role,dept:x.dept,cer
     var out=document.getElementById('yard-ai-out');
     out.style.display='block';out.textContent='Analyzing yard...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this stone yard inventory and recommend optimization strategies for layout, turnover, and pricing:' +
-JSON.stringify(d.slice(0,20))}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this stone yard inventory and recommend optimization strategies for layout, turnover, and pricing:
+'+JSON.stringify(d.slice(0,20))}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Yard Optimization:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Yard Optimization:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdYardPrint=function(){
@@ -27941,10 +27974,11 @@ JSON.stringify(d.slice(0,20))}]})
     var out=document.getElementById('sub-ai-out');
     out.style.display='block';out.textContent='Reviewing subs...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these subcontractors for a stone fabrication company and flag compliance issues, recommend relationship improvements:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these subcontractors for a stone fabrication company and flag compliance issues, recommend relationship improvements:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Sub Review:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Sub Review:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdSubPrint=function(){
@@ -28070,10 +28104,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('bid-ai-out');
     out.style.display='block';out.textContent='Analyzing pipeline...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this sales pipeline for a stone fabrication company and recommend winning strategies for each bid:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this sales pipeline for a stone fabrication company and recommend winning strategies for each bid:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Bid Strategy:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Bid Strategy:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdBidPrint=function(){
@@ -28204,10 +28239,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('it-ai-out');
     out.style.display='block';out.textContent='Auditing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these IT tickets and licenses for a stone fabrication company. Identify security risks, optimization opportunities, and prioritize open tickets:' +
-JSON.stringify({tickets:t,licenses:LICENSES})}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these IT tickets and licenses for a stone fabrication company. Identify security risks, optimization opportunities, and prioritize open tickets:
+'+JSON.stringify({tickets:t,licenses:LICENSES})}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 IT Audit:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 IT Audit:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdITPrint=function(){
@@ -28318,10 +28354,11 @@ JSON.stringify({tickets:t,licenses:LICENSES})}]})
     var out=document.getElementById('dmg-ai-out');
     out.style.display='block';out.textContent='Analyzing claims...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these damage claims for a stone fabrication company and recommend prevention measures and claim resolution strategies:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these damage claims for a stone fabrication company and recommend prevention measures and claim resolution strategies:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Damage Assessment:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Damage Assessment:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdDmgPrint=function(){
@@ -28450,10 +28487,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('train-ai-out');
     out.style.display='block';out.textContent='Building plan...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Create a 90-day training plan for a stone fabrication team based on these records and required training:' +
-JSON.stringify({records:d,required:REQUIRED})}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Create a 90-day training plan for a stone fabrication team based on these records and required training:
+'+JSON.stringify({records:d,required:REQUIRED})}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Training Plan:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Training Plan:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdTrainPrint=function(){
@@ -28578,10 +28616,12 @@ JSON.stringify({records:d,required:REQUIRED})}]})
     var out=document.getElementById('bull-ai-out');
     out.style.display='block';out.textContent='Analyzing bulletins...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Summarize these company bulletins and flag action items:' +
-d.map(function(x){return x.cat+': '+x.title+' — '+x.body;}).join('\n')}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Summarize these company bulletins and flag action items:
+'+d.map(function(x){return x.cat+': '+x.title+' — '+x.body;}).join('
+')}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 AI Summary:</strong><br>'+(r.content||r.completion||'Done').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 AI Summary:</strong><br>'+(r.content||r.completion||'Done').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable in demo.';});
   };
   window.sdBulletinPrint=function(){
@@ -28700,10 +28740,11 @@ d.map(function(x){return x.cat+': '+x.title+' — '+x.body;}).join('\n')}]})
     var out=document.getElementById('waste-ai-out');
     out.style.display='block';out.textContent='Analyzing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Create a waste reduction plan for a stone fabrication shop based on this waste log. Include nesting optimization, remnant reuse strategies, and sustainability initiatives:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Create a waste reduction plan for a stone fabrication shop based on this waste log. Include nesting optimization, remnant reuse strategies, and sustainability initiatives:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Waste Reduction Plan:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Waste Reduction Plan:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdWastePrint=function(){
@@ -28874,10 +28915,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('nps-ai-out');
     out.style.display='block';out.textContent='Analyzing NPS data...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this NPS data for a stone fabricator and recommend specific actions to improve score:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this NPS data for a stone fabricator and recommend specific actions to improve score:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 NPS Insights:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 NPS Insights:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdNPSPrint=function(){
@@ -29006,10 +29048,11 @@ JSON.stringify(d)}]})
     var out=document.getElementById('ap-ai-out');
     out.style.display='block';out.textContent='Analyzing cash flow...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this AP data and recommend cash flow management and payment prioritization:' +
-JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this AP data and recommend cash flow management and payment prioritization:
+'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Cash Flow Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Cash Flow Analysis:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdAPPrint=function(){
@@ -29135,7 +29178,8 @@ JSON.stringify(d)}]})
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Give a quick tax overview for a stone fabrication company with $'+ytd.toLocaleString()+' YTD sales tax collected. Cover: estimated annual liability, quarterly payment schedule, 1099 obligations, and top 3 deductions to maximize.'}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Tax Summary:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Tax Summary:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdTaxAdd1099=function(){alert('1099 contractor tracking — contact your accountant to add contractor records.');};
@@ -29743,7 +29787,8 @@ async function sdRunEmailScan() {
       var isHigh=result.toLowerCase().includes('high')||result.toLowerCase().includes('critical');
       out.style.background=isHigh?'#fef2f2':'#f0fdf4';
       out.style.border='1px solid '+(isHigh?'#fca5a5':'#86efac');
-      out.innerHTML='<strong>🤖 Security Analysis:</strong><br>'+result.replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Security Analysis:</strong><br>'+result.replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdEmailAI=function(){
@@ -29752,7 +29797,8 @@ async function sdRunEmailScan() {
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Provide a 5-point email security improvement plan for a small stone fabrication business with 8 employees. Focus on practical steps to prevent BEC fraud and phishing.'}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Security Plan:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      out.innerHTML='<strong>🤖 Security Plan:</strong><br>'+(r.content||r.completion||'').replace(/
+/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdEmailPrint=function(){
@@ -29771,8 +29817,5 @@ async function sdRunEmailScan() {
     </div>
   </div>
 </div>
-
-
-
 
 
