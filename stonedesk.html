@@ -6467,9 +6467,9 @@ function invRender() {
         '<div style="font-size:11px;color:var(--muted);margin-top:3px">Due ' + inv.due + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<button class="q-btn" onclick="invPrint('' + inv.id + '')" title="View & Print">🖨️</button>' +
-        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid('' + inv.id + '')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
-        '<button class="q-btn" onclick="invDelete('' + inv.id + '')" title="Delete" style="color:#dc2626">🗑️</button>' +
+        '<button class="q-btn" onclick="invPrint('+inv.id+')" title="View & Print">🖨️</button>' +
+        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid('+inv.id+')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
+        '<button class="q-btn" onclick="invDelete('+inv.id+')" title="Delete" style="color:#dc2626">🗑️</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -16125,7 +16125,7 @@ function custOpenDetail(id) {
     '</div>'+
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Job Status</div>'+
-      '<select onchange="custUpdateStatus(\" +id+'',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
+      '<select onchange="custUpdateStatus('+id+',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
       ['quoted','approved','templated','fabricating','scheduled','complete'].map(function(s){return '<option value="'+s+'"'+(c.status===s?' selected':'')+'>'+statusLabels[s]+'</option>';}).join('')+
       '</select>'+
     '</div>'+
@@ -18142,7 +18142,7 @@ function vendorShowCompareModal(product, comparisons) {
           '<div style="font-size:16px;font-weight:900;color:#fff">' + escHtml(product.name) + '</div>' +
           '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px">SKU: ' + product.sku + ' &middot; ' + comparisons.length + ' vendor' + (comparisons.length!==1?'s':'') + ' compared</div>' +
         '</div>' +
-        '<button onclick="document.getElementById('vendor-compare-modal').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer">&#10005;</button>' +
+        '<button onclick="document.getElementById("vendor-compare-modal").style.display="none"" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer">&#10005;</button>' +
       '</div>' +
       // Savings banner
       (maxSaving > 0 ? '<div style="background:#FEF3C7;border-bottom:1px solid #FCD34D;padding:10px 24px;font-size:13px;font-weight:700;color:#92400E">&#128722; Maximum savings opportunity: <span style="color:#15803D;font-size:15px">$'+maxSaving.toFixed(2)+'</span> per unit by choosing '+lowest.vendorName+'</div>' : '') +
@@ -18189,7 +18189,7 @@ function vendorShowCompareModal(product, comparisons) {
         '</div>' +
         // Quick add to cart from best vendor
         '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">' +
-          '<button onclick="document.getElementById('vendor-compare-modal').style.display='none'" class="q-btn">Close</button>' +
+          '<button onclick="document.getElementById(\'vendor-compare-modal\').style.display=\'none\'" class="q-btn">Close</button>' +
           '<button onclick="cartAdd(' + comparisons[0].vendorKey + ',' + comparisons[0].product.id + ',1);document.getElementById(' + '\'vendor-compare-modal\'' + ').style.display=' + '\'none\'' + ';" class="q-btn primary">&#10133; Add Best Price to Cart</button>' +
         '</div>' +
       '</div>' +
@@ -18211,15 +18211,12 @@ function vendorClaudeAnalyze(product, comparisons) {
   var priceList = comparisons.map(function(c,i){
     var neg = c.negotiatedPrice!==undefined?' (negotiated from $'+c.catalogPrice.toFixed(2)+')':'';
     return (i+1)+'. '+c.vendorName+': $'+c.effectivePrice.toFixed(2)+neg+' — '+c.product.sku+(c.matchType==='similar'?' (similar item)':'');
-  }).join('
-');
+  }).join('\n');
 
   var negotiatedCount = comparisons.filter(function(c){return c.negotiatedPrice!==undefined;}).length;
 
   var prompt =
-    'You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.
-
-' +
+    'You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.' +
     'PRODUCT: ' + product.name + ' (SKU: ' + product.sku + ')
 ' +
     'INVENTORY: ' + invContext + '
