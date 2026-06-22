@@ -3195,8 +3195,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     var out=document.getElementById('hist-ai-out');
     out.style.display='block';out.textContent='Analyzing quote history...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this quote history and give win rate trends, top opportunities, and recommendations:
-'+JSON.stringify(d.slice(0,20))}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this quote history and give win rate trends, top opportunities, and recommendations:\n'+JSON.stringify(d.slice(0,20))}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 Quote Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
