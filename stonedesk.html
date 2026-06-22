@@ -18218,20 +18218,11 @@ function vendorClaudeAnalyze(product, comparisons) {
   var negotiatedCount = comparisons.filter(function(c){return c.negotiatedPrice!==undefined;}).length;
 
   var prompt =
-    'You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.
-
-' +
-    'PRODUCT: ' + product.name + ' (SKU: ' + product.sku + ')
-' +
-    'INVENTORY: ' + invContext + '
-' +
-    'VENDOR PRICES (sorted lowest to highest effective price):
-' + priceList + '
-
-' +
-    (negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already factored in above.
-
-' : '') +
+    'You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.\n\n' +
+    'PRODUCT: ' + product.name + ' (SKU: ' + product.sku + ')\n' +
+    'INVENTORY: ' + invContext + '\n' +
+    'VENDOR PRICES (sorted lowest to highest effective price):\n' + priceList + '\n\n' +
+    (negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already factored in above.\n\n' : '') +
     'Tell the shop owner: (1) which vendor to order from and exactly why, (2) if they should buy in bulk now or just reorder qty, (3) any red flags or opportunities they should know about. Be specific with dollar amounts. Do not hedge.';
 
   fetch('https://sairn.vercel.app/api/claude', {
