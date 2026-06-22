@@ -25826,8 +25826,7 @@ function taxExport(){
     var out=document.getElementById('ts-ai-out');
     out.style.display='block';out.textContent='Analyzing labor...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this timesheet data and identify overtime risks, productivity patterns, and labor cost optimization opportunities:
-'+JSON.stringify(d.slice(-30))}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this timesheet data and identify overtime risks, productivity patterns, and labor cost optimization opportunities:\n'+JSON.stringify(d.slice(-30))}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 Labor Analysis:</strong><br>'+(r.content||r.completion||'').replace(/
 /g,'<br>');
