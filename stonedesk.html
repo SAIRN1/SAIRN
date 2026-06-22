@@ -28311,8 +28311,7 @@ function taxExport(){
     var out=document.getElementById('dmg-ai-out');
     out.style.display='block';out.textContent='Analyzing claims...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these damage claims for a stone fabrication company and recommend prevention measures and claim resolution strategies:
-'+JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these damage claims for a stone fabrication company and recommend prevention measures and claim resolution strategies:\n'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 Damage Assessment:</strong><br>'+(r.content||r.completion||'').replace(/
 /g,'<br>');
