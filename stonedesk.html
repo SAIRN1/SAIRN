@@ -18772,7 +18772,7 @@ function safetyRenderChecklist() {
   // Check if today already submitted
   var today=new Date().toISOString().split('T')[0];
   var todaySub=sdSafetyData.checklists.find(function(c){return c.date===today;});
-  el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today's checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +
+  el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today\'s checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +
     DAILY_CHECKLIST.map(function(item){
       var checked=todaySub&&todaySub.completed.includes(item.id);
       return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">' +
