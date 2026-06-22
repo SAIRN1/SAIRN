@@ -18435,13 +18435,8 @@ function pmAIMapCSV() {
     body: JSON.stringify({
       app_id:'stonedesk', is_demo:true,
       messages:[{role:'user', content:
-        'Extract SKU/price pairs from this vendor quote. Our known SKUs: '+allSKUs.slice(0,50).join(', ')+'...
-
-' +
-        'Vendor quote:
-'+raw+'
-
-' +
+        'Extract SKU/price pairs from this vendor quote. Our known SKUs: '+allSKUs.slice(0,50).join(', ')+'...\n\n' +
+        'Vendor quote:\n'+raw+'\n\n' +
         'Return ONLY a CSV in format: SKU,Price — one per line, no headers, no other text. ' +
         'Match product names to our SKUs where possible. Only include lines you are confident about.'
       }]
