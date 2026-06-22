@@ -29722,9 +29722,7 @@ async function sdRunEmailScan() {
     var out=document.getElementById('email-scan-out');
     out.style.display='block';out.style.background='#f8f9fa';out.textContent='Analyzing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this email for phishing, fraud, or social engineering. Rate risk Low/Medium/High/Critical. List red flags and recommended action:
-
-'+txt}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this email for phishing, fraud, or social engineering. Rate risk Low/Medium/High/Critical. List red flags and recommended action:\n'+txt}]})
     }).then(function(r){return r.json();}).then(function(r){
       var result=r.content||r.completion||'';
       var isHigh=result.toLowerCase().includes('high')||result.toLowerCase().includes('critical');
