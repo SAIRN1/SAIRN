@@ -26749,8 +26749,7 @@ function taxExport(){
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Create a comprehensive stone care guide for a customer who just had '+stone+' installed as '+use+'. Include: daily cleaning, stain removal, sealing schedule, what to avoid, long-term maintenance. Format for easy reading.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||'Guide generated.';
-      out.innerHTML=txt.replace(/
-/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      out.innerHTML=txt.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
       try{
         var d=JSON.parse(localStorage.getItem('sd_care_guides')||'[]');
         d.push({stone:stone,customer:cust,use:use,date:new Date().toISOString().slice(0,10),guide:txt});
