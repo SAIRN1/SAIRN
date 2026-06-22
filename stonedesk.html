@@ -18787,7 +18787,7 @@ function safetyRenderChecklist() {
 function safetySubmitChecklist() {
   var today=new Date().toISOString().split('T')[0];
   var existing=sdSafetyData.checklists.find(function(c){return c.date===today;});
-  if(existing){notify('Today's checklist already submitted','warn');return;}
+  if(existing){notify('Today\'s checklist already submitted','warn');return;}
   var completed=[];
   var failed=[];
   DAILY_CHECKLIST.forEach(function(item){
