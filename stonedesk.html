@@ -18213,8 +18213,7 @@ function vendorClaudeAnalyze(product, comparisons) {
   var priceList = comparisons.map(function(c,i){
     var neg = c.negotiatedPrice!==undefined?' (negotiated from $'+c.catalogPrice.toFixed(2)+')':'';
     return (i+1)+'. '+c.vendorName+': $'+c.effectivePrice.toFixed(2)+neg+' — '+c.product.sku+(c.matchType==='similar'?' (similar item)':'');
-  }).join('
-');
+  }).join('\n');
 
   var negotiatedCount = comparisons.filter(function(c){return c.negotiatedPrice!==undefined;}).length;
 
