@@ -18796,13 +18796,7 @@ function safetySubmitChecklist() {
     else if(item.critical) failed.push(item.label);
   });
   if(failed.length){
-    if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:
-
-'+failed.slice(0,3).join('
-')+(failed.length>3?'
-...and '+(failed.length-3)+' more':'')+'
-
-Submit anyway? This will be logged.')){return;}
+    if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:\n\n'+failed.slice(0,3).join('\n')+(failed.length>3?'\n...and '+(failed.length-3)+' more':'')+'\n\nSubmit anyway? This will be logged.')){return;}
   }
   sdSafetyData.checklists.unshift({id:'CL'+Date.now(),date:today,ts:new Date().toISOString(),completed:completed,failed:failed,score:Math.round(completed.length/DAILY_CHECKLIST.length*100)});
   if(sdSafetyData.checklists.length>365) sdSafetyData.checklists=sdSafetyData.checklists.slice(0,365);
