@@ -23586,9 +23586,7 @@ function miSaveBriefing(){
 function miPrintBriefing(){
   var c=document.getElementById('mi-briefing-content');if(!c)return;
   var w=window.open('','_blank');
-  w.document.write('<html><head><title>SAIRN Market Briefing</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}p{margin-bottom:14px}</style></head><body><h1>&#128225; SAIRN Market Intelligence Briefing</h1><p style="color:#64748b">' + new Date().toLocaleString()+'</p>'+c.innerHTML+'
-
-</body></html>');
+  w.document.write('<html><head><title>SAIRN Market Briefing</title><style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1e293b}h1{color:#0A3D1F}p{margin-bottom:14px}</style></head><body><h1>&#128225; SAIRN Market Intelligence Briefing</h1><p style="color:#64748b">' + new Date().toLocaleString()+'</p>'+c.innerHTML+'</body></html>');
   w.document.close();w.print();
 }
 
