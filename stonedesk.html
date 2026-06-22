@@ -27211,8 +27211,7 @@ function taxExport(){
     var out=document.getElementById('con-ai-out');
     out.style.display='block';out.textContent='Analyzing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this contractor client list and recommend growth strategies and which relationships to prioritize:
-'+JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this contractor client list and recommend growth strategies and which relationships to prioritize:\n'+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 Contractor Strategy:</strong><br>'+(r.content||r.completion||'').replace(/
 /g,'<br>');
