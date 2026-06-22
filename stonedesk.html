@@ -26972,8 +26972,7 @@ function taxExport(){
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Provide seam placement advice for: '+mat+' in a '+loc+'. Slab size: '+w+'"x'+l+'". Notes: '+notes+'. Recommend optimal seam location, direction, and technique. Include adhesive color matching tips.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||'';
-      out.innerHTML=txt.replace(/
-/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      out.innerHTML=txt.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
       var d=load();
       d.push({job:job,mat:mat,loc:loc,date:new Date().toISOString().slice(0,10),remake:false});
       save(d);updateKPIs();
