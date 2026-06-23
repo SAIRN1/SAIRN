@@ -30417,6 +30417,11 @@ document.addEventListener('DOMContentLoaded', function(){
   if(typeof loadWeather==='function') loadWeather();
   if(typeof loadCRM==='function') loadCRM();
   if(typeof loadTickets==='function') loadTickets();
+  // Render calls from consolidated panels
+  if(typeof sdRemnantRender==='function') sdRemnantRender();
+  if(typeof sdReviewsRender==='function') sdReviewsRender();
+  if(typeof sdEmpRender==='function') sdEmpRender();
+  if(typeof sdYardRender==='function') sdYardRender();
 });
 </script>
 
