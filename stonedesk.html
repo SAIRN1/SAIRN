@@ -26985,6 +26985,7 @@ document.addEventListener('click', function(e) {
 });
 
 function sbNav(id) {
+  console.log('StoneDesk sbNav called:', id);
   showPanel(id);
   document.querySelectorAll('.sb-btn').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.getElementById('sb-'+id);
