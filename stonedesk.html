@@ -7291,11 +7291,13 @@ function showPanel(id) {
   var target = document.getElementById('panel-' + id);
   if (target) {
     target.classList.add('active');
+    // Diagnostic: log panel switch
+    console.log('StoneDesk: switched to panel-' + id + ', element found, children: ' + target.children.length + ', visible: ' + (target.offsetHeight > 0));
   } else {
     // Panel not found - show diagnostic in AI panel
     var aiPanel = document.getElementById('panel-ai');
     if (aiPanel) aiPanel.classList.add('active');
-    console.error('StoneDesk: panel-' + id + ' not found in DOM. Total panels: ' + document.querySelectorAll('.panel').length);
+    console.error('StoneDesk: panel-' + id + ' NOT FOUND in DOM. Total panels: ' + document.querySelectorAll('.panel').length);
   }
   // BUGFIX (June 2026 audit): the old navMap below was a hardcoded {label:buttonIndex} table that
   // went stale the moment Templates/Doc Scanner/Check Register/SAIRN Suite buttons were inserted
