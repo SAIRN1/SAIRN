@@ -7305,8 +7305,8 @@ function showPanel(id) {
   // of trusting a position number makes this immune to the nav bar ever being reordered or
   // extended again.
   const btns = document.querySelectorAll('.topbar-nav .nav-btn');
-  const target = Array.from(btns).find(b => (b.getAttribute('onclick')||'').indexOf("showPanel('" + id + "')") !== -1);
-  if (target) target.classList.add('active');
+  const navTarget = Array.from(btns).find(b => (b.getAttribute('onclick')||'').indexOf("showPanel('" + id + "')") !== -1);
+  if (navTarget) navTarget.classList.add('active');
   if (id === 'client') buildEstimate();
   if (id === 'draw') { initDrawPanel(); initDCCanvas(); }
   if (id === 'quote') initKTCanvas();
