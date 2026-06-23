@@ -12313,6 +12313,7 @@ window.renderComms=renderComms;
 </script>
 
 <script>
+var quoteCounter=0;
 // == ADMIN FORMULA ============================================
 function initAdminFormula() {
   const matEl = document.getElementById('mat-formula-rows');
@@ -25988,7 +25989,6 @@ function sdJCLoad(){try{return JSON.parse(localStorage.getItem('sd_jobcost')||'n
 {job:'Rodriguez Fireplace',rev:3400,mat:1200,lab:600,oth:150,status:'Billed',date:'2024-06-07'},
 {job:'Chen Full Kitchen',rev:8900,mat:3200,lab:1800,oth:400,status:'In Progress',date:'2024-06-05'}];}catch(e){return [];}}
 function sdJCSave(d){try{localStorage.setItem('sd_jobcost',JSON.stringify(d));}catch(e){}}
-document.addEventListener('DOMContentLoaded',function(){
 function sdJCRender(){
     var d=load();
     var totRev=d.reduce(function(a,x){return a+x.rev;},0);
@@ -28106,7 +28106,6 @@ window.renderComms=renderComms;
   };
   render();
 })();
-});
 </script>
 </div><div style="display:flex;flex-direction:column;gap:10px"></div>
 </div>
