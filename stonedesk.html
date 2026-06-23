@@ -44,7 +44,7 @@
   --shadow:0 1px 4px rgba(0,0,0,0.07),0 4px 20px rgba(0,0,0,0.05);
 }
 
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+html,body{height:100%}body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
 
 /* == SCROLLBAR == */
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -121,7 +121,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .auth-error{color:#f87171;font-size:11px;text-align:center;margin-top:8px;min-height:16px}
 
 /* == APP SHELL == */
-#app{display:none;min-height:100vh;flex-direction:column}
+#app{display:none;height:100vh;flex-direction:column}
 #app.visible{display:flex}
 .app-body{display:flex;flex:1;overflow:hidden;min-height:0}
 
