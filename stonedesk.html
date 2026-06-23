@@ -4405,7 +4405,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.cat+'</td><td>'+x.status+'</td><td>'+x.sync+'</td><td>'+x.errors+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div style="font-size:12px;color:var(--muted)">SMS fires through /api/alerts/sms on Railway. Same credentials used for all alert types.</div>
@@ -5241,7 +5241,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.job+'</td><td>'+x.material+'</td><td>'+x.cause+'</td><td>$'+x.cost+'</td><td>'+x.notes+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="remake-trend-bars"></div>
@@ -5572,7 +5572,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.type+'</td><td>'+x.to+'</td><td>'+x.subj+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="comms-thread-list"></div>
@@ -25911,7 +25911,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.proj+'</td><td>$'+(x.val||0)+'</td><td>'+x.stage+'</td><td>'+x.source+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div style="display:flex;gap:10px;margin-top:8px">
@@ -28487,7 +28487,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.trade+'</td><td>'+x.phone+'</td><td>$'+x.rate+'/day</td><td>$'+(x.ytd||0)+'</td><td>'+x.ins_exp+'</td><td>'+x.status+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div style="display:flex;flex-direction:column;gap:10px"></div>
@@ -28625,7 +28625,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.cust+'</td><td>'+x.proj+'</td><td>$'+x.val.toLocaleString()+'</td><td>'+x.stage+'</td><td>'+x.close+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="bb-claimed-list" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -28768,7 +28768,7 @@ window.renderComms=renderComms;
     t.forEach(function(x){w.document.write('<tr><td>'+x.id+'</td><td>'+x.user+'</td><td>'+x.cat+'</td><td>'+x.priority+'</td><td>'+x.desc+'</td><td>'+x.status+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="ita-audit-log" style="max-height:300px;overflow-y:auto"></div>
@@ -28891,7 +28891,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.job+'</td><td>'+x.type+'</td><td>$'+x.amount+'</td><td>'+x.fault+'</td><td>'+x.status+'</td><td>$'+(x.recovered||0)+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="dmg-ai-result" style="margin-top:16px"></div>
@@ -29032,7 +29032,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.emp+'</td><td>'+x.topic+'</td><td>'+x.type+'</td><td>'+x.hrs+'</td><td>'+x.date+'</td><td>'+(x.cert_exp||'N/A')+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="trn-list"></div>
@@ -29170,7 +29170,7 @@ window.renderComms=renderComms;
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="bltn-list"></div>
@@ -29300,7 +29300,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.job+'</td><td>'+x.material+'</td><td>'+x.lbs+' lbs</td><td>'+x.type+'</td><td>$'+x.cost+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="wst-list"></div>
@@ -29483,7 +29483,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.customer+'</td><td>'+x.score+'</td><td>'+x.comment+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div>
@@ -29624,7 +29624,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.vendor+'</td><td>'+x.desc+'</td><td>$'+x.amt+'</td><td>'+x.due+'</td><td>'+x.status+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  document.addEventListener('DOMContentLoaded', function(){ render(); });
 })();
 </script>
 </div><div id="ap-list"></div>
