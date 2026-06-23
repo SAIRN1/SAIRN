@@ -26065,7 +26065,7 @@ window.renderComms=renderComms;
     });
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div id="jc-ai-result" style="margin-top:16px"></div>
@@ -26196,7 +26196,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.emp+'</td><td>'+x.date+'</td><td>'+x.inn+'</td><td>'+x.out+'</td><td>'+x.hrs.toFixed(1)+'</td><td>'+x.job+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div id="ts-log"></div>
@@ -26335,7 +26335,7 @@ window.renderComms=renderComms;
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
-  sdRemnantRender();
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',sdRemnantRender);}else{sdRemnantRender();}
 })();
 </script>
 </div>
@@ -26459,7 +26459,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.num+'</td><td>'+x.vendor+'</td><td>'+x.mat+'</td><td>$'+x.amt+'</td><td>'+x.exp+'</td><td>'+x.status+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div id="po-list"></div>
@@ -26581,7 +26581,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.mat+'</td><td>'+x.qty+'</td><td>$'+x.val+'</td><td>'+x.vendor+'</td><td>'+x.cond+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div id="rec-log"></div>
@@ -26854,7 +26854,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.to+'</td><td>'+x.phone+'</td><td>'+x.msg+'</td><td>'+x.date+'</td><td>'+x.status+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div>
@@ -27098,7 +27098,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.brand+'</td><td>'+x.thickness+'</td><td>'+x.finish+'</td><td>$'+x.price+'</td><td>'+(x.available?'In Stock':'Order')+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;line-height:1.7" id="sint-safety-list"></div>
@@ -27586,7 +27586,7 @@ window.renderComms=renderComms;
     w.document.write('</body></html>');
     w.document.close();w.print();
   };
-  sdReviewsRender();
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',sdReviewsRender);}else{sdReviewsRender();}
 })();
 </script>
 </div>
@@ -27701,7 +27701,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.contact+'</td><td>'+x.phone+'</td><td>'+x.tier+'</td><td>$'+(x.ytd||0)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
@@ -27849,7 +27849,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.from+'</td><td>'+x.to+'</td><td>'+x.status+'</td><td>$'+(x.val||0)+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div id="rf-list"></div>
@@ -27981,7 +27981,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.mat+'</td><td>$'+x.mkt+'</td><td>$'+x.ours+'</td><td>'+x.source+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px" id="pi-rate-inputs"></div>
@@ -28104,7 +28104,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.make+'</td><td>$'+x.val.toLocaleString()+'</td><td>'+x.maint+'</td><td>'+x.status+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",render);}else{render();}
 })();
 </script>
 </div><div style="display:flex;flex-direction:column;gap:10px"></div>
@@ -28236,7 +28236,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.role+'</td><td>'+x.dept+'</td><td>'+x.phone+'</td><td>'+x.start+'</td><td>'+(x.certs||[]).join(', ')+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  sdEmpRender();
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',sdEmpRender);}else{sdEmpRender();}
 })();
 </script>
 </div><div id="emp-list" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -28366,7 +28366,7 @@ window.renderComms=renderComms;
     d.forEach(function(x){w.document.write('<tr><td>'+x.mat+'</td><td>'+x.loc+'</td><td>'+x.thickness+'</td><td>$'+x.price+'</td><td>'+x.status+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  sdYardRender();
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',sdYardRender);}else{sdYardRender();}
 })();
 </script>
 </div><div id="sy-list" style="display:flex;flex-direction:column;gap:10px"></div>
