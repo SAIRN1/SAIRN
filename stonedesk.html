@@ -28151,14 +28151,6 @@ function crmRender(){
     }).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No leads yet.</div>';
   }
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='crm')setTimeout(crmRender,50);};})();
-
-// ================================================================
-// 2. JOB COSTING
-// ================================================================
-var jcJobs=sdLoad('sd_jc_jobs',[]);
-function jcAddJob(){document.getElementById('jc-form').style.display='block';}
-function jcSaveJob(){
   var cust=((document.getElementById('jc-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var quoted=parseFloat((document.getElementById('jc-quoted')||{}).value)||0;
   var matCost=parseFloat((document.getElementById('jc-mat-cost')||{}).value)||0;
@@ -28201,14 +28193,6 @@ async function jcAIAnalyze(){
   var txt=await sdClaude('You are a stone fabrication shop profitability expert. Analyze these job costs and give 3 specific actions to improve margins.','Jobs: '+summary,900);
   el.innerHTML='<div style="background:linear-gradient(135deg,#f0fef4,#dcfce7);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px"><div style="font-size:13px;font-weight:800;color:#0a3d1f;margin-bottom:8px">&#129504; Margin Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='jobcost')setTimeout(jcRender,50);};})();
-
-// ================================================================
-// 3. TIMESHEETS
-// ================================================================
-var tsEntries=sdLoad('sd_ts_entries',[]);
-var tsActive=sdLoad('sd_ts_active',[]);
-function tsClockIn(){document.getElementById('ts-clockin-form').style.display='block';}
 function tsClockOut(){
   if(!tsActive.length){showToast('No one clocked in');return;}
   tsActive.forEach(function(a){a.end=new Date().toISOString();a.duration=new Date(a.end)-new Date(a.start);tsEntries.unshift(a);});
@@ -28246,14 +28230,6 @@ function tsExportCSV(){
   var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Timesheets_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='timesheet')setTimeout(tsRender,50);};})();
-
-// ================================================================
-// 4. REMNANT YARD
-// ================================================================
-var remRemnants=sdLoad('sd_remnants',[]);
-function remAddRemnant(){document.getElementById('rem-form').style.display='block';}
-function remSave(){
   var mat=((document.getElementById('rem-mat')||{}).value||'').trim();if(!mat){showToast('Material required');return;}
   var w=parseFloat((document.getElementById('rem-w')||{}).value)||0;
   var l=parseFloat((document.getElementById('rem-l')||{}).value)||0;
@@ -28309,14 +28285,6 @@ function remExport(){
   var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Remnants_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='remnant')setTimeout(remRender,50);};})();
-
-// ================================================================
-// 5. PURCHASE ORDERS
-// ================================================================
-var poPOs=sdLoad('sd_pos',[]);
-var poLines=[];
-function poCreate(){poLines=[{desc:'',qty:1,unit:'slab',price:0}];document.getElementById('po-form').style.display='block';poRenderLines();var d=document.getElementById('po-delivery-date');if(d)d.value=new Date(Date.now()+7*86400000).toISOString().split('T')[0];}
 function poAddLine(){poLines.push({desc:'',qty:1,unit:'each',price:0});poRenderLines();}
 function poRenderLines(){
   var c=document.getElementById('po-lines-container');if(!c)return;
@@ -28376,14 +28344,6 @@ function poRender(){
       '<button onclick="poDelete(\''+p.id+'\')" style="padding:5px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">x</button>'+
     '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No purchase orders yet.</div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='po')setTimeout(poRender,50);};})();
-
-// ================================================================
-// 6. RECEIVING
-// ================================================================
-var recLog=sdLoad('sd_rec_log',[]);
-var recItems=[];
-function recReceive(){recItems=[{name:'',qty:1,unit:'slab',condition:'ok',notes:''}];document.getElementById('rec-form').style.display='block';var d=document.getElementById('rec-date');if(d)d.value=new Date().toISOString().split('T')[0];recRenderItems();var sel=document.getElementById('rec-po');if(sel){sel.innerHTML='<option value="">No PO</option>';poPOs.filter(function(p){return p.status==='open';}).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.num+' - '+p.supplier;sel.appendChild(o);});}}
 function recAddItem(){recItems.push({name:'',qty:1,unit:'slab',condition:'ok',notes:''});recRenderItems();}
 function recRenderItems(){
   var c=document.getElementById('rec-items-container');if(!c)return;
@@ -28411,14 +28371,6 @@ function recRenderLog(){
     (r.notes?'<div style="font-size:11px;color:#dc2626;margin-top:4px">'+escHtml(r.notes)+'</div>':'')+
   '</div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No deliveries logged yet.</div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='receiving')setTimeout(recRenderLog,50);};})();
-
-// ================================================================
-// 7. DELIVERY MANIFEST
-// ================================================================
-var mfStops=sdLoad('sd_manifest_stops',[]);
-function mfCreateManifest(){document.getElementById('mf-form').style.display='block';var d=document.getElementById('mf-date');if(d)d.value=new Date().toISOString().split('T')[0];}
-function mfSaveStop(){
   var cust=((document.getElementById('mf-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var stop={id:'MF'+Date.now(),customer:cust,address:((document.getElementById('mf-addr')||{}).value||'').trim(),phone:((document.getElementById('mf-phone')||{}).value||'').trim(),date:(document.getElementById('mf-date')||{}).value||new Date().toISOString().split('T')[0],time:(document.getElementById('mf-time')||{}).value||'08:00',duration:parseFloat((document.getElementById('mf-duration')||{}).value)||2,crew:((document.getElementById('mf-crew')||{}).value||'').trim(),sqft:parseFloat((document.getElementById('mf-sqft')||{}).value)||0,material:((document.getElementById('mf-mat')||{}).value||'').trim(),notes:((document.getElementById('mf-notes')||{}).value||'').trim(),status:'scheduled',createdAt:new Date().toISOString()};
   mfStops.unshift(stop);sdStore('sd_manifest_stops',mfStops);document.getElementById('mf-form').style.display='none';mfRender();showToast('Added to manifest');
@@ -28457,14 +28409,6 @@ function mfPrintToday(){
   list.forEach(function(s,i){win.document.write('<div class="stop"><span class="num">'+(i+1)+'</span><strong>'+s.customer+'</strong>'+(s.time?' · '+s.time:'')+(s.crew?' · '+s.crew:'')+(s.sqft?' · '+s.sqft+'sqft':'')+'<br><div style="margin-top:6px">'+s.address+(s.phone?' · '+s.phone:'')+'</div>'+(s.material?'<div>'+s.material+'</div>':'')+(s.notes?'<div style="color:#dc2626;font-weight:700;margin-top:4px">NOTES: '+s.notes+'</div>':'')+'<div><span class="sig">Customer Signature</span><span class="sig">Installer Sign-Off</span></div></div>');});
   win.document.write('<scr'+'ipt>window.onload=function(){window.print();}<\/script></body></html>');win.document.close();
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='manifest')setTimeout(mfRender,50);};})();
-
-// ================================================================
-// 8. SMS NOTIFICATIONS
-// ================================================================
-var smsLog=sdLoad('sd_sms_log',[]);
-var SMS_TEMPLATES=[
-  {id:'quote_sent',label:'Quote Sent',enabled:true,message:'Hi {name}, your countertop quote from {shop} is ready! We\'ll be in touch shortly to review. Questions? Just reply here.'},
   {id:'approved',label:'Job Approved',enabled:true,message:'Hi {name}, great news — your project with {shop} is approved! We\'ll contact you soon to schedule your template appointment.'},
   {id:'templated',label:'Template Scheduled',enabled:true,message:'Hi {name}, your template appointment with {shop} is scheduled. Our team will take precise measurements. We\'ll confirm your arrival window 24 hours before.'},
   {id:'fabricating',label:'In Fabrication',enabled:true,message:'Hi {name}, your {shop} countertops are being fabricated now. We\'ll reach out soon to schedule your installation date.'},
@@ -28498,14 +28442,6 @@ function smsRenderLog(){
     '<div style="font-size:10px;color:var(--muted);text-align:right">'+sdAgo(s.ts)+'</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:24px">No SMS sent yet.</div>';
 }
 (function(){var smt=document.getElementById('sms-message');if(smt)smt.addEventListener('input',function(){var c=document.getElementById('sms-char-count');if(c)c.textContent=this.value.length+'/160';});})();
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='sms'){smsRenderTemplates();smsRenderLog();}};})();
-
-// ================================================================
-// 9. AI INSTANT QUOTE
-// ================================================================
-var aiqHistory=sdLoad('sd_aiq_history',[]);
-async function aiqGenerate(){
-  var input=document.getElementById('aiq-input');var tier=document.getElementById('aiq-tier');
   var text=(input?input.value.trim():'');if(!text){showToast('Paste a customer message first');return;}
   var tierVal=tier?tier.value:'retail';
   var loading=document.getElementById('aiq-loading');var result=document.getElementById('aiq-result');
@@ -28537,14 +28473,6 @@ function aiqRenderHistory(){
     '<button onclick="var r=document.getElementById(\'aiq-result\');r.innerHTML=sdMarkdown(aiqHistory.find(function(x){return x.id===\''+h.id+'\';}).output);r.style.display=\'block\'" style="padding:3px 8px;font-size:10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid rgba(27,58,107,0.2);border-radius:5px;cursor:pointer">View</button>'+
   '</div>';}).join(''):'';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='aiquote')aiqRenderHistory();};})();
-
-// ================================================================
-// 10. SINTERED / PORCELAIN MODE
-// ================================================================
-var SINT_MATS={
-  dekton:{name:'Dekton',brand:'Cosentino',mult:1.35,minPpsf:85,range:'$75-130/sqft',tooling:'Specialized diamond blades for ultra-compact surfaces. Replace 40% more frequently. Slow feed rates. Wet cutting mandatory.',safety:'Dry cutting prohibited. P100 respirator required. Zero silica but fine particle hazard. Wet methods mandatory at all times.',edge:'Specialized CNC bits required. Standard bits will chip. Slower speeds.'},
-  neolith:{name:'Neolith',brand:'TheSize',mult:1.30,minPpsf:80,range:'$70-125/sqft',tooling:'Diamond tooling for sintered/porcelain. Standard granite tooling will fail. Wet cutting only.',safety:'Wet cutting mandatory. Full respiratory protection at all times.',edge:'Profiling possible with proper tooling. High chip risk without technique.'},
   lapitec:{name:'Lapitec',brand:'Lapitec',mult:1.30,minPpsf:75,range:'$65-120/sqft',tooling:'Sintered surface — use dedicated porcelain blades. Never use granite blades.',safety:'Wet methods mandatory. Standard PPE. Significant particle generation.',edge:'Premium diamond CNC bits required. Slower machine speeds.'},
   laminam:{name:'Laminam',brand:'Laminam',mult:1.40,minPpsf:90,range:'$80-140/sqft',tooling:'Very thin format (3-5mm). Vacuum lifters required. Blade selection critical.',safety:'Extreme fragility — vacuum lifters mandatory during all moves. Standard PPE.',edge:'Mitered edges most common. Laminate to substrate for thicker appearance.'},
   porcelain:{name:'Porcelain Slab',brand:'Various',mult:1.25,minPpsf:70,range:'$60-110/sqft',tooling:'Diamond blade for porcelain/ceramic. Feed rate 25% slower than granite. Chip risk on finished face.',safety:'Wet cutting preferred. Fine particle PPE required. Low crystalline silica.',edge:'Profiling possible — chipping more likely than granite. Slow passes.'},
@@ -28589,14 +28517,6 @@ async function sintAIAdvisor(){
   var txt=await sdClaude('You are an expert in fabricating sintered stone and large-format porcelain. Give specific shop-floor advice for this brand.',m.name+' ('+m.brand+'). Job: '+(cust||'not specified')+'. Sqft: '+(sqft||'not specified')+'. Provide: (1) blade/tooling recommendations, (2) water management, (3) edge profiling approach, (4) known issues with this brand, (5) time estimate vs quartz.',900);
   el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:10px;padding:14px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Advisory — '+m.name+'</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='sintered')sintSetMat(sintCurrent,document.getElementById('sm-'+sintCurrent));};})();
-
-// ================================================================
-// 11. CARE GUIDE AI
-// ================================================================
-var cgHistory=sdLoad('sd_cg_history',[]);
-async function cgGenerate(){
-  var mat=((document.getElementById('cg-mat')||{}).value||'').trim();if(!mat){showToast('Material required');return;}
   var cust=((document.getElementById('cg-cust')||{}).value||'').trim();
   var app=(document.getElementById('cg-app')||{}).value||'countertops';
   var finish=(document.getElementById('cg-finish')||{}).value||'Polished';
@@ -28628,14 +28548,6 @@ function cgRenderHistory(){
     '<button onclick="var r=document.getElementById(\'cg-result\');r.innerHTML=sdMarkdown(cgHistory.find(function(x){return x.id===\''+h.id+'\';}).guide);r.style.display=\'block\'" style="padding:4px 10px;font-size:11px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid rgba(27,58,107,0.2);border-radius:6px;cursor:pointer">View</button>'+
   '</div>';}).join(''):'';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='careguide')cgRenderHistory();};})();
-
-// ================================================================
-// 12. VEIN MATCHING AI
-// ================================================================
-var vmB64_1='',vmB64_2='';
-function vmPreview(input,prevId){
-  var f=input.files[0];if(!f)return;
   var r=new FileReader();r.onload=function(e){
     var img=document.getElementById(prevId);if(img){img.src=e.target.result;img.style.display='block';}
     if(prevId==='vm-prev1')vmB64_1=e.target.result.split(',')[1];
@@ -28763,14 +28675,6 @@ function revRenderLog(){
     '<div style="font-size:10px;color:var(--muted);text-align:right"><div>'+r.channel+'</div><div>'+sdAgo(r.ts)+'</div></div>'+
   '</div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:24px">No review requests sent yet.</div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='reviews'){revUpdateKPIs();revRenderLog();var sn=document.getElementById('rev-shop-name');if(sn&&!sn.value)sn.value=revConfig.shopName||localStorage.getItem('fab_shop_name')||'';var gl=document.getElementById('rev-google-link');if(gl&&!gl.value)gl.value=revConfig.googleLink||'';}};})();
-
-// ================================================================
-// 15. CONTRACTOR PORTAL
-// ================================================================
-var cpContractors=sdLoad('sd_contractors',[]);
-function cpSave(){
-  var co=((document.getElementById('cp-company')||{}).value||'').trim();if(!co){showToast('Company name required');return;}
   var c={id:'CP'+Date.now(),company:co,contact:((document.getElementById('cp-contact')||{}).value||'').trim(),email:((document.getElementById('cp-email')||{}).value||'').trim(),phone:((document.getElementById('cp-phone')||{}).value||'').trim(),tier:(document.getElementById('cp-tier')||{}).value||'contractor',pin:((document.getElementById('cp-pin')||{}).value||'').trim(),notes:((document.getElementById('cp-notes')||{}).value||'').trim(),addedAt:new Date().toISOString(),jobCount:0};
   cpContractors.unshift(c);sdStore('sd_contractors',cpContractors);document.getElementById('cp-form').style.display='none';cpRender();showToast('Contractor added');
 }
@@ -28795,14 +28699,6 @@ function cpRender(){
       '<button onclick="cpDelete(\''+c.id+'\')" style="padding:5px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">x</button>'+
     '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No contractor partners yet.</div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='contractor')cpRender();};})();
-
-// ================================================================
-// 16. REFERRAL TRACKER
-// ================================================================
-var rfReferrals=sdLoad('sd_referrals',[]);
-function rfAddReferral(){document.getElementById('rf-form').style.display='block';var d=document.getElementById('rf-date');if(d)d.value=new Date().toISOString().split('T')[0];}
-function rfSave(){
   var cust=((document.getElementById('rf-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var r={id:'RF'+Date.now(),customer:cust,referredBy:((document.getElementById('rf-referred-by')||{}).value||'').trim(),sourceType:(document.getElementById('rf-source-type')||{}).value||'other',value:parseFloat((document.getElementById('rf-value')||{}).value)||0,status:(document.getElementById('rf-status')||{}).value||'lead',date:(document.getElementById('rf-date')||{}).value||'',createdAt:new Date().toISOString()};
   rfReferrals.unshift(r);sdStore('sd_referrals',rfReferrals);document.getElementById('rf-form').style.display='none';rfRender();showToast('Referral logged');
@@ -28836,14 +28732,6 @@ async function rfAIBriefing(){
   var txt=await sdClaude('You are a stone fabrication business intelligence expert. Give concise, actionable marketing recommendations based on referral data.','Total: '+rfReferrals.length+'. Won: '+won.length+'. Revenue: $'+won.reduce(function(s,r){return s+r.value;},0)+'. Sources: '+JSON.stringify(sources)+'. Top referrers: '+JSON.stringify(Object.entries(referrers).sort(function(a,b){return b[1]-a[1];}).slice(0,5))+'. Give: (1) Best performing source and why to double down, (2) Who to reward with thank-you, (3) Underperforming source to improve, (4) One action this week.',700);
   el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Referral Intelligence</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='referral')rfRender();};})();
-
-// ================================================================
-// 17. PRICE INTELLIGENCE
-// ================================================================
-var PI_RATES=[
-  {mat:'Granite Entry (Lv 1-2)',low:60,high:85,avg:72},
-  {mat:'Granite Mid (Lv 3-4)',low:80,high:120,avg:95},
   {mat:'Granite Premium (Lv 5+)',low:110,high:175,avg:140},
   {mat:'Marble — Domestic',low:90,high:140,avg:115},
   {mat:'Marble — Calacatta/Exotic',low:130,high:220,avg:170},
@@ -28898,14 +28786,6 @@ function piExport(){
   var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_PriceIntel_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='priceintel')piInit();};})();
-
-// ================================================================
-// BOOT
-// ================================================================
-document.addEventListener('DOMContentLoaded',function(){
-  setTimeout(function(){
-    try{crmRender();}catch(e){}
     try{jcRender();}catch(e){}
     try{tsRender();}catch(e){}
     try{remRender();}catch(e){}
@@ -28972,14 +28852,6 @@ function eqExport(){
   var csv=rows.map(function(r){return r.map(function(c){return'"'+(c||'')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='equipment_log.csv';a.click();
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='equipment')eqRender();};})();
-
-// ============================================================
-// TIER 3 — EMPLOYEE DIRECTORY + SKILLS MATRIX
-// ============================================================
-var EMP_DIR_KEY = 'sd_emp_directory_v1';
-function empDirLoad(){try{return JSON.parse(localStorage.getItem(EMP_DIR_KEY)||'[]');}catch(e){return[];}}
-function empDirSaveAll(d){localStorage.setItem(EMP_DIR_KEY,JSON.stringify(d));}
 function empShowAdd(){document.getElementById('emp-add-form').style.display='block';}
 function empSave(){
   var name=document.getElementById('emp-fullname').value.trim();
@@ -29024,14 +28896,6 @@ function empRender(){
   }).join('');
 }
 function empDelete(id){var d=empDirLoad().filter(function(r){return r.id!==id;});empDirSaveAll(d);empRender();}
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='employees')empRender();};})();
-
-// ============================================================
-// TIER 3 — STONE YARD CONTACT DIRECTORY
-// ============================================================
-var SY_KEY = 'sd_stoneyard_v1';
-function syLoad(){try{return JSON.parse(localStorage.getItem(SY_KEY)||'[]');}catch(e){return[];}}
-function sySaveAll(d){localStorage.setItem(SY_KEY,JSON.stringify(d));}
 function syShowAdd(){document.getElementById('sy-add-form').style.display='block';}
 function sySave(){
   var company=document.getElementById('sy-company').value.trim();
@@ -29075,14 +28939,6 @@ function syRender(){
   }).join('');
 }
 function syDelete(id){var d=syLoad().filter(function(r){return r.id!==id;});sySaveAll(d);syRender();}
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='stoneyard')syRender();};})();
-
-// ============================================================
-// TIER 3 — SUBCONTRACTOR MANAGEMENT
-// ============================================================
-var SUB_KEY = 'sd_subcontractors_v1';
-function subLoad(){try{return JSON.parse(localStorage.getItem(SUB_KEY)||'[]');}catch(e){return[];}}
-function subSaveAll(d){localStorage.setItem(SUB_KEY,JSON.stringify(d));}
 function subShowAdd(){document.getElementById('sub-add-form').style.display='block';}
 function subSave(){
   var name=document.getElementById('sub-name').value.trim();
@@ -29126,14 +28982,6 @@ function subRender(){
   }).join('');
 }
 function subDelete(id){var d=subLoad().filter(function(r){return r.id!==id;});subSaveAll(d);subRender();}
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='subcontractor')subRender();};})();
-
-
-// ============================================================
-// TIER 4 — THE BID BOARD
-// ============================================================
-var BB_KEY = 'sd_bidboard_v1';
-var BB_CLAIMED_KEY = 'sd_bidboard_claimed_v1';
 var bbCalYear, bbCalMonth;
 
 function bbLoad(){try{return JSON.parse(localStorage.getItem(BB_KEY)||'[]');}catch(e){return[];}}
@@ -29287,14 +29135,6 @@ function bbExport(){
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='bid_board.csv';a.click();
 }
 
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='bidboard')bbRender();};})();
-
-// -- Missing export + AI functions ------------------------------
-function crmExport(){var rows=[['Name','Phone','Email','Project','Value','Source','Stage','Date']].concat(crmLeads.map(function(l){return[l.name,l.phone,l.email,l.project,l.value,l.source,l.stage,new Date(l.createdAt).toLocaleDateString()];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Leads_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-async function crmAIBriefing(){var el=document.getElementById('crm-ai-result');if(!el){el=document.createElement('div');el.id='crm-ai-result';document.getElementById('panel-crm').querySelector('.panel>div,div').appendChild(el);}if(!crmLeads.length){showToast('Add leads first');return;}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing pipeline...</div>';var won=crmLeads.filter(function(l){return l.stage==='won';});var open=crmLeads.filter(function(l){return !['won','lost'].includes(l.stage);});var val=open.reduce(function(s,l){return s+l.value;},0);var txt=await sdClaude('You are a B2B sales coach for a stone fabrication shop.','Pipeline: '+crmLeads.length+' leads. Open: '+open.length+' ($'+val.toLocaleString()+'). Won: '+won.length+'. Stages: '+JSON.stringify(Object.fromEntries(Object.entries(crmLeads.reduce(function(a,l){a[l.stage]=(a[l.stage]||0)+1;return a;},{}))))+'. Give: (1) Pipeline health score, (2) Top 2 leads to close this week, (3) One action to improve conversion.',600);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Pipeline Briefing</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-async function tsAIAnalysis(){var el=document.getElementById('ts-ai-result');if(!el){el=document.createElement('div');el.id='ts-ai-result';var p=document.getElementById('panel-timesheet');if(p)p.querySelector('div').appendChild(el);}if(!tsEntries.length){showToast('Log time entries first');return;}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing labor...</div>';var byEmp={};tsEntries.forEach(function(e){byEmp[e.employee]=(byEmp[e.employee]||0)+((e.duration||0)/3600000);});var byTask={};tsEntries.forEach(function(e){byTask[e.task]=(byTask[e.task]||0)+((e.duration||0)/3600000);});var txt=await sdClaude('You are a stone shop operations analyst.','Total entries: '+tsEntries.length+'. Hours by employee: '+JSON.stringify(Object.fromEntries(Object.entries(byEmp).map(function(e){return[e[0],e[1].toFixed(1)];})))+'. Hours by task: '+JSON.stringify(Object.fromEntries(Object.entries(byTask).map(function(e){return[e[0],e[1].toFixed(1)];})))+'. Give: (1) Who is most productive, (2) Where labor hours are going, (3) One efficiency improvement.',600);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Labor Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
 function poExport(){var rows=[['PO #','Supplier','Total','Status','Delivery Date','Created']].concat(poPOs.map(function(p){return[p.num,p.supplier,p.total,p.status,p.deliveryDate,new Date(p.createdAt).toLocaleDateString()];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_POs_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
 async function poAIAdvisor(){var el=document.getElementById('po-ai-result');if(!el){el=document.createElement('div');el.id='po-ai-result';var p=document.getElementById('panel-po');if(p)p.querySelector('div').appendChild(el);}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing purchasing...</div>';var open=poPOs.filter(function(p){return p.status==='open';});var txt=await sdClaude('You are a stone shop purchasing advisor.','Open POs: '+open.length+'. Total outstanding: $'+open.reduce(function(s,p){return s+p.total;},0).toFixed(0)+'. Suppliers: '+[...new Set(open.map(function(p){return p.supplier;}))].join(', ')+'. Give: (1) Any overdue POs to follow up on, (2) Purchasing pattern observation, (3) One tip to negotiate better terms.',500);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Purchasing Advisor</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
 
@@ -29386,14 +29226,6 @@ function itaExportAll(){
 }
 function itaImportPrompt(){var inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=function(e){var f=e.target.files[0];if(!f)return;var fr=new FileReader();fr.onload=function(ev){try{var d=JSON.parse(ev.target.result);Object.keys(d).forEach(function(k){localStorage.setItem(k,d[k]);});itaAudit('Data import performed');itaRender();showToast('Data restored — reload to see all changes');}catch(err){showToast('Invalid backup file');}};fr.readAsText(f);};inp.click();}
 function itaClearData(){if(!confirm('This will clear all DEMO data. Your real data will NOT be affected unless this is a demo account. Continue?'))return;var keep=['sd_owner_pin','sd_license_key','sd_plan',ITA_USERS_KEY,ITA_AUDIT_KEY];Object.keys(localStorage).filter(function(k){return k.startsWith('sd_')&&!keep.includes(k);}).forEach(function(k){localStorage.removeItem(k);});itaAudit('Demo data cleared');showToast('Demo data cleared');itaRender();}
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='itadmin'){var pg=document.getElementById('ita-pin-gate');var ct=document.getElementById('ita-content');if(pg)pg.style.display='block';if(ct)ct.style.display='none';var pi=document.getElementById('ita-pin-input');if(pi)pi.value='';var pe=document.getElementById('ita-pin-error');if(pe)pe.style.display='none';}};})();
-
-// ================================================================
-// DAMAGE CLAIMS
-// ================================================================
-var dmgClaims=sdLoad('sd_damage_claims',[]);var dmgFilter='all';
-function dmgAddClaim(){document.getElementById('dmg-form').style.display='block';var d=document.getElementById('dmg-date');if(d)d.value=new Date().toISOString().split('T')[0];}
-function dmgSave(){
   var cust=((document.getElementById('dmg-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var claim={id:'DMG'+Date.now(),customer:cust,job:((document.getElementById('dmg-job')||{}).value||'').trim(),date:(document.getElementById('dmg-date')||{}).value||'',type:(document.getElementById('dmg-type')||{}).value||'',fault:(document.getElementById('dmg-fault')||{}).value||'',cost:parseFloat((document.getElementById('dmg-cost')||{}).value)||0,material:((document.getElementById('dmg-mat')||{}).value||'').trim(),assigned:((document.getElementById('dmg-assigned')||{}).value||'').trim(),status:(document.getElementById('dmg-status')||{}).value||'open',description:((document.getElementById('dmg-desc')||{}).value||'').trim(),resolution:((document.getElementById('dmg-resolution')||{}).value||'').trim(),createdAt:new Date().toISOString()};
   dmgClaims.unshift(claim);sdStore('sd_damage_claims',dmgClaims);document.getElementById('dmg-form').style.display='none';dmgRender();showToast('Claim logged');
@@ -29436,14 +29268,6 @@ async function dmgAIAnalysis(){
   var txt=await sdClaude('You are a stone fabrication quality control expert. Analyze damage claims and identify root causes and prevention strategies.','Claims: '+summary+'. Provide: (1) Most common failure type, (2) Root cause, (3) Top 3 prevention actions, (4) Training recommendation.',800);
   el.innerHTML='<div style="background:rgba(220,38,38,0.06);border:1.5px solid rgba(220,38,38,0.2);border-radius:12px;padding:16px"><div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px">&#129504; Root Cause Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='damage')dmgRender();};})();
-
-// ================================================================
-// TRAINING & CERTIFICATIONS
-// ================================================================
-var trnRecords=sdLoad('sd_training_records',[]);var trnFilter='all';
-function trnAddRecord(){document.getElementById('trn-form').style.display='block';}
-function trnSave(){
   var emp=((document.getElementById('trn-emp')||{}).value||'').trim();if(!emp){showToast('Employee required');return;}
   var type=(document.getElementById('trn-type')||{}).value||'';
   var custom=((document.getElementById('trn-custom')||{}).value||'').trim();
@@ -29486,14 +29310,6 @@ function trnExport(){
   var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Training_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='training')trnRender();};})();
-
-// ================================================================
-// SHOP BULLETIN BOARD
-// ================================================================
-var bltnPosts=sdLoad('sd_bulletin_posts',[]);
-function bltnPost(){document.getElementById('bltn-form').style.display='block';}
-function bltnSave(){
   var title=((document.getElementById('bltn-title')||{}).value||'').trim();if(!title){showToast('Title required');return;}
   var post={id:'BL'+Date.now(),title:title,body:((document.getElementById('bltn-body')||{}).value||'').trim(),cat:(document.getElementById('bltn-cat')||{}).value||'general',author:((document.getElementById('bltn-author')||{}).value||'').trim()||'Management',expires:(document.getElementById('bltn-expires')||{}).value||'',createdAt:new Date().toISOString()};
   bltnPosts.unshift(post);sdStore('sd_bulletin_posts',bltnPosts);document.getElementById('bltn-form').style.display='none';bltnRender();showToast('Posted');
@@ -29520,14 +29336,6 @@ function bltnRender(){
       '<button onclick="bltnDelete(\''+p.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">Remove</button>'+
     '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:48px"><div style="font-size:36px;margin-bottom:12px">📋</div><div style="font-size:15px;font-weight:700">No active announcements</div><div style="font-size:13px;margin-top:6px">Post your first shop announcement above.</div></div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='bulletin')bltnRender();};})();
-
-// ================================================================
-// MATERIAL WASTE TRACKER
-// ================================================================
-var wstEvents=sdLoad('sd_waste_events',[]);
-function wstLog(){document.getElementById('wst-form').style.display='block';var d=document.getElementById('wst-date');if(d)d.value=new Date().toISOString().split('T')[0];}
-function wstSave(){
   var job=((document.getElementById('wst-job')||{}).value||'').trim();if(!job){showToast('Job required');return;}
   var evt={id:'WST'+Date.now(),date:(document.getElementById('wst-date')||{}).value||'',job:job,material:((document.getElementById('wst-mat')||{}).value||'').trim(),cause:(document.getElementById('wst-cause')||{}).value||'',sqft:parseFloat((document.getElementById('wst-sqft')||{}).value)||0,cost:parseFloat((document.getElementById('wst-cost')||{}).value)||0,labor:parseFloat((document.getElementById('wst-labor')||{}).value)||0,fault:(document.getElementById('wst-fault')||{}).value||'',salvage:(document.getElementById('wst-salvage')||{}).value||'no',notes:((document.getElementById('wst-notes')||{}).value||'').trim(),createdAt:new Date().toISOString()};
   wstEvents.unshift(evt);sdStore('sd_waste_events',wstEvents);document.getElementById('wst-form').style.display='none';wstRender();showToast('Waste event logged');
@@ -29565,14 +29373,6 @@ async function wstAIAnalysis(){
   var txt=await sdClaude('You are a stone fabrication shop operations expert specializing in waste reduction.','Waste events: '+wstEvents.length+'. Total cost: $'+totalCost.toFixed(0)+'. Top causes: '+JSON.stringify(Object.entries(causes).sort(function(a,b){return b[1]-a[1];}).slice(0,5))+'. Provide: (1) #1 preventable waste type, (2) Root cause, (3) 3 specific process changes, (4) Expected savings if implemented.',800);
   el.innerHTML='<div style="background:rgba(220,38,38,0.06);border:1.5px solid rgba(220,38,38,0.2);border-radius:12px;padding:16px"><div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px">&#129504; Waste Reduction Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='waste')wstRender();};})();
-
-// ================================================================
-// TEMPLATE / DXF FILE MANAGER
-// ================================================================
-var tmplRecords=sdLoad('sd_template_records',[]);
-function tmplAdd(){document.getElementById('tmpl-form').style.display='block';var d=document.getElementById('tmpl-date');if(d)d.value=new Date().toISOString().split('T')[0];}
-function tmplSave(){
   var cust=((document.getElementById('tmpl-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var go=function(photoData,dxfName){
     var rec={id:'TMPL'+Date.now(),customer:cust,job:((document.getElementById('tmpl-job')||{}).value||'').trim(),date:(document.getElementById('tmpl-date')||{}).value||'',tech:((document.getElementById('tmpl-tech')||{}).value||'').trim(),method:(document.getElementById('tmpl-method')||{}).value||'',cncStatus:(document.getElementById('tmpl-cnc')||{}).value||'pending',dxfName:dxfName,photo:photoData,notes:((document.getElementById('tmpl-notes')||{}).value||'').trim(),createdAt:new Date().toISOString()};
@@ -29610,14 +29410,6 @@ function tmplRender(){
       '<button onclick="tmplDelete(\''+r.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:10px;cursor:pointer">Delete</button>'+
     '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No template records yet.</div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='templates')tmplRender();};})();
-
-// ================================================================
-// CUSTOMER NPS
-// ================================================================
-var npsFeedback=sdLoad('sd_nps_feedback',[]);
-(function(){
-  var c=document.getElementById('nps-score-btns');
   if(c){c.innerHTML='';for(var i=0;i<=10;i++){(function(score){var btn=document.createElement('button');btn.textContent=score;btn.style.cssText='width:38px;height:38px;border-radius:8px;border:2px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer';btn.onclick=function(){document.querySelectorAll('#nps-score-btns button').forEach(function(b){b.style.background='var(--card)';b.style.color='var(--text)';b.style.borderColor='var(--border)';});var c=score<=6?'#dc2626':score<=8?'#ca8a04':'#16a34a';btn.style.background=c;btn.style.color='#fff';btn.style.borderColor=c;document.getElementById('nps-score').value=score;};c.appendChild(btn);})(i);}
   }
 })();
@@ -29660,14 +29452,6 @@ async function npsAIBriefing(){
   var txt=await sdClaude('You are a customer experience expert for a stone fabrication shop.','NPS: '+nps+'. Promoters: '+promoters.length+'. Detractors: '+detractors.length+'. Sample feedback: '+comments+'. Provide: (1) Overall assessment, (2) What customers love, (3) Top complaint theme, (4) 2 specific improvements this week.',700);
   el.innerHTML='<div style="background:rgba(22,163,74,0.06);border:1.5px solid rgba(22,163,74,0.2);border-radius:12px;padding:16px"><div style="font-size:13px;font-weight:800;color:#0a3d1f;margin-bottom:8px">&#129504; NPS Intelligence Briefing</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='nps')npsRender();};})();
-
-// ================================================================
-// ACCOUNTS PAYABLE
-// ================================================================
-var apBills=sdLoad('sd_ap_bills',[]);var apFilter='all';
-function apAdd(){document.getElementById('ap-form').style.display='block';var d=document.getElementById('ap-bill-date');if(d)d.value=new Date().toISOString().split('T')[0];var due=document.getElementById('ap-due-date');if(due){var dt=new Date();dt.setDate(dt.getDate()+30);due.value=dt.toISOString().split('T')[0];}}
-function apSave(){
   var vendor=((document.getElementById('ap-vendor')||{}).value||'').trim();if(!vendor){showToast('Vendor required');return;}
   var bill={id:'AP'+Date.now(),vendor:vendor,invNum:((document.getElementById('ap-inv-num')||{}).value||'').trim(),cat:(document.getElementById('ap-cat')||{}).value||'',amount:parseFloat((document.getElementById('ap-amount')||{}).value)||0,billDate:(document.getElementById('ap-bill-date')||{}).value||'',dueDate:(document.getElementById('ap-due-date')||{}).value||'',terms:(document.getElementById('ap-terms')||{}).value||'Net 30',po:((document.getElementById('ap-po')||{}).value||'').trim(),notes:((document.getElementById('ap-notes')||{}).value||'').trim(),status:'open',paidDate:'',createdAt:new Date().toISOString()};
   apBills.unshift(bill);sdStore('sd_ap_bills',apBills);document.getElementById('ap-form').style.display='none';apRender();showToast('Bill added');
@@ -29703,14 +29487,6 @@ function apExport(){
   var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_AP_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='ap')apRender();};})();
-
-// ================================================================
-// TAX & REPORTING
-// ================================================================
-var taxEntries=sdLoad('sd_tax_entries',[]);
-function taxAddEntry(){
-  var state=(document.getElementById('tax-state')||{}).value||'';
   var juris=((document.getElementById('tax-jurisdiction')||{}).value||'').trim();
   var taxable=parseFloat((document.getElementById('tax-taxable')||{}).value)||0;
   var rate=parseFloat((document.getElementById('tax-rate')||{}).value)||0;
@@ -29751,14 +29527,6 @@ function taxExport(){
   var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_TaxReport_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
-(function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='tax')taxRender();};})();
-
-</script>
-
-</body></html>
-<!-- ============================================================ -->
-<!-- TIER 1 & 2 NEW PANELS — SESSION 22                          -->
-<!-- ============================================================ -->
 
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
@@ -30215,11 +29983,6 @@ function miClearHistory(){
 }
 
 // Hook into sbNav to auto-load on first open
-var _miOrigSbNav=window.sbNav;
-window.sbNav=function(page){
-  if(typeof _miOrigSbNav==='function')_miOrigSbNav(page);
-  if(page==='market'){setTimeout(function(){if(!MI_STATE.lastFetch){miRefresh();}miRenderHistory();},120);}
-};
 
 miRenderHistory();
 </script>
@@ -30335,11 +30098,6 @@ function shClearHistory(){
 }
 
 // Hook sbNav
-var _shOrigNav=window.sbNav;
-window.sbNav=function(page){
-  if(typeof _shOrigNav==='function')_shOrigNav(page);
-  if(page==='stonehub'){setTimeout(function(){shRenderHistory();},100);}
-};
 
 shRenderHistory();
 </script>
