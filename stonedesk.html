@@ -7306,7 +7306,15 @@ function showPanel(id) {
     window.showPage(pageIds[id] || '__none__');
     if (pageIds[id]) return;
   }
-  document.getElementById('panel-' + id).classList.add('active');
+  var target = document.getElementById('panel-' + id);
+  if (target) {
+    target.classList.add('active');
+  } else {
+    // Panel not found - show diagnostic in AI panel
+    var aiPanel = document.getElementById('panel-ai');
+    if (aiPanel) aiPanel.classList.add('active');
+    console.error('StoneDesk: panel-' + id + ' not found in DOM. Total panels: ' + document.querySelectorAll('.panel').length);
+  }
   // BUGFIX (June 2026 audit): the old navMap below was a hardcoded {label:buttonIndex} table that
   // went stale the moment Templates/Doc Scanner/Check Register/SAIRN Suite buttons were inserted
   // into the topbar after "integrations" without anyone updating the indices that follow --
