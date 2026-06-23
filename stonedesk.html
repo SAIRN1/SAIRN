@@ -4472,7 +4472,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:10px">
-    <div style="font-weight:700;font-size:14px;color:var(--text)">Today's Dispatch Board</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text)">Today\'s Dispatch Board</div>
     <div id="fmap-dispatch"></div>
   </div>
 </div>
@@ -18777,7 +18777,7 @@ function safetyRenderChecklist() {
   // Check if today already submitted
   var today=new Date().toISOString().split('T')[0];
   var todaySub=sdSafetyData.checklists.find(function(c){return c.date===today;});
-  el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today's checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +
+  el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today\'s checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +
     DAILY_CHECKLIST.map(function(item){
       var checked=todaySub&&todaySub.completed.includes(item.id);
       return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">' +
@@ -18792,7 +18792,7 @@ function safetyRenderChecklist() {
 function safetySubmitChecklist() {
   var today=new Date().toISOString().split('T')[0];
   var existing=sdSafetyData.checklists.find(function(c){return c.date===today;});
-  if(existing){notify('Today's checklist already submitted','warn');return;}
+  if(existing){notify('Today\'s checklist already submitted','warn');return;}
   var completed=[];
   var failed=[];
   DAILY_CHECKLIST.forEach(function(item){
@@ -18801,13 +18801,7 @@ function safetySubmitChecklist() {
     else if(item.critical) failed.push(item.label);
   });
   if(failed.length){
-    if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:
-
-'+failed.slice(0,3).join('
-')+(failed.length>3?'
-...and '+(failed.length-3)+' more':'')+'
-
-Submit anyway? This will be logged.')){return;}
+    if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:\n'+failed.slice(0,3).join('\n')+(failed.length>3?'\n...and '+(failed.length-3)+' more':'')+' Submit anyway? This will be logged.')){return;}
   }
   sdSafetyData.checklists.unshift({id:'CL'+Date.now(),date:today,ts:new Date().toISOString(),completed:completed,failed:failed,score:Math.round(completed.length/DAILY_CHECKLIST.length*100)});
   if(sdSafetyData.checklists.length>365) sdSafetyData.checklists=sdSafetyData.checklists.slice(0,365);
@@ -18979,7 +18973,7 @@ function safetyAskClaude(topic) {
     var input=document.getElementById('userInput');
     if(input){
       var q = topic==='stop act' ?
-        'Explain exactly what I need to do to comply with California's STOP Act silica safety law as a stone fabrication shop owner. The annual attestation deadline is July 1, 2026. Give me a step-by-step checklist of what I need to do TODAY.' :
+        'Explain exactly what I need to do to comply with California\'s STOP Act silica safety law as a stone fabrication shop owner. The annual attestation deadline is July 1, 2026. Give me a step-by-step checklist of what I need to do TODAY.' :
         'I run a stone countertop fabrication shop. Give me a complete safety briefing: (1) Top 5 OSHA violations in stone shops and how to avoid them, (2) Silica dust exposure controls I must have, (3) What documentation OSHA will ask for if they inspect me, (4) Quick wins I can implement this week.';
       input.value=q;sendMessage();
     }
@@ -19434,7 +19428,7 @@ function finAIJobAdvice(){
   sbNav('ai');
   setTimeout(function(){
     var input=document.getElementById('userInput');
-    if(input){input.value='My stone fabrication job for '+cust+' is quoted at $'+quote.toLocaleString()+' with a '+margin+'% gross margin. Industry average for stone countertop fabrication is 35-45% gross margin. Am I priced right? What should I change — raise the quote, reduce material cost, cut labor hours, or reduce consumables? Give me 3 specific actions to improve this job's profitability.';sendMessage();}
+    if(input){input.value='My stone fabrication job for '+cust+' is quoted at $'+quote.toLocaleString()+' with a '+margin+'% gross margin. Industry average for stone countertop fabrication is 35-45% gross margin. Am I priced right? What should I change — raise the quote, reduce material cost, cut labor hours, or reduce consumables? Give me 3 specific actions to improve this job\'s profitability.';sendMessage();}
   },400);
 }
 
@@ -26206,7 +26200,7 @@ function taxExport(){
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="mfst-today">0</div><div class="kpi-label">Today's Jobs</div></div>
+  <div class="kpi"><div class="kpi-val" id="mfst-today">0</div><div class="kpi-label">Today\'s Jobs</div></div>
   <div class="kpi"><div class="kpi-val" id="mfst-done">0</div><div class="kpi-label">Completed</div></div>
   <div class="kpi"><div class="kpi-val" id="mfst-pending">0</div><div class="kpi-label">Pending</div></div>
   <div class="kpi"><div class="kpi-val" id="mfst-crews">2</div><div class="kpi-label">Active Crews</div></div>
@@ -26214,7 +26208,7 @@ function taxExport(){
 <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-weight:700;color:var(--text)">Today's Manifest — <span id="mfst-date-hdr"></span></div>
+      <div style="font-weight:700;color:var(--text)">Today\'s Manifest — <span id="mfst-date-hdr"></span></div>
       <select id="mfst-crew" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)" onchange="sdManifestRender()">
         <option value="">All Crews</option><option>Crew A</option><option>Crew B</option>
       </select>
