@@ -21493,8 +21493,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <button class="btn bo bsm" onclick="window.print()">🖨️ Print Signed Copy</button>
     </div>
   </div>
-</div><!-- /panel-wrap -->
-</div><!-- /app-body -->
+</div>
 
 <script>
 // Field Quote JS for stonedesk
@@ -25979,18 +25978,17 @@ window.renderComms=renderComms;
   </div>
 </div>
 </div>
+</div>
+
 <script>
-(function(){
-  var SEED=[
-    {job:'Webb Kitchen — Calacatta Gold',rev:4850,mat:1800,lab:800,oth:200,status:'Paid',date:'2024-06-12'},
-    {job:'Johnson Bath — Carrara White',rev:2100,mat:700,lab:450,oth:100,status:'Paid',date:'2024-06-10'},
-    {job:'Park Outdoor Kitchen',rev:6200,mat:2500,lab:1200,oth:300,status:'In Progress',date:'2024-06-09'},
-    {job:'Rodriguez Fireplace',rev:3400,mat:1200,lab:600,oth:150,status:'Billed',date:'2024-06-07'},
-    {job:'Chen Full Kitchen',rev:8900,mat:3200,lab:1800,oth:400,status:'In Progress',date:'2024-06-05'},
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_jobcost')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_jobcost',JSON.stringify(d));}catch(e){}}
-  function render(){
+var sdJCData=null;
+function sdJCLoad(){try{return JSON.parse(localStorage.getItem('sd_jobcost')||'null')||[{job:'Webb Kitchen — Calacatta Gold',rev:4850,mat:1800,lab:800,oth:200,status:'Paid',date:'2024-06-12'},
+{job:'Johnson Bath — Carrara White',rev:2100,mat:700,lab:450,oth:100,status:'Paid',date:'2024-06-10'},
+{job:'Park Outdoor Kitchen',rev:6200,mat:2500,lab:1200,oth:300,status:'In Progress',date:'2024-06-09'},
+{job:'Rodriguez Fireplace',rev:3400,mat:1200,lab:600,oth:150,status:'Billed',date:'2024-06-07'},
+{job:'Chen Full Kitchen',rev:8900,mat:3200,lab:1800,oth:400,status:'In Progress',date:'2024-06-05'}];}catch(e){return [];}}
+function sdJCSave(d){try{localStorage.setItem('sd_jobcost',JSON.stringify(d));}catch(e){}}
+function sdJCRender(){
     var d=load();
     var totRev=d.reduce(function(a,x){return a+x.rev;},0);
     var totMat=d.reduce(function(a,x){return a+x.mat;},0);
@@ -30409,5 +30407,16 @@ window.renderComms=renderComms;
 </script>
   </div>
 </div>
+</div><!-- /panel-wrap -->
+</div><!-- /app-body -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if(typeof render==='function') render();
+  if(typeof loadWeather==='function') loadWeather();
+  if(typeof loadCRM==='function') loadCRM();
+  if(typeof loadTickets==='function') loadTickets();
+});
+</script>
 
 
