@@ -18629,7 +18629,7 @@ var _origPlaceOrder = vendorPlaceOrder;
 vendorPlaceOrder = function() {
   // Record order in history before placing
   var allProducts=[];
-  Object.values(VENDORS).forEach(function(v){v.products.forEach(function(p){allProducts.push(Object.assign({},p,{vendor:v.name,vendorKey:Object.keys(VENDORS).find(function(k){return VENDORS[k]===v;})});});});
+  Object.values(VENDORS).forEach(function(v){v.products.forEach(function(p){allProducts.push(Object.assign({},p,{vendor:v.name,vendorKey:Object.keys(VENDORS).find(function(k){return VENDORS[k]===v;})}));});});
   var items=Object.entries(sdCart).map(function(e){
     var id=e[0],qty=e[1];
     var p=allProducts.find(function(x){return x.id===id;});
