@@ -18779,14 +18779,14 @@ function safetyRenderChecklist() {
   // Check if today already submitted
   var today=new Date().toISOString().split('T')[0];
   var todaySub=sdSafetyData.checklists.find(function(c){return c.date===today;});
-  el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today's checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +\n    DAILY_CHECKLIST.map(function(item){\n      var checked=todaySub&&todaySub.completed.includes(item.id);\n      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">' +\n        '<input type="checkbox" id="dc-'+item.id+'" '+(checked?'checked':'')+' style="width:18px;height:18px;cursor:pointer" '+(todaySub?'disabled':'')+'>' +\n        '<label for="dc-'+item.id+'" style="font-size:13px;color:var(--text);cursor:pointer;flex:1">'+item.label+'</label>' +\n        (item.critical?'<span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:100px;font-weight:700">CRITICAL</span>':'') +\n      '</div>';\n    }).join('');
+  el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today&#39;s checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +\n    DAILY_CHECKLIST.map(function(item){\n      var checked=todaySub&&todaySub.completed.includes(item.id);\n      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">' +\n        '<input type="checkbox" id="dc-'+item.id+'" '+(checked?'checked':'')+' style="width:18px;height:18px;cursor:pointer" '+(todaySub?'disabled':'')+'>' +\n        '<label for="dc-'+item.id+'" style="font-size:13px;color:var(--text);cursor:pointer;flex:1">'+item.label+'</label>' +\n        (item.critical?'<span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:100px;font-weight:700">CRITICAL</span>':'') +\n      '</div>';\n    }).join('');
   safetyRenderChecklistHistory();
 }
 
 function safetySubmitChecklist() {
   var today=new Date().toISOString().split('T')[0];
   var existing=sdSafetyData.checklists.find(function(c){return c.date===today;});
-  if(existing){notify('Today's checklist already submitted','warn');return;}
+  if(existing){notify('Today&#39;s checklist already submitted','warn');return;}
   var completed=[];
   var failed=[];
   DAILY_CHECKLIST.forEach(function(item){
@@ -18795,13 +18795,7 @@ function safetySubmitChecklist() {
     else if(item.critical) failed.push(item.label);
   });
   if(failed.length){
-    if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:
-
-'+failed.slice(0,3).join('
-')+(failed.length>3?'
-...and '+(failed.length-3)+' more':'')+'
-
-Submit anyway? This will be logged.')){return;}
+    if(!confirm('WARNING: '+failed.length+' critical safety item(s) not checked:\n'+failed.slice(0,3).join('\n')+(failed.length>3?'\n...and '+(failed.length-3)+' more':'')+' Submit anyway?')){return;}
   }
   sdSafetyData.checklists.unshift({id:'CL'+Date.now(),date:today,ts:new Date().toISOString(),completed:completed,failed:failed,score:Math.round(completed.length/DAILY_CHECKLIST.length*100)});
   if(sdSafetyData.checklists.length>365) sdSafetyData.checklists=sdSafetyData.checklists.slice(0,365);
@@ -18973,7 +18967,7 @@ function safetyAskClaude(topic) {
     var input=document.getElementById('userInput');
     if(input){
       var q = topic==='stop act' ?
-        'Explain exactly what I need to do to comply with California's STOP Act silica safety law as a stone fabrication shop owner. The annual attestation deadline is July 1, 2026. Give me a step-by-step checklist of what I need to do TODAY.' :
+        'Explain exactly what I need to do to comply with California&#39;s STOP Act silica safety law as a stone fabrication shop owner. The annual attestation deadline is July 1, 2026. Give me a step-by-step checklist of what I need to do TODAY.' :
         'I run a stone countertop fabrication shop. Give me a complete safety briefing: (1) Top 5 OSHA violations in stone shops and how to avoid them, (2) Silica dust exposure controls I must have, (3) What documentation OSHA will ask for if they inspect me, (4) Quick wins I can implement this week.';
       input.value=q;sendMessage();
     }
