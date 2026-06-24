@@ -18487,17 +18487,10 @@ function vendorClaudeAnalyze(product, comparisons) {
 
   var prompt =
     'You are an expert stone fabrication shop buyer. Analyze this pricing data and give a sharp 3-4 sentence recommendation.' +
-    'PRODUCT: ' + product.name + ' (SKU: ' + product.sku + ')
-' +
-    'INVENTORY: ' + invContext + '
-' +
-    'VENDOR PRICES (sorted lowest to highest effective price):
-' + priceList + '
-
-' +
-    (negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already factored in above.
-
-' : '') +
+    'PRODUCT: ' + product.name + ' (SKU: ' + product.sku + ')\n' +
+    'INVENTORY: ' + invContext + '\n' +
+    'VENDOR PRICES (sorted lowest to highest effective price):\n' + priceList + '\n\n' +
+    (negotiatedCount>0 ? 'NOTE: '+negotiatedCount+' negotiated price(s) are already factored in above.\n' : '') +
     'Tell the shop owner: (1) which vendor to order from and exactly why, (2) if they should buy in bulk now or just reorder qty, (3) any red flags or opportunities they should know about. Be specific with dollar amounts. Do not hedge.';
 
   fetch('https://sairn.vercel.app/api/claude', {
@@ -21493,6 +21486,437 @@ document.addEventListener('DOMContentLoaded', function() {
       <button class="btn bo bsm" onclick="window.print()">ðŸ–¨ï¸ Print Signed Copy</button>
     </div>
   </div>
+<!-- PANEL: CRM LEAD PIPELINE -->
+<div class="panel" id="panel-crm">
+<div style="padding:20px;max-width:1100px;margin:0 auto">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">ðŸŽ¯ CRM â€” Lead Pipeline</h2>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Sales pipeline, lead nurturing & conversion tracking</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="q-btn primary" onclick="sdCRMAdd()">+ Add Lead</button>
+    <button class="q-btn" onclick="sdCRMAI()">ðŸ¤– AI Analysis</button>
+    <button class="q-btn" onclick="sdCRMPrint()">ðŸ–¨ï¸ Print</button>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
+  <div class="kpi"><div class="kpi-val" id="crm-leads">0</div><div class="kpi-label">Active Leads</div></div>
+  <div class="kpi"><div class="kpi-val" id="crm-pipeline">$0</div><div class="kpi-label">Pipeline Value</div></div>
+  <div class="kpi"><div class="kpi-val" id="crm-hot">0</div><div class="kpi-label">Hot Leads</div></div>
+  <div class="kpi"><div class="kpi-val" id="crm-conv">0%</div><div class="kpi-label">Conversion Rate</div></div>
+  <div class="kpi"><div class="kpi-val" id="crm-avg">$0</div><div class="kpi-label">Avg Deal Size</div></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="crm-kanban"></div>
+<div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+    <div style="font-weight:700;margin-bottom:12px;color:var(--text)">All Leads</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f8f9fa">
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Lead</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Project</th>
+        <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Value</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Stage</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Source</th>
+      </tr></thead>
+      <tbody id="crm-tbody"></tbody>
+    </table>
+  </div>
+  <div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Add Lead</div>
+      <input id="crm-name" placeholder="Customer name" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <input id="crm-proj" placeholder="Project type" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input id="crm-val" type="number" placeholder="Est. value ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <select id="crm-stage" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+          <option>New Lead</option><option>Contacted</option><option>Quote Sent</option><option>Hot</option>
+        </select>
+      </div>
+      <select id="crm-source" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text)">
+        <option>Referral</option><option>Google</option><option>Yelp</option><option>Houzz</option><option>Walk-in</option><option>Contractor</option>
+      </select>
+      <button class="q-btn primary" style="width:100%" onclick="sdCRMAdd()">Add Lead</button>
+    </div>
+    <div id="crm-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
+  </div>
+</div>
+</div>
+<script>
+(function(){
+  var STAGES=['New Lead','Contacted','Quote Sent','Hot'];
+  var SEED=[
+    {name:'Alex Torres',proj:'Kitchen â€” Marble',val:4800,stage:'Hot',source:'Referral',date:'2024-06-12',phone:'(555) 501-1001'},
+    {name:'Pam Nguyen',proj:'Bath Vanity',val:1800,stage:'Quote Sent',source:'Google',date:'2024-06-10',phone:'(555) 501-1002'},
+    {name:'Brian Kim',proj:'Outdoor Kitchen',val:8200,stage:'Contacted',source:'Houzz',date:'2024-06-09',phone:'(555) 501-1003'},
+    {name:'Dana Scott',proj:'Fireplace',val:2900,stage:'New Lead',source:'Yelp',date:'2024-06-08',phone:'(555) 501-1004'},
+    {name:'James Lee',proj:'Full Kitchen Reno',val:11000,stage:'Hot',source:'Contractor',date:'2024-06-07',phone:'(555) 501-1005'},
+    {name:'Carol White',proj:'Kitchen + 2 Baths',val:7200,stage:'Quote Sent',source:'Referral',date:'2024-06-05',phone:'(555) 501-1006'},
+  ];
+  function load(){try{return JSON.parse(localStorage.getItem('sd_crm')||'null')||SEED;}catch(e){return SEED;}}
+  function save(d){try{localStorage.setItem('sd_crm',JSON.stringify(d));}catch(e){}}
+  function render(){
+    var d=load();
+    var active=d.filter(function(x){return !x.won&&!x.lost;});
+    document.getElementById('crm-leads').textContent=active.length;
+    document.getElementById('crm-pipeline').textContent='$'+active.reduce(function(a,x){return a+(x.val||0);},0).toLocaleString();
+    document.getElementById('crm-hot').textContent=active.filter(function(x){return x.stage==='Hot';}).length;
+    var won=d.filter(function(x){return x.won;}).length;
+    document.getElementById('crm-conv').textContent=d.length?Math.round(won/d.length*100)+'%':'0%';
+    document.getElementById('crm-avg').textContent=active.length?'$'+Math.round(active.reduce(function(a,x){return a+(x.val||0);},0)/active.length).toLocaleString():'$0';
+    var stageColors={'New Lead':'#f3f4f6',Contacted:'#dbeafe','Quote Sent':'#fef3c7',Hot:'#dcfce7'};
+    var kanban=document.getElementById('crm-kanban');
+    kanban.innerHTML=STAGES.map(function(st){
+      var items=active.filter(function(x){return x.stage===st;});
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px">'
+        +'<div style="font-weight:700;margin-bottom:8px;font-size:13px;color:var(--text)">'+st+' ('+items.length+')</div>'
+        +items.map(function(x){return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;font-size:12px">'
+          +'<div style="font-weight:700">'+escHtml(x.name)+'</div>'
+          +'<div style="color:var(--muted)">'+escHtml(x.proj)+'</div>'
+          +'<div style="color:#16C762;font-weight:700">$'+(x.val||0).toLocaleString()+'</div>'
+          +'</div>';}).join('')
+        +'</div>';
+    }).join('');
+    document.getElementById('crm-tbody').innerHTML=d.map(function(x){
+      return '<tr><td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">'+escHtml(x.name)+'</td>'
+        +'<td style="padding:8px;border-bottom:1px solid var(--border)">'+escHtml(x.proj)+'</td>'
+        +'<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-weight:700;color:#16C762">$'+(x.val||0).toLocaleString()+'</td>'
+        +'<td style="padding:8px;border-bottom:1px solid var(--border)"><span style="background:'+(stageColors[x.stage]||'#f3f4f6')+';padding:2px 8px;border-radius:8px;font-size:11px">'+x.stage+'</span></td>'
+        +'<td style="padding:8px;border-bottom:1px solid var(--border);color:var(--muted)">'+x.source+'</td></tr>';
+    }).join('');
+  }
+  window.sdCRMAdd=function(){
+    var name=document.getElementById('crm-name').value.trim();
+    if(!name){alert('Enter customer name');return;}
+    var d=load();
+    d.push({name:name,proj:document.getElementById('crm-proj').value||'Project',
+      val:parseFloat(document.getElementById('crm-val').value)||0,
+      stage:document.getElementById('crm-stage').value,
+      source:document.getElementById('crm-source').value,
+      date:new Date().toISOString().slice(0,10)});
+    save(d);render();
+    ['crm-name','crm-proj','crm-val'].forEach(function(id){document.getElementById(id).value='';});
+  };
+  window.sdCRMAI=function(){
+    var d=load();
+    var out=document.getElementById('crm-ai-out');
+    out.style.display='block';out.textContent='Analyzing leads...';
+    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this sales pipeline for a stone fabrication company and recommend follow-up actions for each lead stage:\n'+JSON.stringify(d)}]})
+    }).then(function(r){return r.json();}).then(function(r){
+      out.innerHTML='<strong>ðŸ¤– CRM Strategy:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+    }).catch(function(){out.textContent='AI unavailable.';});
+  };
+  window.sdCRMPrint=function(){
+    var d=load();
+    var w=window.open('','_blank');
+    w.document.write('<html><head><title>CRM</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><script>
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+window.escHtml=escHtml;
+function sdLoad(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+window.sdLoad=sdLoad;
+function renderCustomers(){if(typeof window.sdCustRender==='function')window.sdCustRender();}
+window.renderCustomers=renderCustomers;
+function renderComms(){if(typeof window.sdCommsRender==='function')window.sdCommsRender();}
+window.renderComms=renderComms;
+</script>
+</head><body>');
+    w.document.write('<h1>Pinnacle Stone â€” CRM Pipeline</h1><p>'+new Date().toLocaleDateString()+'</p>');
+    w.document.write('<table><tr><th>Customer</th><th>Project</th><th>Value</th><th>Stage</th><th>Source</th><th>Date</th></tr>');
+    d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.proj+'</td><td>$'+(x.val||0)+'</td><td>'+x.stage+'</td><td>'+x.source+'</td><td>'+x.date+'</td></tr>');});
+    w.document.write('</table></body></html>');w.document.close();w.print();
+  };
+  render();
+})();
+</script>
+</div><div style="display:flex;gap:10px;margin-top:8px">
+      <button class="q-btn primary" onclick="crmSaveLead()">Save Lead</button>
+      <button class="q-btn" onclick="document.getElementById('crm-form').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- PANEL: JOB COSTING -->
+<div class="panel" id="panel-jobcost">
+<div style="padding:20px;max-width:1100px;margin:0 auto">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">ðŸ“Š Job Cost Tracker</h2>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Per-job profitability, cost breakdown & margin analysis</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="q-btn primary" onclick="sdJCAdd()">+ Add Job</button>
+    <button class="q-btn" onclick="sdJCAI()">ðŸ¤– AI Analysis</button>
+    <button class="q-btn" onclick="sdJCPrint()">ðŸ–¨ï¸ Print</button>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
+  <div class="kpi"><div class="kpi-val" id="jc-jobs">0</div><div class="kpi-label">Active Jobs</div></div>
+  <div class="kpi"><div class="kpi-val" id="jc-revenue">$0</div><div class="kpi-label">Total Revenue</div></div>
+  <div class="kpi"><div class="kpi-val" id="jc-cost">$0</div><div class="kpi-label">Total Cost</div></div>
+  <div class="kpi"><div class="kpi-val" id="jc-profit">$0</div><div class="kpi-label">Gross Profit</div></div>
+  <div class="kpi"><div class="kpi-val" id="jc-margin">0%</div><div class="kpi-label">Avg Margin</div></div>
+</div>
+<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#f8f9fa">
+      <th style="padding:10px;text-align:left;border-bottom:2px solid var(--border)">Job / Customer</th>
+      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Revenue</th>
+      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Material</th>
+      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Labor</th>
+      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Other</th>
+      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Profit</th>
+      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Margin</th>
+      <th style="padding:10px;text-align:left;border-bottom:2px solid var(--border)">Status</th>
+    </tr></thead>
+    <tbody id="jc-tbody"></tbody>
+  </table>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+    <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Add Job Cost Entry</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <input id="jc-job" placeholder="Job name" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+      <input id="jc-rev" type="number" placeholder="Revenue ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <input id="jc-mat" type="number" placeholder="Material ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+      <input id="jc-lab" type="number" placeholder="Labor ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+      <input id="jc-oth" type="number" placeholder="Other ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    </div>
+    <select id="jc-stat" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text)">
+      <option>In Progress</option><option>Complete</option><option>Billed</option><option>Paid</option>
+    </select>
+    <button class="q-btn primary" style="width:100%" onclick="sdJCAdd()">Add Entry</button>
+  </div>
+  <div id="jc-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:14px;line-height:1.6"></div>
+  <div id="jc-ai-placeholder" style="background:#f8f9fa;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;color:var(--muted)">
+    Click AI Analysis to get margin insights and cost reduction recommendations.
+  </div>
+</div>
+</div>
+<script>
+(function(){
+  var SEED=[
+    {job:'Webb Kitchen â€” Calacatta Gold',rev:4850,mat:1800,lab:800,oth:200,status:'Paid',date:'2024-06-12'},
+    {job:'Johnson Bath â€” Carrara White',rev:2100,mat:700,lab:450,oth:100,status:'Paid',date:'2024-06-10'},
+    {job:'Park Outdoor Kitchen',rev:6200,mat:2500,lab:1200,oth:300,status:'In Progress',date:'2024-06-09'},
+    {job:'Rodriguez Fireplace',rev:3400,mat:1200,lab:600,oth:150,status:'Billed',date:'2024-06-07'},
+    {job:'Chen Full Kitchen',rev:8900,mat:3200,lab:1800,oth:400,status:'In Progress',date:'2024-06-05'},
+  ];
+  function load(){try{return JSON.parse(localStorage.getItem('sd_jobcost')||'null')||SEED;}catch(e){return SEED;}}
+  function save(d){try{localStorage.setItem('sd_jobcost',JSON.stringify(d));}catch(e){}}
+  function render(){
+    var d=load();
+    var totRev=d.reduce(function(a,x){return a+x.rev;},0);
+    var totMat=d.reduce(function(a,x){return a+x.mat;},0);
+    var totLab=d.reduce(function(a,x){return a+x.lab;},0);
+    var totOth=d.reduce(function(a,x){return a+x.oth;},0);
+    var totCost=totMat+totLab+totOth;
+    var totProfit=totRev-totCost;
+    document.getElementById('jc-jobs').textContent=d.length;
+    document.getElementById('jc-revenue').textContent='$'+totRev.toLocaleString();
+    document.getElementById('jc-cost').textContent='$'+totCost.toLocaleString();
+    document.getElementById('jc-profit').textContent='$'+totProfit.toLocaleString();
+    document.getElementById('jc-margin').textContent=totRev?Math.round(totProfit/totRev*100)+'%':'0%';
+    var colors={Paid:'#dcfce7','In Progress':'#dbeafe',Billed:'#fef3c7',Complete:'#f3f4f6'};
+    document.getElementById('jc-tbody').innerHTML=d.map(function(x){
+      var cost=x.mat+x.lab+x.oth;
+      var profit=x.rev-cost;
+      var margin=Math.round(profit/x.rev*100);
+      var mc=margin>=30?'#166534':margin>=15?'#92400e':'#dc2626';
+      return '<tr>'
+        +'<td style="padding:10px;border-bottom:1px solid var(--border);font-weight:600">'+escHtml(x.job)+'</td>'
+        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">$'+x.rev.toLocaleString()+'</td>'
+        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);color:#dc2626">$'+x.mat.toLocaleString()+'</td>'
+        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);color:#dc2626">$'+x.lab.toLocaleString()+'</td>'
+        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);color:#dc2626">$'+x.oth.toLocaleString()+'</td>'
+        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);font-weight:700;color:#16C762">$'+profit.toLocaleString()+'</td>'
+        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);font-weight:700;color:'+mc+'">'+margin+'%</td>'
+        +'<td style="padding:10px;border-bottom:1px solid var(--border)"><span style="background:'+(colors[x.status]||'#f3f4f6')+';padding:2px 8px;border-radius:10px;font-size:11px">'+x.status+'</span></td>'
+        +'</tr>';
+    }).join('');
+  }
+  window.sdJCAdd=function(){
+    var job=document.getElementById('jc-job').value.trim();
+    var rev=parseFloat(document.getElementById('jc-rev').value)||0;
+    if(!job||!rev){alert('Enter job name and revenue');return;}
+    var d=load();
+    d.push({job:job,rev:rev,mat:parseFloat(document.getElementById('jc-mat').value)||0,
+      lab:parseFloat(document.getElementById('jc-lab').value)||0,
+      oth:parseFloat(document.getElementById('jc-oth').value)||0,
+      status:document.getElementById('jc-stat').value,date:new Date().toISOString().slice(0,10)});
+    save(d);render();
+    ['jc-job','jc-rev','jc-mat','jc-lab','jc-oth'].forEach(function(id){document.getElementById(id).value='';});
+  };
+  window.sdJCAI=function(){
+    var d=load();
+    document.getElementById('jc-ai-placeholder').style.display='none';
+    var out=document.getElementById('jc-ai-out');
+    out.style.display='block';out.textContent='Analyzing job costs...';
+    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these job costs for a stone fabrication company and identify margin improvement opportunities:\n'+JSON.stringify(d)}]})
+    }).then(function(r){return r.json();}).then(function(r){
+      out.innerHTML='<strong>ðŸ¤– Cost Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+    }).catch(function(){out.textContent='AI unavailable.';});
+  };
+  window.sdJCPrint=function(){
+    var d=load();
+    var w=window.open('','_blank');
+    w.document.write('<html><head><title>Job Cost Report</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}.profit{color:green;font-weight:bold}</style><script>
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+window.escHtml=escHtml;
+function sdLoad(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+window.sdLoad=sdLoad;
+function renderCustomers(){if(typeof window.sdCustRender==='function')window.sdCustRender();}
+window.renderCustomers=renderCustomers;
+function renderComms(){if(typeof window.sdCommsRender==='function')window.sdCommsRender();}
+window.renderComms=renderComms;
+</script>
+</head><body>');
+    w.document.write('<h1>Pinnacle Stone & Design â€” Job Cost Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
+    w.document.write('<table><tr><th>Job</th><th>Revenue</th><th>Material</th><th>Labor</th><th>Other</th><th>Profit</th><th>Margin</th><th>Status</th></tr>');
+    d.forEach(function(x){
+      var cost=x.mat+x.lab+x.oth;var profit=x.rev-cost;
+      w.document.write('<tr><td>'+x.job+'</td><td>$'+x.rev+'</td><td>$'+x.mat+'</td><td>$'+x.lab+'</td><td>$'+x.oth+'</td><td class="profit">$'+profit+'</td><td>'+Math.round(profit/x.rev*100)+'%</td><td>'+x.status+'</td></tr>');
+    });
+    w.document.write('</table></body></html>');w.document.close();w.print();
+  };
+  render();
+})();
+</script>
+</div><div id="jc-ai-result" style="margin-top:16px"></div>
+  <button class="q-btn" style="margin-top:10px;background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.3);color:#7c3aed" onclick="jcAIAnalyze()">&#129504; Claude â€” Analyze My Job Margins</button>
+</div>
+</div>
+
+<!-- PANEL: TIMESHEETS -->
+<div class="panel" id="panel-timesheet">
+<div style="padding:20px;max-width:1100px;margin:0 auto">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">â° Timesheet</h2>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Employee hours, payroll summary & job time tracking</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="q-btn primary" onclick="sdTSLog()">+ Log Hours</button>
+    <button class="q-btn" onclick="sdTSAI()">ðŸ¤– AI Labor Analysis</button>
+    <button class="q-btn" onclick="sdTSPrint()">ðŸ–¨ï¸ Print</button>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+  <div class="kpi"><div class="kpi-val" id="ts-week-hrs">0</div><div class="kpi-label">Hours This Week</div></div>
+  <div class="kpi"><div class="kpi-val" id="ts-payroll">$0</div><div class="kpi-label">Est. Payroll</div></div>
+  <div class="kpi"><div class="kpi-val" id="ts-ot">0</div><div class="kpi-label">OT Hours</div></div>
+  <div class="kpi"><div class="kpi-val" id="ts-employees">0</div><div class="kpi-label">Employees Logged</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+    <div style="font-weight:700;margin-bottom:12px;color:var(--text)">This Week</div>
+    <div id="ts-list"></div>
+  </div>
+  <div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Log Hours</div>
+      <select id="ts-emp" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)">
+        <option>Jim Hartwell</option><option>Mike Rodriguez</option><option>Carlos Mendez</option>
+        <option>Tony Perez</option><option>Dave Wong</option><option>Jake Burns</option>
+      </select>
+      <input id="ts-date" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input id="ts-in" type="time" placeholder="Time in" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <input id="ts-out" type="time" placeholder="Time out" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+      </div>
+      <input id="ts-job" placeholder="Job / project (optional)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <button class="q-btn primary" style="width:100%" onclick="sdTSLog()">Log Hours</button>
+    </div>
+    <div id="ts-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
+  </div>
+</div>
+</div>
+<script>
+(function(){
+  var today=new Date().toISOString().slice(0,10);
+  var weekAgo=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+  var SEED=[
+    {emp:'Mike Rodriguez',date:today,inn:'07:00',out:'15:30',job:'Webb Install',hrs:8.5},
+    {emp:'Carlos Mendez',date:today,inn:'07:00',out:'15:00',job:'Park Fab',hrs:8},
+    {emp:'Tony Perez',date:today,inn:'07:30',out:'16:00',job:'Rodriguez Install',hrs:8.5},
+    {emp:'Jake Burns',date:today,inn:'07:00',out:'17:00',job:'Multiple',hrs:10},
+    {emp:'Dave Wong',date:today,inn:'06:30',out:'15:00',job:'Shop',hrs:8.5},
+    {emp:'Mike Rodriguez',date:weekAgo,inn:'07:00',out:'15:00',job:'Chen Template',hrs:8},
+    {emp:'Carlos Mendez',date:weekAgo,inn:'07:00',out:'14:30',job:'Rem Fab',hrs:7.5},
+  ];
+  function load(){try{return JSON.parse(localStorage.getItem('sd_timesheets')||'null')||SEED;}catch(e){return SEED;}}
+  function save(d){try{localStorage.setItem('sd_timesheets',JSON.stringify(d));}catch(e){}}
+  function render(){
+    var d=load();
+    var week=d.filter(function(x){return x.date>=weekAgo;});
+    var totalHrs=week.reduce(function(a,x){return a+x.hrs;},0);
+    var otHrs=week.filter(function(x){return x.hrs>8;}).reduce(function(a,x){return a+(x.hrs-8);},0);
+    var avgWage=28;
+    document.getElementById('ts-week-hrs').textContent=totalHrs.toFixed(1);
+    document.getElementById('ts-payroll').textContent='$'+(totalHrs*avgWage).toLocaleString();
+    document.getElementById('ts-ot').textContent=otHrs.toFixed(1);
+    var emps=new Set(week.map(function(x){return x.emp;}));
+    document.getElementById('ts-employees').textContent=emps.size;
+    var grouped={};
+    week.forEach(function(x){grouped[x.emp]=(grouped[x.emp]||0)+x.hrs;});
+    document.getElementById('ts-list').innerHTML=Object.entries(grouped).sort(function(a,b){return b[1]-a[1];}).map(function(e){
+      var bar=Math.round(e[1]/50*100);
+      return '<div style="margin-bottom:14px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        +'<span style="font-weight:600;font-size:13px">'+escHtml(e[0])+'</span>'
+        +'<span style="font-size:13px"><strong>'+e[1].toFixed(1)+' hrs</strong> &bull; <span style="color:#16C762">$'+(e[1]*avgWage).toLocaleString()+'</span></span>'
+        +'</div>'
+        +'<div style="background:#f3f4f6;border-radius:4px;height:8px"><div style="background:#16C762;width:'+Math.min(bar,100)+'%;height:8px;border-radius:4px"></div></div>'
+        +'</div>';
+    }).join('');
+  }
+  window.sdTSLog=function(){
+    var emp=document.getElementById('ts-emp').value;
+    var d=load();
+    var inn=document.getElementById('ts-in').value||'08:00';
+    var out=document.getElementById('ts-out').value||'16:00';
+    var h1=parseInt(inn.split(':')[0])*60+parseInt(inn.split(':')[1]);
+    var h2=parseInt(out.split(':')[0])*60+parseInt(out.split(':')[1]);
+    var hrs=Math.max(0,(h2-h1)/60);
+    d.push({emp:emp,date:document.getElementById('ts-date').value||today,inn:inn,out:out,
+      job:document.getElementById('ts-job').value||'General',hrs:hrs});
+    save(d);render();
+    ['ts-in','ts-out','ts-job'].forEach(function(id){document.getElementById(id).value='';});
+  };
+  window.sdTSAI=function(){
+    var d=load();
+    var out=document.getElementById('ts-ai-out');
+    out.style.display='block';out.textContent='Analyzing labor...';
+    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this timesheet data and identify overtime risks, productivity patterns, and labor cost optimization opportunities:\n'+JSON.stringify(d.slice(-30))}]})
+    }).then(function(r){return r.json();}).then(function(r){
+      out.innerHTML='<strong>ðŸ¤– Labor Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+    }).catch(function(){out.textContent='AI unavailable.';});
+  };
+  window.sdTSPrint=function(){
+    var d=load().filter(function(x){return x.date>=weekAgo;});
+    var w=window.open('','_blank');
+    w.document.write('<html><head><title>Timesheet</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><script>
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+window.escHtml=escHtml;
+function sdLoad(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+window.sdLoad=sdLoad;
+function renderCustomers(){if(typeof window.sdCustRender==='function')window.sdCustRender();}
+window.renderCustomers=renderCustomers;
+function renderComms(){if(typeof window.sdCommsRender==='function')window.sdCommsRender();}
+window.renderComms=renderComms;
+</script>
+</head><body>');
+    w.document.write('<h1>Pinnacle Stone â€” Weekly Timesheet</h1><p>Week ending: '+today+'</p>');
+    w.document.write('<table><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Job</th></tr>');
+    d.forEach(function(x){w.document.write('<tr><td>'+x.emp+'</td><td>'+x.date+'</td><td>'+x.inn+'</td><td>'+x.out+'</td><td>'+x.hrs.toFixed(1)+'</td><td>'+x.job+'</td></tr>');});
+    w.document.write('</table></body></html>');w.document.close();w.print();
+  };
+  render();
+})();
+</script>
+</div><div id="ts-log"></div>
+</div>
+</div>
+
 <!-- PANEL: REMNANT YARD -->
 <div class="panel" id="panel-remnant">
 <div style="padding:20px;max-width:1100px;margin:0 auto">
@@ -25571,131 +25995,6 @@ async function sdRunEmailScan() {
     <button class="q-btn primary" onclick="sdEmailScan()">ðŸ” Scan Email</button>
     <button class="q-btn" onclick="sdEmailAI()">ðŸ¤– AI Analysis</button>
     <button class="q-btn" onclick="sdEmailPrint()">ðŸ–¨ï¸ Print Report</button>
-  </div>
-</div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="email-blocked" style="color:#16C762">0</div><div class="kpi-label">Threats Blocked MTD</div></div>
-  <div class="kpi"><div class="kpi-val" id="email-phish">0</div><div class="kpi-label">Phishing Attempts</div></div>
-  <div class="kpi"><div class="kpi-val" id="email-score">A+</div><div class="kpi-label">Security Score</div></div>
-  <div class="kpi"><div class="kpi-val" id="email-trained">0%</div><div class="kpi-label">Staff Trained</div></div>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-  <div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
-      <div style="font-weight:700;margin-bottom:12px;color:var(--text)">Scan Email for Threats</div>
-      <textarea id="email-input" rows="6" placeholder="Paste email content or subject line here to analyze for phishing, social engineering, or fraud..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box;resize:vertical"></textarea>
-      <button class="q-btn primary" style="width:100%" onclick="sdEmailScan()">ðŸ” Analyze Email</button>
-      <div id="email-scan-out" style="display:none;margin-top:12px;padding:14px;border-radius:8px;font-size:13px;line-height:1.6"></div>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
-      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Recent Threats Blocked</div>
-      <div id="email-threats"></div>
-    </div>
-  </div>
-  <div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
-      <div style="font-weight:700;margin-bottom:12px;color:var(--text)">Security Checklist</div>
-      <div id="email-checklist"></div>
-    </div>
-    <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:14px;margin-bottom:12px">
-      <div style="font-weight:700;color:#92400e;margin-bottom:8px">âš ï¸ Top Business Email Scams</div>
-      <div style="font-size:13px;color:#78350f;line-height:1.8">
-        <div>â€¢ Fake vendor invoice (BEC fraud)</div>
-        <div>â€¢ CEO/owner impersonation requests</div>
-        <div>â€¢ Fake wire transfer requests</div>
-        <div>â€¢ Supplier account change scams</div>
-        <div>â€¢ Tax season W-2/payroll phishing</div>
-      </div>
-    </div>
-    <div id="email-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
-  </div>
-</div>
-</div>
-<script>
-(function(){
-  var THREATS=[
-    {type:'Phishing',from:'accounting@stone-supply-llc.net',subject:'Invoice #4821 Overdue â€” URGENT',blocked:'2024-06-14',risk:'High'},
-    {type:'BEC Fraud',from:'jim.hartwell@pinnaclesd-secure.com',subject:'Wire transfer request â€” confidential',blocked:'2024-06-12',risk:'Critical'},
-    {type:'Malware',from:'noreply@fedex-delivery.track.ru',subject:'Your package could not be delivered',blocked:'2024-06-10',risk:'High'},
-    {type:'Phishing',from:'support@quickbooks-verify.net',subject:'Action required: Verify your QB account',blocked:'2024-06-08',risk:'Medium'},
-  ];
-  var CHECKLIST=[
-    {item:'SPF Record configured',status:true},
-    {item:'DKIM signing enabled',status:true},
-    {item:'DMARC policy set to reject',status:true},
-    {item:'MFA enabled for all accounts',status:true},
-    {item:'Phishing simulation training done',status:false},
-    {item:'Email backup & archive enabled',status:true},
-    {item:'Admin account separate from daily use',status:false},
-  ];
-  document.getElementById('email-blocked').textContent=THREATS.length;
-  document.getElementById('email-phish').textContent=THREATS.filter(function(x){return x.type==='Phishing';}).length;
-  document.getElementById('email-trained').textContent='75%';
-  var done=CHECKLIST.filter(function(x){return x.status;}).length;
-  var score=done>=6?'A+':done>=5?'A':done>=4?'B':'C';
-  document.getElementById('email-score').textContent=score;
-  var rColors={Critical:'#fee2e2',High:'#fef3c7',Medium:'#dbeafe',Low:'#f3f4f6'};
-  document.getElementById('email-threats').innerHTML=THREATS.map(function(x){
-    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-      +'<span style="font-weight:700;font-size:13px;color:#dc2626">'+x.type+'</span>'
-      +'<span style="background:'+(rColors[x.risk]||'#f3f4f6')+';font-size:10px;padding:2px 8px;border-radius:8px">'+x.risk+'</span>'
-      +'</div>'
-      +'<div style="font-size:12px;color:var(--muted)">From: '+escHtml(x.from)+'</div>'
-      +'<div style="font-size:12px;font-style:italic;margin-top:2px">'+escHtml(x.subject)+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">Blocked: '+x.blocked+'</div>'
-      +'</div>';
-  }).join('');
-  document.getElementById('email-checklist').innerHTML=CHECKLIST.map(function(x){
-    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">'
-      +'<span style="font-size:18px">'+(x.status?'âœ…':'âŒ')+'</span>'
-      +'<span style="color:'+(x.status?'var(--text)':'#dc2626')+'">'+x.item+'</span>'
-      +'</div>';
-  }).join('');
-  window.sdEmailScan=function(){
-    var txt=document.getElementById('email-input').value.trim();
-    if(!txt){alert('Paste email content to analyze');return;}
-    var out=document.getElementById('email-scan-out');
-    out.style.display='block';out.style.background='#f8f9fa';out.textContent='Analyzing...';
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this email for phishing, fraud, or social engineering. Rate risk Low/Medium/High/Critical. List red flags and recommended action:\n'+txt}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      var result=r.content||r.completion||'';
-      var isHigh=result.toLowerCase().includes('high')||result.toLowerCase().includes('critical');
-      out.style.background=isHigh?'#fef2f2':'#f0fdf4';
-      out.style.border='1px solid '+(isHigh?'#fca5a5':'#86efac');
-      out.innerHTML='<strong>ðŸ¤– Security Analysis:</strong><br>'+result.replace(/\n/g,'<br>');
-    }).catch(function(){out.textContent='AI unavailable.';});
-  };
-  window.sdEmailAI=function(){
-    var out=document.getElementById('email-ai-out');
-    out.style.display='block';out.textContent='Generating security recommendations...';
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Provide a 5-point email security improvement plan for a small stone fabrication business with 8 employees. Focus on practical steps to prevent BEC fraud and phishing.'}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>ðŸ¤– Security Plan:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
-    }).catch(function(){out.textContent='AI unavailable.';});
-  };
-  window.sdEmailPrint=function(){
-    var w=window.open('','_blank');
-    w.document.write('<html><head><title>Email Security</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><script>
-function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-window.escHtml=escHtml;
-function sdLoad(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
-window.sdLoad=sdLoad;
-function renderCustomers(){if(typeof window.sdCustRender==='function')window.sdCustRender();}
-window.renderCustomers=renderCustomers;
-function renderComms(){if(typeof window.sdCommsRender==='function')window.sdCommsRender();}
-window.renderComms=renderComms;
-</script>
-</head><body>');
-    w.document.write('<h1>Pinnacle Stone â€” Email Security Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<h2>Threats Blocked</h2><table><tr><th>Type</th><th>From</th><th>Subject</th><th>Risk</th><th>Blocked</th></tr>');
-    THREATS.forEach(function(x){w.document.write('<tr><td>'+x.type+'</td><td>'+x.from+'</td><td>'+x.subject+'</td><td>'+x.risk+'</td><td>'+x.blocked+'</td></tr>');});
-    w.document.write('</table></body></html>');w.document.close();w.print();
-  };
-})();
-</script>
   </div>
 </div>
 </div><!-- /panel-wrap -->
@@ -29978,415 +30277,112 @@ function taxExport(){
 <!-- TIER 1 & 2 NEW PANELS â€” SESSION 22                          -->
 <!-- ============================================================ -->
 
-<!-- PANEL: CRM LEAD PIPELINE -->
-<div class="panel" id="panel-crm">
-<div style="padding:20px;max-width:1100px;margin:0 auto">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">ðŸŽ¯ CRM â€” Lead Pipeline</h2>
-  <div style="font-size:13px;color:var(--muted);margin-top:2px">Sales pipeline, lead nurturing & conversion tracking</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="q-btn primary" onclick="sdCRMAdd()">+ Add Lead</button>
-    <button class="q-btn" onclick="sdCRMAI()">ðŸ¤– AI Analysis</button>
-    <button class="q-btn" onclick="sdCRMPrint()">ðŸ–¨ï¸ Print</button>
-  </div>
-</div>
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="crm-leads">0</div><div class="kpi-label">Active Leads</div></div>
-  <div class="kpi"><div class="kpi-val" id="crm-pipeline">$0</div><div class="kpi-label">Pipeline Value</div></div>
-  <div class="kpi"><div class="kpi-val" id="crm-hot">0</div><div class="kpi-label">Hot Leads</div></div>
-  <div class="kpi"><div class="kpi-val" id="crm-conv">0%</div><div class="kpi-label">Conversion Rate</div></div>
-  <div class="kpi"><div class="kpi-val" id="crm-avg">$0</div><div class="kpi-label">Avg Deal Size</div></div>
-</div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="crm-kanban"></div>
-<div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
-    <div style="font-weight:700;margin-bottom:12px;color:var(--text)">All Leads</div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#f8f9fa">
-        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Lead</th>
-        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Project</th>
-        <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Value</th>
-        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Stage</th>
-        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Source</th>
-      </tr></thead>
-      <tbody id="crm-tbody"></tbody>
-    </table>
-  </div>
-  <div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
-      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Add Lead</div>
-      <input id="crm-name" placeholder="Customer name" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
-      <input id="crm-proj" placeholder="Project type" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <input id="crm-val" type="number" placeholder="Est. value ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-        <select id="crm-stage" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-          <option>New Lead</option><option>Contacted</option><option>Quote Sent</option><option>Hot</option>
-        </select>
-      </div>
-      <select id="crm-source" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text)">
-        <option>Referral</option><option>Google</option><option>Yelp</option><option>Houzz</option><option>Walk-in</option><option>Contractor</option>
-      </select>
-      <button class="q-btn primary" style="width:100%" onclick="sdCRMAdd()">Add Lead</button>
-    </div>
-    <div id="crm-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
-  </div>
-</div>
-</div>
-<script>
-(function(){
-  var STAGES=['New Lead','Contacted','Quote Sent','Hot'];
-  var SEED=[
-    {name:'Alex Torres',proj:'Kitchen â€” Marble',val:4800,stage:'Hot',source:'Referral',date:'2024-06-12',phone:'(555) 501-1001'},
-    {name:'Pam Nguyen',proj:'Bath Vanity',val:1800,stage:'Quote Sent',source:'Google',date:'2024-06-10',phone:'(555) 501-1002'},
-    {name:'Brian Kim',proj:'Outdoor Kitchen',val:8200,stage:'Contacted',source:'Houzz',date:'2024-06-09',phone:'(555) 501-1003'},
-    {name:'Dana Scott',proj:'Fireplace',val:2900,stage:'New Lead',source:'Yelp',date:'2024-06-08',phone:'(555) 501-1004'},
-    {name:'James Lee',proj:'Full Kitchen Reno',val:11000,stage:'Hot',source:'Contractor',date:'2024-06-07',phone:'(555) 501-1005'},
-    {name:'Carol White',proj:'Kitchen + 2 Baths',val:7200,stage:'Quote Sent',source:'Referral',date:'2024-06-05',phone:'(555) 501-1006'},
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_crm')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_crm',JSON.stringify(d));}catch(e){}}
-  function render(){
-    var d=load();
-    var active=d.filter(function(x){return !x.won&&!x.lost;});
-    document.getElementById('crm-leads').textContent=active.length;
-    document.getElementById('crm-pipeline').textContent='$'+active.reduce(function(a,x){return a+(x.val||0);},0).toLocaleString();
-    document.getElementById('crm-hot').textContent=active.filter(function(x){return x.stage==='Hot';}).length;
-    var won=d.filter(function(x){return x.won;}).length;
-    document.getElementById('crm-conv').textContent=d.length?Math.round(won/d.length*100)+'%':'0%';
-    document.getElementById('crm-avg').textContent=active.length?'$'+Math.round(active.reduce(function(a,x){return a+(x.val||0);},0)/active.length).toLocaleString():'$0';
-    var stageColors={'New Lead':'#f3f4f6',Contacted:'#dbeafe','Quote Sent':'#fef3c7',Hot:'#dcfce7'};
-    var kanban=document.getElementById('crm-kanban');
-    kanban.innerHTML=STAGES.map(function(st){
-      var items=active.filter(function(x){return x.stage===st;});
-      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px">'
-        +'<div style="font-weight:700;margin-bottom:8px;font-size:13px;color:var(--text)">'+st+' ('+items.length+')</div>'
-        +items.map(function(x){return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;font-size:12px">'
-          +'<div style="font-weight:700">'+escHtml(x.name)+'</div>'
-          +'<div style="color:var(--muted)">'+escHtml(x.proj)+'</div>'
-          +'<div style="color:#16C762;font-weight:700">$'+(x.val||0).toLocaleString()+'</div>'
-          +'</div>';}).join('')
-        +'</div>';
-    }).join('');
-    document.getElementById('crm-tbody').innerHTML=d.map(function(x){
-      return '<tr><td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">'+escHtml(x.name)+'</td>'
-        +'<td style="padding:8px;border-bottom:1px solid var(--border)">'+escHtml(x.proj)+'</td>'
-        +'<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-weight:700;color:#16C762">$'+(x.val||0).toLocaleString()+'</td>'
-        +'<td style="padding:8px;border-bottom:1px solid var(--border)"><span style="background:'+(stageColors[x.stage]||'#f3f4f6')+';padding:2px 8px;border-radius:8px;font-size:11px">'+x.stage+'</span></td>'
-        +'<td style="padding:8px;border-bottom:1px solid var(--border);color:var(--muted)">'+x.source+'</td></tr>';
-    }).join('');
-  }
-  window.sdCRMAdd=function(){
-    var name=document.getElementById('crm-name').value.trim();
-    if(!name){alert('Enter customer name');return;}
-    var d=load();
-    d.push({name:name,proj:document.getElementById('crm-proj').value||'Project',
-      val:parseFloat(document.getElementById('crm-val').value)||0,
-      stage:document.getElementById('crm-stage').value,
-      source:document.getElementById('crm-source').value,
-      date:new Date().toISOString().slice(0,10)});
-    save(d);render();
-    ['crm-name','crm-proj','crm-val'].forEach(function(id){document.getElementById(id).value='';});
-  };
-  window.sdCRMAI=function(){
-    var d=load();
-    var out=document.getElementById('crm-ai-out');
-    out.style.display='block';out.textContent='Analyzing leads...';
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this sales pipeline for a stone fabrication company and recommend follow-up actions for each lead stage:\n'+JSON.stringify(d)}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>ðŸ¤– CRM Strategy:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
-    }).catch(function(){out.textContent='AI unavailable.';});
-  };
-  window.sdCRMPrint=function(){
-    var d=load();
-    var w=window.open('','_blank');
-    w.document.write('<html><head><title>CRM</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><script>
-function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-window.escHtml=escHtml;
-function sdLoad(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
-window.sdLoad=sdLoad;
-function renderCustomers(){if(typeof window.sdCustRender==='function')window.sdCustRender();}
-window.renderCustomers=renderCustomers;
-function renderComms(){if(typeof window.sdCommsRender==='function')window.sdCommsRender();}
-window.renderComms=renderComms;
-</script>
-</head><body>');
-    w.document.write('<h1>Pinnacle Stone â€” CRM Pipeline</h1><p>'+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<table><tr><th>Customer</th><th>Project</th><th>Value</th><th>Stage</th><th>Source</th><th>Date</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.proj+'</td><td>$'+(x.val||0)+'</td><td>'+x.stage+'</td><td>'+x.source+'</td><td>'+x.date+'</td></tr>');});
-    w.document.write('</table></body></html>');w.document.close();w.print();
-  };
-  render();
-})();
-</script>
-</div><div style="display:flex;gap:10px;margin-top:8px">
-      <button class="q-btn primary" onclick="crmSaveLead()">Save Lead</button>
-      <button class="q-btn" onclick="document.getElementById('crm-form').style.display='none'">Cancel</button>
-    </div>
-  </div>
-</div>
-</div>
-
-<!-- PANEL: JOB COSTING -->
-<div class="panel" id="panel-jobcost">
-<div style="padding:20px;max-width:1100px;margin:0 auto">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">ðŸ“Š Job Cost Tracker</h2>
-  <div style="font-size:13px;color:var(--muted);margin-top:2px">Per-job profitability, cost breakdown & margin analysis</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="q-btn primary" onclick="sdJCAdd()">+ Add Job</button>
-    <button class="q-btn" onclick="sdJCAI()">ðŸ¤– AI Analysis</button>
-    <button class="q-btn" onclick="sdJCPrint()">ðŸ–¨ï¸ Print</button>
-  </div>
-</div>
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="jc-jobs">0</div><div class="kpi-label">Active Jobs</div></div>
-  <div class="kpi"><div class="kpi-val" id="jc-revenue">$0</div><div class="kpi-label">Total Revenue</div></div>
-  <div class="kpi"><div class="kpi-val" id="jc-cost">$0</div><div class="kpi-label">Total Cost</div></div>
-  <div class="kpi"><div class="kpi-val" id="jc-profit">$0</div><div class="kpi-label">Gross Profit</div></div>
-  <div class="kpi"><div class="kpi-val" id="jc-margin">0%</div><div class="kpi-label">Avg Margin</div></div>
-</div>
-<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
-  <table style="width:100%;border-collapse:collapse;font-size:13px">
-    <thead><tr style="background:#f8f9fa">
-      <th style="padding:10px;text-align:left;border-bottom:2px solid var(--border)">Job / Customer</th>
-      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Revenue</th>
-      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Material</th>
-      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Labor</th>
-      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Other</th>
-      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Profit</th>
-      <th style="padding:10px;text-align:right;border-bottom:2px solid var(--border)">Margin</th>
-      <th style="padding:10px;text-align:left;border-bottom:2px solid var(--border)">Status</th>
-    </tr></thead>
-    <tbody id="jc-tbody"></tbody>
-  </table>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+  <div class="kpi"><div class="kpi-val" id="email-blocked" style="color:#16C762">0</div><div class="kpi-label">Threats Blocked MTD</div></div>
+  <div class="kpi"><div class="kpi-val" id="email-phish">0</div><div class="kpi-label">Phishing Attempts</div></div>
+  <div class="kpi"><div class="kpi-val" id="email-score">A+</div><div class="kpi-label">Security Score</div></div>
+  <div class="kpi"><div class="kpi-val" id="email-trained">0%</div><div class="kpi-label">Staff Trained</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
-    <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Add Job Cost Entry</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-      <input id="jc-job" placeholder="Job name" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-      <input id="jc-rev" type="number" placeholder="Revenue ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+  <div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:12px;color:var(--text)">Scan Email for Threats</div>
+      <textarea id="email-input" rows="6" placeholder="Paste email content or subject line here to analyze for phishing, social engineering, or fraud..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box;resize:vertical"></textarea>
+      <button class="q-btn primary" style="width:100%" onclick="sdEmailScan()">ðŸ” Analyze Email</button>
+      <div id="email-scan-out" style="display:none;margin-top:12px;padding:14px;border-radius:8px;font-size:13px;line-height:1.6"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-      <input id="jc-mat" type="number" placeholder="Material ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-      <input id="jc-lab" type="number" placeholder="Labor ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-      <input id="jc-oth" type="number" placeholder="Other ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Recent Threats Blocked</div>
+      <div id="email-threats"></div>
     </div>
-    <select id="jc-stat" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text)">
-      <option>In Progress</option><option>Complete</option><option>Billed</option><option>Paid</option>
-    </select>
-    <button class="q-btn primary" style="width:100%" onclick="sdJCAdd()">Add Entry</button>
-  </div>
-  <div id="jc-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:14px;line-height:1.6"></div>
-  <div id="jc-ai-placeholder" style="background:#f8f9fa;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;color:var(--muted)">
-    Click AI Analysis to get margin insights and cost reduction recommendations.
-  </div>
-</div>
-</div>
-<script>
-(function(){
-  var SEED=[
-    {job:'Webb Kitchen â€” Calacatta Gold',rev:4850,mat:1800,lab:800,oth:200,status:'Paid',date:'2024-06-12'},
-    {job:'Johnson Bath â€” Carrara White',rev:2100,mat:700,lab:450,oth:100,status:'Paid',date:'2024-06-10'},
-    {job:'Park Outdoor Kitchen',rev:6200,mat:2500,lab:1200,oth:300,status:'In Progress',date:'2024-06-09'},
-    {job:'Rodriguez Fireplace',rev:3400,mat:1200,lab:600,oth:150,status:'Billed',date:'2024-06-07'},
-    {job:'Chen Full Kitchen',rev:8900,mat:3200,lab:1800,oth:400,status:'In Progress',date:'2024-06-05'},
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_jobcost')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_jobcost',JSON.stringify(d));}catch(e){}}
-  function render(){
-    var d=load();
-    var totRev=d.reduce(function(a,x){return a+x.rev;},0);
-    var totMat=d.reduce(function(a,x){return a+x.mat;},0);
-    var totLab=d.reduce(function(a,x){return a+x.lab;},0);
-    var totOth=d.reduce(function(a,x){return a+x.oth;},0);
-    var totCost=totMat+totLab+totOth;
-    var totProfit=totRev-totCost;
-    document.getElementById('jc-jobs').textContent=d.length;
-    document.getElementById('jc-revenue').textContent='$'+totRev.toLocaleString();
-    document.getElementById('jc-cost').textContent='$'+totCost.toLocaleString();
-    document.getElementById('jc-profit').textContent='$'+totProfit.toLocaleString();
-    document.getElementById('jc-margin').textContent=totRev?Math.round(totProfit/totRev*100)+'%':'0%';
-    var colors={Paid:'#dcfce7','In Progress':'#dbeafe',Billed:'#fef3c7',Complete:'#f3f4f6'};
-    document.getElementById('jc-tbody').innerHTML=d.map(function(x){
-      var cost=x.mat+x.lab+x.oth;
-      var profit=x.rev-cost;
-      var margin=Math.round(profit/x.rev*100);
-      var mc=margin>=30?'#166534':margin>=15?'#92400e':'#dc2626';
-      return '<tr>'
-        +'<td style="padding:10px;border-bottom:1px solid var(--border);font-weight:600">'+escHtml(x.job)+'</td>'
-        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">$'+x.rev.toLocaleString()+'</td>'
-        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);color:#dc2626">$'+x.mat.toLocaleString()+'</td>'
-        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);color:#dc2626">$'+x.lab.toLocaleString()+'</td>'
-        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);color:#dc2626">$'+x.oth.toLocaleString()+'</td>'
-        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);font-weight:700;color:#16C762">$'+profit.toLocaleString()+'</td>'
-        +'<td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);font-weight:700;color:'+mc+'">'+margin+'%</td>'
-        +'<td style="padding:10px;border-bottom:1px solid var(--border)"><span style="background:'+(colors[x.status]||'#f3f4f6')+';padding:2px 8px;border-radius:10px;font-size:11px">'+x.status+'</span></td>'
-        +'</tr>';
-    }).join('');
-  }
-  window.sdJCAdd=function(){
-    var job=document.getElementById('jc-job').value.trim();
-    var rev=parseFloat(document.getElementById('jc-rev').value)||0;
-    if(!job||!rev){alert('Enter job name and revenue');return;}
-    var d=load();
-    d.push({job:job,rev:rev,mat:parseFloat(document.getElementById('jc-mat').value)||0,
-      lab:parseFloat(document.getElementById('jc-lab').value)||0,
-      oth:parseFloat(document.getElementById('jc-oth').value)||0,
-      status:document.getElementById('jc-stat').value,date:new Date().toISOString().slice(0,10)});
-    save(d);render();
-    ['jc-job','jc-rev','jc-mat','jc-lab','jc-oth'].forEach(function(id){document.getElementById(id).value='';});
-  };
-  window.sdJCAI=function(){
-    var d=load();
-    document.getElementById('jc-ai-placeholder').style.display='none';
-    var out=document.getElementById('jc-ai-out');
-    out.style.display='block';out.textContent='Analyzing job costs...';
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these job costs for a stone fabrication company and identify margin improvement opportunities:\n'+JSON.stringify(d)}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>ðŸ¤– Cost Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
-    }).catch(function(){out.textContent='AI unavailable.';});
-  };
-  window.sdJCPrint=function(){
-    var d=load();
-    var w=window.open('','_blank');
-    w.document.write('<html><head><title>Job Cost Report</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}.profit{color:green;font-weight:bold}</style><script>
-function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-window.escHtml=escHtml;
-function sdLoad(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
-window.sdLoad=sdLoad;
-function renderCustomers(){if(typeof window.sdCustRender==='function')window.sdCustRender();}
-window.renderCustomers=renderCustomers;
-function renderComms(){if(typeof window.sdCommsRender==='function')window.sdCommsRender();}
-window.renderComms=renderComms;
-</script>
-</head><body>');
-    w.document.write('<h1>Pinnacle Stone & Design â€” Job Cost Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<table><tr><th>Job</th><th>Revenue</th><th>Material</th><th>Labor</th><th>Other</th><th>Profit</th><th>Margin</th><th>Status</th></tr>');
-    d.forEach(function(x){
-      var cost=x.mat+x.lab+x.oth;var profit=x.rev-cost;
-      w.document.write('<tr><td>'+x.job+'</td><td>$'+x.rev+'</td><td>$'+x.mat+'</td><td>$'+x.lab+'</td><td>$'+x.oth+'</td><td class="profit">$'+profit+'</td><td>'+Math.round(profit/x.rev*100)+'%</td><td>'+x.status+'</td></tr>');
-    });
-    w.document.write('</table></body></html>');w.document.close();w.print();
-  };
-  render();
-})();
-</script>
-</div><div id="jc-ai-result" style="margin-top:16px"></div>
-  <button class="q-btn" style="margin-top:10px;background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.3);color:#7c3aed" onclick="jcAIAnalyze()">&#129504; Claude â€” Analyze My Job Margins</button>
-</div>
-</div>
-
-<!-- PANEL: TIMESHEETS -->
-<div class="panel" id="panel-timesheet">
-<div style="padding:20px;max-width:1100px;margin:0 auto">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">â° Timesheet</h2>
-  <div style="font-size:13px;color:var(--muted);margin-top:2px">Employee hours, payroll summary & job time tracking</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="q-btn primary" onclick="sdTSLog()">+ Log Hours</button>
-    <button class="q-btn" onclick="sdTSAI()">ðŸ¤– AI Labor Analysis</button>
-    <button class="q-btn" onclick="sdTSPrint()">ðŸ–¨ï¸ Print</button>
-  </div>
-</div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="ts-week-hrs">0</div><div class="kpi-label">Hours This Week</div></div>
-  <div class="kpi"><div class="kpi-val" id="ts-payroll">$0</div><div class="kpi-label">Est. Payroll</div></div>
-  <div class="kpi"><div class="kpi-val" id="ts-ot">0</div><div class="kpi-label">OT Hours</div></div>
-  <div class="kpi"><div class="kpi-val" id="ts-employees">0</div><div class="kpi-label">Employees Logged</div></div>
-</div>
-<div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
-    <div style="font-weight:700;margin-bottom:12px;color:var(--text)">This Week</div>
-    <div id="ts-list"></div>
   </div>
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
-      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Log Hours</div>
-      <select id="ts-emp" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)">
-        <option>Jim Hartwell</option><option>Mike Rodriguez</option><option>Carlos Mendez</option>
-        <option>Tony Perez</option><option>Dave Wong</option><option>Jake Burns</option>
-      </select>
-      <input id="ts-date" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <input id="ts-in" type="time" placeholder="Time in" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-        <input id="ts-out" type="time" placeholder="Time out" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-      </div>
-      <input id="ts-job" placeholder="Job / project (optional)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
-      <button class="q-btn primary" style="width:100%" onclick="sdTSLog()">Log Hours</button>
+      <div style="font-weight:700;margin-bottom:12px;color:var(--text)">Security Checklist</div>
+      <div id="email-checklist"></div>
     </div>
-    <div id="ts-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
+    <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="font-weight:700;color:#92400e;margin-bottom:8px">âš ï¸ Top Business Email Scams</div>
+      <div style="font-size:13px;color:#78350f;line-height:1.8">
+        <div>â€¢ Fake vendor invoice (BEC fraud)</div>
+        <div>â€¢ CEO/owner impersonation requests</div>
+        <div>â€¢ Fake wire transfer requests</div>
+        <div>â€¢ Supplier account change scams</div>
+        <div>â€¢ Tax season W-2/payroll phishing</div>
+      </div>
+    </div>
+    <div id="email-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
   </div>
 </div>
 </div>
 <script>
 (function(){
-  var today=new Date().toISOString().slice(0,10);
-  var weekAgo=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
-  var SEED=[
-    {emp:'Mike Rodriguez',date:today,inn:'07:00',out:'15:30',job:'Webb Install',hrs:8.5},
-    {emp:'Carlos Mendez',date:today,inn:'07:00',out:'15:00',job:'Park Fab',hrs:8},
-    {emp:'Tony Perez',date:today,inn:'07:30',out:'16:00',job:'Rodriguez Install',hrs:8.5},
-    {emp:'Jake Burns',date:today,inn:'07:00',out:'17:00',job:'Multiple',hrs:10},
-    {emp:'Dave Wong',date:today,inn:'06:30',out:'15:00',job:'Shop',hrs:8.5},
-    {emp:'Mike Rodriguez',date:weekAgo,inn:'07:00',out:'15:00',job:'Chen Template',hrs:8},
-    {emp:'Carlos Mendez',date:weekAgo,inn:'07:00',out:'14:30',job:'Rem Fab',hrs:7.5},
+  var THREATS=[
+    {type:'Phishing',from:'accounting@stone-supply-llc.net',subject:'Invoice #4821 Overdue â€” URGENT',blocked:'2024-06-14',risk:'High'},
+    {type:'BEC Fraud',from:'jim.hartwell@pinnaclesd-secure.com',subject:'Wire transfer request â€” confidential',blocked:'2024-06-12',risk:'Critical'},
+    {type:'Malware',from:'noreply@fedex-delivery.track.ru',subject:'Your package could not be delivered',blocked:'2024-06-10',risk:'High'},
+    {type:'Phishing',from:'support@quickbooks-verify.net',subject:'Action required: Verify your QB account',blocked:'2024-06-08',risk:'Medium'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_timesheets')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_timesheets',JSON.stringify(d));}catch(e){}}
-  function render(){
-    var d=load();
-    var week=d.filter(function(x){return x.date>=weekAgo;});
-    var totalHrs=week.reduce(function(a,x){return a+x.hrs;},0);
-    var otHrs=week.filter(function(x){return x.hrs>8;}).reduce(function(a,x){return a+(x.hrs-8);},0);
-    var avgWage=28;
-    document.getElementById('ts-week-hrs').textContent=totalHrs.toFixed(1);
-    document.getElementById('ts-payroll').textContent='$'+(totalHrs*avgWage).toLocaleString();
-    document.getElementById('ts-ot').textContent=otHrs.toFixed(1);
-    var emps=new Set(week.map(function(x){return x.emp;}));
-    document.getElementById('ts-employees').textContent=emps.size;
-    var grouped={};
-    week.forEach(function(x){grouped[x.emp]=(grouped[x.emp]||0)+x.hrs;});
-    document.getElementById('ts-list').innerHTML=Object.entries(grouped).sort(function(a,b){return b[1]-a[1];}).map(function(e){
-      var bar=Math.round(e[1]/50*100);
-      return '<div style="margin-bottom:14px">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-        +'<span style="font-weight:600;font-size:13px">'+escHtml(e[0])+'</span>'
-        +'<span style="font-size:13px"><strong>'+e[1].toFixed(1)+' hrs</strong> &bull; <span style="color:#16C762">$'+(e[1]*avgWage).toLocaleString()+'</span></span>'
-        +'</div>'
-        +'<div style="background:#f3f4f6;border-radius:4px;height:8px"><div style="background:#16C762;width:'+Math.min(bar,100)+'%;height:8px;border-radius:4px"></div></div>'
-        +'</div>';
-    }).join('');
-  }
-  window.sdTSLog=function(){
-    var emp=document.getElementById('ts-emp').value;
-    var d=load();
-    var inn=document.getElementById('ts-in').value||'08:00';
-    var out=document.getElementById('ts-out').value||'16:00';
-    var h1=parseInt(inn.split(':')[0])*60+parseInt(inn.split(':')[1]);
-    var h2=parseInt(out.split(':')[0])*60+parseInt(out.split(':')[1]);
-    var hrs=Math.max(0,(h2-h1)/60);
-    d.push({emp:emp,date:document.getElementById('ts-date').value||today,inn:inn,out:out,
-      job:document.getElementById('ts-job').value||'General',hrs:hrs});
-    save(d);render();
-    ['ts-in','ts-out','ts-job'].forEach(function(id){document.getElementById(id).value='';});
-  };
-  window.sdTSAI=function(){
-    var d=load();
-    var out=document.getElementById('ts-ai-out');
-    out.style.display='block';out.textContent='Analyzing labor...';
+  var CHECKLIST=[
+    {item:'SPF Record configured',status:true},
+    {item:'DKIM signing enabled',status:true},
+    {item:'DMARC policy set to reject',status:true},
+    {item:'MFA enabled for all accounts',status:true},
+    {item:'Phishing simulation training done',status:false},
+    {item:'Email backup & archive enabled',status:true},
+    {item:'Admin account separate from daily use',status:false},
+  ];
+  document.getElementById('email-blocked').textContent=THREATS.length;
+  document.getElementById('email-phish').textContent=THREATS.filter(function(x){return x.type==='Phishing';}).length;
+  document.getElementById('email-trained').textContent='75%';
+  var done=CHECKLIST.filter(function(x){return x.status;}).length;
+  var score=done>=6?'A+':done>=5?'A':done>=4?'B':'C';
+  document.getElementById('email-score').textContent=score;
+  var rColors={Critical:'#fee2e2',High:'#fef3c7',Medium:'#dbeafe',Low:'#f3f4f6'};
+  document.getElementById('email-threats').innerHTML=THREATS.map(function(x){
+    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+      +'<span style="font-weight:700;font-size:13px;color:#dc2626">'+x.type+'</span>'
+      +'<span style="background:'+(rColors[x.risk]||'#f3f4f6')+';font-size:10px;padding:2px 8px;border-radius:8px">'+x.risk+'</span>'
+      +'</div>'
+      +'<div style="font-size:12px;color:var(--muted)">From: '+escHtml(x.from)+'</div>'
+      +'<div style="font-size:12px;font-style:italic;margin-top:2px">'+escHtml(x.subject)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">Blocked: '+x.blocked+'</div>'
+      +'</div>';
+  }).join('');
+  document.getElementById('email-checklist').innerHTML=CHECKLIST.map(function(x){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">'
+      +'<span style="font-size:18px">'+(x.status?'âœ…':'âŒ')+'</span>'
+      +'<span style="color:'+(x.status?'var(--text)':'#dc2626')+'">'+x.item+'</span>'
+      +'</div>';
+  }).join('');
+  window.sdEmailScan=function(){
+    var txt=document.getElementById('email-input').value.trim();
+    if(!txt){alert('Paste email content to analyze');return;}
+    var out=document.getElementById('email-scan-out');
+    out.style.display='block';out.style.background='#f8f9fa';out.textContent='Analyzing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this timesheet data and identify overtime risks, productivity patterns, and labor cost optimization opportunities:\n'+JSON.stringify(d.slice(-30))}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this email for phishing, fraud, or social engineering. Rate risk Low/Medium/High/Critical. List red flags and recommended action:\n'+txt}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>ðŸ¤– Labor Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+      var result=r.content||r.completion||'';
+      var isHigh=result.toLowerCase().includes('high')||result.toLowerCase().includes('critical');
+      out.style.background=isHigh?'#fef2f2':'#f0fdf4';
+      out.style.border='1px solid '+(isHigh?'#fca5a5':'#86efac');
+      out.innerHTML='<strong>ðŸ¤– Security Analysis:</strong><br>'+result.replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
-  window.sdTSPrint=function(){
-    var d=load().filter(function(x){return x.date>=weekAgo;});
+  window.sdEmailAI=function(){
+    var out=document.getElementById('email-ai-out');
+    out.style.display='block';out.textContent='Generating security recommendations...';
+    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Provide a 5-point email security improvement plan for a small stone fabrication business with 8 employees. Focus on practical steps to prevent BEC fraud and phishing.'}]})
+    }).then(function(r){return r.json();}).then(function(r){
+      out.innerHTML='<strong>ðŸ¤– Security Plan:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+    }).catch(function(){out.textContent='AI unavailable.';});
+  };
+  window.sdEmailPrint=function(){
     var w=window.open('','_blank');
-    w.document.write('<html><head><title>Timesheet</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><script>
+    w.document.write('<html><head><title>Email Security</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><script>
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 window.escHtml=escHtml;
 function sdLoad(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
@@ -30397,18 +30393,14 @@ function renderComms(){if(typeof window.sdCommsRender==='function')window.sdComm
 window.renderComms=renderComms;
 </script>
 </head><body>');
-    w.document.write('<h1>Pinnacle Stone â€” Weekly Timesheet</h1><p>Week ending: '+today+'</p>');
-    w.document.write('<table><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Job</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.emp+'</td><td>'+x.date+'</td><td>'+x.inn+'</td><td>'+x.out+'</td><td>'+x.hrs.toFixed(1)+'</td><td>'+x.job+'</td></tr>');});
+    w.document.write('<h1>Pinnacle Stone â€” Email Security Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
+    w.document.write('<h2>Threats Blocked</h2><table><tr><th>Type</th><th>From</th><th>Subject</th><th>Risk</th><th>Blocked</th></tr>');
+    THREATS.forEach(function(x){w.document.write('<tr><td>'+x.type+'</td><td>'+x.from+'</td><td>'+x.subject+'</td><td>'+x.risk+'</td><td>'+x.blocked+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
-  render();
 })();
 </script>
-</div><div id="ts-log"></div>
+  </div>
 </div>
-</div>
-
-
 
 
