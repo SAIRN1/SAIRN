@@ -25440,8 +25440,6 @@ function agViewSigned(id) {
   win.print();
 }
 
-(function() { var o = window.sbNav; window.sbNav = function(id) { if (o) o(id); if (id === 'agreements') agRender(); }; })();
-
 async function sdRunEmailScan() {
   var sender = document.getElementById('sd-email-sender').value;
   var subject = document.getElementById('sd-email-subject').value;
@@ -26993,6 +26991,7 @@ function sbNav(id) {
   // Auto-expand the section containing this panel
   var section = SB_PANEL_SECTION[id];
   if (section) sbExpandSection(section);
+  if (id === 'agreements') agRender();
 }
 
 function sbToggle() {
