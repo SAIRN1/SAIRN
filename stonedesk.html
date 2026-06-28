@@ -2481,7 +2481,7 @@ window.renderComms=renderComms;
   };
 })();
 </script>
-</div><div class="input-wrap">
+</div><div class="input-wrap" style="display:none">
             <textarea id="userInput" rows="1" placeholder="Ask anything about running your stone shop..."
               onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
             <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Voice input">🎤</button>
@@ -2566,7 +2566,7 @@ window.renderComms=renderComms;
 })();
 </script>
 
-    <div class="quote-container">
+    <div class="quote-container" style="flex:1;overflow-y:auto;min-height:500px">
       <!-- LEFT: INPUTS -->
       <div>
 
