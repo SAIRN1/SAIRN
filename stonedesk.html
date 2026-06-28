@@ -365,7 +365,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .quote-container{
   display:grid;grid-template-columns:1.1fr 0.9fr;
   gap:20px;max-width:1300px;margin:0 auto;padding:20px;
-  overflow-y:auto;height:100%;
+  overflow-y:auto;flex:1;min-height:0;
 }
 @media(max-width:900px){.quote-container{grid-template-columns:1fr}}
 .q-card{
