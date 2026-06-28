@@ -245,7 +245,7 @@ body.is-admin .sb-admin{display:flex}
 body.is-exec .sb-exec{display:flex}
 
 /* Panels now live in the .app-body row */
-.panel-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.panel-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;min-height:0}
 /* == MODE BAR == */
 .mode-bar{
   display:flex;gap:6px;padding:12px 16px;
@@ -276,7 +276,7 @@ body.is-exec .sb-exec{display:flex}
    overflow-y:auto here is the safety net; panels with their own scrollable
    wrapper (.messages-area, .quote-container) are unaffected since the
    browser only shows a scrollbar on whichever element actually overflows. */
-.panel.active{display:flex;flex-direction:column;overflow-y:auto}
+.panel.active{display:flex;flex-direction:column;overflow-y:auto;flex:1;min-height:0}
 
 /* == CHAT PANEL == */
 .chat-container{
