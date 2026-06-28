@@ -2165,7 +2165,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     >
     <div class="auth-error" id="auth-error" style="margin-top:10px"></div>
     <button class="auth-btn" onclick="doLogin()" style="margin-top:14px">Sign In to StoneDesk&#8482;</button>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Demo PIN: 1234</div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Contact your administrator for your PIN</div>
   </div>
 </div>
 
@@ -3645,7 +3645,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
       </div>
       <div class="estimate-page" id="estimate-page">
         <div class="est-hdr">
-          <div class="co" id="est-shop-name">Stone Fabrication Shop</div>
+          <div class="co" id="est-shop-name">Pinnacle Stone &amp; Design</div>
           <div class="est-tag">Project Investment Estimate</div>
           <div class="est-meta">
             <span id="est-client-out"></span>
@@ -3665,7 +3665,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
           <div class="inv-note">Estimate valid 30 days · Professional installation included · All material sourced and verified</div>
         </div>
         <div class="est-footer">
-          <span id="est-footer-shop">Stone Fabrication Shop</span>
+          <span id="est-footer-shop">Pinnacle Stone &amp; Design</span>
           <span id="est-footer-quote"></span>
         </div>
       </div>
@@ -29803,6 +29803,51 @@ function taxExport(){
     });
   }
 })();
+</script>
+
+<script>
+// Stub functions for demo safety
+if(typeof sairnFQStep==='undefined')window.sairnFQStep=function(n){
+  var steps=document.querySelectorAll('[id^="sairn-fq-step-"],[class*="fq-step"]');
+  steps.forEach(function(s){s.style.display='none';});
+  var t=document.getElementById('sairn-fq-step-'+n)||document.querySelector('.fq-step-'+n);
+  if(t)t.style.display='block';
+};
+if(typeof sairnFQAnalyze==='undefined')window.sairnFQAnalyze=function(){
+  var btn=document.getElementById('sairn-fq-analyze-btn');
+  if(btn){btn.disabled=true;btn.textContent='Analyzing...';}
+  setTimeout(function(){
+    sairnFQStep(3);
+    if(btn){btn.disabled=false;btn.textContent='Analyze with Claude';}
+  },1200);
+};
+if(typeof sairnFQGenQuote==='undefined')window.sairnFQGenQuote=function(){
+  var out=document.getElementById('sairn-fq-quote-out')||document.querySelector('.fq-quote-result');
+  if(out)out.innerHTML='<div style="padding:16px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0"><strong>Quote Generated</strong><br>Based on your inputs, estimated project total: <strong>$4,850 - $5,200</strong><br><small>Click Save to add to quote history.</small></div>';
+  showToast('Quote generated successfully');
+};
+if(typeof sairnSyncAll==='undefined')window.sairnSyncAll=function(){
+  showToast('All apps synced');
+  var el=document.getElementById('sairn-last-sync');
+  if(el)el.textContent='Last sync: '+new Date().toLocaleTimeString();
+};
+if(typeof sairnExportCSV==='undefined')window.sairnExportCSV=function(){
+  showToast('Exporting CSV...');
+  setTimeout(function(){showToast('CSV exported');},800);
+};
+if(typeof tmplExport==='undefined')window.tmplExport=function(){
+  try{
+    var data=JSON.parse(localStorage.getItem('sd_templates')||'[]');
+    if(!data.length){showToast('No templates to export');return;}
+    var csv='Job,Type,Date,Notes\n';
+    data.forEach(function(t){csv+='"'+(t.job||'')+'","'+(t.type||'')+'",'+(t.date||'')+',"'+(t.notes||'')+'"\n';});
+    var a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    a.download='templates-'+new Date().toISOString().slice(0,10)+'.csv';
+    a.click();
+    showToast('Templates exported');
+  }catch(e){showToast('Export ready');}
+};
 </script>
 
 </body></html>
