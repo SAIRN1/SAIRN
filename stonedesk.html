@@ -25763,30 +25763,22 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   var ROLE_INITS   = {"owner": "OW", "admin": "MG", "sales": "SR", "install": "IN"};
   var currentRole  = Object.keys(DEFAULT_PINS)[0];
 
-  // -- SHOW PAGE ---------------------------------------------
-  function showPage(id) {
-    // Show/hide pages
-    document.querySelectorAll('.page').forEach(function(p) {
-      var isTarget = p.id === 'page-' + id;
-      p.style.cssText = isTarget
-        ? 'display:block!important'
-        : 'display:none!important';
-      if (isTarget) p.classList.add('active');
-      else p.classList.remove('active');
+  // -- SHOW PAGE / SHOW PANEL (merged) --
+  window.showPage = window.showPanel = function(id) {
+    document.querySelectorAll('.panel').forEach(function(p){
+      p.classList.remove('active');
     });
-    // Highlight nav
-    document.querySelectorAll('.ni').forEach(function(n) {
-      var oc = (n.getAttribute('onclick') || '') + (n.id || '');
-      var isActive = oc.indexOf(id) !== -1;
-      if (isActive) n.classList.add('active');
-      else n.classList.remove('active');
+    var target = document.getElementById('panel-' + id);
+    if (!target) target = document.getElementById('page-' + id);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.sb-btn').forEach(function(b){
+      b.classList.remove('active');
     });
-    var main = document.getElementById('main');
-    if (main) main.scrollTop = 0;
-  }
-  window.showPage = showPage;
-  window.openFQ   = function() { showPage('field-quote'); };
-  window.nav      = showPage; // sairnbiz alias
+    var active = document.querySelector('.sb-btn[onclick*="' + id + '"]');
+    if (active) active.classList.add('active');
+  };
+  window.openFQ = function() { window.showPage('field-quote'); };
+  window.nav = window.showPage;
 
   // -- LOGIN -------------------------------------------------
   function getPins() {
@@ -27100,6 +27092,7 @@ function sbNav(id) {
   var section = SB_PANEL_SECTION[id];
   if (section) sbExpandSection(section);
 }
+window.sbNav = sbNav;
 
 function sbToggle() {
   _sbCollapsed = !_sbCollapsed;
