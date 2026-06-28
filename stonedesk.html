@@ -2348,7 +2348,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 <!-- == GLOBAL ALERT BAR == -->
 <div class="alert-bar" id="alert-bar"></div>
 
-  <div class="panel active" id="panel-ai">
+  <div class="panel" id="panel-ai">
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🤖 StoneDesk AI Assistant</h2>
@@ -2477,10 +2477,6 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
             <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Voice input">🎤</button>
           </div>
           <button class="send-btn" onclick="sendMessage()">➤</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- == QUOTE BUILDER PANEL == -->
   <div class="panel" id="panel-quote">
@@ -3869,7 +3865,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   function load(){try{return JSON.parse(localStorage.getItem('sd_customers')||'null')||SEED;}catch(e){return SEED;}}
   function save(d){try{localStorage.setItem('sd_customers',JSON.stringify(d));}catch(e){}}
   var data=load();
-  window.sdCustRender=function(){
+  window.sdCustRender=function(){try{
     var q=(document.getElementById('cust-search')||{value:''}).value.toLowerCase();
     var tf=(document.getElementById('cust-type-filter')||{value:''}).value;
     var rows=data.filter(function(c){
@@ -3893,7 +3889,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
         +'<div><div style="font-weight:700;font-size:15px;color:var(--text)">'+c.name+'</div>'
         +'<span style="background:'+tc+'20;color:'+tc+';font-size:10px;padding:1px 7px;border-radius:8px;font-weight:700">'+c.type+'</span></div>'
-        +'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:var(--a)">$'+c.ltv.toLocaleString()+'</div><div style="font-size:10px;color:var(--muted)">LTV</div></div></div>'
+        +'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:var(--a)">$'+(c.ltv||0).toLocaleString()+'</div><div style="font-size:10px;color:var(--muted)">LTV</div></div></div>'
         +'<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+c.phone+' &bull; '+c.email+'</div>'
         +'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+c.address+'</div>'
         +'<div style="display:flex;justify-content:space-between;align-items:center">'
@@ -3904,7 +3900,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     });
     html+='</div>';
     document.getElementById('cust-list').innerHTML=html;
-  };
+  }catch(e){console.log("sdCustRender error:",e)}};
   window.sdCustAdd=function(){
     var name=prompt('Customer name:');
     if(!name)return;
@@ -3934,7 +3930,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     w.document.write('<h2 style="color:#16c762">Customer Directory</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>'+data.length+' customers | Total LTV: $'+totalLtv.toLocaleString()+'</p>');
     w.document.write('<table><tr><th>Name</th><th>Type</th><th>Phone</th><th>Email</th><th>Jobs</th><th>LTV</th><th>Last Job</th></tr>');
     data.slice().sort(function(a,b){return b.ltv-a.ltv;}).forEach(function(c){
-      w.document.write('<tr><td>'+c.name+'</td><td>'+c.type+'</td><td>'+c.phone+'</td><td>'+c.email+'</td><td>'+c.jobs+'</td><td>$'+c.ltv.toLocaleString()+'</td><td>'+c.lastJob+'</td></tr>');
+      w.document.write('<tr><td>'+c.name+'</td><td>'+c.type+'</td><td>'+c.phone+'</td><td>'+c.email+'</td><td>'+c.jobs+'</td><td>$'+(c.ltv||0).toLocaleString()+'</td><td>'+c.lastJob+'</td></tr>');
     });
     w.document.write('</table></body></html>');
     w.document.close();w.print();
@@ -29275,55 +29271,8 @@ function bbExport(){
 
 // -- Missing export + AI functions ------------------------------
 function crmExport(){var rows=[['Name','Phone','Email','Project','Value','Source','Stage','Date']].concat(crmLeads.map(function(l){return[l.name,l.phone,l.email,l.project,l.value,l.source,l.stage,new Date(l.createdAt).toLocaleDateString()];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Leads_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-async function crmAIBriefing(){var el=document.getElementById('crm-ai-result');if(!el){el=document.createElement('div');el.id='crm-ai-result';document.getElementById('panel-crm').querySelector('.panel div,div').appendChild(el);}if(!crmLeads.length){showToast('Add leads first');return;}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing pipeline...</div>';var won=crmLeads.filter(function(l){return l.stage==='won';});var open=crmLeads.filter(function(l){return !['won','lost'].includes(l.stage);});var val=open.reduce(function(s,l){return s+l.value;},0);var txt=await sdClaude('You are a B2B sales coach for a stone fabrication shop.','Pipeline: '+crmLeads.length+' leads. Open: '+open.length+' ($'+val.toLocaleString()+'). Won: '+won.length+'. Stages: '+JSON.stringify(Object.fromEntries(Object.entries(crmLeads.reduce(function(a,l){a[l.stage]=(a[l.stage]||0)+1;return a;},{}))));'. Give: (1) Pipeline health score, (2) Top 2 leads to close this week, (3) One action to improve conversion.',600);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Pipeline Briefing</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-async function tsAIAnalysis(){var el=document.getElementById('ts-ai-result');if(!el){el=document.createElement('div');el.id='ts-ai-result';var p=document.getElementById('panel-timesheet');if(p)p.querySelector('div').appendChild(el);}if(!tsEntries.length){showToast('Log time entries first');return;}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing labor...</div>';var byEmp={};tsEntries.forEach(function(e){byEmp[e.employee]=(byEmp[e.employee]||0)+((e.duration||0)/3600000);});var byTask={};tsEntries.forEach(function(e){byTask[e.task]=(byTask[e.task]||0)+((e.duration||0)/3600000);});var txt=await sdClaude('You are a stone shop operations analyst.','Total entries: '+tsEntries.length+'. Hours by employee: '+JSON.stringify(Object.fromEntries(Object.entries(byEmp).map(function(e){return[e[0],e[1].toFixed(1)];})))+'. Hours by task: '+JSON.stringify(Object.fromEntries(Object.entries(byTask).map(function(e){return[e[0],e[1].toFixed(1)];})))+'. Give: (1) Who is most productive, (2) Where labor hours are going, (3) One efficiency improvement.',600);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Labor Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-function poExport(){var rows=[['PO #','Supplier','Total','Status','Delivery Date','Created']].concat(poPOs.map(function(p){return[p.num,p.supplier,p.total,p.status,p.deliveryDate,new Date(p.createdAt).toLocaleDateString()];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_POs_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-async function poAIAdvisor(){var el=document.getElementById('po-ai-result');if(!el){el=document.createElement('div');el.id='po-ai-result';var p=document.getElementById('panel-po');if(p)p.querySelector('div').appendChild(el);}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing purchasing...</div>';var open=poPOs.filter(function(p){return p.status==='open';});var txt=await sdClaude('You are a stone shop purchasing advisor.','Open POs: '+open.length+'. Total outstanding: $'+open.reduce(function(s,p){return s+p.total;},0).toFixed(0)+'. Suppliers: '+[...new Set(open.map(function(p){return p.supplier;}))].join(', ')+'. Give: (1) Any overdue POs to follow up on, (2) Purchasing pattern observation, (3) One tip to negotiate better terms.',500);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Purchasing Advisor</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-function recExport(){var rows=[['Supplier','Date','Received By','Condition','Items','Notes']].concat(recLog.map(function(r){return[r.supplier,r.date,r.receivedBy,r.condition,r.items.map(function(i){return i.qty+'x '+i.name;}).join('; '),r.notes];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Receiving_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-
-function mfExport(){var rows=[['Customer','Address','Date','Time','Crew','Sqft','Status']].concat(mfStops.map(function(s){return[s.customer,s.address,s.date,s.time,s.crew,s.sqft,s.status];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Manifest_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-async function mfAIRoute(){if(!mfStops.length){showToast('Add installs first');return;}var el=document.getElementById('mf-ai-result');if(!el){el=document.createElement('div');el.id='mf-ai-result';var p=document.getElementById('panel-manifest');if(p)p.querySelector('div').appendChild(el);}var df=document.getElementById('mf-date-filter');var fd=df?df.value:new Date().toISOString().split('T')[0];var day=mfStops.filter(function(s){return s.date===fd;}).sort(function(a,b){return a.time.localeCompare(b.time);});if(!day.length){showToast('No installs for selected date');return;}el.innerHTML='<div style="color:var(--muted);padding:12px">Optimizing route...</div>';var stops=day.map(function(s){return s.time+' '+s.customer+' at '+s.address+(s.sqft?' ('+s.sqft+'sqft)':'');}).join('; ');var txt=await sdClaude('You are a delivery route optimizer for a stone countertop shop.','Stops for '+fd+': '+stops+'. Give: (1) Recommended order to minimize drive time, (2) Any scheduling concerns, (3) Estimated total install hours.',500);el.innerHTML='<div style="background:rgba(22,199,98,0.06);border:1.5px solid rgba(22,199,98,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#0a3d1f;margin-bottom:8px">&#129504; Route Optimization</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-async function trnAIAdvisor(){if(!trnRecords.length){showToast('Add training records first');return;}var el=document.getElementById('trn-ai-result');if(!el){el=document.createElement('div');el.id='trn-ai-result';var p=document.getElementById('panel-training');if(p)p.querySelector('div').appendChild(el);}el.innerHTML='<div style="color:var(--muted);padding:12px">Checking compliance...</div>';var today=new Date();var expired=trnRecords.filter(function(r){return r.expires&&new Date(r.expires)<today;});var expiring=trnRecords.filter(function(r){if(!r.expires)return false;var d=new Date(r.expires);return d>=today&&d<=new Date(Date.now()+30*86400000);});var txt=await sdClaude('You are an OSHA compliance advisor for stone fabrication shops.','Total records: '+trnRecords.length+'. Expired: '+expired.length+(expired.length?(' ('+expired.map(function(r){return r.employee+' '+r.certName;}).join(', ')+')'):'')+'. Expiring in 30 days: '+expiring.length+(expiring.length?(' ('+expiring.map(function(r){return r.employee+' '+r.certName;}).join(', ')+')'):'')+'. Give: (1) Compliance status, (2) Most urgent action, (3) Any OSHA silica training gaps.',500);el.innerHTML='<div style="background:rgba(220,38,38,0.06);border:1.5px solid rgba(220,38,38,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px">&#129504; Compliance Check</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-function tmplExport(){var rows=[['Customer','Job #','Date','Technician','Method','CNC Status','DXF File','Notes']].concat(tmplRecords.map(function(r){return[r.customer,r.job,r.date,r.tech,r.method,r.cncStatus,r.dxfName,r.notes];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Templates_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-
-function empExport(){var d=empDirLoad();var rows=[['Name','Role','Phone','Machines','Certifications','Hire Date','Status']].concat(d.map(function(r){return[r.name,r.role,r.phone,r.machines,r.certs,r.hireDate,r.status];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Employees_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-async function empAISkillsGap(){var d=empDirLoad();if(!d.length){showToast('Add employees first');return;}var el=document.getElementById('emp-ai-result');if(!el){el=document.createElement('div');el.id='emp-ai-result';var p=document.getElementById('panel-employees');if(p)p.querySelector('div').appendChild(el);}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing skills...</div>';var skills=d.map(function(r){return r.name+': '+r.role+(r.machines?' | '+r.machines:'')+(r.certs?' | '+r.certs:'');}).join('; ');var txt=await sdClaude('You are a stone shop workforce advisor.','Team: '+skills+'. Give: (1) Skills gaps for a complete stone shop, (2) Who can cross-train on what, (3) Most critical hire if adding headcount.',500);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Skills Gap Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-function syExport(){var d=syLoad();var rows=[['Company','Rep','Phone','Email','Materials','Lead Days','Status']].concat(d.map(function(r){return[r.company,r.rep,r.phone,r.email,r.materials,r.lead,r.status];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_StoneYard_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-async function syAIAnalysis(){var d=syLoad();if(!d.length){showToast('Add suppliers first');return;}var el=document.getElementById('sy-ai-result');if(!el){el=document.createElement('div');el.id='sy-ai-result';var p=document.getElementById('panel-stoneyard');if(p)p.querySelector('div').appendChild(el);}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing suppliers...</div>';var list=d.map(function(r){return r.company+' ('+r.status+', '+r.lead+'d lead, '+r.materials+')';}).join('; ');var txt=await sdClaude('You are a stone shop purchasing strategist.','Suppliers: '+list+'. Give: (1) Supplier concentration risk, (2) Which supplier to negotiate with first, (3) Any gaps in material coverage.',500);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Supplier Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-function subExport(){var d=subLoad();var rows=[['Name','Contact','Phone','Specialty','Rate','Availability','Insurance Exp']].concat(d.map(function(r){return[r.name,r.contact,r.phone,r.specialty,'$'+r.rate+'/'+r.rateType,r.avail,r.insExp];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Subs_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-async function subAIAdvisor(){var d=subLoad();if(!d.length){showToast('Add subcontractors first');return;}var el=document.getElementById('sub-ai-result');if(!el){el=document.createElement('div');el.id='sub-ai-result';var p=document.getElementById('panel-subcontractor');if(p)p.querySelector('div').appendChild(el);}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing subs...</div>';var today=new Date();var expiring=d.filter(function(r){if(!r.insExp)return false;var exp=new Date(r.insExp);return(exp-today)/(1000*60*60*24)<30;});var list=d.map(function(r){return r.name+' ('+r.specialty+', $'+r.rate+'/'+r.rateType+', '+r.avail+')';}).join('; ');var txt=await sdClaude('You are a stone shop operations advisor.','Subcontractors: '+list+(expiring.length?'. Insurance expiring soon: '+expiring.map(function(r){return r.name;}).join(', '):'')+'. Give: (1) Coverage gaps, (2) Insurance alerts, (3) Rate benchmarks for stone install subs.',500);el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Sub Advisor</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-async function apAIAdvisor(){if(!apBills.length){showToast('Add bills first');return;}var el=document.getElementById('ap-ai-result');if(!el){el=document.createElement('div');el.id='ap-ai-result';var p=document.getElementById('panel-ap');if(p)p.querySelector('div').appendChild(el);}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing cash flow...</div>';var today=new Date().toISOString().split('T')[0];var overdue=apBills.filter(function(b){return b.status==='open'&&b.dueDate&&b.dueDate<today;});var open=apBills.filter(function(b){return b.status==='open';});var txt=await sdClaude('You are a stone shop CFO advisor.','Open bills: '+open.length+'. Total owed: $'+open.reduce(function(s,b){return s+b.amount;},0).toFixed(0)+'. Overdue: '+overdue.length+(overdue.length?' ($'+overdue.reduce(function(s,b){return s+b.amount;},0).toFixed(0)+')':'')+'. Top vendors: '+Object.entries(open.reduce(function(a,b){a[b.vendor]=(a[b.vendor]||0)+b.amount;return a;},{})).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return e[0]+' $'+e[1].toFixed(0);}).join(', ')+'. Give: (1) Cash flow risk, (2) Who to pay first, (3) Any early-pay discount opportunities.',500);el.innerHTML='<div style="background:rgba(220,38,38,0.06);border:1.5px solid rgba(220,38,38,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px">&#129504; Cash Flow Advisor</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-function npsExport(){var rows=[['Customer','Score','Project','Feedback','Channel','Date']].concat(npsFeedback.map(function(r){return[r.customer,r.score,r.project,r.feedback,r.channel,r.date];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_NPS_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
-
-async function eqAIAdvisor(){var d=eqLoad();if(!d.length){showToast('Add equipment first');return;}var el=document.getElementById('eq-ai-result');if(!el){el=document.createElement('div');el.id='eq-ai-result';var p=document.getElementById('panel-equipment');if(p)p.querySelector('div').appendChild(el);}el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing maintenance...</div>';var today=new Date();var overdue=d.filter(function(r){return r.nextDate&&new Date(r.nextDate)<today;});var soon=d.filter(function(r){if(!r.nextDate)return false;var nd=new Date(r.nextDate);return nd>=today&&(nd-today)/(1000*60*60*24)<=30;});var list=d.map(function(r){return r.name+' (last: '+r.lastDate+', next: '+r.nextDate+')';}).join('; ');var txt=await sdClaude('You are a stone shop equipment maintenance advisor.','Equipment: '+list+'. Overdue: '+overdue.map(function(r){return r.name;}).join(', ')+'. Due soon: '+soon.map(function(r){return r.name;}).join(', ')+'. Give: (1) Most urgent service needed, (2) Maintenance cost optimization tip, (3) Equipment risk assessment.',500);el.innerHTML='<div style="background:rgba(201,112,8,0.06);border:1.5px solid rgba(201,112,8,0.2);border-radius:12px;padding:16px;margin-top:16px"><div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:8px">&#129504; Maintenance Advisor</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';}
-
-// ================================================================
-// IT ADMIN
-// ================================================================
-var ITA_USERS_KEY='sd_ita_users';var ITA_AUDIT_KEY='sd_ita_audit';var ITA_OWNER_PIN='1234';
-function itaLoad(k,d){try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(d));}catch(e){return d;}}
-function itaSave(k,v){localStorage.setItem(k,JSON.stringify(v));}
-function itaUnlock(){
-  var pin=document.getElementById('ita-pin-input').value;
-  var storedPin=localStorage.getItem('sd_owner_pin')||ITA_OWNER_PIN;
-  if(pin===storedPin){
-    document.getElementById('ita-pin-gate').style.display='none';
-    document.getElementById('ita-content').style.display='block';
-    itaRender();
-  } else {
-    document.getElementById('ita-pin-error').style.display='block';
-    document.getElementById('ita-pin-input').value='';
-  }
-}
+</script>
+<script>
 function itaRender(){
   var users=itaLoad(ITA_USERS_KEY,[{name:'Owner',role:'admin',pin:'****',added:new Date().toISOString()}]);
   var ul=document.getElementById('ita-users-list');
@@ -29411,13 +29360,6 @@ function dmgRender(){
       '</select>'+
       '<button onclick="dmgDelete(\''+c.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">Delete</button>'+
     '</div></div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No damage claims. Keep it that way.</div>';
-}
-async function dmgAIAnalysis(){
-  var el=document.getElementById('dmg-ai-result');if(!dmgClaims.length){showToast('No claims to analyze');return;}
-  el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing...</div>';
-  var summary=dmgClaims.slice(0,20).map(function(c){return c.type+' | fault:'+c.fault+' | $'+c.cost;}).join('; ');
-  var txt=await sdClaude('You are a stone fabrication quality control expert. Analyze damage claims and identify root causes and prevention strategies.','Claims: '+summary+'. Provide: (1) Most common failure type, (2) Root cause, (3) Top 3 prevention actions, (4) Training recommendation.',800);
-  el.innerHTML='<div style="background:rgba(220,38,38,0.06);border:1.5px solid rgba(220,38,38,0.2);border-radius:12px;padding:16px"><div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px">&#129504; Root Cause Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
 }
 
 // ================================================================
@@ -29537,14 +29479,6 @@ function wstRender(){
       '<button onclick="wstDelete(\''+e.id+'\')" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:10px">x</button>'+
     '</div>';}).join('')+'</div>':'<div style="text-align:center;color:var(--muted);padding:32px">No waste events logged yet.</div>';
 }
-async function wstAIAnalysis(){
-  if(!wstEvents.length){showToast('Log waste events first');return;}
-  var el=document.getElementById('wst-ai-result');el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing...</div>';
-  var causes={};wstEvents.forEach(function(e){causes[e.cause]=(causes[e.cause]||0)+1;});
-  var totalCost=wstEvents.reduce(function(s,e){return s+e.cost+e.labor;},0);
-  var txt=await sdClaude('You are a stone fabrication shop operations expert specializing in waste reduction.','Waste events: '+wstEvents.length+'. Total cost: $'+totalCost.toFixed(0)+'. Top causes: '+JSON.stringify(Object.entries(causes).sort(function(a,b){return b[1]-a[1];}).slice(0,5))+'. Provide: (1) #1 preventable waste type, (2) Root cause, (3) 3 specific process changes, (4) Expected savings if implemented.',800);
-  el.innerHTML='<div style="background:rgba(220,38,38,0.06);border:1.5px solid rgba(220,38,38,0.2);border-radius:12px;padding:16px"><div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px">&#129504; Waste Reduction Analysis</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
-}
 
 // ================================================================
 // TEMPLATE / DXF FILE MANAGER
@@ -29629,15 +29563,6 @@ function npsRender(){
     '<button onclick="npsDelete(\''+r.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:10px;cursor:pointer;flex-shrink:0">x</button>'+
     '</div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No customer feedback logged yet.</div>';
 }
-async function npsAIBriefing(){
-  if(!npsFeedback.length){showToast('Log feedback first');return;}
-  var el=document.getElementById('nps-ai-result');el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing...</div>';
-  var promoters=npsFeedback.filter(function(r){return r.score>=9;});var detractors=npsFeedback.filter(function(r){return r.score<=6;});
-  var nps=Math.round(((promoters.length-detractors.length)/npsFeedback.length)*100);
-  var comments=npsFeedback.filter(function(r){return r.feedback;}).slice(0,10).map(function(r){return r.score+'/10: "'+r.feedback.slice(0,100)+'"';}).join('; ');
-  var txt=await sdClaude('You are a customer experience expert for a stone fabrication shop.','NPS: '+nps+'. Promoters: '+promoters.length+'. Detractors: '+detractors.length+'. Sample feedback: '+comments+'. Provide: (1) Overall assessment, (2) What customers love, (3) Top complaint theme, (4) 2 specific improvements this week.',700);
-  el.innerHTML='<div style="background:rgba(22,163,74,0.06);border:1.5px solid rgba(22,163,74,0.2);border-radius:12px;padding:16px"><div style="font-size:13px;font-weight:800;color:#0a3d1f;margin-bottom:8px">&#129504; NPS Intelligence Briefing</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
-}
 
 // ================================================================
 // ACCOUNTS PAYABLE
@@ -29713,13 +29638,6 @@ function taxRender(){
   if(tr&&taxEntries.length)tr.innerHTML='<span>Total Taxable: <strong>'+sdFmt(taxEntries.reduce(function(s,e){return s+e.taxable;},0))+'</strong></span><span>Total Tax Owed: <strong style="color:#dc2626">'+sdFmt(totalTax)+'</strong></span>';
   var qEl=document.getElementById('tax-quarterly');
   if(qEl){var qLabels=['Q1 (Jan-Mar)','Q2 (Apr-Jun)','Q3 (Jul-Sep)','Q4 (Oct-Dec)'];var qDue=['Apr 15','Jun 15','Sep 15','Jan 15'];var qEst=Math.max(0,profit*0.28/4);qEl.innerHTML=qLabels.map(function(q,i){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">'+q+'</div><div style="font-size:18px;font-weight:800;color:#ca8a04">'+sdFmt(qEst)+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Due '+qDue[i]+'</div></div>';}).join('');}
-}
-async function taxAIAdvisor(){
-  var el=document.getElementById('tax-ai-result');el.innerHTML='<div style="color:var(--muted);padding:12px">Getting tax advice...</div>';
-  var invTotal=sd_invoices?sd_invoices.reduce(function(s,i){return s+i.amount;},0):0;
-  var expTotal=apBills?apBills.reduce(function(s,b){return s+b.amount;},0):0;
-  var txt=await sdClaude('You are a small business tax advisor for stone fabrication shops. Provide actionable, specific advice. Always recommend consulting a CPA for final decisions.','Revenue YTD: $'+invTotal.toFixed(0)+'. Expenses YTD: $'+expTotal.toFixed(0)+'. Net profit: $'+(invTotal-expTotal).toFixed(0)+'. State: Ohio. Type: stone fabrication shop LLC. Provide: (1) Top 3 deductions we might be missing, (2) Q2 estimated payment reminder, (3) Year-end planning action, (4) One warning/risk.',900);
-  el.innerHTML='<div style="background:rgba(202,138,4,0.06);border:1.5px solid rgba(202,138,4,0.2);border-radius:12px;padding:16px"><div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:8px">&#129504; Tax Advisor</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div><div style="font-size:11px;color:var(--muted);margin-top:10px">&#9432; This is general guidance only. Consult your CPA for tax filing decisions.</div></div>';
 }
 function taxExport(){
   var invs=sd_invoices||[];var bills=apBills||[];
