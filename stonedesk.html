@@ -2495,52 +2495,6 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     <div class="kpi"><div class="kpi-val" id="qh-kpi4">$0</div><div class="kpi-label">Won Revenue</div></div>
   </div>
 </div>
-<script>
-(function(){
-  function loadQH(){try{return JSON.parse(localStorage.getItem('sd_quote_history')||'null')||[];}catch(e){return[];}}
-  function updateKPIs(){
-    var h=loadQH();
-    var won=h.filter(function(q){return q.status==='Won';});
-    var avg=h.length?Math.round(h.reduce(function(a,q){return a+(q.total||0);},0)/h.length):0;
-    var winRate=h.length?Math.round(won.length/h.length*100):0;
-    var wonRev=won.reduce(function(a,q){return a+(q.total||0);},0);
-    var el=function(id){return document.getElementById(id);};
-    if(el('qh-kpi1'))el('qh-kpi1').textContent=h.length;
-    if(el('qh-kpi2'))el('qh-kpi2').textContent='$'+avg.toLocaleString();
-    if(el('qh-kpi3'))el('qh-kpi3').textContent=winRate+'%';
-    if(el('qh-kpi4'))el('qh-kpi4').textContent='$'+wonRev.toLocaleString();
-  }
-  window.sdQuotePrintPDF=function(){
-    var name=(document.getElementById('client-name')||{value:'Customer'}).value||'Customer';
-    var stone=(document.getElementById('stone-select')||{value:'Stone'}).value||'Stone';
-    var total=(document.getElementById('quote-total')||{textContent:'$0'}).textContent||'$0';
-    var w=window.open('','_blank');
-    w.document.write('<html><head><title>Quote - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h2{color:#16c762}.total{font-size:24px;font-weight:800;color:#16c762;margin-top:20px}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h2>Pinnacle Stone & Design</h2><p>Quote Estimate — '+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<p><strong>Customer:</strong> '+name+'</p>');
-    w.document.write('<p><strong>Stone:</strong> '+stone+'</p>');
-    w.document.write('<div class="total">'+total+'</div>');
-    w.document.write('<p style="color:#64748b;margin-top:20px;font-size:12px">This quote is an estimate. Final pricing may vary based on site conditions. Valid for 30 days.</p>');
-    w.document.write('</body></html>');
-    w.document.close();w.print();
-  };
-  window.sdQuoteSaveHistory=function(){
-    var name=(document.getElementById('client-name')||{value:''}).value||'Unknown';
-    var stone=(document.getElementById('stone-select')||{value:''}).value||'';
-    var totalEl=document.getElementById('quote-total');
-    var totalStr=totalEl?totalEl.textContent.replace(/[^0-9.]/g,''):'0';
-    var total=parseFloat(totalStr)||0;
-    var h=loadQH();
-    h.unshift({id:'Q-'+Date.now(),date:new Date().toISOString().slice(0,10),customer:name,stone:stone,total:total,status:'Pending'});
-    if(h.length>200)h=h.slice(0,200);
-    try{localStorage.setItem('sd_quote_history',JSON.stringify(h));}catch(e){}
-    updateKPIs();
-    alert('Quote saved to history for '+name+'!');
-  };
-  updateKPIs();
-  setInterval(updateKPIs,5000);
-})();
-</script>
 
     <div class="quote-container">
       <!-- LEFT: INPUTS -->
@@ -25517,6 +25471,54 @@ async function sdRunEmailScan() {
 </script>
   </div>
 </div><!-- /panel-wrap -->
+
+<script>
+(function(){
+  function loadQH(){try{return JSON.parse(localStorage.getItem('sd_quote_history')||'null')||[];}catch(e){return[];}}
+  function updateKPIs(){
+    var h=loadQH();
+    var won=h.filter(function(q){return q.status==='Won';});
+    var avg=h.length?Math.round(h.reduce(function(a,q){return a+(q.total||0);},0)/h.length):0;
+    var winRate=h.length?Math.round(won.length/h.length*100):0;
+    var wonRev=won.reduce(function(a,q){return a+(q.total||0);},0);
+    var el=function(id){return document.getElementById(id);};
+    if(el('qh-kpi1'))el('qh-kpi1').textContent=h.length;
+    if(el('qh-kpi2'))el('qh-kpi2').textContent='$'+avg.toLocaleString();
+    if(el('qh-kpi3'))el('qh-kpi3').textContent=winRate+'%';
+    if(el('qh-kpi4'))el('qh-kpi4').textContent='$'+wonRev.toLocaleString();
+  }
+  window.sdQuotePrintPDF=function(){
+    var name=(document.getElementById('client-name')||{value:'Customer'}).value||'Customer';
+    var stone=(document.getElementById('stone-select')||{value:'Stone'}).value||'Stone';
+    var total=(document.getElementById('quote-total')||{textContent:'$0'}).textContent||'$0';
+    var w=window.open('','_blank');
+    w.document.write('<html><head><title>Quote - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h2{color:#16c762}.total{font-size:24px;font-weight:800;color:#16c762;margin-top:20px}</style><scr'+'ipt></scr'+'ipt></head><body>');
+    w.document.write('<h2>Pinnacle Stone & Design</h2><p>Quote Estimate — '+new Date().toLocaleDateString()+'</p>');
+    w.document.write('<p><strong>Customer:</strong> '+name+'</p>');
+    w.document.write('<p><strong>Stone:</strong> '+stone+'</p>');
+    w.document.write('<div class="total">'+total+'</div>');
+    w.document.write('<p style="color:#64748b;margin-top:20px;font-size:12px">This quote is an estimate. Final pricing may vary based on site conditions. Valid for 30 days.</p>');
+    w.document.write('</body></html>');
+    w.document.close();w.print();
+  };
+  window.sdQuoteSaveHistory=function(){
+    var name=(document.getElementById('client-name')||{value:''}).value||'Unknown';
+    var stone=(document.getElementById('stone-select')||{value:''}).value||'';
+    var totalEl=document.getElementById('quote-total');
+    var totalStr=totalEl?totalEl.textContent.replace(/[^0-9.]/g,''):'0';
+    var total=parseFloat(totalStr)||0;
+    var h=loadQH();
+    h.unshift({id:'Q-'+Date.now(),date:new Date().toISOString().slice(0,10),customer:name,stone:stone,total:total,status:'Pending'});
+    if(h.length>200)h=h.slice(0,200);
+    try{localStorage.setItem('sd_quote_history',JSON.stringify(h));}catch(e){}
+    updateKPIs();
+    alert('Quote saved to history for '+name+'!');
+  };
+  updateKPIs();
+  setInterval(updateKPIs,5000);
+})();
+</script>
+
 </div><!-- /app-body -->
 
 <script>
@@ -25745,7 +25747,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       // .panel{flex:1} correctly cap each panel's height to the remaining
       // viewport space, which is what actually makes overflow-y:auto on
       // .panel.active functional.
-      app.style.cssText = 'display:flex!important;flex-direction:column!important;visibility:visible!important;opacity:1!important;height:100vh!important';
+      app.style.cssText = 'display:flex!important;visibility:visible!important;opacity:1!important;height:100vh!important';
       app.classList.add('visible');
     }
     // Show sidebar + topbar explicitly
@@ -25755,9 +25757,6 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     if (tb) tb.style.cssText = 'display:flex!important';
     // Show first page
     showPage(FIRST_PAGE);
-    // Show default panel — hide all panels, activate first
-    if (typeof showPanel === 'function') { showPanel('ai'); }
-    else { document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');}); var def=document.getElementById('panel-ai'); if(def){def.classList.add('active');} }
     // Update user display
     var tavtr = document.getElementById('tavtr');
     var trole = document.getElementById('trole');
