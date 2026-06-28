@@ -1303,9 +1303,6 @@ body.is-exec .exec-only-block{display:block}
 .sh-history-item:hover{background:#F0FEF6}
 .sh-history-q{font-size:13px;font-weight:600;color:#0A3D1F;margin-bottom:2px}
 .sh-history-preview{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-.quote-container{min-height:80vh!important;}
-.panel.active{overflow-y:auto!important;}
 </style>
 <script>
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -2351,7 +2348,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 <!-- == GLOBAL ALERT BAR == -->
 <div class="alert-bar" id="alert-bar"></div>
 
-  <div class="panel" id="panel-ai">
+  <div class="panel active" id="panel-ai">
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🤖 StoneDesk AI Assistant</h2>
@@ -25758,7 +25755,6 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     if (tb) tb.style.cssText = 'display:flex!important';
     // Show first page
     showPage(FIRST_PAGE);
-    if(typeof showPanel==='function'){document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});var dp=document.getElementById('panel-quote');if(dp)dp.classList.add('active');}
     // Update user display
     var tavtr = document.getElementById('tavtr');
     var trole = document.getElementById('trole');
