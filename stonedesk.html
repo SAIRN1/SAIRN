@@ -44,7 +44,7 @@
   --shadow:0 1px 4px rgba(0,0,0,0.07),0 4px 20px rgba(0,0,0,0.05);
 }
 
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;height:100vh;overflow:hidden}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
 
 /* == SCROLLBAR == */
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -122,7 +122,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 
 /* == APP SHELL == */
 #app{display:none;min-height:100vh;flex-direction:column}
-#app.visible{display:flex;flex-direction:column;height:100vh}
+#app.visible{display:flex}
 .app-body{display:flex;flex:1;overflow:hidden;min-height:0}
 
 /* == TOPBAR == */
@@ -2348,7 +2348,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 <!-- == GLOBAL ALERT BAR == -->
 <div class="alert-bar" id="alert-bar"></div>
 
-  <div class="panel" id="panel-ai">
+  <div class="panel active" id="panel-ai">
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🤖 StoneDesk AI Assistant</h2>
@@ -25745,7 +25745,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       // .panel{flex:1} correctly cap each panel's height to the remaining
       // viewport space, which is what actually makes overflow-y:auto on
       // .panel.active functional.
-      app.style.cssText = 'display:flex!important;visibility:visible!important;opacity:1!important;height:100vh!important';
+      app.style.cssText = 'display:flex!important;flex-direction:column!important;visibility:visible!important;opacity:1!important;height:100vh!important';
       app.classList.add('visible');
     }
     // Show sidebar + topbar explicitly
@@ -25755,6 +25755,9 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     if (tb) tb.style.cssText = 'display:flex!important';
     // Show first page
     showPage(FIRST_PAGE);
+    // Show default panel — hide all panels, activate first
+    if (typeof showPanel === 'function') { showPanel('ai'); }
+    else { document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');}); var def=document.getElementById('panel-ai'); if(def){def.classList.add('active');} }
     // Update user display
     var tavtr = document.getElementById('tavtr');
     var trole = document.getElementById('trole');
