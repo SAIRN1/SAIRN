@@ -2123,6 +2123,25 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 
 </script>
 
+<!-- PATTERN 13: LICENSE KEY GATE -->
+<div id="license-screen" style="position:fixed;inset:0;background:linear-gradient(135deg,#1B3A6B 0%,#2a5298 50%,#1B3A6B 100%);display:flex;align-items:center;justify-content:center;z-index:1001;flex-direction:column;gap:0">
+  <div style="position:absolute;top:20%;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(232,133,10,0.08) 0%,transparent 65%);pointer-events:none"></div>
+  <div style="font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;color:#fff;letter-spacing:.04em;text-shadow:0 2px 20px rgba(0,0,0,0.3);position:relative">StoneDesk&#8482;</div>
+  <div style="font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:32px;position:relative">Stone Fabrication Intelligence Platform</div>
+  <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:32px 36px;width:100%;max-width:400px;backdrop-filter:blur(10px);position:relative">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:12px">License Key</div>
+    <input id="lic-key-input" type="text" placeholder="SD-XXXX-XXXX-XXXX" maxlength="20"
+      style="width:100%;padding:14px 16px;font-size:16px;letter-spacing:.06em;text-align:center;font-family:monospace;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;box-sizing:border-box;transition:border-color .15s"
+      onfocus="this.style.borderColor='rgba(232,133,10,0.7)'"
+      onblur="this.style.borderColor='rgba(232,133,10,0.3)'"
+      oninput="this.value=this.value.toUpperCase()"
+      onkeydown="if(event.key==='Enter')sdActivateLicense()">
+    <div id="lic-error" style="color:#f87171;font-size:12px;margin-top:8px;min-height:16px;text-align:center"></div>
+    <button onclick="sdActivateLicense()" style="width:100%;margin-top:12px;padding:14px;background:linear-gradient(135deg,#16C762,#0ea5a0);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Activate StoneDesk&#8482;</button>
+    <div style="font-size:11px;color:rgba(255,255,255,0.35);text-align:center;margin-top:16px">Contact <a href="mailto:michael@sairn.com" style="color:rgba(22,199,98,0.7);text-decoration:none">michael@sairn.com</a> to get your license key</div>
+  </div>
+</div>
+
 <!-- SAIRN AUTH GATE — Role + PIN -->
 <div id="auth-screen">
   <div class="auth-glow"></div>
@@ -29647,6 +29666,143 @@ function taxExport(){
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_TaxReport_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
 
+</script>
+
+
+<script>
+// Demo Data Seed - Pinnacle Stone & Design
+(function(){
+  var SEEDED_KEY='sd_demo_seeded_v2';
+  try{if(localStorage.getItem(SEEDED_KEY))return;}catch(e){return;}
+  var now=new Date();
+  function daysAgo(n){var d=new Date(now);d.setDate(d.getDate()-n);return d.toISOString();}
+  function daysFrom(n){var d=new Date(now);d.setDate(d.getDate()+n);return d.toISOString();}
+  var data={
+    sd_settings:JSON.stringify({company:'Pinnacle Stone & Design',owner:'Jim Hartwell',phone:'(216) 555-0182',addr:'4820 Brookpark Rd, Cleveland OH 44135',email:'jim@pinnaclestoneclev.com',lic:'SD-PINNACLE-2026'}),
+    sd_shop_name:'Pinnacle Stone & Design',
+    sd_customers:JSON.stringify([
+      {id:'C001',name:'Sarah & Tom Kowalski',phone:'(440) 555-0192',email:'skowalski@gmail.com',address:'4412 Elm Ridge Dr, Strongsville OH 44136',type:'Residential',ltv:16800,jobs:3,notes:'Referred by Riverside Builders. Very detail-oriented.',created:daysAgo(180)},
+      {id:'C002',name:'Riverside Builders LLC',phone:'(440) 555-0134',email:'builds@riversideoh.com',address:'900 Corporate Dr, Beachwood OH 44122',type:'Builder',ltv:94200,jobs:12,notes:'Preferred builder account. Net 30 terms.',created:daysAgo(730)},
+      {id:'C003',name:"Mike D'Angelo",phone:'(216) 555-0201',email:'mdangelo@email.com',address:'2201 West 11th St, Cleveland OH 44113',type:'Residential',ltv:4200,jobs:1,notes:'Bathroom vanity only. May add kitchen later.',created:daysAgo(45)},
+      {id:'C004',name:'Lakewood Kitchen & Bath',phone:'(216) 555-0177',email:'orders@lakewoodkb.com',address:'14800 Detroit Ave, Lakewood OH 44107',type:'Trade',ltv:31400,jobs:6,notes:'Interior designer account. Send samples on request.',created:daysAgo(400)},
+      {id:'C005',name:'Jennifer Castellano',phone:'(440) 555-0159',email:'jen.castellano@gmail.com',address:'33 Edgewater Dr, Rocky River OH 44116',type:'Residential',ltv:9800,jobs:1,notes:'Outdoor kitchen Dekton project.',created:daysAgo(60)},
+      {id:'C006',name:'Premier Homes of Ohio',phone:'(614) 555-0188',email:'production@premierhomes.com',address:'5500 Frantz Rd, Dublin OH 43017',type:'Builder',ltv:187500,jobs:31,notes:'Production builder. 30+ jobs/yr.',created:daysAgo(900)},
+      {id:'C007',name:'Chen Restaurant Group',phone:'(216) 555-0199',email:'ops@chenrg.com',address:'1200 Euclid Ave, Cleveland OH 44115',type:'Commercial',ltv:14200,jobs:1,notes:'Bar top project. Net 30.',created:daysAgo(30)},
+      {id:'C008',name:'Anthony & Lisa Moretti',phone:'(440) 555-0144',email:'amoretti@gmail.com',address:'8820 Ridge Rd, Parma OH 44129',type:'Residential',ltv:24600,jobs:2,notes:'Full kitchen + 3 baths. Great referral source.',created:daysAgo(270)}
+    ]),
+    sd_quote_history:JSON.stringify([
+      {id:'Q-2026-088',client:'Sarah Kowalski',phone:'(440) 555-0192',date:daysAgo(12),material:'Calacatta Gold Quartz',sqft:52,edge:'Eased Edge',sinks:2,total:6750,status:'Approved',notes:'Kitchen remodel. 2 sinks, 1 cooktop cutout.'},
+      {id:'Q-2026-087',client:'Chen Restaurant Group',phone:'(216) 555-0199',date:daysAgo(18),material:'Black Absolute Granite',sqft:110,edge:'Waterfall',sinks:0,total:14200,status:'Approved',notes:'Bar tops x4. Commercial install.'},
+      {id:'Q-2026-086',client:'Jennifer Castellano',phone:'(440) 555-0159',date:daysAgo(22),material:'Dekton Sirius',sqft:48,edge:'Eased Edge',sinks:1,total:9800,status:'Approved',notes:'Outdoor kitchen. UV resistant required.'},
+      {id:'Q-2026-085',client:'Premier Homes Lot 44',phone:'(614) 555-0188',date:daysAgo(5),material:'Colonial White Granite',sqft:38,edge:'Standard',sinks:1,total:3180,status:'Quoted',notes:'Standard builder package.'},
+      {id:'Q-2026-084',client:"Mike D'Angelo",phone:'(216) 555-0201',date:daysAgo(35),material:'Arabescato Marble',sqft:24,edge:'Mitered',sinks:1,total:4200,status:'Quoted',notes:'Master bath vanity. Marble care guide sent.'},
+      {id:'Q-2026-083',client:'Anthony Moretti',phone:'(440) 555-0144',date:daysAgo(55),material:'Cambria Quartz',sqft:67,edge:'Ogee',sinks:2,total:8420,status:'Complete',notes:'Kitchen + master bath. Paid in full.'}
+    ]),
+    sd_invoices:JSON.stringify([
+      {id:'INV-2026-084',client:'Anthony & Lisa Moretti',date:daysAgo(48),due:daysAgo(18),amount:8420,paid:8420,status:'Paid',quoteId:'Q-2026-083'},
+      {id:'INV-2026-085',client:'Premier Homes Lot 41',date:daysAgo(35),due:daysAgo(5),amount:3180,paid:3180,status:'Paid',quoteId:'Q-2026-084'},
+      {id:'INV-2026-086',client:'Sarah & Tom Kowalski',date:daysAgo(12),due:daysFrom(18),amount:6750,paid:3375,status:'Partial',quoteId:'Q-2026-088'},
+      {id:'INV-2026-087',client:'Chen Restaurant Group',date:daysAgo(18),due:daysFrom(12),amount:14200,paid:0,status:'Unpaid',quoteId:'Q-2026-087'},
+      {id:'INV-2026-088',client:'Jennifer Castellano',date:daysAgo(10),due:daysFrom(20),amount:9800,paid:0,status:'Unpaid',quoteId:'Q-2026-086'}
+    ]),
+    sd_employees:JSON.stringify([
+      {id:'E001',name:'Marco Rossi',role:'Lead Fabricator',skills:['Bridge Saw','CNC','Waterjet'],hired:'2019-03-12',phone:'(216) 555-0211',rate:28,status:'Active'},
+      {id:'E002',name:'DeShawn Williams',role:'Fabricator',skills:['Bridge Saw','Edger'],hired:'2021-07-19',phone:'(216) 555-0222',rate:22,status:'Active'},
+      {id:'E003',name:'Carlos Mendez',role:'Installer',skills:['Installation','Templating'],hired:'2020-01-08',phone:'(216) 555-0233',rate:24,status:'Active'},
+      {id:'E004',name:'Brittany Parks',role:'Office Manager',skills:['Quoting','Invoicing'],hired:'2022-04-25',phone:'(216) 555-0244',rate:20,status:'Active'},
+      {id:'E005',name:'Tony Greco',role:'Shop Foreman',skills:['All Machines','OSHA 10'],hired:'2017-09-01',phone:'(216) 555-0255',rate:32,status:'Active'},
+      {id:'E006',name:'Kyle Hartwell',role:'Installer/Driver',skills:['Installation','Delivery'],hired:'2023-06-05',phone:'(216) 555-0266',rate:18,status:'Active'}
+    ]),
+    sd_vendors:JSON.stringify([
+      {id:'V001',name:'MSI Stone',contact:'Tom Vecchio',phone:'(440) 555-0134',email:'tvecchio@msisurfaces.com',type:'Stone Supplier',terms:'Net 30',status:'Preferred',ytdSpend:48200},
+      {id:'V002',name:'Arizona Tile',contact:'Lisa Park',phone:'(216) 555-0187',email:'lpark@arizonatile.com',type:'Stone Supplier',terms:'Net 15',status:'Active',ytdSpend:22100},
+      {id:'V003',name:'Cosentino (Dekton)',contact:'Carlos Ruiz',phone:'(800) 555-0141',email:'cruiz@cosentino.com',type:'Stone Supplier',terms:'Net 30',status:'Preferred',ytdSpend:18400},
+      {id:'V004',name:'Dal-Tile',contact:'Mike Banner',phone:'(440) 555-0156',email:'mbanner@daltile.com',type:'Stone Supplier',terms:'Net 30',status:'Backup',ytdSpend:4800}
+    ]),
+    sd_equipment:JSON.stringify([
+      {id:'EQ001',name:'Intermac Master 43 CNC',type:'CNC Router',lastService:'2026-03-15',nextService:'2026-06-15',status:'Operational',notes:'Full calibration done. New vacuum cups installed.'},
+      {id:'EQ002',name:'Park Industries Odyssey Bridge Saw',type:'Bridge Saw',lastService:'2026-02-01',nextService:'2026-08-01',status:'Operational',notes:'Blade replaced. Coolant system serviced.'},
+      {id:'EQ003',name:'BACA Systems Robocutter',type:'Waterjet',lastService:'2026-01-10',nextService:'2026-07-10',status:'Operational',notes:'Pump seals replaced. Nozzle checked.'},
+      {id:'EQ004',name:'Toyota 5000lb Forklift',type:'Material Handling',lastService:'2026-04-01',nextService:'2026-10-01',status:'Operational',notes:'Annual inspection passed.'}
+    ]),
+    sd_slabs:JSON.stringify([
+      {id:'S001',material:'Calacatta Gold Quartz',supplier:'MSI Stone',slabs:2,lot:'4421',sqft:126,cost:380,status:'In Stock',location:'Rack A-3'},
+      {id:'S002',material:'Cambria Brittanicca Warm',supplier:'Arizona Tile',slabs:3,lot:'7820',sqft:189,cost:420,status:'In Stock',location:'Rack B-1'},
+      {id:'S003',material:'Uba Tuba Granite',supplier:'MSI Stone',slabs:4,lot:'3310',sqft:252,cost:180,status:'In Stock',location:'Rack C-2'},
+      {id:'S004',material:'Black Absolute Granite',supplier:'Dal-Tile',slabs:1,lot:'9901',sqft:63,cost:210,status:'Committed',location:'Rack A-7'},
+      {id:'S005',material:'Arabescato Marble',supplier:'Arizona Tile',slabs:2,lot:'5544',sqft:126,cost:490,status:'In Stock',location:'Rack D-1'},
+      {id:'S006',material:'Dekton Sirius',supplier:'Cosentino',slabs:2,lot:'2201',sqft:126,cost:380,status:'Committed',location:'Rack B-4'}
+    ]),
+    sd_remakes:JSON.stringify([
+      {id:'R001',job:'Kowalski Kitchen',date:daysAgo(8),type:'Measurement Error',desc:'Sink cutout wrong size - template off by 3/8"',cost:340,cause:'Field Error',resolved:false},
+      {id:'R002',job:'Premier Homes Lot 39',date:daysAgo(21),type:'Damage in Transit',desc:'Corner chip on island piece during delivery',cost:180,cause:'Handling',resolved:true},
+      {id:'R003',job:"D'Angelo Master Bath",date:daysAgo(35),type:'Wrong Material',desc:'Arabescato Marble pulled instead of Bianco Carrara',cost:520,cause:'Shop Error',resolved:true}
+    ]),
+    sd_schedule:JSON.stringify([
+      {id:'SC001',job:'Kowalski Kitchen',client:'Sarah Kowalski',date:daysFrom(3),time:'8:00 AM',crew:['Carlos Mendez','Kyle Hartwell'],type:'Installation',status:'Confirmed',address:'4412 Elm Ridge Dr, Strongsville OH'},
+      {id:'SC002',job:'Chen Bar Project',client:'Chen Restaurant Group',date:daysFrom(7),time:'7:00 AM',crew:['Carlos Mendez','DeShawn Williams','Kyle Hartwell'],type:'Installation',status:'Confirmed',address:'1200 Euclid Ave, Cleveland OH'},
+      {id:'SC003',job:'Castellano Outdoor',client:'Jennifer Castellano',date:daysFrom(10),time:'9:00 AM',crew:['Carlos Mendez','Kyle Hartwell'],type:'Installation',status:'Tentative',address:'33 Edgewater Dr, Rocky River OH'},
+      {id:'SC004',job:'Premier Homes Lot 44',client:'Premier Homes',date:daysFrom(2),time:'8:30 AM',crew:['Marco Rossi'],type:'Template',status:'Confirmed',address:'5500 Frantz Rd, Dublin OH'}
+    ]),
+    sd_license_key:'SD-PINNACLE-2026'
+  };
+  try{
+    Object.keys(data).forEach(function(k){localStorage.setItem(k,data[k]);});
+    localStorage.setItem(SEEDED_KEY,'1');
+    if(document.readyState==='loading'){
+      document.addEventListener('DOMContentLoaded',function(){_seedAdm();});
+    }else{_seedAdm();}
+  }catch(e){}
+  function _seedAdm(){
+    var map={company:'adm-co',owner:'adm-owner',phone:'adm-phone',addr:'adm-addr',email:'adm-email',lic:'adm-lic'};
+    var vals={company:'Pinnacle Stone & Design',owner:'Jim Hartwell',phone:'(216) 555-0182',addr:'4820 Brookpark Rd, Cleveland OH 44135',email:'jim@pinnaclestoneclev.com',lic:'SD-PINNACLE-2026'};
+    Object.keys(map).forEach(function(k){var el=document.getElementById(map[k]);if(el)el.value=vals[k];});
+    var sn=document.getElementById('est-shop-name');if(sn)sn.textContent='Pinnacle Stone & Design';
+    var esf=document.getElementById('est-footer-shop');if(esf)esf.textContent='Pinnacle Stone & Design';
+  }
+})();
+</script>
+
+<script>
+// Pattern 13: License Key Gate
+(function(){
+  var LIC_KEY='sd_license_key';
+  var VALID_PREFIXES=['SD-','DEMO-','STONE-','SAIRN-'];
+  function isValidKey(k){
+    if(!k||k.length<8)return false;
+    for(var i=0;i<VALID_PREFIXES.length;i++){if(k.indexOf(VALID_PREFIXES[i])===0)return true;}
+    return false;
+  }
+  function hideLicScreen(){var el=document.getElementById('license-screen');if(el)el.style.display='none';}
+  window.sdActivateLicense=function(){
+    var inp=document.getElementById('lic-key-input');
+    var err=document.getElementById('lic-error');
+    var k=(inp?inp.value:'').trim().toUpperCase();
+    if(!isValidKey(k)){
+      if(err)err.textContent='Invalid license key. Contact michael@sairn.com';
+      if(inp){inp.style.borderColor='rgba(248,113,113,0.7)';setTimeout(function(){inp.style.borderColor='rgba(232,133,10,0.3)';},1500);}
+      return;
+    }
+    try{localStorage.setItem(LIC_KEY,k);}catch(e){}
+    hideLicScreen();
+    var admLic=document.getElementById('adm-lic');if(admLic)admLic.value=k;
+  };
+  var stored=null;try{stored=localStorage.getItem(LIC_KEY);}catch(e){}
+  if(isValidKey(stored)){hideLicScreen();}
+  else{
+    // Ensure license screen visible, auth screen hidden until licensed
+    document.addEventListener('DOMContentLoaded',function(){
+      var ls=document.getElementById('license-screen');
+      var as=document.getElementById('auth-screen');
+      if(ls)ls.style.display='flex';
+      if(as)as.style.display='none';
+      var app=document.getElementById('app');
+      if(app)app.classList.remove('visible');
+      var admLic=document.getElementById('adm-lic');
+      if(admLic&&stored)admLic.value=stored;
+    });
+  }
+})();
 </script>
 
 </body></html>
