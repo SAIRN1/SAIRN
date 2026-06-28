@@ -44,7 +44,7 @@
   --shadow:0 1px 4px rgba(0,0,0,0.07),0 4px 20px rgba(0,0,0,0.05);
 }
 
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+body{font-family:'Outfit','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
 
 /* == SCROLLBAR == */
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -18779,7 +18779,7 @@ function safetyRenderChecklist() {
   var todaySub=sdSafetyData.checklists.find(function(c){return c.date===today;});
   el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today\'s checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +
     DAILY_CHECKLIST.map(function(item){
-      var checked=todaySub&&todaySub.completed.includes(item.id);
+      var checked=todaySub&&todaySub.completed&&todaySub.completed.includes(item.id);
       return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">' +
         '<input type="checkbox" id="dc-'+item.id+'" '+(checked?'checked':'')+' style="width:18px;height:18px;cursor:pointer" '+(todaySub?'disabled':'')+'>' +
         '<label for="dc-'+item.id+'" style="font-size:13px;color:var(--text);cursor:pointer;flex:1">'+item.label+'</label>' +
@@ -27325,7 +27325,7 @@ async function remakeAIAnalyze(){
         system:'You are a 25-year veteran stone fabrication quality manager. You know that measurement errors are usually template issues, cut errors are CNC programming issues, and edge errors are usually worn tooling or incorrect speeds. Give brutally honest, shop-floor-specific recommendations.',
         messages:[{role:'user',content:prompt}]})});
     var d=await res.json();
-    var txt=(d.content&&d.content[0])?d.content[0].text:'';
+    var txt=(d&&d.content&&d.content[0])?d.content[0].text:'';
     el.innerHTML=txt?'<div style="font-size:13px;line-height:1.8;color:var(--text)">'+txt.replace(/\*\*(.*?)\*\*/g,'<strong style="color:#1B3A6B">$1</strong>').replace(/\n/g,'<br>')+'</div>':'<div style="color:#dc2626;font-size:12px">AI analysis unavailable — review trend data above.</div>';
   }catch(e){
     el.innerHTML='<div style="color:#dc2626;font-size:12px">Could not reach AI — review trend charts above.</div>';
@@ -28647,7 +28647,7 @@ async function vmAnalyze(){
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:vmB64_2}},
         {type:'text',text:'Material: '+mat+'. Use: '+use+'.'+(bundle?' Bundle: '+bundle+'.':'')+'\n\nProvide:\n1. VEIN MATCH SCORE (1-10)\n2. GRAIN DIRECTION compatibility\n3. BUNDLE ASSESSMENT — same bundle?\n4. ORIENTATION RECOMMENDATION for each slab\n5. BOOKMATCHING POTENTIAL\n6. GO/NO-GO for '+use+'\n7. ONE SENTENCE for the customer'}
       ]}]})});
-    var d=await r.json();var txt=(d.content&&d.content[0])?d.content[0].text:'';
+    var d=await r.json();var txt=(d&&d.content&&d.content[0])?d.content[0].text:'';
     if(loading)loading.style.display='none';
     var scoreMatch=txt.match(/(\d+)\s*\/\s*10|score[:\s]+(\d+)/i);
     var score=scoreMatch?(parseInt(scoreMatch[1]||scoreMatch[2])||5):5;
