@@ -2673,7 +2673,7 @@ console.log('%c SAIRN Security v3.0 â€” 30-Layer Protection Active ', 'back
               <button class="draw-btn active" id="tool-add" onclick="setDrawTool('add',this)">+ Add Run</button>
               <button class="draw-btn" id="tool-erase" onclick="setDrawTool('erase',this)">Erase</button>
               <button class="draw-btn" onclick="clearKTCanvas()">Clear All</button>
-              <span style="font-size:10px;color:var(--muted);margin-left:4px">Drag to draw Â· Click erase to remove</span>
+              <span style="font-size:10px;color:var(--muted);margin-left:4px">Drag to draw · Click erase to remove</span>
             </div>
             <canvas id="kt-canvas" width="600" height="320"></canvas>
             <div id="kt-runs-summary" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
@@ -3063,7 +3063,7 @@ console.log('%c SAIRN Security v3.0 â€” 30-Layer Protection Active ', 'back
               <button class="draw-btn" style="width:100%;text-align:left;background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcRemoveDrainboardsForActiveSink()">Remove</button>
             </div>
             <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCCutouts()">Clear Cutouts</button>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click the spot Â· drag any marker to fine-tune</span>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click the spot · drag any marker to fine-tune</span>
           </div>
           <div class="draw-toolbar" id="dc-sinkshape-picker" style="margin-top:6px;display:none">
             <span style="font-size:10px;color:var(--muted);margin-right:2px">Sink shape:</span>
@@ -3413,7 +3413,7 @@ console.log('%c SAIRN Security v3.0 â€” 30-Layer Protection Active ', 'back
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <div>
           <div style="font-size:18px;font-weight:700;color:var(--text)">ðŸ“Š Business Intelligence</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:3px">True cost Â· Operating overhead Â· Marketing Â· HR</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">True cost · Operating overhead · Marketing · HR</div>
         </div>
         <button onclick="saveBizData()" style="padding:8px 18px;background:var(--a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Save All</button>
       </div>
@@ -3646,7 +3646,7 @@ console.log('%c SAIRN Security v3.0 â€” 30-Layer Protection Active ', 'back
         <div class="est-inv">
           <div class="inv-label">Total Project Investment</div>
           <div class="inv-amount" id="est-total">$â€”</div>
-          <div class="inv-note">Estimate valid 30 days Â· Professional installation included Â· All material sourced and verified</div>
+          <div class="inv-note">Estimate valid 30 days · Professional installation included · All material sourced and verified</div>
         </div>
         <div class="est-footer">
           <span id="est-footer-shop">Stone Fabrication Shop</span>
@@ -6426,7 +6426,7 @@ function invPrint(id) {
       '</div>' +
     '</div>' +
     (inv.notes ? '<div style="margin-top:20px;background:#F9FAFB;border-radius:10px;padding:14px"><div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-bottom:6px">Notes</div><div style="font-size:13px">' + inv.notes + '</div></div>' : '') +
-    '<div style="margin-top:28px;border-top:1px solid #E5E7EB;padding-top:14px;text-align:center;font-size:12px;color:#9CA3AF">Thank you for your business Â· ' + shop + '</div>' +
+    '<div style="margin-top:28px;border-top:1px solid #E5E7EB;padding-top:14px;text-align:center;font-size:12px;color:#9CA3AF">Thank you for your business · ' + shop + '</div>' +
     '</div>';
   document.getElementById('inv2-print-modal').style.display = 'flex';
 }
@@ -6461,7 +6461,7 @@ function invRender() {
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
       '<div style="flex:1;min-width:180px">' +
         '<div style="font-size:14px;font-weight:800;color:var(--text)">' + inv.customer + '</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + inv.num + (inv.desc ? ' Â· ' + inv.desc : '') + (inv.checkNum ? ' Â· <span style="color:#166534;font-weight:600">&#10003; Ck#' + inv.checkNum + '</span>' : '') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + inv.num + (inv.desc ? ' · ' + inv.desc : '') + (inv.checkNum ? ' · <span style="color:#166534;font-weight:600">&#10003; Ck#' + inv.checkNum + '</span>' : '') + '</div>' +
         (overdue ? '<div style="font-size:11px;color:#dc2626;font-weight:700;margin-top:3px">âš ï¸ OVERDUE since ' + inv.due + '</div>' : '') +
       '</div>' +
       '<div style="text-align:center;min-width:90px">' +
@@ -7661,7 +7661,7 @@ function qbImportFromDraw() {
   if(noneEl)   noneEl.style.display   = 'none';
   if(resultEl) {
     resultEl.style.display = 'block';
-    resultEl.innerHTML = 'âœ… <b>Drawing imported:</b> ' + summary.join(' Â· ') +
+    resultEl.innerHTML = 'âœ… <b>Drawing imported:</b> ' + summary.join(' · ') +
       ' â€” <a href="#" onclick="qbResetDrawImport();return false;" style="color:#166534">undo</a>';
   }
 
@@ -7884,7 +7884,7 @@ function buildEstimate() {
   const finishName = finishVal === 0 ? 'polished' : finishVal === 0.06 ? 'honed' : 'leathered';
   const thickVal = parseFloat(document.getElementById('thickness').value);
   const thickName = thickVal === 0.85 ? '2CM' : thickVal === 1.15 ? '4CM' : '3CM';
-  products.push({ name:c.mat.name + ' Countertops', desc:thickName + ' ' + finishName + ' â€” ' + c.proj.name + ' Â· Custom fabricated and installed' });
+  products.push({ name:c.mat.name + ' Countertops', desc:thickName + ' ' + finishName + ' â€” ' + c.proj.name + ' · Custom fabricated and installed' });
 
   const edgeSel = document.getElementById('edge');
   const edgeText = edgeSel.options[edgeSel.selectedIndex].text.split(' â€”')[0];
@@ -10233,7 +10233,7 @@ function calcDrawing() {
     {n:totalMat.toFixed(2)+' sqft',l:'Order Qty +15%',s:'All pieces including waste allowance'},
     {n:slabs,l:'Slabs Needed',s:'Estimated at 50 sqft per slab'},
     {n:thh+' hr',l:'Est. Labor (THH)',s:'Granite benchmark 4hr per 50sqft'},
-    {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' Â· '):'No extras selected'},
+    {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
     {n:seamInfo.seamCount>0?seamInfo.pieceCount+' pieces':'1 piece',l:'Seams',s:seamInfo.seamCount>0?seamInfo.seamCount+' seam(s), '+seamInfo.totalSeamLF.toFixed(1)+' LF, +$'+seamEdgeCost.toFixed(0)+' polished edge':'No seams placed'},
     {n:drainboardInfo.count>0?'$'+drainboardInfo.totalCost.toFixed(0):'None',l:'Drainboard(s)',s:drainboardInfo.count>0?drainboardInfo.count+' side(s) attached':'No drainboards placed'},
     {n:integratedInfo.count>0?'+$'+integratedInfo.totalCost.toFixed(0):'None',l:'Integrated Sink Premium',s:integratedInfo.count>0?'Carved from same stone, no separate fixture â€” '+integratedInfo.count+' sink(s)':'No integrated sinks placed'},
@@ -10425,7 +10425,7 @@ function printDrawCutSheet() {
       <div style="font-size:36px;margin-bottom:10px">ðŸ“„</div>
       <div style="font-size:14px;font-weight:600;color:#374151">Tap to photograph any document</div>
       <div style="font-size:12px;color:#9CA3AF;margin-top:4px">
-        Invoice Â· Contract Â· EOB Â· DEA Log Â· Blueprint Â· Permit Â· Any paper document
+        Invoice · Contract · EOB · DEA Log · Blueprint · Permit · Any paper document
       </div>
       <input type="file" id="doc-scan-file" accept="image/*,application/pdf"
              capture="environment" style="display:none" onchange="scanDoc(this)">
@@ -10487,7 +10487,7 @@ function printDrawCutSheet() {
   <div class="card">
     <div class="ch">
       <div class="ct">Expense Log</div>
-      <span style="font-size:11px;color:#6B7280">Sent to SAIRNbiz automatically Â· Check writing happens in SAIRNbiz</span>
+      <span style="font-size:11px;color:#6B7280">Sent to SAIRNbiz automatically · Check writing happens in SAIRNbiz</span>
     </div>
     <div id="cr-history-tbody">
       <div style="text-align:center;padding:28px;color:#9CA3AF">
@@ -11702,7 +11702,7 @@ async function sairnLoadWeather() {
         const wc   = cw.weathercode;
         const icons = {0:'â˜€ï¸',1:'ðŸŒ¤',2:'â›…',3:'â˜ï¸',45:'ðŸŒ«',48:'ðŸŒ«',51:'ðŸŒ¦',61:'ðŸŒ§',71:'ðŸŒ¨',80:'ðŸŒ¦',95:'â›ˆ'};
         const icon  = icons[wc] || (wc <= 3 ? 'â˜€ï¸' : wc <= 60 ? 'â›…' : 'ðŸŒ§');
-        const desc  = `${temp}Â°F Â· Wind ${wind}mph`;
+        const desc  = `${temp}Â°F · Wind ${wind}mph`;
         const goGo  = temp > 32 && temp < 100 && wind < 25 && ![61,71,80,95].includes(wc);
         document.getElementById('sairn-wx-icon').textContent   = icon;
         document.getElementById('sairn-wx-temp').textContent   = temp + 'Â°F';
@@ -11865,7 +11865,7 @@ function showSOPs() {
 
   const hdr=document.createElement('div');
   hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#0A0D12;border-bottom:1px solid rgba(232,133,10,0.2);flex-shrink:0';
-  hdr.innerHTML='<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">'+shopName+' â€” Standard Operating Procedures</div><div style="font-size:11px;color:#8A8070;margin-top:2px">8 Position SOPs Â· Print any or all for your team</div></div><button onclick="document.getElementById(\'sop-modal\').remove()" style="background:none;border:none;color:#8A8070;font-size:22px;cursor:pointer">x</button>';
+  hdr.innerHTML='<div><div style="font-size:15px;font-weight:700;color:#F5F0E8">'+shopName+' â€” Standard Operating Procedures</div><div style="font-size:11px;color:#8A8070;margin-top:2px">8 Position SOPs · Print any or all for your team</div></div><button onclick="document.getElementById(\'sop-modal\').remove()" style="background:none;border:none;color:#8A8070;font-size:22px;cursor:pointer">x</button>';
   modal.appendChild(hdr);
 
   const body=document.createElement('div');
@@ -12201,7 +12201,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Feature 1 of enhanced AI features â€” highest impact
 // Supports: PDF, images (JPG/PNG), text files, Word docs
 // Claude reads the document and analyzes it in context
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -12361,7 +12361,7 @@ modal.innerHTML =
     '<div class="sdm-drop-zone" id="sdm-drop" onclick="document.getElementById(\'sdm-file-input\').click()">' +
       '<div class="sdm-drop-icon">ðŸ“„</div>' +
       '<div class="sdm-drop-title">Drop your document here or tap to browse</div>' +
-      '<div class="sdm-drop-sub">Supports PDF, JPG, PNG, and text files Â· Max 10MB<br>Your document is processed securely and never stored</div>' +
+      '<div class="sdm-drop-sub">Supports PDF, JPG, PNG, and text files · Max 10MB<br>Your document is processed securely and never stored</div>' +
     '</div>' +
     '<input type="file" id="sdm-file-input" class="sdm-file-input" accept="' + cfg.accept + '">' +
 
@@ -12632,7 +12632,7 @@ setTimeout(injectDocButton, 600);
 // SAIRN UNIVERSAL AI FOLLOW-UP QUESTIONS MODULE
 // Feature 2 â€” after every Claude response, 3 smart follow-up chips
 // appear. One tap sends the question instantly.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -12820,7 +12820,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // After every 3rd AI response, Claude summarizes the session.
 // That summary is injected into all future prompts as context.
 // The AI stops forgetting what it told you 2 questions ago.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -13006,7 +13006,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // User sets preferred response style once â€” stored in localStorage
 // Injected into every system prompt automatically
 // Options: Simple / Detailed / Formal / Casual / Expert
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -13143,7 +13143,7 @@ setTimeout(buildToneBar, 700);
 // When Claude produces a numbered list, auto-render it as an
 // interactive checklist. Progress saved to localStorage.
 // Returns to living action list the user works through over time.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -13356,7 +13356,7 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installActi
 //   "Simplify" â€” rewrite in plain language, short sentences
 //   "Go Deeper" â€” expand with more detail and examples
 // One tap â€” instant. No typing required.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -13523,7 +13523,7 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installSimp
 // Microphone button next to the send button.
 // Speech â†’ text â†’ fills the input â†’ sends to Claude.
 // Works in Chrome, Edge, Safari. Falls back gracefully.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -13652,7 +13652,7 @@ setTimeout(injectVoiceButton, 700);
 // When NEXUS routes you to a cell, your intake context travels with you.
 // The destination app opens pre-loaded with your situation.
 // Also: "Continue in [App]" button after any Claude response.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -13805,7 +13805,7 @@ else {
 // Run two scenarios side by side.
 // Two mortgage options, two debt payoff plans, two lease terms.
 // Claude analyzes both and recommends.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -13967,7 +13967,7 @@ setTimeout(injectCompareButton, 800);
 // Words appear as Claude generates them â€” instant, alive, real.
 // Patches the sendMessage function to use SSE streaming.
 // Falls back to standard fetch if streaming unavailable.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -14183,7 +14183,7 @@ function installStreamingHook() {
 // Claude returns beautiful markdown. Apps display raw symbols.
 // This fixes that â€” **bold**, headers, bullets, code, tables
 // all render properly across every SAIRN app.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -14324,7 +14324,7 @@ else {
 // Current facts injected into every app's system prompt.
 // 2026 rates, guidelines, statutes â€” Claude knows them cold.
 // No extra API calls. Just smarter system prompts.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -14501,7 +14501,7 @@ if (!window._saircKnowledgeFetchPatched) {
 // Musk: strip to the bone, ship fast, question every word
 // Optimum Potential: built to outlast, not just to answer
 // Applied to every app's SYSTEM constant at runtime
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -14509,7 +14509,7 @@ if (window._saircPromptsInstalled) return;
 window._saircPromptsInstalled = true;
 
 // Triad Council + Optimum Potential rewritten system prompts
-// Each was run through: Jobs (UX/focus) Â· Gates (precision/edge cases) Â· Musk (simplify/ship)
+// Each was run through: Jobs (UX/focus) · Gates (precision/edge cases) · Musk (simplify/ship)
 // Standard: built to outlast, not just to answer
 
 var OPTIMIZED_SYSTEMS = {
@@ -14714,7 +14714,7 @@ if (newSystem && !window._saircPromptFetchPatched) {
 // SAIRN GAP 5 â€” CONFIDENCE + CITATION INDICATORS
 // When Claude gives data, numbers, or recommendations â€”
 // a confidence badge appears. Users know what to verify.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -14795,7 +14795,7 @@ function addConfidenceBar(element, text) {
   if (analysis.issues.length > 0) {
     var note = document.createElement('span');
     note.className = 'sairn-verify-note';
-    note.textContent = analysis.issues.join(' Â· ');
+    note.textContent = analysis.issues.join(' · ');
     bar.appendChild(note);
   }
 
@@ -14848,7 +14848,7 @@ else {
 // "Claude is thinking harder" message on slow responses.
 // Cached last response fallback.
 // No more cold generic errors.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -15013,7 +15013,7 @@ else {
 // Injects it into every subsequent Claude API call.
 // Falls back to cached static knowledge if fetch fails.
 // Updates every hour â€” always current.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -15173,7 +15173,7 @@ setInterval(function() {
 // Tracks: question patterns, preferred response style, topics,
 // expertise signals, communication preferences.
 // Gets smarter with every interaction automatically.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -15408,7 +15408,7 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installLear
 // Camera capture â€” photo your document, your bill, your condition.
 // Claude sees the image and analyzes it in context.
 // Photo â†’ base64 â†’ Claude vision API â†’ instant analysis.
-// Built by Michael L. Dibert Â· SAIRN Technologiesâ„¢
+// Built by Michael L. Dibert · SAIRN Technologiesâ„¢
 // ================================================================
 (function() {
 'use strict';
@@ -15527,7 +15527,7 @@ modal.innerHTML =
   '</div>' +
   '<input class="scam-custom" id="scam-custom-q" placeholder="Or type your own question...">' +
   '<button class="scam-analyze" id="scam-analyze-btn" onclick="analyzeImage()">ðŸ§  Claude â€” Analyze This â†’</button>' +
-  '<div style="font-size:11px;color:rgba(240,240,255,0.25);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI Â· Not stored on SAIRN servers</div>' +
+  '<div style="font-size:11px;color:rgba(240,240,255,0.25);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI · Not stored on SAIRN servers</div>' +
   '</div>' +
   '</div>';
 document.body.appendChild(modal);
@@ -16094,7 +16094,7 @@ function custOpenDetail(id) {
   if (!c) return;
   window._custDetailId = id;
   var nm = document.getElementById('cdm-name'); if(nm) nm.textContent = c.name;
-  var pj = document.getElementById('cdm-project'); if(pj) pj.textContent = (c.project||'') + (c.quote?' Â· $'+c.quote.toLocaleString():'');
+  var pj = document.getElementById('cdm-project'); if(pj) pj.textContent = (c.project||'') + (c.quote?' · $'+c.quote.toLocaleString():'');
   var invoices = (typeof sd_invoices!=='undefined') ? sd_invoices.filter(function(i){return i.customer&&i.customer.toLowerCase()===c.name.toLowerCase();}) : [];
   var slabs = (typeof sdSlabs!=='undefined') ? sdSlabs.filter(function(s){return s.reservedFor&&s.reservedFor.toLowerCase()===c.name.toLowerCase();}) : [];
   var photos = (typeof sdPhotos!=='undefined') ? sdPhotos.filter(function(p){return p.job&&p.job.toLowerCase().includes(c.name.toLowerCase());}) : [];
@@ -16486,7 +16486,7 @@ function photoLightbox(id) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99000;display:flex;align-items:center;justify-content:center;cursor:pointer';
   overlay.innerHTML = '<img src="' + p.data + '" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.5)" loading="lazy">' +
     '<div style="position:absolute;top:20px;right:20px;color:#fff;font-size:28px;cursor:pointer">Ã—</div>' +
-    '<div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px">' + escHtml(p.job) + ' Â· ' + escHtml(p.name) + '</div>';
+    '<div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px">' + escHtml(p.job) + ' · ' + escHtml(p.name) + '</div>';
   overlay.onclick = () => document.body.removeChild(overlay);
   document.body.appendChild(overlay);
 }
@@ -16556,8 +16556,8 @@ function renderWarranties() {
         '<div class="warranty-name">' + escHtml(w.customer) + '</div>' +
         '<span class="item-urgency ' + urgency + '">' + (expired?'Expired':soon?daysLeft+'d left':'Active') + '</span>' +
       '</div>' +
-      '<div style="font-size:12px;color:var(--muted)">' + escHtml(w.package) + (w.material?' Â· '+escHtml(w.material):'') + '</div>' +
-      '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate).toLocaleDateString() + ' Â· ' + expiryStr + '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">' + escHtml(w.package) + (w.material?' · '+escHtml(w.material):'') + '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate).toLocaleDateString() + ' · ' + expiryStr + '</div>' +
       '<div style="margin-top:8px;display:flex;gap:8px">' +
         '<span style="font-size:13px;font-weight:700;color:var(--a)">$' + w.price + '</span>' +
         '<button onclick="warrantyDelete(\'' + w.id + '\')" style="font-size:11px;padding:2px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
@@ -17110,9 +17110,9 @@ function renderSchedule(){
           '<span style="font-size:11px;padding:1px 7px;border-radius:20px;background:rgba(27,58,107,0.1);color:var(--a);font-weight:600">'+stageLabels[j.stage]+'</span>' +
         '</div>' +
         '<div style="font-size:12px;color:var(--muted)">'+
-          (j.material?escHtml(j.material)+' Â· ':'')+(j.sqft?j.sqft+'sqft Â· ':'')+'Template: '+new Date(j.templateDate).toLocaleDateString()+
-          (j.targetDate?' Â· Target: '+new Date(j.targetDate).toLocaleDateString():'') +
-          (j.installer?' Â· Crew: '+escHtml(j.installer):'') +
+          (j.material?escHtml(j.material)+' · ':'')+(j.sqft?j.sqft+'sqft · ':'')+'Template: '+new Date(j.templateDate).toLocaleDateString()+
+          (j.targetDate?' · Target: '+new Date(j.targetDate).toLocaleDateString():'') +
+          (j.installer?' · Crew: '+escHtml(j.installer):'') +
         '</div>' +
         (urg!=='done'?'<div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>':'') +
         (j.notes?'<div style="font-size:11px;color:var(--muted);margin-top:4px">'+escHtml(j.notes)+'</div>':'') +
@@ -17836,7 +17836,7 @@ function renderInventory(){
       var pct=Math.min(100,Math.round((item.qty/Math.max(1,item.min*2))*100));
       return '<div class="inv-row" style="display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px;align-items:center">'+
         '<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+escHtml(item.name)+'</div>'+
-          '<div style="font-size:11px;color:var(--muted)">'+vNames[item.vendor]+(item.sku?' Â· '+item.sku:'')+'</div></div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+vNames[item.vendor]+(item.sku?' · '+item.sku:'')+'</div></div>'+
         '<span class="item-urgency '+color+'">'+
           (color==='red'?(item.qty<=0?'Out':'Low'):color==='yellow'?'Warning':'OK')+'</span>'+
         '<div class="inv-level"><div class="inv-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>'+
@@ -19687,11 +19687,11 @@ function renderRemakes(){
             (urg==='red'?'<span class="item-urgency red">OVERDUE '+hrsStr+'</span>':urg==='yellow'?'<span class="item-urgency yellow">'+hrsStr+' elapsed</span>':urg==='approved'?'<span class="item-urgency green">Approved by '+escHtml(r.approvedBy)+'</span>':urg==='done'?'<span class="item-urgency green">Complete</span>':'<span class="item-urgency green">'+hrsStr+'</span>') +
           '</div>' +
           '<div style="font-size:12px;color:var(--muted)">' +
-            (r.material?escHtml(r.material)+' Â· ':'')+(r.sqft?r.sqft+'sqft Â· ':'')+
-            'Cause: '+reasonLabels[r.reason]+(r.assignedTo?' Â· '+escHtml(r.assignedTo):'') +
+            (r.material?escHtml(r.material)+' · ':'')+(r.sqft?r.sqft+'sqft · ':'')+
+            'Cause: '+reasonLabels[r.reason]+(r.assignedTo?' · '+escHtml(r.assignedTo):'') +
           '</div>' +
           (r.notes?'<div style="font-size:12px;color:var(--muted);margin-top:3px">'+escHtml(r.notes)+'</div>':'') +
-          '<div style="font-size:11px;color:var(--muted);margin-top:4px">Limit: '+limitLabel+' Â· Started: '+new Date(r.startTime).toLocaleString()+'</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:4px">Limit: '+limitLabel+' · Started: '+new Date(r.startTime).toLocaleString()+'</div>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">' +
           (r.status==='open'&&!r.approvedExtension&&document.body.classList.contains('is-exec')?
@@ -19838,7 +19838,7 @@ function renderExecChat(){
   el.innerHTML=sdExecMsgs.map(m=>{
     var isMine=m.role===sdExecRole;
     return '<div class="exec-msg '+(isMine?'mine':'theirs')+'">'+
-      '<div class="exec-msg-sender">'+m.role.toUpperCase()+' Â· '+new Date(m.ts).toLocaleTimeString()+'</div>'+
+      '<div class="exec-msg-sender">'+m.role.toUpperCase()+' · '+new Date(m.ts).toLocaleTimeString()+'</div>'+
       escHtml(m.text)+
     '</div>';
   }).join('');
@@ -25197,8 +25197,8 @@ function agRender() {
           '<span style="font-size:14px;font-weight:800">' + escHtml(ag.shop) + '</span>' +
           '<span style="font-size:10px;background:' + (sc[ag.status] || '#6b7280') + ';color:#fff;padding:2px 8px;border-radius:100px;font-weight:700">' + ag.status + '</span>' +
         '</div>' +
-        '<div style="font-size:12px;color:var(--muted)">' + ag.num + ' &nbsp;Â·&nbsp; ' + escHtml(ag.contact || '') + ' &nbsp;Â·&nbsp; ' + escHtml(ag.planLabel || '') + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + new Date(ag.date).toLocaleDateString() + (ag.signedAt ? ' &nbsp;Â·&nbsp; Signed ' + new Date(ag.signedAt).toLocaleDateString() : '') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted)">' + ag.num + ' &nbsp;·&nbsp; ' + escHtml(ag.contact || '') + ' &nbsp;·&nbsp; ' + escHtml(ag.planLabel || '') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + new Date(ag.date).toLocaleDateString() + (ag.signedAt ? ' &nbsp;·&nbsp; Signed ' + new Date(ag.signedAt).toLocaleDateString() : '') + '</div>' +
       '</div>' +
       '<div style="font-size:18px;font-weight:800;color:#16C762">$' + (ag.price || 0) + '/mo</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
@@ -26036,8 +26036,8 @@ function slabCardHtml(s){
         '<div style="font-weight:700;font-size:13px">'+escHtml(s.colorName||'(unnamed)')+'</div>'+
         (s.isRemnant?'<span style="font-size:9px;font-weight:700;color:var(--a);background:var(--stone);padding:2px 6px;border-radius:100px;white-space:nowrap">REMNANT</span>':'')+
       '</div>'+
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+slabMaterialLabel(s.material)+' Â· '+s.thickness+' Â· '+(s.lengthIn||0)+'in Ã— '+(s.widthIn||0)+'in</div>'+
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+(s.usableSqft||0)+' usable sqft Â· $'+slabValue(s).toLocaleString()+'</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+slabMaterialLabel(s.material)+' · '+s.thickness+' · '+(s.lengthIn||0)+'in Ã— '+(s.widthIn||0)+'in</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+(s.usableSqft||0)+' usable sqft · $'+slabValue(s).toLocaleString()+'</div>'+
       '<div style="margin-bottom:8px">'+slabStatusBadge(s)+'</div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap">'+actions+'</div>'+
     '</div>'+
@@ -26510,13 +26510,13 @@ function intakeCardHtml(s) {
         '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+
           (s.client_phone ? 'ðŸ“ž '+escHtml(s.client_phone)+' &nbsp;' : '')+
           (s.client_email ? 'âœ‰ï¸ '+escHtml(s.client_email)+' &nbsp;' : '')+
-          (s.client_role  ? 'Â· '+escHtml(s.client_role) : '')+
+          (s.client_role  ? '· '+escHtml(s.client_role) : '')+
         '</div>' +
         '<div style="font-size:12px;color:var(--text);margin-bottom:4px">'+
           (s.project_type ? 'ðŸ  '+escHtml(s.project_type.charAt(0).toUpperCase()+s.project_type.slice(1))+' &nbsp;' : '')+
-          (s.shape        ? 'Â· '+escHtml(s.shape)+' &nbsp;' : '')+
-          (s.rough_run_a_ft ? 'Â· ~'+s.rough_run_a_ft+'ft run &nbsp;' : '')+
-          (s.sink_count   ? 'Â· '+s.sink_count+' sink(s)' : '')+
+          (s.shape        ? '· '+escHtml(s.shape)+' &nbsp;' : '')+
+          (s.rough_run_a_ft ? '· ~'+s.rough_run_a_ft+'ft run &nbsp;' : '')+
+          (s.sink_count   ? '· '+s.sink_count+' sink(s)' : '')+
         '</div>' +
         (s.notes ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+escHtml(s.notes.slice(0,140))+(s.notes.length>140?'â€¦':'')+'</div>' : '')+
         analysisNote +
@@ -26991,7 +26991,7 @@ function renderSchedCrew(){
           '<span style="font-size:22px">ðŸ‘·</span>'+
           '<div>'+
             '<div style="font-size:14px;font-weight:800">'+escHtml(crew)+'</div>'+
-            '<div style="font-size:11px;opacity:.75">'+open.length+' open Â· '+(totalSqft?totalSqft+' sqft':'')+'</div>'+
+            '<div style="font-size:11px;opacity:.75">'+open.length+' open · '+(totalSqft?totalSqft+' sqft':'')+'</div>'+
           '</div>'+
         '</div>'+
         '<div style="display:flex;align-items:center;gap:8px">'+
@@ -27345,7 +27345,7 @@ function esigPrintApproval(){
   win.document.write('</div>');
   win.document.write('<p style="font-size:13px;line-height:1.7">By signing this agreement, the client authorizes the fabrication shop to begin sourcing materials and scheduling installation upon receipt of the deposit. The deposit is non-refundable once material has been cut. The balance is due on or before the day of installation.</p>');
   win.document.write('<div style="margin-top:40px"><span class="sig-line">Client Signature &amp; Date</span><span class="sig-line">Shop Representative</span></div>');
-  win.document.write('<div class="ftr">'+shopName+' Â· Project Approval Form Â· Generated by StoneDeskâ„¢</div>');
+  win.document.write('<div class="ftr">'+shopName+' · Project Approval Form · Generated by StoneDeskâ„¢</div>');
   win.document.write('<scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>');
   win.document.close();
 }
@@ -27996,7 +27996,7 @@ function crmRender(){
           var opts=CRM_STAGES.filter(function(s){return s.id!==st.id;}).map(function(s){return '<option value="'+s.id+'">'+s.label+'</option>';}).join('');
           return '<div style="background:var(--bg);border:1.5px solid '+(overdue?'#dc2626':'var(--border)')+';border-radius:8px;padding:8px;font-size:11px;margin-bottom:5px">'+
             '<div style="font-weight:700;margin-bottom:2px">'+escHtml(l.name)+'</div>'+
-            '<div style="color:var(--muted)">'+escHtml(l.project||'')+(l.value?' Â· '+sdFmt(l.value):'')+'</div>'+
+            '<div style="color:var(--muted)">'+escHtml(l.project||'')+(l.value?' · '+sdFmt(l.value):'')+'</div>'+
             '<div style="display:flex;gap:4px;margin-top:5px">'+
             (st.id!=='won'&&st.id!=='lost'?'<select onchange="crmAdvance(\''+l.id+'\',this.value)" style="font-size:9px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);outline:none;flex:1"><option value="">Move to...</option>'+opts+'</select>':'')+
             '<button onclick="crmDelete(\''+l.id+'\')" style="padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:10px">x</button>'+
@@ -28010,7 +28010,7 @@ function crmRender(){
       var st=CRM_STAGES.find(function(s){return s.id===l.stage;})||CRM_STAGES[0];
       var opts=CRM_STAGES.map(function(s){return '<option value="'+s.id+'"'+(s.id===l.stage?' selected':'')+'>'+s.label+'</option>';}).join('');
       return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+st.color+';border-radius:10px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'+
-        '<div style="flex:1"><div style="font-weight:700;font-size:14px">'+escHtml(l.name)+'</div><div style="font-size:12px;color:var(--muted)">'+escHtml(l.project||'')+' Â· '+escHtml(l.source||'')+(l.value?' Â· '+sdFmt(l.value):'')+'</div></div>'+
+        '<div style="flex:1"><div style="font-weight:700;font-size:14px">'+escHtml(l.name)+'</div><div style="font-size:12px;color:var(--muted)">'+escHtml(l.project||'')+' · '+escHtml(l.source||'')+(l.value?' · '+sdFmt(l.value):'')+'</div></div>'+
         '<select onchange="crmAdvance(\''+l.id+'\',this.value)" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+opts+'</select>'+
         '<button onclick="crmDelete(\''+l.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:12px;cursor:pointer">x</button>'+
         '</div>';
@@ -28147,7 +28147,7 @@ function remRender(){
       (r.photo?'<img src="'+r.photo+'" style="width:100%;height:140px;object-fit:cover">':'<div style="height:80px;background:rgba(22,163,74,0.06);display:flex;align-items:center;justify-content:center;font-size:32px">&#129521;</div>')+
       '<div style="padding:12px">'+
         '<div style="font-size:13px;font-weight:700;margin-bottom:2px">'+escHtml(r.material)+'</div>'+
-        '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+r.width+'" x '+r.length+'" ('+r.sqft.toFixed(1)+' sqft) Â· '+r.thickness+'</div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+r.width+'" x '+r.length+'" ('+r.sqft.toFixed(1)+' sqft) · '+r.thickness+'</div>'+
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
           '<span style="font-size:16px;font-weight:800;color:var(--a)">'+sdFmt(r.price)+'</span>'+
           '<span style="font-size:10px;font-weight:700;background:'+cc+';color:#fff;padding:2px 8px;border-radius:100px">'+r.condition+'</span>'+
@@ -28234,7 +28234,7 @@ function poRender(){
   var sc={open:'#ca8a04',sent:'#0891b2',received:'#16a34a'};
   el.innerHTML=poPOs.length?poPOs.map(function(p){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'+
     '<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:14px;font-weight:700">'+escHtml(p.num)+'</span><span style="font-size:11px;font-weight:700;background:'+(sc[p.status]||'#6b7280')+';color:#fff;padding:1px 8px;border-radius:100px">'+p.status+'</span></div>'+
-    '<div style="font-size:12px;color:var(--muted)">'+escHtml(p.supplier)+(p.deliveryDate?' Â· Exp: '+new Date(p.deliveryDate).toLocaleDateString():'')+'</div></div>'+
+    '<div style="font-size:12px;color:var(--muted)">'+escHtml(p.supplier)+(p.deliveryDate?' · Exp: '+new Date(p.deliveryDate).toLocaleDateString():'')+'</div></div>'+
     '<div style="font-size:16px;font-weight:800;color:var(--a)">'+sdFmt(p.total)+'</div>'+
     '<div style="display:flex;gap:6px">'+
       (p.status==='open'?'<button onclick="poReceive(\''+p.id+'\')" style="padding:5px 10px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Received</button>':'')+
@@ -28302,8 +28302,8 @@ function mfRender(){
   el.innerHTML=list.length?list.map(function(s,i){var done=s.status==='complete';return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(done?'#16a34a':'var(--a)')+';border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;'+(done?'opacity:.7':'')+'">'+
     '<div style="background:'+(done?'#16a34a':'var(--a)')+';color:#fff;border-radius:8px;padding:8px 10px;text-align:center;min-width:52px;flex-shrink:0"><div style="font-size:18px;font-weight:900;line-height:1">'+(i+1)+'</div><div style="font-size:10px">'+(s.time||'')+'</div></div>'+
     '<div style="flex:1"><div style="font-size:14px;font-weight:800;margin-bottom:4px">'+escHtml(s.customer)+(s.crew?' <span style="font-size:11px;color:var(--muted);font-weight:400">- '+escHtml(s.crew)+'</span>':'')+'</div>'+
-    '<div style="font-size:12px;color:var(--muted)">'+escHtml(s.address)+(s.phone?' Â· '+escHtml(s.phone):'')+'</div>'+
-    (s.material?'<div style="font-size:12px;color:var(--muted)">'+escHtml(s.material)+(s.sqft?' Â· '+s.sqft+' sqft':'')+'</div>':'')+
+    '<div style="font-size:12px;color:var(--muted)">'+escHtml(s.address)+(s.phone?' · '+escHtml(s.phone):'')+'</div>'+
+    (s.material?'<div style="font-size:12px;color:var(--muted)">'+escHtml(s.material)+(s.sqft?' · '+s.sqft+' sqft':'')+'</div>':'')+
     (s.notes?'<div style="font-size:12px;color:#dc2626;font-weight:600;margin-top:4px">'+escHtml(s.notes)+'</div>':'')+
     '</div>'+
     '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
@@ -28320,7 +28320,7 @@ function mfPrintToday(){
   var win=window.open('','_blank');
   win.document.write('<!DOCTYPE html><html><head><title>Install Manifest</title><style>body{font-family:Arial,sans-serif;padding:28px;max-width:750px;margin:0 auto}.hdr{border-bottom:3px solid #0A3D1F;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between}.stop{border:1px solid #ddd;border-left:4px solid #0A3D1F;border-radius:6px;padding:14px;margin-bottom:14px}.num{display:inline-block;background:#0A3D1F;color:#fff;border-radius:6px;padding:4px 10px;font-weight:700;margin-right:8px}.sig{border-top:1px solid #999;padding-top:5px;font-size:11px;color:#777;min-width:180px;display:inline-block;margin-right:30px;margin-top:28px}@media print{body{padding:16px}}</style><scr'+'ipt></scr'+'ipt></head><body>');
   win.document.write('<div class="hdr"><div><div style="font-size:20px;font-weight:700">'+shopName+'</div><div style="font-size:13px;color:#555">Install Manifest â€” '+new Date(fd+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</div></div><div style="font-size:13px;text-align:right">'+list.length+' stops</div></div>');
-  list.forEach(function(s,i){win.document.write('<div class="stop"><span class="num">'+(i+1)+'</span><strong>'+s.customer+'</strong>'+(s.time?' Â· '+s.time:'')+(s.crew?' Â· '+s.crew:'')+(s.sqft?' Â· '+s.sqft+'sqft':'')+'<br><div style="margin-top:6px">'+s.address+(s.phone?' Â· '+s.phone:'')+'</div>'+(s.material?'<div>'+s.material+'</div>':'')+(s.notes?'<div style="color:#dc2626;font-weight:700;margin-top:4px">NOTES: '+s.notes+'</div>':'')+'<div><span class="sig">Customer Signature</span><span class="sig">Installer Sign-Off</span></div></div>');});
+  list.forEach(function(s,i){win.document.write('<div class="stop"><span class="num">'+(i+1)+'</span><strong>'+s.customer+'</strong>'+(s.time?' · '+s.time:'')+(s.crew?' · '+s.crew:'')+(s.sqft?' · '+s.sqft+'sqft':'')+'<br><div style="margin-top:6px">'+s.address+(s.phone?' · '+s.phone:'')+'</div>'+(s.material?'<div>'+s.material+'</div>':'')+(s.notes?'<div style="color:#dc2626;font-weight:700;margin-top:4px">NOTES: '+s.notes+'</div>':'')+'<div><span class="sig">Customer Signature</span><span class="sig">Installer Sign-Off</span></div></div>');});
   win.document.write('<script>window.onload=function(){window.print();}<\/script></body></html>');win.document.close();
 }
 (function(){var o=window.sbNav;window.sbNav=function(id){if(o)o(id);if(id==='manifest')setTimeout(mfRender,50);};})();
@@ -28342,7 +28342,7 @@ function smsRenderTemplates(){
   el.innerHTML=SMS_TEMPLATES.map(function(t){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px">'+
     '<div style="flex:1"><div style="font-size:13px;font-weight:700;margin-bottom:4px">'+t.label+'</div>'+
     '<div style="font-size:12px;color:var(--muted);line-height:1.6">'+escHtml(t.message)+'</div>'+
-    '<div style="font-size:10px;color:var(--a);margin-top:4px">{name} = customer Â· {shop} = your shop name</div></div>'+
+    '<div style="font-size:10px;color:var(--a);margin-top:4px">{name} = customer · {shop} = your shop name</div></div>'+
   '</div>';}).join('');
 }
 async function smsSend(){
@@ -28399,7 +28399,7 @@ async function aiqGenerate(){
 function aiqRenderHistory(){
   var el=document.getElementById('aiq-history');if(!el)return;
   el.innerHTML=aiqHistory.length?aiqHistory.slice(0,10).map(function(h){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'+
-    '<span style="font-size:18px">&#9889;</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(h.input.slice(0,60))+'...</div><div style="font-size:10px;color:var(--muted)">'+sdAgo(h.ts)+' Â· '+h.tier+'</div></div>'+
+    '<span style="font-size:18px">&#9889;</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(h.input.slice(0,60))+'...</div><div style="font-size:10px;color:var(--muted)">'+sdAgo(h.ts)+' · '+h.tier+'</div></div>'+
     '<button onclick="var r=document.getElementById(\'aiq-result\');r.innerHTML=sdMarkdown(aiqHistory.find(function(x){return x.id===\''+h.id+'\';}).output);r.style.display=\'block\'" style="padding:3px 8px;font-size:10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid rgba(27,58,107,0.2);border-radius:5px;cursor:pointer">View</button>'+
   '</div>';}).join(''):'';
 }
@@ -28490,7 +28490,7 @@ function cgPrint(){var r=document.getElementById('cg-result');if(!r)return;var w
 function cgRenderHistory(){
   var el=document.getElementById('cg-history');if(!el)return;
   el.innerHTML=cgHistory.length?cgHistory.slice(0,10).map(function(h){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'+
-    '<span style="font-size:18px">&#128214;</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(h.customer||'Customer')+'</div><div style="font-size:11px;color:var(--muted)">'+escHtml(h.material)+' Â· '+sdAgo(h.ts)+'</div></div>'+
+    '<span style="font-size:18px">&#128214;</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(h.customer||'Customer')+'</div><div style="font-size:11px;color:var(--muted)">'+escHtml(h.material)+' · '+sdAgo(h.ts)+'</div></div>'+
     '<button onclick="var r=document.getElementById(\'cg-result\');r.innerHTML=sdMarkdown(cgHistory.find(function(x){return x.id===\''+h.id+'\';}).guide);r.style.display=\'block\'" style="padding:4px 10px;font-size:11px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid rgba(27,58,107,0.2);border-radius:6px;cursor:pointer">View</button>'+
   '</div>';}).join(''):'';
 }
@@ -28655,7 +28655,7 @@ function cpRender(){
   sv('cp-kpi-contractors',cpContractors.length);sv('cp-kpi-jobs',cpContractors.reduce(function(s,c){return s+c.jobCount;},0));sv('cp-kpi-pending',0);sv('cp-kpi-revenue','$0');
   el.innerHTML=cpContractors.length?cpContractors.map(function(c){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'+
     '<div style="width:44px;height:44px;border-radius:10px;background:rgba(27,58,107,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">&#128119;</div>'+
-    '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+escHtml(c.company)+'</div><div style="font-size:12px;color:var(--muted)">'+escHtml(c.contact)+(c.email?' Â· '+escHtml(c.email):'')+'</div><div style="font-size:11px;color:var(--muted)">'+c.tier+' pricing</div></div>'+
+    '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+escHtml(c.company)+'</div><div style="font-size:12px;color:var(--muted)">'+escHtml(c.contact)+(c.email?' · '+escHtml(c.email):'')+'</div><div style="font-size:11px;color:var(--muted)">'+c.tier+' pricing</div></div>'+
     '<div style="display:flex;gap:6px">'+
       '<button onclick="cpSendPortalInvite(\''+c.id+'\')" style="padding:5px 10px;background:rgba(22,163,74,0.1);color:#16a34a;border:1px solid rgba(22,163,74,0.2);border-radius:6px;font-size:11px;cursor:pointer">Send Invite</button>'+
       '<button onclick="cpDelete(\''+c.id+'\')" style="padding:5px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">x</button>'+
@@ -28688,7 +28688,7 @@ function rfRender(){
   var scColors={lead:'#6b7280',quoted:'#ca8a04',won:'#16a34a',lost:'#dc2626'};
   var el=document.getElementById('rf-list');if(!el)return;
   el.innerHTML=rfReferrals.length?rfReferrals.map(function(r){return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(scColors[r.status]||'#6b7280')+';border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'+
-    '<div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(r.customer)+'</div><div style="font-size:11px;color:var(--muted)">From: '+escHtml(r.referredBy||'â€”')+' Â· '+r.sourceType.replace('_',' ')+(r.value?' Â· '+sdFmt(r.value):'')+'</div></div>'+
+    '<div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(r.customer)+'</div><div style="font-size:11px;color:var(--muted)">From: '+escHtml(r.referredBy||'â€”')+' · '+r.sourceType.replace('_',' ')+(r.value?' · '+sdFmt(r.value):'')+'</div></div>'+
     '<select onchange="rfReferrals.find(function(x){return x.id===\''+r.id+'\';}).status=this.value;sdStore(\'sd_referrals\',rfReferrals);rfRender()" style="font-size:10px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);outline:none">'+
     ['lead','quoted','won','lost'].map(function(s){return '<option value="'+s+'"'+(s===r.status?' selected':'')+'>'+s+'</option>';}).join('')+'</select>'+
   '</div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:24px">No referrals logged yet.</div>';
@@ -29287,7 +29287,7 @@ function dmgRender(){
         (c.job?'<span style="font-size:11px;color:var(--muted)">'+escHtml(c.job)+'</span>':'')+
         '<span style="font-size:10px;font-weight:700;background:'+(sc[c.status]||'#6b7280')+';color:#fff;padding:2px 8px;border-radius:100px">'+c.status+'</span>'+
       '</div>'+
-      '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(c.type)+(c.fault?' Â· Fault: '+c.fault:'')+(c.cost?' Â· Est: '+sdFmt(c.cost):'')+'</div>'+
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(c.type)+(c.fault?' · Fault: '+c.fault:'')+(c.cost?' · Est: '+sdFmt(c.cost):'')+'</div>'+
       (c.description?'<div style="font-size:12px;line-height:1.6;margin-bottom:4px">'+escHtml(c.description)+'</div>':'')+
       (c.resolution?'<div style="font-size:12px;color:#16a34a;font-weight:600">Resolution: '+escHtml(c.resolution)+'</div>':'')+
     '</div>'+
@@ -29384,7 +29384,7 @@ function bltnRender(){
           '<span style="font-size:10px;font-weight:700;background:'+cc+';color:#fff;padding:2px 8px;border-radius:100px;text-transform:capitalize">'+p.cat+'</span>'+
         '</div>'+
         (p.body?'<div style="font-size:13px;line-height:1.7;margin-bottom:8px">'+escHtml(p.body)+'</div>':'')+
-        '<div style="font-size:11px;color:var(--muted)">Posted by '+escHtml(p.author)+' Â· '+new Date(p.createdAt).toLocaleDateString()+(p.expires?' Â· Expires '+p.expires:'')+'</div>'+
+        '<div style="font-size:11px;color:var(--muted)">Posted by '+escHtml(p.author)+' · '+new Date(p.createdAt).toLocaleDateString()+(p.expires?' · Expires '+p.expires:'')+'</div>'+
       '</div>'+
       '<button onclick="bltnDelete(\''+p.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">Remove</button>'+
     '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:48px"><div style="font-size:36px;margin-bottom:12px">ðŸ“‹</div><div style="font-size:15px;font-weight:700">No active announcements</div><div style="font-size:13px;margin-top:6px">Post your first shop announcement above.</div></div>';
@@ -29468,7 +29468,7 @@ function tmplRender(){
       (r.job?'<span style="font-size:11px;color:var(--muted)">'+escHtml(r.job)+'</span>':'')+
       '<span style="font-size:10px;font-weight:700;background:'+(cncColor[r.cncStatus]||'#6b7280')+';color:#fff;padding:2px 8px;border-radius:100px">'+escHtml(r.cncStatus)+'</span>'+
     '</div>'+
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(r.method||'')+(r.tech?' Â· '+escHtml(r.tech):'')+(r.date?' Â· '+escHtml(r.date):'')+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(r.method||'')+(r.tech?' · '+escHtml(r.tech):'')+(r.date?' · '+escHtml(r.date):'')+'</div>'+
     (r.dxfName?'<div style="font-size:11px;background:rgba(27,58,107,0.1);color:var(--a);padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:4px">&#128190; '+escHtml(r.dxfName)+'</div>':'')+
     (r.notes?'<div style="font-size:12px;color:var(--muted)">'+escHtml(r.notes)+'</div>':'')+
     '</div>'+
@@ -29515,7 +29515,7 @@ function npsRender(){
     '<div style="flex:1"><div style="font-size:14px;font-weight:700;margin-bottom:3px">'+escHtml(r.customer)+'</div>'+
     (r.project?'<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(r.project)+'</div>':'')+
     (r.feedback?'<div style="font-size:13px;line-height:1.6;font-style:italic">"'+escHtml(r.feedback)+'"</div>':'')+
-    '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+escHtml(r.channel||'')+(r.date?' Â· '+r.date:'')+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+escHtml(r.channel||'')+(r.date?' · '+r.date:'')+'</div>'+
     '</div>'+
     '<button onclick="npsDelete(\''+r.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:10px;cursor:pointer;flex-shrink:0">x</button>'+
     '</div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No customer feedback logged yet.</div>';
@@ -29558,7 +29558,7 @@ function apRender(){
   var el=document.getElementById('ap-list');if(!el)return;
   el.innerHTML=list.length?list.map(function(b){var isOverdue=b.status==='open'&&b.dueDate&&b.dueDate<today;return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(b.status==='paid'?'#16a34a':isOverdue?'#dc2626':'var(--a)')+';border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'+
     '<div style="flex:1"><div style="font-size:14px;font-weight:700;margin-bottom:3px">'+escHtml(b.vendor)+(b.invNum?' <span style="font-size:11px;color:var(--muted);font-weight:400">#'+escHtml(b.invNum)+'</span>':'')+'</div>'+
-    '<div style="font-size:12px;color:var(--muted)">'+escHtml(b.cat)+(b.terms?' Â· '+b.terms:'')+(b.dueDate?' Â· Due: <strong style="color:'+(isOverdue?'#dc2626':'var(--text)')+'">'+b.dueDate+'</strong>':'')+(isOverdue?' <span style="color:#dc2626;font-weight:700;font-size:11px">OVERDUE</span>':'')+'</div>'+
+    '<div style="font-size:12px;color:var(--muted)">'+escHtml(b.cat)+(b.terms?' · '+b.terms:'')+(b.dueDate?' · Due: <strong style="color:'+(isOverdue?'#dc2626':'var(--text)')+'">'+b.dueDate+'</strong>':'')+(isOverdue?' <span style="color:#dc2626;font-weight:700;font-size:11px">OVERDUE</span>':'')+'</div>'+
     (b.notes?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+escHtml(b.notes)+'</div>':'')+
     '</div>'+
     '<div style="font-size:16px;font-weight:800;color:'+(b.status==='paid'?'#16a34a':'#dc2626')+'">'+sdFmt(b.amount)+'</div>'+
