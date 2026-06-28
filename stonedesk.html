@@ -27011,6 +27011,7 @@ function sbToggleSection(name) {
     _sbSectionStates[name] = 'closed';
   }
 }
+window.sbToggleSection = sbToggleSection;
 
 function sbExpandSection(name) {
   var body = document.getElementById('sbsb-'+name);
