@@ -122,7 +122,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 
 /* == APP SHELL == */
 #app{display:none;min-height:100vh;flex-direction:column}
-#app.visible{display:flex;flex-direction:column;height:100vh}
+#app.visible{display:flex}
 .app-body{display:flex;flex:1;overflow:hidden;min-height:0}
 
 /* == TOPBAR == */
@@ -2348,7 +2348,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 <!-- == GLOBAL ALERT BAR == -->
 <div class="alert-bar" id="alert-bar"></div>
 
-  <div class="panel active" id="panel-ai">
+  <div class="panel" id="panel-ai">
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🤖 StoneDesk AI Assistant</h2>
@@ -3345,12 +3345,12 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   };
 })();
 </script>
-</div><div class="q-field"><label>Email</label><input type="text" id="admin-shop-email" placeholder="quotes@yourshop.com"></div>
+</div><div style="display:none" id="sd-shop-settings-orphan"><div class="q-field"><label>Email</label><input type="text" id="admin-shop-email" placeholder="quotes@yourshop.com"></div>
           <button class="q-btn primary" onclick="saveShopSettings()">Save Shop Settings</button>
         </div>
       </div>
     </div>
-  </div>
+  </div></div>
 
 
   <!-- == BUSINESS INTELLIGENCE PANEL == -->
