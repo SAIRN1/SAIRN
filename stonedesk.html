@@ -1303,6 +1303,7 @@ body.is-exec .exec-only-block{display:block}
 .sh-history-item:hover{background:#F0FEF6}
 .sh-history-q{font-size:13px;font-weight:600;color:#0A3D1F;margin-bottom:2px}
 .sh-history-preview{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quote-container{min-height:700px;}
 </style>
 <script>
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -2476,7 +2477,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
               onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
             <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Voice input">🎤</button>
           </div>
-          <button class="send-btn" onclick="sendMessage()">➤</button>
+          <button class="send-btn" onclick="sendMessage()" style="display:none">➤</button>
 
   <!-- == QUOTE BUILDER PANEL == -->
   <div class="panel" id="panel-quote">
@@ -3345,8 +3346,8 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   };
 })();
 </script>
-</div><div class="q-field"><label>Email</label><input type="text" id="admin-shop-email" placeholder="quotes@yourshop.com"></div>
-          <button class="q-btn primary" onclick="saveShopSettings()">Save Shop Settings</button>
+</div><div style="display:none"><div class="q-field"><label>Email</label><input type="text" id="admin-shop-email" placeholder="quotes@yourshop.com"></div>
+          <button class="q-btn primary" onclick="saveShopSettings()">Save Shop Settings</button></div>
         </div>
       </div>
     </div>
