@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNbiz - Business Operations</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--p:#14B8A6;--pd:#0F766E;--pt:#F0FDFA;--pb:#5EEAD4;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* PIN */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
+.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s;}
+.pdot.on{background:var(--p);border-color:var(--p);}
+.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;}
+.pkey:hover{background:var(--pt);border-color:var(--p);}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+/* SIDEBAR */
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;transition:all .15s;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+/* MAIN */
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--p);}
+.bs{padding:6px 12px;font-size:12px;}
+/* KPIs */
+.krow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+/* FORMS */
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;transition:border .2s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--p);}
+textarea{resize:vertical;min-height:80px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+/* AI */
+.achat{background:var(--bg);border-radius:10px;padding:14px;min-height:180px;max-height:320px;overflow-y:auto;font-size:13px;line-height:1.6;margin-bottom:12px;}
+.amu{background:var(--p);color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;margin:6px 0 6px 40px;font-size:13px;}
+.ama{background:#fff;border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:8px 12px;margin:6px 40px 6px 0;font-size:13px;}
+.air{display:flex;gap:8px;}
+.air input{flex:1;}
+.qts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.qt{background:var(--pt);border:1px solid var(--pb);color:var(--pd);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.qt:hover{background:var(--p);color:#fff;}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+/* PROGRESS */
+.pbar{background:var(--border);border-radius:99px;height:8px;overflow:hidden;margin-top:4px;}
+.pfill{height:100%;background:var(--p);border-radius:99px;transition:width .4s;}
+/* STAT */
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:13px;color:var(--muted);}
+.sval{font-size:14px;font-weight:700;}
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+@media print{
+  #gate,#pin,aside,header .hr,.pa{display:none!important;}
+  main{padding:0;}
+  .panel{display:block!important;}
+  body{font-size:12px;}
+  .card{box-shadow:none;border:1px solid #ddd;}
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNbiz</div>
+    <div class="gsub">Business Operations Platform &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="SB-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNbiz</div>
+    <div class="prole" id="prole">Owner / CEO</div>
+    <div style="margin-bottom:12px;">
+      <select id="psel" onchange="pRoleChange()" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;">
+        <option value="owner">Owner / CEO</option>
+        <option value="hr">HR Manager</option>
+        <option value="accounting">Accounting</option>
+        <option value="manager">Manager</option>
+        <option value="staff">Staff</option>
+      </select>
+    </div>
+    <div class="pdots">
+      <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
+      <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+    </div>
+    <div class="ppad">
+      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
+      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
+      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
+      <button class="pkey" onclick="pk('C')" style="color:var(--muted)">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')" style="color:var(--danger)">&#8592;</button>
+    </div>
+    <div class="perr" id="perr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="hlogo">SAIRNbiz</div>
+    <div class="hbadge">People + Money</div>
+    <div class="hr">
+      <span class="huser" id="huser">Owner</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div class="wrap">
+    <aside>
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
+      <div class="ss">People</div>
+      <button class="sb" id="sb-employees" onclick="nav('employees')"><span class="sico">&#128101;</span>Employees</button>
+      <button class="sb" id="sb-hiring" onclick="nav('hiring')"><span class="sico">&#127919;</span>Hiring</button>
+      <button class="sb" id="sb-timesheet" onclick="nav('timesheet')"><span class="sico">&#9201;</span>Timesheets</button>
+      <button class="sb" id="sb-payroll" onclick="nav('payroll')"><span class="sico">&#128181;</span>Payroll</button>
+      <button class="sb" id="sb-benefits" onclick="nav('benefits')"><span class="sico">&#127973;</span>Benefits</button>
+      <button class="sb" id="sb-performance" onclick="nav('performance')"><span class="sico">&#11088;</span>Performance</button>
+      <button class="sb" id="sb-training" onclick="nav('training')"><span class="sico">&#127891;</span>Training</button>
+      <div class="ss">Money</div>
+      <button class="sb" id="sb-pl" onclick="nav('pl')"><span class="sico">&#128200;</span>P&amp;L Overview</button>
+      <button class="sb" id="sb-invoices" onclick="nav('invoices')"><span class="sico">&#128196;</span>Invoices</button>
+      <button class="sb" id="sb-expenses" onclick="nav('expenses')"><span class="sico">&#128179;</span>Expenses</button>
+      <button class="sb" id="sb-ap" onclick="nav('ap')"><span class="sico">&#128236;</span>Accounts Payable</button>
+      <button class="sb" id="sb-ar" onclick="nav('ar')"><span class="sico">&#128229;</span>Accounts Receivable</button>
+      <button class="sb" id="sb-budget" onclick="nav('budget')"><span class="sico">&#127919;</span>Budget</button>
+      <button class="sb" id="sb-tax" onclick="nav('tax')"><span class="sico">&#129534;</span>Tax &amp; Compliance</button>
+      <div class="ss">Company</div>
+      <button class="sb" id="sb-company" onclick="nav('company')"><span class="sico">&#127970;</span>Company Profile</button>
+      <button class="sb" id="sb-vendors" onclick="nav('vendors')"><span class="sico">&#129309;</span>Vendors</button>
+      <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128203;</span>Reports</button>
+      <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;</span>Settings</button>
+      <div class="sfoot">SAIRNbiz v1.0 &middot; <span style="color:var(--p);font-weight:700;">People + Money</span></div>
+    </aside>
+    <main>
+
+<!-- DASHBOARD -->
+<div class="panel on" id="panel-dashboard">
+  <div class="ph"><div><div class="ptitle">Business Dashboard</div><div class="psub">Real-time overview &middot; Pinnacle Stone &amp; Design</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('dashboard')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Monthly Revenue</div><div class="kval" id="k-rev">$0</div><div class="kt">vs last month</div></div>
+    <div class="kpi"><div class="klbl">Active Employees</div><div class="kval" id="k-emp">0</div><div class="kt">Full + Part time</div></div>
+    <div class="kpi"><div class="klbl">Payroll / Month</div><div class="kval" id="k-pay">$0</div><div class="kt">All staff</div></div>
+    <div class="kpi"><div class="klbl">Open Invoices</div><div class="kval" id="k-inv">0</div><div class="kt d" id="k-invamt">$0 outstanding</div></div>
+    <div class="kpi"><div class="klbl">Net Margin</div><div class="kval" id="k-margin">0%</div><div class="kt">Industry avg 18%</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Headcount by Department</span></div><div class="cb" id="d-dept"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Revenue Trend YTD</span></div><div class="cb" id="d-rev"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Recent Activity</span></div><div class="cb" id="d-activity"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Action Items</span></div><div class="cb" id="d-actions"></div></div>
+  </div>
+</div>
+
+<!-- AI -->
+<div class="panel" id="panel-ai">
+  <div class="ph"><div><div class="ptitle">AI Business Assistant</div><div class="psub">Powered by Claude &middot; HR, Finance, Operations</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="clrAI()">Clear</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="qts">
+      <span class="qt" onclick="askAI('Draft an employee performance improvement plan template')">PIP Template</span>
+      <span class="qt" onclick="askAI('What should our employee handbook include for a stone fabrication shop?')">Handbook Tips</span>
+      <span class="qt" onclick="askAI('What tax deductions apply to a stone fabrication business?')">Tax Deductions</span>
+      <span class="qt" onclick="askAI('Write a job posting for an experienced stone fabricator at $24-28/hr in Westlake OH')">Job Posting</span>
+      <span class="qt" onclick="askAI('How do I calculate loaded labor cost including FICA, benefits, and overhead?')">Loaded Labor Rate</span>
+      <span class="qt" onclick="askAI('What benefits package is competitive for trade shop employees in Northeast Ohio?')">Benefits Guide</span>
+      <span class="qt" onclick="askAI('Analyze our payroll at $83,000/month for 8 employees and suggest optimizations')">Payroll Review</span>
+      <span class="qt" onclick="askAI('Draft a disciplinary action policy for tardiness and absenteeism')">Discipline Policy</span>
+    </div>
+    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about HR, payroll, benefits, taxes, or business operations.</div></div>
+    <div class="air"><input id="ainp" placeholder="Ask about employees, payroll, compliance, finances..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
+  </div></div>
+</div>
+
+<!-- EMPLOYEES -->
+<div class="panel" id="panel-employees">
+  <div class="ph"><div><div class="ptitle">Employees</div><div class="psub">Roster, roles, status, and records</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('employees')">Export CSV</button><button class="btn bp bs" onclick="openEmpModal()">+ Add Employee</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Employees</div><div class="kval" id="e-total">0</div><div class="kt">Active roster</div></div>
+    <div class="kpi"><div class="klbl">Full Time</div><div class="kval" id="e-ft">0</div><div class="kt">Active</div></div>
+    <div class="kpi"><div class="klbl">Part Time</div><div class="kval" id="e-pt">0</div><div class="kt">Active</div></div>
+    <div class="kpi"><div class="klbl">Avg Tenure</div><div class="kval" id="e-ten">0 yrs</div><div class="kt">Retention metric</div></div>
+    <div class="kpi"><div class="klbl">Avg Hourly Rate</div><div class="kval" id="e-rate">$0</div><div class="kt">Excl. benefits</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <input id="esrch" placeholder="Search by name, role, department..." oninput="filterEmps()">
+      <select id="edept" onchange="filterEmps()" style="width:180px;"><option value="">All Departments</option><option>Fabrication</option><option>Installation</option><option>Sales</option><option>Administration</option><option>Management</option></select>
+    </div>
+    <table><thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Type</th><th>Rate/Hr</th><th>Start Date</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="etbody"></tbody></table>
+  </div></div>
+</div>
+<div class="modal" id="empmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Employee</div>
+    <div class="fr"><div class="fg"><label>First Name</label><input id="efn" placeholder="John"></div><div class="fg"><label>Last Name</label><input id="eln" placeholder="Smith"></div></div>
+    <div class="fr"><div class="fg"><label>Role / Title</label><input id="erole" placeholder="Fabricator"></div><div class="fg"><label>Department</label><select id="edept2"><option>Fabrication</option><option>Installation</option><option>Sales</option><option>Administration</option><option>Management</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Employment Type</label><select id="etype"><option>Full Time</option><option>Part Time</option><option>Contract</option></select></div><div class="fg"><label>Hourly Rate ($)</label><input id="ehr" type="number" placeholder="22.00"></div></div>
+    <div class="fr"><div class="fg"><label>Start Date</label><input id="estart" type="date"></div><div class="fg"><label>Phone</label><input id="ephone" placeholder="(440) 555-0100"></div></div>
+    <div class="fg"><label>Email</label><input id="eemail" type="email" placeholder="john@pinnaclesd.com"></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="estatus"><option>Active</option><option>On Leave</option><option>Terminated</option></select></div><div class="fg"><label>Emergency Contact</label><input id="eec" placeholder="Jane Smith (440) 555-0101"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="enotes" rows="2" placeholder="Certifications, skills..."></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeEmpModal()">Cancel</button>
+      <button class="btn bp" onclick="saveEmp()">Save Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- HIRING -->
+<div class="panel" id="panel-hiring">
+  <div class="ph"><div><div class="ptitle">Hiring Pipeline</div><div class="psub">Open positions, applicants, and offers</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('hiring')">Export CSV</button><button class="btn bp bs" onclick="toast('Add position - coming next build')">+ Open Position</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open Positions</div><div class="kval" id="h-open">0</div><div class="kt">Actively hiring</div></div>
+    <div class="kpi"><div class="klbl">Total Applicants</div><div class="kval" id="h-apps">0</div><div class="kt">All stages</div></div>
+    <div class="kpi"><div class="klbl">Interviews Set</div><div class="kval" id="h-int">0</div><div class="kt">This week</div></div>
+    <div class="kpi"><div class="klbl">Offers Out</div><div class="kval" id="h-off">0</div><div class="kt">Pending acceptance</div></div>
+    <div class="kpi"><div class="klbl">Avg Time to Hire</div><div class="kval" id="h-tth">0d</div><div class="kt">Industry avg 21d</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Position</th><th>Department</th><th>Applicants</th><th>Stage</th><th>Posted</th><th>Target Rate</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="htbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- TIMESHEETS -->
+<div class="panel" id="panel-timesheet">
+  <div class="ph"><div><div class="ptitle">Timesheets</div><div class="psub">Hours tracked &middot; Week of <span id="tsweek"></span></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('timesheet')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Hours</div><div class="kval" id="ts-hrs">0</div><div class="kt">This week</div></div>
+    <div class="kpi"><div class="klbl">Overtime Hours</div><div class="kval" id="ts-ot">0</div><div class="kt d">Monitor OT cost</div></div>
+    <div class="kpi"><div class="klbl">Labor Cost (Week)</div><div class="kval" id="ts-cost">$0</div><div class="kt">Reg + OT</div></div>
+    <div class="kpi"><div class="klbl">Billable Hours</div><div class="kval" id="ts-bill">0</div><div class="kt">Job-coded</div></div>
+    <div class="kpi"><div class="klbl">Utilization Rate</div><div class="kval" id="ts-util">0%</div><div class="kt">Billable / Total</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Employee</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Total Hrs</th><th>OT Hrs</th><th>Est. Pay</th></tr></thead>
+    <tbody id="tstbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- PAYROLL -->
+<div class="panel" id="panel-payroll">
+  <div class="ph"><div><div class="ptitle">Payroll</div><div class="psub">Current pay period &middot; Bi-weekly</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('payroll')">Export CSV</button><button class="btn bp bs" onclick="runPayroll()">Run Payroll</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Gross Payroll</div><div class="kval" id="py-gross">$0</div><div class="kt">This period</div></div>
+    <div class="kpi"><div class="klbl">Employer Taxes</div><div class="kval" id="py-tax">$0</div><div class="kt">FICA + FUTA</div></div>
+    <div class="kpi"><div class="klbl">Benefits Cost</div><div class="kval" id="py-ben">$0</div><div class="kt">Employer share</div></div>
+    <div class="kpi"><div class="klbl">Total Labor Cost</div><div class="kval" id="py-total">$0</div><div class="kt">Fully loaded</div></div>
+    <div class="kpi"><div class="klbl">YTD Payroll</div><div class="kval" id="py-ytd">$0</div><div class="kt">All periods</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead>
+    <tbody id="pytbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- BENEFITS -->
+<div class="panel" id="panel-benefits">
+  <div class="ph"><div><div class="ptitle">Benefits</div><div class="psub">Health, dental, vision, 401k, and more</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Enrolled: Health</div><div class="kval" id="bn-health">0</div><div class="kt">Employees</div></div>
+    <div class="kpi"><div class="klbl">Enrolled: Dental</div><div class="kval" id="bn-dental">0</div><div class="kt">Employees</div></div>
+    <div class="kpi"><div class="klbl">Enrolled: 401k</div><div class="kval" id="bn-401k">0</div><div class="kt">Employees</div></div>
+    <div class="kpi"><div class="klbl">Total Ben. Cost/Mo</div><div class="kval" id="bn-cost">$0</div><div class="kt">Employer share</div></div>
+    <div class="kpi"><div class="klbl">Cost Per Employee</div><div class="kval" id="bn-cpe">$0</div><div class="kt">Monthly avg</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Health Insurance</span></div><div class="cb">
+      <div class="srow"><span class="slbl">Provider</span><span class="sval">Medical Mutual of Ohio</span></div>
+      <div class="srow"><span class="slbl">Plan Type</span><span class="sval">PPO Gold</span></div>
+      <div class="srow"><span class="slbl">Employee Premium</span><span class="sval">$180/mo</span></div>
+      <div class="srow"><span class="slbl">Employer Pays</span><span class="sval">$520/mo per employee</span></div>
+      <div class="srow"><span class="slbl">Renewal Date</span><span class="sval">January 1, 2027</span></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">401(k) Plan</span></div><div class="cb">
+      <div class="srow"><span class="slbl">Provider</span><span class="sval">Fidelity Investments</span></div>
+      <div class="srow"><span class="slbl">Employer Match</span><span class="sval">4% dollar-for-dollar</span></div>
+      <div class="srow"><span class="slbl">Vesting Schedule</span><span class="sval">3-year graded</span></div>
+      <div class="srow"><span class="slbl">Employee Contrib.</span><span class="sval">Avg 5.2%</span></div>
+      <div class="srow"><span class="slbl">Plan Assets (est.)</span><span class="sval">$284,000</span></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">Dental &amp; Vision</span></div><div class="cb">
+      <div class="srow"><span class="slbl">Dental Provider</span><span class="sval">Delta Dental</span></div>
+      <div class="srow"><span class="slbl">Annual Max</span><span class="sval">$2,000 per person</span></div>
+      <div class="srow"><span class="slbl">Vision Provider</span><span class="sval">VSP</span></div>
+      <div class="srow"><span class="slbl">Vision Allowance</span><span class="sval">$200 frames/yr</span></div>
+      <div class="srow"><span class="slbl">Employer Pays</span><span class="sval">100% dental, 50% vision</span></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">Other Benefits</span></div><div class="cb">
+      <div class="srow"><span class="slbl">PTO Accrual</span><span class="sval">1.5 days/month (18/yr)</span></div>
+      <div class="srow"><span class="slbl">Sick Days</span><span class="sval">5 days/year</span></div>
+      <div class="srow"><span class="slbl">Workers Comp</span><span class="sval">Active &middot; BWC Ohio</span></div>
+      <div class="srow"><span class="slbl">Life Insurance</span><span class="sval">1x annual salary</span></div>
+      <div class="srow"><span class="slbl">Tool Allowance</span><span class="sval">$500/yr fabricators</span></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- PERFORMANCE -->
+<div class="panel" id="panel-performance">
+  <div class="ph"><div><div class="ptitle">Performance Reviews</div><div class="psub">Annual and mid-year evaluations</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('performance')">Export CSV</button><button class="btn bp bs" onclick="toast('New review form - coming next build')">+ New Review</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Reviews Due</div><div class="kval" id="pf-due">0</div><div class="kt">Next 30 days</div></div>
+    <div class="kpi"><div class="klbl">Completed YTD</div><div class="kval" id="pf-done">0</div><div class="kt">Of scheduled</div></div>
+    <div class="kpi"><div class="klbl">Avg Score</div><div class="kval" id="pf-avg">0</div><div class="kt">Out of 5.0</div></div>
+    <div class="kpi"><div class="klbl">Raises Approved</div><div class="kval" id="pf-raises">0</div><div class="kt">This cycle</div></div>
+    <div class="kpi"><div class="klbl">PIPs Active</div><div class="kval" id="pf-pip">0</div><div class="kt">Monitor closely</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Employee</th><th>Review Type</th><th>Due Date</th><th>Reviewer</th><th>Score</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="pftbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- TRAINING -->
+<div class="panel" id="panel-training">
+  <div class="ph"><div><div class="ptitle">Training &amp; Certifications</div><div class="psub">Compliance, skills, and safety training</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('training')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Certs Active</div><div class="kval" id="tr-cert">0</div><div class="kt">All employees</div></div>
+    <div class="kpi"><div class="klbl">Expiring 90 Days</div><div class="kval" id="tr-exp">0</div><div class="kt d">Needs renewal</div></div>
+    <div class="kpi"><div class="klbl">Training Hours YTD</div><div class="kval" id="tr-hrs">0</div><div class="kt">All staff</div></div>
+    <div class="kpi"><div class="klbl">Safety Incidents</div><div class="kval" id="tr-safe">0</div><div class="kt">YTD OSHA log</div></div>
+    <div class="kpi"><div class="klbl">Training Budget</div><div class="kval" id="tr-bud">$0</div><div class="kt">Remaining</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Employee</th><th>Training / Cert</th><th>Completed</th><th>Expires</th><th>Provider</th><th>Cost</th><th>Status</th></tr></thead>
+    <tbody id="trtbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- P&L -->
+<div class="panel" id="panel-pl">
+  <div class="ph"><div><div class="ptitle">P&amp;L Overview</div><div class="psub">Profit &amp; Loss &middot; Year to Date 2026</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('pl')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">YTD Revenue</div><div class="kval" id="pl-rev">$0</div><div class="kt">vs prior year</div></div>
+    <div class="kpi"><div class="klbl">YTD COGS</div><div class="kval" id="pl-cogs">$0</div><div class="kt">Materials + Labor</div></div>
+    <div class="kpi"><div class="klbl">Gross Profit</div><div class="kval" id="pl-gp">$0</div><div class="kt">Gross margin</div></div>
+    <div class="kpi"><div class="klbl">Operating Expenses</div><div class="kval" id="pl-opex">$0</div><div class="kt">Overhead</div></div>
+    <div class="kpi"><div class="klbl">Net Income</div><div class="kval" id="pl-net">$0</div><div class="kt">Bottom line</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Revenue Breakdown</span></div><div class="cb" id="pl-revbk"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Expense Breakdown</span></div><div class="cb" id="pl-expbk"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Monthly Revenue Trend</span></div><div class="cb" id="pl-monthly"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Margin Analysis</span></div><div class="cb" id="pl-margin"></div></div>
+  </div>
+</div>
+
+<!-- INVOICES -->
+<div class="panel" id="panel-invoices">
+  <div class="ph"><div><div class="ptitle">Invoices</div><div class="psub">Customer billing and payment tracking</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('invoices')">Export CSV</button><button class="btn bp bs" onclick="toast('New invoice - coming next build')">+ New Invoice</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Outstanding</div><div class="kval" id="iv-out">$0</div><div class="kt d">Needs collection</div></div>
+    <div class="kpi"><div class="klbl">Current (0-30d)</div><div class="kval" id="iv-curr">$0</div><div class="kt">Within terms</div></div>
+    <div class="kpi"><div class="klbl">Overdue (30+d)</div><div class="kval" id="iv-over">$0</div><div class="kt d">Follow up</div></div>
+    <div class="kpi"><div class="klbl">Paid This Month</div><div class="kval" id="iv-paid">$0</div><div class="kt">Collected</div></div>
+    <div class="kpi"><div class="klbl">Avg Days to Pay</div><div class="kval" id="iv-dtp">0d</div><div class="kt">Net 30 terms</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <input id="ivsrch" placeholder="Search invoices..." oninput="filterInv()">
+      <select id="ivstat" onchange="filterInv()" style="width:160px;"><option value="">All Status</option><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option><option>Overdue</option></select>
+    </div>
+    <table><thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Due</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="ivtbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- EXPENSES -->
+<div class="panel" id="panel-expenses">
+  <div class="ph"><div><div class="ptitle">Expenses</div><div class="psub">Business expense tracking and categorization</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('expenses')">Export CSV</button><button class="btn bp bs" onclick="toast('Add expense - coming next build')">+ Add Expense</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">This Month</div><div class="kval" id="ex-month">$0</div><div class="kt">All categories</div></div>
+    <div class="kpi"><div class="klbl">YTD Expenses</div><div class="kval" id="ex-ytd">$0</div><div class="kt">Running total</div></div>
+    <div class="kpi"><div class="klbl">Largest Category</div><div class="kval" id="ex-top">--</div><div class="kt">This month</div></div>
+    <div class="kpi"><div class="klbl">Pending Receipts</div><div class="kval" id="ex-pend">0</div><div class="kt d">Needs review</div></div>
+    <div class="kpi"><div class="klbl">Tax Deductible</div><div class="kval" id="ex-ded">$0</div><div class="kt">Estimated YTD</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Vendor</th><th>Amount</th><th>Deductible</th><th>Receipt</th><th>Status</th></tr></thead>
+    <tbody id="extbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- AP -->
+<div class="panel" id="panel-ap">
+  <div class="ph"><div><div class="ptitle">Accounts Payable</div><div class="psub">Bills owed to vendors and suppliers</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('ap')">Export CSV</button><button class="btn bp bs" onclick="toast('Add bill - coming next build')">+ Add Bill</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Owed</div><div class="kval" id="ap-total">$0</div><div class="kt">All vendors</div></div>
+    <div class="kpi"><div class="klbl">Due This Week</div><div class="kval" id="ap-week">$0</div><div class="kt d">Pay now</div></div>
+    <div class="kpi"><div class="klbl">Overdue Bills</div><div class="kval" id="ap-over">0</div><div class="kt d">Past due</div></div>
+    <div class="kpi"><div class="klbl">Paid This Month</div><div class="kval" id="ap-paid">$0</div><div class="kt">Cleared</div></div>
+    <div class="kpi"><div class="klbl">Largest Vendor</div><div class="kval" id="ap-top">--</div><div class="kt">By balance</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="aptbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- AR -->
+<div class="panel" id="panel-ar">
+  <div class="ph"><div><div class="ptitle">Accounts Receivable</div><div class="psub">Money owed to your business</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('ar')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Receivable</div><div class="kval" id="ar-total">$0</div><div class="kt">Owed to you</div></div>
+    <div class="kpi"><div class="klbl">Current (0-30d)</div><div class="kval" id="ar-curr">$0</div><div class="kt">Within terms</div></div>
+    <div class="kpi"><div class="klbl">31-60 Days</div><div class="kval" id="ar-60">$0</div><div class="kt d">Follow up</div></div>
+    <div class="kpi"><div class="klbl">61+ Days</div><div class="kval" id="ar-90">$0</div><div class="kt d">Escalate</div></div>
+    <div class="kpi"><div class="klbl">Collection Rate</div><div class="kval" id="ar-rate">0%</div><div class="kt">Last 12 months</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Customer</th><th>Invoice #</th><th>Invoice Date</th><th>Due Date</th><th>Original</th><th>Balance</th><th>Age</th><th>Status</th></tr></thead>
+    <tbody id="artbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- BUDGET -->
+<div class="panel" id="panel-budget">
+  <div class="ph"><div><div class="ptitle">Budget</div><div class="psub">2026 Annual Budget vs Actuals</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('budget')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Annual Budget</div><div class="kval" id="bu-total">$0</div><div class="kt">2026 Plan</div></div>
+    <div class="kpi"><div class="klbl">YTD Actual</div><div class="kval" id="bu-actual">$0</div><div class="kt">Spent to date</div></div>
+    <div class="kpi"><div class="klbl">Remaining</div><div class="kval" id="bu-rem">$0</div><div class="kt">Available</div></div>
+    <div class="kpi"><div class="klbl">% Utilized</div><div class="kval" id="bu-pct">0%</div><div class="kt">Of annual</div></div>
+    <div class="kpi"><div class="klbl">Forecast Variance</div><div class="kval" id="bu-var">$0</div><div class="kt">vs plan</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Category</th><th>Annual Budget</th><th>YTD Actual</th><th>Remaining</th><th>% Used</th><th>Status</th></tr></thead>
+    <tbody id="butbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- TAX -->
+<div class="panel" id="panel-tax">
+  <div class="ph"><div><div class="ptitle">Tax &amp; Compliance</div><div class="psub">Federal, state, and local obligations</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('tax')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Taxes Paid YTD</div><div class="kval" id="tx-paid">$0</div><div class="kt">All obligations</div></div>
+    <div class="kpi"><div class="klbl">Est. Q3 Liability</div><div class="kval" id="tx-q3">$0</div><div class="kt">Due Sep 15</div></div>
+    <div class="kpi"><div class="klbl">Sales Tax Collected</div><div class="kval" id="tx-sales">$0</div><div class="kt">Ohio rate 6.5%</div></div>
+    <div class="kpi"><div class="klbl">Payroll Tax YTD</div><div class="kval" id="tx-payroll">$0</div><div class="kt">Employer share</div></div>
+    <div class="kpi"><div class="klbl">Next Filing Due</div><div class="kval" id="tx-next">--</div><div class="kt">Mark calendar</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Est. Amount</th><th>YTD Paid</th><th>Status</th></tr></thead>
+    <tbody id="txtbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- COMPANY -->
+<div class="panel" id="panel-company">
+  <div class="ph"><div><div class="ptitle">Company Profile</div><div class="psub">Business info synced to all SAIRN apps</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="syncSupabase()">Sync to All Apps</button><button class="btn bp bs" onclick="saveCo()">Save</button></div></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Business Information</span></div><div class="cb">
+      <div class="fg"><label>Company Name</label><input id="co-name" value="Pinnacle Stone &amp; Design"></div>
+      <div class="fg"><label>DBA / Trade Name</label><input id="co-dba" value="Pinnacle Stone"></div>
+      <div class="fr"><div class="fg"><label>Entity Type</label><select id="co-entity"><option>LLC</option><option>S-Corp</option><option>C-Corp</option><option>Sole Prop</option></select></div><div class="fg"><label>State of Formation</label><input id="co-state" value="Ohio"></div></div>
+      <div class="fr"><div class="fg"><label>EIN</label><input id="co-ein" value="82-4571039"></div><div class="fg"><label>Founded</label><input id="co-founded" value="2014"></div></div>
+      <div class="fg"><label>Industry</label><input id="co-industry" value="Stone Fabrication &amp; Installation"></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">Contact &amp; Location</span></div><div class="cb">
+      <div class="fg"><label>Street Address</label><input id="co-addr" value="4820 Center Ridge Rd"></div>
+      <div class="fr3"><div class="fg"><label>City</label><input id="co-city" value="Westlake"></div><div class="fg"><label>State</label><input id="co-st" value="OH"></div><div class="fg"><label>ZIP</label><input id="co-zip" value="44145"></div></div>
+      <div class="fr"><div class="fg"><label>Phone</label><input id="co-phone" value="(440) 899-4200"></div><div class="fg"><label>Fax</label><input id="co-fax" value="(440) 899-4201"></div></div>
+      <div class="fg"><label>Website</label><input id="co-web" value="www.pinnaclesd.com"></div>
+      <div class="fg"><label>Email</label><input id="co-email" value="info@pinnaclesd.com"></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">Key Contacts</span></div><div class="cb">
+      <div class="fr"><div class="fg"><label>Owner Name</label><input id="co-owner" value="Michael Pinnacle"></div><div class="fg"><label>Owner Phone</label><input id="co-oph" value="(440) 899-4200"></div></div>
+      <div class="fr"><div class="fg"><label>HR Manager</label><input id="co-hr" value="Sarah Kovacs"></div><div class="fg"><label>Controller</label><input id="co-ctrl" value="David Reyes"></div></div>
+      <div class="fg"><label>Accountant / CPA</label><input id="co-cpa" value="Thompson &amp; Associates (440) 333-9900"></div>
+      <div class="fg"><label>Attorney</label><input id="co-atty" value="Miller Law Group (440) 222-8800"></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">SAIRN Integration Status</span></div><div class="cb">
+      <div class="srow"><span class="slbl">StoneDesk</span><span class="sval"><span class="badge bg">Synced</span></span></div>
+      <div class="srow"><span class="slbl">SAIRNgrounds</span><span class="sval"><span class="badge bx">Not Connected</span></span></div>
+      <div class="srow"><span class="slbl">SAIRNbuild</span><span class="sval"><span class="badge bx">Not Connected</span></span></div>
+      <div class="srow"><span class="slbl">SAIRNcode</span><span class="sval"><span class="badge bx">Not Connected</span></span></div>
+      <div class="srow"><span class="slbl">Last Sync</span><span class="sval" id="co-sync">Never</span></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- VENDORS -->
+<div class="panel" id="panel-vendors">
+  <div class="ph"><div><div class="ptitle">Vendors</div><div class="psub">Suppliers, subcontractors, and service providers</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('vendors')">Export CSV</button><button class="btn bp bs" onclick="toast('Add vendor - coming next build')">+ Add Vendor</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Vendors</div><div class="kval" id="vn-total">0</div><div class="kt">Active</div></div>
+    <div class="kpi"><div class="klbl">YTD Spend</div><div class="kval" id="vn-spend">$0</div><div class="kt">All vendors</div></div>
+    <div class="kpi"><div class="klbl">Top Vendor</div><div class="kval" id="vn-top">--</div><div class="kt">By spend</div></div>
+    <div class="kpi"><div class="klbl">W-9 on File</div><div class="kval" id="vn-w9">0</div><div class="kt">Tax compliance</div></div>
+    <div class="kpi"><div class="klbl">1099 Required</div><div class="kval" id="vn-1099">0</div><div class="kt">$600+ paid</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <table><thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>YTD Spend</th><th>Terms</th><th>W-9</th><th>Status</th></tr></thead>
+    <tbody id="vntbody"></tbody></table>
+  </div></div>
+</div>
+
+<!-- REPORTS -->
+<div class="panel" id="panel-reports">
+  <div class="ph"><div><div class="ptitle">Reports</div><div class="psub">Generate business intelligence reports</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="window.print()">Print All</button></div></div>
+  <div class="g3">
+    <div class="card" style="cursor:pointer;" onclick="genReport('payroll')"><div class="cb" style="text-align:center;padding:28px;"><div style="font-size:32px;margin-bottom:8px;">&#128181;</div><div style="font-weight:700;font-size:15px;">Payroll Summary</div><div style="color:var(--muted);font-size:12px;margin-top:4px;">All employees &middot; Current period</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="genReport('pl')"><div class="cb" style="text-align:center;padding:28px;"><div style="font-size:32px;margin-bottom:8px;">&#128202;</div><div style="font-weight:700;font-size:15px;">P&amp;L Statement</div><div style="color:var(--muted);font-size:12px;margin-top:4px;">Year to date &middot; Full detail</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="genReport('roster')"><div class="cb" style="text-align:center;padding:28px;"><div style="font-size:32px;margin-bottom:8px;">&#128101;</div><div style="font-weight:700;font-size:15px;">Employee Roster</div><div style="color:var(--muted);font-size:12px;margin-top:4px;">Full roster with rates</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="genReport('ar')"><div class="cb" style="text-align:center;padding:28px;"><div style="font-size:32px;margin-bottom:8px;">&#128229;</div><div style="font-weight:700;font-size:15px;">AR Aging</div><div style="color:var(--muted);font-size:12px;margin-top:4px;">Receivables by age bucket</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="genReport('ap')"><div class="cb" style="text-align:center;padding:28px;"><div style="font-size:32px;margin-bottom:8px;">&#128236;</div><div style="font-weight:700;font-size:15px;">AP Aging</div><div style="color:var(--muted);font-size:12px;margin-top:4px;">What you owe by vendor</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="genReport('tax')"><div class="cb" style="text-align:center;padding:28px;"><div style="font-size:32px;margin-bottom:8px;">&#129534;</div><div style="font-weight:700;font-size:15px;">Tax Summary</div><div style="color:var(--muted);font-size:12px;margin-top:4px;">YTD obligations &amp; filings</div></div></div>
+  </div>
+  <div class="card" id="rout" style="display:none;">
+    <div class="ch"><span class="ct" id="rtitle">Report</span><div style="margin-left:auto;display:flex;gap:8px;"><button class="btn bo bs" onclick="csv('report')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+    <div class="cb" id="rbody"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="panel" id="panel-settings">
+  <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">PINs, roles, and system configuration</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="saveSettings()">Save Settings</button></div></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">PIN Management</span></div><div class="cb">
+      <div class="fg"><label>Owner PIN</label><input id="sp-owner" type="password" maxlength="4" placeholder="4 digits"></div>
+      <div class="fg"><label>HR Manager PIN</label><input id="sp-hr" type="password" maxlength="4" placeholder="4 digits"></div>
+      <div class="fg"><label>Accounting PIN</label><input id="sp-acc" type="password" maxlength="4" placeholder="4 digits"></div>
+      <div class="fg"><label>Manager PIN</label><input id="sp-mgr" type="password" maxlength="4" placeholder="4 digits"></div>
+      <div class="fg"><label>Staff PIN</label><input id="sp-staff" type="password" maxlength="4" placeholder="4 digits"></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">System Settings</span></div><div class="cb">
+      <div class="fg"><label>Fiscal Year Start</label><select id="ss-fy"><option>January</option><option>April</option><option>July</option><option>October</option></select></div>
+      <div class="fg"><label>Pay Period</label><select id="ss-pay"><option>Bi-Weekly</option><option>Weekly</option><option>Semi-Monthly</option><option>Monthly</option></select></div>
+      <div class="fg"><label>Overtime Threshold (hrs/week)</label><input id="ss-ot" type="number" value="40"></div>
+      <div class="fg"><label>Default Invoice Terms</label><select id="ss-terms"><option>Net 30</option><option>Net 15</option><option>Net 45</option><option>Due on Receipt</option></select></div>
+      <div class="fg"><label>State Tax Rate (%)</label><input id="ss-tax" type="number" step="0.01" value="3.99"></div>
+    </div></div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairnbiz';
+var SB_URL='https://ejrlrrkvhtllxbbypdjb.supabase.co';
+var SB_KEY='sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
+var PROXY='https://sairn.vercel.app/api/claude';
+var VALID=['SB-','DEMO-','SAIRN-','BIZ-'];
+var PINS={owner:'1234',hr:'2345',accounting:'3456',manager:'4567',staff:'5678'};
+var eid=null,pbuf='',prole='owner',aiHist=[];
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fdate(d){if(!d)return'--';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key. Try SB-PINNACLE-2026';return;}
+  st('sb_lic',k);$('gate').style.display='none';$('pin').classList.add('on');
+}
+
+function pRoleChange(){
+  prole=$('psel').value;
+  var L={owner:'Owner / CEO',hr:'HR Manager',accounting:'Accounting',manager:'Manager',staff:'Staff'};
+  $('prole').textContent=L[prole]||prole;pbuf='';dots();
+}
+function pk(k){$('perr').textContent='';
+  if(k==='C'){pbuf='';dots();return;}
+  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
+  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+}
+function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+function chkPin(){
+  if(pbuf===PINS[prole]){
+    st('sb_role',prole);$('pin').classList.remove('on');$('app').classList.add('on');
+    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);init();
+  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+}
+function doLogout(){st('sb_role',null);$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+function nav(id){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+}
+
+function seed(){
+  if(ld('sb_seeded',false))return;
+  st('sb_emps',[
+    {id:'E001',fn:'Marcus',ln:'Thompson',role:'Shop Foreman',dept:'Fabrication',type:'Full Time',rate:28.50,start:'2019-03-15',phone:'(440) 555-0101',email:'mthompson@pinnaclesd.com',status:'Active',ec:'Linda Thompson (440) 555-0102',notes:'OSHA 30 certified'},
+    {id:'E002',fn:'Jose',ln:'Ramirez',role:'Lead Fabricator',dept:'Fabrication',type:'Full Time',rate:24.00,start:'2020-07-01',phone:'(440) 555-0103',email:'jramirez@pinnaclesd.com',status:'Active',ec:'Maria Ramirez (440) 555-0104',notes:''},
+    {id:'E003',fn:'Tyler',ln:'Novak',role:'Fabricator',dept:'Fabrication',type:'Full Time',rate:20.50,start:'2021-11-08',phone:'(440) 555-0105',email:'tnovak@pinnaclesd.com',status:'Active',ec:'Karen Novak (440) 555-0106',notes:''},
+    {id:'E004',fn:'Derek',ln:'Sullivan',role:'Installer',dept:'Installation',type:'Full Time',rate:26.00,start:'2018-06-20',phone:'(440) 555-0107',email:'dsullivan@pinnaclesd.com',status:'Active',ec:'Pat Sullivan (440) 555-0108',notes:'Lead installer'},
+    {id:'E005',fn:'Amir',ln:'Patel',role:'Installer',dept:'Installation',type:'Full Time',rate:22.00,start:'2022-02-14',phone:'(440) 555-0109',email:'apatel@pinnaclesd.com',status:'Active',ec:'Priya Patel (440) 555-0110',notes:''},
+    {id:'E006',fn:'Sarah',ln:'Kovacs',role:'Office Manager / HR',dept:'Administration',type:'Full Time',rate:23.00,start:'2017-09-05',phone:'(440) 555-0111',email:'skovacs@pinnaclesd.com',status:'Active',ec:'Tom Kovacs (440) 555-0112',notes:'SHRM certified'},
+    {id:'E007',fn:'Rachel',ln:'Monroe',role:'Sales Representative',dept:'Sales',type:'Full Time',rate:18.00,start:'2023-01-09',phone:'(440) 555-0113',email:'rmonroe@pinnaclesd.com',status:'Active',ec:'Greg Monroe (440) 555-0114',notes:''},
+    {id:'E008',fn:'Kevin',ln:'Walsh',role:'Delivery Driver',dept:'Fabrication',type:'Part Time',rate:16.50,start:'2023-08-21',phone:'(440) 555-0115',email:'kwalsh@pinnaclesd.com',status:'Active',ec:'Donna Walsh (440) 555-0116',notes:''}
+  ]);
+  st('sb_invs',[
+    {id:'INV-2601',cust:'Hartley Custom Homes',date:'2026-06-01',due:'2026-07-01',amt:8420,paid:8420,status:'Paid'},
+    {id:'INV-2602',cust:'Lakewood Kitchen & Bath',date:'2026-06-05',due:'2026-07-05',amt:3890,paid:0,status:'Sent'},
+    {id:'INV-2603',cust:'Westside Remodeling Group',date:'2026-06-10',due:'2026-07-10',amt:12750,paid:6000,status:'Partial'},
+    {id:'INV-2604',cust:'Premier Properties LLC',date:'2026-05-15',due:'2026-06-15',amt:5200,paid:0,status:'Overdue'},
+    {id:'INV-2605',cust:'Rocky River Renovations',date:'2026-06-18',due:'2026-07-18',amt:4100,paid:4100,status:'Paid'},
+    {id:'INV-2606',cust:'Avon Lake Home Builders',date:'2026-06-22',due:'2026-07-22',amt:9640,paid:0,status:'Draft'}
+  ]);
+  st('sb_exps',[
+    {date:'2026-06-02',desc:'Granite slab - Bianco Antico',cat:'Materials',vendor:'Midwest Stone Supply',amt:4200,ded:'Yes',receipt:'Yes',status:'Approved'},
+    {date:'2026-06-05',desc:'Diamond blade replacement x4',cat:'Tools',vendor:'Tooling Pros',amt:380,ded:'Yes',receipt:'Yes',status:'Approved'},
+    {date:'2026-06-08',desc:'Shop insurance monthly premium',cat:'Insurance',vendor:'Erie Insurance',amt:1140,ded:'Yes',receipt:'Yes',status:'Approved'},
+    {date:'2026-06-10',desc:'Fuel - delivery truck',cat:'Vehicle',vendor:'BP Gas',amt:220,ded:'Yes',receipt:'Yes',status:'Approved'},
+    {date:'2026-06-12',desc:'Marketing - Google Ads',cat:'Marketing',vendor:'Google',amt:500,ded:'Yes',receipt:'Yes',status:'Approved'},
+    {date:'2026-06-15',desc:'Quartz slabs - Calacatta Gold',cat:'Materials',vendor:'Surface Solutions',amt:5600,ded:'Yes',receipt:'Yes',status:'Approved'},
+    {date:'2026-06-18',desc:'Shop supplies - adhesive caulk',cat:'Supplies',vendor:'Ace Hardware',amt:145,ded:'Yes',receipt:'No',status:'Pending'},
+    {date:'2026-06-20',desc:'SAIRN platform monthly',cat:'Software',vendor:'SAIRN Technologies',amt:299,ded:'Yes',receipt:'Yes',status:'Approved'}
+  ]);
+  st('sb_vends',[
+    {id:'V001',name:'Midwest Stone Supply',cat:'Materials',contact:'Bob Harrington',phone:'(216) 444-7700',ytd:48200,terms:'Net 30',w9:'Yes'},
+    {id:'V002',name:'Surface Solutions Inc',cat:'Materials',contact:'Amy Chen',phone:'(440) 333-5500',ytd:31800,terms:'Net 30',w9:'Yes'},
+    {id:'V003',name:'Tooling Pros',cat:'Equipment',contact:'Frank DiMarco',phone:'(330) 222-4400',ytd:8900,terms:'Net 15',w9:'Yes'},
+    {id:'V004',name:'Erie Insurance',cat:'Insurance',contact:'Janet Moore',phone:'(800) 458-0811',ytd:13680,terms:'Monthly',w9:'Yes'},
+    {id:'V005',name:'Eagle Plumbing Co',cat:'Subcontractor',contact:'Mike Eagle',phone:'(440) 555-9900',ytd:6200,terms:'Net 15',w9:'No'},
+    {id:'V006',name:'SAIRN Technologies',cat:'Software',contact:'Support',phone:'(800) 724-7600',ytd:3588,terms:'Monthly',w9:'Yes'}
+  ]);
+  st('sb_ap',[
+    {vendor:'Midwest Stone Supply',inv:'MSS-44821',date:'2026-06-01',due:'2026-07-01',amt:12400,bal:12400,status:'Open'},
+    {vendor:'Surface Solutions Inc',inv:'SS-9912',date:'2026-06-05',due:'2026-07-05',amt:8200,bal:8200,status:'Open'},
+    {vendor:'Erie Insurance',inv:'EI-JUN26',date:'2026-06-01',due:'2026-06-10',amt:1140,bal:0,status:'Paid'},
+    {vendor:'Tooling Pros',inv:'TP-3341',date:'2026-05-20',due:'2026-06-04',amt:380,bal:380,status:'Overdue'},
+    {vendor:'Eagle Plumbing Co',inv:'EP-0882',date:'2026-06-18',due:'2026-07-03',amt:1850,bal:1850,status:'Open'}
+  ]);
+  st('sb_train',[
+    {emp:'Marcus Thompson',cert:'OSHA 30-Hour Construction',done:'2025-04-10',exp:'2028-04-10',prov:'National Safety Council',cost:180,status:'Active'},
+    {emp:'Jose Ramirez',cert:'Stone Fabrication Safety Level 2',done:'2024-11-01',exp:'2026-11-01',prov:'ISFA',cost:250,status:'Active'},
+    {emp:'Tyler Novak',cert:'Forklift Operator Certification',done:'2025-01-15',exp:'2028-01-15',prov:'Safety Solutions',cost:95,status:'Active'},
+    {emp:'Derek Sullivan',cert:'OSHA 10-Hour',done:'2023-08-20',exp:'2026-08-20',prov:'National Safety Council',cost:80,status:'Expiring Soon'},
+    {emp:'Amir Patel',cert:'Wet Saw Operations',done:'2024-03-01',exp:'2027-03-01',prov:'Internal',cost:0,status:'Active'},
+    {emp:'Sarah Kovacs',cert:'HR Fundamentals Certificate',done:'2025-06-01',exp:'2028-06-01',prov:'SHRM',cost:320,status:'Active'}
+  ]);
+  st('sb_perf',[
+    {emp:'Marcus Thompson',type:'Annual Review',due:'2026-08-01',rev:'Owner',score:'4.8',status:'Scheduled'},
+    {emp:'Jose Ramirez',type:'Annual Review',due:'2026-09-01',rev:'Marcus Thompson',score:'4.5',status:'Scheduled'},
+    {emp:'Sarah Kovacs',type:'Mid-Year Check-in',due:'2026-07-15',rev:'Owner',score:'--',status:'Upcoming'},
+    {emp:'Tyler Novak',type:'90-Day Review',due:'2026-07-01',rev:'Marcus Thompson',score:'3.9',status:'Completed'},
+    {emp:'Rachel Monroe',type:'Annual Review',due:'2026-10-01',rev:'Owner',score:'--',status:'Upcoming'}
+  ]);
+  st('sb_hire',[
+    {pos:'Senior Fabricator',dept:'Fabrication',apps:7,stage:'Interviewing',posted:'2026-06-01',rate:'$26-30/hr',status:'Active'},
+    {pos:'Installation Helper',dept:'Installation',apps:12,stage:'Screening',posted:'2026-06-10',rate:'$17-20/hr',status:'Active'},
+    {pos:'Counter Sales',dept:'Sales',apps:5,stage:'Offer Out',posted:'2026-05-20',rate:'$18-22/hr',status:'Active'}
+  ]);
+  st('sb_bud',[
+    {cat:'Labor & Payroll',annual:520000,actual:248000},{cat:'Materials / COGS',annual:380000,actual:182000},
+    {cat:'Rent & Utilities',annual:72000,actual:34200},{cat:'Equipment & Tools',annual:45000,actual:18900},
+    {cat:'Insurance',annual:24000,actual:13680},{cat:'Marketing',annual:18000,actual:7400},
+    {cat:'Software & Tech',annual:9600,actual:4312},{cat:'Vehicle & Fuel',annual:12000,actual:5800},
+    {cat:'Professional Services',annual:8000,actual:3100},{cat:'Misc & Contingency',annual:15000,actual:4200}
+  ]);
+  st('sb_seeded',true);toast('Demo data loaded - Pinnacle Stone & Design');
+}
+
+function init(){
+  seed();rDash();rEmps();rTS();rPay();rInvs();rExps();rAP();rAR();rVends();rBud();rTax();rHire();rTrain();rPerf();rBenKPIs();
+  $('tsweek').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+function pbar(pct,color){return '<div class="pbar"><div class="pfill" style="width:'+pct+'%;'+(color?'background:'+color:'')+'"></div></div>';}
+
+function rDash(){
+  var emps=ld('sb_emps',[]),invs=ld('sb_invs',[]),exps=ld('sb_exps',[]);
+  var rev=invs.reduce(function(s,i){return s+(i.paid||0);},0)+28000;
+  var pay=emps.reduce(function(s,e){return s+(e.type==='Full Time'?e.rate*80:e.rate*32);},0);
+  var oinv=invs.filter(function(i){return i.status!=='Paid';});
+  var oamt=oinv.reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var tot=exps.reduce(function(s,e){return s+e.amt;},0)+pay;
+  var mgn=rev>0?Math.round((rev-tot)/rev*100):0;
+  $('k-rev').textContent=fmt(rev);$('k-emp').textContent=emps.filter(function(e){return e.status==='Active';}).length;
+  $('k-pay').textContent=fmt(pay);$('k-inv').textContent=oinv.length;
+  $('k-invamt').textContent=fmt(oamt)+' outstanding';$('k-margin').textContent=mgn+'%';
+  var depts={};emps.forEach(function(e){depts[e.dept]=(depts[e.dept]||0)+1;});
+  $('d-dept').innerHTML=Object.keys(depts).map(function(d){var p=Math.round(depts[d]/emps.length*100);return'<div class="srow"><span class="slbl">'+H(d)+'</span><span class="sval">'+depts[d]+' employees</span></div>'+pbar(p);}).join('');
+  var revArr=[68000,72000,81000,76000,89000,rev];
+  $('d-rev').innerHTML=['Jan','Feb','Mar','Apr','May','Jun'].map(function(m,i){return'<div class="srow"><span class="slbl">'+m+'</span><span class="sval">'+fmt(revArr[i])+'</span></div>'+pbar(Math.round(revArr[i]/100000*100),'var(--ok)');}).join('');
+  $('d-activity').innerHTML=[
+    {t:'Payroll processed - '+fmt(pay),s:'2 hours ago'},{t:'INV-2603 partial payment $6,000',s:'Yesterday'},
+    {t:'Tyler Novak 90-day review 3.9/5',s:'2 days ago'},{t:'MSS-44821 bill entered $12,400',s:'3 days ago'},{t:'INV-2605 paid in full $4,100',s:'June 22'}
+  ].map(function(a){return'<div class="srow"><span class="slbl">'+H(a.t)+'</span><span class="sval" style="font-size:11px;color:var(--muted)">'+a.s+'</span></div>';}).join('');
+  $('d-actions').innerHTML=[
+    {t:'INV-2604 overdue - $5,200 Premier Properties',b:'Overdue',c:'br'},{t:'Derek Sullivan OSHA cert expiring Aug 2026',b:'90 Days',c:'bw'},
+    {t:'3 open hiring positions active',b:'Hiring',c:'bb'},{t:'Tooling Pros AP overdue $380',b:'Past Due',c:'br'},{t:'5 performance reviews due next 60 days',b:'HR',c:'bb'}
+  ].map(function(a){return'<div class="srow"><span class="slbl">'+H(a.t)+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join('');
+}
+
+function rEmps(){
+  var emps=ld('sb_emps',[]);
+  var ft=emps.filter(function(e){return e.type==='Full Time'&&e.status==='Active';});
+  var pt=emps.filter(function(e){return e.type!=='Full Time'&&e.status==='Active';});
+  var rates=emps.map(function(e){return e.rate||0;});
+  var avg=rates.length?rates.reduce(function(a,b){return a+b;},0)/rates.length:0;
+  var now=new Date();
+  var ten=emps.map(function(e){return e.start?(now-new Date(e.start))/31557600000:0;});
+  var avgT=ten.length?ten.reduce(function(a,b){return a+b;},0)/ten.length:0;
+  $('e-total').textContent=emps.length;$('e-ft').textContent=ft.length;$('e-pt').textContent=pt.length;
+  $('e-ten').textContent=avgT.toFixed(1)+' yrs';$('e-rate').textContent='$'+avg.toFixed(2);
+  rEmpTbl(emps);
+}
+function rEmpTbl(emps){
+  var tb=$('etbody');if(!emps.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No employees found</td></tr>';return;}
+  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong><div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(''+H(e.id||'')+'')">Edit</button></td></tr>';}).join('');
+}
+function filterEmps(){
+  var q=($('esrch').value||'').toLowerCase(),dept=$('edept').value;
+  rEmpTbl(ld('sb_emps',[]).filter(function(e){return(!q||(e.fn+' '+e.ln+' '+e.role+' '+e.dept).toLowerCase().includes(q))&&(!dept||e.dept===dept);}));
+}
+function openEmpModal(){eid=null;['efn','eln','erole','ehr','estart','ephone','eemail','eec','enotes'].forEach(function(f){var el=$(f);if(el)el.value='';});$('empmodal').classList.add('on');}
+function closeEmpModal(){$('empmodal').classList.remove('on');}
+function editEmp(id){
+  var e=ld('sb_emps',[]).find(function(x){return x.id===id;});if(!e)return;eid=id;
+  $('efn').value=e.fn||'';$('eln').value=e.ln||'';$('erole').value=e.role||'';$('edept2').value=e.dept||'';
+  $('etype').value=e.type||'Full Time';$('ehr').value=e.rate||'';$('estart').value=e.start||'';
+  $('ephone').value=e.phone||'';$('eemail').value=e.email||'';$('estatus').value=e.status||'Active';
+  $('eec').value=e.ec||'';$('enotes').value=e.notes||'';$('empmodal').classList.add('on');
+}
+function saveEmp(){
+  var emps=ld('sb_emps',[]);
+  var r={id:eid||('E'+String(Date.now()).slice(-4)),fn:$('efn').value.trim(),ln:$('eln').value.trim(),role:$('erole').value.trim(),dept:$('edept2').value,type:$('etype').value,rate:parseFloat($('ehr').value)||0,start:$('estart').value,phone:$('ephone').value.trim(),email:$('eemail').value.trim(),status:$('estatus').value,ec:$('eec').value.trim(),notes:$('enotes').value.trim()};
+  if(!r.fn||!r.ln){toast('Name required');return;}
+  if(eid){var i=emps.findIndex(function(x){return x.id===eid;});if(i>-1)emps[i]=r;else emps.push(r);}else emps.push(r);
+  st('sb_emps',emps);closeEmpModal();rEmps();syncEmps(emps);toast('Saved - '+r.fn+' '+r.ln);
+}
+
+function rTS(){
+  var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+  var td=[[8,8,8,8,8,0],[8,8,8,8,10,0],[8,8,7,8,8,4],[8,8,8,8,8,0],[8,8,8,8,8,0],[8,8,8,8,8,0],[8,8,8,8,8,0],[0,0,5,0,5,0]];
+  var th=0,tot=0,tc=0,tb=0;
+  $('tstbody').innerHTML=emps.map(function(e,i){
+    var d=td[i]||[8,8,8,8,8,0];var t=d.reduce(function(a,b){return a+b;},0);var ot=Math.max(0,t-40);var c=(t-ot)*e.rate+ot*e.rate*1.5;
+    th+=t;tot+=ot;tc+=c;tb+=Math.round(t*0.85);
+    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td>'+d.map(function(x){return'<td style="text-align:center;">'+(x||'--')+'</td>';}).join('')+'<td style="text-align:center;"><strong>'+t+'</strong></td><td style="text-align:center;color:'+(ot?'var(--danger)':'var(--muted)')+'">'+ot+'</td><td style="text-align:right;">'+fmt(c)+'</td></tr>';
+  }).join('');
+  $('ts-hrs').textContent=th;$('ts-ot').textContent=tot;$('ts-cost').textContent=fmt(tc);
+  $('ts-bill').textContent=tb;$('ts-util').textContent=th>0?Math.round(tb/th*100)+'%':'0%';
+}
+
+function rPay(){
+  var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+  var gross=0,taxes=0,bens=0;
+  $('pytbody').innerHTML=emps.map(function(e){
+    var hrs=e.type==='Full Time'?80:32;var g=e.rate*hrs;var ft=g*0.22;var st2=g*0.0399;var fi=g*0.0765;var net=g-ft-st2-fi;
+    gross+=g;taxes+=fi;bens+=520;
+    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td style="text-align:center;">'+hrs+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td><strong>'+fmt(g)+'</strong></td><td>'+fmt(ft)+'</td><td>'+fmt(st2)+'</td><td>'+fmt(fi)+'</td><td><strong>'+fmt(net)+'</strong></td><td><span class="badge bg">Ready</span></td></tr>';
+  }).join('');
+  $('py-gross').textContent=fmt(gross);$('py-tax').textContent=fmt(taxes);$('py-ben').textContent=fmt(bens*emps.length);
+  $('py-total').textContent=fmt(gross+taxes+bens*emps.length);$('py-ytd').textContent=fmt(gross*13);
+  var rev=498000,cogs=199000,gp=rev-cogs,opex=gross*6+84000,net=gp-opex;
+  $('pl-rev').textContent=fmt(rev);$('pl-cogs').textContent=fmt(cogs);$('pl-gp').textContent=fmt(gp);$('pl-opex').textContent=fmt(opex);$('pl-net').textContent=fmt(net);
+  $('pl-revbk').innerHTML=[{l:'Kitchen Countertops',a:241000},{l:'Bathroom Vanities',a:118000},{l:'Commercial Projects',a:89000},{l:'Repairs & Remnants',a:50000}].map(function(r){var p=Math.round(r.a/rev*100);return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval">'+fmt(r.a)+' ('+p+'%)</span></div>'+pbar(p);}).join('');
+  $('pl-expbk').innerHTML=[{l:'Labor',a:opex},{l:'Materials',a:cogs},{l:'Rent',a:34200},{l:'Equipment',a:18900},{l:'Other',a:21000}].map(function(r){var t=opex+cogs+74100;var p=Math.round(r.a/t*100);return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval">'+fmt(r.a)+'</span></div>'+pbar(p,'var(--warn)');}).join('');
+  $('pl-monthly').innerHTML=['Jan','Feb','Mar','Apr','May','Jun'].map(function(m,i){var a=[68000,72000,81000,76000,89000,83000][i];return'<div class="srow"><span class="slbl">'+m+'</span><span class="sval">'+fmt(a)+'</span></div>'+pbar(Math.round(a/100000*100),'var(--ok)');}).join('');
+  $('pl-margin').innerHTML=[{l:'Gross Margin',v:Math.round(gp/rev*100)+'%'},{l:'Operating Margin',v:Math.round(net/rev*100)+'%'},{l:'Industry Avg Gross',v:'45%'},{l:'Industry Avg Net',v:'18%'},{l:'Your Net vs Industry',v:(Math.round(net/rev*100)-18)+'pp'}].map(function(r){return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval"><strong>'+r.v+'</strong></span></div>';}).join('');
+}
+function runPayroll(){toast('Payroll approved - ACH transfers initiated');}
+
+function rInvs(){
+  var invs=ld('sb_invs',[]);
+  var out=invs.reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var curr=invs.filter(function(i){return i.status==='Sent';}).reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var over=invs.filter(function(i){return i.status==='Overdue';}).reduce(function(s,i){return s+i.amt;},0);
+  var paid=invs.filter(function(i){return i.status==='Paid';}).reduce(function(s,i){return s+i.amt;},0);
+  $('iv-out').textContent=fmt(out);$('iv-curr').textContent=fmt(curr);$('iv-over').textContent=fmt(over);$('iv-paid').textContent=fmt(paid);$('iv-dtp').textContent='22d';
+  rInvTbl(invs);
+}
+function rInvTbl(invs){
+  $('ivtbody').innerHTML=invs.map(function(i){var b=i.amt-(i.paid||0);var sc={Paid:'bg',Sent:'bb',Draft:'bx',Overdue:'br',Partial:'bw'}[i.status]||'bx';return'<tr><td><strong>'+H(i.id)+'</strong></td><td>'+H(i.cust)+'</td><td>'+fdate(i.date)+'</td><td>'+fdate(i.due)+'</td><td>'+fmt(i.amt)+'</td><td>'+fmt(i.paid||0)+'</td><td><strong>'+fmt(b)+'</strong></td><td><span class="badge '+sc+'">'+H(i.status)+'</span></td><td><button class="btn bo bs" onclick="toast('Invoice view - next build')">View</button></td></tr>';}).join('');
+}
+function filterInv(){
+  var q=($('ivsrch').value||'').toLowerCase(),s=$('ivstat').value;
+  rInvTbl(ld('sb_invs',[]).filter(function(i){return(!q||(i.id+i.cust).toLowerCase().includes(q))&&(!s||i.status===s);}));
+}
+
+function rExps(){
+  var exps=ld('sb_exps',[]);
+  var m=exps.reduce(function(s,e){return s+e.amt;},0);
+  var ded=exps.filter(function(e){return e.ded==='Yes';}).reduce(function(s,e){return s+e.amt;},0);
+  var pend=exps.filter(function(e){return e.status==='Pending';}).length;
+  var cats={};exps.forEach(function(e){cats[e.cat]=(cats[e.cat]||0)+e.amt;});
+  var top=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];})[0]||'--';
+  $('ex-month').textContent=fmt(m);$('ex-ytd').textContent=fmt(m*6);$('ex-top').textContent=top;$('ex-pend').textContent=pend;$('ex-ded').textContent=fmt(ded*6);
+  $('extbody').innerHTML=exps.map(function(e){var sc=e.status==='Approved'?'bg':'bw';return'<tr><td>'+fdate(e.date)+'</td><td>'+H(e.desc)+'</td><td>'+H(e.cat)+'</td><td>'+H(e.vendor)+'</td><td><strong>'+fmt(e.amt)+'</strong></td><td><span class="badge '+(e.ded==='Yes'?'bg':'bx')+'">'+H(e.ded)+'</span></td><td><span class="badge '+(e.receipt==='Yes'?'bg':'bw')+'">'+H(e.receipt)+'</span></td><td><span class="badge '+sc+'">'+H(e.status)+'</span></td></tr>';}).join('');
+}
+
+function rAP(){
+  var bills=ld('sb_ap',[]);
+  var tot=bills.reduce(function(s,b){return s+b.bal;},0);
+  var wk=bills.filter(function(b){return b.status==='Open';}).reduce(function(s,b){return s+b.bal;},0);
+  var ov=bills.filter(function(b){return b.status==='Overdue';}).length;
+  var pd=bills.filter(function(b){return b.status==='Paid';}).reduce(function(s,b){return s+b.amt;},0);
+  var top=bills.filter(function(b){return b.bal>0;}).sort(function(a,b){return b.bal-a.bal;})[0];
+  $('ap-total').textContent=fmt(tot);$('ap-week').textContent=fmt(wk);$('ap-over').textContent=ov;$('ap-paid').textContent=fmt(pd);$('ap-top').textContent=top?top.vendor:'--';
+  $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td><button class="btn bo bs" onclick="toast('Marked paid')">Pay</button></td></tr>';}).join('');
+}
+
+function rAR(){
+  var invs=ld('sb_invs',[]);
+  var out=invs.reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var curr=invs.filter(function(i){return i.status==='Sent';}).reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var over=invs.filter(function(i){return i.status==='Overdue';}).reduce(function(s,i){return s+i.amt;},0);
+  $('ar-total').textContent=fmt(out);$('ar-curr').textContent=fmt(curr);$('ar-60').textContent=fmt(6750);$('ar-90').textContent=fmt(over);$('ar-rate').textContent='97%';
+  $('artbody').innerHTML=invs.filter(function(i){return i.status!=='Paid';}).map(function(i){var b=i.amt-(i.paid||0);var age=i.status==='Overdue'?'43 days':'12 days';var sc=i.status==='Overdue'?'br':'bb';return'<tr><td>'+H(i.cust)+'</td><td>'+H(i.id)+'</td><td>'+fdate(i.date)+'</td><td>'+fdate(i.due)+'</td><td>'+fmt(i.amt)+'</td><td><strong>'+fmt(b)+'</strong></td><td>'+age+'</td><td><span class="badge '+sc+'">'+H(i.status)+'</span></td></tr>';}).join('');
+}
+
+function rVends(){
+  var v=ld('sb_vends',[]);var sp=v.reduce(function(s,x){return s+x.ytd;},0);
+  var w9=v.filter(function(x){return x.w9==='Yes';}).length;var req=v.filter(function(x){return x.ytd>=600;}).length;
+  var top=v.slice().sort(function(a,b){return b.ytd-a.ytd;})[0];
+  $('vn-total').textContent=v.length;$('vn-spend').textContent=fmt(sp);$('vn-top').textContent=top?top.name:'--';$('vn-w9').textContent=w9;$('vn-1099').textContent=req;
+  $('vntbody').innerHTML=v.map(function(x){return'<tr><td><strong>'+H(x.name)+'</strong></td><td>'+H(x.cat)+'</td><td>'+H(x.contact)+'</td><td>'+H(x.phone)+'</td><td>'+fmt(x.ytd)+'</td><td>'+H(x.terms)+'</td><td><span class="badge '+(x.w9==='Yes'?'bg':'br')+'">'+H(x.w9)+'</span></td><td><span class="badge bg">Active</span></td></tr>';}).join('');
+}
+
+function rBud(){
+  var b=ld('sb_bud',[]);var tot=b.reduce(function(s,x){return s+x.annual;},0);var act=b.reduce(function(s,x){return s+x.actual;},0);
+  var rem=tot-act;var pct=tot>0?Math.round(act/tot*100):0;var fc=act*(12/6);var var2=tot-fc;
+  $('bu-total').textContent=fmt(tot);$('bu-actual').textContent=fmt(act);$('bu-rem').textContent=fmt(rem);$('bu-pct').textContent=pct+'%';$('bu-var').textContent=fmt(var2);
+  $('butbody').innerHTML=b.map(function(x){var u=x.annual>0?Math.round(x.actual/x.annual*100):0;var sc=u>90?'br':u>75?'bw':'bg';return'<tr><td><strong>'+H(x.cat)+'</strong></td><td>'+fmt(x.annual)+'</td><td>'+fmt(x.actual)+'</td><td>'+fmt(x.annual-x.actual)+'</td><td>'+pbar(u,(u>90?'var(--danger)':u>75?'var(--warn)':'var(--p)'))+'<div style="font-size:11px;text-align:right;margin-top:2px">'+u+'%</div></td><td><span class="badge '+sc+'">'+(u>90?'Over Budget':u>75?'Watch':'On Track')+'</span></td></tr>';}).join('');
+}
+
+function rTax(){
+  var taxes=[
+    {t:'Federal Income Tax (Quarterly)',f:'Quarterly',d:'Sep 15, 2026',e:18400,y:36800,s:'Current'},
+    {t:'Ohio State Income Tax',f:'Quarterly',d:'Sep 15, 2026',e:4200,y:8400,s:'Current'},
+    {t:'FICA Payroll Tax (Employer)',f:'Semi-Weekly',d:'Ongoing',e:2800,y:33600,s:'Current'},
+    {t:'Ohio Sales Tax (6.5%)',f:'Monthly',d:'Jul 23, 2026',e:3100,y:16800,s:'Current'},
+    {t:'FUTA Federal Unemployment',f:'Quarterly',d:'Jul 31, 2026',e:840,y:840,s:'Due Soon'},
+    {t:'SUTA Ohio Unemployment',f:'Quarterly',d:'Jul 31, 2026',e:620,y:1240,s:'Due Soon'},
+    {t:'Commercial Activity Tax CAT',f:'Annual',d:'May 10, 2027',e:1200,y:0,s:'Filed'}
+  ];
+  $('tx-paid').textContent=fmt(97680);$('tx-q3').textContent=fmt(22600);$('tx-sales').textContent=fmt(16800);$('tx-payroll').textContent=fmt(33600);$('tx-next').textContent='Jul 23';
+  $('txtbody').innerHTML=taxes.map(function(x){var sc=x.s==='Current'?'bg':x.s==='Due Soon'?'bw':x.s==='Filed'?'bb':'br';return'<tr><td><strong>'+H(x.t)+'</strong></td><td>'+H(x.f)+'</td><td>'+H(x.d)+'</td><td>'+fmt(x.e)+'</td><td>'+fmt(x.y)+'</td><td><span class="badge '+sc+'">'+H(x.s)+'</span></td></tr>';}).join('');
+}
+
+function rBenKPIs(){
+  var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+  var ft=emps.filter(function(e){return e.type==='Full Time';});
+  $('bn-health').textContent=ft.length;$('bn-dental').textContent=ft.length;
+  $('bn-401k').textContent=Math.floor(ft.length*0.75);$('bn-cost').textContent=fmt(ft.length*520);$('bn-cpe').textContent=fmt(520);
+}
+
+function rHire(){
+  var h=ld('sb_hire',[]);var apps=h.reduce(function(s,x){return s+x.apps;},0);
+  var ints=h.filter(function(x){return x.stage==='Interviewing';}).length;
+  var offs=h.filter(function(x){return x.stage==='Offer Out';}).length;
+  $('h-open').textContent=h.length;$('h-apps').textContent=apps;$('h-int').textContent=ints;$('h-off').textContent=offs;$('h-tth').textContent='16d';
+  $('htbody').innerHTML=h.map(function(x){var sc={Active:'bg',Paused:'bw',Closed:'bx'}[x.status]||'bx';var ss={Screening:'bb',Interviewing:'bw','Offer Out':'bg',Closed:'bx'}[x.stage]||'bx';return'<tr><td><strong>'+H(x.pos)+'</strong></td><td>'+H(x.dept)+'</td><td style="text-align:center;">'+x.apps+'</td><td><span class="badge '+ss+'">'+H(x.stage)+'</span></td><td>'+fdate(x.posted)+'</td><td>'+H(x.rate)+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast('Applicants - next build')">View</button></td></tr>';}).join('');
+}
+
+function rTrain(){
+  var tr=ld('sb_train',[]);var exp=tr.filter(function(t){return t.status==='Expiring Soon';}).length;
+  $('tr-cert').textContent=tr.length;$('tr-exp').textContent=exp;$('tr-hrs').textContent=284;$('tr-safe').textContent=0;$('tr-bud').textContent=fmt(2800);
+  $('trtbody').innerHTML=tr.map(function(t){var sc=t.status==='Active'?'bg':t.status==='Expiring Soon'?'bw':'br';return'<tr><td>'+H(t.emp)+'</td><td><strong>'+H(t.cert)+'</strong></td><td>'+fdate(t.done)+'</td><td>'+fdate(t.exp)+'</td><td>'+H(t.prov)+'</td><td>'+(t.cost?fmt(t.cost):'Internal')+'</td><td><span class="badge '+sc+'">'+H(t.status)+'</span></td></tr>';}).join('');
+}
+
+function rPerf(){
+  var p=ld('sb_perf',[]);var due=p.filter(function(x){return x.status==='Scheduled';}).length;var done=p.filter(function(x){return x.status==='Completed';}).length;
+  var sc=p.filter(function(x){return x.score&&x.score!=='--';});var avg=sc.length?sc.reduce(function(s,x){return s+parseFloat(x.score);},0)/sc.length:0;
+  $('pf-due').textContent=due;$('pf-done').textContent=done;$('pf-avg').textContent=avg.toFixed(1);$('pf-raises').textContent=2;$('pf-pip').textContent=0;
+  $('pftbody').innerHTML=p.map(function(x){var sc={Scheduled:'bb',Upcoming:'bw',Completed:'bg'}[x.status]||'bx';return'<tr><td><strong>'+H(x.emp)+'</strong></td><td>'+H(x.type)+'</td><td>'+fdate(x.due)+'</td><td>'+H(x.rev)+'</td><td>'+(x.score&&x.score!=='--'?'<strong>'+x.score+'/5.0</strong>':'--')+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast('Review form - next build')">Start</button></td></tr>';}).join('');
+}
+
+function sendAI(){var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
+function askAI(q){$('ainp').value=q;sendAI();}
+function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Conversation cleared.</div>';}
+function addMsg(t,role){var c=$('achat');var d=document.createElement('div');d.className=role==='u'?'amu':'ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function callAI(msg){
+  var emps=ld('sb_emps',[]);
+  var ctx='You are the AI business operations assistant for SAIRNbiz, used by Pinnacle Stone & Design in Westlake, OH. They have '+emps.length+' employees, operate a stone fabrication shop, and use SAIRNbiz for HR and accounting. Be concise, practical, and industry-specific. No fluff.';
+  aiHist.push({role:'user',content:msg});addMsg('Thinking...','a');
+  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
+  .then(function(r){return r.json();}).then(function(d){
+    var c=$('achat');var msgs=c.querySelectorAll('.ama');if(msgs.length)msgs[msgs.length-1].remove();
+    var rep=(d.content&&d.content[0]&&d.content[0].text)||'No response.';aiHist.push({role:'assistant',content:rep});addMsg(rep,'a');
+  }).catch(function(){var c=$('achat');var msgs=c.querySelectorAll('.ama');if(msgs.length)msgs[msgs.length-1].remove();addMsg('Connection error.','a');});
+}
+
+function saveCo(){
+  st('sb_co',{name:$('co-name').value,dba:$('co-dba').value,entity:$('co-entity').value,state:$('co-state').value,ein:$('co-ein').value,founded:$('co-founded').value,industry:$('co-industry').value,addr:$('co-addr').value,city:$('co-city').value,st2:$('co-st').value,zip:$('co-zip').value,phone:$('co-phone').value,email:$('co-email').value,web:$('co-web').value,owner:$('co-owner').value,hr:$('co-hr').value,ctrl:$('co-ctrl').value});
+  toast('Company profile saved');
+}
+function syncSupabase(){
+  syncEmps(ld('sb_emps',[]));
+  var now=new Date().toLocaleString();st('sb_sync',now);$('co-sync').textContent=now;
+  toast('Synced to Supabase - StoneDesk can now read employee and company data');
+}
+function syncEmps(emps){
+  try{if(typeof supabase!=='undefined'){
+    var _s=supabase.createClient(SB_URL,SB_KEY);
+    var pl=emps.map(function(e){return{employee_id:e.id,first_name:e.fn,last_name:e.ln,role:e.role,department:e.dept,employment_type:e.type,hourly_rate:e.rate,start_date:e.start,phone:e.phone,email:e.email,status:e.status,source_app:'sairnbiz',updated_at:new Date().toISOString()};});
+    _s.from('employees').upsert(pl,{onConflict:'employee_id'}).then(function(r){if(r&&r.error)console.warn('Supabase:',r.error.message);});
+  }}catch(e){console.warn('Supabase skipped:',e.message);}
+}
+
+function genReport(type){
+  $('rout').style.display='block';
+  var emps=ld('sb_emps',[]),invs=ld('sb_invs',[]);
+  if(type==='roster'){$('rtitle').textContent='Employee Roster - '+new Date().toLocaleDateString();$('rbody').innerHTML='<table><thead><tr><th>ID</th><th>Name</th><th>Role</th><th>Dept</th><th>Type</th><th>Rate/Hr</th><th>Start</th><th>Status</th></tr></thead><tbody>'+emps.map(function(e){return'<tr><td>'+H(e.id)+'</td><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role)+'</td><td>'+H(e.dept)+'</td><td>'+H(e.type)+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td>'+fdate(e.start)+'</td><td>'+H(e.status)+'</td></tr>';}).join('')+'</tbody></table>';}
+  else if(type==='ar'){$('rtitle').textContent='AR Aging Report - '+new Date().toLocaleDateString();$('rbody').innerHTML='<table><thead><tr><th>Customer</th><th>Invoice</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>'+invs.map(function(i){var b=i.amt-(i.paid||0);return'<tr><td>'+H(i.cust)+'</td><td>'+H(i.id)+'</td><td>'+fmt(i.amt)+'</td><td>'+fmt(i.paid||0)+'</td><td><strong>'+fmt(b)+'</strong></td><td>'+H(i.status)+'</td></tr>';}).join('')+'</tbody></table>';}
+  else if(type==='pl'){$('rtitle').textContent='P&L Statement YTD 2026';$('rbody').innerHTML='<table><thead><tr><th>Category</th><th>Amount</th><th>% Revenue</th></tr></thead><tbody><tr><td><strong>Total Revenue</strong></td><td><strong>$498,000</strong></td><td>100%</td></tr><tr><td>COGS</td><td>$199,000</td><td>40%</td></tr><tr><td><strong>Gross Profit</strong></td><td><strong>$299,000</strong></td><td>60%</td></tr><tr><td>Operating Expenses</td><td>$241,000</td><td>48%</td></tr><tr><td><strong>Net Income</strong></td><td><strong>$58,000</strong></td><td>12%</td></tr></tbody></table>';}
+  else{$('rtitle').textContent='Report: '+type;$('rbody').innerHTML='<p style="color:var(--muted);padding:24px;text-align:center;">Generated - '+new Date().toLocaleString()+'</p>';}
+  $('rout').scrollIntoView({behavior:'smooth'});
+}
+
+function csv(type){
+  var rows=[],fn='sairnbiz-'+type+'.csv';
+  if(type==='employees'){rows=[['ID','First','Last','Role','Dept','Type','Rate','Start','Status']];ld('sb_emps',[]).forEach(function(e){rows.push([e.id,e.fn,e.ln,e.role,e.dept,e.type,e.rate,e.start,e.status]);});}
+  else if(type==='invoices'){rows=[['Invoice','Customer','Date','Due','Amount','Paid','Balance','Status']];ld('sb_invs',[]).forEach(function(i){rows.push([i.id,i.cust,i.date,i.due,i.amt,i.paid||0,i.amt-(i.paid||0),i.status]);});}
+  else if(type==='vendors'){rows=[['ID','Name','Cat','Contact','Phone','YTD','Terms','W-9']];ld('sb_vends',[]).forEach(function(v){rows.push([v.id,v.name,v.cat,v.contact,v.phone,v.ytd,v.terms,v.w9]);});}
+  else if(type==='budget'){rows=[['Category','Budget','Actual','Remaining','% Used']];ld('sb_bud',[]).forEach(function(b){rows.push([b.cat,b.annual,b.actual,b.annual-b.actual,b.annual?Math.round(b.actual/b.annual*100)+'%':'0%']);});}
+  else if(type==='payroll'){rows=[['Employee','Role','Type','Rate','Hours','Gross']];ld('sb_emps',[]).filter(function(e){return e.status==='Active';}).forEach(function(e){var h=e.type==='Full Time'?80:32;rows.push([e.fn+' '+e.ln,e.role,e.type,e.rate,h,(e.rate*h).toFixed(2)]);});}
+  else{rows=[['SAIRNbiz',type,new Date().toLocaleDateString()]];}
+  var c=rows.map(function(r){return r.map(function(x){return'"'+String(x||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
+  toast('Exported - '+fn);
+}
+
+function saveSettings(){
+  st('sb_cfg',{pinOwner:$('sp-owner').value,pinHr:$('sp-hr').value,pinAcc:$('sp-acc').value,pinMgr:$('sp-mgr').value,pinStaff:$('sp-staff').value,fy:$('ss-fy').value,pay:$('ss-pay').value,ot:$('ss-ot').value,terms:$('ss-terms').value,tax:$('ss-tax').value});
+  toast('Settings saved');
+}
+
+(function(){
+  var k=ld('sb_lic',null);if(k){$('gate').style.display='none';$('pin').classList.add('on');}
+  rBenKPIs();
+})();
+</script>
+</body>
+</html>
