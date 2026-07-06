@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAIRN Code - Medical Billing Intelligence</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #fff;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        .header {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #F87171;
+        }
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .demo-badge {
+            background: #fef2f2;
+            border: 1px solid #F87171;
+            color: #F87171;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .nav {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 1rem 2rem;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            overflow-x: auto;
+        }
+        .nav-btn {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover {
+            border-color: #F87171;
+            color: #F87171;
+        }
+        .nav-btn.active {
+            background: #F87171;
+            color: #fff;
+            border-color: #F87171;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .panel {
+            display: none;
+        }
+        .panel.active {
+            display: block;
+        }
+        .panel-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #1f2937;
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .kpi-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+        .kpi-card:hover {
+            border-color: #F87171;
+            box-shadow: 0 4px 12px rgba(248, 113, 113, 0.1);
+        }
+        .kpi-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #F87171;
+            margin-bottom: 0.5rem;
+        }
+        .kpi-detail {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            border-color: #F87171;
+            color: #F87171;
+        }
+        .btn-primary {
+            background: #F87171;
+            color: #fff;
+            border-color: #F87171;
+        }
+        .btn-primary:hover {
+            background: #f05252;
+            border-color: #f05252;
+        }
+        .table-container {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead {
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-clean {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-denied {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status-hold {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1f2937;
+            color: #fff;
+            padding: 1rem 1.5rem;
+            border-radius: 4px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #F87171;
+            box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.1);
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #fff;
+        }
+        .chat-message {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+        .chat-bubble {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .chat-message.assistant .chat-bubble {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        .chat-message.user .chat-bubble {
+            background: #F87171;
+            color: #fff;
+        }
+        .chat-input {
+            border-top: 1px solid #e5e7eb;
+            padding: 1rem;
+            background: #f9fafb;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .chat-input input {
+            flex: 1;
+        }
+        .search-input {
+            max-width: 400px;
+        }
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        .patent-badge {
+            display: inline-block;
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            color: #92400e;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        @media print {
+            body { background: #fff; }
+            .header, .nav { display: none; }
+            .container { padding: 0; }
+            .panel { display: block !important; page-break-after: always; }
+            .toolbar { display: none; }
+            .btn { display: none; }
+            .kpi-card, .table-container { border: 1px solid #d1d5db; }
+            .nav-btn { display: none; }
+        }
+        .error-box {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #991b1b;
+            font-size: 0.875rem;
+        }
+        .success-box {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #166534;
+            font-size: 0.875rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #F87171;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">SAIRN Code</div>
+        <div class="header-right">
+            <div class="demo-badge">Demo: SC-PINNACLE-2026</div>
+        </div>
+    </div>
+
+    <div class="nav" id="navbar">
+        <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
+        <button class="nav-btn" onclick="showPanel('ai')">AI Chat</button>
+        <button class="nav-btn" onclick="showPanel('claims')">Claims</button>
+        <button class="nav-btn" onclick="showPanel('prebill')">Prebill</button>
+        <button class="nav-btn" onclick="showPanel('hcc')">HCC</button>
+        <button class="nav-btn" onclick="showPanel('drg')">DRG</button>
+        <button class="nav-btn" onclick="showPanel('query')">Physician Query</button>
+        <button class="nav-btn" onclick="showPanel('encoder')">Encoder</button>
+        <button class="nav-btn" onclick="showPanel('rac')">RAC Audit</button>
+        <button class="nav-btn" onclick="showPanel('denial')">Denials</button>
+        <button class="nav-btn" onclick="showPanel('telehealth')">Telehealth</button>
+        <button class="nav-btn" onclick="showPanel('anesthesia')">Anesthesia</button>
+        <button class="nav-btn" onclick="showPanel('compliance')">Compliance</button>
+        <button class="nav-btn" onclick="showPanel('auth')">Authorizations</button>
+        <button class="nav-btn" onclick="showPanel('fraud')">Fraud Detection</button>
+        <button class="nav-btn" onclick="showPanel('ar')">A/R</button>
+        <button class="nav-btn" onclick="showPanel('revenue')">Revenue Cycle</button>
+        <button class="nav-btn" onclick="showPanel('reports')">Reports</button>
+        <button class="nav-btn" onclick="showPanel('providers')">Providers</button>
+        <button class="nav-btn" onclick="showPanel('settings')">Settings</button>
+    </div>
+
+    <div class="container">
+        <!-- Dashboard Panel -->
+        <div id="panel-dashboard" class="panel active">
+            <h1 class="panel-title">Dashboard</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('dashboard')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Claims Volume</div>
+                    <div class="kpi-value">1,247</div>
+                    <div class="kpi-detail">YTD submissions</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Clean Claim Rate</div>
+                    <div class="kpi-value">94.2%</div>
+                    <div class="kpi-detail">First pass accuracy</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Revenue at Risk</div>
+                    <div class="kpi-value">$287K</div>
+                    <div class="kpi-detail">Pending denials</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Denial Rate</div>
+                    <div class="kpi-value">3.8%</div>
+                    <div class="kpi-detail">Down 0.2% MoM</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Days to Pay</div>
+                    <div class="kpi-value">18.3</div>
+                    <div class="kpi-detail">Cash flow metric</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Chat Panel -->
+        <div id="panel-ai" class="panel">
+            <h1 class="panel-title">AI Medical Coding Assistant</h1>
+            <div class="toolbar">
+                <button class="btn" onclick="clearChat()">Clear History</button>
+            </div>
+            <div class="chat-container">
+                <div class="chat-history" id="chatHistory">
+                    <div class="chat-message assistant">
+                        <div class="chat-bubble">Hello! I'm your medical coding expert. Ask me about ICD-10, CPT, HCC codes, or medical billing compliance.</div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="Ask a medical coding question..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+                    <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Claims Panel -->
+        <div id="panel-claims" class="panel">
+            <h1 class="panel-title">Claims Management</h1>
+            <div class="toolbar">
+                <input type="text" class="search-input" id="claimsSearch" placeholder="Search claims..." onkeyup="filterTable('claimsTable', 'claimsSearch')">
+                <button class="btn btn-primary" onclick="exportCSV('claims')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Claims</div>
+                    <div class="kpi-value">8</div>
+                    <div class="kpi-detail">Seed data</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Clean Status</div>
+                    <div class="kpi-value">4</div>
+                    <div class="kpi-detail">Ready to submit</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Pending</div>
+                    <div class="kpi-value">2</div>
+                    <div class="kpi-detail">Awaiting response</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Denied</div>
+                    <div class="kpi-value">1</div>
+                    <div class="kpi-detail">Under appeal</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Hold</div>
+                    <div class="kpi-value">1</div>
+                    <div class="kpi-detail">Needs review</div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="claimsTable">
+                    <thead>
+                        <tr>
+                            <th>Claim ID</th>
+                            <th>Patient</th>
+                            <th>Payer</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>CLM-2601</td>
+                            <td>John Smith</td>
+                            <td>Aetna</td>
+                            <td>$2,450.00</td>
+                            <td><span class="status-badge status-clean">Clean</span></td>
+                            <td>2026-01-15</td>
+                        </tr>
+                        <tr>
+                            <td>CLM-2602</td>
+                            <td>Mary Johnson</td>
+                            <td>Medicare</td>
+                            <td>$1,825.50</td>
+                            <td><span class="status-badge status-clean">Clean</span></td>
+                            <td>2026-01-16</td>
+                        </tr>
+                        <tr>
+                            <td>CLM-2603</td>
+                            <td>Robert Williams</td>
+                            <td>UHC</td>
+                            <td>$3,100.00</td>
+                            <td><span class="status-badge status-pending">Pending</span></td>
+                            <td>2026-01-17</td>
+                        </tr>
+                        <tr>
+                            <td>CLM-2604</td>
+                            <td>Patricia Brown</td>
+                            <td>BCBS</td>
+                            <td>$2,675.25</td>
+                            <td><span class="status-badge status-clean">Clean</span></td>
+                            <td>2026-01-18</td>
+                        </tr>
+                        <tr>
+                            <td>CLM-2605</td>
+                            <td>Michael Davis</td>
+                            <td>Cigna</td>
+                            <td>$1,950.75</td>
+                            <td><span class="status-badge status-hold">Hold</span></td>
+                            <td>2026-01-19</td>
+                        </tr>
+                        <tr>
+                            <td>CLM-2606</td>
+                            <td>Jennifer Miller</td>
+                            <td>Aetna</td>
+                            <td>$2,200.00</td>
+                            <td><span class="status-badge status-clean">Clean</span></td>
+                            <td>2026-01-20</td>
+                        </tr>
+                        <tr>
+                            <td>CLM-2607</td>
+                            <td>David Wilson</td>
+                            <td>Medicare</td>
+                            <td>$2,800.50</td>
+                            <td><span class="status-badge status-pending">Pending</span></td>
+                            <td>2026-01-21</td>
+                        </tr>
+                        <tr>
+                            <td>CLM-2608</td>
+                            <td>Linda Moore</td>
+                            <td>UHC</td>
+                            <td>$2,350.00</td>
+                            <td><span class="status-badge status-denied">Denied</span></td>
+                            <td>2026-01-22</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Prebill Panel -->
+        <div id="panel-prebill" class="panel">
+            <h1 class="panel-title">AI Prebill Scrubber</h1>
+            <div class="patent-badge">Patent Pending: AI Error Detection Engine</div>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('prebill')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Errors Detected</div>
+                    <div class="kpi-value">47</div>
+                    <div class="kpi-detail">This month</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Prevented Denials</div>
+                    <div class="kpi-value">$94K</div>
+                    <div class="kpi-detail">Value protected</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Accuracy Rate</div>
+                    <div class="kpi-value">99.2%</div>
+                    <div class="kpi-detail">AI detection</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Claims Scrubbed</div>
+                    <div class="kpi-value">1,189</div>
+                    <div class="kpi-detail">YTD processed</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Time Saved</div>
+                    <div class="kpi-value">4.2 min</div>
+                    <div class="kpi-detail">Per claim</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HCC Panel -->
+        <div id="panel-hcc" class="panel">
+            <h1 class="panel-title">HCC & Risk Adjustment</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('hcc')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">RAF Score</div>
+                    <div class="kpi-value">1.247</div>
+                    <div class="kpi-detail">Risk adjustment factor</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">HCC Categories</div>
+                    <div class="kpi-value">34</div>
+                    <div class="kpi-detail">Identified</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Gap Analysis</div>
+                    <div class="kpi-value">12</div>
+                    <div class="kpi-detail">Unrecorded diagnoses</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Potential Impact</div>
+                    <div class="kpi-value">$156K</div>
+                    <div class="kpi-detail">Revenue opportunity</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Capture Rate</div>
+                    <div class="kpi-value">87.3%</div>
+                    <div class="kpi-detail">Current documentation</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DRG Panel -->
+        <div id="panel-drg" class="panel">
+            <h1 class="panel-title">MS-DRG Grouper</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('drg')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Grouper Accuracy</div>
+                    <div class="kpi-value">98.7%</div>
+                    <div class="kpi-detail">DRG assignments</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Base DRG</div>
+                    <div class="kpi-value">847</div>
+                    <div class="kpi-detail">Cases processed</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">CC Cases</div>
+                    <div class="kpi-value">156</div>
+                    <div class="kpi-detail">Complication/comorbidity</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">MCC Cases</div>
+                    <div class="kpi-value">89</div>
+                    <div class="kpi-detail">Major complication</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Payment/Case</div>
+                    <div class="kpi-value">$8,342</div>
+                    <div class="kpi-detail">DRG-based</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Physician Query Panel -->
+        <div id="panel-query" class="panel">
+            <h1 class="panel-title">AHIMA Physician Query Builder</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('query')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Queries Sent</div>
+                    <div class="kpi-value">62</div>
+                    <div class="kpi-detail">YTD</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Response Rate</div>
+                    <div class="kpi-value">91.9%</div>
+                    <div class="kpi-detail">Physician replies</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Compliant Queries</div>
+                    <div class="kpi-value">100%</div>
+                    <div class="kpi-detail">AHIMA standards</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Days Pending</div>
+                    <div class="kpi-value">3.2</div>
+                    <div class="kpi-detail">Awaiting response</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Value Impacted</div>
+                    <div class="kpi-value">$127K</div>
+                    <div class="kpi-detail">Query-driven revenue</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Encoder Panel -->
+        <div id="panel-encoder" class="panel">
+            <h1 class="panel-title">ICD-10 / CPT / HCPCS Encoder</h1>
+            <div class="toolbar">
+                <input type="text" class="search-input" placeholder="Search codes...">
+                <button class="btn btn-primary" onclick="exportCSV('encoder')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">ICD-10 Codes</div>
+                    <div class="kpi-value">79</div>
+                    <div class="kpi-detail">Active codes</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">CPT Codes</div>
+                    <div class="kpi-value">156</div>
+                    <div class="kpi-detail">Indexed</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">HCPCS Codes</div>
+                    <div class="kpi-value">43</div>
+                    <div class="kpi-detail">Common modifiers</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Bundling Alerts</div>
+                    <div class="kpi-value">23</div>
+                    <div class="kpi-detail">Unbundling prevented</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Search Speed</div>
+                    <div class="kpi-value">&lt;100ms</div>
+                    <div class="kpi-detail">Avg lookup time</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAC Audit Panel -->
+        <div id="panel-rac" class="panel">
+            <h1 class="panel-title">RAC Audit Tracker</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('rac')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Active Audits</div>
+                    <div class="kpi-value">7</div>
+                    <div class="kpi-detail">In progress</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Overpayments Found</div>
+                    <div class="kpi-value">$43K</div>
+                    <div class="kpi-detail">Repayment requests</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Appeals Filed</div>
+                    <div class="kpi-value">5</div>
+                    <div class="kpi-detail">Under review</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Disputed Amount</div>
+                    <div class="kpi-value">$18K</div>
+                    <div class="kpi-detail">Appealing</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Reopened Claims</div>
+                    <div class="kpi-value">2</div>
+                    <div class="kpi-detail">Secondary audits</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Denial Management Panel -->
+        <div id="panel-denial" class="panel">
+            <h1 class="panel-title">Denial Management & AI Appeals</h1>
+            <div class="toolbar">
+                <input type="text" class="search-input" id="denialSearch" placeholder="Search denials...">
+                <button class="btn btn-primary" onclick="exportCSV('denial')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Denials</div>
+                    <div class="kpi-value">156</div>
+                    <div class="kpi-detail">YTD</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Root Causes</div>
+                    <div class="kpi-value">5</div>
+                    <div class="kpi-detail">Top categories</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Appeal Success Rate</div>
+                    <div class="kpi-value">68.4%</div>
+                    <div class="kpi-detail">Overturned</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">AI Appeal Drafts</div>
+                    <div class="kpi-value">89</div>
+                    <div class="kpi-detail">Generated</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Recovery Value</div>
+                    <div class="kpi-value">$287K</div>
+                    <div class="kpi-detail">Recovered YTD</div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Denial Code</th>
+                            <th>Root Cause</th>
+                            <th>Count</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>CO-4</td>
+                            <td>Lack of documentation</td>
+                            <td>34</td>
+                            <td>$47,500</td>
+                            <td><span class="status-badge status-pending">In Appeal</span></td>
+                        </tr>
+                        <tr>
+                            <td>CO-97</td>
+                            <td>Medical necessity</td>
+                            <td>28</td>
+                            <td>$38,200</td>
+                            <td><span class="status-badge status-pending">In Appeal</span></td>
+                        </tr>
+                        <tr>
+                            <td>PR-1</td>
+                            <td>Not covered service</td>
+                            <td>22</td>
+                            <td>$29,800</td>
+                            <td><span class="status-badge status-denied">Denied</span></td>
+                        </tr>
+                        <tr>
+                            <td>N479</td>
+                            <td>Duplicate claim</td>
+                            <td>18</td>
+                            <td>$24,100</td>
+                            <td><span class="status-badge status-clean">Resolved</span></td>
+                        </tr>
+                        <tr>
+                            <td>CO-16</td>
+                            <td>Claim form errors</td>
+                            <td>16</td>
+                            <td>$21,400</td>
+                            <td><span class="status-badge status-pending">Correcting</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Telehealth Panel -->
+        <div id="panel-telehealth" class="panel">
+            <h1 class="panel-title">Telehealth Coding Wizard</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('telehealth')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Telehealth Claims</div>
+                    <div class="kpi-value">387</div>
+                    <div class="kpi-detail">YTD coded</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">POS Code Accuracy</div>
+                    <div class="kpi-value">99.5%</div>
+                    <div class="kpi-detail">Correct modifiers</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Modifier Compliance</div>
+                    <div class="kpi-value">98.2%</div>
+                    <div class="kpi-detail">Payer requirements</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">GQ / GT Codes</div>
+                    <div class="kpi-value">156</div>
+                    <div class="kpi-detail">Telehealth modifiers</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Compliance Value</div>
+                    <div class="kpi-value">$89K</div>
+                    <div class="kpi-detail">Prevented errors</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anesthesia Panel -->
+        <div id="panel-anesthesia" class="panel">
+            <h1 class="panel-title">Anesthesia Time Units Calculator</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('anesthesia')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Cases Calculated</div>
+                    <div class="kpi-value">923</div>
+                    <div class="kpi-detail">YTD</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Base Units Avg</div>
+                    <div class="kpi-value">8.7</div>
+                    <div class="kpi-detail">Per procedure</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Time Units Avg</div>
+                    <div class="kpi-value">3.2</div>
+                    <div class="kpi-detail">Per 15 minutes</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">QC Modifiers</div>
+                    <div class="kpi-value">34</div>
+                    <div class="kpi-detail">Quality codes</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Billing Accuracy</div>
+                    <div class="kpi-value">97.8%</div>
+                    <div class="kpi-detail">Correct units</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compliance Panel -->
+        <div id="panel-compliance" class="panel">
+            <h1 class="panel-title">Compliance & Audit Schedule</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('compliance')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">OIG Work Plan</div>
+                    <div class="kpi-value">4</div>
+                    <div class="kpi-detail">Focus areas</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Audit Schedule</div>
+                    <div class="kpi-value">12</div>
+                    <div class="kpi-detail">Planned audits</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Compliance Score</div>
+                    <div class="kpi-value">94.7%</div>
+                    <div class="kpi-detail">Overall rating</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Training Complete</div>
+                    <div class="kpi-value">100%</div>
+                    <div class="kpi-detail">Staff certified</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Policy Updates</div>
+                    <div class="kpi-value">23</div>
+                    <div class="kpi-detail">Current year</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authorization Panel -->
+        <div id="panel-auth" class="panel">
+            <h1 class="panel-title">Authorization Management</h1>
+            <div class="toolbar">
+                <input type="text" class="search-input" id="authSearch" placeholder="Search authorizations...">
+                <button class="btn btn-primary" onclick="exportCSV('auth')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Active Auths</div>
+                    <div class="kpi-value">47</div>
+                    <div class="kpi-detail">Valid today</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Expiring Soon</div>
+                    <div class="kpi-value">8</div>
+                    <div class="kpi-detail">Within 30 days</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Expired</div>
+                    <div class="kpi-value">3</div>
+                    <div class="kpi-detail">Renewal pending</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Appeal Log</div>
+                    <div class="kpi-value">6</div>
+                    <div class="kpi-detail">Documented</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Approval Rate</div>
+                    <div class="kpi-value">96.2%</div>
+                    <div class="kpi-detail">Granted auths</div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="authTable">
+                    <thead>
+                        <tr>
+                            <th>Auth ID</th>
+                            <th>Procedure</th>
+                            <th>Expiration</th>
+                            <th>Units</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>AUTH-001</td>
+                            <td>Hip Replacement</td>
+                            <td>2026-08-15</td>
+                            <td>1</td>
+                            <td><span class="status-badge status-clean">Active</span></td>
+                        </tr>
+                        <tr>
+                            <td>AUTH-002</td>
+                            <td>Cardiac Catheterization</td>
+                            <td>2026-07-20</td>
+                            <td>1</td>
+                            <td><span class="status-badge status-clean">Active</span></td>
+                        </tr>
+                        <tr>
+                            <td>AUTH-003</td>
+                            <td>MRI Scan</td>
+                            <td>2026-07-10</td>
+                            <td>1</td>
+                            <td><span class="status-badge status-pending">Expiring Soon</span></td>
+                        </tr>
+                        <tr>
+                            <td>AUTH-004</td>
+                            <td>Physical Therapy</td>
+                            <td>2026-06-30</td>
+                            <td>20</td>
+                            <td><span class="status-badge status-clean">Active</span></td>
+                        </tr>
+                        <tr>
+                            <td>AUTH-005</td>
+                            <td>Knee Arthroscopy</td>
+                            <td>2026-09-01</td>
+                            <td>1</td>
+                            <td><span class="status-badge status-clean">Active</span></td>
+                        </tr>
+                        <tr>
+                            <td>AUTH-006</td>
+                            <td>Ultrasound</td>
+                            <td>2026-06-15</td>
+                            <td>1</td>
+                            <td><span class="status-badge status-pending">Expiring Soon</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Fraud Detection Panel -->
+        <div id="panel-fraud" class="panel">
+            <h1 class="panel-title">AI Fraud Detection Engine</h1>
+            <div class="patent-badge">Patent Pending: Pattern Memory AI</div>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('fraud')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Anomalies Detected</div>
+                    <div class="kpi-value">23</div>
+                    <div class="kpi-detail">This month</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Fraud Confidence</div>
+                    <div class="kpi-value">87.3%</div>
+                    <div class="kpi-detail">Avg probability</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Pattern Memory</div>
+                    <div class="kpi-value">1.2M</div>
+                    <div class="kpi-detail">Patterns indexed</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Verified Fraud</div>
+                    <div class="kpi-value">3</div>
+                    <div class="kpi-detail">Confirmed cases</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Prevented Loss</div>
+                    <div class="kpi-value">$187K</div>
+                    <div class="kpi-detail">Year to date</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- A/R Panel -->
+        <div id="panel-ar" class="panel">
+            <h1 class="panel-title">Accounts Receivable</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('ar')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total A/R</div>
+                    <div class="kpi-value">$1.2M</div>
+                    <div class="kpi-detail">Outstanding</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">0-30 Days</div>
+                    <div class="kpi-value">$687K</div>
+                    <div class="kpi-detail">Current</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">31-60 Days</div>
+                    <div class="kpi-value">$342K</div>
+                    <div class="kpi-detail">Aging</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">60+ Days</div>
+                    <div class="kpi-value">$171K</div>
+                    <div class="kpi-detail">Delinquent</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Collection Rate</div>
+                    <div class="kpi-value">92.1%</div>
+                    <div class="kpi-detail">Within 90 days</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue Cycle Panel -->
+        <div id="panel-revenue" class="panel">
+            <h1 class="panel-title">Revenue Cycle Analytics</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('revenue')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Charges</div>
+                    <div class="kpi-value">$4.2M</div>
+                    <div class="kpi-detail">YTD</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Collections</div>
+                    <div class="kpi-value">$3.8M</div>
+                    <div class="kpi-detail">Realized</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Payer Mix</div>
+                    <div class="kpi-value">42%/38%/20%</div>
+                    <div class="kpi-detail">Com/Gov/Other</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Cash Conversion</div>
+                    <div class="kpi-value">90.5%</div>
+                    <div class="kpi-detail">Collection ratio</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Trend</div>
+                    <div class="kpi-value">+8.3%</div>
+                    <div class="kpi-detail">vs last year</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Panel -->
+        <div id="panel-reports" class="panel">
+            <h1 class="panel-title">Reports</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('reports')">Export All</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Report 1</div>
+                    <div class="kpi-value">Claims Volume</div>
+                    <div class="kpi-detail" onclick="exportCSV('report1')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Report 2</div>
+                    <div class="kpi-value">Denial Analysis</div>
+                    <div class="kpi-detail" onclick="exportCSV('report2')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Report 3</div>
+                    <div class="kpi-value">Provider Performance</div>
+                    <div class="kpi-detail" onclick="exportCSV('report3')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Report 4</div>
+                    <div class="kpi-value">Revenue Cycle</div>
+                    <div class="kpi-detail" onclick="exportCSV('report4')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Report 5</div>
+                    <div class="kpi-value">Compliance Audit</div>
+                    <div class="kpi-detail" onclick="exportCSV('report5')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Report 6</div>
+                    <div class="kpi-value">HCC Capture Rate</div>
+                    <div class="kpi-detail" onclick="exportCSV('report6')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Report 7</div>
+                    <div class="kpi-value">A/R Aging</div>
+                    <div class="kpi-detail" onclick="exportCSV('report7')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Report 8</div>
+                    <div class="kpi-value">Payer Scorecard</div>
+                    <div class="kpi-detail" onclick="exportCSV('report8')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Providers Panel -->
+        <div id="panel-providers" class="panel">
+            <h1 class="panel-title">Provider Directory</h1>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="exportCSV('providers')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Providers</div>
+                    <div class="kpi-value">4</div>
+                    <div class="kpi-detail">Active</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Credentialed</div>
+                    <div class="kpi-value">100%</div>
+                    <div class="kpi-detail">Current</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Performance</div>
+                    <div class="kpi-value">96.4%</div>
+                    <div class="kpi-detail">Efficiency</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Appointments</div>
+                    <div class="kpi-value">523</div>
+                    <div class="kpi-detail">This month</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Patient Satisfaction</div>
+                    <div class="kpi-value">4.8/5</div>
+                    <div class="kpi-detail">Average rating</div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Specialty</th>
+                            <th>License</th>
+                            <th>Credentialed</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Dr. Michael Chen</td>
+                            <td>Internal Medicine</td>
+                            <td>MD-2847291</td>
+                            <td>Yes</td>
+                            <td>97.2%</td>
+                        </tr>
+                        <tr>
+                            <td>Dr. Sarah Martinez</td>
+                            <td>Cardiology</td>
+                            <td>MD-2947382</td>
+                            <td>Yes</td>
+                            <td>98.1%</td>
+                        </tr>
+                        <tr>
+                            <td>Dr. James Patel</td>
+                            <td>Orthopedic Surgery</td>
+                            <td>MD-3047291</td>
+                            <td>Yes</td>
+                            <td>96.8%</td>
+                        </tr>
+                        <tr>
+                            <td>NP Rachel Kim</td>
+                            <td>Family Practice</td>
+                            <td>NP-3147382</td>
+                            <td>Yes</td>
+                            <td>94.3%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="panel-settings" class="panel">
+            <h1 class="panel-title">Settings</h1>
+            <div class="grid-2col">
+                <div class="card">
+                    <h3>PIN Management</h3>
+                    <div class="form-group">
+                        <label>Demo PIN</label>
+                        <input type="password" value="1234" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>License Prefix</label>
+                        <input type="text" value="SC-" readonly>
+                    </div>
+                    <button class="btn btn-primary" onclick="showToast('Settings saved')">Save Changes</button>
+                </div>
+                <div class="card">
+                    <h3>Practice Information</h3>
+                    <div class="form-group">
+                        <label>Demo Company</label>
+                        <input type="text" value="Pinnacle Medical Billing LLC">
+                    </div>
+                    <div class="form-group">
+                        <label>App Color</label>
+                        <input type="text" value="#F87171" readonly>
+                    </div>
+                    <button class="btn btn-primary" onclick="showToast('Practice info updated')">Update</button>
+                </div>
+                <div class="card">
+                    <h3>Payer Schedules</h3>
+                    <div class="form-group">
+                        <label>Aetna Payment Cycle</label>
+                        <input type="text" value="7-14 days">
+                    </div>
+                    <div class="form-group">
+                        <label>Medicare Payment Cycle</label>
+                        <input type="text" value="14-21 days">
+                    </div>
+                    <button class="btn btn-primary" onclick="showToast('Payer schedules updated')">Save</button>
+                </div>
+                <div class="card">
+                    <h3>Proxy Configuration</h3>
+                    <div class="form-group">
+                        <label>API Proxy URL</label>
+                        <input type="text" value="https://sairn.vercel.app/api/claude" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <input type="text" value="Connected" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const APP_CONFIG = {
+            app_id: 'sairncode',
+            color: '#F87171',
+            license_prefix: 'SC-',
+            demo_key: 'SC-PINNACLE-2026',
+            demo_pin: '1234',
+            demo_company: 'Pinnacle Medical Billing LLC',
+            proxy: 'https://sairn.vercel.app/api/claude',
+            supabase: 'https://ejrlrrkvhtllxbbypdjb.supabase.co',
+            is_demo: true
+        };
+
+        function escHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = escHtml(message);
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function showPanel(panelName) {
+            const panels = document.querySelectorAll('.panel');
+            const buttons = document.querySelectorAll('.nav-btn');
+
+            panels.forEach(p => p.classList.remove('active'));
+            buttons.forEach(b => b.classList.remove('active'));
+
+            const panel = document.getElementById('panel-' + panelName);
+            if (panel) {
+                panel.classList.add('active');
+            }
+
+            const activeBtn = Array.from(buttons).find(b =>
+                b.textContent.toLowerCase().includes(panelName.replace(/-/g, ' '))
+            );
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+
+            window.scrollTo(0, 0);
+            localStorage.setItem('sc_last_panel', panelName);
+        }
+
+        function exportCSV(panel) {
+            let csv = 'Panel,Metric,Value\n';
+            const panelEl = document.getElementById('panel-' + panel);
+            if (!panelEl) return;
+
+            const kpiCards = panelEl.querySelectorAll('.kpi-card');
+            kpiCards.forEach(card => {
+                const label = card.querySelector('.kpi-label')?.textContent || '';
+                const value = card.querySelector('.kpi-value')?.textContent || '';
+                csv += `${panel},${escHtml(label)},${escHtml(value)}\n`;
+            });
+
+            const tables = panelEl.querySelectorAll('table');
+            tables.forEach(table => {
+                const rows = table.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('th, td');
+                    const line = Array.from(cells).map(c => escHtml(c.textContent)).join(',');
+                    csv += line + '\n';
+                });
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `sairncode-${panel}-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            window.URL.revokeObjectURL(url);
+
+            showToast('CSV exported: ' + panel);
+        }
+
+        function filterTable(tableId, searchInputId) {
+            const table = document.getElementById(tableId);
+            const input = document.getElementById(searchInputId);
+            if (!table || !input) return;
+
+            const filter = input.value.toLowerCase();
+            const rows = table.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        }
+
+        function clearChat() {
+            const history = document.getElementById('chatHistory');
+            if (history) {
+                history.innerHTML = '<div class="chat-message assistant"><div class="chat-bubble">Chat history cleared. Ready to assist with medical coding questions.</div></div>';
+                localStorage.removeItem('sc_chat_history');
+                showToast('Chat history cleared');
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const history = document.getElementById('chatHistory');
+            if (!input || !history) return;
+
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value = '';
+
+            const userMsg = document.createElement('div');
+            userMsg.className = 'chat-message user';
+            userMsg.innerHTML = `<div class="chat-bubble">${escHtml(message)}</div>`;
+            history.appendChild(userMsg);
+
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'chat-message assistant';
+            loadingMsg.innerHTML = '<div class="chat-bubble"><div class="spinner"></div> Processing...</div>';
+            history.appendChild(loadingMsg);
+            history.scrollTop = history.scrollHeight;
+
+            try {
+                const response = await fetch(APP_CONFIG.proxy, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        app_id: APP_CONFIG.app_id,
+                        is_demo: APP_CONFIG.is_demo
+                    })
+                });
+
+                loadingMsg.remove();
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const assistantMsg = document.createElement('div');
+                    assistantMsg.className = 'chat-message assistant';
+                    assistantMsg.innerHTML = `<div class="chat-bubble">${escHtml(data.response || 'Response received')}</div>`;
+                    history.appendChild(assistantMsg);
+                } else {
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'chat-message assistant';
+                    errorMsg.innerHTML = '<div class="chat-bubble error-box">Error: Unable to process request</div>';
+                    history.appendChild(errorMsg);
+                }
+            } catch (error) {
+                loadingMsg.remove();
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'chat-message assistant';
+                errorMsg.innerHTML = '<div class="chat-bubble error-box">Error: Connection failed</div>';
+                history.appendChild(errorMsg);
+            }
+
+            history.scrollTop = history.scrollHeight;
+        }
+
+        window.addEventListener('load', () => {
+            const lastPanel = localStorage.getItem('sc_last_panel') || 'dashboard';
+            showPanel(lastPanel);
+
+            document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+        });
+    </script>
+</body>
+</html>
