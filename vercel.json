@@ -1,10 +1,11 @@
 {
-  "buildCommand": "mkdir -p dist && cp stonedesk.html dist/stonedesk.html && cp sairnbiz.html dist/sairnbiz.html && cp sairncode.html dist/sairncode.html && cp stonedesk.html dist/index.html",
+  "buildCommand": "mkdir -p dist && cp stonedesk.html dist/stonedesk.html && cp sairnbiz.html dist/sairnbiz.html && cp sairncode.html dist/sairncode.html && cp sairnvet.html dist/sairnvet.html && cp stonedesk.html dist/index.html",
   "outputDirectory": "dist",
   "public": true,
   "routes": [
     { "src": "/stonedesk$", "dest": "/stonedesk.html" },
     { "src": "/sairnbiz$", "dest": "/sairnbiz.html" },
-    { "src": "/sairncode$", "dest": "/sairncode.html" }
+    { "src": "/sairncode$", "dest": "/sairncode.html" },
+    { "src": "/sairnvet$", "dest": "/sairnvet.html" }
   ]
 }
