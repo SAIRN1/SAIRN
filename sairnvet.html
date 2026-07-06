@@ -3,91 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SAIRNvet - Veterinary Practice Management</title>
+  <title>SAIRNvet — Veterinary Platform | Diagnoses, Drugs, AI</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary: #7C3AED;
-      --primary-dark: #5B21B6;
-      --primary-tint: #EDE9FE;
-      --primary-bright: #A78BFA;
-      --bg: #F8FAFC;
-      --card: #FFFFFF;
-      --border: #E2E8F0;
-      --text: #0F172A;
-      --muted: #64748B;
-      --success: #22C55E;
-      --warn: #F59E0B;
-      --danger: #EF4444;
-      --shadow: 0 1px 4px rgba(0,0,0,.08);
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
-    .gate { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; z-index: 9999; }
-    .gate-card { background: #FFFFFF; padding: 60px 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.12); max-width: 420px; width: 100%; text-align: center; }
-    .gate-card h1 { font-size: 28px; margin-bottom: 8px; color: var(--primary); font-weight: 700; }
-    .gate-card p { color: var(--muted); margin-bottom: 30px; font-size: 14px; }
-    .gate-role { margin-bottom: 20px; }
-    .gate-role label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); text-align: left; }
-    .gate-role select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-    .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 30px 0; }
-    .pin-btn { padding: 16px; background: var(--primary-tint); border: 1px solid var(--border); border-radius: 8px; font-size: 18px; font-weight: 600; color: var(--primary); cursor: pointer; transition: all .2s; }
-    .pin-btn:hover { background: var(--primary); color: #FFFFFF; }
-    .pin-display { width: 100%; padding: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 20px; font-size: 18px; letter-spacing: 4px; text-align: center; font-weight: 600; font-family: monospace; }
-    .gate-submit { width: 100%; padding: 14px; background: var(--primary); color: #FFFFFF; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
-    .gate-submit:hover { background: var(--primary-dark); }
-    .gate-hint { font-size: 12px; color: var(--muted); margin-top: 20px; }
-    .app-container { display: none; }
-    .app-container.active { display: flex; }
-    .sidebar { width: 220px; background: #FFFFFF; border-right: 1px solid var(--border); overflow-y: auto; padding: 20px 0; position: fixed; height: 100vh; left: 0; top: 0; }
-    .sidebar-logo { padding: 0 20px 20px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
-    .sidebar-logo h2 { font-size: 16px; color: var(--primary); font-weight: 700; }
-    .sidebar-logo p { font-size: 12px; color: var(--muted); margin-top: 4px; }
-    .sidebar-section { padding: 0; margin: 16px 0; }
-    .sidebar-section-title { padding: 8px 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-    .sidebar-btn { display: block; width: 100%; text-align: left; padding: 12px 20px; background: none; border: none; color: var(--text); cursor: pointer; font-size: 14px; transition: all .2s; }
-    .sidebar-btn:hover { background: var(--primary-tint); color: var(--primary); }
-    .sidebar-btn.active { background: var(--primary-tint); color: var(--primary); font-weight: 600; border-left: 3px solid var(--primary); padding-left: 17px; }
-    .main-content { margin-left: 220px; padding: 30px; }
-    .panel { display: none; }
-    .panel.active { display: block; }
-    .panel-header { margin-bottom: 30px; }
-    .panel-title { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-    .panel-desc { color: var(--muted); font-size: 14px; }
-    .panel-actions { display: flex; gap: 8px; margin-bottom: 20px; }
-    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 30px; }
-    .kpi { background: #FFFFFF; padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
-    .kpi-label { font-size: 12px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
-    .kpi-value { font-size: 32px; font-weight: 700; color: var(--primary); }
-    .kpi-change { font-size: 12px; color: var(--success); margin-top: 8px; }
-    .card { background: #FFFFFF; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-    .btn { padding: 10px 16px; background: var(--primary); color: #FFFFFF; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; }
-    .btn:hover { background: var(--primary-dark); }
-    .btn-secondary { background: #FFFFFF; color: var(--primary); border: 1px solid var(--primary); }
-    .btn-secondary:hover { background: var(--primary-tint); }
-    .btn-sm { padding: 8px 12px; font-size: 12px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    th { background: var(--bg); padding: 12px; text-align: left; font-weight: 600; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); }
-    td { padding: 12px; border-bottom: 1px solid var(--border); }
-    tr:hover { background: var(--bg); }
-    input, textarea, select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; background: #FFFFFF; }
-    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-tint); }
-    textarea { resize: vertical; }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.5); z-index: 5000; align-items: center; justify-content: center; }
-    .modal.active { display: flex; }
-    .modal-content { background: #FFFFFF; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
-    .modal-header { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
-    .modal-close { float: right; cursor: pointer; font-size: 24px; color: var(--muted); }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #FFFFFF; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,.15); z-index: 6000; max-width: 300px; animation: slideIn .3s ease-out; }
-    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    .toast.success { border-left: 4px solid var(--success); }
-    .toast.error { border-left: 4px solid var(--danger); }
-    .toast.info { border-left: 4px solid var(--primary); }
-    @media print {
-      .sidebar, .panel-actions, .btn-secondary, .modal { display: none !important; -webkit-print-color-adjust: exact; }
-      .main-content { margin-left: 0; }
-      .kpi, .card { page-break-inside: avoid; -webkit-print-color-adjust: exact; }
-    }
+    :root{--primary:#7C3AED;--dark:#5B21B6;--tint:#EDE9FE;--bright:#A78BFA;--bg:#F8FAFC;--card:#FFFFFF;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--success:#22C55E;--warn:#F59E0B;--danger:#EF4444;--shadow:0 1px 4px rgba(0,0,0,.08);}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;}
+    .gate{position:fixed;top:0;left:0;width:100%;height:100%;background:#FFFFFF;display:flex;align-items:center;justify-content:center;z-index:9999;}
+    .gate-card{background:#FFFFFF;padding:60px 40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.12);max-width:420px;width:100%;text-align:center;}
+    .gate-card h1{font-size:28px;margin-bottom:8px;color:var(--primary);font-weight:700;}
+    .gate-card p{color:var(--muted);margin-bottom:30px;font-size:14px;}
+    .gate-role{margin-bottom:20px;}
+    .gate-role label{display:block;margin-bottom:8px;font-size:13px;color:var(--muted);text-align:left;}
+    .gate-role select,.gate-role input{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:#FFFFFF;}
+    .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:30px 0;}
+    .pin-btn{padding:16px;background:var(--tint);border:1px solid var(--border);border-radius:8px;font-size:18px;font-weight:600;color:var(--primary);cursor:pointer;transition:all .2s;}
+    .pin-btn:hover{background:var(--primary);color:#FFFFFF;-webkit-print-color-adjust:exact;}
+    .pin-display{width:100%;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:20px;font-size:18px;letter-spacing:4px;text-align:center;font-weight:600;font-family:monospace;}
+    .gate-submit{width:100%;padding:14px;background:var(--primary);color:#FFFFFF;border:none;border-radius:6px;font-size:16px;font-weight:600;cursor:pointer;-webkit-print-color-adjust:exact;}
+    .gate-submit:hover{background:var(--dark);}
+    .gate-hint{font-size:12px;color:var(--muted);margin-top:20px;}
+    .app-container{display:none;}
+    .app-container.active{display:flex;}
+    .sidebar{width:240px;background:#FFFFFF;border-right:1px solid var(--border);overflow-y:auto;padding:20px 0;position:fixed;height:100vh;left:0;top:0;}
+    .sidebar-logo{padding:0 20px 20px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+    .sidebar-logo h2{font-size:14px;color:var(--primary);font-weight:700;}
+    .sidebar-logo p{font-size:11px;color:var(--muted);margin-top:4px;}
+    .sidebar-section{padding:0;margin:12px 0;}
+    .sidebar-section-title{padding:8px 20px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px;}
+    .sidebar-btn{display:block;width:100%;text-align:left;padding:10px 20px;background:none;border:none;color:var(--text);cursor:pointer;font-size:13px;transition:all .2s;}
+    .sidebar-btn:hover{background:var(--tint);color:var(--primary);}
+    .sidebar-btn.active{background:var(--tint);color:var(--primary);font-weight:600;border-left:3px solid var(--primary);padding-left:17px;}
+    .main-content{margin-left:240px;padding:30px;}
+    .panel{display:none;}
+    .panel.active{display:block;}
+    .panel-header{margin-bottom:30px;}
+    .panel-title{font-size:28px;font-weight:700;color:var(--text);margin-bottom:8px;}
+    .panel-desc{color:var(--muted);font-size:14px;}
+    .panel-actions{display:flex;gap:8px;margin:20px 0;flex-wrap:wrap;}
+    .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin:30px 0;}
+    .kpi{background:#FFFFFF;padding:20px;border-radius:8px;border:1px solid var(--border);-webkit-print-color-adjust:exact;}
+    .kpi-label{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px;}
+    .kpi-value{font-size:28px;font-weight:700;color:var(--primary);-webkit-print-color-adjust:exact;}
+    .kpi-change{font-size:12px;color:var(--success);margin-top:8px;}
+    .card{background:#FFFFFF;border:1px solid var(--border);border-radius:8px;padding:20px;margin:20px 0;-webkit-print-color-adjust:exact;}
+    .btn{padding:10px 16px;background:var(--primary);color:#FFFFFF;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;-webkit-print-color-adjust:exact;}
+    .btn:hover{background:var(--dark);}
+    .btn-secondary{background:#FFFFFF;color:var(--primary);border:1px solid var(--primary);-webkit-print-color-adjust:exact;}
+    .btn-secondary:hover{background:var(--tint);}
+    .btn-sm{padding:8px 12px;font-size:12px;}
+    table{width:100%;border-collapse:collapse;margin:20px 0;background:#FFFFFF;-webkit-print-color-adjust:exact;}
+    th{background:var(--bg);padding:12px;text-align:left;font-weight:600;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);-webkit-print-color-adjust:exact;}
+    td{padding:12px;border-bottom:1px solid var(--border);}
+    tr:hover{background:var(--bg);}
+    input,textarea,select{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;background:#FFFFFF;}
+    input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--tint);}
+    textarea{resize:vertical;min-height:100px;}
+    .search-box{display:flex;gap:8px;margin:20px 0;flex-wrap:wrap;}
+    .search-box input{flex:1;min-width:200px;}
+    .toast{position:fixed;bottom:20px;right:20px;background:#FFFFFF;border:1px solid var(--border);border-radius:8px;padding:16px 20px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:6000;max-width:400px;display:none;}
+    .toast.show{display:block;animation:slideIn .3s ease-out;}
+    .toast.success{border-left:4px solid var(--success);-webkit-print-color-adjust:exact;}
+    .toast.error{border-left:4px solid var(--danger);-webkit-print-color-adjust:exact;}
+    .toast.info{border-left:4px solid var(--primary);-webkit-print-color-adjust:exact;}
+    @keyframes slideIn{from{transform:translateX(400px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+    .red-flag{background:#FEF2F2;border:1px solid var(--danger);border-radius:6px;padding:12px;margin:10px 0;color:var(--danger);font-weight:600;font-size:13px;-webkit-print-color-adjust:exact;}
+    .tabs{display:flex;border-bottom:1px solid var(--border);margin:20px 0;}
+    .tab{padding:12px 20px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s;}
+    .tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+    .tab-content{display:none;}
+    .tab-content.active{display:block;}
+    @media print{.sidebar,.panel-actions,.btn-secondary{display:none!important;-webkit-print-color-adjust:exact;}.main-content{margin-left:0;}.kpi,.card{page-break-inside:avoid;-webkit-print-color-adjust:exact;}}
   </style>
 </head>
 <body>
@@ -95,7 +81,7 @@
 <div id="gate" class="gate">
   <div class="gate-card">
     <h1>SAIRNvet</h1>
-    <p>Veterinary Practice Management Platform</p>
+    <p>The World's Most Complete Veterinary Platform</p>
     <div class="gate-role">
       <label>Role</label>
       <select id="gateRole">
@@ -106,7 +92,7 @@
       </select>
     </div>
     <div class="gate-role">
-      <label>License Key</label>
+      <label>License</label>
       <input type="text" id="gateLicense" placeholder="SV-PINNACLE-2026">
     </div>
     <div class="gate-role">
@@ -115,7 +101,7 @@
       <div class="pin-pad" id="pinPad"></div>
     </div>
     <button class="gate-submit" onclick="gateSubmit()">Enter</button>
-    <div class="gate-hint">Demo: SV-PINNACLE-2026, PIN: 1234</div>
+    <div class="gate-hint">Demo: SV-PINNACLE-2026 | PIN: 1234 | Clinic: Pinnacle Animal Hospital, Cleveland OH</div>
   </div>
 </div>
 
@@ -123,2063 +109,762 @@
   <div class="sidebar">
     <div class="sidebar-logo">
       <h2>SAIRNvet</h2>
-      <p id="userRole">Loading...</p>
+      <p id="userRole">Doctor</p>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Companion Animals</div>
-      <button class="sidebar-btn" onclick="switchPanel('companion-patients')">Patient Management</button>
-      <button class="sidebar-btn" onclick="switchPanel('companion-medical')">Medical Records</button>
-      <button class="sidebar-btn" onclick="switchPanel('companion-prescriptions')">Prescriptions</button>
-      <button class="sidebar-btn" onclick="switchPanel('companion-diagnostics')">Diagnostics</button>
-      <button class="sidebar-btn" onclick="switchPanel('companion-surgeries')">Surgeries</button>
-      <button class="sidebar-btn" onclick="switchPanel('companion-vaccines')">Vaccinations</button>
-      <button class="sidebar-btn" onclick="switchPanel('companion-wellness')">Wellness Plans</button>
-      <button class="sidebar-btn" onclick="switchPanel('companion-billing')">Billing</button>
+      <div class="sidebar-section-title">Core</div>
+      <button class="sidebar-btn" onclick="switchPanel('dashboard')">Dashboard</button>
+      <button class="sidebar-btn" onclick="switchPanel('panel-diagnoses')">Diagnoses</button>
+      <button class="sidebar-btn" onclick="switchPanel('panel-drugdb')">Drug Database</button>
+      <button class="sidebar-btn" onclick="switchPanel('panel-pharmacy')">Dosing Calculator</button>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Equine</div>
-      <button class="sidebar-btn" onclick="switchPanel('equine-patients')">Patient Management</button>
-      <button class="sidebar-btn" onclick="switchPanel('equine-medical')">Medical Records</button>
-      <button class="sidebar-btn" onclick="switchPanel('equine-prescriptions')">Prescriptions</button>
-      <button class="sidebar-btn" onclick="switchPanel('equine-diagnostics')">Diagnostics</button>
-      <button class="sidebar-btn" onclick="switchPanel('equine-surgeries')">Surgeries</button>
-      <button class="sidebar-btn" onclick="switchPanel('equine-dentals')">Dental Care</button>
-      <button class="sidebar-btn" onclick="switchPanel('equine-lameness')">Lameness Evaluation</button>
-      <button class="sidebar-btn" onclick="switchPanel('equine-billing')">Billing</button>
+      <div class="sidebar-section-title">Species</div>
+      <button class="sidebar-btn" onclick="switchPanel('companion-patients')">Companion Animals</button>
+      <button class="sidebar-btn" onclick="switchPanel('equine-patients')">Equine</button>
+      <button class="sidebar-btn" onclick="switchPanel('large-patients')">Large Animals</button>
+      <button class="sidebar-btn" onclick="switchPanel('exotic-patients')">Exotic</button>
+      <button class="sidebar-btn" onclick="switchPanel('avian-patients')">Avian</button>
+      <button class="sidebar-btn" onclick="switchPanel('reptile-patients')">Reptile</button>
+      <button class="sidebar-btn" onclick="switchPanel('zoo-patients')">Zoo/Wildlife</button>
+      <button class="sidebar-btn" onclick="switchPanel('aquatic-patients')">Aquatic</button>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Large Animals</div>
-      <button class="sidebar-btn" onclick="switchPanel('large-patients')">Patient Management</button>
-      <button class="sidebar-btn" onclick="switchPanel('large-medical')">Medical Records</button>
-      <button class="sidebar-btn" onclick="switchPanel('large-prescriptions')">Prescriptions</button>
-      <button class="sidebar-btn" onclick="switchPanel('large-diagnostics')">Diagnostics</button>
-      <button class="sidebar-btn" onclick="switchPanel('large-surgeries')">Surgeries</button>
-      <button class="sidebar-btn" onclick="switchPanel('large-herd')">Herd Management</button>
-      <button class="sidebar-btn" onclick="switchPanel('large-reproduction')">Reproduction</button>
-      <button class="sidebar-btn" onclick="switchPanel('large-billing')">Billing</button>
+      <div class="sidebar-section-title">Clinical</div>
+      <button class="sidebar-btn" onclick="switchPanel('patient-records')">Patient Records</button>
+      <button class="sidebar-btn" onclick="switchPanel('medical-history')">Medical History</button>
+      <button class="sidebar-btn" onclick="switchPanel('vaccines')">Vaccination Records</button>
+      <button class="sidebar-btn" onclick="switchPanel('surgery-log')">Surgery Log</button>
+      <button class="sidebar-btn" onclick="switchPanel('diagnostics')">Diagnostics</button>
+      <button class="sidebar-btn" onclick="switchPanel('prescriptions')">Prescriptions</button>
+      <button class="sidebar-btn" onclick="switchPanel('laboratory')">Laboratory</button>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Exotic &amp; Zoo</div>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-patients')">Patient Management</button>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-medical')">Medical Records</button>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-prescriptions')">Prescriptions</button>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-diagnostics')">Diagnostics</button>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-anesthesia')">Anesthesia Protocols</button>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-nutrition')">Nutrition Plans</button>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-enrichment')">Enrichment &amp; Care</button>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-billing')">Billing</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Wildlife</div>
-      <button class="sidebar-btn" onclick="switchPanel('wildlife-patients')">Patient Management</button>
-      <button class="sidebar-btn" onclick="switchPanel('wildlife-medical')">Medical Records</button>
-      <button class="sidebar-btn" onclick="switchPanel('wildlife-prescriptions')">Prescriptions</button>
-      <button class="sidebar-btn" onclick="switchPanel('wildlife-diagnostics')">Diagnostics</button>
-      <button class="sidebar-btn" onclick="switchPanel('wildlife-rehabilitation')">Rehabilitation</button>
-      <button class="sidebar-btn" onclick="switchPanel('wildlife-release')">Release Tracking</button>
-      <button class="sidebar-btn" onclick="switchPanel('wildlife-epidemiology')">Epidemiology</button>
-      <button class="sidebar-btn" onclick="switchPanel('wildlife-reports')">Reports</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Admin</div>
-      <button class="sidebar-btn" onclick="switchPanel('admin-settings')">Settings</button>
-      <button class="sidebar-btn" onclick="switchPanel('admin-users')">Users</button>
-      <button class="sidebar-btn" onclick="switchPanel('admin-audit')">Audit Log</button>
+      <div class="sidebar-section-title">Management</div>
+      <button class="sidebar-btn" onclick="switchPanel('appointments')">Appointments</button>
+      <button class="sidebar-btn" onclick="switchPanel('billing')">Billing</button>
+      <button class="sidebar-btn" onclick="switchPanel('inventory')">Inventory</button>
+      <button class="sidebar-btn" onclick="switchPanel('reports')">Reports</button>
+      <button class="sidebar-btn" onclick="switchPanel('settings')">Settings</button>
     </div>
   </div>
 
   <div class="main-content">
-    <!-- Companion Animals Panels -->
-    <div id="companion-patients" class="panel">
+    <!-- Dashboard -->
+    <div id="dashboard" class="panel active">
       <div class="panel-header">
-        <h1 class="panel-title">Companion Patient Management</h1>
-        <p class="panel-desc">Manage dogs, cats, rabbits, and small animal patients</p>
+        <h1 class="panel-title">Dashboard</h1>
+        <p class="panel-desc">Welcome to SAIRNvet — the complete veterinary platform with 2000+ diagnoses, 500+ medications, and AI-powered clinical support.</p>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="kpi-label">Total Diagnoses</div>
+          <div class="kpi-value">2000+</div>
+          <div class="kpi-change">All species covered</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Medications</div>
+          <div class="kpi-value">500+</div>
+          <div class="kpi-change">Complete database</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Species</div>
+          <div class="kpi-value">50+</div>
+          <div class="kpi-change">Every group covered</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">AI Features</div>
+          <div class="kpi-value">3</div>
+          <div class="kpi-change">Claude-powered</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Quick Start</h3>
+        <ul style="margin:15px 0;padding-left:20px;">
+          <li style="margin:8px 0;">Search diagnoses by species and body system</li>
+          <li style="margin:8px 0;">Look up drug information, dosing, and contraindications</li>
+          <li style="margin:8px 0;">Use AI dosing calculator for precise pharmacology</li>
+          <li style="margin:8px 0;">Get full treatment protocols from Claude AI</li>
+          <li style="margin:8px 0;">Access RED FLAG warnings for dangerous drug combinations</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Diagnosis Finder -->
+    <div id="panel-diagnoses" class="panel">
+      <div class="panel-header">
+        <h1 class="panel-title">Diagnosis Finder</h1>
+        <p class="panel-desc">Search 2000+ diagnoses across all species and body systems with AI-powered treatment protocols</p>
       </div>
       <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('companion-patients')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <button class="btn btn-sm" onclick="exportTableCSV('diagnoses-table','diagnoses')">Export CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
+      </div>
+
+      <div class="card">
+        <div class="search-box">
+          <select id="dx-species" style="flex:0.4;">
+            <option value="">All Species</option>
+            <option value="dog">Dog</option>
+            <option value="cat">Cat</option>
+            <option value="horse">Horse</option>
+            <option value="cattle">Cattle</option>
+            <option value="bird">Bird</option>
+            <option value="reptile">Reptile</option>
+            <option value="exotic">Exotic Mammal</option>
+            <option value="zoo">Zoo/Wildlife</option>
+          </select>
+          <select id="dx-system" style="flex:0.4;">
+            <option value="">All Body Systems</option>
+            <option value="integumentary">Integumentary</option>
+            <option value="musculoskeletal">Musculoskeletal</option>
+            <option value="cardiovascular">Cardiovascular</option>
+            <option value="respiratory">Respiratory</option>
+            <option value="gastrointestinal">Gastrointestinal</option>
+            <option value="urogenital">Urogenital</option>
+            <option value="neurological">Neurological</option>
+            <option value="endocrine">Endocrine</option>
+            <option value="ophthalmology">Ophthalmology</option>
+            <option value="hematology">Hematology/Oncology</option>
+            <option value="infectious">Infectious Disease</option>
+            <option value="behavioral">Behavioral/Toxicology</option>
+          </select>
+          <input type="text" id="dx-search" placeholder="Search diagnosis..." style="flex:1;min-width:200px;">
+          <button class="btn btn-sm" onclick="searchDiagnoses()">Search</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table id="diagnoses-table">
+          <thead>
+            <tr>
+              <th>Diagnosis</th>
+              <th>Species</th>
+              <th>Body System</th>
+              <th>Common Signs</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="diagnoses-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--muted);">Select filters and search to view diagnoses</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Get Full Protocol</h3>
+        <div style="margin:15px 0;">
+          <label>Diagnosis name:</label>
+          <input type="text" id="dx-for-protocol" placeholder="e.g., Atopic dermatitis" style="width:100%;margin:10px 0;">
+          <label>Patient weight (kg):</label>
+          <input type="number" id="dx-weight" placeholder="25" style="width:100%;margin:10px 0;">
+          <label>Species:</label>
+          <select id="dx-species-protocol" style="width:100%;margin:10px 0;">
+            <option>Dog</option>
+            <option>Cat</option>
+            <option>Horse</option>
+            <option>Cattle</option>
+          </select>
+          <button class="btn" onclick="getProtocolFromClaude()">Get Protocol from Claude</button>
+          <div id="protocol-result" style="margin:15px 0;padding:15px;background:var(--bg);border-radius:6px;display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drug Database -->
+    <div id="panel-drugdb" class="panel">
+      <div class="panel-header">
+        <h1 class="panel-title">Drug Database</h1>
+        <p class="panel-desc">500+ medications with dosing, species, and RED FLAG contraindications</p>
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-sm" onclick="exportTableCSV('drug-table','drugs')">Export CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
+      </div>
+
+      <div class="card">
+        <div class="search-box">
+          <input type="text" id="drug-name" placeholder="Drug name or class..." style="flex:1;">
+          <select id="drug-species" style="flex:0.4;">
+            <option value="">All Species</option>
+            <option value="dog/cat">Dog/Cat</option>
+            <option value="horse">Horse</option>
+            <option value="cattle">Cattle</option>
+            <option value="bird">Bird</option>
+            <option value="reptile">Reptile</option>
+          </select>
+          <button class="btn btn-sm" onclick="searchDrugs()">Search</button>
+        </div>
+      </div>
+
+      <div id="drug-red-flags" class="red-flag" style="display:none;">
+        <strong>RED FLAG:</strong> <span id="red-flag-text"></span>
+      </div>
+
+      <div class="card">
+        <table id="drug-table">
+          <thead>
+            <tr>
+              <th>Drug Name</th>
+              <th>Class</th>
+              <th>Species</th>
+              <th>Route</th>
+              <th>Dose/Notes</th>
+              <th>Controlled</th>
+            </tr>
+          </thead>
+          <tbody id="drug-tbody">
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);">Search to view drugs</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Dosing Calculator -->
+    <div id="panel-pharmacy" class="panel">
+      <div class="panel-header">
+        <h1 class="panel-title">AI Dosing Calculator</h1>
+        <p class="panel-desc">Calculate precise drug doses using Claude AI with automatic species contraindication checking</p>
+      </div>
+
+      <div class="card">
+        <h3>Calculate Dose</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0;">
+          <div>
+            <label style="display:block;margin-bottom:8px;">Drug Name *</label>
+            <input type="text" id="calc-drug" placeholder="e.g., Amoxicillin" style="width:100%;">
+          </div>
+          <div>
+            <label style="display:block;margin-bottom:8px;">Patient Weight (kg) *</label>
+            <input type="number" id="calc-weight" placeholder="25" style="width:100%;">
+          </div>
+          <div>
+            <label style="display:block;margin-bottom:8px;">Species *</label>
+            <select id="calc-species" style="width:100%;">
+              <option>Dog</option>
+              <option>Cat</option>
+              <option>Horse</option>
+              <option>Cattle</option>
+              <option>Bird</option>
+              <option>Reptile</option>
+              <option>Rabbit</option>
+              <option>Guinea Pig</option>
+              <option>Ferret</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;margin-bottom:8px;">Patient Age</label>
+            <input type="text" id="calc-age" placeholder="e.g., 3 years" style="width:100%;">
+          </div>
+        </div>
+
+        <div style="margin:20px 0;">
+          <label style="display:block;margin-bottom:8px;">Clinical Indication (optional)</label>
+          <textarea id="calc-indication" placeholder="e.g., Skin infection, respiratory infection, post-operative prophylaxis"></textarea>
+        </div>
+
+        <button class="btn" onclick="calculateDoseAI()" style="width:100%;">Calculate Dose from Claude</button>
+
+        <div id="dose-result" style="display:none;margin:20px 0;padding:20px;background:var(--bg);border-radius:8px;border-left:4px solid var(--primary);">
+          <h4 style="margin-bottom:15px;color:var(--primary);">Dosing Result</h4>
+          <div id="dose-result-text" style="line-height:1.8;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Patient Records Panel -->
+    <div id="patient-records" class="panel">
+      <div class="panel-header">
+        <h1 class="panel-title">Patient Records</h1>
+        <p class="panel-desc">Manage patient information and medical records</p>
       </div>
       <div class="kpi-row">
         <div class="kpi">
           <div class="kpi-label">Active Patients</div>
-          <div class="kpi-value">247</div>
-          <div class="kpi-change">+12 this month</div>
+          <div class="kpi-value">487</div>
+          <div class="kpi-change">All species</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">This Month</div>
+          <div class="kpi-value">156</div>
+          <div class="kpi-change">Appointments</div>
         </div>
         <div class="kpi">
           <div class="kpi-label">Avg Age</div>
-          <div class="kpi-value">5.2 yrs</div>
-          <div class="kpi-change">Dogs: 6.1, Cats: 4.3</div>
+          <div class="kpi-value">6.2yr</div>
+          <div class="kpi-change">Adult patients</div>
         </div>
         <div class="kpi">
-          <div class="kpi-label">Vaccinated</div>
-          <div class="kpi-value">89%</div>
-          <div class="kpi-change">22 pending boosters</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Appointments This Week</div>
-          <div class="kpi-value">56</div>
-          <div class="kpi-change">Average: 8 per day</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Revenue</div>
-          <div class="kpi-value">$18.2K</div>
-          <div class="kpi-change">+8% vs last month</div>
+          <div class="kpi-label">Up-to-Date</div>
+          <div class="kpi-value">92%</div>
+          <div class="kpi-change">Vaccinated</div>
         </div>
       </div>
       <div class="card">
-        <h3 style="margin-bottom:15px;">Recent Patients</h3>
         <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Species</th>
-              <th>Owner</th>
-              <th>Last Visit</th>
-              <th>Status</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Patient Name</th><th>Species</th><th>Age</th><th>Owner</th><th>Last Visit</th><th>Status</th></tr></thead>
           <tbody>
-            <tr>
-              <td>Max</td>
-              <td>Dog (Golden Retriever)</td>
-              <td>John Smith</td>
-              <td>2026-07-04</td>
-              <td>Healthy</td>
-            </tr>
-            <tr>
-              <td>Whiskers</td>
-              <td>Cat (Persian)</td>
-              <td>Jane Doe</td>
-              <td>2026-07-03</td>
-              <td>Follow-up needed</td>
-            </tr>
-            <tr>
-              <td>Bunny</td>
-              <td>Rabbit</td>
-              <td>Sarah Johnson</td>
-              <td>2026-06-28</td>
-              <td>Healthy</td>
-            </tr>
+            <tr><td>Max</td><td>Dog (Golden Retriever)</td><td>5y</td><td>Smith, John</td><td>2026-07-05</td><td>Healthy</td></tr>
+            <tr><td>Whiskers</td><td>Cat (Persian)</td><td>8y</td><td>Doe, Jane</td><td>2026-07-04</td><td>Follow-up</td></tr>
+            <tr><td>Star</td><td>Horse (Quarter Horse)</td><td>12y</td><td>Johnson, Sarah</td><td>2026-06-28</td><td>Healthy</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <div id="companion-medical" class="panel">
+    <!-- Remaining Core Panels -->
+    <div id="companion-patients" class="panel">
       <div class="panel-header">
-        <h1 class="panel-title">Companion Medical Records</h1>
-        <p class="panel-desc">Detailed medical history and treatment records</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('companion-medical')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <h1 class="panel-title">Companion Animals</h1>
+        <p class="panel-desc">Dogs, cats, and small companion animal care</p>
       </div>
       <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Total Records</div>
-          <div class="kpi-value">1,247</div>
-          <div class="kpi-change">+89 this month</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Chronic Conditions</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-change">Diabetes, Arthritis</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Allergies Documented</div>
-          <div class="kpi-value">52</div>
-          <div class="kpi-change">Food &amp; Environmental</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Surgeries</div>
-          <div class="kpi-value">18</div>
-          <div class="kpi-change">This quarter</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Chart Completeness</div>
-          <div class="kpi-value">97%</div>
-          <div class="kpi-change">Well maintained</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">287</div></div>
+        <div class="kpi"><div class="kpi-label">Visits YTD</div><div class="kpi-value">1204</div></div>
+        <div class="kpi"><div class="kpi-label">Vaccinated</div><div class="kpi-value">94%</div></div>
+        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$156K</div></div>
+        <div class="kpi"><div class="kpi-label">Avg Case</div><div class="kpi-value">$287</div></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Medical Summary</h3>
-        <p>Companion animal medical records are current and comprehensive. All records are HIPAA-compliant and securely stored.</p>
-      </div>
+      <div class="card"><p>Comprehensive companion animal care including preventive medicine, surgery, and diagnostics.</p></div>
     </div>
 
-    <div id="companion-prescriptions" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Companion Prescriptions</h1>
-        <p class="panel-desc">Active and historical prescription management</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('companion-prescriptions')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Prescriptions</div>
-          <div class="kpi-value">156</div>
-          <div class="kpi-change">Antibiotics, Analgesics</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Most Common Drug</div>
-          <div class="kpi-value">Amoxicillin</div>
-          <div class="kpi-change">42 prescriptions</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Refills This Month</div>
-          <div class="kpi-value">234</div>
-          <div class="kpi-change">Cardiac, Endocrine</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Drug Interactions Flagged</div>
-          <div class="kpi-value">3</div>
-          <div class="kpi-change">All resolved</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Compliance Rate</div>
-          <div class="kpi-value">85%</div>
-          <div class="kpi-change">Follow-up calls active</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Common Medications</h3>
-        <table>
-          <thead>
-            <tr><th>Drug Name</th><th>Prescriptions</th><th>Indication</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Amoxicillin</td><td>42</td><td>Bacterial Infection</td></tr>
-            <tr><td>Carprofen</td><td>38</td><td>Pain &amp; Inflammation</td></tr>
-            <tr><td>Cerenia</td><td>31</td><td>Nausea/Vomiting</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="companion-diagnostics" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Companion Diagnostics</h1>
-        <p class="panel-desc">Lab results, imaging, and diagnostic testing</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('companion-diagnostics')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Tests This Month</div>
-          <div class="kpi-value">187</div>
-          <div class="kpi-change">CBC, Chemistry, UA</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Imaging Studies</div>
-          <div class="kpi-value">42</div>
-          <div class="kpi-change">Radiography, Ultrasound</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Abnormal Results</div>
-          <div class="kpi-value">18</div>
-          <div class="kpi-change">Follow-up ordered</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Turnaround Time</div>
-          <div class="kpi-value">2.1 days</div>
-          <div class="kpi-change">Internal lab</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Cost per Test</div>
-          <div class="kpi-value">$67</div>
-          <div class="kpi-change">Competitive pricing</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Recent Lab Results</h3>
-        <p>All diagnostic results are reviewed by licensed veterinarians before release to owners.</p>
-      </div>
-    </div>
-
-    <div id="companion-surgeries" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Companion Surgeries</h1>
-        <p class="panel-desc">Surgical procedures and outcomes tracking</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('companion-surgeries')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Surgeries YTD</div>
-          <div class="kpi-value">89</div>
-          <div class="kpi-change">Spay/Neuter, Dentals</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Complication Rate</div>
-          <div class="kpi-value">1.1%</div>
-          <div class="kpi-change">Below industry average</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Avg Recovery Time</div>
-          <div class="kpi-value">8.3 days</div>
-          <div class="kpi-change">Minor variations</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Surgeries This Month</div>
-          <div class="kpi-value">14</div>
-          <div class="kpi-change">All successful</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Revenue per Surgery</div>
-          <div class="kpi-value">$524</div>
-          <div class="kpi-change">Average case</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Surgical Schedule</h3>
-        <p>All surgical procedures are performed under general anesthesia with monitored care.</p>
-      </div>
-    </div>
-
-    <div id="companion-vaccines" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Companion Vaccinations</h1>
-        <p class="panel-desc">Vaccination records and booster tracking</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('companion-vaccines')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Total Vaccinations</div>
-          <div class="kpi-value">523</div>
-          <div class="kpi-change">YTD administered</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Rabies Up to Date</div>
-          <div class="kpi-value">94%</div>
-          <div class="kpi-change">Highest priority</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Pending Boosters</div>
-          <div class="kpi-value">22</div>
-          <div class="kpi-change">Owner reminders sent</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Reactions Reported</div>
-          <div class="kpi-value">2</div>
-          <div class="kpi-change">Mild, all resolved</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Compliance Score</div>
-          <div class="kpi-value">91%</div>
-          <div class="kpi-change">Excellent</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Core Vaccines</h3>
-        <table>
-          <thead>
-            <tr><th>Vaccine</th><th>Administered</th><th>Frequency</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>DHPP (Dogs)</td><td>287</td><td>Every 3 years</td></tr>
-            <tr><td>Rabies</td><td>312</td><td>Every 3 years</td></tr>
-            <tr><td>FVRCP (Cats)</td><td>156</td><td>Every 3 years</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="companion-wellness" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Companion Wellness Plans</h1>
-        <p class="panel-desc">Preventive care and wellness program management</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('companion-wellness')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Enrolled Patients</div>
-          <div class="kpi-value">128</div>
-          <div class="kpi-change">52% of active patients</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Annual Revenue</div>
-          <div class="kpi-value">$18.5K</div>
-          <div class="kpi-change">Growing segment</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Member Retention</div>
-          <div class="kpi-value">87%</div>
-          <div class="kpi-change">High satisfaction</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Plans This Month</div>
-          <div class="kpi-value">8</div>
-          <div class="kpi-change">New enrollments</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Cost Savings</div>
-          <div class="kpi-value">$2.4K</div>
-          <div class="kpi-change">Average member savings</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Plan Types</h3>
-        <p>Comprehensive wellness plans include preventive care, vaccinations, dental, and emergency discounts.</p>
-      </div>
-    </div>
-
-    <div id="companion-billing" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Companion Billing</h1>
-        <p class="panel-desc">Financial management and revenue tracking</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('companion-billing')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">YTD Revenue</div>
-          <div class="kpi-value">$287.4K</div>
-          <div class="kpi-change">+12% vs prior year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Outstanding A/R</div>
-          <div class="kpi-value">$12.3K</div>
-          <div class="kpi-change">4.2% of revenue</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Average Invoice</div>
-          <div class="kpi-value">$287</div>
-          <div class="kpi-change">Consistent pricing</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Collection Rate</div>
-          <div class="kpi-value">96%</div>
-          <div class="kpi-change">Excellent</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Avg Days to Pay</div>
-          <div class="kpi-value">6.2 days</div>
-          <div class="kpi-change">Quick payment</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Revenue Summary</h3>
-        <table>
-          <thead>
-            <tr><th>Category</th><th>Revenue</th><th>% of Total</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Wellness Exams</td><td>$87.2K</td><td>30%</td></tr>
-            <tr><td>Surgeries</td><td>$46.6K</td><td>16%</td></tr>
-            <tr><td>Diagnostics</td><td>$65.3K</td><td>23%</td></tr>
-            <tr><td>Medications</td><td>$43.1K</td><td>15%</td></tr>
-            <tr><td>Other</td><td>$45.2K</td><td>16%</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Equine Panels (8 panels) -->
     <div id="equine-patients" class="panel">
       <div class="panel-header">
-        <h1 class="panel-title">Equine Patient Management</h1>
-        <p class="panel-desc">Horse and pony patient records and care</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('equine-patients')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <h1 class="panel-title">Equine</h1>
+        <p class="panel-desc">Horses, ponies, and equine specialist care</p>
       </div>
       <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Equine Patients</div>
-          <div class="kpi-value">87</div>
-          <div class="kpi-change">Horses, Ponies, Donkeys</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Average Age</div>
-          <div class="kpi-value">9.7 years</div>
-          <div class="kpi-change">Range: 2-32 years</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Facilities Served</div>
-          <div class="kpi-value">12</div>
-          <div class="kpi-change">Stables, Ranches</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Appointments This Month</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-change">Farrier coordination</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Emergency Calls</div>
-          <div class="kpi-value">2</div>
-          <div class="kpi-change">Colic evaluation</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">87</div></div>
+        <div class="kpi"><div class="kpi-label">Farm Calls</div><div class="kpi-value">234</div></div>
+        <div class="kpi"><div class="kpi-label">Lameness Cases</div><div class="kpi-value">34</div></div>
+        <div class="kpi"><div class="kpi-label">Surgeries</div><div class="kpi-value">12</div></div>
+        <div class="kpi"><div class="kpi-label">Avg Invoice</div><div class="kpi-value">$1,640</div></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Patient Summary</h3>
-        <p>Comprehensive equine care including routine wellness, lameness evaluation, and surgical management.</p>
-      </div>
+      <div class="card"><p>Advanced equine medicine including lameness diagnosis, reproduction, and performance medicine.</p></div>
     </div>
 
-    <div id="equine-medical" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Equine Medical Records</h1>
-        <p class="panel-desc">Detailed equine medical history</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('equine-medical')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Total Records</div>
-          <div class="kpi-value">423</div>
-          <div class="kpi-change">Well documented</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Chronic Conditions</div>
-          <div class="kpi-value">14</div>
-          <div class="kpi-change">PSSM, Cushings, IBD</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Allergies</div>
-          <div class="kpi-value">8</div>
-          <div class="kpi-change">Environmental, Feed</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Surgeries</div>
-          <div class="kpi-value">12</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Record Completeness</div>
-          <div class="kpi-value">98%</div>
-          <div class="kpi-change">Excellent</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Medical Highlights</h3>
-        <p>All equine medical records include diagnostic imaging, surgical notes, and rehabilitation protocols.</p>
-      </div>
-    </div>
-
-    <div id="equine-prescriptions" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Equine Prescriptions</h1>
-        <p class="panel-desc">Medication management for equine patients</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('equine-prescriptions')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Prescriptions</div>
-          <div class="kpi-value">67</div>
-          <div class="kpi-change">Chronic management</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Most Common Drug</div>
-          <div class="kpi-value">Phenylbutazone</div>
-          <div class="kpi-change">16 prescriptions</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Refills This Month</div>
-          <div class="kpi-value">89</div>
-          <div class="kpi-change">Consistent management</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Drug Interactions</div>
-          <div class="kpi-value">0</div>
-          <div class="kpi-change">Clean medication profile</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Compliance Rate</div>
-          <div class="kpi-value">92%</div>
-          <div class="kpi-change">Owner cooperation</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Common Equine Medications</h3>
-        <table>
-          <thead>
-            <tr><th>Drug Name</th><th>Prescriptions</th><th>Indication</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Phenylbutazone</td><td>16</td><td>Pain &amp; Inflammation</td></tr>
-            <tr><td>Dexamethasone</td><td>12</td><td>Inflammation, Shock</td></tr>
-            <tr><td>Omeprazole</td><td>11</td><td>Gastric Ulcer Prevention</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="equine-diagnostics" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Equine Diagnostics</h1>
-        <p class="panel-desc">Diagnostic testing and imaging</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('equine-diagnostics')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Lab Tests</div>
-          <div class="kpi-value">156</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Radiographs</div>
-          <div class="kpi-value">87</div>
-          <div class="kpi-change">Digital imaging</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Ultrasounds</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-change">Lameness evaluation</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Abnormal Results</div>
-          <div class="kpi-value">23</div>
-          <div class="kpi-change">Follow-up planned</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Turnaround Time</div>
-          <div class="kpi-value">3.2 days</div>
-          <div class="kpi-change">Specialty lab</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Diagnostic Services</h3>
-        <p>Full-service equine diagnostics including advanced imaging and laboratory analysis.</p>
-      </div>
-    </div>
-
-    <div id="equine-surgeries" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Equine Surgeries</h1>
-        <p class="panel-desc">Surgical procedures and outcomes</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('equine-surgeries')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Surgeries YTD</div>
-          <div class="kpi-value">12</div>
-          <div class="kpi-change">Colic, Trauma, Soft Tissue</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Success Rate</div>
-          <div class="kpi-value">100%</div>
-          <div class="kpi-change">Excellent outcomes</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Recovery Time</div>
-          <div class="kpi-value">6.8 weeks</div>
-          <div class="kpi-change">Average case</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Complication Rate</div>
-          <div class="kpi-value">0%</div>
-          <div class="kpi-change">Outstanding</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Revenue per Surgery</div>
-          <div class="kpi-value">$3,200</div>
-          <div class="kpi-change">Complex procedures</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Surgical Programs</h3>
-        <p>Advanced equine surgical services with state-of-the-art facilities and recovery protocols.</p>
-      </div>
-    </div>
-
-    <div id="equine-dentals" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Equine Dental Care</h1>
-        <p class="panel-desc">Dental health and maintenance</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('equine-dentals')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Dental Exams</div>
-          <div class="kpi-value">54</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Floating Procedures</div>
-          <div class="kpi-value">42</div>
-          <div class="kpi-change">Routine maintenance</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Extractions</div>
-          <div class="kpi-value">8</div>
-          <div class="kpi-change">Problem teeth</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Patients Up to Date</div>
-          <div class="kpi-value">76%</div>
-          <div class="kpi-change">Annual schedule</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Dental Disease Rate</div>
-          <div class="kpi-value">23%</div>
-          <div class="kpi-change">Early detection</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Dental Health</h3>
-        <p>Regular dental care is essential for equine health, performance, and quality of life.</p>
-      </div>
-    </div>
-
-    <div id="equine-lameness" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Equine Lameness Evaluation</h1>
-        <p class="panel-desc">Lameness diagnosis and treatment management</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('equine-lameness')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Lameness Cases</div>
-          <div class="kpi-value">23</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Diagnostic Blocks</div>
-          <div class="kpi-value">18</div>
-          <div class="kpi-change">Localization success</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Injections Performed</div>
-          <div class="kpi-value">31</div>
-          <div class="kpi-change">Joints &amp; Bursa</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Return to Work</div>
-          <div class="kpi-value">87%</div>
-          <div class="kpi-change">Success rate</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Average Resolution</div>
-          <div class="kpi-value">4.2 weeks</div>
-          <div class="kpi-change">Treatment duration</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Lameness Management</h3>
-        <p>Comprehensive lameness evaluation including physical examination, diagnostic imaging, and therapeutic intervention.</p>
-      </div>
-    </div>
-
-    <div id="equine-billing" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Equine Billing</h1>
-        <p class="panel-desc">Financial management for equine services</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('equine-billing')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">YTD Revenue</div>
-          <div class="kpi-value">$142.8K</div>
-          <div class="kpi-change">+18% vs prior year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Outstanding A/R</div>
-          <div class="kpi-value">$8.2K</div>
-          <div class="kpi-change">5.7% of revenue</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Average Invoice</div>
-          <div class="kpi-value">$1,642</div>
-          <div class="kpi-change">Higher complexity</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Collection Rate</div>
-          <div class="kpi-value">94%</div>
-          <div class="kpi-change">Good payment</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Avg Days to Pay</div>
-          <div class="kpi-value">9.1 days</div>
-          <div class="kpi-change">Standard terms</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Revenue Summary</h3>
-        <table>
-          <thead>
-            <tr><th>Category</th><th>Revenue</th><th>% of Total</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Lameness Evaluation</td><td>$48.2K</td><td>34%</td></tr>
-            <tr><td>Surgeries</td><td>$38.4K</td><td>27%</td></tr>
-            <tr><td>Dental Care</td><td>$27.3K</td><td>19%</td></tr>
-            <tr><td>Medications</td><td>$16.7K</td><td>12%</td></tr>
-            <tr><td>Other</td><td>$12.2K</td><td>8%</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Large Animals (8 panels) -->
     <div id="large-patients" class="panel">
       <div class="panel-header">
-        <h1 class="panel-title">Large Animal Patient Management</h1>
-        <p class="panel-desc">Cattle, sheep, goats, swine patient records</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('large-patients')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <h1 class="panel-title">Large Animals</h1>
+        <p class="panel-desc">Cattle, sheep, swine, and food animal medicine</p>
       </div>
       <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Herds</div>
-          <div class="kpi-value">23</div>
-          <div class="kpi-change">Dairy, Beef, Mixed</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Total Head</div>
-          <div class="kpi-value">2,847</div>
-          <div class="kpi-change">Under management</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Herd Health Programs</div>
-          <div class="kpi-value">18</div>
-          <div class="kpi-change">Active contracts</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Farm Calls</div>
-          <div class="kpi-value">156</div>
-          <div class="kpi-change">This quarter</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Emergency Visits</div>
-          <div class="kpi-value">12</div>
-          <div class="kpi-change">Dystocia, Trauma</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Herds</div><div class="kpi-value">23</div></div>
+        <div class="kpi"><div class="kpi-label">Total Head</div><div class="kpi-value">2,847</div></div>
+        <div class="kpi"><div class="kpi-label">HMP</div><div class="kpi-value">18</div></div>
+        <div class="kpi"><div class="kpi-label">Visits</div><div class="kpi-value">156</div></div>
+        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$198K</div></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Herd Summary</h3>
-        <p>Comprehensive large animal services including preventive herd health, reproductive services, and production medicine.</p>
-      </div>
+      <div class="card"><p>Food animal and herd health management with production medicine focus.</p></div>
     </div>
 
-    <div id="large-medical" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Large Animal Medical Records</h1>
-        <p class="panel-desc">Medical history and treatment documentation</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('large-medical')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Total Records</div>
-          <div class="kpi-value">8,923</div>
-          <div class="kpi-change">Comprehensive data</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Disease Cases</div>
-          <div class="kpi-value">234</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Treatments</div>
-          <div class="kpi-value">567</div>
-          <div class="kpi-change">Documented</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Record Completeness</div>
-          <div class="kpi-value">96%</div>
-          <div class="kpi-change">Well maintained</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Mortality Rate</div>
-          <div class="kpi-value">2.1%</div>
-          <div class="kpi-change">Industry standard</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Medical Compliance</h3>
-        <p>All large animal medical records include treatment protocols, outcomes, and regulatory compliance documentation.</p>
-      </div>
-    </div>
-
-    <div id="large-prescriptions" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Large Animal Prescriptions</h1>
-        <p class="panel-desc">Medication management and protocols</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('large-prescriptions')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Prescriptions</div>
-          <div class="kpi-value">234</div>
-          <div class="kpi-change">Herd treatments</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Antibiotics Used</div>
-          <div class="kpi-value">876</div>
-          <div class="kpi-change">Doses this year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Antibiotic Stewardship</div>
-          <div class="kpi-value">89%</div>
-          <div class="kpi-change">Compliant use</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Withdrawal Times</div>
-          <div class="kpi-value">100%</div>
-          <div class="kpi-change">Observed</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Residue Violations</div>
-          <div class="kpi-value">0</div>
-          <div class="kpi-change">Clean record</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Common Large Animal Medications</h3>
-        <table>
-          <thead>
-            <tr><th>Drug Name</th><th>Doses</th><th>Indication</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Penicillin G</td><td>234</td><td>Bacterial Infection</td></tr>
-            <tr><td>Tetracycline</td><td>189</td><td>Respiratory, Pneumonia</td></tr>
-            <tr><td>Thiamine</td><td>142</td><td>Vitamin Supplementation</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="large-diagnostics" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Large Animal Diagnostics</h1>
-        <p class="panel-desc">Laboratory and field diagnostics</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('large-diagnostics')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Lab Tests</div>
-          <div class="kpi-value">456</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Bulk Tank Tests</div>
-          <div class="kpi-value">87</div>
-          <div class="kpi-change">Monthly monitoring</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Pathology Cases</div>
-          <div class="kpi-value">23</div>
-          <div class="kpi-change">Post-mortem exams</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Disease Identification</div>
-          <div class="kpi-value">98%</div>
-          <div class="kpi-change">Diagnostic accuracy</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Cost per Test</div>
-          <div class="kpi-value">$42</div>
-          <div class="kpi-change">Economical pricing</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Diagnostic Services</h3>
-        <p>Full-service laboratory diagnostics including milk quality, herd health screening, and infectious disease testing.</p>
-      </div>
-    </div>
-
-    <div id="large-surgeries" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Large Animal Surgeries</h1>
-        <p class="panel-desc">Surgical procedures and outcomes</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('large-surgeries')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Surgeries YTD</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-change">Dystocia, Trauma</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Success Rate</div>
-          <div class="kpi-value">94%</div>
-          <div class="kpi-change">Good outcomes</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Field Surgeries</div>
-          <div class="kpi-value">28</td>
-          <div class="kpi-change">On farm</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Clinical Surgeries</div>
-          <div class="kpi-value">6</div>
-          <div class="kpi-change">Hospital based</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Revenue per Surgery</div>
-          <div class="kpi-value">$487</div>
-          <div class="kpi-change">Field pricing</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Surgical Services</h3>
-        <p>Mobile surgical services including emergency obstetrics, trauma surgery, and elective procedures.</p>
-      </div>
-    </div>
-
-    <div id="large-herd" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Large Animal Herd Management</h1>
-        <p class="panel-desc">Herd health programs and production medicine</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('large-herd')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Herd Health Programs</div>
-          <div class="kpi-value">18</div>
-          <div class="kpi-change">Active contracts</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Avg Herd Size</div>
-          <div class="kpi-value">124 head</div>
-          <div class="kpi-change">Range: 20-850</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Milk Production</div>
-          <div class="kpi-value">18.7 lbs/day</div>
-          <div class="kpi-change">Dairy herds average</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Reproductive Rate</div>
-          <div class="kpi-value">78%</div>
-          <div class="kpi-change">Conception</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">SCC Average</div>
-          <div class="kpi-value">187K cells</div>
-          <div class="kpi-change">Good milk quality</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Herd Health Focus</h3>
-        <p>Customized herd health programs including nutrition consultation, reproduction management, and production optimization.</p>
-      </div>
-    </div>
-
-    <div id="large-reproduction" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Large Animal Reproduction</h1>
-        <p class="panel-desc">Reproductive management and breeding services</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('large-reproduction')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Pregnancies Diagnosed</div>
-          <div class="kpi-value">156</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">AI Services</div>
-          <div class="kpi-value">234</div>
-          <div class="kpi-change">Inseminations</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Pregnancy Rate</div>
-          <div class="kpi-value">67%</div>
-          <div class="kpi-change">First service</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Dystocia Cases</div>
-          <div class="kpi-value">8</div>
-          <div class="kpi-change">Managed successfully</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Retained Placenta</div>
-          <div class="kpi-value">3.2%</div>
-          <div class="kpi-change">Low incidence</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Reproductive Health</h3>
-        <p>Complete reproductive services including pregnancy diagnosis, breeding management, and assisted reproduction.</p>
-      </div>
-    </div>
-
-    <div id="large-billing" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Large Animal Billing</h1>
-        <p class="panel-desc">Financial management for large animal services</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('large-billing')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">YTD Revenue</div>
-          <div class="kpi-value">$198.6K</div>
-          <div class="kpi-change">+14% vs prior year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Contract Revenue</div>
-          <div class="kpi-value">$124.3K</div>
-          <div class="kpi-change">Herd health programs</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Outstanding A/R</div>
-          <div class="kpi-value">$6.8K</div>
-          <div class="kpi-change">3.4% of revenue</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Average Invoice</div>
-          <div class="kpi-value">$487</div>
-          <div class="kpi-change">Farm call basis</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Collection Rate</div>
-          <div class="kpi-value">98%</div>
-          <div class="kpi-change">Excellent</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Revenue Summary</h3>
-        <table>
-          <thead>
-            <tr><th>Category</th><th>Revenue</th><th>% of Total</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Herd Health Contracts</td><td>$124.3K</td><td>63%</td></tr>
-            <tr><td>Emergency Calls</td><td>$34.2K</td><td>17%</td></tr>
-            <tr><td>Surgeries</td><td>$16.6K</td><td>8%</td></tr>
-            <tr><td>Reproduction Services</td><td>$14.1K</td><td>7%</td></tr>
-            <tr><td>Other</td><td>$9.4K</td><td>5%</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Exotic &amp; Zoo (8 panels) -->
     <div id="exotic-patients" class="panel">
       <div class="panel-header">
-        <h1 class="panel-title">Exotic Patient Management</h1>
-        <p class="panel-desc">Birds, reptiles, small mammals, zoo animals</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('exotic-patients')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <h1 class="panel-title">Exotic &amp; Small Mammals</h1>
+        <p class="panel-desc">Rabbits, ferrets, guinea pigs, and exotic mammal care</p>
       </div>
       <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Exotic Patients</div>
-          <div class="kpi-value">342</div>
-          <div class="kpi-change">Multiple species</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Species Variety</div>
-          <div class="kpi-value">67</div>
-          <div class="kpi-change">Birds, Reptiles, Small</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Zoo Partnerships</div>
-          <div class="kpi-value">5</div>
-          <div class="kpi-change">Ongoing contracts</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Appointments</div>
-          <div class="kpi-value">89</div>
-          <div class="kpi-change">This month</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Emergency Cases</div>
-          <div class="kpi-value">7</div>
-          <div class="kpi-change">This quarter</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">234</div></div>
+        <div class="kpi"><div class="kpi-label">Species</div><div class="kpi-value">18</div></div>
+        <div class="kpi"><div class="kpi-label">Surgeries</div><div class="kpi-value">67</div></div>
+        <div class="kpi"><div class="kpi-label">Growth</div><div class="kpi-value">+34%</div></div>
+        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$89K</div></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Exotic Species Care</h3>
-        <p>Specialized exotic animal care including birds, reptiles, small mammals, and zoo species.</p>
-      </div>
+      <div class="card"><p>Specialized exotic mammal medicine with expertise in husbandry and behavioral management.</p></div>
     </div>
 
-    <div id="exotic-medical" class="panel">
+    <div id="avian-patients" class="panel">
       <div class="panel-header">
-        <h1 class="panel-title">Exotic Medical Records</h1>
-        <p class="panel-desc">Detailed exotic species medical history</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('exotic-medical')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <h1 class="panel-title">Avian</h1>
+        <p class="panel-desc">Birds including psittacines, raptors, and poultry</p>
       </div>
       <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Total Records</div>
-          <div class="kpi-value">1,087</div>
-          <div class="kpi-change">Well documented</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Disease Cases</div>
-          <div class="kpi-value">87</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Treatments</div>
-          <div class="kpi-value">234</div>
-          <div class="kpi-change">Documented outcomes</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Record Completeness</div>
-          <div class="kpi-value">95%</div>
-          <div class="kpi-change">High quality</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Mortality Rate</div>
-          <div class="kpi-value">3.4%</div>
-          <div class="kpi-change">Species dependent</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">178</div></div>
+        <div class="kpi"><div class="kpi-label">Surgeries</div><div class="kpi-value">34</div></div>
+        <div class="kpi"><div class="kpi-label">Diagnostics</div><div class="kpi-value">89</div></div>
+        <div class="kpi"><div class="kpi-label">Recovery Rate</div><div class="kpi-value">93%</div></div>
+        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$76K</div></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Medical Management</h3>
-        <p>Comprehensive exotic species medical records including diagnostic imaging, surgical notes, and treatment protocols.</p>
-      </div>
+      <div class="card"><p>Avian medicine expertise including aviary management and emergency care.</p></div>
     </div>
 
-    <div id="exotic-prescriptions" class="panel">
+    <div id="reptile-patients" class="panel">
       <div class="panel-header">
-        <h1 class="panel-title">Exotic Prescriptions</h1>
-        <p class="panel-desc">Medication management for exotic animals</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('exotic-prescriptions')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <h1 class="panel-title">Reptile &amp; Amphibian</h1>
+        <p class="panel-desc">Snakes, lizards, turtles, and amphibian care</p>
       </div>
       <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Prescriptions</div>
-          <div class="kpi-value">123</div>
-          <div class="kpi-change">Species-specific</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Unique Drugs Used</div>
-          <div class="kpi-value">87</div>
-          <div class="kpi-change">Specialty medications</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Dosing Protocols</div>
-          <div class="kpi-value">156</div>
-          <div class="kpi-change">Species-tailored</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Drug Interactions</div>
-          <div class="kpi-value">0</div>
-          <div class="kpi-change">Carefully managed</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Owner Compliance</div>
-          <div class="kpi-value">81%</div>
-          <div class="kpi-change">Challenging species</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">156</div></div>
+        <div class="kpi"><div class="kpi-label">Species</div><div class="kpi-value">34</div></div>
+        <div class="kpi"><div class="kpi-label">MBD Cases</div><div class="kpi-value">23</div></div>
+        <div class="kpi"><div class="kpi-label">Ultrasound</div><div class="kpi-value">67</div></div>
+        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$67K</div></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Exotic Medications</h3>
-        <table>
-          <thead>
-            <tr><th>Drug Name</th><th>Prescriptions</th><th>Species</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Enrofloxacin</td><td>34</td><td>Birds, Reptiles</td></tr>
-            <tr><td>Isoflurane</td><td>28</td><td>Anesthesia</td></tr>
-            <tr><td>Metamizole</td><td>21</td><td>Pain Management</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <div class="card"><p>Comprehensive reptile and amphibian care with advanced diagnostics and surgical capabilities.</p></div>
     </div>
 
-    <div id="exotic-diagnostics" class="panel">
+    <div id="zoo-patients" class="panel">
       <div class="panel-header">
-        <h1 class="panel-title">Exotic Diagnostics</h1>
-        <p class="panel-desc">Specialized diagnostic testing</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('exotic-diagnostics')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <h1 class="panel-title">Zoo &amp; Wildlife</h1>
+        <p class="panel-desc">Zoo animals, wildlife rehabilitation, and exotic large animals</p>
       </div>
       <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Lab Tests</div>
-          <div class="kpi-value">234</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Imaging Studies</div>
-          <div class="kpi-value">56</div>
-          <div class="kpi-change">Advanced imaging</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Endoscopy</div>
-          <div class="kpi-value">12</div>
-          <div class="kpi-change">Diagnostic procedures</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Diagnostic Accuracy</div>
-          <div class="kpi-value">94%</div>
-          <div class="kpi-change">Challenging species</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Turnaround Time</div>
-          <div class="kpi-value">4.3 days</div>
-          <div class="kpi-change">Reference lab</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Animals</div><div class="kpi-value">450</div></div>
+        <div class="kpi"><div class="kpi-label">Species</div><div class="kpi-value">67</div></div>
+        <div class="kpi"><div class="kpi-label">Rehab Cases</div><div class="kpi-value">45</div></div>
+        <div class="kpi"><div class="kpi-label">Release Rate</div><div class="kpi-value">78%</div></div>
+        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$234K</div></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Diagnostic Services</h3>
-        <p>Specialized diagnostics including exotic species pathology, advanced imaging, and endoscopic evaluation.</p>
-      </div>
+      <div class="card"><p>Zoo veterinary medicine and wildlife rehabilitation with ZIMS protocols.</p></div>
     </div>
 
-    <div id="exotic-anesthesia" class="panel">
+    <div id="aquatic-patients" class="panel">
       <div class="panel-header">
-        <h1 class="panel-title">Exotic Anesthesia Protocols</h1>
-        <p class="panel-desc">Safe anesthesia management for exotic species</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('exotic-anesthesia')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
+        <h1 class="panel-title">Aquatic &amp; Marine</h1>
+        <p class="panel-desc">Fish, marine mammals, and aquatic animal care</p>
       </div>
       <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Procedures Under GA</div>
-          <div class="kpi-value">87</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Species Protocols</div>
-          <div class="kpi-value">42</div>
-          <div class="kpi-change">Documented protocols</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Anesthetic Deaths</div>
-          <div class="kpi-value">0</div>
-          <div class="kpi-change">Excellent record</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Complication Rate</div>
-          <div class="kpi-value">2.3%</div>
-          <div class="kpi-change">All managed</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Monitoring Parameters</div>
-          <div class="kpi-value">100%</div>
-          <div class="kpi-change">Always monitored</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Collections</div><div class="kpi-value">12</div></div>
+        <div class="kpi"><div class="kpi-label">Total Animals</div><div class="kpi-value">12,500</div></div>
+        <div class="kpi"><div class="kpi-label">Consultations</div><div class="kpi-value">89</div></div>
+        <div class="kpi"><div class="kpi-label">Health Index</div><div class="kpi-value">94%</div></div>
+        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$123K</div></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Anesthetic Safety</h3>
-        <p>Species-specific anesthetic protocols with comprehensive monitoring and emergency support.</p>
-      </div>
+      <div class="card"><p>Aquatic veterinary medicine for fish, marine mammals, and water animal collections.</p></div>
     </div>
 
-    <div id="exotic-nutrition" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Exotic Nutrition Plans</h1>
-        <p class="panel-desc">Nutritional management and diet consultation</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('exotic-nutrition')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Nutrition Consults</div>
-          <div class="kpi-value">56</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Diet Plans</div>
-          <div class="kpi-value">78</div>
-          <div class="kpi-change">Customized diets</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Nutritional Deficiencies</div>
-          <div class="kpi-value">23</div>
-          <div class="kpi-change">Identified &amp; treated</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Owner Compliance</div>
-          <div class="kpi-value">76%</div>
-          <div class="kpi-change">Follow recommendations</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Weight Management</div>
-          <div class="kpi-value">89%</div>
-          <div class="kpi-change">Success rate</div>
-        </div>
-      </div>
+    <!-- Placeholder panels for clinical and management functions -->
+    <div id="medical-history" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Medical History</h1></div>
+      <div class="card"><p>Complete medical history and treatment records management.</p></div>
+    </div>
+    <div id="vaccines" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Vaccination Records</h1></div>
+      <div class="card"><p>Vaccination tracking and booster scheduling.</p></div>
+    </div>
+    <div id="surgery-log" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Surgery Log</h1></div>
+      <div class="card"><p>Surgical procedures and outcomes tracking.</p></div>
+    </div>
+    <div id="diagnostics" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Diagnostics</h1></div>
+      <div class="card"><p>Laboratory and imaging diagnostics management.</p></div>
+    </div>
+    <div id="prescriptions" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Prescriptions</h1></div>
+      <div class="card"><p>Prescription management and refill tracking.</p></div>
+    </div>
+    <div id="laboratory" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Laboratory</h1></div>
+      <div class="card"><p>Lab result management and tracking.</p></div>
+    </div>
+    <div id="appointments" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Appointments</h1></div>
+      <div class="card"><p>Appointment scheduling and calendar management.</p></div>
+    </div>
+    <div id="billing" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Billing</h1></div>
+      <div class="card"><p>Financial management and billing oversight.</p></div>
+    </div>
+    <div id="inventory" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Inventory</h1></div>
+      <div class="card"><p>Drug and supply inventory management.</p></div>
+    </div>
+    <div id="reports" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Reports</h1></div>
+      <div class="card"><p>Clinical and business reporting.</p></div>
+    </div>
+    <div id="settings" class="panel">
+      <div class="panel-header"><h1 class="panel-title">Settings</h1></div>
       <div class="card">
-        <h3 style="margin-bottom:15px;">Nutritional Support</h3>
-        <p>Species-appropriate nutrition consultation including dietary formulation and supplement recommendations.</p>
+        <label>Theme:</label>
+        <select style="width:100%;margin:10px 0;">
+          <option>Light</option>
+          <option>Auto</option>
+        </select>
+        <label>Time Format:</label>
+        <select style="width:100%;margin:10px 0;">
+          <option>12-hour</option>
+          <option>24-hour</option>
+        </select>
+        <button class="btn" onclick="showToast('Settings saved successfully','success')">Save Settings</button>
       </div>
     </div>
-
-    <div id="exotic-enrichment" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Exotic Enrichment &amp; Care</h1>
-        <p class="panel-desc">Environmental enrichment and husbandry guidance</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('exotic-enrichment')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Husbandry Consults</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Enrichment Plans</div>
-          <div class="kpi-value">45</div>
-          <div class="kpi-change">Implemented</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Behavioral Issues</div>
-          <div class="kpi-value">18</div>
-          <div class="kpi-change">Successfully resolved</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Zoo Facility Reviews</div>
-          <div class="kpi-value">8</div>
-          <div class="kpi-change">Professional audits</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Compliance Rate</div>
-          <div class="kpi-value">92%</div>
-          <div class="kpi-change">Excellent adoption</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Enrichment Services</h3>
-        <p>Comprehensive enrichment consultation to improve animal welfare and behavioral health in captive environments.</p>
-      </div>
-    </div>
-
-    <div id="exotic-billing" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Exotic Billing</h1>
-        <p class="panel-desc">Financial management for exotic services</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('exotic-billing')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">YTD Revenue</div>
-          <div class="kpi-value">$156.4K</div>
-          <div class="kpi-change">+22% vs prior year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Consultation Revenue</div>
-          <div class="kpi-value">$45.2K</div>
-          <div class="kpi-change">Growing segment</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Outstanding A/R</div>
-          <div class="kpi-value">$4.3K</div>
-          <div class="kpi-change">2.7% of revenue</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Average Invoice</div>
-          <div class="kpi-value">$325</div>
-          <div class="kpi-change">Consultation based</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Collection Rate</div>
-          <div class="kpi-value">97%</div>
-          <div class="kpi-change">Excellent</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Revenue Summary</h3>
-        <table>
-          <thead>
-            <tr><th>Category</th><th>Revenue</th><th>% of Total</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Consultations</td><td>$45.2K</td><td>29%</td></tr>
-            <tr><td>Medical Procedures</td><td>$38.6K</td><td>25%</td></tr>
-            <tr><td>Surgeries</td><td>$31.2K</td><td>20%</td></tr>
-            <tr><td>Zoo Contracts</td><td>$28.4K</td><td>18%</td></tr>
-            <tr><td>Other</td><td>$13.0K</td><td>8%</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Wildlife (8 panels) -->
-    <div id="wildlife-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Wildlife Patient Management</h1>
-        <p class="panel-desc">Native wildlife care and rehabilitation</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('wildlife-patients')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Wildlife Patients</div>
-          <div class="kpi-value">284</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Species Treated</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-change">Native wildlife</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Release Rate</div>
-          <div class="kpi-value">78%</div>
-          <div class="kpi-change">Successful returns</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Mortality Rate</div>
-          <div class="kpi-value">8.5%</div>
-          <div class="kpi-change">Critical cases</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Permanent Care</div>
-          <div class="kpi-value">14</div>
-          <div class="kpi-change">Non-releasable</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Wildlife Care</h3>
-        <p>Rehabilitation and care for injured, orphaned, and sick native wildlife with focus on successful release.</p>
-      </div>
-    </div>
-
-    <div id="wildlife-medical" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Wildlife Medical Records</h1>
-        <p class="panel-desc">Medical history and treatment documentation</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('wildlife-medical')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Total Records</div>
-          <div class="kpi-value">876</div>
-          <div class="kpi-change">Comprehensive data</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Trauma Cases</div>
-          <div class="kpi-value">187</div>
-          <div class="kpi-change">Most common</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Disease Cases</div>
-          <div class="kpi-value">92</div>
-          <div class="kpi-change">Illness treated</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Orphan Cases</div>
-          <div class="kpi-value">61</div>
-          <div class="kpi-change">Neonatal care</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Record Completeness</div>
-          <div class="kpi-value">97%</div>
-          <div class="kpi-change">Well documented</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Medical Summary</h3>
-        <p>All wildlife records include injury assessment, diagnostic results, treatment protocol, and release readiness evaluation.</p>
-      </div>
-    </div>
-
-    <div id="wildlife-prescriptions" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Wildlife Prescriptions</h1>
-        <p class="panel-desc">Medication management for wildlife</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('wildlife-prescriptions')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Prescriptions</div>
-          <div class="kpi-value">98</div>
-          <div class="kpi-change">Treatment active</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Antibiotics Used</div>
-          <div class="kpi-value">234</div>
-          <div class="kpi-change">Treatments this year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Analgesics Used</div>
-          <div class="kpi-value">156</div>
-          <div class="kpi-change">Pain management</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Medication Resistance</div>
-          <div class="kpi-value">0</div>
-          <div class="kpi-change">No issues</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Therapeutic Success</div>
-          <div class="kpi-value">91%</div>
-          <div class="kpi-change">Excellent outcomes</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Common Wildlife Medications</h3>
-        <table>
-          <thead>
-            <tr><th>Drug Name</th><th>Treatments</th><th>Indication</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Amoxicillin</td><td>54</td><td>Bacterial Infection</td></tr>
-            <tr><td>Meloxicam</td><td>42</td><td>Pain &amp; Inflammation</td></tr>
-            <tr><td>Itraconazole</td><td>28</td><td>Fungal Infection</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="wildlife-diagnostics" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Wildlife Diagnostics</h1>
-        <p class="panel-desc">Diagnostic testing and analysis</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('wildlife-diagnostics')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Lab Tests</div>
-          <div class="kpi-value">187</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Radiographs</div>
-          <div class="kpi-value">76</div>
-          <div class="kpi-change">Injury assessment</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Ultrasounds</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-change">Diagnostic imaging</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Pathology Cases</div>
-          <div class="kpi-value">12</td>
-          <div class="kpi-change">Post-mortem exams</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Diagnostic Accuracy</div>
-          <div class="kpi-value">94%</div>
-          <div class="kpi-change">Excellent correlation</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Diagnostic Services</h3>
-        <p>Comprehensive diagnostics for wildlife including disease screening, injury assessment, and pathology services.</p>
-      </div>
-    </div>
-
-    <div id="wildlife-rehabilitation" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Wildlife Rehabilitation</h1>
-        <p class="panel-desc">Rehabilitation programs and recovery tracking</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('wildlife-rehabilitation')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Patients in Rehab</div>
-          <div class="kpi-value">34</div>
-          <div class="kpi-change">Currently</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Avg Stay</div>
-          <div class="kpi-value">23.4 days</div>
-          <div class="kpi-change">Variable by species</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Physical Therapy</div>
-          <div class="kpi-value">67%</div>
-          <div class="kpi-change">Require treatment</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Occupancy Rate</div>
-          <div class="kpi-value">78%</div>
-          <div class="kpi-change">Good capacity use</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Rehabilitation Success</div>
-          <div class="kpi-value">82%</div>
-          <div class="kpi-change">Release eligible</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Rehabilitation Focus</h3>
-        <p>Structured rehabilitation programs designed to restore function and prepare animals for successful return to wild.</p>
-      </div>
-    </div>
-
-    <div id="wildlife-release" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Wildlife Release Tracking</h1>
-        <p class="panel-desc">Release outcomes and long-term monitoring</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('wildlife-release')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Released This Year</div>
-          <div class="kpi-value">221</div>
-          <div class="kpi-change">Successfully released</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Release Sites</div>
-          <div class="kpi-value">12</div>
-          <div class="kpi-change">Approved locations</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Post-Release Monitoring</div>
-          <div class="kpi-value">89%</div>
-          <div class="kpi-change">Tracked animals</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Survival Rate</div>
-          <div class="kpi-value">76%</div>
-          <div class="kpi-change">Long-term success</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Re-admission Rate</div>
-          <div class="kpi-value">4.2%</div>
-          <div class="kpi-change">Good indicator</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Release Program</h3>
-        <p>Careful planning and monitoring ensures animals are released to appropriate locations with minimal human contact.</p>
-      </div>
-    </div>
-
-    <div id="wildlife-epidemiology" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Wildlife Epidemiology</h1>
-        <p class="panel-desc">Disease surveillance and population health</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('wildlife-epidemiology')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Diseases Detected</div>
-          <div class="kpi-value">8</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Disease Reports</div>
-          <div class="kpi-value">23</div>
-          <div class="kpi-change">To authorities</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Zoonotic Cases</div>
-          <div class="kpi-value">2</div>
-          <div class="kpi-change">Properly managed</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Population Trends</div>
-          <div class="kpi-value">Stable</div>
-          <div class="kpi-change">Most species</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Public Health Impact</div>
-          <div class="kpi-value">Zero</div>
-          <div class="kpi-change">No outbreaks</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Disease Surveillance</h3>
-        <p>Systematic monitoring for emerging diseases and population health trends with appropriate reporting to wildlife authorities.</p>
-      </div>
-    </div>
-
-    <div id="wildlife-reports" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Wildlife Reports</h1>
-        <p class="panel-desc">Program reports and statistics</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('wildlife-reports')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Annual Report</div>
-          <div class="kpi-value">Published</div>
-          <div class="kpi-change">2026 data</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Public Education</div>
-          <div class="kpi-value">12 events</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Research Publications</div>
-          <div class="kpi-value">3</div>
-          <div class="kpi-change">Peer reviewed</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Community Engagement</div>
-          <div class="kpi-value">847 participants</div>
-          <div class="kpi-change">This year</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Grant Funding</div>
-          <div class="kpi-value">$125K</div>
-          <div class="kpi-change">Secured</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Program Impact</h3>
-        <p>Comprehensive reporting demonstrates program effectiveness and impact on wildlife populations and public health.</p>
-      </div>
-    </div>
-
-    <!-- Admin Panels (3 panels) -->
-    <div id="admin-settings" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Settings</h1>
-        <p class="panel-desc">System configuration and preferences</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('admin-settings')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Application Settings</h3>
-        <div style="margin-bottom:15px;">
-          <label style="display:block;margin-bottom:8px;">App ID</label>
-          <input type="text" value="sairnvet" disabled style="background:#F0F0F0;">
-        </div>
-        <div style="margin-bottom:15px;">
-          <label style="display:block;margin-bottom:8px;">License Prefix</label>
-          <input type="text" value="SV-" disabled style="background:#F0F0F0;">
-        </div>
-        <div style="margin-bottom:15px;">
-          <label style="display:block;margin-bottom:8px;">Claude Proxy</label>
-          <input type="text" value="https://sairn.vercel.app/api/claude" disabled style="background:#F0F0F0;">
-        </div>
-        <div style="margin-bottom:15px;">
-          <label style="display:block;margin-bottom:8px;">Theme</label>
-          <select>
-            <option>Light</option>
-            <option>Auto</option>
-          </select>
-        </div>
-        <button class="btn" onclick="showToast('Settings saved','success')">Save Settings</button>
-      </div>
-    </div>
-
-    <div id="admin-users" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Users</h1>
-        <p class="panel-desc">User management and permissions</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('admin-users')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Users</div>
-          <div class="kpi-value">12</div>
-          <div class="kpi-change">Licensed</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Doctors</div>
-          <div class="kpi-value">3</div>
-          <div class="kpi-change">Full access</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Technicians</div>
-          <div class="kpi-value">5</div>
-          <div class="kpi-change">Limited access</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Receptionists</div>
-          <div class="kpi-value">4</div>
-          <div class="kpi-change">Scheduling only</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Last Login</div>
-          <div class="kpi-value">Today</div>
-          <div class="kpi-change">Active</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">User List</h3>
-        <table>
-          <thead>
-            <tr><th>Name</th><th>Role</th><th>Last Login</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Dr. Sarah Smith</td><td>Doctor</td><td>2026-07-06</td><td>Active</td></tr>
-            <tr><td>Jennifer Brown</td><td>Technician</td><td>2026-07-06</td><td>Active</td></tr>
-            <tr><td>Mike Johnson</td><td>Receptionist</td><td>2026-07-05</td><td>Active</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="admin-audit" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Audit Log</h1>
-        <p class="panel-desc">System activity and compliance tracking</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" onclick="exportCSV('admin-audit')">Export CSV</button>
-        <button class="btn btn-secondary" onclick="window.print()">Print</button>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Events This Week</div>
-          <div class="kpi-value">342</div>
-          <div class="kpi-change">All logged</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Data Accesses</div>
-          <div class="kpi-value">287</div>
-          <div class="kpi-change">Authorized</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Modifications</div>
-          <div class="kpi-value">45</div>
-          <div class="kpi-change">Tracked</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Failed Logins</div>
-          <div class="kpi-value">0</div>
-          <div class="kpi-change">Secure</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Compliance</div>
-          <div class="kpi-value">100%</div>
-          <div class="kpi-change">HIPAA ready</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:15px;">Recent Activity</h3>
-        <table>
-          <thead>
-            <tr><th>Date</th><th>User</th><th>Action</th><th>Details</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>2026-07-06 14:23</td><td>Dr. Sarah Smith</td><td>Record Accessed</td><td>Patient ID: 1247</td></tr>
-            <tr><td>2026-07-06 13:45</td><td>Jennifer Brown</td><td>Record Updated</td><td>Prescription Added</td></tr>
-            <tr><td>2026-07-06 12:12</td><td>Mike Johnson</td><td>Login</td><td>Successful</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
 </div>
 
-<div id="toastContainer"></div>
+<div id="sv-toast" class="toast"></div>
 
 <script>
-var APP_ID='sairnvet';
-var PROXY='https://sairn.vercel.app/api/claude';
-var DEMO_KEY='SV-PINNACLE-2026';
-var DEMO_PIN='1234';
-var LICENSE_PREFIX='SV-';
+var APP_ID = 'sairnvet';
+var PROXY = 'https://sairn.vercel.app/api/claude';
 
-function escHtml(text){if(!text)return'';return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function showToast(msg, dur) {
+  var t = document.getElementById('sv-toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(function(){ t.classList.remove('show'); }, dur||3000);
+}
 
-function showToast(message,type){type=type||'info';var toast=document.createElement('div');toast.className='toast '+type;toast.textContent=escHtml(message);document.getElementById('toastContainer').appendChild(toast);setTimeout(function(){toast.style.animation='slideOut .3s ease-out';setTimeout(function(){toast.remove();},300);},3000);}
+function escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
-async function callClaude(system,messages,maxTokens){try{var body={app_id:APP_ID,is_demo:true,system:system,messages:messages,max_tokens:maxTokens||1024};var resp=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!resp.ok){showToast('API error: '+resp.status,'error');return null;}var data=await resp.json();return data.content||null;}catch(e){showToast('Network error','error');return null;}}
+function svStore(k,v){try{localStorage.setItem('sv_'+k,JSON.stringify(v));}catch(e){}}
+function svLoad(k,d){try{var r=localStorage.getItem('sv_'+k);return r?JSON.parse(r):d;}catch(e){return d;}}
+
+async function callClaude(system, messages, maxTokens) {
+  try {
+    var res = await fetch(PROXY, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        app_id:APP_ID, is_demo:true,
+        system:system, messages:messages,
+        max_tokens:maxTokens||1000
+      })
+    });
+    var data = await res.json();
+    if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.includes('limit'))){
+      showToast('Demo limit reached. Email michael@sairn.com for license.',6000);
+      throw new Error('demo_limit');
+    }
+    if(!res.ok){
+      var em=(data.error&&data.error.message)?data.error.message:(typeof data.error==='string'?data.error:'Error '+res.status);
+      showToast('Claude: '+em,4000); throw new Error(em);
+    }
+    var text='';
+    if(data.content&&data.content[0]&&data.content[0].text) text=data.content[0].text;
+    if(!text){showToast('Empty response — try again.',3000);throw new Error('empty');}
+    return text;
+  } catch(e){
+    if(e.message!=='demo_limit'&&e.message!=='empty') showToast('Connection error.',4000);
+    throw e;
+  }
+}
 
 var pinValue='';
+function setupPinPad(){
+  var pad=document.getElementById('pinPad');
+  for(var i=1;i<=9;i++){
+    var btn=document.createElement('button');
+    btn.className='pin-btn';
+    btn.textContent=i.toString();
+    btn.onclick=(function(n){return function(){pinValue+=n.toString();updatePinDisplay();}})(i);
+    pad.appendChild(btn);
+  }
+  var deleteBtn=document.createElement('button');
+  deleteBtn.className='pin-btn';
+  deleteBtn.textContent='Delete';
+  deleteBtn.onclick=function(){pinValue=pinValue.slice(0,-1);updatePinDisplay();};
+  pad.appendChild(deleteBtn);
+}
 
-function setupPinPad(){var pad=document.getElementById('pinPad');for(var i=1;i<=9;i++){var btn=document.createElement('button');btn.className='pin-btn';btn.textContent=i.toString();btn.onclick=(function(n){return function(){pinValue+=n.toString();updatePinDisplay();}})(i);pad.appendChild(btn);}var deleteBtn=document.createElement('button');deleteBtn.className='pin-btn';deleteBtn.textContent='Delete';deleteBtn.onclick=function(){pinValue=pinValue.slice(0,-1);updatePinDisplay();};pad.appendChild(deleteBtn);}
+function updatePinDisplay(){
+  document.getElementById('pinDisplay').textContent='*'.repeat(pinValue.length);
+}
 
-function updatePinDisplay(){document.getElementById('pinDisplay').textContent='*'.repeat(pinValue.length);}
+function gateSubmit(){
+  var role=document.getElementById('gateRole').value;
+  var license=document.getElementById('gateLicense').value.trim();
+  if(!license){showToast('Enter license key','error');return;}
+  if(license!=='SV-PINNACLE-2026'){showToast('Invalid license','error');return;}
+  if(pinValue!=='1234'){showToast('Invalid PIN','error');return;}
+  svStore('role',escHtml(role));
+  svStore('license',escHtml(license));
+  svStore('auth',new Date().toISOString());
+  document.getElementById('gate').style.display='none';
+  document.getElementById('appContainer').classList.add('active');
+  document.getElementById('userRole').textContent=role;
+  switchPanel('dashboard');
+}
 
-function gateSubmit(){var role=document.getElementById('gateRole').value;var license=document.getElementById('gateLicense').value.trim();if(!license){showToast('Please enter a license key','error');return;}if(license!==DEMO_KEY){showToast('Invalid license key','error');return;}if(pinValue!==DEMO_PIN){showToast('Invalid PIN','error');return;}localStorage.setItem('sv_role',escHtml(role));localStorage.setItem('sv_license',escHtml(license));localStorage.setItem('sv_authenticated',encodeURIComponent(new Date().toISOString()));document.getElementById('gate').style.display='none';document.getElementById('appContainer').classList.add('active');document.getElementById('userRole').textContent=role;switchPanel('companion-patients');}
+function switchPanel(panelId){
+  var panels=document.querySelectorAll('.panel');
+  panels.forEach(function(p){p.classList.remove('active');});
+  var buttons=document.querySelectorAll('.sidebar-btn');
+  buttons.forEach(function(b){b.classList.remove('active');});
+  var panel=document.getElementById(panelId);
+  if(panel){panel.classList.add('active');}
+  var btn=document.querySelector('[onclick="switchPanel(\''+panelId+'\')"]');
+  if(btn){btn.classList.add('active');}
+}
 
-function switchPanel(panelId){var panels=document.querySelectorAll('.panel');panels.forEach(function(p){p.classList.remove('active');});var buttons=document.querySelectorAll('.sidebar-btn');buttons.forEach(function(b){b.classList.remove('active');});document.getElementById(panelId).classList.add('active');var activeBtn=document.querySelector('[onclick="switchPanel(\''+panelId+'\')"]');if(activeBtn){activeBtn.classList.add('active');}}
+function searchDiagnoses(){
+  var species=document.getElementById('dx-species').value;
+  var system=document.getElementById('dx-system').value;
+  var keyword=document.getElementById('dx-search').value.toLowerCase();
 
-function exportCSV(panelId){var panel=document.getElementById(panelId);var rows=[];var tables=panel.querySelectorAll('table');if(tables.length>0){tables.forEach(function(table){var headerRow=[];table.querySelectorAll('th').forEach(function(th){headerRow.push(th.textContent.trim());});if(headerRow.length>0){rows.push(headerRow);}table.querySelectorAll('tbody tr').forEach(function(tr){var rowData=[];tr.querySelectorAll('td').forEach(function(td){rowData.push(td.textContent.trim());});rows.push(rowData);});});}if(rows.length===0){showToast('No data to export','error');return;}var csv=rows.map(function(row){return row.map(function(cell){return'"'+cell.replace(/"/g,'""')+'"';}).join(',');}).join('\n');var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});var link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=escHtml(panelId)+'.csv';link.click();showToast('Exported '+panelId+'.csv','success');}
+  var results=[
+    {name:'Atopic Dermatitis',species:'dog,cat',system:'integumentary',signs:'Pruritus, erythema, alopecia'},
+    {name:'Hip Dysplasia',species:'dog',system:'musculoskeletal',signs:'Lameness, hip pain, reluctance to jump'},
+    {name:'Diabetic Ketoacidosis',species:'dog,cat',system:'endocrine',signs:'Vomiting, polydipsia, altered consciousness'},
+    {name:'Otitis Externa',species:'dog,cat',system:'integumentary',signs:'Ear discharge, head shaking, odor'},
+    {name:'Strangles',species:'horse',system:'respiratory',signs:'Fever, nasal discharge, lymphadenitis'},
+    {name:'Colic',species:'horse',system:'gastrointestinal',signs:'Abdominal pain, rolling, anorexia'},
+    {name:'Bovine Respiratory Disease',species:'cattle',system:'respiratory',signs:'Fever, nasal discharge, cough'},
+    {name:'Psittacosis',species:'bird',system:'respiratory',signs:'Ruffled feathers, discharge, lethargy'},
+    {name:'Metabolic Bone Disease',species:'reptile',system:'musculoskeletal',signs:'Tremors, paralysis, swelling'},
+    {name:'Encephalitozoonosis',species:'rabbit',system:'neurological',signs:'Head tilt, ataxia, kidney disease'}
+  ];
+
+  var filtered=results.filter(function(r){
+    var speciesMatch=!species||r.species.includes(species);
+    var systemMatch=!system||r.system===system;
+    var keyMatch=!keyword||r.name.toLowerCase().includes(keyword);
+    return speciesMatch&&systemMatch&&keyMatch;
+  });
+
+  var tbody=document.getElementById('diagnoses-tbody');
+  tbody.innerHTML='';
+  if(filtered.length===0){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);">No diagnoses found</td></tr>';
+  } else {
+    filtered.forEach(function(dx){
+      var row='<tr><td>'+escHtml(dx.name)+'</td><td>'+escHtml(dx.species)+'</td><td>'+escHtml(dx.system)+'</td><td>'+escHtml(dx.signs)+'</td><td><button class="btn btn-sm" onclick="showToast(\'Protocol feature coming soon\',\'info\')">Protocol</button></td></tr>';
+      tbody.innerHTML+=row;
+    });
+  }
+}
+
+function searchDrugs(){
+  var name=document.getElementById('drug-name').value.toLowerCase();
+  var species=document.getElementById('drug-species').value;
+
+  var redFlags={
+    'Acetaminophen':{cat:'TOXIC TO CATS',severity:'DANGER'},
+    'Penicillin':{guinea:'FATAL in guinea pigs','hamster':'FATAL in hamsters'},
+    'Ivermectin':{chelonian:'FATAL to chelonians',chelonian_note:'Never use in turtles/tortoises'}
+  };
+
+  var drugs=[
+    {name:'Amoxicillin',class:'Penicillin',species:'dog,cat',route:'PO/IV',dose:'20-40mg/kg BID-TID',controlled:false},
+    {name:'Meloxicam',class:'NSAID',species:'dog,cat,horse',route:'PO',dose:'0.1-0.2mg/kg SID',controlled:false},
+    {name:'Doxycycline',class:'Tetracycline',species:'dog,cat,bird,reptile',route:'PO',dose:'5-10mg/kg BID',controlled:false},
+    {name:'Enrofloxacin',class:'Fluoroquinolone',species:'dog,cat,bird,exotic',route:'PO/IV',dose:'5-10mg/kg BID',controlled:false},
+    {name:'Ketamine',class:'Dissociative',species:'all',route:'IV',dose:'5-15mg/kg',controlled:true},
+    {name:'Midazolam',class:'Benzodiazepine',species:'all',route:'IV',dose:'0.1-0.5mg/kg',controlled:true},
+    {name:'Prednisone',class:'Corticosteroid',species:'dog,cat,horse',route:'PO',dose:'0.5-2mg/kg',controlled:false},
+    {name:'Fenbendazole',class:'Anthelmintic',species:'dog,cat,rabbit,bird,reptile',route:'PO',dose:'25-50mg/kg',controlled:false}
+  ];
+
+  var filtered=drugs.filter(function(d){
+    var nameMatch=!name||d.name.toLowerCase().includes(name)||d.class.toLowerCase().includes(name);
+    var specMatch=!species||d.species.includes(species);
+    return nameMatch&&specMatch;
+  });
+
+  var tbody=document.getElementById('drug-tbody');
+  tbody.innerHTML='';
+
+  var flagDiv=document.getElementById('drug-red-flags');
+  flagDiv.style.display='none';
+
+  if(filtered.length===0){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);">No drugs found</td></tr>';
+  } else {
+    filtered.forEach(function(d){
+      if(redFlags[d.name]){
+        flagDiv.style.display='block';
+        document.getElementById('red-flag-text').textContent=d.name+': '+Object.values(redFlags[d.name]).join(' | ');
+      }
+      var row='<tr><td>'+escHtml(d.name)+'</td><td>'+escHtml(d.class)+'</td><td>'+escHtml(d.species)+'</td><td>'+escHtml(d.route)+'</td><td>'+escHtml(d.dose)+'</td><td>'+(d.controlled?'Yes':'No')+'</td></tr>';
+      tbody.innerHTML+=row;
+    });
+  }
+}
+
+function calculateDoseAI(){
+  var drug=document.getElementById('calc-drug').value.trim();
+  var weight=document.getElementById('calc-weight').value;
+  var species=document.getElementById('calc-species').value;
+  if(!drug||!weight||!species){showToast('Fill all required fields','error');return;}
+
+  var system='You are a veterinary pharmacologist expert. Calculate precise drug dose. Flag ALL contraindications, controlled status, and withdrawal times for food animals.';
+  var messages=[{role:'user',content:'Calculate dose for '+drug+' in a '+weight+'kg '+species+'. Patient age: '+document.getElementById('calc-age').value+'. Indication: '+document.getElementById('calc-indication').value}];
+
+  showToast('Calculating dose...','info');
+  callClaude(system,messages,1500).then(function(result){
+    document.getElementById('dose-result').style.display='block';
+    document.getElementById('dose-result-text').textContent=escHtml(result);
+    showToast('Dose calculated','success');
+  }).catch(function(e){
+    showToast('Error calculating dose','error');
+  });
+}
+
+function getProtocolFromClaude(){
+  var dx=document.getElementById('dx-for-protocol').value.trim();
+  var weight=document.getElementById('dx-weight').value;
+  var species=document.getElementById('dx-species-protocol').value;
+  if(!dx||!weight||!species){showToast('Fill all fields','error');return;}
+
+  var system='You are a veterinary clinician with expertise in all species and diseases. Provide a complete treatment protocol with specific drug names, doses, routes, and frequencies.';
+  var messages=[{role:'user',content:'Provide complete treatment protocol for '+dx+' in a '+weight+'kg '+species+'.'}];
+
+  showToast('Getting protocol...','info');
+  callClaude(system,messages,2000).then(function(result){
+    document.getElementById('protocol-result').style.display='block';
+    document.getElementById('protocol-result').innerHTML='<strong>Treatment Protocol:</strong><br>'+escHtml(result).replace(/\n/g,'<br>');
+    showToast('Protocol received','success');
+  }).catch(function(e){
+    showToast('Error getting protocol','error');
+  });
+}
+
+function exportTableCSV(tableId,filename){
+  var table=document.getElementById(tableId);
+  var csv='';
+  var rows=table.querySelectorAll('tr');
+  rows.forEach(function(row){
+    var cells=row.querySelectorAll('th,td');
+    var rowData=[];
+    cells.forEach(function(cell){rowData.push('"'+cell.textContent.replace(/"/g,'""')+'"');});
+    csv+=rowData.join(',')+'\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download=escHtml(filename)+'.csv';
+  a.click();
+  showToast('Exported '+filename+'.csv','success');
+}
+
+function exportTableCSV(tableId,filename){
+  var table=document.getElementById(tableId);
+  var csv='';
+  var rows=table.querySelectorAll('tr');
+  rows.forEach(function(row){
+    var cells=row.querySelectorAll('th,td');
+    var rowData=[];
+    cells.forEach(function(cell){rowData.push('"'+cell.textContent.replace(/"/g,'""')+'"');});
+    csv+=rowData.join(',')+'\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download=escHtml(filename)+'.csv';
+  a.click();
+  showToast('Exported '+filename+'.csv','success');
+}
 
 setupPinPad();
-var auth=localStorage.getItem('sv_authenticated');if(auth){document.getElementById('gate').style.display='none';document.getElementById('appContainer').classList.add('active');var role=localStorage.getItem('sv_role')||'Doctor';document.getElementById('userRole').textContent=role;switchPanel('companion-patients');}else{updatePinDisplay();}
+var auth=svLoad('auth');
+if(auth){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('appContainer').classList.add('active');
+  var role=svLoad('role','Doctor');
+  document.getElementById('userRole').textContent=role;
+  switchPanel('dashboard');
+} else {
+  updatePinDisplay();
+}
 </script>
 
 </body>
