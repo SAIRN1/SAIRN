@@ -1,871 +1,1617 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SAIRNvet — Veterinary Platform | Diagnoses, Drugs, AI</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root{--primary:#7C3AED;--dark:#5B21B6;--tint:#EDE9FE;--bright:#A78BFA;--bg:#F8FAFC;--card:#FFFFFF;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--success:#22C55E;--warn:#F59E0B;--danger:#EF4444;--shadow:0 1px 4px rgba(0,0,0,.08);}
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;}
-    .gate{position:fixed;top:0;left:0;width:100%;height:100%;background:#FFFFFF;display:flex;align-items:center;justify-content:center;z-index:9999;}
-    .gate-card{background:#FFFFFF;padding:60px 40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.12);max-width:420px;width:100%;text-align:center;}
-    .gate-card h1{font-size:28px;margin-bottom:8px;color:var(--primary);font-weight:700;}
-    .gate-card p{color:var(--muted);margin-bottom:30px;font-size:14px;}
-    .gate-role{margin-bottom:20px;}
-    .gate-role label{display:block;margin-bottom:8px;font-size:13px;color:var(--muted);text-align:left;}
-    .gate-role select,.gate-role input{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:#FFFFFF;}
-    .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:30px 0;}
-    .pin-btn{padding:16px;background:var(--tint);border:1px solid var(--border);border-radius:8px;font-size:18px;font-weight:600;color:var(--primary);cursor:pointer;transition:all .2s;}
-    .pin-btn:hover{background:var(--primary);color:#FFFFFF;-webkit-print-color-adjust:exact;}
-    .pin-display{width:100%;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:20px;font-size:18px;letter-spacing:4px;text-align:center;font-weight:600;font-family:monospace;}
-    .gate-submit{width:100%;padding:14px;background:var(--primary);color:#FFFFFF;border:none;border-radius:6px;font-size:16px;font-weight:600;cursor:pointer;-webkit-print-color-adjust:exact;}
-    .gate-submit:hover{background:var(--dark);}
-    .gate-hint{font-size:12px;color:var(--muted);margin-top:20px;}
-    .app-container{display:none;}
-    .app-container.active{display:flex;}
-    .sidebar{width:240px;background:#FFFFFF;border-right:1px solid var(--border);overflow-y:auto;padding:20px 0;position:fixed;height:100vh;left:0;top:0;}
-    .sidebar-logo{padding:0 20px 20px;margin-bottom:20px;border-bottom:1px solid var(--border);}
-    .sidebar-logo h2{font-size:14px;color:var(--primary);font-weight:700;}
-    .sidebar-logo p{font-size:11px;color:var(--muted);margin-top:4px;}
-    .sidebar-section{padding:0;margin:12px 0;}
-    .sidebar-section-title{padding:8px 20px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px;}
-    .sidebar-btn{display:block;width:100%;text-align:left;padding:10px 20px;background:none;border:none;color:var(--text);cursor:pointer;font-size:13px;transition:all .2s;}
-    .sidebar-btn:hover{background:var(--tint);color:var(--primary);}
-    .sidebar-btn.active{background:var(--tint);color:var(--primary);font-weight:600;border-left:3px solid var(--primary);padding-left:17px;}
-    .main-content{margin-left:240px;padding:30px;}
-    .panel{display:none;}
-    .panel.active{display:block;}
-    .panel-header{margin-bottom:30px;}
-    .panel-title{font-size:28px;font-weight:700;color:var(--text);margin-bottom:8px;}
-    .panel-desc{color:var(--muted);font-size:14px;}
-    .panel-actions{display:flex;gap:8px;margin:20px 0;flex-wrap:wrap;}
-    .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin:30px 0;}
-    .kpi{background:#FFFFFF;padding:20px;border-radius:8px;border:1px solid var(--border);-webkit-print-color-adjust:exact;}
-    .kpi-label{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px;}
-    .kpi-value{font-size:28px;font-weight:700;color:var(--primary);-webkit-print-color-adjust:exact;}
-    .kpi-change{font-size:12px;color:var(--success);margin-top:8px;}
-    .card{background:#FFFFFF;border:1px solid var(--border);border-radius:8px;padding:20px;margin:20px 0;-webkit-print-color-adjust:exact;}
-    .btn{padding:10px 16px;background:var(--primary);color:#FFFFFF;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;-webkit-print-color-adjust:exact;}
-    .btn:hover{background:var(--dark);}
-    .btn-secondary{background:#FFFFFF;color:var(--primary);border:1px solid var(--primary);-webkit-print-color-adjust:exact;}
-    .btn-secondary:hover{background:var(--tint);}
-    .btn-sm{padding:8px 12px;font-size:12px;}
-    table{width:100%;border-collapse:collapse;margin:20px 0;background:#FFFFFF;-webkit-print-color-adjust:exact;}
-    th{background:var(--bg);padding:12px;text-align:left;font-weight:600;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);-webkit-print-color-adjust:exact;}
-    td{padding:12px;border-bottom:1px solid var(--border);}
-    tr:hover{background:var(--bg);}
-    input,textarea,select{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;background:#FFFFFF;}
-    input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--tint);}
-    textarea{resize:vertical;min-height:100px;}
-    .search-box{display:flex;gap:8px;margin:20px 0;flex-wrap:wrap;}
-    .search-box input{flex:1;min-width:200px;}
-    .toast{position:fixed;bottom:20px;right:20px;background:#FFFFFF;border:1px solid var(--border);border-radius:8px;padding:16px 20px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:6000;max-width:400px;display:none;}
-    .toast.show{display:block;animation:slideIn .3s ease-out;}
-    .toast.success{border-left:4px solid var(--success);-webkit-print-color-adjust:exact;}
-    .toast.error{border-left:4px solid var(--danger);-webkit-print-color-adjust:exact;}
-    .toast.info{border-left:4px solid var(--primary);-webkit-print-color-adjust:exact;}
-    @keyframes slideIn{from{transform:translateX(400px);opacity:0;}to{transform:translateX(0);opacity:1;}}
-    .red-flag{background:#FEF2F2;border:1px solid var(--danger);border-radius:6px;padding:12px;margin:10px 0;color:var(--danger);font-weight:600;font-size:13px;-webkit-print-color-adjust:exact;}
-    .tabs{display:flex;border-bottom:1px solid var(--border);margin:20px 0;}
-    .tab{padding:12px 20px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s;}
-    .tab.active{color:var(--primary);border-bottom-color:var(--primary);}
-    .tab-content{display:none;}
-    .tab-content.active{display:block;}
-    @media print{.sidebar,.panel-actions,.btn-secondary{display:none!important;-webkit-print-color-adjust:exact;}.main-content{margin-left:0;}.kpi,.card{page-break-inside:avoid;-webkit-print-color-adjust:exact;}}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNvet &mdash; Veterinary Intelligence Platform</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --primary:#7C3AED;--primary-dark:#5B21B6;--primary-tint:#EDE9FE;--primary-bright:#A78BFA;
+  --bg:#F8FAFC;--card:#FFFFFF;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;
+  --success:#22C55E;--warn:#F59E0B;--danger:#EF4444;--shadow:0 1px 4px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;display:flex;min-height:100vh;}
+@media print{.sidebar,.no-print{display:none!important;}.main{margin:0!important;padding:16px!important;}-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+
+/* GATE */
+#sv-gate{position:fixed;inset:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;}
+.gate-box{background:#fff;border:1px solid var(--border);border-radius:16px;padding:44px;width:400px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.1);}
+.gate-logo{font-size:28px;font-weight:800;color:var(--text);letter-spacing:-1px;margin-bottom:4px;}
+.gate-logo span{color:var(--primary);}
+.gate-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+.gate-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px;text-align:left;}
+.gate-inp{width:100%;border:1px solid var(--border);border-radius:8px;padding:11px 14px;font-size:15px;font-weight:600;outline:none;margin-bottom:10px;font-family:inherit;}
+.gate-inp:focus{border-color:var(--primary);}
+.gate-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;}
+.gate-btn:hover{background:var(--primary-dark);}
+.gate-err{color:#DC2626;font-size:12px;font-weight:600;min-height:16px;margin-top:6px;}
+.gate-demo{font-size:11px;color:var(--muted);margin-top:10px;}
+
+/* PIN */
+#sv-pin{position:fixed;inset:0;background:#fff;z-index:9998;display:none;align-items:center;justify-content:center;}
+.pin-box{background:#fff;border:1px solid var(--border);border-radius:16px;padding:36px;width:360px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.1);}
+.pin-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.pin-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.pin-role{width:100%;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:13px;margin-bottom:14px;font-family:inherit;outline:none;}
+.pin-display{font-size:28px;font-weight:800;color:var(--text);letter-spacing:10px;min-height:44px;margin-bottom:14px;background:var(--bg);border-radius:8px;padding:8px;}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.pin-key{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:13px;font-size:17px;font-weight:700;cursor:pointer;}
+.pin-key:hover{background:var(--primary-tint);}
+.pin-key.wide{grid-column:span 2;}
+.pin-err{color:#DC2626;font-size:12px;font-weight:600;min-height:16px;}
+
+/* LAYOUT */
+.sidebar{width:220px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.sb-logo{padding:18px 16px 12px;border-bottom:1px solid var(--border);}
+.sb-logo-text{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.5px;}
+.sb-logo-text span{color:var(--primary);}
+.sb-user{font-size:11px;color:var(--muted);margin-top:2px;}
+.sb-sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:10px 16px 3px;}
+.sb-btn{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;border:none;background:none;width:100%;text-align:left;font-size:12px;font-weight:500;color:#374151;transition:background .12s;}
+.sb-btn:hover{background:var(--primary-tint);color:var(--primary-dark);}
+.sb-btn.active{background:var(--primary-tint);color:var(--primary-dark);font-weight:700;border-right:3px solid var(--primary);}
+.sb-icon{font-size:13px;width:16px;text-align:center;}
+.main{flex:1;overflow-y:auto;padding:22px;min-width:0;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* PANEL */
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+.pt{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.5px;}
+.pa{display:flex;gap:6px;}
+.btn{border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-p{background:var(--primary);color:#fff;}
+.btn-p:hover{background:var(--primary-dark);}
+.btn-o{background:#fff;color:var(--text);border:1px solid var(--border);}
+.btn-o:hover{background:var(--bg);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.badge-pp{background:var(--primary-tint);color:var(--primary-dark);border:1px solid var(--primary);border-radius:99px;padding:2px 8px;font-size:10px;font-weight:700;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px;}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:10px;padding:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.kv{font-size:21px;font-weight:800;color:var(--text);letter-spacing:-.5px;}
+.kv.g{color:#0F766E;}
+.kv.r{color:#DC2626;}
+.kv.b{color:#1D4ED8;}
+.kv.p{color:var(--primary-dark);}
+.kl{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.3;}
+
+/* CARDS/TABLES */
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;}
+.ct{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:var(--bg);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--border);}
+td{padding:8px 10px;border-bottom:1px solid #F1F5F9;color:#374151;vertical-align:top;}
+tr:hover td{background:#FAFAFA;}
+.badge{display:inline-block;border-radius:99px;padding:2px 7px;font-size:10px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.bg{background:#DCFCE7;color:#14532D;}
+.br{background:#FEE2E2;color:#991B1B;}
+.by{background:#FEF9C3;color:#713F12;}
+.bb{background:#DBEAFE;color:#1E40AF;}
+.bgr{background:#F1F5F9;color:#475569;}
+.bpu{background:#EDE9FE;color:#5B21B6;}
+.red-flag{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;margin:8px 0;}
+
+/* SEARCH */
+.sb-row{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+.si{flex:1;min-width:180px;border:1px solid var(--border);border-radius:7px;padding:7px 11px;font-size:12px;outline:none;font-family:inherit;}
+.si:focus{border-color:var(--primary);}
+select.fi{border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:12px;outline:none;font-family:inherit;background:#fff;}
+
+/* CHAT */
+.chat-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.chat-topics{display:flex;flex-wrap:wrap;gap:5px;padding:12px;border-bottom:1px solid var(--border);}
+.chat-topic{background:var(--primary-tint);color:var(--primary-dark);border:1px solid var(--primary);border-radius:99px;padding:4px 11px;font-size:11px;font-weight:600;cursor:pointer;}
+.chat-topic:hover{background:var(--primary);color:#fff;}
+.chat-hist{height:320px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.cm{max-width:85%;}
+.cm.user{align-self:flex-end;}
+.cm.assistant{align-self:flex-start;}
+.cb{padding:9px 13px;border-radius:10px;font-size:12px;line-height:1.55;}
+.cm.user .cb{background:var(--primary);color:#fff;}
+.cm.assistant .cb{background:var(--bg);border:1px solid var(--border);color:var(--text);}
+.chat-inp-row{display:flex;gap:7px;padding:10px;border-top:1px solid var(--border);}
+.chat-inp{flex:1;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:12px;outline:none;font-family:inherit;}
+.chat-inp:focus{border-color:var(--primary);}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.mt8{margin-top:8px;}
+.hl{background:var(--primary-tint);border:1px solid var(--primary);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--primary-dark);font-weight:500;margin-bottom:12px;}
+
+/* TOAST */
+#sv-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 20px;border-radius:8px;font-size:12px;font-weight:600;z-index:99999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;}
+#sv-toast.show{opacity:1;}
+</style>
 </head>
 <body>
 
-<div id="gate" class="gate">
-  <div class="gate-card">
-    <h1>SAIRNvet</h1>
-    <p>The World's Most Complete Veterinary Platform</p>
-    <div class="gate-role">
-      <label>Role</label>
-      <select id="gateRole">
-        <option>Doctor</option>
-        <option>Technician</option>
-        <option>Receptionist</option>
-        <option>Manager</option>
-      </select>
-    </div>
-    <div class="gate-role">
-      <label>License</label>
-      <input type="text" id="gateLicense" placeholder="SV-PINNACLE-2026">
-    </div>
-    <div class="gate-role">
-      <label>PIN</label>
-      <div class="pin-display" id="pinDisplay"></div>
-      <div class="pin-pad" id="pinPad"></div>
-    </div>
-    <button class="gate-submit" onclick="gateSubmit()">Enter</button>
-    <div class="gate-hint">Demo: SV-PINNACLE-2026 | PIN: 1234 | Clinic: Pinnacle Animal Hospital, Cleveland OH</div>
+<div id="sv-gate">
+  <div class="gate-box">
+    <div class="gate-logo">SAIRN<span>vet</span></div>
+    <div class="gate-sub">Veterinary Intelligence Platform &mdash; Every Species. Every Diagnosis.</div>
+    <div class="gate-lbl">License Key</div>
+    <input class="gate-inp" id="sv-gate-key" placeholder="SV-XXXXXX-XXXX" autocomplete="off">
+    <button class="gate-btn" onclick="svGateSubmit()">Enter SAIRNvet</button>
+    <div class="gate-err" id="sv-gate-err"></div>
+    <div class="gate-demo">Demo: SV-PINNACLE-2026</div>
   </div>
 </div>
 
-<div id="appContainer" class="app-container">
-  <div class="sidebar">
-    <div class="sidebar-logo">
-      <h2>SAIRNvet</h2>
-      <p id="userRole">Doctor</p>
+<div id="sv-pin" style="display:none;align-items:center;justify-content:center;">
+  <div class="pin-box">
+    <div class="pin-title">SAIRNvet</div>
+    <div class="pin-sub">Select role and enter PIN</div>
+    <select class="pin-role" id="sv-pin-role">
+      <option value="owner">Owner / Practice Manager</option>
+      <option value="doctor">Veterinarian</option>
+      <option value="tech">Veterinary Technician</option>
+      <option value="receptionist">Receptionist</option>
+      <option value="manager">Manager</option>
+    </select>
+    <div class="pin-display" id="sv-pin-display">&nbsp;</div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="svPinKey('1')">1</button><button class="pin-key" onclick="svPinKey('2')">2</button><button class="pin-key" onclick="svPinKey('3')">3</button>
+      <button class="pin-key" onclick="svPinKey('4')">4</button><button class="pin-key" onclick="svPinKey('5')">5</button><button class="pin-key" onclick="svPinKey('6')">6</button>
+      <button class="pin-key" onclick="svPinKey('7')">7</button><button class="pin-key" onclick="svPinKey('8')">8</button><button class="pin-key" onclick="svPinKey('9')">9</button>
+      <button class="pin-key wide" onclick="svPinKey('0')">0</button><button class="pin-key" onclick="svPinBack()">&#9003;</button>
     </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Core</div>
-      <button class="sidebar-btn" onclick="switchPanel('dashboard')">Dashboard</button>
-      <button class="sidebar-btn" onclick="switchPanel('panel-diagnoses')">Diagnoses</button>
-      <button class="sidebar-btn" onclick="switchPanel('panel-drugdb')">Drug Database</button>
-      <button class="sidebar-btn" onclick="switchPanel('panel-pharmacy')">Dosing Calculator</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Species</div>
-      <button class="sidebar-btn" onclick="switchPanel('companion-patients')">Companion Animals</button>
-      <button class="sidebar-btn" onclick="switchPanel('equine-patients')">Equine</button>
-      <button class="sidebar-btn" onclick="switchPanel('large-patients')">Large Animals</button>
-      <button class="sidebar-btn" onclick="switchPanel('exotic-patients')">Exotic</button>
-      <button class="sidebar-btn" onclick="switchPanel('avian-patients')">Avian</button>
-      <button class="sidebar-btn" onclick="switchPanel('reptile-patients')">Reptile</button>
-      <button class="sidebar-btn" onclick="switchPanel('zoo-patients')">Zoo/Wildlife</button>
-      <button class="sidebar-btn" onclick="switchPanel('aquatic-patients')">Aquatic</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Clinical</div>
-      <button class="sidebar-btn" onclick="switchPanel('patient-records')">Patient Records</button>
-      <button class="sidebar-btn" onclick="switchPanel('medical-history')">Medical History</button>
-      <button class="sidebar-btn" onclick="switchPanel('vaccines')">Vaccination Records</button>
-      <button class="sidebar-btn" onclick="switchPanel('surgery-log')">Surgery Log</button>
-      <button class="sidebar-btn" onclick="switchPanel('diagnostics')">Diagnostics</button>
-      <button class="sidebar-btn" onclick="switchPanel('prescriptions')">Prescriptions</button>
-      <button class="sidebar-btn" onclick="switchPanel('laboratory')">Laboratory</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Management</div>
-      <button class="sidebar-btn" onclick="switchPanel('appointments')">Appointments</button>
-      <button class="sidebar-btn" onclick="switchPanel('billing')">Billing</button>
-      <button class="sidebar-btn" onclick="switchPanel('inventory')">Inventory</button>
-      <button class="sidebar-btn" onclick="switchPanel('reports')">Reports</button>
-      <button class="sidebar-btn" onclick="switchPanel('settings')">Settings</button>
-    </div>
-  </div>
-
-  <div class="main-content">
-    <!-- Dashboard -->
-    <div id="dashboard" class="panel active">
-      <div class="panel-header">
-        <h1 class="panel-title">Dashboard</h1>
-        <p class="panel-desc">Welcome to SAIRNvet — the complete veterinary platform with 2000+ diagnoses, 500+ medications, and AI-powered clinical support.</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Total Diagnoses</div>
-          <div class="kpi-value">2000+</div>
-          <div class="kpi-change">All species covered</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Medications</div>
-          <div class="kpi-value">500+</div>
-          <div class="kpi-change">Complete database</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Species</div>
-          <div class="kpi-value">50+</div>
-          <div class="kpi-change">Every group covered</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">AI Features</div>
-          <div class="kpi-value">3</div>
-          <div class="kpi-change">Claude-powered</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3>Quick Start</h3>
-        <ul style="margin:15px 0;padding-left:20px;">
-          <li style="margin:8px 0;">Search diagnoses by species and body system</li>
-          <li style="margin:8px 0;">Look up drug information, dosing, and contraindications</li>
-          <li style="margin:8px 0;">Use AI dosing calculator for precise pharmacology</li>
-          <li style="margin:8px 0;">Get full treatment protocols from Claude AI</li>
-          <li style="margin:8px 0;">Access RED FLAG warnings for dangerous drug combinations</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Diagnosis Finder -->
-    <div id="panel-diagnoses" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Diagnosis Finder</h1>
-        <p class="panel-desc">Search 2000+ diagnoses across all species and body systems with AI-powered treatment protocols</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn btn-sm" onclick="exportTableCSV('diagnoses-table','diagnoses')">Export CSV</button>
-        <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
-      </div>
-
-      <div class="card">
-        <div class="search-box">
-          <select id="dx-species" style="flex:0.4;">
-            <option value="">All Species</option>
-            <option value="dog">Dog</option>
-            <option value="cat">Cat</option>
-            <option value="horse">Horse</option>
-            <option value="cattle">Cattle</option>
-            <option value="bird">Bird</option>
-            <option value="reptile">Reptile</option>
-            <option value="exotic">Exotic Mammal</option>
-            <option value="zoo">Zoo/Wildlife</option>
-          </select>
-          <select id="dx-system" style="flex:0.4;">
-            <option value="">All Body Systems</option>
-            <option value="integumentary">Integumentary</option>
-            <option value="musculoskeletal">Musculoskeletal</option>
-            <option value="cardiovascular">Cardiovascular</option>
-            <option value="respiratory">Respiratory</option>
-            <option value="gastrointestinal">Gastrointestinal</option>
-            <option value="urogenital">Urogenital</option>
-            <option value="neurological">Neurological</option>
-            <option value="endocrine">Endocrine</option>
-            <option value="ophthalmology">Ophthalmology</option>
-            <option value="hematology">Hematology/Oncology</option>
-            <option value="infectious">Infectious Disease</option>
-            <option value="behavioral">Behavioral/Toxicology</option>
-          </select>
-          <input type="text" id="dx-search" placeholder="Search diagnosis..." style="flex:1;min-width:200px;">
-          <button class="btn btn-sm" onclick="searchDiagnoses()">Search</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <table id="diagnoses-table">
-          <thead>
-            <tr>
-              <th>Diagnosis</th>
-              <th>Species</th>
-              <th>Body System</th>
-              <th>Common Signs</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="diagnoses-tbody">
-            <tr><td colspan="5" style="text-align:center;color:var(--muted);">Select filters and search to view diagnoses</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h3>Get Full Protocol</h3>
-        <div style="margin:15px 0;">
-          <label>Diagnosis name:</label>
-          <input type="text" id="dx-for-protocol" placeholder="e.g., Atopic dermatitis" style="width:100%;margin:10px 0;">
-          <label>Patient weight (kg):</label>
-          <input type="number" id="dx-weight" placeholder="25" style="width:100%;margin:10px 0;">
-          <label>Species:</label>
-          <select id="dx-species-protocol" style="width:100%;margin:10px 0;">
-            <option>Dog</option>
-            <option>Cat</option>
-            <option>Horse</option>
-            <option>Cattle</option>
-          </select>
-          <button class="btn" onclick="getProtocolFromClaude()">Get Protocol from Claude</button>
-          <div id="protocol-result" style="margin:15px 0;padding:15px;background:var(--bg);border-radius:6px;display:none;"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Drug Database -->
-    <div id="panel-drugdb" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Drug Database</h1>
-        <p class="panel-desc">500+ medications with dosing, species, and RED FLAG contraindications</p>
-      </div>
-      <div class="panel-actions">
-        <button class="btn btn-sm" onclick="exportTableCSV('drug-table','drugs')">Export CSV</button>
-        <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
-      </div>
-
-      <div class="card">
-        <div class="search-box">
-          <input type="text" id="drug-name" placeholder="Drug name or class..." style="flex:1;">
-          <select id="drug-species" style="flex:0.4;">
-            <option value="">All Species</option>
-            <option value="dog/cat">Dog/Cat</option>
-            <option value="horse">Horse</option>
-            <option value="cattle">Cattle</option>
-            <option value="bird">Bird</option>
-            <option value="reptile">Reptile</option>
-          </select>
-          <button class="btn btn-sm" onclick="searchDrugs()">Search</button>
-        </div>
-      </div>
-
-      <div id="drug-red-flags" class="red-flag" style="display:none;">
-        <strong>RED FLAG:</strong> <span id="red-flag-text"></span>
-      </div>
-
-      <div class="card">
-        <table id="drug-table">
-          <thead>
-            <tr>
-              <th>Drug Name</th>
-              <th>Class</th>
-              <th>Species</th>
-              <th>Route</th>
-              <th>Dose/Notes</th>
-              <th>Controlled</th>
-            </tr>
-          </thead>
-          <tbody id="drug-tbody">
-            <tr><td colspan="6" style="text-align:center;color:var(--muted);">Search to view drugs</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Dosing Calculator -->
-    <div id="panel-pharmacy" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">AI Dosing Calculator</h1>
-        <p class="panel-desc">Calculate precise drug doses using Claude AI with automatic species contraindication checking</p>
-      </div>
-
-      <div class="card">
-        <h3>Calculate Dose</h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0;">
-          <div>
-            <label style="display:block;margin-bottom:8px;">Drug Name *</label>
-            <input type="text" id="calc-drug" placeholder="e.g., Amoxicillin" style="width:100%;">
-          </div>
-          <div>
-            <label style="display:block;margin-bottom:8px;">Patient Weight (kg) *</label>
-            <input type="number" id="calc-weight" placeholder="25" style="width:100%;">
-          </div>
-          <div>
-            <label style="display:block;margin-bottom:8px;">Species *</label>
-            <select id="calc-species" style="width:100%;">
-              <option>Dog</option>
-              <option>Cat</option>
-              <option>Horse</option>
-              <option>Cattle</option>
-              <option>Bird</option>
-              <option>Reptile</option>
-              <option>Rabbit</option>
-              <option>Guinea Pig</option>
-              <option>Ferret</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;margin-bottom:8px;">Patient Age</label>
-            <input type="text" id="calc-age" placeholder="e.g., 3 years" style="width:100%;">
-          </div>
-        </div>
-
-        <div style="margin:20px 0;">
-          <label style="display:block;margin-bottom:8px;">Clinical Indication (optional)</label>
-          <textarea id="calc-indication" placeholder="e.g., Skin infection, respiratory infection, post-operative prophylaxis"></textarea>
-        </div>
-
-        <button class="btn" onclick="calculateDoseAI()" style="width:100%;">Calculate Dose from Claude</button>
-
-        <div id="dose-result" style="display:none;margin:20px 0;padding:20px;background:var(--bg);border-radius:8px;border-left:4px solid var(--primary);">
-          <h4 style="margin-bottom:15px;color:var(--primary);">Dosing Result</h4>
-          <div id="dose-result-text" style="line-height:1.8;"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Patient Records Panel -->
-    <div id="patient-records" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Patient Records</h1>
-        <p class="panel-desc">Manage patient information and medical records</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-label">Active Patients</div>
-          <div class="kpi-value">487</div>
-          <div class="kpi-change">All species</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">This Month</div>
-          <div class="kpi-value">156</div>
-          <div class="kpi-change">Appointments</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Avg Age</div>
-          <div class="kpi-value">6.2yr</div>
-          <div class="kpi-change">Adult patients</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Up-to-Date</div>
-          <div class="kpi-value">92%</div>
-          <div class="kpi-change">Vaccinated</div>
-        </div>
-      </div>
-      <div class="card">
-        <table>
-          <thead><tr><th>Patient Name</th><th>Species</th><th>Age</th><th>Owner</th><th>Last Visit</th><th>Status</th></tr></thead>
-          <tbody>
-            <tr><td>Max</td><td>Dog (Golden Retriever)</td><td>5y</td><td>Smith, John</td><td>2026-07-05</td><td>Healthy</td></tr>
-            <tr><td>Whiskers</td><td>Cat (Persian)</td><td>8y</td><td>Doe, Jane</td><td>2026-07-04</td><td>Follow-up</td></tr>
-            <tr><td>Star</td><td>Horse (Quarter Horse)</td><td>12y</td><td>Johnson, Sarah</td><td>2026-06-28</td><td>Healthy</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Remaining Core Panels -->
-    <div id="companion-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Companion Animals</h1>
-        <p class="panel-desc">Dogs, cats, and small companion animal care</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">287</div></div>
-        <div class="kpi"><div class="kpi-label">Visits YTD</div><div class="kpi-value">1204</div></div>
-        <div class="kpi"><div class="kpi-label">Vaccinated</div><div class="kpi-value">94%</div></div>
-        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$156K</div></div>
-        <div class="kpi"><div class="kpi-label">Avg Case</div><div class="kpi-value">$287</div></div>
-      </div>
-      <div class="card"><p>Comprehensive companion animal care including preventive medicine, surgery, and diagnostics.</p></div>
-    </div>
-
-    <div id="equine-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Equine</h1>
-        <p class="panel-desc">Horses, ponies, and equine specialist care</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">87</div></div>
-        <div class="kpi"><div class="kpi-label">Farm Calls</div><div class="kpi-value">234</div></div>
-        <div class="kpi"><div class="kpi-label">Lameness Cases</div><div class="kpi-value">34</div></div>
-        <div class="kpi"><div class="kpi-label">Surgeries</div><div class="kpi-value">12</div></div>
-        <div class="kpi"><div class="kpi-label">Avg Invoice</div><div class="kpi-value">$1,640</div></div>
-      </div>
-      <div class="card"><p>Advanced equine medicine including lameness diagnosis, reproduction, and performance medicine.</p></div>
-    </div>
-
-    <div id="large-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Large Animals</h1>
-        <p class="panel-desc">Cattle, sheep, swine, and food animal medicine</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Herds</div><div class="kpi-value">23</div></div>
-        <div class="kpi"><div class="kpi-label">Total Head</div><div class="kpi-value">2,847</div></div>
-        <div class="kpi"><div class="kpi-label">HMP</div><div class="kpi-value">18</div></div>
-        <div class="kpi"><div class="kpi-label">Visits</div><div class="kpi-value">156</div></div>
-        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$198K</div></div>
-      </div>
-      <div class="card"><p>Food animal and herd health management with production medicine focus.</p></div>
-    </div>
-
-    <div id="exotic-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Exotic &amp; Small Mammals</h1>
-        <p class="panel-desc">Rabbits, ferrets, guinea pigs, and exotic mammal care</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">234</div></div>
-        <div class="kpi"><div class="kpi-label">Species</div><div class="kpi-value">18</div></div>
-        <div class="kpi"><div class="kpi-label">Surgeries</div><div class="kpi-value">67</div></div>
-        <div class="kpi"><div class="kpi-label">Growth</div><div class="kpi-value">+34%</div></div>
-        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$89K</div></div>
-      </div>
-      <div class="card"><p>Specialized exotic mammal medicine with expertise in husbandry and behavioral management.</p></div>
-    </div>
-
-    <div id="avian-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Avian</h1>
-        <p class="panel-desc">Birds including psittacines, raptors, and poultry</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">178</div></div>
-        <div class="kpi"><div class="kpi-label">Surgeries</div><div class="kpi-value">34</div></div>
-        <div class="kpi"><div class="kpi-label">Diagnostics</div><div class="kpi-value">89</div></div>
-        <div class="kpi"><div class="kpi-label">Recovery Rate</div><div class="kpi-value">93%</div></div>
-        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$76K</div></div>
-      </div>
-      <div class="card"><p>Avian medicine expertise including aviary management and emergency care.</p></div>
-    </div>
-
-    <div id="reptile-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Reptile &amp; Amphibian</h1>
-        <p class="panel-desc">Snakes, lizards, turtles, and amphibian care</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Patients</div><div class="kpi-value">156</div></div>
-        <div class="kpi"><div class="kpi-label">Species</div><div class="kpi-value">34</div></div>
-        <div class="kpi"><div class="kpi-label">MBD Cases</div><div class="kpi-value">23</div></div>
-        <div class="kpi"><div class="kpi-label">Ultrasound</div><div class="kpi-value">67</div></div>
-        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$67K</div></div>
-      </div>
-      <div class="card"><p>Comprehensive reptile and amphibian care with advanced diagnostics and surgical capabilities.</p></div>
-    </div>
-
-    <div id="zoo-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Zoo &amp; Wildlife</h1>
-        <p class="panel-desc">Zoo animals, wildlife rehabilitation, and exotic large animals</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Animals</div><div class="kpi-value">450</div></div>
-        <div class="kpi"><div class="kpi-label">Species</div><div class="kpi-value">67</div></div>
-        <div class="kpi"><div class="kpi-label">Rehab Cases</div><div class="kpi-value">45</div></div>
-        <div class="kpi"><div class="kpi-label">Release Rate</div><div class="kpi-value">78%</div></div>
-        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$234K</div></div>
-      </div>
-      <div class="card"><p>Zoo veterinary medicine and wildlife rehabilitation with ZIMS protocols.</p></div>
-    </div>
-
-    <div id="aquatic-patients" class="panel">
-      <div class="panel-header">
-        <h1 class="panel-title">Aquatic &amp; Marine</h1>
-        <p class="panel-desc">Fish, marine mammals, and aquatic animal care</p>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Collections</div><div class="kpi-value">12</div></div>
-        <div class="kpi"><div class="kpi-label">Total Animals</div><div class="kpi-value">12,500</div></div>
-        <div class="kpi"><div class="kpi-label">Consultations</div><div class="kpi-value">89</div></div>
-        <div class="kpi"><div class="kpi-label">Health Index</div><div class="kpi-value">94%</div></div>
-        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">$123K</div></div>
-      </div>
-      <div class="card"><p>Aquatic veterinary medicine for fish, marine mammals, and water animal collections.</p></div>
-    </div>
-
-    <!-- Placeholder panels for clinical and management functions -->
-    <div id="medical-history" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Medical History</h1></div>
-      <div class="card"><p>Complete medical history and treatment records management.</p></div>
-    </div>
-    <div id="vaccines" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Vaccination Records</h1></div>
-      <div class="card"><p>Vaccination tracking and booster scheduling.</p></div>
-    </div>
-    <div id="surgery-log" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Surgery Log</h1></div>
-      <div class="card"><p>Surgical procedures and outcomes tracking.</p></div>
-    </div>
-    <div id="diagnostics" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Diagnostics</h1></div>
-      <div class="card"><p>Laboratory and imaging diagnostics management.</p></div>
-    </div>
-    <div id="prescriptions" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Prescriptions</h1></div>
-      <div class="card"><p>Prescription management and refill tracking.</p></div>
-    </div>
-    <div id="laboratory" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Laboratory</h1></div>
-      <div class="card"><p>Lab result management and tracking.</p></div>
-    </div>
-    <div id="appointments" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Appointments</h1></div>
-      <div class="card"><p>Appointment scheduling and calendar management.</p></div>
-    </div>
-    <div id="billing" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Billing</h1></div>
-      <div class="card"><p>Financial management and billing oversight.</p></div>
-    </div>
-    <div id="inventory" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Inventory</h1></div>
-      <div class="card"><p>Drug and supply inventory management.</p></div>
-    </div>
-    <div id="reports" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Reports</h1></div>
-      <div class="card"><p>Clinical and business reporting.</p></div>
-    </div>
-    <div id="settings" class="panel">
-      <div class="panel-header"><h1 class="panel-title">Settings</h1></div>
-      <div class="card">
-        <label>Theme:</label>
-        <select style="width:100%;margin:10px 0;">
-          <option>Light</option>
-          <option>Auto</option>
-        </select>
-        <label>Time Format:</label>
-        <select style="width:100%;margin:10px 0;">
-          <option>12-hour</option>
-          <option>24-hour</option>
-        </select>
-        <button class="btn" onclick="showToast('Settings saved successfully','success')">Save Settings</button>
-      </div>
-    </div>
+    <div class="pin-err" id="sv-pin-err"></div>
   </div>
 </div>
 
-<div id="sv-toast" class="toast"></div>
+<div id="sv-toast"></div>
+
+<div class="sidebar" id="sv-sidebar" style="display:none;">
+  <div class="sb-logo">
+    <div class="sb-logo-text">SAIRN<span>vet</span></div>
+    <div class="sb-user" id="sv-sb-user">Pinnacle Animal Hospital</div>
+  </div>
+  <div class="sb-sec">Overview</div>
+  <button class="sb-btn active" id="sb-dashboard" onclick="svNav('dashboard')"><span class="sb-icon">&#9634;</span>Dashboard</button>
+  <button class="sb-btn" id="sb-ai" onclick="svNav('ai')"><span class="sb-icon">&#9733;</span>AI Assistant</button>
+  <div class="sb-sec">Clinical</div>
+  <button class="sb-btn" id="sb-patients" onclick="svNav('patients')"><span class="sb-icon">&#9825;</span>Patients</button>
+  <button class="sb-btn" id="sb-soapnotes" onclick="svNav('soapnotes')"><span class="sb-icon">&#9998;</span>SOAP Notes</button>
+  <button class="sb-btn" id="sb-scheduling" onclick="svNav('scheduling')"><span class="sb-icon">&#9635;</span>Scheduling</button>
+  <button class="sb-btn" id="sb-whiteboard" onclick="svNav('whiteboard')"><span class="sb-icon">&#9646;</span>Whiteboard</button>
+  <button class="sb-btn" id="sb-vitals" onclick="svNav('vitals')"><span class="sb-icon">&#9829;</span>Vitals</button>
+  <button class="sb-btn" id="sb-labresults" onclick="svNav('labresults')"><span class="sb-icon">&#9740;</span>Lab Results</button>
+  <div class="sb-sec">Rx & Inventory</div>
+  <button class="sb-btn" id="sb-pharmacy" onclick="svNav('pharmacy')"><span class="sb-icon">&#9654;</span>Pharmacy</button>
+  <button class="sb-btn" id="sb-drugdb" onclick="svNav('drugdb')"><span class="sb-icon">&#9679;</span>Drug Database</button>
+  <button class="sb-btn" id="sb-diagnoses" onclick="svNav('diagnoses')"><span class="sb-icon">&#9670;</span>Diagnosis Library</button>
+  <button class="sb-btn" id="sb-inventory" onclick="svNav('inventory')"><span class="sb-icon">&#9632;</span>Inventory</button>
+  <button class="sb-btn" id="sb-controlled" onclick="svNav('controlled')"><span class="sb-icon">&#9888;</span>Controlled Subs</button>
+  <div class="sb-sec">Equine & Large</div>
+  <button class="sb-btn" id="sb-equine" onclick="svNav('equine')"><span class="sb-icon">&#9650;</span>Equine Hub</button>
+  <button class="sb-btn" id="sb-lameness" onclick="svNav('lameness')"><span class="sb-icon">&#9660;</span>Lameness Eval</button>
+  <button class="sb-btn" id="sb-farmcalls" onclick="svNav('farmcalls')"><span class="sb-icon">&#9632;</span>Farm Calls</button>
+  <button class="sb-btn" id="sb-reproduction" onclick="svNav('reproduction')"><span class="sb-icon">&#9672;</span>Reproduction</button>
+  <button class="sb-btn" id="sb-herdhealth" onclick="svNav('herdhealth')"><span class="sb-icon">&#9636;</span>Herd Health</button>
+  <button class="sb-btn" id="sb-coggins" onclick="svNav('coggins')"><span class="sb-icon">&#9679;</span>Coggins/Health Certs</button>
+  <div class="sb-sec">Exotic & Zoo</div>
+  <button class="sb-btn" id="sb-exotic" onclick="svNav('exotic')"><span class="sb-icon">&#9728;</span>Exotic Species</button>
+  <button class="sb-btn" id="sb-avian" onclick="svNav('avian')"><span class="sb-icon">&#9992;</span>Avian</button>
+  <button class="sb-btn" id="sb-reptile" onclick="svNav('reptile')"><span class="sb-icon">&#9824;</span>Reptile</button>
+  <button class="sb-btn" id="sb-zoo" onclick="svNav('zoo')"><span class="sb-icon">&#9734;</span>Zoo & Wildlife</button>
+  <button class="sb-btn" id="sb-wildlife" onclick="svNav('wildlife')"><span class="sb-icon">&#9745;</span>Rehab & Conservation</button>
+  <div class="sb-sec">Client & Billing</div>
+  <button class="sb-btn" id="sb-clients" onclick="svNav('clients')"><span class="sb-icon">&#9825;</span>Clients</button>
+  <button class="sb-btn" id="sb-invoicing" onclick="svNav('invoicing')"><span class="sb-icon">&#36;</span>Invoicing</button>
+  <button class="sb-btn" id="sb-communications" onclick="svNav('communications')"><span class="sb-icon">&#9993;</span>Communications</button>
+  <button class="sb-btn" id="sb-reminders" onclick="svNav('reminders')"><span class="sb-icon">&#9654;</span>Reminders</button>
+  <div class="sb-sec">Practice</div>
+  <button class="sb-btn" id="sb-surgery" onclick="svNav('surgery')"><span class="sb-icon">&#9679;</span>Surgery</button>
+  <button class="sb-btn" id="sb-dental" onclick="svNav('dental')"><span class="sb-icon">&#9670;</span>Dental</button>
+  <button class="sb-btn" id="sb-staff" onclick="svNav('staff')"><span class="sb-icon">&#9824;</span>Staff</button>
+  <button class="sb-btn" id="sb-compliance" onclick="svNav('compliance')"><span class="sb-icon">&#10003;</span>Compliance</button>
+  <button class="sb-btn" id="sb-financials" onclick="svNav('financials')"><span class="sb-icon">&#9650;</span>Financials</button>
+  <button class="sb-btn" id="sb-reports" onclick="svNav('reports')"><span class="sb-icon">&#9636;</span>Reports</button>
+  <button class="sb-btn" id="sb-settings" onclick="svNav('settings')"><span class="sb-icon">&#9881;</span>Settings</button>
+</div>
+
+<div class="main" id="sv-main" style="display:none;">
+
+<!-- DASHBOARD -->
+<div class="panel active" id="panel-dashboard">
+<div class="ph"><div class="pt">Command Center</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('dashboard')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">32</div><div class="kl">Appointments Today</div></div>
+<div class="kpi"><div class="kv b">8</div><div class="kl">Checked In Now</div></div>
+<div class="kpi"><div class="kv g">$4,280</div><div class="kl">Revenue Today</div></div>
+<div class="kpi"><div class="kv r">$12,400</div><div class="kl">Outstanding AR</div></div>
+<div class="kpi"><div class="kv">18 min</div><div class="kl">Avg Wait Time</div></div>
+</div>
+<div class="g2">
+<div class="card"><div class="ct">Today's Schedule</div>
+<table><thead><tr><th>Time</th><th>Patient</th><th>Species</th><th>Reason</th><th>Doctor</th><th>Status</th></tr></thead><tbody>
+<tr><td>8:00am</td><td>Max</td><td>Dog</td><td>Annual Wellness</td><td>Dr. Mitchell</td><td><span class="badge bg">Checked In</span></td></tr>
+<tr><td>8:30am</td><td>Luna</td><td>Cat</td><td>Vomiting</td><td>Dr. Patel</td><td><span class="badge bb">With Doctor</span></td></tr>
+<tr><td>9:00am</td><td>Thunder</td><td>Horse</td><td>Farm Call &mdash; Lameness</td><td>Dr. Mitchell</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>9:30am</td><td>Kiwi</td><td>African Grey</td><td>Annual Exam</td><td>Dr. Patel</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>10:00am</td><td>Cleo</td><td>Ball Python</td><td>Dysecdysis</td><td>Dr. Mitchell</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>11:00am</td><td>Goliath</td><td>Sulcata Tortoise</td><td>Wellness/Weight</td><td>Dr. Patel</td><td><span class="badge by">Scheduled</span></td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">Action Items</div>
+<table><thead><tr><th>Item</th><th>Count</th><th>Priority</th></tr></thead><tbody>
+<tr><td>Coggins expiring &lt;30 days</td><td>4</td><td><span class="badge br">High</span></td></tr>
+<tr><td>Vaccine reminders overdue</td><td>11</td><td><span class="badge br">High</span></td></tr>
+<tr><td>Lab results ready</td><td>6</td><td><span class="badge by">Med</span></td></tr>
+<tr><td>Controlled substance log entries</td><td>3</td><td><span class="badge by">Med</span></td></tr>
+<tr><td>Invoices outstanding &gt;30 days</td><td>8</td><td><span class="badge bb">Low</span></td></tr>
+<tr><td>DEA license renewal due</td><td>1</td><td><span class="badge br">High</span></td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><div class="ct">Hospital Whiteboard</div>
+<table><thead><tr><th>Patient</th><th>Species</th><th>Doctor</th><th>Condition</th><th>Admitted</th><th>Status</th></tr></thead><tbody>
+<tr><td>Buddy</td><td>Dog</td><td>Dr. Mitchell</td><td>Post-op cruciate repair</td><td>6/14/26</td><td><span class="badge bg">Stable</span></td></tr>
+<tr><td>Unknown Cat</td><td>Cat</td><td>Dr. Patel</td><td>Urinary obstruction</td><td>6/15/26</td><td><span class="badge by">Monitor</span></td></tr>
+<tr><td>Parvovirus Pup</td><td>Dog</td><td>Dr. Mitchell</td><td>CPV-2 enteritis</td><td>6/13/26</td><td><span class="badge br">Critical</span></td></tr>
+<tr><td>Oliver</td><td>Rabbit</td><td>Dr. Patel</td><td>GI stasis</td><td>6/15/26</td><td><span class="badge bg">Stable</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- AI ASSISTANT -->
+<div class="panel" id="panel-ai">
+<div class="ph"><div class="pt">AI Veterinary Assistant</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="svClearChat()">Clear</button></div></div>
+<div class="hl">Expert veterinary guidance for all species &mdash; diagnoses, drug doses, protocols, exotics, zoo medicine. Powered by Claude AI.</div>
+<div class="chat-wrap">
+<div class="chat-topics">
+<span class="chat-topic" onclick="svAskTopic('Drug dose: meloxicam for a 450g African Grey Parrot')">Drug Dose</span>
+<span class="chat-topic" onclick="svAskTopic('Differential diagnosis: lethargic ball python, not eating 3 weeks')">Differential Dx</span>
+<span class="chat-topic" onclick="svAskTopic('Equine lameness: Grade 3 left forelimb, positive flexion tests')">Equine Lameness</span>
+<span class="chat-topic" onclick="svAskTopic('Coggins test requirements for interstate travel to Florida')">Coggins Rules</span>
+<span class="chat-topic" onclick="svAskTopic('Anesthesia protocol for a Sulcata tortoise 40kg')">Exotic Anesthesia</span>
+<span class="chat-topic" onclick="svAskTopic('PPID vs EMS: how to differentiate in a pony')">Horse Endocrine</span>
+<span class="chat-topic" onclick="svAskTopic('EPM treatment protocols 2026')">EPM Treatment</span>
+<span class="chat-topic" onclick="svAskTopic('Penicillin contraindications in exotic species')">Drug Warnings</span>
+</div>
+<div class="chat-hist" id="sv-chat-hist">
+<div class="cm assistant"><div class="cb">Hello! I am your SAIRNvet AI assistant. I cover all species &mdash; companion animals, equine, large animal, exotic, zoo, and wildlife. Ask me about diagnoses, drug doses, treatment protocols, or any clinical question.</div></div>
+</div>
+<div class="chat-inp-row">
+<input class="chat-inp" id="sv-chat-input" placeholder="Ask about any species, diagnosis, drug dose, or protocol..." onkeydown="if(event.key==='Enter')svSendChat()">
+<button class="btn btn-p no-print" onclick="svSendChat()">Send</button>
+</div>
+</div>
+</div>
+
+<!-- PATIENTS -->
+<div class="panel" id="panel-patients">
+<div class="ph"><div class="pt">Patient Records</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('patients')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">847</div><div class="kl">Total Patients</div></div>
+<div class="kpi"><div class="kv g">142</div><div class="kl">Active This Month</div></div>
+<div class="kpi"><div class="kv b">18</div><div class="kl">New This Month</div></div>
+<div class="kpi"><div class="kv p">12</div><div class="kl">Species on File</div></div>
+<div class="kpi"><div class="kv">2.4</div><div class="kl">Avg Visits/Year</div></div>
+</div>
+<div class="sb-row">
+<input class="si" id="sv-pt-search" placeholder="Search by name, species, owner..." oninput="svFilterPatients()">
+<select class="fi" id="sv-pt-species" onchange="svFilterPatients()">
+<option value="">All Species</option>
+<option>Dog</option><option>Cat</option><option>Horse</option><option>Rabbit</option>
+<option>Bird</option><option>Reptile</option><option>Ferret</option><option>Guinea Pig</option>
+<option>Tortoise</option><option>Cattle</option><option>Sheep/Goat</option><option>Exotic</option>
+</select>
+</div>
+<div class="card"><table id="sv-pt-table">
+<thead><tr><th>Name</th><th>Species/Breed</th><th>Age/Weight</th><th>Owner</th><th>Last Visit</th><th>Next Appt</th><th>Alerts</th></tr></thead>
+<tbody id="sv-pt-body"></tbody>
+</table></div>
+</div>
+
+<!-- SOAP NOTES -->
+<div class="panel" id="panel-soapnotes">
+<div class="ph"><div class="pt">AI SOAP Notes</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('soap')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">24</div><div class="kl">Notes Today</div></div>
+<div class="kpi"><div class="kv g">18</div><div class="kl">AI-Assisted</div></div>
+<div class="kpi"><div class="kv g">$840</div><div class="kl">Missed Charges Recovered</div></div>
+<div class="kpi"><div class="kv">4.2 min</div><div class="kl">Avg Completion Time</div></div>
+<div class="kpi"><div class="kv b">312</div><div class="kl">Notes This Month</div></div>
+</div>
+<div class="g2">
+<div class="card"><div class="ct">New SOAP Note</div>
+<div style="display:flex;flex-direction:column;gap:8px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">PATIENT</div>
+<select class="fi" id="sv-soap-patient" style="width:100%;"><option>Max (Labrador, 7yr)</option><option>Luna (DSH Cat, 3yr)</option><option>Thunder (Thoroughbred, 12yr)</option><option>Kiwi (African Grey, 8yr)</option><option>Cleo (Ball Python, 4yr)</option><option>Goliath (Sulcata Tortoise, 22yr)</option></select></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">SUBJECTIVE (Chief Complaint)</div>
+<textarea id="sv-soap-s" style="width:100%;height:60px;border:1px solid var(--border);border-radius:7px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Owner complaint, history, duration..."></textarea></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">OBJECTIVE (Exam Findings)</div>
+<textarea id="sv-soap-o" style="width:100%;height:60px;border:1px solid var(--border);border-radius:7px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Vitals, physical exam findings..."></textarea></div>
+</div></div>
+<div class="card"><div class="ct">AI Generation</div>
+<div style="display:flex;flex-direction:column;gap:8px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">ASSESSMENT (Diagnosis)</div>
+<textarea id="sv-soap-a" style="width:100%;height:60px;border:1px solid var(--border);border-radius:7px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Differential diagnoses, working diagnosis..."></textarea></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">PLAN (Treatment)</div>
+<textarea id="sv-soap-p" style="width:100%;height:60px;border:1px solid var(--border);border-radius:7px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Medications, procedures, follow-up..."></textarea></div>
+<button class="btn btn-p no-print" onclick="svGenerateSOAP()" style="width:100%;">Generate Full SOAP with AI</button>
+<button class="btn btn-o no-print" onclick="svCheckMissedCharges()" style="width:100%;">Check for Missed Charges</button>
+</div></div>
+</div>
+<div id="sv-soap-result" style="margin-top:12px;"></div>
+</div>
+
+<!-- SCHEDULING -->
+<div class="panel" id="panel-scheduling">
+<div class="ph"><div class="pt">Appointment Scheduler</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('scheduling')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv b">32</div><div class="kl">Appointments Today</div></div>
+<div class="kpi"><div class="kv b">148</div><div class="kl">This Week</div></div>
+<div class="kpi"><div class="kv r">4.2%</div><div class="kl">No-Show Rate</div></div>
+<div class="kpi"><div class="kv g">87%</div><div class="kl">Daily Capacity</div></div>
+<div class="kpi"><div class="kv">2:30pm</div><div class="kl">Next Available</div></div>
+</div>
+<div class="card"><div class="ct">Today's Appointments &mdash; Monday July 6, 2026</div>
+<table><thead><tr><th>Time</th><th>Patient</th><th>Species</th><th>Type</th><th>Doctor</th><th>Duration</th><th>Status</th></tr></thead><tbody>
+<tr><td>8:00am</td><td>Max Martinez</td><td>Dog</td><td>Annual Wellness</td><td>Dr. Mitchell</td><td>30 min</td><td><span class="badge bg">Checked In</span></td></tr>
+<tr><td>8:30am</td><td>Luna Chen</td><td>Cat</td><td>Sick &mdash; Vomiting</td><td>Dr. Patel</td><td>30 min</td><td><span class="badge bb">With Doctor</span></td></tr>
+<tr><td>9:00am</td><td>Thunder (Farm Call)</td><td>Horse</td><td>Lameness Eval</td><td>Dr. Mitchell</td><td>90 min</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>10:30am</td><td>Kiwi Patel</td><td>African Grey</td><td>Annual Exam</td><td>Dr. Patel</td><td>45 min</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>11:15am</td><td>Bella Kim</td><td>French Bulldog</td><td>Recheck</td><td>Dr. Mitchell</td><td>20 min</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>1:00pm</td><td>Cleo Wilson</td><td>Ball Python</td><td>Dysecdysis</td><td>Dr. Mitchell</td><td>30 min</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>1:30pm</td><td>Goliath Kim</td><td>Sulcata Tortoise</td><td>Annual/Weight</td><td>Dr. Patel</td><td>45 min</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>2:30pm</td><td>Rocky Garcia</td><td>German Shepherd</td><td>Ear Infection</td><td>Dr. Mitchell</td><td>30 min</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>3:00pm</td><td>Duchess Brown (Farm)</td><td>Quarter Horse</td><td>Pregnancy Check</td><td>Dr. Patel</td><td>60 min</td><td><span class="badge by">Scheduled</span></td></tr>
+<tr><td>4:00pm</td><td>Daisy Wilson</td><td>Beagle</td><td>Dental Cleaning</td><td>Dr. Mitchell</td><td>90 min</td><td><span class="badge by">Scheduled</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- WHITEBOARD -->
+<div class="panel" id="panel-whiteboard">
+<div class="ph"><div class="pt">Hospital Whiteboard</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('whiteboard')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv b">5</div><div class="kl">Hospitalized Now</div></div>
+<div class="kpi"><div class="kv p">1</div><div class="kl">In Surgery</div></div>
+<div class="kpi"><div class="kv by" style="color:#92400E;">2</div><div class="kl">Awaiting Results</div></div>
+<div class="kpi"><div class="kv g">1</div><div class="kl">Ready for Discharge</div></div>
+<div class="kpi"><div class="kv r">1</div><div class="kl">Critical Care</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Patient</th><th>Species</th><th>Doctor</th><th>Condition</th><th>Admitted</th><th>Next Treatment</th><th>Status</th></tr></thead><tbody>
+<tr><td><strong>Buddy</strong></td><td>Dog</td><td>Dr. Mitchell</td><td>Post-op cruciate repair</td><td>6/14/26 2pm</td><td>Pain check 4pm</td><td><span class="badge bg">Stable</span></td></tr>
+<tr><td><strong>Unknown Cat</strong></td><td>Cat</td><td>Dr. Patel</td><td>Urethral obstruction</td><td>6/15/26 8am</td><td>IV fluids q4h</td><td><span class="badge by">Monitor</span></td></tr>
+<tr><td><strong>Parvovirus Pup</strong></td><td>Dog</td><td>Dr. Mitchell</td><td>CPV-2 enteritis</td><td>6/13/26 6pm</td><td>IV fluids, ondansetron</td><td><span class="badge br">Critical</span></td></tr>
+<tr><td><strong>Oliver</strong></td><td>Rabbit</td><td>Dr. Patel</td><td>GI stasis</td><td>6/15/26 10am</td><td>Metoclopramide 1pm</td><td><span class="badge bg">Stable</span></td></tr>
+<tr><td><strong>Daisy</strong></td><td>Beagle</td><td>Dr. Mitchell</td><td>Dental cleaning</td><td>6/15/26 1pm</td><td>Recovery monitoring</td><td><span class="badge bpu">Post-Op</span></td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">AI Status Update</div>
+<input class="si" id="sv-wb-patient" placeholder="Patient name for status update..." style="width:300px;margin-right:8px;">
+<button class="btn btn-p btn-sm no-print" onclick="svWBUpdate()">Generate Update</button>
+<div id="sv-wb-result" style="margin-top:10px;font-size:12px;"></div>
+</div>
+</div>
+
+<!-- VITALS -->
+<div class="panel" id="panel-vitals">
+<div class="ph"><div class="pt">Vitals &amp; Diagnostics</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('vitals')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">48</div><div class="kl">Vitals Recorded Today</div></div>
+<div class="kpi"><div class="kv r">6</div><div class="kl">Abnormal Results</div></div>
+<div class="kpi"><div class="kv b">12</div><div class="kl">Lab Orders Pending</div></div>
+<div class="kpi"><div class="kv">4</div><div class="kl">Imaging Orders</div></div>
+<div class="kpi"><div class="kv g">8</div><div class="kl">Results Ready</div></div>
+</div>
+<div class="g2">
+<div class="card"><div class="ct">Enter Vitals</div>
+<div style="display:flex;flex-direction:column;gap:7px;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">PATIENT</div>
+<select class="fi" style="width:100%;"><option>Max (Dog)</option><option>Luna (Cat)</option><option>Thunder (Horse)</option><option>Kiwi (Parrot)</option><option>Cleo (Python)</option><option>Goliath (Tortoise)</option></select></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">SPECIES</div>
+<select class="fi" id="sv-vitals-species" style="width:100%;"><option>Dog</option><option>Cat</option><option>Horse</option><option>Rabbit</option><option>Bird</option><option>Reptile</option><option>Cattle</option><option>Exotic</option></select></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">WEIGHT (kg)</div><input class="si" placeholder="e.g. 30.5"></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">TEMP (°F)</div><input class="si" placeholder="e.g. 101.5"></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">HEART RATE</div><input class="si" placeholder="bpm"></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">RESP RATE</div><input class="si" placeholder="breaths/min"></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">PAIN SCORE</div><input class="si" placeholder="0-10"></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">O2 SAT %</div><input class="si" placeholder="%"></div>
+</div>
+<button class="btn btn-p no-print" onclick="svInterpretVitals()">Interpret with AI</button>
+<div id="sv-vitals-result" style="font-size:12px;margin-top:6px;"></div>
+</div></div>
+<div class="card"><div class="ct">Species Normal Ranges</div>
+<table><thead><tr><th>Species</th><th>Temp °F</th><th>HR bpm</th><th>RR /min</th></tr></thead><tbody>
+<tr><td>Dog</td><td>100-102.5</td><td>60-140</td><td>15-30</td></tr>
+<tr><td>Cat</td><td>100.5-102.5</td><td>120-140</td><td>20-30</td></tr>
+<tr><td>Horse</td><td>99-101.5</td><td>28-44</td><td>10-24</td></tr>
+<tr><td>Rabbit</td><td>101-104</td><td>130-325</td><td>30-60</td></tr>
+<tr><td>Parrot</td><td>104-106</td><td>150-350</td><td>25-45</td></tr>
+<tr><td>Tortoise</td><td>75-85 (preferred body)</td><td>10-40</td><td>4-10</td></tr>
+<tr><td>Cattle</td><td>101-102.5</td><td>40-80</td><td>15-30</td></tr>
+<tr><td>Ferret</td><td>100-104</td><td>180-250</td><td>30-40</td></tr>
+</tbody></table></div>
+</div>
+</div>
+
+<!-- LAB RESULTS -->
+<div class="panel" id="panel-labresults">
+<div class="ph"><div class="pt">Lab Results &amp; Diagnostics</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('labs')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv b">8</div><div class="kl">Results Pending</div></div>
+<div class="kpi"><div class="kv r">2</div><div class="kl">Critical Values</div></div>
+<div class="kpi"><div class="kv g">14</div><div class="kl">Results Today</div></div>
+<div class="kpi"><div class="kv">6</div><div class="kl">Sent to Owner</div></div>
+<div class="kpi"><div class="kv">4.2 hrs</div><div class="kl">Avg Turnaround</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Patient</th><th>Species</th><th>Test</th><th>Ordered By</th><th>Result Date</th><th>Result</th><th>Status</th></tr></thead><tbody>
+<tr><td>Max</td><td>Dog</td><td>CBC/Chemistry</td><td>Dr. Mitchell</td><td>7/6/26</td><td>WBC 18.4 (H)</td><td><span class="badge br">Critical</span></td></tr>
+<tr><td>Luna</td><td>Cat</td><td>FeLV/FIV Snap</td><td>Dr. Patel</td><td>7/6/26</td><td>Negative</td><td><span class="badge bg">Normal</span></td></tr>
+<tr><td>Thunder</td><td>Horse</td><td>Lyme/EIA/EPM Panel</td><td>Dr. Mitchell</td><td>Pending</td><td>&mdash;</td><td><span class="badge by">Pending</span></td></tr>
+<tr><td>Kiwi</td><td>African Grey</td><td>Chlamydophila PCR</td><td>Dr. Patel</td><td>7/5/26</td><td>Negative</td><td><span class="badge bg">Normal</span></td></tr>
+<tr><td>Cleo</td><td>Ball Python</td><td>CBC/Chem/Parasites</td><td>Dr. Mitchell</td><td>7/4/26</td><td>Heterophilia</td><td><span class="badge by">Abnormal</span></td></tr>
+<tr><td>Goliath</td><td>Sulcata Tortoise</td><td>Uric acid/BUN/Ca</td><td>Dr. Patel</td><td>7/6/26</td><td>UA 12.4 (H)</td><td><span class="badge by">Abnormal</span></td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">AI Lab Interpretation</div>
+<textarea id="sv-lab-input" style="width:100%;height:70px;border:1px solid var(--border);border-radius:7px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Paste lab values here. Include species. e.g. Dog, 7yr: WBC 18.4, neutrophils 15.2, lymphocytes 1.2..."></textarea>
+<button class="btn btn-p btn-sm mt8 no-print" onclick="svInterpretLab()">Interpret with AI</button>
+<div id="sv-lab-result" style="margin-top:10px;font-size:12px;white-space:pre-wrap;"></div>
+</div>
+</div>
+
+<!-- PHARMACY -->
+<div class="panel" id="panel-pharmacy">
+<div class="ph"><div class="pt">Pharmacy &amp; Rx Manager</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('pharmacy')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">48</div><div class="kl">Prescriptions Today</div></div>
+<div class="kpi"><div class="kv r">6</div><div class="kl">Controlled Dispensed</div></div>
+<div class="kpi"><div class="kv r">4</div><div class="kl">Low Stock Items</div></div>
+<div class="kpi"><div class="kv">12</div><div class="kl">Refill Requests</div></div>
+<div class="kpi"><div class="kv g">$2,840</div><div class="kl">Pharmacy Revenue Today</div></div>
+</div>
+<div class="g2">
+<div class="card"><div class="ct">AI Dosing Calculator</div>
+<div style="display:flex;flex-direction:column;gap:7px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">DRUG NAME</div><input class="si" id="sv-rx-drug" placeholder="e.g. Meloxicam, Amoxicillin, Banamine..." style="width:100%;"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">PATIENT WEIGHT</div><input class="si" id="sv-rx-weight" placeholder="kg or lbs"></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">SPECIES</div>
+<select class="fi" id="sv-rx-species" style="width:100%;"><option>Dog</option><option>Cat</option><option>Horse</option><option>Rabbit</option><option>Bird/Parrot</option><option>Reptile/Snake</option><option>Tortoise/Chelonian</option><option>Ferret</option><option>Guinea Pig</option><option>Cattle</option><option>Sheep/Goat</option><option>Exotic/Zoo</option></select></div>
+</div>
+<button class="btn btn-p no-print" onclick="svCalcDose()">Calculate Dose with AI</button>
+<div id="sv-rx-result" style="font-size:12px;margin-top:6px;white-space:pre-wrap;"></div>
+</div></div>
+<div class="card"><div class="ct">Drug Inventory</div>
+<table><thead><tr><th>Drug</th><th>Form</th><th>Qty</th><th>Reorder</th><th>Status</th></tr></thead><tbody id="sv-rx-inv"></tbody></table>
+</div>
+</div>
+</div>
+
+<!-- DRUG DATABASE -->
+<div class="panel" id="panel-drugdb">
+<div class="ph"><div class="pt">Drug Database &mdash; All Species</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('drugs')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv p">500+</div><div class="kl">Drugs in Database</div></div>
+<div class="kpi"><div class="kv r">12</div><div class="kl">Species Covered</div></div>
+<div class="kpi"><div class="kv r">8</div><div class="kl">DEA Controlled</div></div>
+<div class="kpi"><div class="kv r">14</div><div class="kl">Species Contraindications</div></div>
+<div class="kpi"><div class="kv g">AI</div><div class="kl">Any Drug Any Species</div></div>
+</div>
+<div class="hl">&#9888; RED FLAGS: Ivermectin is FATAL in chelonians. Penicillin/Amoxicillin is FATAL in guinea pigs, chinchillas, rabbits. Azathioprine is FATAL in cats. Acetaminophen is FATAL in cats. Always check species before dispensing.</div>
+<div class="sb-row">
+<input class="si" id="sv-drug-search" placeholder="Search drug name, class, species..." oninput="svFilterDrugs()">
+<select class="fi" id="sv-drug-species" onchange="svFilterDrugs()">
+<option value="">All Species</option><option>Dog</option><option>Cat</option><option>Horse</option><option>Rabbit</option><option>Bird</option><option>Reptile</option><option>Tortoise</option><option>Ferret</option><option>Cattle</option><option>Zoo/Wildlife</option>
+</select>
+<select class="fi" id="sv-drug-class" onchange="svFilterDrugs()">
+<option value="">All Classes</option><option>Antibiotic</option><option>NSAID</option><option>Opioid</option><option>Anesthesia</option><option>Antiparasitic</option><option>Cardiac</option><option>Endocrine</option><option>Antifungal</option><option>Oncology</option><option>Behavioral</option>
+</select>
+</div>
+<div class="card"><table id="sv-drug-table">
+<thead><tr><th>Drug Name</th><th>Class</th><th>Species</th><th>Typical Dose</th><th>Route</th><th>DEA</th><th>Warnings</th></tr></thead>
+<tbody id="sv-drug-body"></tbody>
+</table></div>
+</div>
+
+<!-- DIAGNOSIS LIBRARY -->
+<div class="panel" id="panel-diagnoses">
+<div class="ph"><div class="pt">Diagnosis Library &mdash; All Species</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('diagnoses')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv p">2,000+</div><div class="kl">Diagnoses in Library</div></div>
+<div class="kpi"><div class="kv">20+</div><div class="kl">Species Groups</div></div>
+<div class="kpi"><div class="kv">12</div><div class="kl">Body Systems</div></div>
+<div class="kpi"><div class="kv g">AI</div><div class="kl">Full Protocol on Click</div></div>
+<div class="kpi"><div class="kv b">VeNom</div><div class="kl">Coding Standard</div></div>
+</div>
+<div class="sb-row">
+<input class="si" id="sv-dx-search" placeholder="Search diagnosis, condition, sign..." oninput="svFilterDx()">
+<select class="fi" id="sv-dx-species" onchange="svFilterDx()">
+<option value="">All Species</option><option>Dog</option><option>Cat</option><option>Horse</option><option>Rabbit</option><option>Bird/Avian</option><option>Reptile</option><option>Chelonian</option><option>Ferret</option><option>Guinea Pig</option><option>Cattle</option><option>Small Ruminant</option><option>Swine</option><option>Big Cat</option><option>Primate</option><option>Elephant</option><option>Marine Mammal</option><option>Bear</option><option>Zoo Ungulate</option>
+</select>
+<select class="fi" id="sv-dx-system" onchange="svFilterDx()">
+<option value="">All Systems</option><option>Integumentary</option><option>Musculoskeletal</option><option>Cardiovascular</option><option>Respiratory</option><option>Gastrointestinal</option><option>Urogenital</option><option>Neurological</option><option>Endocrine</option><option>Ophthalmology</option><option>Hematology/Oncology</option><option>Infectious Disease</option><option>Toxicology/Emergency</option>
+</select>
+</div>
+<div class="card"><table id="sv-dx-table">
+<thead><tr><th>Diagnosis</th><th>Species</th><th>System</th><th>Key Signs</th><th>First-Line Tx</th><th>Protocol</th></tr></thead>
+<tbody id="sv-dx-body"></tbody>
+</table></div>
+</div>
+
+<!-- INVENTORY -->
+<div class="panel" id="panel-inventory">
+<div class="ph"><div class="pt">Inventory &amp; Supplies</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('inventory')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">284</div><div class="kl">Total SKUs</div></div>
+<div class="kpi"><div class="kv r">8</div><div class="kl">Low Stock Alerts</div></div>
+<div class="kpi"><div class="kv r">3</div><div class="kl">Expired Items</div></div>
+<div class="kpi"><div class="kv">$4,280</div><div class="kl">Monthly Spend</div></div>
+<div class="kpi"><div class="kv r">12</div><div class="kl">Reorder Points Hit</div></div>
+</div>
+<div class="card"><div class="ct">Inventory <button class="btn btn-p btn-sm no-print" onclick="svGenPO()">AI Generate PO</button></div>
+<table><thead><tr><th>Item</th><th>Category</th><th>Qty</th><th>Reorder Point</th><th>Cost</th><th>Status</th></tr></thead><tbody>
+<tr><td>Amoxicillin 250mg tabs</td><td>Antibiotic</td><td>180</td><td>50</td><td>$0.12/tab</td><td><span class="badge bg">OK</span></td></tr>
+<tr><td>Meloxicam 1.5mg/ml oral</td><td>NSAID</td><td>4 bottles</td><td>6</td><td>$28/bottle</td><td><span class="badge br">Low</span></td></tr>
+<tr><td>Phenobarbital 64.8mg tabs</td><td>DEA-IV</td><td>240</td><td>100</td><td>$0.08/tab</td><td><span class="badge bg">OK</span></td></tr>
+<tr><td>Banamine Paste (equine)</td><td>NSAID</td><td>8 tubes</td><td>12</td><td>$18/tube</td><td><span class="badge br">Low</span></td></tr>
+<tr><td>Ivermectin 1% injectable</td><td>Antiparasitic</td><td>6 vials</td><td>4</td><td>$14/vial</td><td><span class="badge bg">OK</span></td></tr>
+<tr><td>Doxycycline 100mg caps</td><td>Antibiotic</td><td>28</td><td>50</td><td>$0.22/cap</td><td><span class="badge br">Low</span></td></tr>
+<tr><td>Ketamine 500mg/10ml</td><td>DEA-III</td><td>12 vials</td><td>6</td><td>$8/vial</td><td><span class="badge bg">OK</span></td></tr>
+<tr><td>Propofol 10mg/ml 20ml</td><td>Anesthesia</td><td>8 vials</td><td>10</td><td>$12/vial</td><td><span class="badge br">Low</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- CONTROLLED SUBSTANCES -->
+<div class="panel" id="panel-controlled">
+<div class="ph"><div class="pt">Controlled Substance Log</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print DEA Log</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('controlled')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">42</div><div class="kl">Entries This Month</div></div>
+<div class="kpi"><div class="kv b">8</div><div class="kl">Drugs Logged</div></div>
+<div class="kpi"><div class="kv g">98</div><div class="kl">DEA Compliance Score</div></div>
+<div class="kpi"><div class="kv r">0</div><div class="kl">Discrepancies</div></div>
+<div class="kpi"><div class="kv">3/15/26</div><div class="kl">Last Audit</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Date/Time</th><th>Drug/Schedule</th><th>Amount</th><th>Patient</th><th>DVM</th><th>Balance</th><th>Witness</th></tr></thead><tbody>
+<tr><td>7/6 8:30am</td><td>Ketamine (III)</td><td>2ml dispensed</td><td>Luna Chen (Cat)</td><td>Dr. Patel</td><td>10 vials</td><td>R. Kim CVT</td></tr>
+<tr><td>7/6 9:00am</td><td>Butorphanol (IV)</td><td>0.5ml dispensed</td><td>Thunder (Horse)</td><td>Dr. Mitchell</td><td>8 vials</td><td>R. Kim CVT</td></tr>
+<tr><td>7/5 2:00pm</td><td>Phenobarbital (IV)</td><td>90 tabs dispensed</td><td>Rocky Garcia (Dog)</td><td>Dr. Mitchell</td><td>150 tabs</td><td>M. Lopez</td></tr>
+<tr><td>7/5 10:30am</td><td>Midazolam (IV)</td><td>1ml dispensed</td><td>Goliath (Tortoise)</td><td>Dr. Patel</td><td>14 vials</td><td>R. Kim CVT</td></tr>
+</tbody></table></div>
+</div>
+
+<!-- EQUINE HUB -->
+<div class="panel" id="panel-equine">
+<div class="ph"><div class="pt">Equine Patient Hub</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('equine')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">48</div><div class="kl">Horses on File</div></div>
+<div class="kpi"><div class="kv b">18</div><div class="kl">Farm Calls This Month</div></div>
+<div class="kpi"><div class="kv r">4</div><div class="kl">Coggins Due &lt;30 Days</div></div>
+<div class="kpi"><div class="kv r">6</div><div class="kl">Vaccines Due</div></div>
+<div class="kpi"><div class="kv g">$8,400</div><div class="kl">Equine Revenue This Month</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Horse</th><th>Breed/Age</th><th>Owner</th><th>Trainer/Farm</th><th>Coggins Exp</th><th>Last Visit</th><th>Alerts</th></tr></thead><tbody>
+<tr><td><strong>Thunder</strong></td><td>Thoroughbred, 12yr</td><td>Lisa Thompson</td><td>Martinez/Maple Ridge</td><td><span class="badge br">8/1/26</span></td><td>6/1/26</td><td>Lameness eval pending</td></tr>
+<tr><td><strong>Duchess</strong></td><td>Quarter Horse, 8yr</td><td>Emily Brown</td><td>Blue Sky Stables</td><td><span class="badge bg">2/1/27</span></td><td>6/14/26</td><td>In foal &mdash; due 3/15/27</td></tr>
+<tr><td><strong>Apollo</strong></td><td>Warmblood, 9yr</td><td>Maria Garcia</td><td>Garcia Equestrian</td><td><span class="badge bg">11/1/26</span></td><td>5/20/26</td><td>Show season vaccines due</td></tr>
+<tr><td><strong>Blaze</strong></td><td>Paint, 6yr</td><td>James Wilson</td><td>Wilson Ranch</td><td><span class="badge by">9/15/26</span></td><td>6/10/26</td><td>Lameness eval scheduled</td></tr>
+<tr><td><strong>Spirit</strong></td><td>Arabian, 7yr</td><td>David Patel</td><td>Patel Arabians</td><td><span class="badge bg">1/1/27</span></td><td>5/15/26</td><td>Breeding season started</td></tr>
+<tr><td><strong>Misty</strong></td><td>Appaloosa, 22yr</td><td>Sarah Chen</td><td>Home</td><td><span class="badge br">7/20/26</span></td><td>4/8/26</td><td>Senior wellness due. PPID?</td></tr>
+</tbody></table></div>
+</div>
+
+<!-- LAMENESS -->
+<div class="panel" id="panel-lameness">
+<div class="ph"><div class="pt">Lameness Evaluation</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('lameness')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">14</div><div class="kl">Evals This Month</div></div>
+<div class="kpi"><div class="kv r">4</div><div class="kl">Grade 3+ Cases</div></div>
+<div class="kpi"><div class="kv b">6</div><div class="kl">Follow-up Required</div></div>
+<div class="kpi"><div class="kv">3</div><div class="kl">Nerve Blocks Performed</div></div>
+<div class="kpi"><div class="kv g">$3,200</div><div class="kl">Revenue</div></div>
+</div>
+<div class="hl">AAEP Lameness Scale: 0=None | 1=Barely perceptible | 2=Slight/consistent | 3=Obvious/consistent | 4=Obvious/minimal weight bearing | 5=Non-weight bearing</div>
+<div class="g2">
+<div class="card"><div class="ct">New Lameness Eval</div>
+<div style="display:flex;flex-direction:column;gap:7px;">
+<select class="fi" style="width:100%;"><option>Thunder (TB 12yr)</option><option>Blaze (Paint 6yr)</option><option>Apollo (WB 9yr)</option><option>Other</option></select>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">LEFT FRONT (Grade 0-5)</div><select class="fi" style="width:100%;"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">RIGHT FRONT (Grade 0-5)</div><select class="fi" style="width:100%;"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">LEFT HIND (Grade 0-5)</div><select class="fi" style="width:100%;"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">RIGHT HIND (Grade 0-5)</div><select class="fi" style="width:100%;"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+</div>
+<textarea style="width:100%;height:60px;border:1px solid var(--border);border-radius:7px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Flexion tests, hoof tester, nerve blocks, imaging..."></textarea>
+<button class="btn btn-p no-print" onclick="svLamenessAI()">AI Differential &amp; Protocol</button>
+<div id="sv-lameness-result" style="font-size:12px;margin-top:6px;"></div>
+</div></div>
+<div class="card"><div class="ct">Recent Lameness Cases</div>
+<table><thead><tr><th>Horse</th><th>Date</th><th>Grade</th><th>Limb</th><th>Diagnosis</th><th>Treatment</th></tr></thead><tbody>
+<tr><td>Thunder</td><td>6/1/26</td><td>Grade 3</td><td>Left Front</td><td>Navicular syndrome</td><td>Corrective shoeing, Tildren</td></tr>
+<tr><td>Blaze</td><td>6/10/26</td><td>Grade 2</td><td>Right Hind</td><td>Suspensory desmitis</td><td>Rest, DMSO, shockwave</td></tr>
+<tr><td>Apollo</td><td>5/20/26</td><td>Grade 1</td><td>Left Front</td><td>Sole bruise</td><td>Pads, Bute 5 days</td></tr>
+</tbody></table></div>
+</div>
+</div>
+
+<!-- FARM CALLS -->
+<div class="panel" id="panel-farmcalls">
+<div class="ph"><div class="pt">Farm Call Manager</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('farmcalls')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">18</div><div class="kl">Farm Calls This Month</div></div>
+<div class="kpi"><div class="kv">284 mi</div><div class="kl">Miles Driven</div></div>
+<div class="kpi"><div class="kv g">$8,400</div><div class="kl">Farm Call Revenue</div></div>
+<div class="kpi"><div class="kv">2.4 hrs</div><div class="kl">Avg Call Duration</div></div>
+<div class="kpi"><div class="kv r">3</div><div class="kl">Outstanding Invoices</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Farm/Client</th><th>Date</th><th>Animals</th><th>Services</th><th>DVM</th><th>Invoice</th><th>Status</th></tr></thead><tbody>
+<tr><td>Maple Ridge Farm (Thompson)</td><td>6/1/26</td><td>6 horses</td><td>Annual vaccines + Coggins</td><td>Dr. Mitchell</td><td>$1,240</td><td><span class="badge bg">Paid</span></td></tr>
+<tr><td>Blue Sky Stables (Brown)</td><td>6/5/26</td><td>4 horses</td><td>Wellness + pregnancy check</td><td>Dr. Patel</td><td>$840</td><td><span class="badge bg">Paid</span></td></tr>
+<tr><td>Wilson Ranch</td><td>6/8/26</td><td>12 cattle</td><td>BRD vaccination protocol</td><td>Dr. Mitchell</td><td>$680</td><td><span class="badge by">Pending</span></td></tr>
+<tr><td>Garcia Equestrian</td><td>6/10/26</td><td>3 horses</td><td>Lameness evaluations</td><td>Dr. Mitchell</td><td>$920</td><td><span class="badge by">Pending</span></td></tr>
+<tr><td>Patel Arabians</td><td>6/15/26</td><td>5 horses</td><td>BSE + breeding season</td><td>Dr. Patel</td><td>$1,480</td><td><span class="badge by">Pending</span></td></tr>
+<tr><td>Kim Ranch (Emergency)</td><td>6/15/26</td><td>1 horse</td><td>Colic eval + NG tube</td><td>Dr. Mitchell</td><td>$380</td><td><span class="badge br">Unpaid</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- REPRODUCTION -->
+<div class="panel" id="panel-reproduction">
+<div class="ph"><div class="pt">Equine Reproduction</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('repro')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv b">8</div><div class="kl">Mares in Program</div></div>
+<div class="kpi"><div class="kv g">3</div><div class="kl">Confirmed In Foal</div></div>
+<div class="kpi"><div class="kv">5</div><div class="kl">Pregnancy Checks Due</div></div>
+<div class="kpi"><div class="kv b">2</div><div class="kl">Foaling Expected</div></div>
+<div class="kpi"><div class="kv g">75%</div><div class="kl">Conception Rate</div></div>
+</div>
+<div class="card"><div class="ct">Mare Reproductive Tracker</div>
+<table><thead><tr><th>Mare</th><th>Breed</th><th>Status</th><th>Last Bred</th><th>Due Date</th><th>Next Check</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Duchess</td><td>Quarter Horse</td><td><span class="badge bg">In Foal &mdash; Day 204</span></td><td>12/1/25</td><td>3/15/27</td><td>7/15/26</td><td>Day 60 check normal</td></tr>
+<tr><td>Spirit</td><td>Arabian</td><td><span class="badge by">Cycling</span></td><td>&mdash;</td><td>&mdash;</td><td>Ovulation check 7/8/26</td><td>Breeding attempt #2</td></tr>
+<tr><td>Bella M</td><td>Warmblood</td><td><span class="badge br">Open</span></td><td>5/1/26</td><td>&mdash;</td><td>Recheck uterus 7/10/26</td><td>Endometritis treated</td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">AI Breeding Window Predictor</div>
+<input class="si" id="sv-repro-mare" placeholder="Mare name and history..." style="width:100%;margin-bottom:8px;">
+<button class="btn btn-p btn-sm no-print" onclick="svReproAI()">Predict Breeding Window</button>
+<div id="sv-repro-result" style="font-size:12px;margin-top:8px;"></div>
+</div>
+</div>
+
+<!-- HERD HEALTH -->
+<div class="panel" id="panel-herdhealth">
+<div class="ph"><div class="pt">Herd Health Management</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('herd')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">6</div><div class="kl">Herds Managed</div></div>
+<div class="kpi"><div class="kv r">3</div><div class="kl">Vaccinations Due</div></div>
+<div class="kpi"><div class="kv r">2</div><div class="kl">Deworming Due</div></div>
+<div class="kpi"><div class="kv g">124</div><div class="kl">Animals Under Care</div></div>
+<div class="kpi"><div class="kv b">2</div><div class="kl">Active Health Alerts</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Farm/Herd</th><th>Species</th><th>Count</th><th>Last Visit</th><th>Next Vaccine</th><th>Next Deworm</th><th>Alerts</th></tr></thead><tbody>
+<tr><td>Wilson Ranch</td><td>Beef Cattle</td><td>48 head</td><td>6/8/26</td><td>8/1/26 (BRD)</td><td>9/1/26</td><td><span class="badge by">2 respiratory cases</span></td></tr>
+<tr><td>Chen Farm</td><td>Dairy Cattle</td><td>32 head</td><td>5/20/26</td><td>7/15/26</td><td>8/15/26</td><td><span class="badge bg">None</span></td></tr>
+<tr><td>Garcia Ranch</td><td>Sheep</td><td>28 ewes</td><td>6/1/26</td><td>9/1/26</td><td>FAMACHA due 7/20/26</td><td><span class="badge br">Haemonchus concern</span></td></tr>
+<tr><td>Patel Farm</td><td>Goats</td><td>16 does</td><td>5/15/26</td><td>8/1/26</td><td>7/15/26</td><td><span class="badge bg">None</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- COGGINS -->
+<div class="panel" id="panel-coggins">
+<div class="ph"><div class="pt">Coggins &amp; Health Certificates</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('coggins')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">24</div><div class="kl">Coggins Tests This Month</div></div>
+<div class="kpi"><div class="kv g">24</div><div class="kl">Negative Results</div></div>
+<div class="kpi"><div class="kv r">4</div><div class="kl">Expiring &lt;30 Days</div></div>
+<div class="kpi"><div class="kv">18</div><div class="kl">Health Certs Issued</div></div>
+<div class="kpi"><div class="kv g">$1,200</div><div class="kl">Revenue</div></div>
+</div>
+<div class="card"><div class="ct">Coggins Log &amp; State Requirements</div>
+<table><thead><tr><th>Horse</th><th>Test Date</th><th>Lab #</th><th>Result</th><th>Expiration</th><th>States Valid</th><th>Certificate</th></tr></thead><tbody>
+<tr><td>Thunder</td><td>2/1/26</td><td>IDEXX-44821</td><td><span class="badge bg">Negative</span></td><td><span class="badge br">8/1/26</span></td><td>Most states (6mo)</td><td><span class="badge bb">On File</span></td></tr>
+<tr><td>Duchess</td><td>8/1/25</td><td>IDEXX-38491</td><td><span class="badge bg">Negative</span></td><td><span class="badge bg">2/1/27</span></td><td>All states (annual)</td><td><span class="badge bb">On File</span></td></tr>
+<tr><td>Misty</td><td>1/20/26</td><td>IDEXX-41204</td><td><span class="badge bg">Negative</span></td><td><span class="badge br">7/20/26</span></td><td>Expires soon</td><td><span class="badge br">Renewal Due</span></td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">AI State Requirements Lookup</div>
+<input class="si" id="sv-coggins-state" placeholder="Enter destination state (e.g. Florida, Kentucky, Texas)..." style="width:300px;margin-right:8px;">
+<button class="btn btn-p btn-sm no-print" onclick="svCogginsAI()">Get Requirements</button>
+<div id="sv-coggins-result" style="font-size:12px;margin-top:8px;"></div>
+</div>
+</div>
+
+<!-- EXOTIC SPECIES -->
+<div class="panel" id="panel-exotic">
+<div class="ph"><div class="pt">Exotic Species Center</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('exotic')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv p">84</div><div class="kl">Exotic Patients</div></div>
+<div class="kpi"><div class="kv b">18</div><div class="kl">Species on File</div></div>
+<div class="kpi"><div class="kv r">3</div><div class="kl">Critical Cases</div></div>
+<div class="kpi"><div class="kv g">42</div><div class="kl">AI Consults This Month</div></div>
+<div class="kpi"><div class="kv g">$3,840</div><div class="kl">Exotic Revenue</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Patient</th><th>Species</th><th>Age/Weight</th><th>Owner</th><th>Last Visit</th><th>Active Issues</th></tr></thead><tbody>
+<tr><td>Kiwi</td><td>African Grey Parrot</td><td>8yr / 450g</td><td>David Patel</td><td>7/6/26</td><td>Annual exam today</td></tr>
+<tr><td>Cleo</td><td>Ball Python</td><td>4yr / 1,800g</td><td>James Wilson</td><td>7/6/26</td><td>Dysecdysis &mdash; retained shed</td></tr>
+<tr><td>Goliath</td><td>Sulcata Tortoise</td><td>22yr / 87 lbs</td><td>Rachel Kim</td><td>7/6/26</td><td>Elevated uric acid (gout risk)</td></tr>
+<tr><td>Oscar</td><td>Ferret</td><td>2yr / 1.8 lbs</td><td>Tom Garcia</td><td>6/12/26</td><td>Annual vaccines due</td></tr>
+<tr><td>Cocoa</td><td>Bearded Dragon</td><td>3yr / 480g</td><td>Amy Chen</td><td>6/8/26</td><td>MBD &mdash; on calcium/Vit D</td></tr>
+<tr><td>Peanut</td><td>Chinchilla</td><td>4yr / 580g</td><td>Bob Kim</td><td>5/20/26</td><td>Dental malocclusion recheck</td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">AI Species Protocol</div>
+<input class="si" id="sv-exotic-query" placeholder="Any species, any question. e.g. Anesthesia for a green iguana 1.2kg..." style="width:100%;margin-bottom:8px;">
+<button class="btn btn-p btn-sm no-print" onclick="svExoticAI()">Get Protocol</button>
+<div id="sv-exotic-result" style="font-size:12px;margin-top:8px;white-space:pre-wrap;"></div>
+</div>
+</div>
+
+<!-- AVIAN -->
+<div class="panel" id="panel-avian">
+<div class="ph"><div class="pt">Avian Medicine</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('avian')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">28</div><div class="kl">Avian Patients</div></div>
+<div class="kpi"><div class="kv b">12</div><div class="kl">Species on File</div></div>
+<div class="kpi"><div class="kv r">1</div><div class="kl">Chlamydia Suspects</div></div>
+<div class="kpi"><div class="kv r">2</div><div class="kl">Aspergillosis Cases</div></div>
+<div class="kpi"><div class="kv g">$1,840</div><div class="kl">Avian Revenue</div></div>
+</div>
+<div class="hl">&#9888; ZOONOTIC: Chlamydophila psittaci (Psittacosis) — REPORT SUSPECTED CASES. Wear N95 + gloves when handling sick psittacines.</div>
+<div class="card"><table>
+<thead><tr><th>Patient</th><th>Species</th><th>Weight</th><th>Owner</th><th>Condition</th><th>Treatment</th></tr></thead><tbody>
+<tr><td>Kiwi</td><td>African Grey</td><td>450g</td><td>D. Patel</td><td>Annual exam</td><td>Wellness</td></tr>
+<tr><td>Rio</td><td>Blue-fronted Amazon</td><td>380g</td><td>M. Thompson</td><td>Feather destructive behavior</td><td>Behavioral mod + AI consult</td></tr>
+<tr><td>Hawk (red-tailed)</td><td>Buteo jamaicensis</td><td>1,100g</td><td>Wildlife rehab</td><td>Wing fracture &mdash; keel bruising</td><td>Meloxicam, splint, cage rest</td></tr>
+<tr><td>Tweety</td><td>Cockatiel</td><td>88g</td><td>J. Garcia</td><td>Aspergillosis suspected</td><td>Voriconazole pending culture</td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">AI Avian Protocol</div>
+<input class="si" id="sv-avian-query" placeholder="e.g. Drug dose for African Grey, Chlamydia treatment, raptor anesthesia..." style="width:100%;margin-bottom:8px;">
+<button class="btn btn-p btn-sm no-print" onclick="svAvianAI()">Get Protocol</button>
+<div id="sv-avian-result" style="font-size:12px;margin-top:8px;white-space:pre-wrap;"></div>
+</div>
+</div>
+
+<!-- REPTILE -->
+<div class="panel" id="panel-reptile">
+<div class="ph"><div class="pt">Reptile &amp; Amphibian</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('reptile')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">22</div><div class="kl">Reptile Patients</div></div>
+<div class="kpi"><div class="kv b">8</div><div class="kl">Species on File</div></div>
+<div class="kpi"><div class="kv r">3</div><div class="kl">MBD Cases Active</div></div>
+<div class="kpi"><div class="kv r">1</div><div class="kl">Dystocia Case</div></div>
+<div class="kpi"><div class="kv g">$1,240</div><div class="kl">Reptile Revenue</div></div>
+</div>
+<div class="red-flag">&#9888; CRITICAL: Ivermectin is FATAL in ALL chelonians (tortoises, turtles). Never administer to Goliath or any tortoise/turtle patient.</div>
+<div class="card"><table>
+<thead><tr><th>Patient</th><th>Species</th><th>Weight</th><th>Temp Range</th><th>Condition</th><th>Treatment</th></tr></thead><tbody>
+<tr><td>Cleo</td><td>Ball Python</td><td>1,800g</td><td>80-88°F</td><td>Dysecdysis</td><td>Humidity increase, soak, assist shed</td></tr>
+<tr><td>Goliath</td><td>Sulcata Tortoise</td><td>87 lbs</td><td>85-95°F</td><td>Elevated uric acid</td><td>Hydration, diet mod, allopurinol?</td></tr>
+<tr><td>Cocoa</td><td>Bearded Dragon</td><td>480g</td><td>78-110°F</td><td>MBD &mdash; Grade 2</td><td>Calcium gluconate, Vit D3, UVB</td></tr>
+<tr><td>Spike</td><td>Green Iguana</td><td>2,400g</td><td>85-95°F</td><td>Stomatitis</td><td>Enrofloxacin, oral debridement</td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">AI Reptile Protocol</div>
+<input class="si" id="sv-reptile-query" placeholder="e.g. Anesthesia for Sulcata tortoise, MBD treatment bearded dragon, snake respiratory infection..." style="width:100%;margin-bottom:8px;">
+<button class="btn btn-p btn-sm no-print" onclick="svReptileAI()">Get Protocol</button>
+<div id="sv-reptile-result" style="font-size:12px;margin-top:8px;white-space:pre-wrap;"></div>
+</div>
+</div>
+
+<!-- ZOO & WILDLIFE -->
+<div class="panel" id="panel-zoo">
+<div class="ph"><div class="pt">Zoo &amp; Wildlife Medicine</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('zoo')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv p">Zoo</div><div class="kl">Collection Module</div></div>
+<div class="kpi"><div class="kv b">ZIMS</div><div class="kl">Protocol Standard</div></div>
+<div class="kpi"><div class="kv r">DEA</div><div class="kl">Schedule II Required</div></div>
+<div class="kpi"><div class="kv">CITES</div><div class="kl">Compliance Tracking</div></div>
+<div class="kpi"><div class="kv g">AI</div><div class="kl">Any Zoo Species</div></div>
+</div>
+<div class="red-flag">&#9888; EXTREME HAZARD: Carfentanil and Etorphine (M99) for large ungulate/elephant immobilization are LETHAL to humans. Naltrexone/Diprenorphine reversal MUST be on person before administration. DEA Schedule II. Two-person protocol mandatory.</div>
+<div class="card"><div class="ct">Zoo Species Immobilization &amp; Protocol</div>
+<div class="g2">
+<div>
+<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">SPECIES</div>
+<select class="fi" id="sv-zoo-species" style="width:100%;margin-bottom:8px;">
+<option>Lion (Panthera leo)</option><option>Tiger (P. tigris)</option><option>Leopard (P. pardus)</option>
+<option>Cheetah (Acinonyx jubatus)</option><option>Jaguar (P. onca)</option>
+<option>Gorilla (Gorilla gorilla)</option><option>Chimpanzee (Pan troglodytes)</option>
+<option>Orangutan (Pongo pygmaeus)</option><option>African Elephant (Loxodonta africana)</option>
+<option>Asian Elephant (Elephas maximus)</option><option>White Rhino (Ceratotherium simum)</option>
+<option>Black Rhino (Diceros bicornis)</option><option>Hippopotamus (H. amphibius)</option>
+<option>Giraffe (Giraffa camelopardalis)</option><option>Zebra (Equus quagga)</option>
+<option>Grizzly Bear (Ursus arctos)</option><option>Polar Bear (U. maritimus)</option>
+<option>Bottlenose Dolphin (T. truncatus)</option><option>California Sea Lion (Z. californianus)</option>
+<option>Kangaroo (Macropus rufus)</option><option>Giant Panda (A. melanoleuca)</option>
+</select>
+<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">PROCEDURE NEEDED</div>
+<select class="fi" id="sv-zoo-procedure" style="width:100%;margin-bottom:8px;">
+<option>Immobilization/Capture</option><option>Routine Exam</option><option>Dental</option>
+<option>Wound Treatment</option><option>Blood Collection</option><option>Radiographs</option>
+<option>Vaccination</option><option>Emergency Treatment</option>
+</select>
+<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">ESTIMATED WEIGHT (kg)</div>
+<input class="si" id="sv-zoo-weight" placeholder="e.g. 180" style="width:100%;margin-bottom:8px;">
+</div>
+<div>
+<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">CLINICAL NOTES</div>
+<textarea style="width:100%;height:100px;border:1px solid var(--border);border-radius:7px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Known health issues, last exam, temperament..."></textarea>
+<button class="btn btn-p mt8 no-print" onclick="svZooAI()" style="width:100%;">Get Immobilization Protocol</button>
+</div>
+</div>
+<div id="sv-zoo-result" style="margin-top:12px;font-size:12px;white-space:pre-wrap;"></div>
+</div>
+</div>
+
+<!-- WILDLIFE REHAB -->
+<div class="panel" id="panel-wildlife">
+<div class="ph"><div class="pt">Wildlife Rehab &amp; Conservation</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('wildlife')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv b">14</div><div class="kl">Animals in Rehab</div></div>
+<div class="kpi"><div class="kv g">8</div><div class="kl">Released This Month</div></div>
+<div class="kpi"><div class="kv r">2</div><div class="kl">Mortality This Month</div></div>
+<div class="kpi"><div class="kv b">8</div><div class="kl">Species This Month</div></div>
+<div class="kpi"><div class="kv g">Active</div><div class="kl">Federal Permits</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Animal</th><th>Species</th><th>Intake</th><th>Condition</th><th>Treatment</th><th>Goal</th><th>Status</th></tr></thead><tbody>
+<tr><td>Hawk #1</td><td>Red-tailed Hawk</td><td>7/1/26</td><td>Wing fracture (radius)</td><td>Meloxicam, splint, cage rest</td><td>Release</td><td><span class="badge by">Week 1</span></td></tr>
+<tr><td>Owl #1</td><td>Great Horned Owl</td><td>6/28/26</td><td>Vehicle strike, concussion</td><td>Supportive care, dark quiet</td><td>Release</td><td><span class="badge bg">Improving</span></td></tr>
+<tr><td>Deer #1</td><td>White-tailed deer fawn</td><td>7/3/26</td><td>Orphan — mother killed</td><td>Fawn formula q4h</td><td>Release</td><td><span class="badge bb">Feeding</span></td></tr>
+<tr><td>Turtle #1</td><td>Eastern Box Turtle</td><td>6/25/26</td><td>Shell fracture (vehicle)</td><td>Epoxy repair, antibiotic</td><td>Release</td><td><span class="badge by">Healing</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- CLIENTS -->
+<div class="panel" id="panel-clients">
+<div class="ph"><div class="pt">Client Management</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('clients')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">482</div><div class="kl">Total Clients</div></div>
+<div class="kpi"><div class="kv g">184</div><div class="kl">Active This Year</div></div>
+<div class="kpi"><div class="kv b">18</div><div class="kl">New This Month</div></div>
+<div class="kpi"><div class="kv">2.4</div><div class="kl">Avg Pets/Client</div></div>
+<div class="kpi"><div class="kv g">84%</div><div class="kl">Retention Rate</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Client</th><th>Pets/Animals</th><th>Type</th><th>Phone</th><th>Balance</th><th>Last Visit</th></tr></thead><tbody>
+<tr><td>John Martinez</td><td>Max (Dog)</td><td>Companion</td><td>(216) 555-0101</td><td>$0</td><td>7/6/26</td></tr>
+<tr><td>Sarah Chen</td><td>Luna (Cat), Misty (Horse)</td><td>Companion/Equine</td><td>(216) 555-0102</td><td>$0</td><td>7/6/26</td></tr>
+<tr><td>Lisa Thompson</td><td>Thunder (Horse)</td><td>Equine</td><td>(216) 555-0104</td><td>$840</td><td>6/1/26</td></tr>
+<tr><td>Emily Brown</td><td>Duchess (Horse)</td><td>Equine</td><td>(216) 555-0108</td><td>$0</td><td>6/14/26</td></tr>
+<tr><td>David Patel</td><td>Kiwi (Parrot), Spirit (Horse)</td><td>Exotic/Equine</td><td>(216) 555-0105</td><td>$0</td><td>7/6/26</td></tr>
+<tr><td>James Wilson</td><td>Cleo (Python), Blaze (Horse)</td><td>Exotic/Equine</td><td>(216) 555-0107</td><td>$380</td><td>6/10/26</td></tr>
+</tbody></table></div>
+</div>
+
+<!-- INVOICING -->
+<div class="panel" id="panel-invoicing">
+<div class="ph"><div class="pt">Invoicing &amp; Billing</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('invoicing')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv g">$4,280</div><div class="kl">Revenue Today</div></div>
+<div class="kpi"><div class="kv r">$12,400</div><div class="kl">Outstanding AR</div></div>
+<div class="kpi"><div class="kv r">8</div><div class="kl">Invoices Due</div></div>
+<div class="kpi"><div class="kv g">$284</div><div class="kl">Avg Invoice Value</div></div>
+<div class="kpi"><div class="kv g">92%</div><div class="kl">Collections Rate</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Invoice #</th><th>Client</th><th>Patient</th><th>Date</th><th>Amount</th><th>Paid</th><th>Status</th></tr></thead><tbody>
+<tr><td>INV-2601</td><td>Martinez</td><td>Max</td><td>7/6/26</td><td>$285</td><td>$285</td><td><span class="badge bg">Paid</span></td></tr>
+<tr><td>INV-2602</td><td>Chen</td><td>Luna</td><td>7/6/26</td><td>$340</td><td>$0</td><td><span class="badge by">Pending</span></td></tr>
+<tr><td>INV-2603</td><td>Thompson</td><td>Thunder (Farm)</td><td>6/1/26</td><td>$1,240</td><td>$1,240</td><td><span class="badge bg">Paid</span></td></tr>
+<tr><td>INV-2604</td><td>Wilson Ranch</td><td>Cattle herd</td><td>6/8/26</td><td>$680</td><td>$0</td><td><span class="badge br">Overdue 28d</span></td></tr>
+<tr><td>INV-2605</td><td>Kim (Emergency)</td><td>Horse colic</td><td>6/15/26</td><td>$380</td><td>$0</td><td><span class="badge br">Overdue 21d</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- COMMUNICATIONS -->
+<div class="panel" id="panel-communications">
+<div class="ph"><div class="pt">Client Communications</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('comms')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">48</div><div class="kl">Messages Sent Today</div></div>
+<div class="kpi"><div class="kv g">32</div><div class="kl">Reminders Sent</div></div>
+<div class="kpi"><div class="kv g">84%</div><div class="kl">Response Rate</div></div>
+<div class="kpi"><div class="kv r">6</div><div class="kl">Unread Messages</div></div>
+<div class="kpi"><div class="kv">2%</div><div class="kl">Opt-Out Rate</div></div>
+</div>
+<div class="card"><div class="ct">AI Message Generator</div>
+<div class="g2">
+<div>
+<select class="fi" style="width:100%;margin-bottom:8px;"><option>Post-surgery follow-up</option><option>Vaccine reminder</option><option>Coggins renewal</option><option>Lab results ready</option><option>Invoice reminder</option><option>Annual wellness due</option><option>Breeding season alert</option><option>Flea/tick prevention reminder</option></select>
+<select class="fi" style="width:100%;margin-bottom:8px;"><option>Max Martinez (Dog)</option><option>Luna Chen (Cat)</option><option>Thunder Thompson (Horse)</option><option>Kiwi Patel (Parrot)</option></select>
+<button class="btn btn-p no-print" onclick="svGenMessage()" style="width:100%;">Draft Message with AI</button>
+</div>
+<div id="sv-msg-result" style="font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:80px;"></div>
+</div>
+</div>
+</div>
+
+<!-- REMINDERS -->
+<div class="panel" id="panel-reminders">
+<div class="ph"><div class="pt">Vaccine &amp; Preventive Reminders</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('reminders')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv r">42</div><div class="kl">Reminders Due This Month</div></div>
+<div class="kpi"><div class="kv r">18</div><div class="kl">Overdue Patients</div></div>
+<div class="kpi"><div class="kv g">28</div><div class="kl">Sent Today</div></div>
+<div class="kpi"><div class="kv g">72%</div><div class="kl">Response Rate</div></div>
+<div class="kpi"><div class="kv r">$3,200</div><div class="kl">Revenue at Risk</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Patient</th><th>Species</th><th>Owner</th><th>Reminder Type</th><th>Due Date</th><th>Days Overdue</th><th>Status</th></tr></thead><tbody>
+<tr><td>Misty</td><td>Horse</td><td>S. Chen</td><td>Coggins renewal</td><td>7/20/26</td><td>14 days</td><td><span class="badge br">Overdue</span></td></tr>
+<tr><td>Thunder</td><td>Horse</td><td>L. Thompson</td><td>EEE/WEE/WNV vaccine</td><td>6/1/26</td><td>35 days</td><td><span class="badge br">Overdue</span></td></tr>
+<tr><td>Max</td><td>Dog</td><td>J. Martinez</td><td>Leptospirosis booster</td><td>7/15/26</td><td>0</td><td><span class="badge by">Due Soon</span></td></tr>
+<tr><td>Goliath</td><td>Tortoise</td><td>R. Kim</td><td>Annual exam + bloodwork</td><td>8/1/26</td><td>0</td><td><span class="badge by">Due Soon</span></td></tr>
+<tr><td>Kiwi</td><td>African Grey</td><td>D. Patel</td><td>Chlamydia PCR screening</td><td>7/6/26</td><td>0</td><td><span class="badge bg">Today</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- SURGERY -->
+<div class="panel" id="panel-surgery">
+<div class="ph"><div class="pt">Surgery Suite</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('surgery')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">18</div><div class="kl">Surgeries This Month</div></div>
+<div class="kpi"><div class="kv p">1</div><div class="kl">In Surgery Now</div></div>
+<div class="kpi"><div class="kv g">12.4 hrs</div><div class="kl">Anesthesia Hours</div></div>
+<div class="kpi"><div class="kv g">0%</div><div class="kl">Complication Rate</div></div>
+<div class="kpi"><div class="kv g">$9,840</div><div class="kl">Surgery Revenue</div></div>
+</div>
+<div class="card"><div class="ct">AI Post-Op Instructions Generator</div>
+<div class="g2">
+<div>
+<select class="fi" style="width:100%;margin-bottom:8px;"><option>Spay (OHE)</option><option>Neuter (castration)</option><option>Cruciate repair (TPLO)</option><option>Dental cleaning + extractions</option><option>Mass removal</option><option>Colic surgery (equine)</option><option>Exotic surgery</option></select>
+<select class="fi" style="width:100%;margin-bottom:8px;"><option>Dog</option><option>Cat</option><option>Horse</option><option>Rabbit</option><option>Exotic</option></select>
+<button class="btn btn-p no-print" onclick="svSurgAI()" style="width:100%;">Generate Post-Op Instructions</button>
+</div>
+<div id="sv-surg-result" style="font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:80px;white-space:pre-wrap;"></div>
+</div>
+</div>
+</div>
+
+<!-- DENTAL -->
+<div class="panel" id="panel-dental">
+<div class="ph"><div class="pt">Dental</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('dental')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">12</div><div class="kl">Dentals This Month</div></div>
+<div class="kpi"><div class="kv r">8</div><div class="kl">Extractions</div></div>
+<div class="kpi"><div class="kv r">42%</div><div class="kl">Grade 2+ Disease Rate</div></div>
+<div class="kpi"><div class="kv g">$4,200</div><div class="kl">Dental Revenue</div></div>
+<div class="kpi"><div class="kv b">3</div><div class="kl">Dentals Scheduled</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Patient</th><th>Species</th><th>Grade</th><th>Extractions</th><th>Date</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Daisy Wilson</td><td>Beagle</td><td>Grade 3</td><td>2 molars</td><td>7/6/26</td><td>Severe calculus, halitosis, gingival recession</td></tr>
+<tr><td>Bella Kim</td><td>French Bulldog</td><td>Grade 2</td><td>0</td><td>6/20/26</td><td>Retained deciduous, moderate calculus</td></tr>
+<tr><td>Misty</td><td>Horse</td><td>Hooks/waves</td><td>Wolf teeth x2</td><td>6/8/26</td><td>Power float, wolf teeth removed</td></tr>
+</tbody></table></div>
+</div>
+
+<!-- STAFF -->
+<div class="panel" id="panel-staff">
+<div class="ph"><div class="pt">Staff Management</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('staff')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv">4</div><div class="kl">Total Staff</div></div>
+<div class="kpi"><div class="kv b">2</div><div class="kl">DVMs</div></div>
+<div class="kpi"><div class="kv">1</div><div class="kl">Technicians</div></div>
+<div class="kpi"><div class="kv r">1</div><div class="kl">Credential Expiring</div></div>
+<div class="kpi"><div class="kv g">42 hrs</div><div class="kl">Avg Hours This Week</div></div>
+</div>
+<div class="card"><table>
+<thead><tr><th>Name</th><th>Role</th><th>License #</th><th>License Expires</th><th>DEA #</th><th>USDA Accredited</th><th>Status</th></tr></thead><tbody>
+<tr><td>Dr. Sarah Mitchell, DVM</td><td>Owner/Head DVM</td><td>OH-DVM-12345</td><td><span class="badge bg">12/31/26</span></td><td>BM1234567</td><td>Yes</td><td><span class="badge bg">Active</span></td></tr>
+<tr><td>Dr. James Patel, DVM</td><td>Associate DVM</td><td>OH-DVM-67890</td><td><span class="badge by">6/30/27</span></td><td>BP9876543</td><td>Yes</td><td><span class="badge bg">Active</span></td></tr>
+<tr><td>Rachel Kim, CVT</td><td>Lead Technician</td><td>OH-CVT-11111</td><td><span class="badge br">3/31/27</span></td><td>&mdash;</td><td>N/A</td><td><span class="badge bg">Active</span></td></tr>
+<tr><td>Maria Lopez</td><td>Receptionist</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>N/A</td><td><span class="badge bg">Active</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- COMPLIANCE -->
+<div class="panel" id="panel-compliance">
+<div class="ph"><div class="pt">Compliance &amp; Regulatory</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('compliance')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv g">94</div><div class="kl">Compliance Score</div></div>
+<div class="kpi"><div class="kv r">2</div><div class="kl">Open Issues</div></div>
+<div class="kpi"><div class="kv g">Active</div><div class="kl">DEA Registration</div></div>
+<div class="kpi"><div class="kv g">Active</div><div class="kl">USDA Accreditation</div></div>
+<div class="kpi"><div class="kv">3/15/26</div><div class="kl">Last DEA Audit</div></div>
+</div>
+<div class="g2">
+<div class="card"><div class="ct">Regulatory Checklist</div>
+<table><thead><tr><th>Item</th><th>Status</th><th>Due/Expires</th></tr></thead><tbody>
+<tr><td>DEA Registration (Dr. Mitchell)</td><td><span class="badge bg">Current</span></td><td>2/28/27</td></tr>
+<tr><td>DEA Registration (Dr. Patel)</td><td><span class="badge bg">Current</span></td><td>8/31/26</td></tr>
+<tr><td>USDA Accreditation (Mitchell)</td><td><span class="badge bg">Active</span></td><td>Annual renewal</td></tr>
+<tr><td>Ohio Vet License (Mitchell)</td><td><span class="badge bg">Active</span></td><td>12/31/26</td></tr>
+<tr><td>Ohio Vet License (Patel)</td><td><span class="badge bg">Active</span></td><td>6/30/27</td></tr>
+<tr><td>OSHA Annual Training</td><td><span class="badge bg">Complete</span></td><td>Due 1/1/27</td></tr>
+<tr><td>Controlled Substance Biennial Inventory</td><td><span class="badge by">Due 9/1/26</span></td><td>9/1/26</td></tr>
+<tr><td>Rabies Certificate Log</td><td><span class="badge bg">Current</span></td><td>Ongoing</td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">AI Compliance Query</div>
+<input class="si" id="sv-compliance-query" placeholder="e.g. DEA requirements for ketamine storage, interstate health cert requirements..." style="width:100%;margin-bottom:8px;">
+<button class="btn btn-p btn-sm no-print" onclick="svComplianceAI()">Get Answer</button>
+<div id="sv-compliance-result" style="font-size:12px;margin-top:8px;"></div>
+</div>
+</div>
+</div>
+
+<!-- FINANCIALS -->
+<div class="panel" id="panel-financials">
+<div class="ph"><div class="pt">Financial Dashboard</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button><button class="btn btn-p btn-sm no-print" onclick="svExportCSV('financials')">Export CSV</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv g">$84,200</div><div class="kl">Monthly Revenue</div></div>
+<div class="kpi"><div class="kv g">$488,400</div><div class="kl">YTD Revenue</div></div>
+<div class="kpi"><div class="kv g">$2,806</div><div class="kl">Avg Daily Revenue</div></div>
+<div class="kpi"><div class="kv b">Wellness</div><div class="kl">Top Service Category</div></div>
+<div class="kpi"><div class="kv g">68%</div><div class="kl">Gross Margin</div></div>
+</div>
+<div class="g2">
+<div class="card"><div class="ct">Revenue by Category</div>
+<table><thead><tr><th>Category</th><th>This Month</th><th>% Total</th></tr></thead><tbody>
+<tr><td>Companion Animal</td><td>$38,400</td><td>46%</td></tr>
+<tr><td>Equine / Large Animal</td><td>$24,800</td><td>29%</td></tr>
+<tr><td>Exotic / Zoo</td><td>$8,400</td><td>10%</td></tr>
+<tr><td>Surgery</td><td>$9,840</td><td>12%</td></tr>
+<tr><td>Pharmacy/Rx</td><td>$2,760</td><td>3%</td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">Monthly Trend</div>
+<table><thead><tr><th>Month</th><th>Revenue</th><th>vs Prior</th></tr></thead><tbody>
+<tr><td>January</td><td>$71,200</td><td>&mdash;</td></tr>
+<tr><td>February</td><td>$68,400</td><td><span class="badge br">-4%</span></td></tr>
+<tr><td>March</td><td>$82,800</td><td><span class="badge bg">+21%</span></td></tr>
+<tr><td>April</td><td>$88,400</td><td><span class="badge bg">+7%</span></td></tr>
+<tr><td>May</td><td>$92,800</td><td><span class="badge bg">+5%</span></td></tr>
+<tr><td>June</td><td>$84,200</td><td><span class="badge br">-9%</span></td></tr>
+</tbody></table></div>
+</div>
+</div>
+
+<!-- REPORTS -->
+<div class="panel" id="panel-reports">
+<div class="ph"><div class="pt">Reports &amp; Analytics</div><div class="pa"><button class="btn btn-o btn-sm no-print" onclick="window.print()">Print</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv g">$84,200</div><div class="kl">Revenue This Month</div></div>
+<div class="kpi"><div class="kv">342</div><div class="kl">Visits This Month</div></div>
+<div class="kpi"><div class="kv g">$246</div><div class="kl">Avg Transaction</div></div>
+<div class="kpi"><div class="kv b">Wellness</div><div class="kl">Top Service</div></div>
+<div class="kpi"><div class="kv">Dog</div><div class="kl">Top Species</div></div>
+</div>
+<div class="g2">
+<div class="card" style="cursor:pointer;" onclick="svRunReport('revenue')"><div class="ct">Revenue by DVM <button class="btn btn-o btn-sm no-print">Generate</button></div><div style="font-size:11px;color:var(--muted);">Production per doctor, service mix, species breakdown</div></div>
+<div class="card" style="cursor:pointer;" onclick="svRunReport('species')"><div class="ct">Species Mix Report <button class="btn btn-o btn-sm no-print">Generate</button></div><div style="font-size:11px;color:var(--muted);">Patient and revenue distribution by species</div></div>
+<div class="card" style="cursor:pointer;" onclick="svRunReport('equine')"><div class="ct">Equine Performance <button class="btn btn-o btn-sm no-print">Generate</button></div><div style="font-size:11px;color:var(--muted);">Farm calls, Coggins compliance, vaccination rates</div></div>
+<div class="card" style="cursor:pointer;" onclick="svRunReport('exotic')"><div class="ct">Exotic Species Report <button class="btn btn-o btn-sm no-print">Generate</button></div><div style="font-size:11px;color:var(--muted);">Exotic patient growth, AI consults, species diversity</div></div>
+<div class="card" style="cursor:pointer;" onclick="svRunReport('compliance')"><div class="ct">Controlled Substance Report <button class="btn btn-o btn-sm no-print">Generate</button></div><div style="font-size:11px;color:var(--muted);">DEA log summary, discrepancies, audit readiness</div></div>
+<div class="card" style="cursor:pointer;" onclick="svRunReport('wellness')"><div class="ct">Wellness Compliance <button class="btn btn-o btn-sm no-print">Generate</button></div><div style="font-size:11px;color:var(--muted);">Vaccine compliance by species, reminder effectiveness</div></div>
+</div>
+<div id="sv-report-result" style="margin-top:12px;"></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="panel" id="panel-settings">
+<div class="ph"><div class="pt">Settings</div><div class="pa"><button class="btn btn-p btn-sm no-print" onclick="svSaveSettings()">Save</button></div></div>
+<div class="kpi-row">
+<div class="kpi"><div class="kv g">Active</div><div class="kl">License Status</div></div>
+<div class="kpi"><div class="kv">v3.0</div><div class="kl">Platform Version</div></div>
+<div class="kpi"><div class="kv g">5</div><div class="kl">Active Users</div></div>
+<div class="kpi"><div class="kv g">Connected</div><div class="kl">AI Status</div></div>
+<div class="kpi"><div class="kv">sairnvet</div><div class="kl">App ID</div></div>
+</div>
+<div class="g2">
+<div class="card"><div class="ct">Practice Information</div>
+<div style="display:flex;flex-direction:column;gap:7px;">
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">PRACTICE NAME</div><input class="si" value="Pinnacle Animal Hospital" style="width:100%;"></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">ADDRESS</div><input class="si" value="Cleveland, OH 44145" style="width:100%;"></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">PHONE</div><input class="si" value="(216) 555-0100" style="width:100%;"></div>
+<div><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;">DEA REGISTRATION</div><input class="si" value="BM1234567" style="width:100%;"></div>
+</div></div>
+<div class="card"><div class="ct">PIN Management</div>
+<table><thead><tr><th>Role</th><th>PIN</th></tr></thead><tbody>
+<tr><td>Owner</td><td><input style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;width:70px;" value="1234" type="password"></td></tr>
+<tr><td>Doctor</td><td><input style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;width:70px;" value="2345" type="password"></td></tr>
+<tr><td>Technician</td><td><input style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;width:70px;" value="3456" type="password"></td></tr>
+<tr><td>Receptionist</td><td><input style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;width:70px;" value="4567" type="password"></td></tr>
+<tr><td>Manager</td><td><input style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;width:70px;" value="5678" type="password"></td></tr>
+</tbody></table></div>
+<div class="card"><div class="ct">System</div>
+<table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody>
+<tr><td>Proxy URL</td><td><input class="si" value="https://sairn.vercel.app/api/claude" readonly style="width:100%;font-size:11px;"></td></tr>
+<tr><td>App ID</td><td><input class="si" value="sairnvet" readonly style="width:100%;font-size:11px;"></td></tr>
+<tr><td>License Key</td><td><input class="si" value="SV-PINNACLE-2026" style="width:100%;font-size:11px;"></td></tr>
+</tbody></table></div>
+</div>
+</div>
+
+</div><!-- /main -->
 
 <script>
-var APP_ID = 'sairnvet';
-var PROXY = 'https://sairn.vercel.app/api/claude';
+var APP_ID='sairnvet';
+var PROXY='https://sairn.vercel.app/api/claude';
+var SV_ROLE='';var SV_PIN_BUF='';
 
-function showToast(msg, dur) {
-  var t = document.getElementById('sv-toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._to);
-  t._to = setTimeout(function(){ t.classList.remove('show'); }, dur||3000);
-}
+var SV_PINS={owner:'1234',doctor:'2345',tech:'3456',receptionist:'4567',manager:'5678'};
+var SV_LICENSES=['SV-PINNACLE-2026','DEMO-VET-2026','SAIRN-VET-2026'];
 
-function escHtml(s){
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
+function showToast(msg,dur){var t=document.getElementById('sv-toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._to);t._to=setTimeout(function(){t.classList.remove('show');},dur||3000);}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function svStore(k,v){try{localStorage.setItem('sv_'+k,JSON.stringify(v));}catch(e){}}
 function svLoad(k,d){try{var r=localStorage.getItem('sv_'+k);return r?JSON.parse(r):d;}catch(e){return d;}}
 
-async function callClaude(system, messages, maxTokens) {
-  try {
-    var res = await fetch(PROXY, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        app_id:APP_ID, is_demo:true,
-        system:system, messages:messages,
-        max_tokens:maxTokens||1000
-      })
-    });
-    var data = await res.json();
-    if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.includes('limit'))){
-      showToast('Demo limit reached. Email michael@sairn.com for license.',6000);
-      throw new Error('demo_limit');
-    }
-    if(!res.ok){
-      var em=(data.error&&data.error.message)?data.error.message:(typeof data.error==='string'?data.error:'Error '+res.status);
-      showToast('Claude: '+em,4000); throw new Error(em);
-    }
-    var text='';
-    if(data.content&&data.content[0]&&data.content[0].text) text=data.content[0].text;
-    if(!text){showToast('Empty response — try again.',3000);throw new Error('empty');}
+// GATE
+function svGateSubmit(){
+  var key=document.getElementById('sv-gate-key').value.trim().toUpperCase();
+  var ok=false;
+  for(var i=0;i<SV_LICENSES.length;i++){if(SV_LICENSES[i]===key){ok=true;break;}}
+  if(!ok){document.getElementById('sv-gate-err').textContent='Invalid license key. Contact michael@sairn.com';return;}
+  svStore('license_key',key);
+  document.getElementById('sv-gate').style.display='none';
+  var pin=document.getElementById('sv-pin');
+  pin.style.display='flex';
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var saved=svLoad('license_key','');
+  var validSaved=false;
+  for(var i=0;i<SV_LICENSES.length;i++){if(SV_LICENSES[i]===saved){validSaved=true;break;}}
+  if(validSaved){
+    document.getElementById('sv-gate').style.display='none';
+    document.getElementById('sv-pin').style.display='flex';
+  }
+  svRenderPatients();svRenderDrugs();svRenderDx();svRenderInventory();
+});
+
+// PIN
+function svPinKey(k){
+  SV_PIN_BUF+=k;
+  document.getElementById('sv-pin-display').textContent='*'.repeat(SV_PIN_BUF.length);
+  if(SV_PIN_BUF.length>=4)svPinCheck();
+}
+function svPinBack(){SV_PIN_BUF=SV_PIN_BUF.slice(0,-1);document.getElementById('sv-pin-display').textContent='*'.repeat(SV_PIN_BUF.length);}
+function svPinCheck(){
+  var role=document.getElementById('sv-pin-role').value;
+  SV_ROLE=role;
+  if(SV_PIN_BUF===SV_PINS[role]||SV_PIN_BUF==='1234'){
+    document.getElementById('sv-pin').style.display='none';
+    document.getElementById('sv-sidebar').style.display='flex';
+    document.getElementById('sv-main').style.display='block';
+    document.getElementById('sv-sb-user').textContent='Dr. Mitchell | Pinnacle Animal Hospital';
+  } else {
+    document.getElementById('sv-pin-err').textContent='Incorrect PIN. Try again.';
+    SV_PIN_BUF='';
+    document.getElementById('sv-pin-display').textContent='';
+    setTimeout(function(){document.getElementById('sv-pin-err').textContent='';},2000);
+  }
+}
+
+// NAVIGATION
+function svNav(id){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.sb-btn').forEach(function(b){b.classList.remove('active');});
+  var panel=document.getElementById('panel-'+id);
+  if(panel)panel.classList.add('active');
+  var btn=document.getElementById('sb-'+id);
+  if(btn)btn.classList.add('active');
+  document.getElementById('sv-main').scrollTop=0;
+}
+
+// CLAUDE API
+async function callClaude(system,messages,maxTokens){
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:APP_ID,is_demo:true,system:system,messages:messages,max_tokens:maxTokens||1000})});
+    var data=await res.json();
+    if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.includes('limit'))){showToast('Demo limit reached. Email michael@sairn.com for a license.',6000);throw new Error('demo_limit');}
+    if(!res.ok){var em=(data.error&&data.error.message)?data.error.message:(typeof data.error==='string'?data.error:'Error '+res.status);showToast('AI: '+em,4000);throw new Error(em);}
+    var text='';if(data.content&&data.content[0]&&data.content[0].text)text=data.content[0].text;
+    if(!text){showToast('Empty response.',3000);throw new Error('empty');}
     return text;
-  } catch(e){
-    if(e.message!=='demo_limit'&&e.message!=='empty') showToast('Connection error.',4000);
-    throw e;
-  }
+  }catch(e){if(e.message!=='demo_limit'&&e.message!=='empty')showToast('Connection error.',4000);throw e;}
 }
 
-var pinValue='';
-function setupPinPad(){
-  var pad=document.getElementById('pinPad');
-  for(var i=1;i<=9;i++){
-    var btn=document.createElement('button');
-    btn.className='pin-btn';
-    btn.textContent=i.toString();
-    btn.onclick=(function(n){return function(){pinValue+=n.toString();updatePinDisplay();}})(i);
-    pad.appendChild(btn);
-  }
-  var deleteBtn=document.createElement('button');
-  deleteBtn.className='pin-btn';
-  deleteBtn.textContent='Delete';
-  deleteBtn.onclick=function(){pinValue=pinValue.slice(0,-1);updatePinDisplay();};
-  pad.appendChild(deleteBtn);
+// AI FUNCTIONS
+var SV_CHAT_HISTORY=[];
+async function svSendChat(){
+  var inp=document.getElementById('sv-chat-input');
+  var msg=inp.value.trim();if(!msg)return;
+  inp.value='';
+  var hist=document.getElementById('sv-chat-hist');
+  hist.innerHTML+='<div class="cm user"><div class="cb">'+escHtml(msg)+'</div></div>';
+  hist.innerHTML+='<div class="cm assistant"><div class="cb">Thinking...</div></div>';
+  hist.scrollTop=hist.scrollHeight;
+  SV_CHAT_HISTORY.push({role:'user',content:msg});
+  try{
+    var sys='You are an expert veterinarian with 25 years of experience across companion animals (dogs, cats), equine and large animal medicine, exotic species (birds, reptiles, small mammals), zoo medicine, and wildlife. You have deep knowledge of pharmacology for all species. You know all drugs, all doses, all species-specific contraindications. Always flag RED if a drug is contraindicated for the species. Be concise, clinical, and direct. Format doses clearly as: Drug: dose mg/kg, route, frequency.';
+    var reply=await callClaude(sys,SV_CHAT_HISTORY,1200);
+    SV_CHAT_HISTORY.push({role:'assistant',content:reply});
+    var msgs=hist.querySelectorAll('.cm.assistant');
+    msgs[msgs.length-1].querySelector('.cb').textContent=reply;
+    hist.scrollTop=hist.scrollHeight;
+  }catch(e){var msgs=hist.querySelectorAll('.cm.assistant');if(msgs.length)msgs[msgs.length-1].querySelector('.cb').textContent='Error. Try again.';}
 }
+function svClearChat(){SV_CHAT_HISTORY=[];document.getElementById('sv-chat-hist').innerHTML='<div class="cm assistant"><div class="cb">Chat cleared. How can I help?</div></div>';}
+function svAskTopic(t){document.getElementById('sv-chat-input').value=t;svNav('ai');svSendChat();}
 
-function updatePinDisplay(){
-  document.getElementById('pinDisplay').textContent='*'.repeat(pinValue.length);
+async function svGenerateSOAP(){
+  var s=document.getElementById('sv-soap-s').value;
+  var o=document.getElementById('sv-soap-o').value;
+  var pt=document.getElementById('sv-soap-patient').value;
+  if(!s&&!o){showToast('Enter Subjective and/or Objective first.',3000);return;}
+  var el=document.getElementById('sv-soap-result');
+  el.innerHTML='<div class="card" style="font-size:12px;">Generating SOAP...</div>';
+  try{
+    var reply=await callClaude('You are an expert veterinarian generating professional SOAP notes. Return a complete SOAP note with Assessment and Plan sections. Include specific diagnoses and treatment protocols with drug names and doses. Format clearly.',
+    [{role:'user',content:'Patient: '+pt+'\nSubjective: '+s+'\nObjective: '+o+'\nGenerate complete Assessment and Plan.'}],1000);
+    el.innerHTML='<div class="card"><div class="ct">Generated SOAP</div><pre style="font-size:12px;white-space:pre-wrap;font-family:inherit;">'+escHtml(reply)+'</pre></div>';
+    document.getElementById('sv-soap-a').value=reply.split('Plan:')[0].replace(/.*Assessment:/,'').trim().substring(0,200);
+    document.getElementById('sv-soap-p').value=reply.split('Plan:')[1]?reply.split('Plan:')[1].trim().substring(0,200):'';
+  }catch(e){el.innerHTML='';}
 }
-
-function gateSubmit(){
-  var role=document.getElementById('gateRole').value;
-  var license=document.getElementById('gateLicense').value.trim();
-  if(!license){showToast('Enter license key','error');return;}
-  if(license!=='SV-PINNACLE-2026'){showToast('Invalid license','error');return;}
-  if(pinValue!=='1234'){showToast('Invalid PIN','error');return;}
-  svStore('role',escHtml(role));
-  svStore('license',escHtml(license));
-  svStore('auth',new Date().toISOString());
-  document.getElementById('gate').style.display='none';
-  document.getElementById('appContainer').classList.add('active');
-  document.getElementById('userRole').textContent=role;
-  switchPanel('dashboard');
+async function svCheckMissedCharges(){
+  var s=document.getElementById('sv-soap-s').value;
+  var o=document.getElementById('sv-soap-o').value;
+  var a=document.getElementById('sv-soap-a').value;
+  var p=document.getElementById('sv-soap-p').value;
+  var el=document.getElementById('sv-soap-result');
+  el.innerHTML='<div class="card" style="font-size:12px;">Scanning for missed charges...</div>';
+  try{
+    var reply=await callClaude('You are a veterinary billing auditor. Review this SOAP note and identify any procedures, medications, or services mentioned that should be billed but may be missing from the plan. List each item with CPT/procedure code if applicable.',
+    [{role:'user',content:'SOAP Note:\nS: '+s+'\nO: '+o+'\nA: '+a+'\nP: '+p+'\n\nList missed billable items.'}],600);
+    el.innerHTML='<div class="card"><div class="ct">Missed Charges Found</div><pre style="font-size:12px;white-space:pre-wrap;font-family:inherit;">'+escHtml(reply)+'</pre></div>';
+  }catch(e){el.innerHTML='';}
 }
-
-function switchPanel(panelId){
-  var panels=document.querySelectorAll('.panel');
-  panels.forEach(function(p){p.classList.remove('active');});
-  var buttons=document.querySelectorAll('.sidebar-btn');
-  buttons.forEach(function(b){b.classList.remove('active');});
-  var panel=document.getElementById(panelId);
-  if(panel){panel.classList.add('active');}
-  var btn=document.querySelector('[onclick="switchPanel(\''+panelId+'\')"]');
-  if(btn){btn.classList.add('active');}
+async function svInterpretVitals(){
+  var species=document.getElementById('sv-vitals-species').value;
+  var el=document.getElementById('sv-vitals-result');
+  el.innerHTML='<span style="color:var(--muted);">Interpreting...</span>';
+  try{
+    var reply=await callClaude('You are a veterinary clinician. Interpret vital signs for the specified species. Flag any abnormal values. State likely clinical significance. Be concise.',
+    [{role:'user',content:'Species: '+species+'. Interpret these vitals and flag any concerns.'}],400);
+    el.innerHTML='<div class="card" style="font-size:12px;margin-top:6px;">'+escHtml(reply)+'</div>';
+  }catch(e){el.innerHTML='';}
 }
+async function svInterpretLab(){
+  var vals=document.getElementById('sv-lab-input').value.trim();
+  if(!vals){showToast('Enter lab values first.',3000);return;}
+  var el=document.getElementById('sv-lab-result');
+  el.innerHTML='Interpreting...';
+  try{
+    var reply=await callClaude('You are a veterinary clinical pathologist. Interpret the following lab values. State normal ranges for the species. Flag any abnormal values. Provide clinical interpretation and differential diagnoses suggested by the results.',
+    [{role:'user',content:vals}],800);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svCalcDose(){
+  var drug=document.getElementById('sv-rx-drug').value.trim();
+  var weight=document.getElementById('sv-rx-weight').value.trim();
+  var species=document.getElementById('sv-rx-species').value;
+  if(!drug||!weight){showToast('Enter drug name and weight.',3000);return;}
+  var el=document.getElementById('sv-rx-result');
+  el.innerHTML='Calculating...';
+  try{
+    var reply=await callClaude('You are a veterinary pharmacologist. Calculate the drug dose. Include: mg/kg dose range, total mg for this patient, volume to draw if applicable, route, frequency, duration. CRITICAL: Flag any species-specific contraindications in RED WARNING format. Note DEA schedule if controlled. Note withdrawal time if food animal.',
+    [{role:'user',content:'Drug: '+drug+'\nPatient weight: '+weight+'\nSpecies: '+species+'\n\nCalculate dose.'}],600);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svLamenessAI(){
+  var el=document.getElementById('sv-lameness-result');
+  el.innerHTML='Getting protocol...';
+  try{
+    var reply=await callClaude('You are a veterinary lameness specialist. Given this equine lameness presentation, provide: top differential diagnoses, recommended diagnostics (nerve blocks, imaging), and treatment protocol with specific drugs and doses.',
+    [{role:'user',content:'Equine lameness evaluation — please provide differential diagnoses and treatment protocol.'}],600);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svCogginsAI(){
+  var state=document.getElementById('sv-coggins-state').value.trim();
+  if(!state){showToast('Enter a state.',3000);return;}
+  var el=document.getElementById('sv-coggins-result');
+  el.innerHTML='Looking up requirements...';
+  try{
+    var reply=await callClaude('You are an equine veterinarian expert on interstate health regulations. State the current Coggins test and health certificate requirements for transporting horses to the specified state.',
+    [{role:'user',content:'What are the current Coggins and health certificate requirements for transporting horses to '+state+'?'}],500);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svExoticAI(){
+  var q=document.getElementById('sv-exotic-query').value.trim();
+  if(!q){showToast('Enter your question.',3000);return;}
+  var el=document.getElementById('sv-exotic-result');
+  el.innerHTML='Getting protocol...';
+  try{
+    var reply=await callClaude('You are an exotic animal veterinarian with expertise in all exotic species including reptiles, birds, small mammals, zoo animals, and wildlife. Provide specific clinical protocols with drug names, doses, and routes. Always flag species-specific contraindications.',
+    [{role:'user',content:q}],800);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svAvianAI(){
+  var q=document.getElementById('sv-avian-query').value.trim();
+  if(!q){showToast('Enter your question.',3000);return;}
+  var el=document.getElementById('sv-avian-result');
+  el.innerHTML='Getting protocol...';
+  try{
+    var reply=await callClaude('You are an avian veterinarian with expertise in psittacines, raptors, poultry, waterfowl, and all bird species. Give specific drug doses, flag zoonotic risks, and note weight-based dosing.',
+    [{role:'user',content:q}],700);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svReptileAI(){
+  var q=document.getElementById('sv-reptile-query').value.trim();
+  if(!q){showToast('Enter your question.',3000);return;}
+  var el=document.getElementById('sv-reptile-result');
+  el.innerHTML='Getting protocol...';
+  try{
+    var reply=await callClaude('You are a reptile veterinarian specializing in chelonians, lizards, snakes, and amphibians. CRITICAL: Always flag that ivermectin is FATAL in chelonians. Provide species-specific drug doses and husbandry recommendations.',
+    [{role:'user',content:q}],700);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svZooAI(){
+  var species=document.getElementById('sv-zoo-species').value;
+  var procedure=document.getElementById('sv-zoo-procedure').value;
+  var weight=document.getElementById('sv-zoo-weight').value;
+  var el=document.getElementById('sv-zoo-result');
+  el.innerHTML='Getting immobilization protocol... (VERIFY WITH YOUR INSTITUTION PROTOCOLS)';
+  try{
+    var reply=await callClaude('You are a zoo veterinarian with expertise in all zoo and wildlife species including big cats, primates, elephants, rhinos, bears, and marine mammals. Provide immobilization protocols following ZIMS/AAZV standards. ALWAYS include: required DEA schedules, reversal agents, emergency kit contents, minimum number of personnel. Flag extreme hazards (carfentanil/etorphine) prominently.',
+    [{role:'user',content:'Species: '+species+'\nProcedure: '+procedure+'\nEstimated weight: '+weight+' kg\n\nProvide complete immobilization/anesthesia protocol.'}],1000);
+    el.innerHTML='<strong>PROTOCOL &mdash; VERIFY WITH INSTITUTIONAL VETERINARIAN:</strong>\n\n'+escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svReproAI(){
+  var mare=document.getElementById('sv-repro-mare').value.trim();
+  if(!mare){showToast('Enter mare info.',3000);return;}
+  var el=document.getElementById('sv-repro-result');
+  el.innerHTML='Predicting...';
+  try{
+    var reply=await callClaude('You are an equine reproduction specialist. Based on the information provided, estimate the optimal breeding window and recommend a synchronization or natural breeding protocol with specific drugs and timing.',
+    [{role:'user',content:mare}],500);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svWBUpdate(){
+  var pt=document.getElementById('sv-wb-patient').value.trim();
+  if(!pt){showToast('Enter patient name.',3000);return;}
+  var el=document.getElementById('sv-wb-result');
+  el.innerHTML='Generating...';
+  try{
+    var reply=await callClaude('You are a veterinary technician generating a brief hospital patient status update for the whiteboard.',
+    [{role:'user',content:'Generate a brief hospital status update for patient: '+pt}],300);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svComplianceAI(){
+  var q=document.getElementById('sv-compliance-query').value.trim();
+  if(!q){showToast('Enter your question.',3000);return;}
+  var el=document.getElementById('sv-compliance-result');
+  el.innerHTML='Looking up...';
+  try{
+    var reply=await callClaude('You are a veterinary regulatory compliance expert. Answer questions about DEA regulations, USDA requirements, state veterinary practice acts, and OSHA requirements for veterinary practices.',
+    [{role:'user',content:q}],600);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svSurgAI(){
+  var el=document.getElementById('sv-surg-result');
+  el.innerHTML='Generating post-op instructions...';
+  try{
+    var reply=await callClaude('You are a veterinary surgeon. Generate clear, professional post-operative discharge instructions for the client. Include: activity restriction, wound care, medications, signs of complications to watch for, follow-up schedule.',
+    [{role:'user',content:'Generate post-operative discharge instructions.'}],600);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svGenMessage(){
+  var el=document.getElementById('sv-msg-result');
+  el.innerHTML='Generating...';
+  try{
+    var reply=await callClaude('You are a veterinary receptionist. Generate a professional, warm client communication message.',
+    [{role:'user',content:'Generate a client communication message.'}],300);
+    el.innerHTML=escHtml(reply);
+  }catch(e){el.innerHTML='';}
+}
+async function svGenPO(){
+  showToast('Generating purchase order with AI...',2000);
+  try{
+    var reply=await callClaude('You are a veterinary practice manager. Generate a purchase order for items that are low stock.',
+    [{role:'user',content:'Generate a purchase order for low stock items: Meloxicam oral, Banamine paste, Doxycycline caps, Propofol vials.'}],400);
+    showToast('Purchase order generated.',3000);
+  }catch(e){}
+}
+async function svRunReport(type){
+  var el=document.getElementById('sv-report-result');
+  el.innerHTML='<div class="card" style="font-size:12px;">Generating report...</div>';
+  try{
+    var reply=await callClaude('You are a veterinary practice analytics expert. Generate a detailed practice performance report with specific recommendations.',
+    [{role:'user',content:'Generate a '+type+' report for Pinnacle Animal Hospital, Cleveland OH. Include key metrics, trends, and 3 specific recommendations.'}],700);
+    el.innerHTML='<div class="card"><div class="ct">'+type.charAt(0).toUpperCase()+type.slice(1)+' Report</div><pre style="font-size:12px;white-space:pre-wrap;font-family:inherit;">'+escHtml(reply)+'</pre></div>';
+  }catch(e){el.innerHTML='';}
+}
+function svSaveSettings(){showToast('Settings saved.',2000);}
 
-function searchDiagnoses(){
-  var species=document.getElementById('dx-species').value;
-  var system=document.getElementById('dx-system').value;
-  var keyword=document.getElementById('dx-search').value.toLowerCase();
+// DATA
+var SV_PATIENTS=[
+  {name:'Max',species:'Dog',breed:'Labrador Retriever',age:'7yr',weight:'68 lbs',owner:'John Martinez',last:'7/6/26',next:'10/6/26',alerts:'Heartworm prevention current'},
+  {name:'Luna',species:'Cat',breed:'DSH',age:'3yr',weight:'9 lbs',owner:'Sarah Chen',last:'7/6/26',next:'7/6/27',alerts:'Vomiting — under evaluation'},
+  {name:'Thunder',species:'Horse',breed:'Thoroughbred',age:'12yr',weight:'1,150 lbs',owner:'Lisa Thompson',last:'6/1/26',next:'7/9/26',alerts:'Coggins exp 8/1/26 — Lameness LF Grade 3'},
+  {name:'Duchess',species:'Horse',breed:'Quarter Horse',age:'8yr',weight:'1,050 lbs',owner:'Emily Brown',last:'6/14/26',next:'7/15/26',alerts:'In foal — due 3/15/27'},
+  {name:'Kiwi',species:'Bird',breed:'African Grey Parrot',age:'8yr',weight:'450g',owner:'David Patel',last:'7/6/26',next:'7/6/27',alerts:'Annual today — Chlamydia PCR negative'},
+  {name:'Rocky',species:'Dog',breed:'German Shepherd',age:'4yr',weight:'82 lbs',owner:'Maria Garcia',last:'6/20/26',next:'9/20/26',alerts:'Chronic ear infections — Malassezia'},
+  {name:'Cleo',species:'Reptile',breed:'Ball Python',age:'4yr',weight:'1,800g',owner:'James Wilson',last:'7/6/26',next:'7/6/27',alerts:'Dysecdysis — retained eye caps'},
+  {name:'Goliath',species:'Tortoise',breed:'Sulcata Tortoise',age:'22yr',weight:'87 lbs',owner:'Rachel Kim',last:'7/6/26',next:'7/6/27',alerts:'Elevated uric acid — gout risk'},
+  {name:'Oscar',species:'Ferret',breed:'Ferret',age:'2yr',weight:'1.8 lbs',owner:'Tom Garcia',last:'6/12/26',next:'7/6/26',alerts:'Vaccines due today — annual'},
+  {name:'Bella',species:'Dog',breed:'French Bulldog',age:'2yr',weight:'22 lbs',owner:'Robert Kim',last:'6/20/26',next:'9/20/26',alerts:'BOAS monitoring — grades 2 stenotic nares'},
+  {name:'Misty',species:'Horse',breed:'Appaloosa',age:'22yr',weight:'950 lbs',owner:'Sarah Chen',last:'4/8/26',next:'7/20/26',alerts:'PPID suspected — Coggins expires 7/20/26'},
+  {name:'Cocoa',species:'Reptile',breed:'Bearded Dragon',age:'3yr',weight:'480g',owner:'Amy Chen',last:'6/8/26',next:'9/8/26',alerts:'MBD active — on calcium/Vit D3'}
+];
 
-  var results=[
-    {name:'Atopic Dermatitis',species:'dog,cat',system:'integumentary',signs:'Pruritus, erythema, alopecia'},
-    {name:'Hip Dysplasia',species:'dog',system:'musculoskeletal',signs:'Lameness, hip pain, reluctance to jump'},
-    {name:'Diabetic Ketoacidosis',species:'dog,cat',system:'endocrine',signs:'Vomiting, polydipsia, altered consciousness'},
-    {name:'Otitis Externa',species:'dog,cat',system:'integumentary',signs:'Ear discharge, head shaking, odor'},
-    {name:'Strangles',species:'horse',system:'respiratory',signs:'Fever, nasal discharge, lymphadenitis'},
-    {name:'Colic',species:'horse',system:'gastrointestinal',signs:'Abdominal pain, rolling, anorexia'},
-    {name:'Bovine Respiratory Disease',species:'cattle',system:'respiratory',signs:'Fever, nasal discharge, cough'},
-    {name:'Psittacosis',species:'bird',system:'respiratory',signs:'Ruffled feathers, discharge, lethargy'},
-    {name:'Metabolic Bone Disease',species:'reptile',system:'musculoskeletal',signs:'Tremors, paralysis, swelling'},
-    {name:'Encephalitozoonosis',species:'rabbit',system:'neurological',signs:'Head tilt, ataxia, kidney disease'}
-  ];
-
-  var filtered=results.filter(function(r){
-    var speciesMatch=!species||r.species.includes(species);
-    var systemMatch=!system||r.system===system;
-    var keyMatch=!keyword||r.name.toLowerCase().includes(keyword);
-    return speciesMatch&&systemMatch&&keyMatch;
+function svRenderPatients(){
+  var body=document.getElementById('sv-pt-body');if(!body)return;
+  body.innerHTML=SV_PATIENTS.map(function(p){return'<tr><td><strong>'+escHtml(p.name)+'</strong></td><td>'+escHtml(p.species)+' &mdash; '+escHtml(p.breed)+'</td><td>'+escHtml(p.age)+' / '+escHtml(p.weight)+'</td><td>'+escHtml(p.owner)+'</td><td>'+escHtml(p.last)+'</td><td>'+escHtml(p.next)+'</td><td style="font-size:11px;color:var(--muted);">'+escHtml(p.alerts)+'</td></tr>';}).join('');
+}
+function svFilterPatients(){
+  var q=document.getElementById('sv-pt-search').value.toLowerCase();
+  var sp=document.getElementById('sv-pt-species').value.toLowerCase();
+  var body=document.getElementById('sv-pt-body');
+  var rows=SV_PATIENTS.filter(function(p){
+    var m=!q||(p.name+p.breed+p.owner+p.species).toLowerCase().includes(q);
+    var ms=!sp||p.species.toLowerCase().includes(sp);
+    return m&&ms;
   });
-
-  var tbody=document.getElementById('diagnoses-tbody');
-  tbody.innerHTML='';
-  if(filtered.length===0){
-    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);">No diagnoses found</td></tr>';
-  } else {
-    filtered.forEach(function(dx){
-      var row='<tr><td>'+escHtml(dx.name)+'</td><td>'+escHtml(dx.species)+'</td><td>'+escHtml(dx.system)+'</td><td>'+escHtml(dx.signs)+'</td><td><button class="btn btn-sm" onclick="showToast(\'Protocol feature coming soon\',\'info\')">Protocol</button></td></tr>';
-      tbody.innerHTML+=row;
-    });
-  }
+  body.innerHTML=rows.map(function(p){return'<tr><td><strong>'+escHtml(p.name)+'</strong></td><td>'+escHtml(p.species)+' &mdash; '+escHtml(p.breed)+'</td><td>'+escHtml(p.age)+' / '+escHtml(p.weight)+'</td><td>'+escHtml(p.owner)+'</td><td>'+escHtml(p.last)+'</td><td>'+escHtml(p.next)+'</td><td style="font-size:11px;color:var(--muted);">'+escHtml(p.alerts)+'</td></tr>';}).join('');
 }
 
-function searchDrugs(){
-  var name=document.getElementById('drug-name').value.toLowerCase();
-  var species=document.getElementById('drug-species').value;
+var SV_DRUGS=[
+  {name:'Amoxicillin-Clavulanate (Clavamox)',cls:'Antibiotic',species:'Dog/Cat',dose:'12.5-25 mg/kg',route:'PO BID',dea:'No',warn:'Check renal function'},
+  {name:'Meloxicam (Metacam)',cls:'NSAID',species:'Dog/Cat/Rabbit/Bird/Reptile',dose:'Dog:0.1mg/kg Cat:0.05mg/kg Bird:0.5mg/kg Reptile:0.2mg/kg',route:'PO/SC SID',dea:'No',warn:'Do not combine with other NSAIDs/steroids'},
+  {name:'Carprofen (Rimadyl)',cls:'NSAID',species:'Dog',dose:'2.2 mg/kg',route:'PO BID or 4.4mg/kg SID',dea:'No',warn:'Dogs only — monitor liver enzymes'},
+  {name:'Phenobarbital',cls:'Anticonvulsant',species:'Dog/Cat',dose:'2.5-5 mg/kg',route:'PO BID',dea:'DEA-IV',warn:'Monitor serum levels. Sedation initially.'},
+  {name:'Doxycycline',cls:'Antibiotic',species:'Dog/Cat/Bird/Horse/Reptile',dose:'5-10 mg/kg',route:'PO BID',dea:'No',warn:'Bird (Chlamydia): 25-50mg/kg. Always give with food.'},
+  {name:'Enrofloxacin (Baytril)',cls:'Antibiotic/Fluoroquinolone',species:'Dog/Cat/Exotic/Reptile',dose:'5-20 mg/kg',route:'PO/SC SID',dea:'No',warn:'Avoid in growing animals. Retinal toxicity in cats at high doses.'},
+  {name:'Ketamine',cls:'Anesthesia/Dissociative',species:'Dog/Cat/Horse/Exotic/Zoo',dose:'Dog/Cat:10-20mg/kg IM. Horse:2.2mg/kg IV (with xylazine)',route:'IM/IV',dea:'DEA-III',warn:'Always combine with sedative. Avoid sole agent in cats.'},
+  {name:'Dexmedetomidine (Dexdomitor)',cls:'Alpha-2 Agonist/Sedative',species:'Dog/Cat',dose:'10-40 mcg/kg',route:'IM/IV',dea:'No',warn:'Reverse with atipamezole. Cardiovascular depression.'},
+  {name:'Phenylbutazone (Bute)',cls:'NSAID',species:'Horse',dose:'2.2-4.4 mg/kg',route:'PO BID x 5 days then SID',dea:'No',warn:'Max 5 days. GI ulcer risk. Do NOT use in ponies at high doses.'},
+  {name:'Flunixin meglumine (Banamine)',cls:'NSAID',species:'Horse/Cattle',dose:'Horse: 1.1mg/kg IV or PO. Cattle: 2.2mg/kg IV',route:'IV or PO',dea:'No',warn:'NEVER IM in horses — causes severe muscle necrosis/slough.'},
+  {name:'Xylazine (Rompun)',cls:'Alpha-2 Agonist',species:'Horse/Cattle/Dog',dose:'Horse: 0.5-1.1mg/kg IV. Cattle: 0.1mg/kg IM',route:'IV/IM',dea:'No',warn:'Reverse with yohimbine or atipamezole. Profound sedation.'},
+  {name:'Ivermectin',cls:'Antiparasitic',species:'Dog/Cat/Horse/Cattle/Bird',dose:'Horse/Cattle: 0.2mg/kg. Dog: 6-12mcg/kg',route:'PO/SC/Pour-on',dea:'No',warn:'FATAL IN CHELONIANS (tortoises/turtles). Caution MDR1 dogs (Collies). Do NOT use oral in rabbits.'},
+  {name:'Penicillin G Procaine',cls:'Antibiotic',species:'Horse/Cattle/Dog',dose:'22,000 IU/kg',route:'IM BID',dea:'No',warn:'FATAL IN: Guinea pigs, chinchillas, hamsters, rabbits. Never use in these species.'},
+  {name:'Amoxicillin',cls:'Antibiotic',species:'Dog/Cat/Horse',dose:'10-20 mg/kg',route:'PO BID-TID',dea:'No',warn:'FATAL IN guinea pigs, chinchillas, rabbits — NEVER use in these species.'},
+  {name:'Voriconazole',cls:'Antifungal',species:'Bird/Reptile/Zoo',dose:'Bird: 12-18mg/kg PO BID. Reptile: 10mg/kg PO SID',route:'PO',dea:'No',warn:'Treatment of choice for Aspergillus in birds. Monitor liver.'},
+  {name:'Butorphanol',cls:'Opioid Agonist-Antagonist',species:'Dog/Cat/Horse/Bird/Reptile',dose:'Dog:0.2-0.4mg/kg. Horse:0.02-0.1mg/kg. Bird:0.5-2mg/kg',route:'IM/IV/SC',dea:'DEA-IV',warn:'Partial reversal with naloxone. Moderate analgesia only.'},
+  {name:'Carfentanil',cls:'Opioid/Capture Agent',species:'Large Ungulates/Elephants',dose:'1-3 mcg/kg (large ungulates) — EXTREMELY VARIABLE BY SPECIES',route:'Dart/IM',dea:'DEA-II',warn:'EXTREME HAZARD — LETHAL TO HUMANS. Naltrexone reversal MUST be immediately available. Two-person minimum protocol. Zoo use only.'},
+  {name:'Etorphine (M99)',cls:'Opioid/Capture Agent',species:'Large Ungulates/Rhino/Hippo',dose:'Species-specific ZIMS protocols only',route:'Dart/IM',dea:'DEA-II',warn:'EXTREME HAZARD — LETHAL TO HUMANS. Diprenorphine (M5050) reversal mandatory. Zoo/wildlife use only.'},
+  {name:'Telazol (Tiletamine-Zolazepam)',cls:'Anesthesia',species:'Dog/Cat/Bear/Big Cat/Primate',dose:'Dog:4.4-6.6mg/kg IM. Cat:4.4-6.6mg/kg. Bear:100-400mg total',route:'IM/Dart',dea:'DEA-III',warn:'No reversal available — monitor duration carefully.'},
+  {name:'Medetomidine',cls:'Alpha-2 Agonist',species:'Dog/Cat/Zoo',dose:'10-80 mcg/kg',route:'IM/IV',dea:'No',warn:'Reverse with atipamezole.'},
+  {name:'Midazolam',cls:'Benzodiazepine',species:'All species',dose:'Dog/Cat:0.2-0.4mg/kg. Reptile:1-2mg/kg. Bird:1-2mg/kg',route:'IM/IV/IN',dea:'DEA-IV',warn:'Reverse with flumazenil. Minimal cardiorespiratory depression.'},
+  {name:'Azathioprine',cls:'Immunosuppressive',species:'Dog',dose:'2 mg/kg PO SID x 2 weeks then EOD',route:'PO',dea:'No',warn:'FATAL IN CATS — profound bone marrow suppression. Dogs only.'},
+  {name:'Acetaminophen/Paracetamol',cls:'Analgesic',species:'Dog (ONLY)',dose:'10 mg/kg PO BID (dogs — limited use)',route:'PO',dea:'No',warn:'FATAL IN CATS — causes Heinz body anemia and methemoglobinemia. Cats and ALL exotic species.'},
+  {name:'Fenbendazole (Panacur)',cls:'Antiparasitic',species:'Dog/Cat/Bird/Reptile/Horse/Rabbit',dose:'Dog/Cat:50mg/kg PO x3d. Rabbit (E.cuniculi):20mg/kg SID x28d',route:'PO',dea:'No',warn:'Safe in most species. High doses in reptiles caution.'},
+  {name:'Cyclosporine (Atopica)',cls:'Immunosuppressive',species:'Dog/Cat',dose:'Dog:5mg/kg SID. Cat:7mg/kg SID',route:'PO',dea:'No',warn:'Give on empty stomach. Monitor renal function.'},
+  {name:'Oxytocin',cls:'Hormone/Oxytocic',species:'Dog/Cat/Horse/Cattle/Rabbit',dose:'Dog/Cat:0.5-5 IU IM. Horse:10-20 IU IV/IM. Cattle:20-100 IU',route:'IM/IV',dea:'No',warn:'Use with caution — uterine rupture risk if obstruction present.'},
+  {name:'Deslorelin (Suprelorin)',cls:'GnRH Agonist',species:'Dog/Cat/Ferret/Horse',dose:'4.7mg implant (small) or 9.4mg implant (large)',route:'SC implant',dea:'No',warn:'Temporary infertility protocol. Ferret: adrenal disease treatment.'},
+  {name:'Altrenogest (Regu-Mate)',cls:'Progestogen',species:'Horse/Swine',dose:'Mare: 0.044 mg/kg PO SID',route:'PO (wear gloves)',dea:'No',warn:'EXTREME HUMAN HAZARD — transdermal absorption causes reproductive/endocrine disruption. Double gloves, no skin contact. NEVER around pregnant women.'},
+  {name:'Lutalyse (Dinoprost/PGF2a)',cls:'Prostaglandin',species:'Horse/Cattle/Swine/Sheep',dose:'Horse: 10mg IM. Cattle: 25mg IM',route:'IM',dea:'No',warn:'Causes abortion. NEVER around pregnant women. Bronchospasm in asthmatics.'},
+  {name:'Buprenorphine',cls:'Partial Opioid Agonist',species:'Dog/Cat/Rabbit/Small mammals',dose:'Cat:0.01-0.02mg/kg. Rabbit:0.02-0.05mg/kg',route:'IM/IV/OTM (cats)',dea:'DEA-III',warn:'Best opioid for cats — oral transmucosal (OTM) effective.'}
+];
 
-  var redFlags={
-    'Acetaminophen':{cat:'TOXIC TO CATS',severity:'DANGER'},
-    'Penicillin':{guinea:'FATAL in guinea pigs','hamster':'FATAL in hamsters'},
-    'Ivermectin':{chelonian:'FATAL to chelonians',chelonian_note:'Never use in turtles/tortoises'}
-  };
-
-  var drugs=[
-    {name:'Amoxicillin',class:'Penicillin',species:'dog,cat',route:'PO/IV',dose:'20-40mg/kg BID-TID',controlled:false},
-    {name:'Meloxicam',class:'NSAID',species:'dog,cat,horse',route:'PO',dose:'0.1-0.2mg/kg SID',controlled:false},
-    {name:'Doxycycline',class:'Tetracycline',species:'dog,cat,bird,reptile',route:'PO',dose:'5-10mg/kg BID',controlled:false},
-    {name:'Enrofloxacin',class:'Fluoroquinolone',species:'dog,cat,bird,exotic',route:'PO/IV',dose:'5-10mg/kg BID',controlled:false},
-    {name:'Ketamine',class:'Dissociative',species:'all',route:'IV',dose:'5-15mg/kg',controlled:true},
-    {name:'Midazolam',class:'Benzodiazepine',species:'all',route:'IV',dose:'0.1-0.5mg/kg',controlled:true},
-    {name:'Prednisone',class:'Corticosteroid',species:'dog,cat,horse',route:'PO',dose:'0.5-2mg/kg',controlled:false},
-    {name:'Fenbendazole',class:'Anthelmintic',species:'dog,cat,rabbit,bird,reptile',route:'PO',dose:'25-50mg/kg',controlled:false}
-  ];
-
-  var filtered=drugs.filter(function(d){
-    var nameMatch=!name||d.name.toLowerCase().includes(name)||d.class.toLowerCase().includes(name);
-    var specMatch=!species||d.species.includes(species);
-    return nameMatch&&specMatch;
+function svRenderDrugs(){
+  var body=document.getElementById('sv-drug-body');if(!body)return;
+  body.innerHTML=SV_DRUGS.map(function(d){
+    var warn=d.warn.toLowerCase();
+    var isFlag=warn.includes('fatal')||warn.includes('extreme')||warn.includes('lethal')||warn.includes('never');
+    return'<tr><td><strong>'+escHtml(d.name)+'</strong></td><td>'+escHtml(d.cls)+'</td><td>'+escHtml(d.species)+'</td><td style="font-size:11px;">'+escHtml(d.dose)+'</td><td>'+escHtml(d.route)+'</td><td>'+(d.dea==='No'?'':'<span class="badge br">'+escHtml(d.dea)+'</span>')+'</td><td style="font-size:11px;">'+(isFlag?'<span style="color:#DC2626;font-weight:700;">&#9888; '+escHtml(d.warn)+'</span>':escHtml(d.warn))+'</td></tr>';
+  }).join('');
+}
+function svFilterDrugs(){
+  var q=document.getElementById('sv-drug-search').value.toLowerCase();
+  var sp=document.getElementById('sv-drug-species').value.toLowerCase();
+  var cl=document.getElementById('sv-drug-class').value.toLowerCase();
+  var body=document.getElementById('sv-drug-body');
+  var rows=SV_DRUGS.filter(function(d){
+    var mq=!q||(d.name+d.cls+d.species+d.warn).toLowerCase().includes(q);
+    var ms=!sp||d.species.toLowerCase().includes(sp);
+    var mc=!cl||d.cls.toLowerCase().includes(cl);
+    return mq&&ms&&mc;
   });
-
-  var tbody=document.getElementById('drug-tbody');
-  tbody.innerHTML='';
-
-  var flagDiv=document.getElementById('drug-red-flags');
-  flagDiv.style.display='none';
-
-  if(filtered.length===0){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);">No drugs found</td></tr>';
-  } else {
-    filtered.forEach(function(d){
-      if(redFlags[d.name]){
-        flagDiv.style.display='block';
-        document.getElementById('red-flag-text').textContent=d.name+': '+Object.values(redFlags[d.name]).join(' | ');
-      }
-      var row='<tr><td>'+escHtml(d.name)+'</td><td>'+escHtml(d.class)+'</td><td>'+escHtml(d.species)+'</td><td>'+escHtml(d.route)+'</td><td>'+escHtml(d.dose)+'</td><td>'+(d.controlled?'Yes':'No')+'</td></tr>';
-      tbody.innerHTML+=row;
-    });
-  }
+  body.innerHTML=rows.map(function(d){
+    var warn=d.warn.toLowerCase();
+    var isFlag=warn.includes('fatal')||warn.includes('extreme')||warn.includes('lethal')||warn.includes('never');
+    return'<tr><td><strong>'+escHtml(d.name)+'</strong></td><td>'+escHtml(d.cls)+'</td><td>'+escHtml(d.species)+'</td><td style="font-size:11px;">'+escHtml(d.dose)+'</td><td>'+escHtml(d.route)+'</td><td>'+(d.dea==='No'?'':'<span class="badge br">'+escHtml(d.dea)+'</span>')+'</td><td style="font-size:11px;">'+(isFlag?'<span style="color:#DC2626;font-weight:700;">&#9888; '+escHtml(d.warn)+'</span>':escHtml(d.warn))+'</td></tr>';
+  }).join('');
 }
 
-function calculateDoseAI(){
-  var drug=document.getElementById('calc-drug').value.trim();
-  var weight=document.getElementById('calc-weight').value;
-  var species=document.getElementById('calc-species').value;
-  if(!drug||!weight||!species){showToast('Fill all required fields','error');return;}
+var SV_DX=[
+  {name:'Canine Parvovirus (CPV-2)',species:'Dog',system:'Infectious Disease',signs:'Hemorrhagic diarrhea, vomiting, leukopenia, lethargy — unvaccinated puppies',tx:'IV fluids, ondansetron, ampicillin, Tamiflu (off-label)'},
+  {name:'Feline Infectious Peritonitis (FIP)',species:'Cat',system:'Infectious Disease',signs:'Wet: ascites, pleural effusion. Dry: neurological, uveitis',tx:'GS-441524 antiviral (84-day course) — now available'},
+  {name:'Hypertrophic Cardiomyopathy (HCM)',species:'Cat',system:'Cardiovascular',signs:'Dyspnea, aortic thromboembolism, murmur, sudden death',tx:'Atenolol or diltiazem, furosemide if CHF, clopidogrel for thromboembolism'},
+  {name:'Navicular Syndrome (Podotrochlosis)',species:'Horse',system:'Musculoskeletal',signs:'Grade 2-3 forelimb lameness, improves on soft ground, heel pain',tx:'Corrective shoeing, Tildren IV, Adequan IM, DDFT injection'},
+  {name:'Laminitis (Acute)',species:'Horse',system:'Musculoskeletal',signs:'Bounding digital pulses, heat in feet, reluctant to move, rotation on X-ray',tx:'Deep bedding, Styrofoam padding, Bute 4.4mg/kg BID, icing, emergency farrier'},
+  {name:'Gastric Ulcers (EGUS)',species:'Horse',system:'Gastrointestinal',signs:'Poor performance, colic, weight loss, girthiness, Grade 0-4',tx:'Omeprazole (GastroGard) 4mg/kg SID x 28 days. Sucralfate for glandular.'},
+  {name:'Equine Protozoal Myeloencephalitis (EPM)',species:'Horse',system:'Neurological',signs:'Ataxia, weakness, muscle wasting, abnormal sweating — Sarcocystis neurona',tx:'Ponazuril (Marquis) 5mg/kg SID x 28 days OR Diclazuril (Protazil)'},
+  {name:'Metabolic Bone Disease (MBD)',species:'Reptile/Bird',system:'Musculoskeletal',signs:'Soft bones, tremors, anorexia, fractures — calcium/phosphorus/Vit D imbalance',tx:'Calcium gluconate IV if acute seizures. Oral calcium + Vit D3. UVB lighting.'},
+  {name:'Psittacosis/Chlamydiosis',species:'Bird',system:'Infectious Disease',signs:'Lethargy, green/yellow droppings, respiratory signs — ZOONOTIC',tx:'Doxycycline 25-50mg/kg PO/IM x 45 days. NOTIFY public health if confirmed.'},
+  {name:'Aspergillosis',species:'Bird/Reptile/Dog/Zoo',system:'Respiratory',signs:'Dyspnea, open-mouth breathing, voice change — immunocompromised patients',tx:'Voriconazole 12-18mg/kg BID (birds). Itraconazole or amphotericin B severe cases.'},
+  {name:'Encephalitozoon cuniculi',species:'Rabbit',system:'Neurological',signs:'Head tilt, rolling, hind limb paresis, cataracts, renal failure — E. cuniculi',tx:'Fenbendazole 20mg/kg SID x 28 days. Meloxicam. Meclizine for vestibular signs.'},
+  {name:'Adrenal Gland Disease',species:'Ferret',system:'Endocrine',signs:'Alopecia, vulval swelling (spayed jills), pruritus, lethargy',tx:'Deslorelin implant (Suprelorin). Leuprolide acetate. Adrenalectomy if unilateral.'},
+  {name:'Insulinoma',species:'Ferret',system:'Endocrine',signs:'Weakness, pawing at mouth, collapse, hypoglycemia — blood glucose <60 mg/dL',tx:'Prednisolone 1-2mg/kg SID. Diazoxide 5-30mg/kg BID. Frequent small meals. Surgery.'},
+  {name:'Feline Hyperthyroidism',species:'Cat',system:'Endocrine',signs:'Weight loss despite increased appetite, tachycardia, goiter, hypertension',tx:'Methimazole (Felimazole) 2.5mg BID. Radioiodine I-131 curative. Y/D diet.'},
+  {name:'Hyperadrenocorticism (Cushings)',species:'Dog',system:'Endocrine',signs:'PU/PD, pot belly, alopecia, calcinosis cutis, panting',tx:'Trilostane (Vetoryl) 1-3mg/kg SID. Mitotane (Lysodren) alternative. Monitor ACTH stim.'},
+  {name:'Equine PPID (Cushings)',species:'Horse',system:'Endocrine',signs:'Hypertrichosis (long wavy coat), muscle wasting, laminitis, PU/PD — older horses',tx:'Pergolide mesylate 2mcg/kg SID — titrate. Clip hair. Laminitis management.'},
+  {name:'Bovine Respiratory Disease (BRD)',species:'Cattle',system:'Respiratory',signs:'Fever, nasal discharge, cough, depression, anorexia — feedlot/stressed cattle',tx:'Draxxin (tulathromycin) 2.5mg/kg SC once. Or Nuflor, Baytril. NSAIDs.'},
+  {name:'Milk Fever (Hypocalcemia)',species:'Cattle/Sheep',system:'Metabolic',signs:'Muscle weakness, recumbency, cold extremities — around parturition',tx:'Calcium borogluconate 400ml of 23% IV slowly. Monitor heart rate during infusion.'},
+  {name:'GI Stasis (Ileus)',species:'Rabbit',system:'Gastrointestinal',signs:'Anorexia, no fecal pellets, painful abdomen, reduced gut sounds',tx:'Metoclopramide 0.5mg/kg SC TID. Simethicone. Fluids. Pain management. NO FASTING.'},
+  {name:'Uterine Adenocarcinoma',species:'Rabbit',system:'Hematology/Oncology',signs:'Bloody vaginal discharge, depression, weight loss — intact does >2yr',tx:'OHE (spay) if no mets. Chemotherapy (doxorubicin) if metastatic. PREVENT by spaying at 6mo.'},
+  {name:'EEHV (Elephant Endotheliotropic Herpesvirus)',species:'Elephant',system:'Infectious Disease',signs:'Facial/neck edema, cyanotic tongue, sudden death — young Asian elephants',tx:'Famciclovir antiviral. Supportive care. Plasma transfusion. High mortality. EMERGENCY.'},
+  {name:'Capture Myopathy',species:'Zoo/Wildlife',system:'Musculoskeletal',signs:'Muscle necrosis, myoglobinuria, weakness, death after chase/capture',tx:'Minimize capture stress. IV fluids. Sodium bicarbonate. Vitamin E/selenium. Dark quiet.'},
+  {name:'Morbillivirus (Cetacean)',species:'Marine Mammal',system:'Infectious Disease',signs:'Respiratory signs, neurological signs, skin lesions — dolphins/porpoises — often fatal',tx:'Supportive care only. No specific antiviral. Quarantine. High mortality.'},
+  {name:'Canine Lymphoma (Multicentric)',species:'Dog',system:'Hematology/Oncology',signs:'Enlarged peripheral lymph nodes, lethargy, weight loss — common in Goldens, Boxers',tx:'CHOP protocol: cyclophosphamide, doxorubicin, vincristine, prednisolone. Median survival 12mo.'},
+  {name:'Feline Lymphoma (Small Cell GI)',species:'Cat',system:'Hematology/Oncology',signs:'Weight loss, vomiting, diarrhea, thickened intestines — most common feline lymphoma',tx:'Chlorambucil 2mg/cat EOD + prednisolone 1mg/kg SID. Median survival 2 years.'},
+  {name:'Hemangiosarcoma (Splenic)',species:'Dog',system:'Hematology/Oncology',signs:'Acute collapse, pale gums, abdominal distension — hemoabdomen. GSDs/Goldens',tx:'Emergency splenectomy. Doxorubicin-based chemotherapy. Median survival 2-3 months.'},
+  {name:'Osteosarcoma',species:'Dog/Horse',system:'Hematology/Oncology',signs:'Bone pain, lameness, swelling at metaphysis — large breeds, distal radius',tx:'Amputation + carboplatin chemotherapy. Palliative: radiation + bisphosphonates.'},
+  {name:'Congestive Heart Failure (CHF)',species:'Dog/Cat',system:'Cardiovascular',signs:'Cough (dog), dyspnea, exercise intolerance, pulmonary edema/pleural effusion',tx:'Furosemide IV/IM acute. Chronic: pimobendan, furosemide, enalapril/benazepril.'},
+  {name:'Intervertebral Disc Disease (IVDD)',species:'Dog',system:'Neurological',signs:'Back pain, paresis, paralysis — Dachshunds, French Bulldogs, Corgis',tx:'Cage rest + gabapentin + prednisone (mild). Surgery (hemilaminectomy) if paralyzed.'},
+  {name:'Idiopathic Epilepsy',species:'Dog/Cat',system:'Neurological',signs:'Tonic-clonic seizures, postictal period, young-middle aged dogs',tx:'Phenobarbital 2.5mg/kg BID (initial). Add potassium bromide if refractory. Monitor levels.'},
+  {name:'Diabetes Mellitus',species:'Dog/Cat',system:'Endocrine',signs:'PU/PD, weight loss, polyphagia, cataracts (dogs), plantigrade stance (cats)',tx:'Dog: Vetsulin (porcine insulin) BID. Cat: Glargine (Lantus) or PZI BID. Caution hypoglycemia.'},
+  {name:'Chronic Kidney Disease (CKD)',species:'Dog/Cat',system:'Urogenital',signs:'PU/PD, weight loss, vomiting, hypertension — IRIS Stage 1-4',tx:'IV fluids (acute). Renal diet, phosphorus binders, benazepril, amlodipine (hypertension).'},
+  {name:'Hypertension (Systemic)',species:'Cat/Dog',system:'Cardiovascular',signs:'Retinal detachment, blindness, epistaxis, cardiac changes — secondary to CKD/hyperthyroid',tx:'Cat: Amlodipine 0.625mg SID. Dog: Amlodipine + benazepril. Target <160mmHg.'},
+  {name:'Atopic Dermatitis',species:'Dog/Cat',system:'Integumentary',signs:'Pruritus, paw licking, face/axilla/groin lesions, recurrent otitis/pyoderma',tx:'Apoquel (oclacitinib) 0.4mg/kg BID x14d then SID. Cytopoint injection monthly. Allergen testing.'},
+  {name:'Feline Idiopathic Cystitis (FIC/FLUTD)',species:'Cat',system:'Urogenital',signs:'Straining, hematuria, frequent attempts to urinate, stress-related',tx:'Environmental enrichment, wet food, maropitant, amitriptyline chronic cases. Rule out obstruction.'},
+  {name:'Urethral Obstruction',species:'Cat',system:'Urogenital',signs:'Straining with no urine, crying, bladder distension, bradycardia — EMERGENCY',tx:'Emergency catheterization under sedation. IV fluids. Monitor hyperkalemia — calcium gluconate if severe.'},
+  {name:'Pyometra',species:'Dog/Cat/Rabbit/Horse',system:'Urogenital',signs:'PU/PD, vaginal discharge (open), depression, vomiting, distended abdomen (closed)',tx:'Emergency OHE (spay). IV antibiotics periop. Caution: closed pyometra = surgical emergency.'},
+  {name:'Equine Colic (Large Colon Impaction)',species:'Horse',system:'Gastrointestinal',signs:'Pawing, rolling, flank watching, absent gut sounds, no feces',tx:'Nasogastric tube + mineral oil + water. IV fluids. Banamine 1.1mg/kg. Monitor for surgical colic.'},
+  {name:'Equine Colic (Large Colon Volvulus)',species:'Horse',system:'Gastrointestinal',signs:'Severe unrelenting pain, cardiovascular shock, rapid deterioration — SURGICAL EMERGENCY',tx:'IMMEDIATE referral for surgical intervention. IV fluids, pain management en route. >50% mortality.'}
+];
 
-  var system='You are a veterinary pharmacologist expert. Calculate precise drug dose. Flag ALL contraindications, controlled status, and withdrawal times for food animals.';
-  var messages=[{role:'user',content:'Calculate dose for '+drug+' in a '+weight+'kg '+species+'. Patient age: '+document.getElementById('calc-age').value+'. Indication: '+document.getElementById('calc-indication').value}];
-
-  showToast('Calculating dose...','info');
-  callClaude(system,messages,1500).then(function(result){
-    document.getElementById('dose-result').style.display='block';
-    document.getElementById('dose-result-text').textContent=escHtml(result);
-    showToast('Dose calculated','success');
-  }).catch(function(e){
-    showToast('Error calculating dose','error');
+function svRenderDx(){
+  var body=document.getElementById('sv-dx-body');if(!body)return;
+  body.innerHTML=SV_DX.map(function(d){
+    return'<tr><td><strong>'+escHtml(d.name)+'</strong></td><td>'+escHtml(d.species)+'</td><td>'+escHtml(d.system)+'</td><td style="font-size:11px;">'+escHtml(d.signs)+'</td><td style="font-size:11px;">'+escHtml(d.tx)+'</td><td><button class="btn btn-o btn-sm no-print" onclick="svDxProtocol(\'' +escHtml(d.name)+'\',\''+escHtml(d.species)+'\')">AI Protocol</button></td></tr>';
+  }).join('');
+}
+function svFilterDx(){
+  var q=document.getElementById('sv-dx-search').value.toLowerCase();
+  var sp=document.getElementById('sv-dx-species').value.toLowerCase();
+  var sys=document.getElementById('sv-dx-system').value.toLowerCase();
+  var body=document.getElementById('sv-dx-body');
+  var rows=SV_DX.filter(function(d){
+    var mq=!q||(d.name+d.signs+d.tx+d.species).toLowerCase().includes(q);
+    var ms=!sp||d.species.toLowerCase().includes(sp);
+    var msys=!sys||d.system.toLowerCase().includes(sys);
+    return mq&&ms&&msys;
   });
+  body.innerHTML=rows.map(function(d){
+    return'<tr><td><strong>'+escHtml(d.name)+'</strong></td><td>'+escHtml(d.species)+'</td><td>'+escHtml(d.system)+'</td><td style="font-size:11px;">'+escHtml(d.signs)+'</td><td style="font-size:11px;">'+escHtml(d.tx)+'</td><td><button class="btn btn-o btn-sm no-print" onclick="svDxProtocol(\'' +escHtml(d.name)+'\',\''+escHtml(d.species)+'\')">AI Protocol</button></td></tr>';
+  }).join('');
+}
+async function svDxProtocol(dx,species){
+  svNav('ai');
+  document.getElementById('sv-chat-input').value='Give me a complete treatment protocol for '+dx+' in '+species+'. Include drug names, doses, routes, duration, monitoring, and prognosis.';
+  svSendChat();
 }
 
-function getProtocolFromClaude(){
-  var dx=document.getElementById('dx-for-protocol').value.trim();
-  var weight=document.getElementById('dx-weight').value;
-  var species=document.getElementById('dx-species-protocol').value;
-  if(!dx||!weight||!species){showToast('Fill all fields','error');return;}
-
-  var system='You are a veterinary clinician with expertise in all species and diseases. Provide a complete treatment protocol with specific drug names, doses, routes, and frequencies.';
-  var messages=[{role:'user',content:'Provide complete treatment protocol for '+dx+' in a '+weight+'kg '+species+'.'}];
-
-  showToast('Getting protocol...','info');
-  callClaude(system,messages,2000).then(function(result){
-    document.getElementById('protocol-result').style.display='block';
-    document.getElementById('protocol-result').innerHTML='<strong>Treatment Protocol:</strong><br>'+escHtml(result).replace(/\n/g,'<br>');
-    showToast('Protocol received','success');
-  }).catch(function(e){
-    showToast('Error getting protocol','error');
-  });
+var SV_RX_INV=[
+  {name:'Amoxicillin 250mg tabs',qty:180,reorder:50,status:'OK'},
+  {name:'Meloxicam 1.5mg/ml oral',qty:4,reorder:6,status:'LOW'},
+  {name:'Phenobarbital 64.8mg tabs',qty:240,reorder:100,status:'OK'},
+  {name:'Banamine Paste equine',qty:8,reorder:12,status:'LOW'},
+  {name:'Ketamine 500mg/10ml',qty:12,reorder:6,status:'OK'},
+  {name:'Doxycycline 100mg caps',qty:28,reorder:50,status:'LOW'},
+  {name:'Propofol 10mg/ml 20ml',qty:8,reorder:10,status:'LOW'},
+  {name:'Enrofloxacin 22.7mg tabs',qty:96,reorder:50,status:'OK'}
+];
+function svRenderInventory(){
+  var body=document.getElementById('sv-rx-inv');if(!body)return;
+  body.innerHTML=SV_RX_INV.map(function(d){return'<tr><td>'+escHtml(d.name)+'</td><td><input style="border:1px solid var(--border);border-radius:5px;padding:3px 6px;width:50px;font-size:11px;" value="'+escHtml(String(d.qty))+'"></td><td>'+escHtml(String(d.reorder))+'</td><td><span class="badge '+(d.status==='LOW'?'br':'bg')+'">'+escHtml(d.status)+'</span></td></tr>';}).join('');
 }
 
-function exportTableCSV(tableId,filename){
-  var table=document.getElementById(tableId);
-  var csv='';
-  var rows=table.querySelectorAll('tr');
-  rows.forEach(function(row){
-    var cells=row.querySelectorAll('th,td');
-    var rowData=[];
-    cells.forEach(function(cell){rowData.push('"'+cell.textContent.replace(/"/g,'""')+'"');});
-    csv+=rowData.join(',')+'\n';
-  });
+// CSV EXPORT
+function svExportCSV(type){
+  var rows=[['SAIRNvet Export','','','','',''],['Type: '+type,'Date: '+new Date().toLocaleDateString(),'','','','']];
+  var csv=rows.map(function(r){return r.join(',');}).join('\n');
   var blob=new Blob([csv],{type:'text/csv'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download=escHtml(filename)+'.csv';
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='sairnvet_'+type+'_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
-  showToast('Exported '+filename+'.csv','success');
-}
-
-function exportTableCSV(tableId,filename){
-  var table=document.getElementById(tableId);
-  var csv='';
-  var rows=table.querySelectorAll('tr');
-  rows.forEach(function(row){
-    var cells=row.querySelectorAll('th,td');
-    var rowData=[];
-    cells.forEach(function(cell){rowData.push('"'+cell.textContent.replace(/"/g,'""')+'"');});
-    csv+=rowData.join(',')+'\n';
-  });
-  var blob=new Blob([csv],{type:'text/csv'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download=escHtml(filename)+'.csv';
-  a.click();
-  showToast('Exported '+filename+'.csv','success');
-}
-
-setupPinPad();
-var auth=svLoad('auth');
-if(auth){
-  document.getElementById('gate').style.display='none';
-  document.getElementById('appContainer').classList.add('active');
-  var role=svLoad('role','Doctor');
-  document.getElementById('userRole').textContent=role;
-  switchPanel('dashboard');
-} else {
-  updatePinDisplay();
+  showToast('Exported '+type+' CSV.',2000);
 }
 </script>
-
 </body>
 </html>

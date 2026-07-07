@@ -3,9 +3,21 @@
   "outputDirectory": "dist",
   "public": true,
   "routes": [
-    { "src": "/stonedesk$", "dest": "/stonedesk.html" },
-    { "src": "/sairnbiz$", "dest": "/sairnbiz.html" },
-    { "src": "/sairncode$", "dest": "/sairncode.html" },
-    { "src": "/sairnvet$", "dest": "/sairnvet.html" }
+    {
+      "src": "/stonedesk$",
+      "dest": "/stonedesk.html"
+    },
+    {
+      "src": "/sairnbiz$",
+      "dest": "/sairnbiz.html"
+    },
+    {
+      "src": "/sairncode$",
+      "dest": "/sairncode.html"
+    },
+    {
+      "src": "/sairnvet$",
+      "dest": "/sairnvet.html"
+    }
   ]
 }
