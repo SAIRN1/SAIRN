@@ -179,11 +179,11 @@
 <div id="dashboard" class="panel active">
   <div class="panel-header">
     <h1 class="panel-title">Dashboard</h1>
-    <p class="panel-desc">Welcome to SAIRNvet — the complete veterinary platform with 346+ diagnoses, 208+ medications, and AI-powered clinical support across every species.</p>
+    <p class="panel-desc">Welcome to SAIRNvet — the complete veterinary platform with 451 diagnoses, 466 medication dosing entries (283 verified, 183 flagged for specialist review), and AI-powered clinical support grounded in verified data across every species.</p>
   </div>
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-label">Diagnoses Library</div><div class="kpi-value">346</div><div class="kpi-change">All species, growing weekly</div></div>
-    <div class="kpi"><div class="kpi-label">Medications</div><div class="kpi-value">208</div><div class="kpi-change">With species red flags</div></div>
+    <div class="kpi"><div class="kpi-label">Diagnoses Library</div><div class="kpi-value">451</div><div class="kpi-change">All species, growing weekly</div></div>
+    <div class="kpi"><div class="kpi-label">Medications</div><div class="kpi-value">466</div><div class="kpi-change">283 verified · 183 flagged for review</div></div>
     <div class="kpi"><div class="kpi-label">Active Patients</div><div class="kpi-value">1,847</div><div class="kpi-change">Every species group</div></div>
     <div class="kpi"><div class="kpi-label">Panels</div><div class="kpi-value">54</div><div class="kpi-change">Full practice coverage</div></div>
   </div>
@@ -203,7 +203,7 @@
 <div id="panel-diagnoses" class="panel">
   <div class="panel-header">
     <h1 class="panel-title">Diagnosis Library</h1>
-    <p class="panel-desc">Search 346 diagnoses across all species and body systems with AI-powered treatment protocols</p>
+    <p class="panel-desc">Search 451 diagnoses across all species and body systems with AI-powered treatment protocols</p>
   </div>
   <div class="panel-actions">
     <button class="btn btn-sm" onclick="exportTableCSV('diagnoses-table','diagnoses')">Export CSV</button>
@@ -247,7 +247,7 @@
   <div class="card">
     <table id="diagnoses-table">
       <thead><tr><th>Diagnosis</th><th>Species</th><th>Body System</th><th>Common Signs</th><th>Action</th></tr></thead>
-      <tbody id="diagnoses-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">Select filters and search to view diagnoses (346 total)</td></tr></tbody>
+      <tbody id="diagnoses-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">Select filters and search to view diagnoses (451 total)</td></tr></tbody>
     </table>
   </div>
   <div class="card">
@@ -271,7 +271,7 @@
 <div id="panel-drugdb" class="panel">
   <div class="panel-header">
     <h1 class="panel-title">Drug Database</h1>
-    <p class="panel-desc">208 medications with dosing, species, and RED FLAG contraindications</p>
+    <p class="panel-desc">466 medication dosing entries with species-specific bounds-checking, contraindication gate, and RED FLAG warnings — unverified entries are clearly flagged rather than guessed</p>
   </div>
   <div class="panel-actions">
     <button class="btn btn-sm" onclick="exportTableCSV('drug-table','drugs')">Export CSV</button>
@@ -291,8 +291,8 @@
   <div id="drug-red-flags" class="red-flag" style="display:none;"><strong>RED FLAG:</strong> <span id="red-flag-text"></span></div>
   <div class="card">
     <table id="drug-table">
-      <thead><tr><th>Drug Name</th><th>Class</th><th>Species</th><th>Route</th><th>Dose/Notes</th><th>Controlled</th></tr></thead>
-      <tbody id="drug-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);">Search to view drugs (208 total)</td></tr></tbody>
+      <thead><tr><th>Drug Name</th><th>Class</th><th>Species</th><th>Route</th><th>Dose/Notes</th><th>Status</th><th>Controlled</th></tr></thead>
+      <tbody id="drug-tbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);">Search to view drugs (466 total)</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -2256,12 +2256,15 @@ function searchDrugs(){
   flagDiv.style.display='none';
 
   if(filtered.length===0){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);">No drugs found</td></tr>';
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);">No drugs found</td></tr>';
   } else {
     var flags=[];
     filtered.slice(0,300).forEach(function(d){
       if(d.flag){ flags.push(d.name+': '+d.flag); }
-      var row='<tr><td>'+escHtml(d.name)+'</td><td>'+escHtml(d.class)+'</td><td>'+escHtml(d.species)+'</td><td>'+escHtml(d.route)+'</td><td>'+escHtml(d.dose)+'</td><td>'+(d.controlled?'Yes':'No')+'</td></tr>';
+      var status = d.needsReview
+        ? '<span style="color:#B45309;background:#FEF3C7;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;">⚠ Needs Review</span>'
+        : '<span style="color:#065F46;background:#D1FAE5;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;">✓ Verified</span>';
+      var row='<tr><td>'+escHtml(d.name)+'</td><td>'+escHtml(d.class)+'</td><td>'+escHtml(d.species)+'</td><td>'+escHtml(d.route)+'</td><td>'+escHtml(d.dose)+'</td><td>'+status+'</td><td>'+(d.controlled?'Yes':'No')+'</td></tr>';
       tbody.innerHTML+=row;
     });
     if(flags.length){
