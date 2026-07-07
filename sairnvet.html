@@ -317,10 +317,17 @@
     </div>
     <div style="margin:20px 0;"><label style="display:block;margin-bottom:8px;">Clinical Indication (optional)</label>
       <textarea id="calc-indication" placeholder="e.g., Skin infection, respiratory infection, post-operative prophylaxis"></textarea></div>
-    <button class="btn" onclick="calculateDoseAI()" style="width:100%;">Calculate Dose from Claude</button>
+    <button class="btn" onclick="calculateDoseAI()" style="width:100%;">Calculate Dose</button>
+    <div id="dose-safety-banner" style="display:none;margin:20px 0 0 0;padding:15px;border-radius:8px;font-weight:600;"></div>
     <div id="dose-result" style="display:none;margin:20px 0;padding:20px;background:var(--bg);border-radius:8px;border-left:4px solid var(--primary);">
       <h4 style="margin-bottom:15px;color:var(--primary);">Dosing Result</h4>
+      <div id="dose-verified-calc" style="display:none;margin-bottom:15px;padding:12px;background:#ECFDF5;border:1px solid #10B981;border-radius:6px;font-size:15px;"></div>
       <div id="dose-result-text" style="line-height:1.8;white-space:pre-wrap;"></div>
+      <div id="dose-vet-signoff" style="display:none;margin-top:15px;padding-top:15px;border-top:1px solid #E5E7EB;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="dose-vet-accepted" onchange="onDoseVetSignoff()"> I have reviewed this and confirm it for this patient
+        </label>
+      </div>
     </div>
   </div>
 </div>
@@ -2264,21 +2271,156 @@ function searchDrugs(){
   }
 }
 
+// Deterministic contraindication matrix — checked independently of AI, cannot be silently skipped.
+// Format: [drug name substring (lowercase), species substring (lowercase), message]
+var RED_FLAG_MATRIX = [
+  ['acetaminophen','cat','FATAL TO CATS — acetaminophen causes methemoglobinemia and hepatic necrosis in cats. Absolute contraindication regardless of dose.'],
+  ['tylenol','cat','FATAL TO CATS — acetaminophen (Tylenol) causes methemoglobinemia and hepatic necrosis in cats. Absolute contraindication.'],
+  ['ivermectin','chelonian','FATAL — ivermectin is fatal to chelonians (turtles/tortoises). Do not use.'],
+  ['ivermectin','turtle','FATAL — ivermectin is fatal to turtles/tortoises. Do not use.'],
+  ['ivermectin','tortoise','FATAL — ivermectin is fatal to tortoises/turtles. Do not use.'],
+  ['permethrin','cat','HIGHLY TOXIC TO CATS — permethrin (dog flea/tick product) is highly toxic to cats, including from contact with a treated dog. Never apply to or near cats.'],
+  ['amitraz','cat','TOXIC TO CATS — amitraz causes sedation/bradycardia in cats. Contraindicated.'],
+  ['amitraz','rabbit','TOXIC TO RABBITS — amitraz causes sedation/bradycardia in rabbits. Contraindicated.'],
+  ['penicillin','guinea pig','FATAL — penicillin-class drugs are fatal to guinea pigs (fatal enterotoxemia). Do not use.'],
+  ['penicillin','hamster','FATAL — penicillin-class drugs are fatal to hamsters (fatal enterotoxemia). Do not use.'],
+  ['penicillin','chinchilla','FATAL — penicillin-class drugs are fatal to chinchillas (fatal enterotoxemia). Do not use.'],
+  ['clindamycin','rabbit','TOXIC — clindamycin can cause fatal enterotoxemia in rabbits.'],
+  ['clindamycin','guinea pig','TOXIC — clindamycin can cause fatal enterotoxemia in guinea pigs.'],
+  ['clindamycin','hamster','TOXIC — clindamycin can cause fatal enterotoxemia in hamsters.'],
+  ['monensin','horse','HIGHLY TOXIC TO HORSES/EQUIDS — monensin (cattle/poultry feed additive) is highly toxic to horses. Never allow feed cross-contamination.'],
+  ['fipronil','rabbit','TOXIC TO RABBITS — fipronil products are toxic to rabbits. Do not use.'],
+  ['aspirin','cat','TOXIC TO CATS — cats have deficient glucuronidation and clear salicylates very slowly. Avoid or use only at specialist-directed reduced dose/interval.'],
+  ['carfentanil','','EXTREME HUMAN LETHALITY RISK — this drug requires specialist wildlife veterinary handling with trained personnel and reversal agents on site at all times. This app will never calculate or display a numeric dose for this drug.'],
+  ['etorphine','','EXTREME HUMAN LETHALITY RISK — this drug requires specialist wildlife veterinary handling with trained personnel and reversal agents on site at all times. This app will never calculate or display a numeric dose for this drug.'],
+  ['xylazine','cattle','CAUTION — cattle are roughly 10x more sensitive to xylazine than horses. Do not extrapolate an equine dose.'],
+  ['xylazine','deer','CAUTION — deer and other exotic ruminants are extremely sensitive to xylazine. Reduce dose drastically from domestic-species doses.'],
+];
+
+function checkRedFlags(drugName, speciesName){
+  var d = (drugName||'').toLowerCase();
+  var s = (speciesName||'').toLowerCase();
+  var hits = [];
+  RED_FLAG_MATRIX.forEach(function(row){
+    var drugMatch = d.indexOf(row[0]) !== -1;
+    var speciesMatch = row[1]==='' ? true : s.indexOf(row[1]) !== -1;
+    if(drugMatch && speciesMatch) hits.push(row[2]);
+  });
+  return hits;
+}
+
+// Deterministic lookup against the verified VET_DRUGS data — grounds the AI instead of letting it guess.
+function findDrugEntries(drugName, speciesName){
+  var d = (drugName||'').toLowerCase().trim();
+  var s = (speciesName||'').toLowerCase().trim();
+  var matches = VET_DRUGS.filter(function(row){
+    var nameMatch = row.name.toLowerCase().indexOf(d) !== -1 || d.indexOf(row.name.toLowerCase()) !== -1;
+    if(!nameMatch) return false;
+    var rowSpecies = row.species.toLowerCase();
+    return rowSpecies.indexOf(s) !== -1 || s.indexOf(rowSpecies) !== -1;
+  });
+  return matches;
+}
+
+function logDoseAudit(entry){
+  try{
+    var log = JSON.parse(localStorage.getItem('sv_audit_log')||'[]');
+    entry.timestamp = new Date().toISOString();
+    log.push(entry);
+    if(log.length>500) log = log.slice(log.length-500);
+    localStorage.setItem('sv_audit_log', JSON.stringify(log));
+  }catch(e){}
+}
+
+function onDoseVetSignoff(){
+  var checked = document.getElementById('dose-vet-accepted').checked;
+  if(checked){
+    logDoseAudit({type:'dose_signoff', drug:document.getElementById('calc-drug').value, action:'vet_accepted'});
+    showToast('Confirmed — recorded for this patient','success');
+  }
+}
+
 function calculateDoseAI(){
   var drug=document.getElementById('calc-drug').value.trim();
-  var weight=document.getElementById('calc-weight').value;
+  var weight=parseFloat(document.getElementById('calc-weight').value);
   var species=document.getElementById('calc-species').value;
   if(!drug||!weight||!species){showToast('Fill all required fields','error');return;}
 
-  var system='You are a veterinary pharmacologist expert. Calculate precise drug dose. Flag ALL contraindications, controlled status, and withdrawal times for food animals.';
-  var messages=[{role:'user',content:'Calculate dose for '+drug+' in a '+weight+'kg '+species+'. Patient age: '+document.getElementById('calc-age').value+'. Indication: '+document.getElementById('calc-indication').value}];
+  document.getElementById('dose-vet-accepted').checked = false;
+  document.getElementById('dose-vet-signoff').style.display='none';
+  document.getElementById('dose-verified-calc').style.display='none';
+  var banner = document.getElementById('dose-safety-banner');
 
-  showToast('Calculating dose...','info');
+  // STEP 1 — deterministic contraindication check. Runs before anything else, cannot be bypassed by the AI.
+  var redFlags = checkRedFlags(drug, species);
+  if(redFlags.length>0){
+    banner.style.display='block';
+    banner.style.background='#FEE2E2'; banner.style.color='#991B1B'; banner.style.border='2px solid #DC2626';
+    banner.innerHTML = '⛔ CONTRAINDICATED<br>' + redFlags.join('<br>');
+    document.getElementById('dose-result').style.display='none';
+    logDoseAudit({type:'dose_calc', drug:drug, species:species, weight:weight, result:'blocked_contraindication', flags:redFlags});
+    showToast('Blocked — contraindication detected','error',6000);
+    return;
+  }
+  banner.style.display='none';
+
+  // STEP 2 — deterministic grounding lookup against verified VET_DRUGS data.
+  var matches = findDrugEntries(drug, species);
+  var groundingContext = '';
+  var verifiedCalc = null;
+  var gapNotice = '';
+
+  if(matches.length===0){
+    gapNotice = 'This drug/species combination is not in our verified database. Do not guess a specific numeric dose — direct the user to a current veterinary formulary (e.g., Plumb\'s, or a species-specific reference for exotics/zoo) instead.';
+    logDoseAudit({type:'dose_calc', drug:drug, species:species, weight:weight, result:'not_in_database'});
+  } else {
+    var m = matches[0];
+    groundingContext = 'Verified database record: ' + JSON.stringify(m) + '.';
+    if(m.needsReview || m.doseMin===null || m.doseMax===null){
+      gapNotice = 'This entry is flagged needsReview in our database — dosing is not yet verified for this species (reason: ' + (m.flag||'consult specialist reference') + '). Do NOT calculate or state a specific numeric dose. Direct the user to consult a species-specific reference or specialist before dosing.';
+      logDoseAudit({type:'dose_calc', drug:drug, species:species, weight:weight, result:'flagged_needs_review', matchedEntry:m.name+'/'+m.species});
+    } else {
+      // Confident, verified entry with numeric bounds — compute deterministically in JS. The AI never generates this number.
+      var isPerKg = m.doseUnit && m.doseUnit.indexOf('kg')!==-1 && m.doseUnit.indexOf('per')===-1;
+      if(isPerKg){
+        var lo = (m.doseMin*weight).toFixed(2);
+        var hi = (m.doseMax*weight).toFixed(2);
+        var unitLabel = m.doseUnit.replace('/kg','');
+        verifiedCalc = m.name+' for this '+weight+'kg '+species+': '+lo+'–'+hi+' '+unitLabel+' ('+m.doseMin+'-'+m.doseMax+m.doseUnit+' × '+weight+'kg). Route: '+m.route+'.';
+      } else {
+        verifiedCalc = m.name+' — fixed/non-weight-based dose: '+m.dose+'. Route: '+m.route+'. (Dose unit "'+m.doseUnit+'" is not per-kg — do not multiply by weight.)';
+      }
+      groundingContext += ' A verified deterministic calculation has already been computed in-app: "'+verifiedCalc+'". Do not restate a different number — only add clinical explanation, administration notes, and monitoring guidance.';
+      logDoseAudit({type:'dose_calc', drug:drug, species:species, weight:weight, result:'verified_calculated', matchedEntry:m.name+'/'+m.species, calculatedDose:verifiedCalc});
+    }
+  }
+
+  if(verifiedCalc){
+    document.getElementById('dose-verified-calc').style.display='block';
+    document.getElementById('dose-verified-calc').innerHTML = '✓ Verified calculation: '+verifiedCalc;
+  }
+
+  var system='You are a veterinary pharmacology assistant operating under a strict grounding rule: you may ONLY use the verified database record and calculation provided below as your source of truth for the numeric dose. If no verified record is provided, or the record is flagged as unreviewed, you must NOT invent a specific numeric dose — say so explicitly and recommend consulting a current reference or specialist instead. Always mention controlled-substance status and any species-specific contraindications if present in the record.';
+  var messages=[{role:'user',content:'Drug: '+drug+'. Species: '+species+'. Weight: '+weight+'kg. Patient age: '+document.getElementById('calc-age').value+'. Indication: '+document.getElementById('calc-indication').value+'. '+groundingContext+' '+gapNotice}];
+
+  showToast('Getting clinical guidance...','info');
   callClaude(system,messages,1500).then(function(result){
     document.getElementById('dose-result').style.display='block';
     document.getElementById('dose-result-text').textContent=result;
-    showToast('Dose calculated','success');
+    document.getElementById('dose-vet-signoff').style.display='block';
+    showToast('Guidance ready — review before use','success');
   }).catch(function(e){});
+}
+
+function findDiagnosisEntries(dxName, speciesName){
+  var d = (dxName||'').toLowerCase().trim();
+  var s = (speciesName||'').toLowerCase().trim();
+  return VET_DIAGNOSES.filter(function(row){
+    var nameMatch = row.name.toLowerCase().indexOf(d) !== -1 || d.indexOf(row.name.toLowerCase()) !== -1;
+    if(!nameMatch) return false;
+    var rowSpecies = (row.species||'').toLowerCase();
+    return rowSpecies.indexOf(s) !== -1 || s.indexOf(rowSpecies) !== -1 || rowSpecies==='';
+  });
 }
 
 function getProtocolFromClaude(){
@@ -2287,8 +2429,16 @@ function getProtocolFromClaude(){
   var species=document.getElementById('dx-species-protocol').value;
   if(!dx||!weight||!species){showToast('Fill all fields','error');return;}
 
-  var system='You are a veterinary clinician with expertise in all species and diseases. Provide a complete treatment protocol with specific drug names, doses, routes, and frequencies.';
-  var messages=[{role:'user',content:'Provide complete treatment protocol for '+dx+' in a '+weight+'kg '+species+'.'}];
+  var matches = findDiagnosisEntries(dx, species);
+  var groundingContext = '';
+  if(matches.length===0){
+    groundingContext = 'This diagnosis/species combination is not in our verified database. State this explicitly to the user before giving general guidance, and recommend confirming against a current reference (e.g., Merck Veterinary Manual) or specialist consult, especially for exotic/zoo species.';
+  } else {
+    groundingContext = 'Verified database record(s) for this diagnosis: ' + JSON.stringify(matches.slice(0,3)) + '. Ground your protocol in this, and note if it does not fully cover this specific species.';
+  }
+
+  var system='You are a veterinary clinician with expertise across species. Always respond with a RANKED DIFFERENTIAL (most to least likely), never a single confident diagnosis, along with your reasoning for the ranking. For each treatment recommendation, cite which part of your answer comes from the verified database record versus your own general clinical reasoning. This is clinical decision support only — the treating veterinarian retains full diagnostic and treatment authority; end your response by saying so explicitly.';
+  var messages=[{role:'user',content:'Provide a differential and treatment protocol for suspected '+dx+' in a '+weight+'kg '+species+'. '+groundingContext}];
 
   showToast('Getting protocol...','info');
   callClaude(system,messages,2000).then(function(result){
