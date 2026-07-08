@@ -803,36 +803,30 @@
 <div id="panel-equinedental" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Equine Dental</h1>
-<p class="panel-desc">Floating, wave mouth correction, and equine oral exams</p>
+<p class="panel-desc">Floating, wave mouth correction, and equine oral exams — click any record to edit or remove it</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-equinedental-table','panel-equinedental')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Floats This Month</div>
-<div class="kpi-value">18</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Wolf Teeth Removed</div>
-<div class="kpi-value">4</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Wave Mouth Cases</div>
-<div class="kpi-value">2</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Sedated Exams</div>
-<div class="kpi-value">16</div>
-</div>
-</div>
+<div class="kpi-row" id="eqdent-kpis"></div>
 <div class="card"><table id="panel-equinedental-table">
 <thead><tr><th>Patient</th><th>Procedure</th><th>Findings</th><th>Doctor</th><th>Date</th></tr></thead>
-<tbody>
-<tr><td>Star</td><td>Routine float</td><td>Mild points, corrected</td><td>Dr. Mitchell</td><td>2026-06-20</td></tr>
-<tr><td>Duke</td><td>Float + wolf tooth extraction</td><td>Retained wolf tooth</td><td>Dr. Mitchell</td><td>2026-06-25</td></tr>
-</tbody></table></div>
+<tbody id="eqdent-tbody"></tbody></table></div>
+<div class="card">
+<h3>Log Equine Dental Record</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="eqdent-add-patient" placeholder="Patient name">
+<select id="eqdent-add-procedure">
+<option>Routine Float</option><option>Float + Wolf Tooth Extraction</option><option>Wave Mouth Correction</option><option>Oral Exam Only</option><option>Other</option>
+</select>
+<input type="text" id="eqdent-add-findings" placeholder="Findings">
+<input type="text" id="eqdent-add-doctor" placeholder="Doctor, e.g. Dr. Mitchell">
+<input type="date" id="eqdent-add-date">
+<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="eqdent-add-sedated" checked> Performed under sedation</label>
+<button class="btn" onclick="addEquineDentalRecord()">Log Record</button>
+</div>
+</div>
 </div>
 
 <div id="panel-prepurchase" class="panel">
@@ -2127,6 +2121,7 @@ function gateSubmit(){
   renderLameness();
   renderFarmCalls();
   renderRepro();
+  renderEquineDental();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -3781,6 +3776,130 @@ function addReproRecord(){
   showToast(patient+' record logged','success');
 }
 
+function getEquineDentalRecords(){
+  try {
+    var stored = localStorage.getItem('sv_equinedental');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'ed1', patient:'Star', procedure:'Routine Float', findings:'Mild points, corrected', doctor:'Dr. Mitchell', sedated:true, date:'2026-06-20'},
+    {id:'ed2', patient:'Duke', procedure:'Float + Wolf Tooth Extraction', findings:'Retained wolf tooth', doctor:'Dr. Mitchell', sedated:true, date:'2026-06-25'}
+  ];
+  saveEquineDentalRecords(seed);
+  return seed;
+}
+
+function saveEquineDentalRecords(list){
+  try { localStorage.setItem('sv_equinedental', JSON.stringify(list)); } catch(e){}
+}
+
+function renderEquineDental(){
+  var list = getEquineDentalRecords();
+  var tbody = document.getElementById('eqdent-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openEquineDentalEdit(r.id); };
+    tr.innerHTML = '<td>'+escHtml(r.patient)+'</td><td>'+escHtml(r.procedure)+'</td><td>'+escHtml(r.findings||'—')+'</td><td>'+escHtml(r.doctor)+'</td><td>'+escHtml(r.date)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var floatsThisMonth = list.filter(function(r){ return r.procedure.indexOf('Float')===0 && r.date && r.date.slice(0,7)===thisMonth; }).length;
+  var wolfTeeth = list.filter(function(r){ return r.procedure==='Float + Wolf Tooth Extraction'; }).length;
+  var waveMouth = list.filter(function(r){ return r.procedure==='Wave Mouth Correction'; }).length;
+  var sedated = list.filter(function(r){ return r.sedated; }).length;
+
+  var kpis = document.getElementById('eqdent-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Floats This Month</div><div class="kpi-value">'+floatsThisMonth+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Wolf Teeth Removed</div><div class="kpi-value">'+wolfTeeth+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Wave Mouth Cases</div><div class="kpi-value">'+waveMouth+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Sedated Exams</div><div class="kpi-value">'+sedated+'</div></div>';
+  }
+}
+
+function openEquineDentalEdit(id){
+  var list = getEquineDentalRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  var procOptions = ['Routine Float','Float + Wolf Tooth Extraction','Wave Mouth Correction','Oral Exam Only','Other'].map(function(p){ return '<option'+(p===r.procedure?' selected':'')+'>'+p+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="eqdent-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(r.patient)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Procedure</label><select id="eqdent-edit-procedure" style="width:100%;">'+procOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Findings</label><input type="text" id="eqdent-edit-findings" value="'+escHtml(r.findings||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="eqdent-edit-doctor" value="'+escHtml(r.doctor)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="eqdent-edit-date" value="'+escHtml(r.date)+'" style="width:100%;"></div>'+
+    '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="eqdent-edit-sedated"'+(r.sedated?' checked':'')+'> Performed under sedation</label></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveEquineDentalEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelEquineDentalEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeEquineDentalRecord(\''+id+'\')">Remove</button>'+
+    '</div>';
+  var existing = document.getElementById('eqdent-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-equinedental-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('eqdent-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelEquineDentalEdit(){
+  var existing = document.getElementById('eqdent-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveEquineDentalEdit(id){
+  var list = getEquineDentalRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  r.procedure = document.getElementById('eqdent-edit-procedure').value;
+  r.findings = document.getElementById('eqdent-edit-findings').value.trim();
+  r.doctor = document.getElementById('eqdent-edit-doctor').value.trim();
+  r.date = document.getElementById('eqdent-edit-date').value;
+  r.sedated = document.getElementById('eqdent-edit-sedated').checked;
+  saveEquineDentalRecords(list);
+  cancelEquineDentalEdit();
+  renderEquineDental();
+  showToast('Updated '+r.patient,'success');
+}
+
+function removeEquineDentalRecord(id){
+  var list = getEquineDentalRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveEquineDentalRecords(list);
+  cancelEquineDentalEdit();
+  renderEquineDental();
+  showToast((r?r.patient:'Record')+' removed','success');
+}
+
+function addEquineDentalRecord(){
+  var patient = document.getElementById('eqdent-add-patient').value.trim();
+  var procedure = document.getElementById('eqdent-add-procedure').value;
+  var findings = document.getElementById('eqdent-add-findings').value.trim();
+  var doctor = document.getElementById('eqdent-add-doctor').value.trim();
+  var date = document.getElementById('eqdent-add-date').value || new Date().toISOString().slice(0,10);
+  var sedated = document.getElementById('eqdent-add-sedated').checked;
+  if(!patient){ showToast('Patient name required','error'); return; }
+  var list = getEquineDentalRecords();
+  var id = 'ed' + Date.now();
+  list.push({id:id, patient:patient, procedure:procedure, findings:findings, doctor:doctor||'—', sedated:sedated, date:date});
+  saveEquineDentalRecords(list);
+  renderEquineDental();
+  document.getElementById('eqdent-add-patient').value='';
+  document.getElementById('eqdent-add-findings').value='';
+  document.getElementById('eqdent-add-doctor').value='';
+  document.getElementById('eqdent-add-date').value='';
+  showToast(patient+' dental record logged','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -4338,6 +4457,7 @@ if(auth){
   renderLameness();
   renderFarmCalls();
   renderRepro();
+  renderEquineDental();
 } else {
   updatePinDisplay();
 }
