@@ -594,37 +594,28 @@
 <div id="panel-surgery" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Surgery</h1>
-<p class="panel-desc">Surgical scheduling, consent, and procedure logs</p>
+<p class="panel-desc">Surgical scheduling, consent, and procedure logs — click any procedure to update status, consent, or complications</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-surgery-table','panel-surgery')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Scheduled Today</div>
-<div class="kpi-value">3</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">This Month</div>
-<div class="kpi-value">47</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Complication Rate</div>
-<div class="kpi-value">0.8%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Duration</div>
-<div class="kpi-value">42 min</div>
-</div>
-</div>
+<div class="kpi-row" id="surgery-kpis"></div>
 <div class="card"><table id="panel-surgery-table">
-<thead><tr><th>Patient</th><th>Procedure</th><th>Surgeon</th><th>Time</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Rex</td><td>Neuter</td><td>Dr. Mitchell</td><td>8:00 AM</td><td>Complete</td></tr>
-<tr><td>Bella</td><td>Spay</td><td>Dr. Chen</td><td>9:30 AM</td><td>Complete</td></tr>
-<tr><td>Milo</td><td>Exploratory — GDV</td><td>Dr. Mitchell</td><td>11:00 AM</td><td>In Recovery</td></tr>
-</tbody></table></div>
+<thead><tr><th>Patient</th><th>Procedure</th><th>Surgeon</th><th>Time</th><th>Consent</th><th>Status</th></tr></thead>
+<tbody id="surgery-tbody"></tbody></table></div>
+<div class="card">
+<h3>Schedule Procedure</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="surg-add-patient" placeholder="Patient name">
+<input type="text" id="surg-add-procedure" placeholder="Procedure, e.g. Neuter">
+<input type="text" id="surg-add-surgeon" placeholder="Surgeon, e.g. Dr. Mitchell">
+<input type="text" id="surg-add-time" placeholder="e.g., 8:00 AM">
+<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="surg-add-consent"> Consent signed</label>
+<button class="btn" onclick="addSurgery()">Schedule</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">A procedure can't be moved to In Progress or Complete without signed consent on file.</p>
+</div>
 </div>
 
 <div id="panel-dental" class="panel">
@@ -2161,6 +2152,7 @@ function gateSubmit(){
   renderVitals();
   renderLab();
   renderImaging();
+  renderSurgery();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -2859,6 +2851,146 @@ function addImagingStudy(){
   showToast(study+' ordered for '+patient,'success');
 }
 
+var SURGERY_STATUSES = ['Scheduled','In Progress','In Recovery','Complete','Cancelled'];
+
+function getSurgeries(){
+  try {
+    var stored = localStorage.getItem('sv_surgery');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var today = new Date().toISOString().slice(0,10);
+  var seed = [
+    {id:'sg1', patient:'Rex', procedure:'Neuter', surgeon:'Dr. Mitchell', time:'8:00 AM', consent:true, status:'Complete', complication:false, complicationNote:'', duration:35, date:today},
+    {id:'sg2', patient:'Bella', procedure:'Spay', surgeon:'Dr. Chen', time:'9:30 AM', consent:true, status:'Complete', complication:false, complicationNote:'', duration:48, date:today},
+    {id:'sg3', patient:'Milo', procedure:'Exploratory — GDV', surgeon:'Dr. Mitchell', time:'11:00 AM', consent:true, status:'In Recovery', complication:false, complicationNote:'', duration:null, date:today}
+  ];
+  saveSurgeries(seed);
+  return seed;
+}
+
+function saveSurgeries(list){
+  try { localStorage.setItem('sv_surgery', JSON.stringify(list)); } catch(e){}
+}
+
+function renderSurgery(){
+  var list = getSurgeries();
+  var tbody = document.getElementById('surgery-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(s){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openSurgeryEdit(s.id); };
+    var statusText = s.status + (s.complication ? ' — complication noted' : '');
+    tr.innerHTML = '<td>'+escHtml(s.patient)+'</td><td>'+escHtml(s.procedure)+'</td><td>'+escHtml(s.surgeon)+'</td><td>'+escHtml(s.time)+'</td><td>'+(s.consent?'Signed':'NOT SIGNED')+'</td><td>'+escHtml(statusText)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var today = new Date().toISOString().slice(0,10);
+  var scheduledToday = list.filter(function(s){ return s.date===today && s.status!=='Cancelled'; }).length;
+  var completed = list.filter(function(s){ return s.status==='Complete'; }).length;
+  var active = list.filter(function(s){ return s.status==='In Progress' || s.status==='In Recovery'; }).length;
+  var consentPending = list.filter(function(s){ return !s.consent && s.status!=='Cancelled'; }).length;
+
+  var kpis = document.getElementById('surgery-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Scheduled Today</div><div class="kpi-value">'+scheduledToday+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-value">'+completed+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">In Progress / Recovery</div><div class="kpi-value">'+active+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Consent Pending</div><div class="kpi-value">'+consentPending+'</div>'+(consentPending>0?'<div class="kpi-change">Cannot proceed without it</div>':'')+'</div>';
+  }
+}
+
+function openSurgeryEdit(id){
+  var list = getSurgeries();
+  var s = list.find(function(x){ return x.id===id; });
+  if(!s) return;
+  var statusOptions = SURGERY_STATUSES.map(function(st){ return '<option'+(st===s.status?' selected':'')+'>'+st+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="surg-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(s.patient)+' — '+escHtml(s.procedure)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Surgeon</label><input type="text" id="surg-edit-surgeon" value="'+escHtml(s.surgeon)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Time</label><input type="text" id="surg-edit-time" value="'+escHtml(s.time)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="surg-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Duration (min)</label><input type="number" id="surg-edit-duration" value="'+(typeof s.duration==='number'?s.duration:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="surg-edit-consent"'+(s.consent?' checked':'')+'> Consent signed</label></div>'+
+    '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="surg-edit-complication"'+(s.complication?' checked':'')+'> Complication occurred</label></div>'+
+    '<div style="grid-column:1/-1;"><label style="display:block;margin-bottom:6px;">Complication Notes</label><input type="text" id="surg-edit-complication-note" value="'+escHtml(s.complicationNote||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveSurgeryEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelSurgeryEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeSurgery(\''+id+'\')">Remove</button>'+
+    '</div>';
+  var existing = document.getElementById('surg-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-surgery-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('surg-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelSurgeryEdit(){
+  var existing = document.getElementById('surg-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveSurgeryEdit(id){
+  var list = getSurgeries();
+  var s = list.find(function(x){ return x.id===id; });
+  if(!s) return;
+  var newStatus = document.getElementById('surg-edit-status').value;
+  var consent = document.getElementById('surg-edit-consent').checked;
+  if(!consent && (newStatus==='In Progress' || newStatus==='Complete')){
+    showToast('Cannot mark '+newStatus+' — consent not signed','error');
+    return;
+  }
+  s.surgeon = document.getElementById('surg-edit-surgeon').value.trim();
+  s.time = document.getElementById('surg-edit-time').value.trim();
+  s.status = newStatus;
+  s.consent = consent;
+  s.complication = document.getElementById('surg-edit-complication').checked;
+  s.complicationNote = document.getElementById('surg-edit-complication-note').value.trim();
+  var d = parseFloat(document.getElementById('surg-edit-duration').value);
+  s.duration = isNaN(d) ? null : d;
+  saveSurgeries(list);
+  cancelSurgeryEdit();
+  renderSurgery();
+  showToast('Updated '+s.patient+' — '+s.procedure,'success');
+}
+
+function removeSurgery(id){
+  var list = getSurgeries();
+  var s = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveSurgeries(list);
+  cancelSurgeryEdit();
+  renderSurgery();
+  showToast((s?s.patient+' — '+s.procedure:'Procedure')+' removed','success');
+}
+
+function addSurgery(){
+  var patient = document.getElementById('surg-add-patient').value.trim();
+  var procedure = document.getElementById('surg-add-procedure').value.trim();
+  var surgeon = document.getElementById('surg-add-surgeon').value.trim();
+  var time = document.getElementById('surg-add-time').value.trim();
+  var consent = document.getElementById('surg-add-consent').checked;
+  if(!patient){ showToast('Patient name required','error'); return; }
+  if(!procedure){ showToast('Procedure name required','error'); return; }
+  var list = getSurgeries();
+  var id = 'sg' + Date.now();
+  list.push({id:id, patient:patient, procedure:procedure, surgeon:surgeon||'—', time:time||'—', consent:consent, status:'Scheduled', complication:false, complicationNote:'', duration:null, date:new Date().toISOString().slice(0,10)});
+  saveSurgeries(list);
+  renderSurgery();
+  document.getElementById('surg-add-patient').value='';
+  document.getElementById('surg-add-procedure').value='';
+  document.getElementById('surg-add-surgeon').value='';
+  document.getElementById('surg-add-time').value='';
+  document.getElementById('surg-add-consent').checked=false;
+  showToast(procedure+' scheduled for '+patient+(consent?'':' — consent still needed'),'success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -3409,6 +3541,7 @@ if(auth){
   renderVitals();
   renderLab();
   renderImaging();
+  renderSurgery();
 } else {
   updatePinDisplay();
 }
