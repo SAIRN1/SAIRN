@@ -1805,7 +1805,7 @@
 <h1 class="panel-title">AI Assistant</h1>
 <p class="panel-desc">General-purpose clinical AI assistant powered by Claude — ask anything</p>
 </div>
-<div class="card"><h3>Ask SAIRNvet AI</h3><p style="margin-bottom:15px;color:var(--muted);">Ask about diagnoses, drug interactions, protocols, or general veterinary questions across any species.</p><textarea id="ai-question" placeholder="e.g., What is the differential for acute collapse in a 6-year-old Boxer?" style="min-height:100px;"></textarea><button class="btn" onclick="askAI()" style="margin-top:10px;">Ask Claude</button><div id="ai-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;line-height:1.7;"></div></div>
+<div class="card"><h3>Ask SAIRNvet AI</h3><p style="margin-bottom:15px;color:var(--muted);">Ask about general veterinary concepts, mechanisms, or reasoning across any species. For a specific drug dose, use the <strong>AI Dosing Calculator</strong> — for a specific patient's differential, use the <strong>Diagnosis Library</strong>. Those tools are connected to the verified database and contraindication checks; this one isn't.</p><textarea id="ai-question" placeholder="e.g., What is the differential for acute collapse in a 6-year-old Boxer?" style="min-height:100px;"></textarea><button class="btn" onclick="askAI()" style="margin-top:10px;">Ask Claude</button><div id="ai-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;line-height:1.7;"></div></div>
 </div>
 
 <div id="companion-patients" class="panel">
@@ -2812,9 +2812,10 @@ function getZooProtocol(){
 function askAI(){
   var q=document.getElementById('ai-question').value.trim();
   if(!q){showToast('Enter a question','error');return;}
-  var system='You are an expert veterinary clinical AI assistant with knowledge across all species. Give clear, clinically accurate answers.';
+  var system='You are a general veterinary knowledge assistant. Answer clearly and accurately. IMPORTANT: if the question asks for a specific numeric drug dose or asks you to diagnose a specific patient, do NOT provide a specific number or a single diagnosis here — this tool is not connected to the verified drug/diagnosis database or the contraindication safety checks. Instead, tell the user to use the AI Dosing Calculator (for verified, bounds-checked doses) or the Diagnosis Library / Diagnosis Protocol Generator (for a grounded, ranked differential) so the safety checks actually run. You may still discuss general concepts, mechanisms, and reasoning freely.';
   var messages=[{role:'user',content:q}];
   showToast('Asking Claude...','info');
+  logDoseAudit({type:'ai_assistant_question', question:q.slice(0,200)});
   callClaude(system,messages,1500).then(function(result){
     document.getElementById('ai-result').style.display='block';
     document.getElementById('ai-result').textContent=result;
