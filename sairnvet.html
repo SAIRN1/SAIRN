@@ -707,36 +707,33 @@
 <div id="panel-lameness" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Lameness Exam</h1>
-<p class="panel-desc">Equine lameness grading, flexion tests, and nerve blocks</p>
+<p class="panel-desc">Equine lameness grading, flexion tests, and nerve blocks — click any exam to update or add follow-up</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-lameness-table','panel-lameness')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Exams This Month</div>
-<div class="kpi-value">14</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Grade 3+</div>
-<div class="kpi-value">5</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Blocks Performed</div>
-<div class="kpi-value">9</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Follow-Up Scheduled</div>
-<div class="kpi-value">6</div>
-</div>
-</div>
+<div class="kpi-row" id="lame-kpis"></div>
 <div class="card"><table id="panel-lameness-table">
 <thead><tr><th>Patient</th><th>Limb</th><th>AAEP Grade</th><th>Block Result</th><th>Doctor</th></tr></thead>
-<tbody>
-<tr><td>Star</td><td>RF</td><td>2/5</td><td>Positive to abaxial block</td><td>Dr. Mitchell</td></tr>
-<tr><td>Duke</td><td>LH</td><td>3/5</td><td>Positive to fetlock block</td><td>Dr. Mitchell</td></tr>
-</tbody></table></div>
+<tbody id="lame-tbody"></tbody></table></div>
+<div class="card">
+<h3>Log Lameness Exam</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="lame-add-patient" placeholder="Patient name">
+<select id="lame-add-limb">
+<option>LF</option><option>RF</option><option>LH</option><option>RH</option><option>Multiple</option>
+</select>
+<select id="lame-add-grade">
+<option value="0">AAEP Grade 0</option><option value="1">AAEP Grade 1</option><option value="2">AAEP Grade 2</option><option value="3">AAEP Grade 3</option><option value="4">AAEP Grade 4</option><option value="5">AAEP Grade 5</option>
+</select>
+<input type="text" id="lame-add-block" placeholder="Block result, e.g. Positive to abaxial block">
+<input type="text" id="lame-add-doctor" placeholder="Doctor, e.g. Dr. Mitchell">
+<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="lame-add-followup"> Follow-up scheduled</label>
+<button class="btn" onclick="addLamenessExam()">Log Exam</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Grade uses the standard AAEP 0-5 lameness scale. Block result is the examining doctor's finding — never auto-generated.</p>
+</div>
 </div>
 
 <div id="panel-farmcalls" class="panel">
@@ -2133,6 +2130,7 @@ function gateSubmit(){
   renderDental();
   renderExamRooms();
   renderTeleconsult();
+  renderLameness();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -3405,6 +3403,132 @@ function copyConsultLink(){
   }
 }
 
+function getLamenessExams(){
+  try {
+    var stored = localStorage.getItem('sv_lameness');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var today = new Date().toISOString().slice(0,10);
+  var seed = [
+    {id:'lm1', patient:'Star', limb:'RF', grade:'2', block:'Positive to abaxial block', doctor:'Dr. Mitchell', followUp:false, date:today},
+    {id:'lm2', patient:'Duke', limb:'LH', grade:'3', block:'Positive to fetlock block', doctor:'Dr. Mitchell', followUp:false, date:today}
+  ];
+  saveLamenessExams(seed);
+  return seed;
+}
+
+function saveLamenessExams(list){
+  try { localStorage.setItem('sv_lameness', JSON.stringify(list)); } catch(e){}
+}
+
+function renderLameness(){
+  var list = getLamenessExams();
+  var tbody = document.getElementById('lame-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(l){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openLamenessEdit(l.id); };
+    tr.innerHTML = '<td>'+escHtml(l.patient)+'</td><td>'+escHtml(l.limb)+'</td><td>'+escHtml(l.grade)+'/5</td><td>'+escHtml(l.block||'—')+'</td><td>'+escHtml(l.doctor)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var examsThisMonth = list.filter(function(l){ return l.date && l.date.slice(0,7)===thisMonth; }).length;
+  var grade3plus = list.filter(function(l){ return parseInt(l.grade,10) >= 3; }).length;
+  var blocksPerformed = list.filter(function(l){ return l.block && l.block.trim() !== ''; }).length;
+  var followUps = list.filter(function(l){ return l.followUp; }).length;
+
+  var kpis = document.getElementById('lame-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Exams This Month</div><div class="kpi-value">'+examsThisMonth+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Grade 3+</div><div class="kpi-value">'+grade3plus+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Blocks Performed</div><div class="kpi-value">'+blocksPerformed+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Follow-Up Scheduled</div><div class="kpi-value">'+followUps+'</div></div>';
+  }
+}
+
+function openLamenessEdit(id){
+  var list = getLamenessExams();
+  var l = list.find(function(x){ return x.id===id; });
+  if(!l) return;
+  var limbOptions = ['LF','RF','LH','RH','Multiple'].map(function(o){ return '<option'+(o===l.limb?' selected':'')+'>'+o+'</option>'; }).join('');
+  var gradeOptions = ['0','1','2','3','4','5'].map(function(g){ return '<option value="'+g+'"'+(g===l.grade?' selected':'')+'>AAEP Grade '+g+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="lame-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(l.patient)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Limb</label><select id="lame-edit-limb" style="width:100%;">'+limbOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">AAEP Grade</label><select id="lame-edit-grade" style="width:100%;">'+gradeOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Block Result</label><input type="text" id="lame-edit-block" value="'+escHtml(l.block||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="lame-edit-doctor" value="'+escHtml(l.doctor)+'" style="width:100%;"></div>'+
+    '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="lame-edit-followup"'+(l.followUp?' checked':'')+'> Follow-up scheduled</label></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveLamenessEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelLamenessEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLamenessExam(\''+id+'\')">Remove</button>'+
+    '</div>';
+  var existing = document.getElementById('lame-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-lameness-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('lame-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelLamenessEdit(){
+  var existing = document.getElementById('lame-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveLamenessEdit(id){
+  var list = getLamenessExams();
+  var l = list.find(function(x){ return x.id===id; });
+  if(!l) return;
+  l.limb = document.getElementById('lame-edit-limb').value;
+  l.grade = document.getElementById('lame-edit-grade').value;
+  l.block = document.getElementById('lame-edit-block').value.trim();
+  l.doctor = document.getElementById('lame-edit-doctor').value.trim();
+  l.followUp = document.getElementById('lame-edit-followup').checked;
+  saveLamenessExams(list);
+  cancelLamenessEdit();
+  renderLameness();
+  showToast('Updated '+l.patient,'success');
+}
+
+function removeLamenessExam(id){
+  var list = getLamenessExams();
+  var l = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveLamenessExams(list);
+  cancelLamenessEdit();
+  renderLameness();
+  showToast((l?l.patient:'Exam')+' removed','success');
+}
+
+function addLamenessExam(){
+  var patient = document.getElementById('lame-add-patient').value.trim();
+  var limb = document.getElementById('lame-add-limb').value;
+  var grade = document.getElementById('lame-add-grade').value;
+  var block = document.getElementById('lame-add-block').value.trim();
+  var doctor = document.getElementById('lame-add-doctor').value.trim();
+  var followUp = document.getElementById('lame-add-followup').checked;
+  if(!patient){ showToast('Patient name required','error'); return; }
+  var list = getLamenessExams();
+  var id = 'lm' + Date.now();
+  list.push({id:id, patient:patient, limb:limb, grade:grade, block:block, doctor:doctor||'—', followUp:followUp, date:new Date().toISOString().slice(0,10)});
+  saveLamenessExams(list);
+  renderLameness();
+  document.getElementById('lame-add-patient').value='';
+  document.getElementById('lame-add-block').value='';
+  document.getElementById('lame-add-doctor').value='';
+  document.getElementById('lame-add-followup').checked=false;
+  showToast(patient+' exam logged — Grade '+grade+'/5','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -3959,6 +4083,7 @@ if(auth){
   renderDental();
   renderExamRooms();
   renderTeleconsult();
+  renderLameness();
 } else {
   updatePinDisplay();
 }
