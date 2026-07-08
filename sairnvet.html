@@ -435,7 +435,7 @@
 <tr><td>2026-07-06</td><td>Star</td><td>Lameness eval</td><td>Dr. Mitchell</td><td>Signed</td></tr>
 <tr><td>2026-07-05</td><td>Bessie</td><td>Herd health check</td><td>Dr. Mitchell</td><td>Draft</td></tr>
 </tbody></table></div>
-<div class="card"><h3>Generate SOAP Note with Claude</h3><label>Patient / Species</label><input type="text" id="soap-patient" placeholder="e.g., Max, canine" style="width:100%;margin:8px 0;"><label>Subjective (owner-reported)</label><textarea id="soap-subj" placeholder="e.g., limping on left hind for 2 days"></textarea><label>Objective findings</label><textarea id="soap-obj" placeholder="e.g., T 101.9F, mild swelling left stifle, pain on flexion"></textarea><button class="btn" onclick="generateSOAP()" style="margin-top:10px;">Generate SOAP Note</button><div id="soap-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div></div>
+<div class="card"><h3>Generate SOAP Note with Claude</h3><label>Patient / Species</label><input type="text" id="soap-patient" placeholder="e.g., Max, canine" style="width:100%;margin:8px 0;"><label>Subjective (owner-reported)</label><textarea id="soap-subj" placeholder="e.g., limping on left hind for 2 days"></textarea><label>Objective findings</label><textarea id="soap-obj" placeholder="e.g., T 101.9F, mild swelling left stifle, pain on flexion"></textarea><button class="btn" onclick="generateSOAP()" style="margin-top:10px;">Generate SOAP Note</button><div id="soap-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div><div id="soap-signoff" style="display:none;margin-top:15px;padding-top:15px;border-top:1px solid #E5E7EB;"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="soap-vet-accepted" onchange="onSoapSignoff()"> I have reviewed and edited this note and confirm it as accurate for this patient</label></div></div>
 </div>
 
 <div id="panel-scheduling" class="panel">
@@ -2681,18 +2681,29 @@ function getProtocolFromClaude(){
   }).catch(function(e){});
 }
 
+function onSoapSignoff(){
+  if(document.getElementById('soap-vet-accepted').checked){
+    logDoseAudit({type:'soap_signoff', patient:document.getElementById('soap-patient').value, action:'vet_accepted'});
+    showToast('Confirmed for this patient','success');
+  }
+}
+
 function generateSOAP(){
   var patient=document.getElementById('soap-patient').value.trim();
   var subj=document.getElementById('soap-subj').value.trim();
   var obj=document.getElementById('soap-obj').value.trim();
   if(!patient||!subj||!obj){showToast('Fill patient, subjective, and objective fields','error');return;}
-  var system='You are a veterinary clinician. Write a complete, professional SOAP note (Subjective, Objective, Assessment, Plan) in standard veterinary medical record format.';
-  var messages=[{role:'user',content:'Patient/species: '+patient+'. Subjective: '+subj+'. Objective: '+obj+'. Write the full SOAP note including differential diagnoses and a treatment plan.'}];
+  document.getElementById('soap-vet-accepted').checked=false;
+  document.getElementById('soap-signoff').style.display='none';
+  var system='You are a veterinary clinical documentation assistant. Write a complete SOAP note (Subjective, Objective, Assessment, Plan) in standard veterinary format. In the Assessment, give a RANKED DIFFERENTIAL, not a single diagnosis. This is a draft only — the treating veterinarian must review and edit before it becomes part of the medical record. End the note with that reminder explicitly.';
+  var messages=[{role:'user',content:'Patient/species: '+patient+'. Subjective: '+subj+'. Objective: '+obj+'. Write the full SOAP note including a ranked differential and a treatment plan.'}];
   showToast('Generating SOAP note...','info');
+  logDoseAudit({type:'soap_generate', patient:patient});
   callClaude(system,messages,1800).then(function(result){
     document.getElementById('soap-result').style.display='block';
     document.getElementById('soap-result').textContent=result;
-    showToast('SOAP note generated','success');
+    document.getElementById('soap-signoff').style.display='block';
+    showToast('Draft ready — review before use','success');
   }).catch(function(e){});
 }
 
