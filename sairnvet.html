@@ -564,38 +564,31 @@
 <div id="panel-imaging" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Imaging &amp; Diagnostics</h1>
-<p class="panel-desc">Radiography, ultrasound, and diagnostic imaging tracking</p>
+<p class="panel-desc">Radiography, ultrasound, and diagnostic imaging tracking — click any study to update status or add findings</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-imaging-table','panel-imaging')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Studies Today</div>
-<div class="kpi-value">9</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Radiology Review Pending</div>
-<div class="kpi-value">3</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Ultrasound Bookings</div>
-<div class="kpi-value">4</div>
-<div class="kpi-change">This week</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">DR Uptime</div>
-<div class="kpi-value">100%</div>
-</div>
-</div>
+<div class="kpi-row" id="imaging-kpis"></div>
 <div class="card"><table id="panel-imaging-table">
 <thead><tr><th>Patient</th><th>Study</th><th>Modality</th><th>Ordering Dr.</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Rex</td><td>Abdomen 2-view</td><td>Digital Radiograph</td><td>Dr. Mitchell</td><td>Reviewed — normal</td></tr>
-<tr><td>Star</td><td>Distal Limb</td><td>Radiograph</td><td>Dr. Chen</td><td>Pending read</td></tr>
-<tr><td>Bella</td><td>Abdomen</td><td>Ultrasound</td><td>Dr. Mitchell</td><td>In progress</td></tr>
-</tbody></table></div>
+<tbody id="imaging-tbody"></tbody></table></div>
+<div class="card">
+<h3>Order Imaging Study</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="img-add-patient" placeholder="Patient name">
+<input type="text" id="img-add-study" placeholder="Study, e.g. Abdomen 2-view">
+<select id="img-add-modality">
+<option>Digital Radiograph</option><option>Radiograph</option><option>Ultrasound</option><option>CT</option><option>MRI</option><option>Other</option>
+</select>
+<input type="text" id="img-add-doctor" placeholder="Ordering Dr., e.g. Dr. Mitchell">
+<select id="img-add-status">
+<option>Ordered</option><option>In Progress</option><option>Pending Read</option>
+</select>
+<button class="btn" onclick="addImagingStudy()">Order Study</button>
+</div>
+</div>
 </div>
 
 <div id="panel-surgery" class="panel">
@@ -2167,6 +2160,7 @@ function gateSubmit(){
   renderSchedule();
   renderVitals();
   renderLab();
+  renderImaging();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -2743,6 +2737,128 @@ function addLabResult(){
   showToast(patient+' — '+test+' added: '+computeLabFlag(entry),'success');
 }
 
+var IMAGING_STATUSES = ['Ordered','In Progress','Pending Read','Reviewed — Normal','Reviewed — Abnormal'];
+
+function getImagingStudies(){
+  try {
+    var stored = localStorage.getItem('sv_imaging');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var today = new Date().toISOString().slice(0,10);
+  var seed = [
+    {id:'im1', patient:'Rex', study:'Abdomen 2-view', modality:'Digital Radiograph', doctor:'Dr. Mitchell', status:'Reviewed — Normal', findings:'', date:today},
+    {id:'im2', patient:'Star', study:'Distal Limb', modality:'Radiograph', doctor:'Dr. Chen', status:'Pending Read', findings:'', date:today},
+    {id:'im3', patient:'Bella', study:'Abdomen', modality:'Ultrasound', doctor:'Dr. Mitchell', status:'In Progress', findings:'', date:today}
+  ];
+  saveImagingStudies(seed);
+  return seed;
+}
+
+function saveImagingStudies(list){
+  try { localStorage.setItem('sv_imaging', JSON.stringify(list)); } catch(e){}
+}
+
+function renderImaging(){
+  var list = getImagingStudies();
+  var tbody = document.getElementById('imaging-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(s){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openImagingEdit(s.id); };
+    tr.innerHTML = '<td>'+escHtml(s.patient)+'</td><td>'+escHtml(s.study)+'</td><td>'+escHtml(s.modality)+'</td><td>'+escHtml(s.doctor)+'</td><td>'+escHtml(s.status)+(s.findings?' <span style="color:var(--text-muted,#666);">— '+escHtml(s.findings)+'</span>':'')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var today = new Date().toISOString().slice(0,10);
+  var studiesToday = list.filter(function(s){ return s.date===today; }).length;
+  var pendingRead = list.filter(function(s){ return s.status==='Pending Read'; }).length;
+  var inProgress = list.filter(function(s){ return s.status==='In Progress'; }).length;
+  var reviewed = list.filter(function(s){ return s.status.indexOf('Reviewed')===0; }).length;
+
+  var kpis = document.getElementById('imaging-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Studies Today</div><div class="kpi-value">'+studiesToday+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Pending Read</div><div class="kpi-value">'+pendingRead+'</div>'+(pendingRead>0?'<div class="kpi-change">Needs radiologist review</div>':'')+'</div>'+
+      '<div class="kpi"><div class="kpi-label">In Progress</div><div class="kpi-value">'+inProgress+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Reviewed</div><div class="kpi-value">'+reviewed+'</div></div>';
+  }
+}
+
+function openImagingEdit(id){
+  var list = getImagingStudies();
+  var s = list.find(function(x){ return x.id===id; });
+  if(!s) return;
+  var statusOptions = IMAGING_STATUSES.map(function(st){ return '<option'+(st===s.status?' selected':'')+'>'+st+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="img-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(s.patient)+' — '+escHtml(s.study)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Ordering Dr.</label><input type="text" id="img-edit-doctor" value="'+escHtml(s.doctor)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="img-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div style="grid-column:1/-1;"><label style="display:block;margin-bottom:6px;">Findings (once reviewed)</label><input type="text" id="img-edit-findings" value="'+escHtml(s.findings||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveImagingEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelImagingEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeImagingStudy(\''+id+'\')">Remove Study</button>'+
+    '</div>';
+  var existing = document.getElementById('img-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-imaging-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('img-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelImagingEdit(){
+  var existing = document.getElementById('img-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveImagingEdit(id){
+  var list = getImagingStudies();
+  var s = list.find(function(x){ return x.id===id; });
+  if(!s) return;
+  s.doctor = document.getElementById('img-edit-doctor').value.trim();
+  s.status = document.getElementById('img-edit-status').value;
+  s.findings = document.getElementById('img-edit-findings').value.trim();
+  saveImagingStudies(list);
+  cancelImagingEdit();
+  renderImaging();
+  showToast('Updated '+s.patient+' — '+s.study,'success');
+}
+
+function removeImagingStudy(id){
+  var list = getImagingStudies();
+  var s = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveImagingStudies(list);
+  cancelImagingEdit();
+  renderImaging();
+  showToast((s?s.patient+' — '+s.study:'Study')+' removed','success');
+}
+
+function addImagingStudy(){
+  var patient = document.getElementById('img-add-patient').value.trim();
+  var study = document.getElementById('img-add-study').value.trim();
+  var modality = document.getElementById('img-add-modality').value;
+  var doctor = document.getElementById('img-add-doctor').value.trim();
+  var status = document.getElementById('img-add-status').value;
+  if(!patient){ showToast('Patient name required','error'); return; }
+  if(!study){ showToast('Study name required','error'); return; }
+  var list = getImagingStudies();
+  var id = 'im' + Date.now();
+  list.push({id:id, patient:patient, study:study, modality:modality, doctor:doctor||'—', status:status, findings:'', date:new Date().toISOString().slice(0,10)});
+  saveImagingStudies(list);
+  renderImaging();
+  document.getElementById('img-add-patient').value='';
+  document.getElementById('img-add-study').value='';
+  document.getElementById('img-add-doctor').value='';
+  showToast(study+' ordered for '+patient,'success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -3292,6 +3408,7 @@ if(auth){
   renderSchedule();
   renderVitals();
   renderLab();
+  renderImaging();
 } else {
   updatePinDisplay();
 }
