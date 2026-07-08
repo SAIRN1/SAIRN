@@ -832,36 +832,32 @@
 <div id="panel-prepurchase" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Pre-Purchase Exams</h1>
-<p class="panel-desc">Comprehensive PPE reports for equine sales transactions</p>
+<p class="panel-desc">Comprehensive PPE reports for equine sales transactions — click any exam to edit or remove it</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-prepurchase-table','panel-prepurchase')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">PPEs This Month</div>
-<div class="kpi-value">6</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Pass Rate</div>
-<div class="kpi-value">67%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Report Length</div>
-<div class="kpi-value">14 pages</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Radiographs Included</div>
-<div class="kpi-value">5/6</div>
-</div>
-</div>
+<div class="kpi-row" id="ppe-kpis"></div>
 <div class="card"><table id="panel-prepurchase-table">
 <thead><tr><th>Horse</th><th>Buyer</th><th>Seller</th><th>Result</th><th>Date</th></tr></thead>
-<tbody>
-<tr><td>Cash</td><td>Thompson, Amy</td><td>Miller Ranch</td><td>Passed with notes</td><td>2026-07-01</td></tr>
-<tr><td>Ranger</td><td>Lee, Kevin</td><td>Private Seller</td><td>Failed — navicular changes</td><td>2026-06-22</td></tr>
-</tbody></table></div>
+<tbody id="ppe-tbody"></tbody></table></div>
+<div class="card">
+<h3>Log Pre-Purchase Exam</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="ppe-add-horse" placeholder="Horse name">
+<input type="text" id="ppe-add-buyer" placeholder="Buyer, e.g. Last, First">
+<input type="text" id="ppe-add-seller" placeholder="Seller">
+<select id="ppe-add-result">
+<option>Passed</option><option>Passed with Notes</option><option>Failed</option><option>Conditional</option>
+</select>
+<input type="text" id="ppe-add-findings" placeholder="Findings, e.g. navicular changes">
+<input type="date" id="ppe-add-date">
+<input type="number" id="ppe-add-pages" placeholder="Report pages (optional)">
+<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="ppe-add-radiographs"> Radiographs included</label>
+<button class="btn" onclick="addPPE()">Log Exam</button>
+</div>
+</div>
 </div>
 
 <div id="panel-coggins" class="panel">
@@ -2122,6 +2118,7 @@ function gateSubmit(){
   renderFarmCalls();
   renderRepro();
   renderEquineDental();
+  renderPPE();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -3900,6 +3897,146 @@ function addEquineDentalRecord(){
   showToast(patient+' dental record logged','success');
 }
 
+function ppeResultText(p){
+  return p.result + (p.findings ? ' — '+p.findings : '');
+}
+
+function getPPEs(){
+  try {
+    var stored = localStorage.getItem('sv_prepurchase');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'pp1', horse:'Cash', buyer:'Thompson, Amy', seller:'Miller Ranch', result:'Passed with Notes', findings:'', radiographs:true, pages:null, date:'2026-07-01'},
+    {id:'pp2', horse:'Ranger', buyer:'Lee, Kevin', seller:'Private Seller', result:'Failed', findings:'navicular changes', radiographs:true, pages:null, date:'2026-06-22'}
+  ];
+  savePPEs(seed);
+  return seed;
+}
+
+function savePPEs(list){
+  try { localStorage.setItem('sv_prepurchase', JSON.stringify(list)); } catch(e){}
+}
+
+function renderPPE(){
+  var list = getPPEs();
+  var tbody = document.getElementById('ppe-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(p){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openPPEEdit(p.id); };
+    tr.innerHTML = '<td>'+escHtml(p.horse)+'</td><td>'+escHtml(p.buyer)+'</td><td>'+escHtml(p.seller)+'</td><td>'+escHtml(ppeResultText(p))+'</td><td>'+escHtml(p.date)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var ppesThisMonth = list.filter(function(p){ return p.date && p.date.slice(0,7)===thisMonth; }).length;
+  var passed = list.filter(function(p){ return p.result.indexOf('Passed')===0; }).length;
+  var passRate = list.length ? Math.round((passed/list.length)*100)+'%' : '—';
+  var withRadiographs = list.filter(function(p){ return p.radiographs; }).length;
+  var pagesEntered = list.filter(function(p){ return typeof p.pages==='number'; }).map(function(p){ return p.pages; });
+  var avgPages = pagesEntered.length ? Math.round(pagesEntered.reduce(function(a,b){return a+b;},0)/pagesEntered.length)+' pages' : '—';
+
+  var kpis = document.getElementById('ppe-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">PPEs This Month</div><div class="kpi-value">'+ppesThisMonth+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Pass Rate</div><div class="kpi-value">'+passRate+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Report Length</div><div class="kpi-value">'+avgPages+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Radiographs Included</div><div class="kpi-value">'+withRadiographs+'/'+list.length+'</div></div>';
+  }
+}
+
+function openPPEEdit(id){
+  var list = getPPEs();
+  var p = list.find(function(x){ return x.id===id; });
+  if(!p) return;
+  var resultOptions = ['Passed','Passed with Notes','Failed','Conditional'].map(function(r){ return '<option'+(r===p.result?' selected':'')+'>'+r+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="ppe-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(p.horse)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Buyer</label><input type="text" id="ppe-edit-buyer" value="'+escHtml(p.buyer)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Seller</label><input type="text" id="ppe-edit-seller" value="'+escHtml(p.seller)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Result</label><select id="ppe-edit-result" style="width:100%;">'+resultOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Findings</label><input type="text" id="ppe-edit-findings" value="'+escHtml(p.findings||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="ppe-edit-date" value="'+escHtml(p.date)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Report Pages</label><input type="number" id="ppe-edit-pages" value="'+(typeof p.pages==='number'?p.pages:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="ppe-edit-radiographs"'+(p.radiographs?' checked':'')+'> Radiographs included</label></div>'+
+    '</div>'+
+    '<button class="btn" onclick="savePPEEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelPPEEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removePPE(\''+id+'\')">Remove</button>'+
+    '</div>';
+  var existing = document.getElementById('ppe-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-prepurchase-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('ppe-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelPPEEdit(){
+  var existing = document.getElementById('ppe-edit-card');
+  if(existing) existing.remove();
+}
+
+function savePPEEdit(id){
+  var list = getPPEs();
+  var p = list.find(function(x){ return x.id===id; });
+  if(!p) return;
+  p.buyer = document.getElementById('ppe-edit-buyer').value.trim();
+  p.seller = document.getElementById('ppe-edit-seller').value.trim();
+  p.result = document.getElementById('ppe-edit-result').value;
+  p.findings = document.getElementById('ppe-edit-findings').value.trim();
+  p.date = document.getElementById('ppe-edit-date').value;
+  var pg = parseInt(document.getElementById('ppe-edit-pages').value, 10);
+  p.pages = isNaN(pg) ? null : pg;
+  p.radiographs = document.getElementById('ppe-edit-radiographs').checked;
+  savePPEs(list);
+  cancelPPEEdit();
+  renderPPE();
+  showToast('Updated '+p.horse,'success');
+}
+
+function removePPE(id){
+  var list = getPPEs();
+  var p = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  savePPEs(list);
+  cancelPPEEdit();
+  renderPPE();
+  showToast((p?p.horse:'Exam')+' removed','success');
+}
+
+function addPPE(){
+  var horse = document.getElementById('ppe-add-horse').value.trim();
+  var buyer = document.getElementById('ppe-add-buyer').value.trim();
+  var seller = document.getElementById('ppe-add-seller').value.trim();
+  var result = document.getElementById('ppe-add-result').value;
+  var findings = document.getElementById('ppe-add-findings').value.trim();
+  var date = document.getElementById('ppe-add-date').value || new Date().toISOString().slice(0,10);
+  var pg = parseInt(document.getElementById('ppe-add-pages').value, 10);
+  var radiographs = document.getElementById('ppe-add-radiographs').checked;
+  if(!horse){ showToast('Horse name required','error'); return; }
+  var list = getPPEs();
+  var id = 'pp' + Date.now();
+  list.push({id:id, horse:horse, buyer:buyer||'—', seller:seller||'—', result:result, findings:findings, radiographs:radiographs, pages:isNaN(pg)?null:pg, date:date});
+  savePPEs(list);
+  renderPPE();
+  document.getElementById('ppe-add-horse').value='';
+  document.getElementById('ppe-add-buyer').value='';
+  document.getElementById('ppe-add-seller').value='';
+  document.getElementById('ppe-add-findings').value='';
+  document.getElementById('ppe-add-date').value='';
+  document.getElementById('ppe-add-pages').value='';
+  document.getElementById('ppe-add-radiographs').checked=false;
+  showToast(horse+' PPE logged','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -4458,6 +4595,7 @@ if(auth){
   renderFarmCalls();
   renderRepro();
   renderEquineDental();
+  renderPPE();
 } else {
   updatePinDisplay();
 }
