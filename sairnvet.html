@@ -621,36 +621,34 @@
 <div id="panel-dental" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Dental</h1>
-<p class="panel-desc">Dental charting, cleanings, and extraction tracking</p>
+<p class="panel-desc">Dental charting, cleanings, and extraction tracking — click any record to edit or remove it</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-dental-table','panel-dental')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Cleanings This Month</div>
-<div class="kpi-value">38</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Extractions</div>
-<div class="kpi-value">11</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Grade 3+ Disease Found</div>
-<div class="kpi-value">22%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Procedure Time</div>
-<div class="kpi-value">55 min</div>
-</div>
-</div>
+<div class="kpi-row" id="dental-kpis"></div>
 <div class="card"><table id="panel-dental-table">
-<thead><tr><th>Patient</th><th>Procedure</th><th>Teeth Extracted</th><th>Doctor</th><th>Date</th></tr></thead>
-<tbody>
-<tr><td>Whiskers</td><td>Cleaning + Extractions</td><td>2 (109, 209)</td><td>Dr. Chen</td><td>2026-07-03</td></tr>
-<tr><td>Max</td><td>Cleaning</td><td>0</td><td>Dr. Mitchell</td><td>2026-06-29</td></tr>
-</tbody></table></div>
+<thead><tr><th>Patient</th><th>Procedure</th><th>Teeth Extracted</th><th>Grade</th><th>Doctor</th><th>Date</th></tr></thead>
+<tbody id="dental-tbody"></tbody></table></div>
+<div class="card">
+<h3>Log Dental Procedure</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="dent-add-patient" placeholder="Patient name">
+<select id="dent-add-procedure">
+<option>Cleaning</option><option>Cleaning + Extractions</option><option>Extraction Only</option><option>Dental Radiographs</option><option>Other</option>
+</select>
+<input type="text" id="dent-add-teeth" placeholder="Teeth extracted, e.g. 2 (109, 209)">
+<select id="dent-add-grade">
+<option value="">Grade — not assessed</option><option value="0">Grade 0</option><option value="1">Grade 1</option><option value="2">Grade 2</option><option value="3">Grade 3</option><option value="4">Grade 4</option>
+</select>
+<input type="text" id="dent-add-doctor" placeholder="Doctor, e.g. Dr. Chen">
+<input type="date" id="dent-add-date">
+<input type="number" id="dent-add-duration" placeholder="Duration (min), optional">
+<button class="btn" onclick="addDentalRecord()">Log Procedure</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Grade uses the standard AVDC periodontal disease grading scale (0-4) — assigned by the examining doctor, not computed.</p>
+</div>
 </div>
 
 <div id="panel-examrooms" class="panel">
@@ -2153,6 +2151,7 @@ function gateSubmit(){
   renderLab();
   renderImaging();
   renderSurgery();
+  renderDental();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -2991,6 +2990,145 @@ function addSurgery(){
   showToast(procedure+' scheduled for '+patient+(consent?'':' — consent still needed'),'success');
 }
 
+function parseExtractedCount(teeth){
+  if(!teeth) return 0;
+  var m = String(teeth).match(/^\s*(\d+)/);
+  return m ? parseInt(m[1],10) : 0;
+}
+
+function getDentalRecords(){
+  try {
+    var stored = localStorage.getItem('sv_dental');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'dt1', patient:'Whiskers', procedure:'Cleaning + Extractions', teeth:'2 (109, 209)', grade:'3', doctor:'Dr. Chen', date:'2026-07-03', duration:null},
+    {id:'dt2', patient:'Max', procedure:'Cleaning', teeth:'0', grade:'1', doctor:'Dr. Mitchell', date:'2026-06-29', duration:null}
+  ];
+  saveDentalRecords(seed);
+  return seed;
+}
+
+function saveDentalRecords(list){
+  try { localStorage.setItem('sv_dental', JSON.stringify(list)); } catch(e){}
+}
+
+function renderDental(){
+  var list = getDentalRecords();
+  var tbody = document.getElementById('dental-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openDentalEdit(r.id); };
+    tr.innerHTML = '<td>'+escHtml(r.patient)+'</td><td>'+escHtml(r.procedure)+'</td><td>'+escHtml(r.teeth||'0')+'</td><td>'+(r.grade!==''&&r.grade!=null?'Grade '+escHtml(r.grade):'—')+'</td><td>'+escHtml(r.doctor)+'</td><td>'+escHtml(r.date)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var cleaningsThisMonth = list.filter(function(r){
+    return r.date && r.date.slice(0,7)===thisMonth && (r.procedure==='Cleaning' || r.procedure==='Cleaning + Extractions');
+  }).length;
+  var totalExtractions = list.reduce(function(sum,r){ return sum + parseExtractedCount(r.teeth); }, 0);
+  var grade3plus = list.filter(function(r){ return r.grade==='3' || r.grade==='4'; }).length;
+  var durations = list.filter(function(r){ return typeof r.duration==='number' && !isNaN(r.duration); }).map(function(r){ return r.duration; });
+  var avgDuration = durations.length ? Math.round(durations.reduce(function(a,b){return a+b;},0)/durations.length)+' min' : '—';
+
+  var kpis = document.getElementById('dental-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Cleanings This Month</div><div class="kpi-value">'+cleaningsThisMonth+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Teeth Extracted</div><div class="kpi-value">'+totalExtractions+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Grade 3+ Cases</div><div class="kpi-value">'+grade3plus+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Procedure Time</div><div class="kpi-value">'+avgDuration+'</div></div>';
+  }
+}
+
+function openDentalEdit(id){
+  var list = getDentalRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  var procOptions = ['Cleaning','Cleaning + Extractions','Extraction Only','Dental Radiographs','Other'].map(function(p){ return '<option'+(p===r.procedure?' selected':'')+'>'+p+'</option>'; }).join('');
+  var gradeOptions = ['','0','1','2','3','4'].map(function(g){ return '<option value="'+g+'"'+(g===(r.grade||'')?' selected':'')+'>'+(g===''?'Grade — not assessed':'Grade '+g)+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="dent-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(r.patient)+' — '+escHtml(r.date)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Procedure</label><select id="dent-edit-procedure" style="width:100%;">'+procOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Teeth Extracted</label><input type="text" id="dent-edit-teeth" value="'+escHtml(r.teeth||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Grade</label><select id="dent-edit-grade" style="width:100%;">'+gradeOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="dent-edit-doctor" value="'+escHtml(r.doctor)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="dent-edit-date" value="'+escHtml(r.date)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Duration (min)</label><input type="number" id="dent-edit-duration" value="'+(typeof r.duration==='number'?r.duration:'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveDentalEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelDentalEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeDentalRecord(\''+id+'\')">Remove Record</button>'+
+    '</div>';
+  var existing = document.getElementById('dent-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-dental-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('dent-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelDentalEdit(){
+  var existing = document.getElementById('dent-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveDentalEdit(id){
+  var list = getDentalRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  r.procedure = document.getElementById('dent-edit-procedure').value;
+  r.teeth = document.getElementById('dent-edit-teeth').value.trim();
+  r.grade = document.getElementById('dent-edit-grade').value;
+  r.doctor = document.getElementById('dent-edit-doctor').value.trim();
+  r.date = document.getElementById('dent-edit-date').value;
+  var d = parseFloat(document.getElementById('dent-edit-duration').value);
+  r.duration = isNaN(d) ? null : d;
+  saveDentalRecords(list);
+  cancelDentalEdit();
+  renderDental();
+  showToast('Updated '+r.patient,'success');
+}
+
+function removeDentalRecord(id){
+  var list = getDentalRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveDentalRecords(list);
+  cancelDentalEdit();
+  renderDental();
+  showToast((r?r.patient:'Record')+' removed','success');
+}
+
+function addDentalRecord(){
+  var patient = document.getElementById('dent-add-patient').value.trim();
+  var procedure = document.getElementById('dent-add-procedure').value;
+  var teeth = document.getElementById('dent-add-teeth').value.trim();
+  var grade = document.getElementById('dent-add-grade').value;
+  var doctor = document.getElementById('dent-add-doctor').value.trim();
+  var date = document.getElementById('dent-add-date').value || new Date().toISOString().slice(0,10);
+  var d = parseFloat(document.getElementById('dent-add-duration').value);
+  if(!patient){ showToast('Patient name required','error'); return; }
+  var list = getDentalRecords();
+  var id = 'dt' + Date.now();
+  list.push({id:id, patient:patient, procedure:procedure, teeth:teeth||'0', grade:grade, doctor:doctor||'—', date:date, duration:isNaN(d)?null:d});
+  saveDentalRecords(list);
+  renderDental();
+  document.getElementById('dent-add-patient').value='';
+  document.getElementById('dent-add-teeth').value='';
+  document.getElementById('dent-add-doctor').value='';
+  document.getElementById('dent-add-date').value='';
+  document.getElementById('dent-add-duration').value='';
+  showToast(procedure+' logged for '+patient,'success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -3542,6 +3680,7 @@ if(auth){
   renderLab();
   renderImaging();
   renderSurgery();
+  renderDental();
 } else {
   updatePinDisplay();
 }
