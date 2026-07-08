@@ -891,36 +891,30 @@
 <div id="panel-herdhealth" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Herd Health</h1>
-<p class="panel-desc">Production medicine, vaccination protocols, and herd-level analytics</p>
+<p class="panel-desc">Production medicine, vaccination protocols, and herd-level analytics — click any herd to update or log metrics</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-herdhealth-table','panel-herdhealth')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Herds Managed</div>
-<div class="kpi-value">23</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Total Head</div>
-<div class="kpi-value">2,847</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Vaccination Compliance</div>
-<div class="kpi-value">96%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Somatic Cell Count</div>
-<div class="kpi-value">187K</div>
-</div>
-</div>
+<div class="kpi-row" id="herd-kpis"></div>
 <div class="card"><table id="panel-herdhealth-table">
 <thead><tr><th>Herd</th><th>Species</th><th>Head Count</th><th>Last Visit</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Miller Dairy Farm</td><td>Holstein Cattle</td><td>340</td><td>2026-07-07</td><td>Routine check</td></tr>
-<tr><td>Green Pastures Ranch</td><td>Angus Beef</td><td>890</td><td>2026-06-28</td><td>Vaccinations current</td></tr>
-</tbody></table></div>
+<tbody id="herd-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Herd</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="herd-add-name" placeholder="Herd/Farm name">
+<input type="text" id="herd-add-species" placeholder="Species/breed, e.g. Holstein Cattle">
+<input type="number" id="herd-add-headcount" placeholder="Head count">
+<input type="date" id="herd-add-visit">
+<select id="herd-add-status">
+<option>Routine Check</option><option>Vaccinations Current</option><option>Vaccinations Due</option><option>Disease Investigation</option><option>Other</option>
+</select>
+<button class="btn" onclick="addHerd()">Add Herd</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Herds Managed and Total Head are counted from what's actually in this table. Vaccination Compliance and SCC are logged per-herd via the edit screen and averaged only across herds where a value has been entered.</p>
+</div>
 </div>
 
 <div id="panel-wildliferehab" class="panel">
@@ -2113,6 +2107,7 @@ function gateSubmit(){
   renderEquineDental();
   renderPPE();
   renderCoggins();
+  renderHerdHealth();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -4152,6 +4147,132 @@ function addCogginsTest(){
   showToast(horse+' sample logged','success');
 }
 
+function getHerds(){
+  try {
+    var stored = localStorage.getItem('sv_herdhealth');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'hd1', herd:'Miller Dairy Farm', species:'Holstein Cattle', headCount:340, lastVisit:'2026-07-07', status:'Routine Check', vaccinationCompliance:null, scc:null},
+    {id:'hd2', herd:'Green Pastures Ranch', species:'Angus Beef', headCount:890, lastVisit:'2026-06-28', status:'Vaccinations Current', vaccinationCompliance:null, scc:null}
+  ];
+  saveHerds(seed);
+  return seed;
+}
+
+function saveHerds(list){
+  try { localStorage.setItem('sv_herdhealth', JSON.stringify(list)); } catch(e){}
+}
+
+function renderHerdHealth(){
+  var list = getHerds();
+  var tbody = document.getElementById('herd-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(h){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openHerdEdit(h.id); };
+    tr.innerHTML = '<td>'+escHtml(h.herd)+'</td><td>'+escHtml(h.species)+'</td><td>'+(typeof h.headCount==='number'?h.headCount.toLocaleString():'—')+'</td><td>'+escHtml(h.lastVisit||'—')+'</td><td>'+escHtml(h.status)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var herdsManaged = list.length;
+  var totalHead = list.reduce(function(sum,h){ return sum + (typeof h.headCount==='number' ? h.headCount : 0); }, 0);
+  var compliances = list.filter(function(h){ return typeof h.vaccinationCompliance==='number'; }).map(function(h){ return h.vaccinationCompliance; });
+  var avgCompliance = compliances.length ? Math.round(compliances.reduce(function(a,b){return a+b;},0)/compliances.length)+'%' : '—';
+  var sccs = list.filter(function(h){ return typeof h.scc==='number'; }).map(function(h){ return h.scc; });
+  var avgSCC = sccs.length ? Math.round(sccs.reduce(function(a,b){return a+b;},0)/sccs.length).toLocaleString()+'K' : '—';
+
+  var kpis = document.getElementById('herd-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Herds Managed</div><div class="kpi-value">'+herdsManaged+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Total Head</div><div class="kpi-value">'+totalHead.toLocaleString()+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Vaccination Compliance</div><div class="kpi-value">'+avgCompliance+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Somatic Cell Count</div><div class="kpi-value">'+avgSCC+'</div></div>';
+  }
+}
+
+function openHerdEdit(id){
+  var list = getHerds();
+  var h = list.find(function(x){ return x.id===id; });
+  if(!h) return;
+  var statusOptions = ['Routine Check','Vaccinations Current','Vaccinations Due','Disease Investigation','Other'].map(function(s){ return '<option'+(s===h.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="herd-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(h.herd)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Head Count</label><input type="number" id="herd-edit-headcount" value="'+(typeof h.headCount==='number'?h.headCount:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Last Visit</label><input type="date" id="herd-edit-visit" value="'+escHtml(h.lastVisit||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="herd-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Vaccination Compliance %</label><input type="number" min="0" max="100" id="herd-edit-compliance" value="'+(typeof h.vaccinationCompliance==='number'?h.vaccinationCompliance:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Somatic Cell Count (thousands, dairy only)</label><input type="number" id="herd-edit-scc" value="'+(typeof h.scc==='number'?h.scc:'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveHerdEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelHerdEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeHerd(\''+id+'\')">Remove Herd</button>'+
+    '</div>';
+  var existing = document.getElementById('herd-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-herdhealth-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('herd-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelHerdEdit(){
+  var existing = document.getElementById('herd-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveHerdEdit(id){
+  var list = getHerds();
+  var h = list.find(function(x){ return x.id===id; });
+  if(!h) return;
+  var hc = parseInt(document.getElementById('herd-edit-headcount').value, 10);
+  h.headCount = isNaN(hc) ? null : hc;
+  h.lastVisit = document.getElementById('herd-edit-visit').value;
+  h.status = document.getElementById('herd-edit-status').value;
+  var vc = parseFloat(document.getElementById('herd-edit-compliance').value);
+  h.vaccinationCompliance = isNaN(vc) ? null : vc;
+  var scc = parseFloat(document.getElementById('herd-edit-scc').value);
+  h.scc = isNaN(scc) ? null : scc;
+  saveHerds(list);
+  cancelHerdEdit();
+  renderHerdHealth();
+  showToast('Updated '+h.herd,'success');
+}
+
+function removeHerd(id){
+  var list = getHerds();
+  var h = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveHerds(list);
+  cancelHerdEdit();
+  renderHerdHealth();
+  showToast((h?h.herd:'Herd')+' removed','success');
+}
+
+function addHerd(){
+  var name = document.getElementById('herd-add-name').value.trim();
+  var species = document.getElementById('herd-add-species').value.trim();
+  var hc = parseInt(document.getElementById('herd-add-headcount').value, 10);
+  var visit = document.getElementById('herd-add-visit').value;
+  var status = document.getElementById('herd-add-status').value;
+  if(!name){ showToast('Herd/Farm name required','error'); return; }
+  var list = getHerds();
+  var id = 'hd' + Date.now();
+  list.push({id:id, herd:name, species:species||'—', headCount:isNaN(hc)?null:hc, lastVisit:visit||'—', status:status, vaccinationCompliance:null, scc:null});
+  saveHerds(list);
+  renderHerdHealth();
+  document.getElementById('herd-add-name').value='';
+  document.getElementById('herd-add-species').value='';
+  document.getElementById('herd-add-headcount').value='';
+  document.getElementById('herd-add-visit').value='';
+  showToast(name+' added','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -4712,6 +4833,7 @@ if(auth){
   renderEquineDental();
   renderPPE();
   renderCoggins();
+  renderHerdHealth();
 } else {
   updatePinDisplay();
 }
