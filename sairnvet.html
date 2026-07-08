@@ -654,39 +654,24 @@
 <div id="panel-examrooms" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Exam Rooms</h1>
-<p class="panel-desc">Live room occupancy and turnover tracking</p>
+<p class="panel-desc">Live room occupancy and turnover tracking — click any room to update status</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-examrooms-table','panel-examrooms')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Rooms</div>
-<div class="kpi-value">5</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Occupied</div>
-<div class="kpi-value">3</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Turnover</div>
-<div class="kpi-value">14 min</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Cleaning In Progress</div>
-<div class="kpi-value">1</div>
-</div>
-</div>
+<div class="kpi-row" id="examrooms-kpis"></div>
 <div class="card"><table id="panel-examrooms-table">
 <thead><tr><th>Room</th><th>Status</th><th>Patient</th><th>Doctor</th><th>Since</th></tr></thead>
-<tbody>
-<tr><td>Exam 1</td><td>Occupied</td><td>Max</td><td>Dr. Mitchell</td><td>8:02 AM</td></tr>
-<tr><td>Exam 2</td><td>Cleaning</td><td>—</td><td>—</td><td>9:14 AM</td></tr>
-<tr><td>Exam 3</td><td>Occupied</td><td>Kiwi</td><td>Dr. Chen</td><td>10:01 AM</td></tr>
-<tr><td>Exam 4</td><td>Open</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>Farm Call Bay</td><td>Occupied</td><td>Bessie</td><td>Dr. Mitchell</td><td>9:15 AM</td></tr>
-</tbody></table></div>
+<tbody id="examrooms-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Room</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="exrm-add-name" placeholder="Room name, e.g. Exam 5">
+<button class="btn" onclick="addExamRoom()">Add Room</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Avg Turnover is computed live from real Cleaning-to-Open transitions during this session — it starts at "—" until the first one happens.</p>
+</div>
 </div>
 
 <div id="panel-teleconsult" class="panel">
@@ -2152,6 +2137,7 @@ function gateSubmit(){
   renderImaging();
   renderSurgery();
   renderDental();
+  renderExamRooms();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -3129,6 +3115,161 @@ function addDentalRecord(){
   showToast(procedure+' logged for '+patient,'success');
 }
 
+var EXAMROOM_STATUSES = ['Open','Occupied','Cleaning'];
+
+function nowTimeLabel(){
+  var d = new Date();
+  var h = d.getHours();
+  var m = d.getMinutes();
+  var ampm = h>=12 ? 'PM' : 'AM';
+  var h12 = h%12; if(h12===0) h12=12;
+  var mStr = m<10 ? '0'+m : ''+m;
+  return h12+':'+mStr+' '+ampm;
+}
+
+function getExamRooms(){
+  try {
+    var stored = localStorage.getItem('sv_examrooms');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'er1', room:'Exam 1', status:'Occupied', patient:'Max', doctor:'Dr. Mitchell', since:'8:02 AM', cleaningStartedAt:null},
+    {id:'er2', room:'Exam 2', status:'Cleaning', patient:'', doctor:'', since:'9:14 AM', cleaningStartedAt:null},
+    {id:'er3', room:'Exam 3', status:'Occupied', patient:'Kiwi', doctor:'Dr. Chen', since:'10:01 AM', cleaningStartedAt:null},
+    {id:'er4', room:'Exam 4', status:'Open', patient:'', doctor:'', since:'—', cleaningStartedAt:null},
+    {id:'er5', room:'Farm Call Bay', status:'Occupied', patient:'Bessie', doctor:'Dr. Mitchell', since:'9:15 AM', cleaningStartedAt:null}
+  ];
+  saveExamRooms(seed);
+  return seed;
+}
+
+function saveExamRooms(list){
+  try { localStorage.setItem('sv_examrooms', JSON.stringify(list)); } catch(e){}
+}
+
+function getExamRoomTurnoverLog(){
+  try {
+    var stored = localStorage.getItem('sv_examrooms_turnover');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  return [];
+}
+
+function saveExamRoomTurnoverLog(list){
+  try { localStorage.setItem('sv_examrooms_turnover', JSON.stringify(list)); } catch(e){}
+}
+
+function renderExamRooms(){
+  var list = getExamRooms();
+  var tbody = document.getElementById('examrooms-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openExamRoomEdit(r.id); };
+    tr.innerHTML = '<td>'+escHtml(r.room)+'</td><td>'+escHtml(r.status)+'</td><td>'+escHtml(r.patient||'—')+'</td><td>'+escHtml(r.doctor||'—')+'</td><td>'+escHtml(r.since||'—')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var rooms = list.length;
+  var occupied = list.filter(function(r){ return r.status==='Occupied'; }).length;
+  var cleaning = list.filter(function(r){ return r.status==='Cleaning'; }).length;
+  var turnoverLog = getExamRoomTurnoverLog();
+  var avgTurnover = turnoverLog.length ? Math.round(turnoverLog.reduce(function(a,b){return a+b;},0)/turnoverLog.length)+' min' : '—';
+
+  var kpis = document.getElementById('examrooms-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Rooms</div><div class="kpi-value">'+rooms+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Occupied</div><div class="kpi-value">'+occupied+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Cleaning</div><div class="kpi-value">'+cleaning+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Turnover</div><div class="kpi-value">'+avgTurnover+'</div>'+(turnoverLog.length?'<div class="kpi-change">'+turnoverLog.length+' logged this session</div>':'')+'</div>';
+  }
+}
+
+function openExamRoomEdit(id){
+  var list = getExamRooms();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  var statusOptions = EXAMROOM_STATUSES.map(function(s){ return '<option'+(s===r.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="exrm-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(r.room)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="exrm-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Patient</label><input type="text" id="exrm-edit-patient" value="'+escHtml(r.patient||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="exrm-edit-doctor" value="'+escHtml(r.doctor||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveExamRoomEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelExamRoomEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeExamRoom(\''+id+'\')">Remove Room</button>'+
+    '</div>';
+  var existing = document.getElementById('exrm-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-examrooms-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('exrm-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelExamRoomEdit(){
+  var existing = document.getElementById('exrm-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveExamRoomEdit(id){
+  var list = getExamRooms();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  var newStatus = document.getElementById('exrm-edit-status').value;
+  var oldStatus = r.status;
+
+  if(newStatus==='Cleaning' && oldStatus!=='Cleaning'){
+    r.cleaningStartedAt = Date.now();
+  }
+  if(oldStatus==='Cleaning' && newStatus==='Open' && r.cleaningStartedAt){
+    var minutes = Math.round((Date.now()-r.cleaningStartedAt)/60000);
+    var log = getExamRoomTurnoverLog();
+    log.push(minutes);
+    saveExamRoomTurnoverLog(log);
+    r.cleaningStartedAt = null;
+  }
+  if(newStatus!==oldStatus){
+    r.since = nowTimeLabel();
+  }
+
+  r.status = newStatus;
+  r.patient = newStatus==='Occupied' ? document.getElementById('exrm-edit-patient').value.trim() : '';
+  r.doctor = newStatus==='Occupied' ? document.getElementById('exrm-edit-doctor').value.trim() : '';
+  saveExamRooms(list);
+  cancelExamRoomEdit();
+  renderExamRooms();
+  showToast(r.room+' updated to '+newStatus,'success');
+}
+
+function removeExamRoom(id){
+  var list = getExamRooms();
+  var r = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveExamRooms(list);
+  cancelExamRoomEdit();
+  renderExamRooms();
+  showToast((r?r.room:'Room')+' removed','success');
+}
+
+function addExamRoom(){
+  var name = document.getElementById('exrm-add-name').value.trim();
+  if(!name){ showToast('Room name required','error'); return; }
+  var list = getExamRooms();
+  var id = 'er' + Date.now();
+  list.push({id:id, room:name, status:'Open', patient:'', doctor:'', since:'—', cleaningStartedAt:null});
+  saveExamRooms(list);
+  renderExamRooms();
+  document.getElementById('exrm-add-name').value='';
+  showToast(name+' added','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -3681,6 +3822,7 @@ if(auth){
   renderImaging();
   renderSurgery();
   renderDental();
+  renderExamRooms();
 } else {
   updatePinDisplay();
 }
