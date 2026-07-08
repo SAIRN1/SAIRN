@@ -530,39 +530,35 @@
 <div id="panel-lab" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Lab Results</h1>
-<p class="panel-desc">In-house and reference lab result tracking with critical value flags</p>
+<p class="panel-desc">In-house and reference lab result tracking — numeric results are checked against the reference range automatically; qualitative results and critical calls are set by the entering clinician</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-lab-table','panel-lab')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Pending</div>
-<div class="kpi-value">14</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Resulted Today</div>
-<div class="kpi-value">31</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Critical Values</div>
-<div class="kpi-value">2</div>
-<div class="kpi-change">Needs review</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg TAT</div>
-<div class="kpi-value">38 min</div>
-<div class="kpi-change">In-house</div>
-</div>
-</div>
+<div class="kpi-row" id="lab-kpis"></div>
 <div class="card"><table id="panel-lab-table">
 <thead><tr><th>Patient</th><th>Test</th><th>Result</th><th>Reference Range</th><th>Flag</th></tr></thead>
-<tbody>
-<tr><td>Milo</td><td>BUN</td><td>68 mg/dL</td><td>7-27 mg/dL</td><td>HIGH — acute kidney concern</td></tr>
-<tr><td>Max</td><td>CBC</td><td>WNL</td><td>—</td><td>Normal</td></tr>
-<tr><td>Bessie</td><td>Milk Culture</td><td>Staph aureus</td><td>—</td><td>Positive — treat per protocol</td></tr>
-</tbody></table></div>
+<tbody id="lab-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Lab Result</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="lab-add-patient" placeholder="Patient name">
+<input type="text" id="lab-add-test" placeholder="Test, e.g. BUN">
+<input type="text" id="lab-add-result" placeholder="Result, e.g. 68 mg/dL or WNL">
+<input type="text" id="lab-add-range" placeholder="Reference range, e.g. 7-27 mg/dL">
+<select id="lab-add-status">
+<option>Resulted</option><option>Pending</option>
+</select>
+<select id="lab-add-flag">
+<option>Normal</option><option>Abnormal</option><option>Positive</option><option>Negative</option>
+</select>
+<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="lab-add-critical"> Critical value</label>
+<input type="text" id="lab-add-notes" placeholder="Clinical notes (optional)">
+<button class="btn" onclick="addLabResult()">Add Result</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">If Result and Reference Range are both numeric, Normal/Abnormal is computed automatically and overrides the dropdown. Non-numeric results (WNL, culture growth, titers) use the dropdown as-entered.</p>
+</div>
 </div>
 
 <div id="panel-imaging" class="panel">
@@ -2170,6 +2166,7 @@ function gateSubmit(){
   renderControlled();
   renderSchedule();
   renderVitals();
+  renderLab();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -2582,6 +2579,168 @@ function addVital(){
   document.getElementById('vital-add-weight').value='';
   var flag = computeVitalFlag(list[list.length-1]);
   showToast(patient+' recorded — '+flag,flag==='Normal'?'success':'error');
+}
+
+// Parses a result and reference range as numbers if possible (e.g. "68 mg/dL" / "7-27 mg/dL").
+// Returns {inRange:true/false} when both sides are numeric, or null when either side is qualitative
+// (WNL, culture growth, titers, etc) — qualitative results are never auto-interpreted.
+function tryParseNumericRange(result, refRange){
+  if(!result || !refRange) return null;
+  var rm = String(result).match(/-?\d+(\.\d+)?/);
+  if(!rm) return null;
+  var val = parseFloat(rm[0]);
+  var rangeMatch = String(refRange).match(/(-?\d+(\.\d+)?)\s*-\s*(-?\d+(\.\d+)?)/);
+  if(!rangeMatch) return null;
+  var lo = parseFloat(rangeMatch[1]);
+  var hi = parseFloat(rangeMatch[3]);
+  if(isNaN(val) || isNaN(lo) || isNaN(hi)) return null;
+  return {inRange: val>=lo && val<=hi};
+}
+
+function computeLabFlag(entry){
+  if(entry.status === 'Pending') return 'Pending';
+  var numeric = tryParseNumericRange(entry.result, entry.refRange);
+  if(numeric){
+    if(entry.critical) return numeric.inRange ? 'Flagged critical — value in range, verify' : 'CRITICAL — outside reference range';
+    return numeric.inRange ? 'Normal' : 'Abnormal — outside reference range';
+  }
+  if(entry.critical) return 'CRITICAL — ' + (entry.manualFlag||'Abnormal');
+  return entry.manualFlag || 'Resulted — see result';
+}
+
+function getLabResults(){
+  try {
+    var stored = localStorage.getItem('sv_labresults');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var today = new Date().toISOString().slice(0,10);
+  var seed = [
+    {id:'lb1', patient:'Milo', test:'BUN', result:'68 mg/dL', refRange:'7-27 mg/dL', status:'Resulted', manualFlag:'Abnormal', critical:true, notes:'Acute kidney concern — recheck with creatinine, USG', date:today},
+    {id:'lb2', patient:'Max', test:'CBC', result:'WNL', refRange:'—', status:'Resulted', manualFlag:'Normal', critical:false, notes:'', date:today},
+    {id:'lb3', patient:'Bessie', test:'Milk Culture', result:'Staph aureus', refRange:'—', status:'Resulted', manualFlag:'Positive', critical:false, notes:'Treat per mastitis protocol', date:today}
+  ];
+  saveLabResults(seed);
+  return seed;
+}
+
+function saveLabResults(list){
+  try { localStorage.setItem('sv_labresults', JSON.stringify(list)); } catch(e){}
+}
+
+function renderLab(){
+  var list = getLabResults();
+  var tbody = document.getElementById('lab-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(entry){
+    var flag = computeLabFlag(entry);
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openLabEdit(entry.id); };
+    tr.innerHTML = '<td>'+escHtml(entry.patient)+'</td><td>'+escHtml(entry.test)+'</td><td>'+escHtml(entry.result)+'</td><td>'+escHtml(entry.refRange||'—')+'</td><td>'+escHtml(flag)+(entry.notes?' <span style="color:var(--text-muted,#666);">— '+escHtml(entry.notes)+'</span>':'')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var today = new Date().toISOString().slice(0,10);
+  var pending = list.filter(function(e){ return e.status==='Pending'; }).length;
+  var resultedToday = list.filter(function(e){ return e.status==='Resulted' && e.date===today; }).length;
+  var critical = list.filter(function(e){ return e.critical; }).length;
+  var abnormal = list.filter(function(e){ var f=computeLabFlag(e); return f!=='Normal' && f!=='Pending'; }).length;
+
+  var kpis = document.getElementById('lab-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Pending</div><div class="kpi-value">'+pending+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Resulted Today</div><div class="kpi-value">'+resultedToday+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Critical Values</div><div class="kpi-value">'+critical+'</div>'+(critical>0?'<div class="kpi-change">Needs review</div>':'')+'</div>'+
+      '<div class="kpi"><div class="kpi-label">Abnormal</div><div class="kpi-value">'+abnormal+'</div></div>';
+  }
+}
+
+function openLabEdit(id){
+  var list = getLabResults();
+  var entry = list.find(function(x){ return x.id===id; });
+  if(!entry) return;
+  var flagOptions = ['Normal','Abnormal','Positive','Negative'].map(function(s){ return '<option'+(s===entry.manualFlag?' selected':'')+'>'+s+'</option>'; }).join('');
+  var statusOptions = ['Resulted','Pending'].map(function(s){ return '<option'+(s===entry.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="lab-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(entry.patient)+' — '+escHtml(entry.test)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Result</label><input type="text" id="lab-edit-result" value="'+escHtml(entry.result)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Reference Range</label><input type="text" id="lab-edit-range" value="'+escHtml(entry.refRange||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="lab-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Flag (if qualitative)</label><select id="lab-edit-flag" style="width:100%;">'+flagOptions+'</select></div>'+
+    '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="lab-edit-critical"'+(entry.critical?' checked':'')+'> Critical value</label></div>'+
+    '<div style="grid-column:1/-1;"><label style="display:block;margin-bottom:6px;">Notes</label><input type="text" id="lab-edit-notes" value="'+escHtml(entry.notes||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveLabEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelLabEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLabResult(\''+id+'\')">Remove Result</button>'+
+    '</div>';
+  var existing = document.getElementById('lab-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-lab-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('lab-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelLabEdit(){
+  var existing = document.getElementById('lab-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveLabEdit(id){
+  var list = getLabResults();
+  var entry = list.find(function(x){ return x.id===id; });
+  if(!entry) return;
+  entry.result = document.getElementById('lab-edit-result').value.trim();
+  entry.refRange = document.getElementById('lab-edit-range').value.trim();
+  entry.status = document.getElementById('lab-edit-status').value;
+  entry.manualFlag = document.getElementById('lab-edit-flag').value;
+  entry.critical = document.getElementById('lab-edit-critical').checked;
+  entry.notes = document.getElementById('lab-edit-notes').value.trim();
+  saveLabResults(list);
+  cancelLabEdit();
+  renderLab();
+  showToast('Updated '+entry.patient+' — '+entry.test,'success');
+}
+
+function removeLabResult(id){
+  var list = getLabResults();
+  var entry = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveLabResults(list);
+  cancelLabEdit();
+  renderLab();
+  showToast((entry?entry.patient+' — '+entry.test:'Result')+' removed','success');
+}
+
+function addLabResult(){
+  var patient = document.getElementById('lab-add-patient').value.trim();
+  var test = document.getElementById('lab-add-test').value.trim();
+  var result = document.getElementById('lab-add-result').value.trim();
+  var refRange = document.getElementById('lab-add-range').value.trim();
+  var status = document.getElementById('lab-add-status').value;
+  var manualFlag = document.getElementById('lab-add-flag').value;
+  var critical = document.getElementById('lab-add-critical').checked;
+  var notes = document.getElementById('lab-add-notes').value.trim();
+  if(!patient){ showToast('Patient name required','error'); return; }
+  if(!test){ showToast('Test name required','error'); return; }
+  var list = getLabResults();
+  var id = 'lb' + Date.now();
+  var entry = {id:id, patient:patient, test:test, result:result||'—', refRange:refRange||'—', status:status, manualFlag:manualFlag, critical:critical, notes:notes, date:new Date().toISOString().slice(0,10)};
+  list.push(entry);
+  saveLabResults(list);
+  renderLab();
+  document.getElementById('lab-add-patient').value='';
+  document.getElementById('lab-add-test').value='';
+  document.getElementById('lab-add-result').value='';
+  document.getElementById('lab-add-range').value='';
+  document.getElementById('lab-add-notes').value='';
+  document.getElementById('lab-add-critical').checked=false;
+  showToast(patient+' — '+test+' added: '+computeLabFlag(entry),'success');
 }
 
 function getControlledLog(){
@@ -3132,6 +3291,7 @@ if(auth){
   renderControlled();
   renderSchedule();
   renderVitals();
+  renderLab();
 } else {
   updatePinDisplay();
 }
