@@ -739,36 +739,32 @@
 <div id="panel-farmcalls" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Farm Calls</h1>
-<p class="panel-desc">Mobile/ambulatory equine and large-animal visit scheduling</p>
+<p class="panel-desc">Mobile/ambulatory equine and large-animal visit scheduling — click any visit to update status or log mileage/charge</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-farmcalls-table','panel-farmcalls')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">This Week</div>
-<div class="kpi-value">23</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Miles Driven</div>
-<div class="kpi-value">412</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Drive Time</div>
-<div class="kpi-value">28 min</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue MTD</div>
-<div class="kpi-value">$41,200</div>
-</div>
-</div>
+<div class="kpi-row" id="farm-kpis"></div>
 <div class="card"><table id="panel-farmcalls-table">
 <thead><tr><th>Date</th><th>Farm/Client</th><th>Species</th><th>Reason</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>2026-07-07</td><td>Miller Dairy Farm</td><td>Cattle</td><td>Herd health check</td><td>En route</td></tr>
-<tr><td>2026-07-06</td><td>Johnson Ranch</td><td>Equine</td><td>Lameness + vaccines</td><td>Complete</td></tr>
-</tbody></table></div>
+<tbody id="farm-tbody"></tbody></table></div>
+<div class="card">
+<h3>Schedule Farm Call</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="date" id="farm-add-date">
+<input type="text" id="farm-add-client" placeholder="Farm/Client name">
+<select id="farm-add-species">
+<option>Cattle</option><option>Equine</option><option>Swine</option><option>Small Ruminant</option><option>Poultry</option><option>Mixed</option><option>Other</option>
+</select>
+<input type="text" id="farm-add-reason" placeholder="Reason for visit">
+<select id="farm-add-status">
+<option>Scheduled</option><option>En Route</option><option>In Progress</option>
+</select>
+<button class="btn" onclick="addFarmCall()">Schedule</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Miles and charge are logged per-visit once entered on the edit screen — "Charges Logged" reflects what's been entered here, not a connected billing system.</p>
+</div>
 </div>
 
 <div id="panel-reproduction" class="panel">
@@ -2131,6 +2127,7 @@ function gateSubmit(){
   renderExamRooms();
   renderTeleconsult();
   renderLameness();
+  renderFarmCalls();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -3529,6 +3526,131 @@ function addLamenessExam(){
   showToast(patient+' exam logged — Grade '+grade+'/5','success');
 }
 
+var FARMCALL_STATUSES = ['Scheduled','En Route','In Progress','Complete','Cancelled'];
+
+function getFarmCalls(){
+  try {
+    var stored = localStorage.getItem('sv_farmcalls');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'fc1', date:'2026-07-07', client:'Miller Dairy Farm', species:'Cattle', reason:'Herd health check', status:'En Route', miles:null, charge:null},
+    {id:'fc2', date:'2026-07-06', client:'Johnson Ranch', species:'Equine', reason:'Lameness + vaccines', status:'Complete', miles:null, charge:null}
+  ];
+  saveFarmCalls(seed);
+  return seed;
+}
+
+function saveFarmCalls(list){
+  try { localStorage.setItem('sv_farmcalls', JSON.stringify(list)); } catch(e){}
+}
+
+function renderFarmCalls(){
+  var list = getFarmCalls();
+  var tbody = document.getElementById('farm-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(f){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openFarmCallEdit(f.id); };
+    tr.innerHTML = '<td>'+escHtml(f.date)+'</td><td>'+escHtml(f.client)+'</td><td>'+escHtml(f.species)+'</td><td>'+escHtml(f.reason)+'</td><td>'+escHtml(f.status)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var weekAgo = Date.now() - 7*24*60*60*1000;
+  var thisWeek = list.filter(function(f){ return f.date && new Date(f.date).getTime() >= weekAgo && f.status!=='Cancelled'; }).length;
+  var completed = list.filter(function(f){ return f.status==='Complete'; }).length;
+  var milesLogged = list.reduce(function(sum,f){ return sum + (typeof f.miles==='number' ? f.miles : 0); }, 0);
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var chargesLogged = list.reduce(function(sum,f){ return sum + ((f.date && f.date.slice(0,7)===thisMonth && typeof f.charge==='number') ? f.charge : 0); }, 0);
+
+  var kpis = document.getElementById('farm-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">This Week</div><div class="kpi-value">'+thisWeek+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Complete</div><div class="kpi-value">'+completed+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Miles Logged</div><div class="kpi-value">'+milesLogged+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Charges Logged (MTD)</div><div class="kpi-value">$'+chargesLogged.toLocaleString()+'</div></div>';
+  }
+}
+
+function openFarmCallEdit(id){
+  var list = getFarmCalls();
+  var f = list.find(function(x){ return x.id===id; });
+  if(!f) return;
+  var statusOptions = FARMCALL_STATUSES.map(function(s){ return '<option'+(s===f.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="farm-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(f.client)+' — '+escHtml(f.date)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Reason</label><input type="text" id="farm-edit-reason" value="'+escHtml(f.reason)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="farm-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Miles</label><input type="number" id="farm-edit-miles" value="'+(typeof f.miles==='number'?f.miles:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Charge ($)</label><input type="number" id="farm-edit-charge" value="'+(typeof f.charge==='number'?f.charge:'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveFarmCallEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelFarmCallEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeFarmCall(\''+id+'\')">Remove</button>'+
+    '</div>';
+  var existing = document.getElementById('farm-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-farmcalls-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('farm-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelFarmCallEdit(){
+  var existing = document.getElementById('farm-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveFarmCallEdit(id){
+  var list = getFarmCalls();
+  var f = list.find(function(x){ return x.id===id; });
+  if(!f) return;
+  f.reason = document.getElementById('farm-edit-reason').value.trim();
+  f.status = document.getElementById('farm-edit-status').value;
+  var m = parseFloat(document.getElementById('farm-edit-miles').value);
+  var c = parseFloat(document.getElementById('farm-edit-charge').value);
+  f.miles = isNaN(m) ? null : m;
+  f.charge = isNaN(c) ? null : c;
+  saveFarmCalls(list);
+  cancelFarmCallEdit();
+  renderFarmCalls();
+  showToast('Updated '+f.client,'success');
+}
+
+function removeFarmCall(id){
+  var list = getFarmCalls();
+  var f = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveFarmCalls(list);
+  cancelFarmCallEdit();
+  renderFarmCalls();
+  showToast((f?f.client:'Visit')+' removed','success');
+}
+
+function addFarmCall(){
+  var date = document.getElementById('farm-add-date').value || new Date().toISOString().slice(0,10);
+  var client = document.getElementById('farm-add-client').value.trim();
+  var species = document.getElementById('farm-add-species').value;
+  var reason = document.getElementById('farm-add-reason').value.trim();
+  var status = document.getElementById('farm-add-status').value;
+  if(!client){ showToast('Farm/Client name required','error'); return; }
+  var list = getFarmCalls();
+  var id = 'fc' + Date.now();
+  list.push({id:id, date:date, client:client, species:species, reason:reason||'—', status:status, miles:null, charge:null});
+  saveFarmCalls(list);
+  renderFarmCalls();
+  document.getElementById('farm-add-date').value='';
+  document.getElementById('farm-add-client').value='';
+  document.getElementById('farm-add-reason').value='';
+  showToast(client+' farm call scheduled','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -4084,6 +4206,7 @@ if(auth){
   renderExamRooms();
   renderTeleconsult();
   renderLameness();
+  renderFarmCalls();
 } else {
   updatePinDisplay();
 }
