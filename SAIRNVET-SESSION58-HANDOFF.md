@@ -1,14 +1,16 @@
 # SAIRNvet — Session 58 Handoff
 Generated: July 8, 2026 | Verified via fresh GitHub blob fetch, not memory
+Updated: same session, one commit later — AI Assistant panel fix landed after this doc was first written; numbers below are corrected to match.
 
 ## VERIFIED CURRENT STATE (re-verify this yourself before trusting it — see protocol below)
-- Master commit: f861a61547b9dcbda065d97bcddd96c933b3a425
-- sairnvet.html: 376,984 bytes
+- Master commit: 8dde0c6694054c082eaa76ef3a63571f3bad9eaa
+- sairnvet.html: 377,821 bytes
 - VET_DRUGS: 485 entries (283 originally verified-confident + 202 added this session across sheep/goat/llama/emu, split roughly 60/40 confident vs needsReview)
 - VET_DIAGNOSES: 465 entries
 - 54 panels, nav confirmed working
-- api/claude.js: 4,114 bytes — EXISTS NOW, was missing from both GitHub and Michael's local machine all along until this session
+- api/claude.js: 4,114 bytes (blob sha d6ac41172afb37c91c89a5d754b0d99a9e404c24) — EXISTS NOW, was missing from both GitHub and Michael's local machine all along until this session
 - Guardian v2 skill: 33 checks (was 25 at start of session)
+- Panel-ai (AI Assistant) fixed as of this commit — see item 16 below, added after this doc was first drafted
 
 ## CRITICAL — READ THIS FIRST
 **api/claude.js did not exist anywhere before this session** — not in the GitHub repo, not on Michael's local machine — despite every app (StoneDesk, SAIRNbiz, SAIRNcode, SAIRNvet) calling `https://sairn.vercel.app/api/claude` this whole time. It silently failed with an empty-catch swallow every time. Built and pushed this session. `ANTHROPIC_API_KEY` has been added to Vercel (Production + Preview) and Michael confirmed the dosing calculator's AI narrative is now genuinely working end to end.
@@ -52,10 +54,12 @@ Generated: July 8, 2026 | Verified via fresh GitHub blob fetch, not memory
 
 **15. Controlled Substances panel — was completely fake.** The "Log Entry" form's inputs had **no id attributes at all**; the button's onclick just called `showToast('Logged...','success')` directly with no logic behind it — didn't read any value, didn't touch the table, didn't update any balance. Now real: data-driven (`sv_controlled`), actual running-balance subtraction on logging, Schedule II entries **blocked** without a witness name (real DEA co-sign requirement), negative-balance discrepancy flagging, live KPIs.
 
-## PANEL AUDIT STATUS — this is a one-at-a-time, ongoing process (Michael's explicit preference given session-limit pressure)
-**Audited and fixed this session:** dashboard, panel-diagnoses, panel-drugdb, panel-pharmacy, panel-patients (spot-checked, was already fine), panel-whiteboard, panel-soap, panel-controlled
+**16. AI Assistant panel — was a fully open ask-anything box with zero connection to the safety architecture.** Someone could ask a dosing question here and bypass RED_FLAG_MATRIX and the grounded calculator entirely. Now: system prompt explicitly instructs the AI not to give a specific numeric dose or single diagnosis here, and the panel UI itself tells the user to use the AI Dosing Calculator or Diagnosis Library instead for anything safety-gated. Audit log added.
 
-**NOT yet audited — assume nothing about these until checked the same way:** panel-ai (AI Assistant — do this one next, it's the first Core sidebar item after Dashboard, most likely to get clicked early in a demo), panel-scheduling, panel-vitals, panel-lab, panel-imaging, panel-surgery, panel-dental, panel-examrooms, panel-teleconsult, panel-lameness, panel-farmcalls, panel-reproduction, panel-equinedental, panel-prepurchase, panel-coggins, panel-herdhealth, panel-wildliferehab, panel-speciesref, panel-conservation, panel-compliance, panel-clients, panel-invoicing, billing, panel-financials, reports, panel-analytics, panel-staff, panel-multisite, panel-documents, panel-referrals, panel-petinsurance, panel-portal, panel-boarding, panel-wellness, panel-mobilevet, panel-communications, panel-reminders, settings, companion-patients, equine-patients, large-patients, exotic-patients, avian-patients, reptile-patients, aquatic-patients, zoo-patients
+## PANEL AUDIT STATUS — this is a one-at-a-time, ongoing process (Michael's explicit preference given session-limit pressure)
+**Audited and fixed this session:** dashboard, panel-diagnoses, panel-drugdb, panel-pharmacy, panel-patients (spot-checked, was already fine), panel-whiteboard, panel-soap, panel-controlled, panel-ai
+
+**NOT yet audited — assume nothing about these until checked the same way:** panel-scheduling (do this one next — it's the next Core-adjacent item likely to get clicked), panel-vitals, panel-lab, panel-imaging, panel-surgery, panel-dental, panel-examrooms, panel-teleconsult, panel-lameness, panel-farmcalls, panel-reproduction, panel-equinedental, panel-prepurchase, panel-coggins, panel-herdhealth, panel-wildliferehab, panel-speciesref, panel-conservation, panel-compliance, panel-clients, panel-invoicing, billing, panel-financials, reports, panel-analytics, panel-staff, panel-multisite, panel-documents, panel-referrals, panel-petinsurance, panel-portal, panel-boarding, panel-wellness, panel-mobilevet, panel-communications, panel-reminders, settings, companion-patients, equine-patients, large-patients, exotic-patients, avian-patients, reptile-patients, aquatic-patients, zoo-patients
 
 The pattern to check for in each: (a) do buttons/forms have real ids and real logic, or fake success toasts like Controlled Substances had, (b) is any AI-calling function grounded/safety-gated like the dosing calculator, or raw like SOAP notes was, (c) are KPIs/counts live or hardcoded-stale, (d) do all interactive-looking elements actually do something.
 
@@ -76,7 +80,7 @@ The pattern to check for in each: (a) do buttons/forms have real ids and real lo
 
 ## NEXT SESSION START PROTOCOL
 1. New PAT: SAIRN-Session59 | Fine-grained | SAIRN1/SAIRN | Contents R/W
-2. Fetch sairnvet.html via git tree/blob (commit f861a61547b9dcbda065d97bcddd96c933b3a425), confirm 376,984 bytes / 485 drugs / 465 diagnoses / 54 panels before believing anything else in this handoff
+2. Fetch sairnvet.html via git tree/blob (commit 8dde0c6694054c082eaa76ef3a63571f3bad9eaa), confirm 377,821 bytes / 485 drugs / 465 diagnoses / 54 panels before believing anything else in this handoff
 3. Confirm master branch, not main — check this explicitly every time now, it's Guardian check #26
-4. Continue the panel-by-panel audit starting with panel-ai, one panel per checkpoint, Guardian scan + push + independent GitHub re-verify after each — this pacing is deliberate, not a shortcut being skipped
+4. Continue the panel-by-panel audit starting with panel-scheduling, one panel per checkpoint, Guardian scan + push + independent GitHub re-verify after each — this pacing is deliberate, not a shortcut being skipped
 5. Before touching the SAIRNbiz bridge: check Vercel dashboard Functions tab and local `dir api` for whether `api/bridge.js` exists anywhere
