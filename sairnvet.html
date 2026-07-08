@@ -441,40 +441,32 @@
 <div id="panel-scheduling" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Scheduling</h1>
-<p class="panel-desc">Multi-doctor, multi-room appointment scheduling</p>
+<p class="panel-desc">Multi-doctor, multi-room appointment scheduling — click any appointment to update status or reschedule</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-scheduling-table','panel-scheduling')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Today&#x27;s Appts</div>
-<div class="kpi-value">28</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Open Slots</div>
-<div class="kpi-value">6</div>
-<div class="kpi-change">Remaining today</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">No-Show Rate</div>
-<div class="kpi-value">3.1%</div>
-<div class="kpi-change">Trailing 90 days</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Wait</div>
-<div class="kpi-value">8 min</div>
-</div>
-</div>
+<div class="kpi-row" id="scheduling-kpis"></div>
 <div class="card"><table id="panel-scheduling-table">
 <thead><tr><th>Time</th><th>Patient</th><th>Type</th><th>Doctor</th><th>Room</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>8:00 AM</td><td>Max</td><td>Wellness Exam</td><td>Dr. Mitchell</td><td>Exam 1</td><td>Checked In</td></tr>
-<tr><td>8:30 AM</td><td>Whiskers</td><td>Vaccine Booster</td><td>Dr. Chen</td><td>Exam 2</td><td>Scheduled</td></tr>
-<tr><td>9:15 AM</td><td>Bessie (Farm)</td><td>Herd Health Visit</td><td>Dr. Mitchell</td><td>Farm Call</td><td>En Route</td></tr>
-<tr><td>10:00 AM</td><td>Kiwi</td><td>Wellness — Avian</td><td>Dr. Chen</td><td>Exam 3</td><td>Scheduled</td></tr>
-</tbody></table></div>
+<tbody id="scheduling-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Appointment</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="sched-add-time" placeholder="e.g., 2:30 PM">
+<input type="text" id="sched-add-patient" placeholder="Patient name">
+<select id="sched-add-type">
+<option>Wellness Exam</option><option>Vaccine Booster</option><option>Sick Visit</option><option>Recheck</option><option>Surgery Consult</option><option>Herd Health Visit</option><option>Farm Call</option><option>Dental</option><option>Other</option>
+</select>
+<input type="text" id="sched-add-doctor" placeholder="e.g., Dr. Mitchell">
+<input type="text" id="sched-add-room" placeholder="e.g., Exam 2">
+<select id="sched-add-status">
+<option>Scheduled</option><option>Checked In</option><option>En Route</option>
+</select>
+<button class="btn" onclick="addScheduleAppt()">Add Appointment</button>
+</div>
+</div>
 </div>
 
 <div id="panel-whiteboard" class="panel">
@@ -2182,6 +2174,7 @@ function gateSubmit(){
   svNav('dashboard');
   renderWhiteboard();
   renderControlled();
+  renderSchedule();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -2304,6 +2297,134 @@ function addWhiteboardPatient(){
   document.getElementById('wb-add-doctor').value='';
   document.getElementById('wb-add-notes').value='';
   showToast(name+' added to whiteboard','success');
+}
+
+var SCHEDULE_STATUSES = ['Scheduled','Checked In','En Route','In Progress','Completed','No-Show','Cancelled'];
+
+function getScheduleAppts(){
+  try {
+    var stored = localStorage.getItem('sv_scheduling');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'sc1', time:'8:00 AM', patient:'Max', type:'Wellness Exam', doctor:'Dr. Mitchell', room:'Exam 1', status:'Checked In'},
+    {id:'sc2', time:'8:30 AM', patient:'Whiskers', type:'Vaccine Booster', doctor:'Dr. Chen', room:'Exam 2', status:'Scheduled'},
+    {id:'sc3', time:'9:15 AM', patient:'Bessie (Farm)', type:'Herd Health Visit', doctor:'Dr. Mitchell', room:'Farm Call', status:'En Route'},
+    {id:'sc4', time:'10:00 AM', patient:'Kiwi', type:'Wellness — Avian', doctor:'Dr. Chen', room:'Exam 3', status:'Scheduled'}
+  ];
+  saveScheduleAppts(seed);
+  return seed;
+}
+
+function saveScheduleAppts(list){
+  try { localStorage.setItem('sv_scheduling', JSON.stringify(list)); } catch(e){}
+}
+
+function renderSchedule(){
+  var list = getScheduleAppts();
+  var tbody = document.getElementById('scheduling-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(a){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openScheduleEdit(a.id); };
+    tr.innerHTML = '<td>'+escHtml(a.time)+'</td><td>'+escHtml(a.patient)+'</td><td>'+escHtml(a.type)+'</td><td>'+escHtml(a.doctor)+'</td><td>'+escHtml(a.room)+'</td><td>'+escHtml(a.status)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var total = list.length;
+  var checkedIn = list.filter(function(a){ return a.status==='Checked In'; }).length;
+  var completed = list.filter(function(a){ return a.status==='Completed'; }).length;
+  var noShow = list.filter(function(a){ return a.status==='No-Show'; }).length;
+  var noShowRate = total>0 ? ((noShow/total)*100).toFixed(1)+'%' : '0.0%';
+
+  var kpis = document.getElementById('scheduling-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Today&#x27;s Appts</div><div class="kpi-value">'+total+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Checked In</div><div class="kpi-value">'+checkedIn+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-value">'+completed+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">No-Show Rate</div><div class="kpi-value">'+noShowRate+'</div><div class="kpi-change">This list</div></div>';
+  }
+}
+
+function openScheduleEdit(id){
+  var list = getScheduleAppts();
+  var a = list.find(function(x){ return x.id===id; });
+  if(!a) return;
+  var statusOptions = SCHEDULE_STATUSES.map(function(s){ return '<option'+(s===a.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="sched-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(a.patient)+' — '+escHtml(a.time)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Time</label><input type="text" id="sched-edit-time" value="'+escHtml(a.time)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Type</label><input type="text" id="sched-edit-type" value="'+escHtml(a.type)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="sched-edit-doctor" value="'+escHtml(a.doctor)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Room</label><input type="text" id="sched-edit-room" value="'+escHtml(a.room)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="sched-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveScheduleEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelScheduleEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeScheduleAppt(\''+id+'\')">Remove Appointment</button>'+
+    '</div>';
+  var existing = document.getElementById('sched-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-scheduling-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('sched-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelScheduleEdit(){
+  var existing = document.getElementById('sched-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveScheduleEdit(id){
+  var list = getScheduleAppts();
+  var a = list.find(function(x){ return x.id===id; });
+  if(!a) return;
+  a.time = document.getElementById('sched-edit-time').value.trim();
+  a.type = document.getElementById('sched-edit-type').value.trim();
+  a.doctor = document.getElementById('sched-edit-doctor').value.trim();
+  a.room = document.getElementById('sched-edit-room').value.trim();
+  a.status = document.getElementById('sched-edit-status').value;
+  saveScheduleAppts(list);
+  cancelScheduleEdit();
+  renderSchedule();
+  showToast('Updated '+a.patient,'success');
+}
+
+function removeScheduleAppt(id){
+  var list = getScheduleAppts();
+  var a = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveScheduleAppts(list);
+  cancelScheduleEdit();
+  renderSchedule();
+  showToast((a?a.patient:'Appointment')+' removed from schedule','success');
+}
+
+function addScheduleAppt(){
+  var time = document.getElementById('sched-add-time').value.trim();
+  var patient = document.getElementById('sched-add-patient').value.trim();
+  var type = document.getElementById('sched-add-type').value;
+  var doctor = document.getElementById('sched-add-doctor').value.trim();
+  var room = document.getElementById('sched-add-room').value.trim();
+  var status = document.getElementById('sched-add-status').value;
+  if(!patient){ showToast('Patient name required','error'); return; }
+  if(!time){ showToast('Appointment time required','error'); return; }
+  var list = getScheduleAppts();
+  var id = 'sc' + Date.now();
+  list.push({id:id, time:time, patient:patient, type:type, doctor:doctor||'—', room:room||'—', status:status});
+  saveScheduleAppts(list);
+  renderSchedule();
+  document.getElementById('sched-add-time').value='';
+  document.getElementById('sched-add-patient').value='';
+  document.getElementById('sched-add-doctor').value='';
+  document.getElementById('sched-add-room').value='';
+  showToast(patient+' added to schedule','success');
 }
 
 function getControlledLog(){
@@ -2852,6 +2973,7 @@ if(auth){
   svNav('dashboard');
   renderWhiteboard();
   renderControlled();
+  renderSchedule();
 } else {
   updatePinDisplay();
 }
