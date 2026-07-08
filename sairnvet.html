@@ -480,38 +480,29 @@
 <div id="panel-whiteboard" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Whiteboard</h1>
-<p class="panel-desc">Live in-hospital patient status board for the care team</p>
+<p class="panel-desc">Live in-hospital patient status board for the care team — click any patient to update status, location, or notes</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-whiteboard-table','panel-whiteboard')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">In-Hospital</div>
-<div class="kpi-value">9</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Surgery Today</div>
-<div class="kpi-value">3</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Discharge Pending</div>
-<div class="kpi-value">2</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Critical</div>
-<div class="kpi-value">1</div>
-<div class="kpi-change">Monitor closely</div>
-</div>
-</div>
+<div class="kpi-row" id="whiteboard-kpis"></div>
 <div class="card"><table id="panel-whiteboard-table">
 <thead><tr><th>Patient</th><th>Location</th><th>Status</th><th>Doctor</th><th>Notes</th></tr></thead>
-<tbody>
-<tr><td>Rex</td><td>Kennel 3</td><td>Post-Op Recovery</td><td>Dr. Mitchell</td><td>Neuter, stable, waking</td></tr>
-<tr><td>Milo</td><td>Kennel 1</td><td>Critical — ICU</td><td>Dr. Chen</td><td>GDV post-op, monitor q1h</td></tr>
-<tr><td>Bella</td><td>Cat Ward B</td><td>Ready for Discharge</td><td>Dr. Mitchell</td><td>Spay recovery complete</td></tr>
-</tbody></table></div>
+<tbody id="whiteboard-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Patient to Board</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="wb-add-name" placeholder="Patient name">
+<input type="text" id="wb-add-location" placeholder="e.g., Kennel 4">
+<select id="wb-add-status">
+<option>Awaiting Surgery</option><option>Post-Op Recovery</option><option>Critical — ICU</option><option>Stable — Monitoring</option><option>Ready for Discharge</option>
+</select>
+<input type="text" id="wb-add-doctor" placeholder="e.g., Dr. Mitchell">
+<input type="text" id="wb-add-notes" placeholder="Notes">
+<button class="btn" onclick="addWhiteboardPatient()">Add to Board</button>
+</div>
+</div>
 </div>
 
 <div id="panel-vitals" class="panel">
@@ -2210,6 +2201,129 @@ function gateSubmit(){
   document.getElementById('appContainer').classList.add('active');
   document.getElementById('userRole').textContent=role;
   svNav('dashboard');
+  renderWhiteboard();
+}
+
+var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
+
+function getWhiteboardPatients(){
+  try {
+    var stored = localStorage.getItem('sv_whiteboard');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'wb1', name:'Rex', location:'Kennel 3', status:'Post-Op Recovery', doctor:'Dr. Mitchell', notes:'Neuter, stable, waking'},
+    {id:'wb2', name:'Milo', location:'Kennel 1', status:'Critical — ICU', doctor:'Dr. Chen', notes:'GDV post-op, monitor q1h'},
+    {id:'wb3', name:'Bella', location:'Cat Ward B', status:'Ready for Discharge', doctor:'Dr. Mitchell', notes:'Spay recovery complete'}
+  ];
+  saveWhiteboardPatients(seed);
+  return seed;
+}
+
+function saveWhiteboardPatients(list){
+  try { localStorage.setItem('sv_whiteboard', JSON.stringify(list)); } catch(e){}
+}
+
+function renderWhiteboard(){
+  var list = getWhiteboardPatients();
+  var tbody = document.getElementById('whiteboard-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(p, i){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openWhiteboardEdit(p.id); };
+    tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.location)+'</td><td>'+escHtml(p.status)+'</td><td>'+escHtml(p.doctor)+'</td><td>'+escHtml(p.notes)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var inHospital = list.length;
+  var critical = list.filter(function(p){ return p.status==='Critical — ICU'; }).length;
+  var dischargePending = list.filter(function(p){ return p.status==='Ready for Discharge'; }).length;
+  var surgeryToday = list.filter(function(p){ return p.status==='Awaiting Surgery' || p.status==='Post-Op Recovery'; }).length;
+
+  var kpis = document.getElementById('whiteboard-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">In-Hospital</div><div class="kpi-value">'+inHospital+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Surgery Today</div><div class="kpi-value">'+surgeryToday+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Discharge Pending</div><div class="kpi-value">'+dischargePending+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Critical</div><div class="kpi-value">'+critical+'</div>'+(critical>0?'<div class="kpi-change">Monitor closely</div>':'')+'</div>';
+  }
+}
+
+function openWhiteboardEdit(id){
+  var list = getWhiteboardPatients();
+  var p = list.find(function(x){ return x.id===id; });
+  if(!p) return;
+  var statusOptions = WHITEBOARD_STATUSES.map(function(s){ return '<option'+(s===p.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="wb-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(p.name)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Location</label><input type="text" id="wb-edit-location" value="'+escHtml(p.location)+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="wb-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="wb-edit-doctor" value="'+escHtml(p.doctor)+'" style="width:100%;"></div>'+
+    '<div style="grid-column:1/-1;"><label style="display:block;margin-bottom:6px;">Notes</label><input type="text" id="wb-edit-notes" value="'+escHtml(p.notes)+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveWhiteboardEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelWhiteboardEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWhiteboardPatient(\''+id+'\')">Discharge / Remove from Board</button>'+
+    '</div>';
+  var existing = document.getElementById('wb-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-whiteboard-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('wb-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelWhiteboardEdit(){
+  var existing = document.getElementById('wb-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveWhiteboardEdit(id){
+  var list = getWhiteboardPatients();
+  var p = list.find(function(x){ return x.id===id; });
+  if(!p) return;
+  p.location = document.getElementById('wb-edit-location').value.trim();
+  p.status = document.getElementById('wb-edit-status').value;
+  p.doctor = document.getElementById('wb-edit-doctor').value.trim();
+  p.notes = document.getElementById('wb-edit-notes').value.trim();
+  saveWhiteboardPatients(list);
+  cancelWhiteboardEdit();
+  renderWhiteboard();
+  showToast('Updated '+p.name,'success');
+}
+
+function removeWhiteboardPatient(id){
+  var list = getWhiteboardPatients();
+  var p = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveWhiteboardPatients(list);
+  cancelWhiteboardEdit();
+  renderWhiteboard();
+  showToast((p?p.name:'Patient')+' removed from board','success');
+}
+
+function addWhiteboardPatient(){
+  var name = document.getElementById('wb-add-name').value.trim();
+  var location = document.getElementById('wb-add-location').value.trim();
+  var status = document.getElementById('wb-add-status').value;
+  var doctor = document.getElementById('wb-add-doctor').value.trim();
+  var notes = document.getElementById('wb-add-notes').value.trim();
+  if(!name){ showToast('Patient name required','error'); return; }
+  var list = getWhiteboardPatients();
+  var id = 'wb' + Date.now();
+  list.push({id:id, name:name, location:location||'—', status:status, doctor:doctor||'—', notes:notes||''});
+  saveWhiteboardPatients(list);
+  renderWhiteboard();
+  document.getElementById('wb-add-name').value='';
+  document.getElementById('wb-add-location').value='';
+  document.getElementById('wb-add-doctor').value='';
+  document.getElementById('wb-add-notes').value='';
+  showToast(name+' added to whiteboard','success');
 }
 
 function svNav(panelId){
@@ -2659,6 +2773,7 @@ if(auth){
   var role=svLoad('role','Doctor');
   document.getElementById('userRole').textContent=role;
   svNav('dashboard');
+  renderWhiteboard();
 } else {
   updatePinDisplay();
 }
