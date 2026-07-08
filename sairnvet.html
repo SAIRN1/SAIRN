@@ -770,36 +770,34 @@
 <div id="panel-reproduction" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Reproduction</h1>
-<p class="panel-desc">Breeding soundness exams, ultrasound pregnancy checks, foaling/calving</p>
+<p class="panel-desc">Breeding soundness exams, ultrasound pregnancy checks, foaling/calving — click any record to edit or remove it</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-reproduction-table','panel-reproduction')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Pregnancy Checks MTD</div>
-<div class="kpi-value">31</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Confirmed Pregnant</div>
-<div class="kpi-value">24</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Foalings Attended</div>
-<div class="kpi-value">4</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Breeding Soundness Exams</div>
-<div class="kpi-value">8</div>
-</div>
-</div>
+<div class="kpi-row" id="repro-kpis"></div>
 <div class="card"><table id="panel-reproduction-table">
 <thead><tr><th>Patient</th><th>Species</th><th>Procedure</th><th>Result</th><th>Date</th></tr></thead>
-<tbody>
-<tr><td>Belle</td><td>Equine</td><td>Ultrasound preg check</td><td>Confirmed — Day 28</td><td>2026-07-05</td></tr>
-<tr><td>Bessie</td><td>Bovine</td><td>Pregnancy check (rectal)</td><td>Confirmed — ~5mo</td><td>2026-07-02</td></tr>
-</tbody></table></div>
+<tbody id="repro-tbody"></tbody></table></div>
+<div class="card">
+<h3>Log Reproduction Record</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="repro-add-patient" placeholder="Patient name">
+<select id="repro-add-species">
+<option>Equine</option><option>Bovine</option><option>Small Ruminant</option><option>Swine</option><option>Other</option>
+</select>
+<select id="repro-add-procedure">
+<option>Ultrasound Pregnancy Check</option><option>Rectal Pregnancy Check</option><option>Breeding Soundness Exam</option><option>Foaling/Calving Attended</option><option>Other</option>
+</select>
+<select id="repro-add-outcome">
+<option>N/A</option><option>Confirmed Pregnant</option><option>Not Pregnant</option><option>Inconclusive</option>
+</select>
+<input type="text" id="repro-add-notes" placeholder="Notes, e.g. Day 28, twins">
+<input type="date" id="repro-add-date">
+<button class="btn" onclick="addReproRecord()">Log Record</button>
+</div>
+</div>
 </div>
 
 <div id="panel-equinedental" class="panel">
@@ -2128,6 +2126,7 @@ function gateSubmit(){
   renderTeleconsult();
   renderLameness();
   renderFarmCalls();
+  renderRepro();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -3651,6 +3650,137 @@ function addFarmCall(){
   showToast(client+' farm call scheduled','success');
 }
 
+function reproResultText(r){
+  if(r.outcome==='N/A') return r.notes || '—';
+  return r.outcome + (r.notes ? ' — '+r.notes : '');
+}
+
+function getReproRecords(){
+  try {
+    var stored = localStorage.getItem('sv_reproduction');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'rp1', patient:'Belle', species:'Equine', procedure:'Ultrasound Pregnancy Check', outcome:'Confirmed Pregnant', notes:'Day 28', date:'2026-07-05'},
+    {id:'rp2', patient:'Bessie', species:'Bovine', procedure:'Rectal Pregnancy Check', outcome:'Confirmed Pregnant', notes:'~5mo', date:'2026-07-02'}
+  ];
+  saveReproRecords(seed);
+  return seed;
+}
+
+function saveReproRecords(list){
+  try { localStorage.setItem('sv_reproduction', JSON.stringify(list)); } catch(e){}
+}
+
+function renderRepro(){
+  var list = getReproRecords();
+  var tbody = document.getElementById('repro-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openReproEdit(r.id); };
+    tr.innerHTML = '<td>'+escHtml(r.patient)+'</td><td>'+escHtml(r.species)+'</td><td>'+escHtml(r.procedure)+'</td><td>'+escHtml(reproResultText(r))+'</td><td>'+escHtml(r.date)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var isPregCheck = function(r){ return r.procedure==='Ultrasound Pregnancy Check' || r.procedure==='Rectal Pregnancy Check'; };
+  var checksMTD = list.filter(function(r){ return isPregCheck(r) && r.date && r.date.slice(0,7)===thisMonth; }).length;
+  var confirmedMTD = list.filter(function(r){ return r.outcome==='Confirmed Pregnant' && r.date && r.date.slice(0,7)===thisMonth; }).length;
+  var foalings = list.filter(function(r){ return r.procedure==='Foaling/Calving Attended'; }).length;
+  var bse = list.filter(function(r){ return r.procedure==='Breeding Soundness Exam'; }).length;
+
+  var kpis = document.getElementById('repro-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Pregnancy Checks MTD</div><div class="kpi-value">'+checksMTD+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Confirmed Pregnant (MTD)</div><div class="kpi-value">'+confirmedMTD+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Foalings Attended</div><div class="kpi-value">'+foalings+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Breeding Soundness Exams</div><div class="kpi-value">'+bse+'</div></div>';
+  }
+}
+
+function openReproEdit(id){
+  var list = getReproRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  var speciesOptions = ['Equine','Bovine','Small Ruminant','Swine','Other'].map(function(s){ return '<option'+(s===r.species?' selected':'')+'>'+s+'</option>'; }).join('');
+  var procOptions = ['Ultrasound Pregnancy Check','Rectal Pregnancy Check','Breeding Soundness Exam','Foaling/Calving Attended','Other'].map(function(p){ return '<option'+(p===r.procedure?' selected':'')+'>'+p+'</option>'; }).join('');
+  var outcomeOptions = ['N/A','Confirmed Pregnant','Not Pregnant','Inconclusive'].map(function(o){ return '<option'+(o===r.outcome?' selected':'')+'>'+o+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="repro-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(r.patient)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Species</label><select id="repro-edit-species" style="width:100%;">'+speciesOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Procedure</label><select id="repro-edit-procedure" style="width:100%;">'+procOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Outcome</label><select id="repro-edit-outcome" style="width:100%;">'+outcomeOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Notes</label><input type="text" id="repro-edit-notes" value="'+escHtml(r.notes||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="repro-edit-date" value="'+escHtml(r.date)+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveReproEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelReproEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeReproRecord(\''+id+'\')">Remove</button>'+
+    '</div>';
+  var existing = document.getElementById('repro-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-reproduction-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('repro-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelReproEdit(){
+  var existing = document.getElementById('repro-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveReproEdit(id){
+  var list = getReproRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  r.species = document.getElementById('repro-edit-species').value;
+  r.procedure = document.getElementById('repro-edit-procedure').value;
+  r.outcome = document.getElementById('repro-edit-outcome').value;
+  r.notes = document.getElementById('repro-edit-notes').value.trim();
+  r.date = document.getElementById('repro-edit-date').value;
+  saveReproRecords(list);
+  cancelReproEdit();
+  renderRepro();
+  showToast('Updated '+r.patient,'success');
+}
+
+function removeReproRecord(id){
+  var list = getReproRecords();
+  var r = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveReproRecords(list);
+  cancelReproEdit();
+  renderRepro();
+  showToast((r?r.patient:'Record')+' removed','success');
+}
+
+function addReproRecord(){
+  var patient = document.getElementById('repro-add-patient').value.trim();
+  var species = document.getElementById('repro-add-species').value;
+  var procedure = document.getElementById('repro-add-procedure').value;
+  var outcome = document.getElementById('repro-add-outcome').value;
+  var notes = document.getElementById('repro-add-notes').value.trim();
+  var date = document.getElementById('repro-add-date').value || new Date().toISOString().slice(0,10);
+  if(!patient){ showToast('Patient name required','error'); return; }
+  var list = getReproRecords();
+  var id = 'rp' + Date.now();
+  list.push({id:id, patient:patient, species:species, procedure:procedure, outcome:outcome, notes:notes, date:date});
+  saveReproRecords(list);
+  renderRepro();
+  document.getElementById('repro-add-patient').value='';
+  document.getElementById('repro-add-notes').value='';
+  document.getElementById('repro-add-date').value='';
+  showToast(patient+' record logged','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -4207,6 +4337,7 @@ if(auth){
   renderTeleconsult();
   renderLameness();
   renderFarmCalls();
+  renderRepro();
 } else {
   updatePinDisplay();
 }
