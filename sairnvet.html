@@ -677,37 +677,31 @@
 <div id="panel-teleconsult" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Telemedicine</h1>
-<p class="panel-desc">Virtual consults, triage, and specialist video referrals</p>
+<p class="panel-desc">Virtual consults, triage, and specialist video referrals — click any consult to update status</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-teleconsult-table','panel-teleconsult')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Consults This Week</div>
-<div class="kpi-value">19</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Duration</div>
-<div class="kpi-value">12 min</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Converted to In-Person</div>
-<div class="kpi-value">31%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Satisfaction</div>
-<div class="kpi-value">4.8/5</div>
-</div>
-</div>
+<div class="kpi-row" id="telec-kpis"></div>
 <div class="card"><table id="panel-teleconsult-table">
 <thead><tr><th>Client</th><th>Patient</th><th>Reason</th><th>Doctor</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Smith, John</td><td>Max</td><td>Follow-up — skin recheck</td><td>Dr. Mitchell</td><td>Scheduled 2:00 PM</td></tr>
-<tr><td>Doe, Jane</td><td>Whiskers</td><td>Diet question</td><td>Dr. Chen</td><td>Completed</td></tr>
-</tbody></table></div>
-<div class="card"><button class="btn" onclick="showToast('Launching video consult room...','info')">Start Video Consult</button></div>
+<tbody id="telec-tbody"></tbody></table></div>
+<div class="card">
+<h3>Schedule Consult</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="tc-add-client" placeholder="Client, e.g. Smith, John">
+<input type="text" id="tc-add-patient" placeholder="Patient name">
+<input type="text" id="tc-add-reason" placeholder="Reason for consult">
+<input type="text" id="tc-add-doctor" placeholder="Doctor, e.g. Dr. Mitchell">
+<input type="text" id="tc-add-time" placeholder="Scheduled time, e.g. 2:00 PM">
+<button class="btn" onclick="addTeleconsult()">Schedule</button>
+</div>
+</div>
+<div class="card">
+<button class="btn" onclick="copyConsultLink()">Copy Consult Link</button>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:10px 0 0 0;">This app doesn't host video itself — it generates a placeholder link to paste into whatever video platform your clinic uses (Zoom, Google Meet, etc).</p>
+</div>
 </div>
 
 <div id="panel-lameness" class="panel">
@@ -2138,6 +2132,7 @@ function gateSubmit(){
   renderSurgery();
   renderDental();
   renderExamRooms();
+  renderTeleconsult();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -3270,6 +3265,146 @@ function addExamRoom(){
   showToast(name+' added','success');
 }
 
+var TELECONSULT_STATUSES = ['Scheduled','Completed','Converted to In-Person','Cancelled'];
+
+function getTeleconsults(){
+  try {
+    var stored = localStorage.getItem('sv_teleconsults');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var today = new Date().toISOString().slice(0,10);
+  var seed = [
+    {id:'tc1', client:'Smith, John', patient:'Max', reason:'Follow-up — skin recheck', doctor:'Dr. Mitchell', time:'2:00 PM', status:'Scheduled', satisfaction:null, date:today},
+    {id:'tc2', client:'Doe, Jane', patient:'Whiskers', reason:'Diet question', doctor:'Dr. Chen', time:'—', status:'Completed', satisfaction:5, date:today}
+  ];
+  saveTeleconsults(seed);
+  return seed;
+}
+
+function saveTeleconsults(list){
+  try { localStorage.setItem('sv_teleconsults', JSON.stringify(list)); } catch(e){}
+}
+
+function renderTeleconsult(){
+  var list = getTeleconsults();
+  var tbody = document.getElementById('telec-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(c){
+    var statusText = c.status==='Scheduled' && c.time && c.time!=='—' ? 'Scheduled '+c.time : c.status;
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openTeleconsultEdit(c.id); };
+    tr.innerHTML = '<td>'+escHtml(c.client)+'</td><td>'+escHtml(c.patient)+'</td><td>'+escHtml(c.reason)+'</td><td>'+escHtml(c.doctor)+'</td><td>'+escHtml(statusText)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var weekAgo = Date.now() - 7*24*60*60*1000;
+  var consultsThisWeek = list.filter(function(c){ return c.date && new Date(c.date).getTime() >= weekAgo; }).length;
+  var completed = list.filter(function(c){ return c.status==='Completed' || c.status==='Converted to In-Person'; }).length;
+  var converted = list.filter(function(c){ return c.status==='Converted to In-Person'; }).length;
+  var ratings = list.filter(function(c){ return typeof c.satisfaction==='number'; }).map(function(c){ return c.satisfaction; });
+  var avgSat = ratings.length ? (ratings.reduce(function(a,b){return a+b;},0)/ratings.length).toFixed(1)+'/5' : '—';
+
+  var kpis = document.getElementById('telec-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Consults This Week</div><div class="kpi-value">'+consultsThisWeek+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-value">'+completed+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Converted to In-Person</div><div class="kpi-value">'+converted+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Satisfaction</div><div class="kpi-value">'+avgSat+'</div></div>';
+  }
+}
+
+function openTeleconsultEdit(id){
+  var list = getTeleconsults();
+  var c = list.find(function(x){ return x.id===id; });
+  if(!c) return;
+  var statusOptions = TELECONSULT_STATUSES.map(function(s){ return '<option'+(s===c.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="tc-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(c.client)+' — '+escHtml(c.patient)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="tc-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Time</label><input type="text" id="tc-edit-time" value="'+escHtml(c.time||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Satisfaction (1-5, if completed)</label><input type="number" min="1" max="5" id="tc-edit-satisfaction" value="'+(typeof c.satisfaction==='number'?c.satisfaction:'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveTeleconsultEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelTeleconsultEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeTeleconsult(\''+id+'\')">Remove</button>'+
+    '</div>';
+  var existing = document.getElementById('tc-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-teleconsult-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('tc-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelTeleconsultEdit(){
+  var existing = document.getElementById('tc-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveTeleconsultEdit(id){
+  var list = getTeleconsults();
+  var c = list.find(function(x){ return x.id===id; });
+  if(!c) return;
+  c.status = document.getElementById('tc-edit-status').value;
+  c.time = document.getElementById('tc-edit-time').value.trim();
+  var s = parseInt(document.getElementById('tc-edit-satisfaction').value, 10);
+  c.satisfaction = (!isNaN(s) && s>=1 && s<=5) ? s : null;
+  saveTeleconsults(list);
+  cancelTeleconsultEdit();
+  renderTeleconsult();
+  showToast('Updated '+c.client,'success');
+}
+
+function removeTeleconsult(id){
+  var list = getTeleconsults();
+  var c = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveTeleconsults(list);
+  cancelTeleconsultEdit();
+  renderTeleconsult();
+  showToast((c?c.client:'Consult')+' removed','success');
+}
+
+function addTeleconsult(){
+  var client = document.getElementById('tc-add-client').value.trim();
+  var patient = document.getElementById('tc-add-patient').value.trim();
+  var reason = document.getElementById('tc-add-reason').value.trim();
+  var doctor = document.getElementById('tc-add-doctor').value.trim();
+  var time = document.getElementById('tc-add-time').value.trim();
+  if(!client){ showToast('Client name required','error'); return; }
+  if(!patient){ showToast('Patient name required','error'); return; }
+  var list = getTeleconsults();
+  var id = 'tc' + Date.now();
+  list.push({id:id, client:client, patient:patient, reason:reason||'—', doctor:doctor||'—', time:time||'—', status:'Scheduled', satisfaction:null, date:new Date().toISOString().slice(0,10)});
+  saveTeleconsults(list);
+  renderTeleconsult();
+  document.getElementById('tc-add-client').value='';
+  document.getElementById('tc-add-patient').value='';
+  document.getElementById('tc-add-reason').value='';
+  document.getElementById('tc-add-doctor').value='';
+  document.getElementById('tc-add-time').value='';
+  showToast(client+' scheduled for teleconsult','success');
+}
+
+function copyConsultLink(){
+  var placeholderId = Math.random().toString(36).slice(2,10);
+  var link = 'https://meet.your-video-platform.com/sairnvet-'+placeholderId;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).then(function(){
+      showToast('Placeholder consult link copied — paste into your video platform','success');
+    }).catch(function(){
+      showToast('Could not copy automatically — link: '+link,'error');
+    });
+  } else {
+    showToast('Clipboard unavailable — link: '+link,'error');
+  }
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -3823,6 +3958,7 @@ if(auth){
   renderSurgery();
   renderDental();
   renderExamRooms();
+  renderTeleconsult();
 } else {
   updatePinDisplay();
 }
