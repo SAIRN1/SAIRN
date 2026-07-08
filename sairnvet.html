@@ -1125,32 +1125,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-controlled-table','panel-controlled')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">On Hand (Sched II)</div>
-<div class="kpi-value">342 units</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Discrepancies This Month</div>
-<div class="kpi-value">0</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Logs Requiring Co-Sign</div>
-<div class="kpi-value">2</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Last DEA Audit</div>
-<div class="kpi-value">2026-04-12</div>
-</div>
-</div>
+<div class="kpi-row" id="controlled-kpis"></div>
 <div class="card"><table id="panel-controlled-table">
 <thead><tr><th>Drug</th><th>Schedule</th><th>On Hand</th><th>Last Transaction</th><th>Balance Check</th></tr></thead>
-<tbody>
-<tr><td>Ketamine 100mg/mL</td><td>III</td><td>1,240mg</td><td>2026-07-06 — 200mg used, Dr. Mitchell</td><td>Balanced</td></tr>
-<tr><td>Butorphanol 10mg/mL</td><td>IV</td><td>480mg</td><td>2026-07-05 — 20mg used, Dr. Chen</td><td>Balanced</td></tr>
-<tr><td>Fentanyl 50mcg/mL</td><td>II</td><td>96mL</td><td>2026-07-04 — 4mL used, Dr. Mitchell (witnessed: Tech Reyes)</td><td>Balanced</td></tr>
-</tbody></table></div>
-<div class="card"><h3>Log Controlled Substance Use</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" placeholder="Drug name"><input type="number" placeholder="Amount used"><input type="text" placeholder="Patient"><input type="text" placeholder="Witness (Sched II)"><button class="btn" onclick="showToast('Logged — running balance updated','success')">Log Entry</button></div></div>
+<tbody id="controlled-tbody"></tbody></table></div>
+<div class="card"><h3>Log Controlled Substance Use</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="log-drug" placeholder="Drug name (e.g., Ketamine 100mg/mL)"><input type="text" id="log-schedule" placeholder="Schedule (e.g., III)"><input type="number" id="log-amount" placeholder="Amount used"><input type="text" id="log-patient" placeholder="Patient"><input type="text" id="log-witness" placeholder="Witness (required for Sched II)"><button class="btn" onclick="logControlledUse()">Log Entry</button></div></div>
 </div>
 
 <div id="panel-compliance" class="panel">
@@ -2202,6 +2181,7 @@ function gateSubmit(){
   document.getElementById('userRole').textContent=role;
   svNav('dashboard');
   renderWhiteboard();
+  renderControlled();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -2324,6 +2304,91 @@ function addWhiteboardPatient(){
   document.getElementById('wb-add-doctor').value='';
   document.getElementById('wb-add-notes').value='';
   showToast(name+' added to whiteboard','success');
+}
+
+function getControlledLog(){
+  try {
+    var stored = localStorage.getItem('sv_controlled');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {drug:'Ketamine 100mg/mL', schedule:'III', onHand:1240, unit:'mg', lastTransaction:'2026-07-06 — 200mg used, Dr. Mitchell', witness:''},
+    {drug:'Butorphanol 10mg/mL', schedule:'IV', onHand:480, unit:'mg', lastTransaction:'2026-07-05 — 20mg used, Dr. Chen', witness:''},
+    {drug:'Fentanyl 50mcg/mL', schedule:'II', onHand:96, unit:'mL', lastTransaction:'2026-07-04 — 4mL used, Dr. Mitchell (witnessed: Tech Reyes)', witness:'Tech Reyes'}
+  ];
+  saveControlledLog(seed);
+  return seed;
+}
+
+function saveControlledLog(list){
+  try { localStorage.setItem('sv_controlled', JSON.stringify(list)); } catch(e){}
+}
+
+function renderControlled(){
+  var list = getControlledLog();
+  var tbody = document.getElementById('controlled-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(d){
+    var balanceOk = d.onHand >= 0;
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+escHtml(d.drug)+'</td><td>'+escHtml(d.schedule)+'</td><td>'+d.onHand+d.unit+'</td><td>'+escHtml(d.lastTransaction)+'</td><td>'+(balanceOk?'Balanced':'<span style="color:#DC2626;font-weight:600;">⚠ NEGATIVE — investigate</span>')+'</td>';
+    tbody.appendChild(tr);
+  });
+  var kpis = document.getElementById('controlled-kpis');
+  if(kpis){
+    var schedII = list.filter(function(d){ return d.schedule==='II'; });
+    var schedIITotal = schedII.reduce(function(sum,d){ return sum + d.onHand; }, 0);
+    var discrepancies = list.filter(function(d){ return d.onHand < 0; }).length;
+    var needsCoSign = list.filter(function(d){ return d.schedule==='II' && !d.witness; }).length;
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">On Hand (Sched II)</div><div class="kpi-value">'+schedIITotal+' units</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Discrepancies This Month</div><div class="kpi-value">'+discrepancies+'</div>'+(discrepancies>0?'<div class="kpi-change">Investigate immediately</div>':'')+'</div>'+
+      '<div class="kpi"><div class="kpi-label">Logs Requiring Co-Sign</div><div class="kpi-value">'+needsCoSign+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Last DEA Audit</div><div class="kpi-value">2026-04-12</div></div>';
+  }
+}
+
+function logControlledUse(){
+  var drugName = document.getElementById('log-drug').value.trim();
+  var schedule = document.getElementById('log-schedule').value.trim().toUpperCase();
+  var amount = parseFloat(document.getElementById('log-amount').value);
+  var patient = document.getElementById('log-patient').value.trim();
+  var witness = document.getElementById('log-witness').value.trim();
+
+  if(!drugName || !amount || amount<=0){ showToast('Drug name and a positive amount are required','error'); return; }
+
+  var list = getControlledLog();
+  var entry = list.find(function(d){ return d.drug.toLowerCase()===drugName.toLowerCase(); });
+
+  var effectiveSchedule = entry ? entry.schedule : (schedule || '');
+  if(effectiveSchedule==='II' && !witness){
+    showToast('Schedule II entries require a witness — DEA co-sign requirement','error',5000);
+    logDoseAudit({type:'controlled_log_blocked', drug:drugName, reason:'missing_witness_schedule_II'});
+    return;
+  }
+
+  var dateStr = new Date().toISOString().slice(0,10);
+  var txnText = dateStr+' — '+amount+(entry?entry.unit:'')+' used'+(patient?', patient '+patient:'')+(witness?' (witnessed: '+witness+')':'');
+
+  if(entry){
+    entry.onHand = entry.onHand - amount;
+    entry.lastTransaction = txnText;
+    if(witness) entry.witness = witness;
+  } else {
+    list.push({drug:drugName, schedule:effectiveSchedule||'Unspecified', onHand:-amount, unit:'', lastTransaction:txnText, witness:witness});
+    showToast('New drug not in prior log — on-hand balance may be inaccurate until initial count is entered','error',6000);
+  }
+
+  saveControlledLog(list);
+  renderControlled();
+  logDoseAudit({type:'controlled_log', drug:drugName, amount:amount, patient:patient, witness:witness});
+  document.getElementById('log-drug').value='';
+  document.getElementById('log-schedule').value='';
+  document.getElementById('log-amount').value='';
+  document.getElementById('log-patient').value='';
+  document.getElementById('log-witness').value='';
+  showToast('Logged — running balance updated','success');
 }
 
 function svNav(panelId){
@@ -2785,6 +2850,7 @@ if(auth){
   document.getElementById('userRole').textContent=role;
   svNav('dashboard');
   renderWhiteboard();
+  renderControlled();
 } else {
   updatePinDisplay();
 }
