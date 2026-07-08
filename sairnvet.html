@@ -500,37 +500,31 @@
 <div id="panel-vitals" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Vitals Trends</h1>
-<p class="panel-desc">Track vitals over time with automatic abnormal-value flagging</p>
+<p class="panel-desc">Track vitals over time with automatic abnormal-value flagging — click any entry to correct or remove it</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-vitals-table','panel-vitals')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Recorded Today</div>
-<div class="kpi-value">112</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Flagged Abnormal</div>
-<div class="kpi-value">7</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg HR (canine)</div>
-<div class="kpi-value">96 bpm</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Temp</div>
-<div class="kpi-value">101.4°F</div>
-</div>
-</div>
+<div class="kpi-row" id="vitals-kpis"></div>
 <div class="card"><table id="panel-vitals-table">
-<thead><tr><th>Patient</th><th>Temp</th><th>HR</th><th>RR</th><th>Weight</th><th>Flag</th></tr></thead>
-<tbody>
-<tr><td>Max</td><td>101.8°F</td><td>88 bpm</td><td>22 rpm</td><td>32.4 kg</td><td>Normal</td></tr>
-<tr><td>Milo</td><td>103.9°F</td><td>142 bpm</td><td>38 rpm</td><td>18.1 kg</td><td>HIGH TEMP / TACHYCARDIA</td></tr>
-<tr><td>Star</td><td>99.8°F</td><td>36 bpm</td><td>14 rpm</td><td>512 kg</td><td>Normal (equine)</td></tr>
-</tbody></table></div>
+<thead><tr><th>Patient</th><th>Species</th><th>Temp</th><th>HR</th><th>RR</th><th>Weight</th><th>Flag</th></tr></thead>
+<tbody id="vitals-tbody"></tbody></table></div>
+<div class="card">
+<h3>Record Vitals</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="vital-add-patient" placeholder="Patient name">
+<select id="vital-add-species">
+<option>Canine</option><option>Feline</option><option>Equine</option><option>Bovine</option><option>Rabbit</option><option>Ball Python</option><option>Other</option>
+</select>
+<input type="number" step="0.1" id="vital-add-temp" placeholder="Temp °F">
+<input type="number" id="vital-add-hr" placeholder="HR bpm">
+<input type="number" id="vital-add-rr" placeholder="RR rpm">
+<input type="text" id="vital-add-weight" placeholder="Weight, e.g. 32.4 kg">
+<button class="btn" onclick="addVital()">Record Vitals</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Abnormal-value flagging uses the reference ranges in the Species Reference Library (Canine/Feline/Equine/Bovine/Rabbit). "Other" and ectotherms are flagged Not Evaluated rather than guessed.</p>
+</div>
 </div>
 
 <div id="panel-lab" class="panel">
@@ -2175,6 +2169,7 @@ function gateSubmit(){
   renderWhiteboard();
   renderControlled();
   renderSchedule();
+  renderVitals();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -2425,6 +2420,168 @@ function addScheduleAppt(){
   document.getElementById('sched-add-doctor').value='';
   document.getElementById('sched-add-room').value='';
   showToast(patient+' added to schedule','success');
+}
+
+// Reference ranges match the published Species Reference Library table (panel-speciesref) —
+// abnormal-value flagging is grounded in that data, never guessed by an AI.
+var VITALS_REF_RANGES = {
+  'Canine': {temp:[100.5,102.5], hr:[70,120], rr:[10,30]},
+  'Feline': {temp:[100.5,102.5], hr:[140,220], rr:[20,30]},
+  'Equine': {temp:[99.0,101.5], hr:[28,44], rr:[8,16]},
+  'Bovine': {temp:[101.0,102.5], hr:[48,84], rr:[10,30]},
+  'Rabbit': {temp:[101.0,103.5], hr:[130,325], rr:[30,60]},
+  'Ball Python': null // ectotherm — no numeric HR/RR/temp reference, evaluated separately
+};
+
+function computeVitalFlag(v){
+  if(v.species === 'Ball Python') return 'Not Evaluated — Ectotherm';
+  var ref = VITALS_REF_RANGES[v.species];
+  if(!ref) return 'Not Evaluated';
+  var issues = [];
+  if(typeof v.temp === 'number' && !isNaN(v.temp)){
+    if(v.temp > ref.temp[1]) issues.push('HIGH TEMP');
+    else if(v.temp < ref.temp[0]) issues.push('LOW TEMP');
+  }
+  if(typeof v.hr === 'number' && !isNaN(v.hr)){
+    if(v.hr > ref.hr[1]) issues.push('TACHYCARDIA');
+    else if(v.hr < ref.hr[0]) issues.push('BRADYCARDIA');
+  }
+  if(typeof v.rr === 'number' && !isNaN(v.rr)){
+    if(v.rr > ref.rr[1]) issues.push('TACHYPNEA');
+    else if(v.rr < ref.rr[0]) issues.push('BRADYPNEA');
+  }
+  return issues.length ? issues.join(' / ') : 'Normal';
+}
+
+function getVitals(){
+  try {
+    var stored = localStorage.getItem('sv_vitals');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var today = new Date().toISOString().slice(0,10);
+  var seed = [
+    {id:'vt1', patient:'Max', species:'Canine', temp:101.8, hr:88, rr:22, weight:'32.4 kg', date:today},
+    {id:'vt2', patient:'Milo', species:'Canine', temp:103.9, hr:142, rr:38, weight:'18.1 kg', date:today},
+    {id:'vt3', patient:'Star', species:'Equine', temp:99.8, hr:36, rr:14, weight:'512 kg', date:today}
+  ];
+  saveVitals(seed);
+  return seed;
+}
+
+function saveVitals(list){
+  try { localStorage.setItem('sv_vitals', JSON.stringify(list)); } catch(e){}
+}
+
+function renderVitals(){
+  var list = getVitals();
+  var tbody = document.getElementById('vitals-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(v){
+    var flag = computeVitalFlag(v);
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openVitalEdit(v.id); };
+    tr.innerHTML = '<td>'+escHtml(v.patient)+'</td><td>'+escHtml(v.species)+'</td><td>'+(typeof v.temp==='number'?v.temp+'°F':'—')+'</td><td>'+(typeof v.hr==='number'?v.hr+' bpm':'—')+'</td><td>'+(typeof v.rr==='number'?v.rr+' rpm':'—')+'</td><td>'+escHtml(v.weight||'—')+'</td><td>'+escHtml(flag)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var today = new Date().toISOString().slice(0,10);
+  var recordedToday = list.filter(function(v){ return v.date===today; }).length;
+  var abnormal = list.filter(function(v){ var f=computeVitalFlag(v); return f!=='Normal' && f.indexOf('Not Evaluated')!==0; }).length;
+  var normal = list.filter(function(v){ return computeVitalFlag(v)==='Normal'; }).length;
+  var notEvaluated = list.filter(function(v){ return computeVitalFlag(v).indexOf('Not Evaluated')===0; }).length;
+
+  var kpis = document.getElementById('vitals-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Recorded Today</div><div class="kpi-value">'+recordedToday+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Flagged Abnormal</div><div class="kpi-value">'+abnormal+'</div>'+(abnormal>0?'<div class="kpi-change">Review recommended</div>':'')+'</div>'+
+      '<div class="kpi"><div class="kpi-label">Normal</div><div class="kpi-value">'+normal+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Not Evaluated</div><div class="kpi-value">'+notEvaluated+'</div></div>';
+  }
+}
+
+function openVitalEdit(id){
+  var list = getVitals();
+  var v = list.find(function(x){ return x.id===id; });
+  if(!v) return;
+  var speciesOptions = Object.keys(VITALS_REF_RANGES).concat(['Other']).map(function(s){ return '<option'+(s===v.species?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="vital-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(v.patient)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Species</label><select id="vital-edit-species" style="width:100%;">'+speciesOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Temp °F</label><input type="number" step="0.1" id="vital-edit-temp" value="'+(typeof v.temp==='number'?v.temp:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">HR bpm</label><input type="number" id="vital-edit-hr" value="'+(typeof v.hr==='number'?v.hr:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">RR rpm</label><input type="number" id="vital-edit-rr" value="'+(typeof v.rr==='number'?v.rr:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Weight</label><input type="text" id="vital-edit-weight" value="'+escHtml(v.weight||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveVitalEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelVitalEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeVital(\''+id+'\')">Remove Entry</button>'+
+    '</div>';
+  var existing = document.getElementById('vital-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-vitals-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('vital-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelVitalEdit(){
+  var existing = document.getElementById('vital-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveVitalEdit(id){
+  var list = getVitals();
+  var v = list.find(function(x){ return x.id===id; });
+  if(!v) return;
+  v.species = document.getElementById('vital-edit-species').value;
+  var t = parseFloat(document.getElementById('vital-edit-temp').value);
+  var h = parseFloat(document.getElementById('vital-edit-hr').value);
+  var r = parseFloat(document.getElementById('vital-edit-rr').value);
+  v.temp = isNaN(t) ? null : t;
+  v.hr = isNaN(h) ? null : h;
+  v.rr = isNaN(r) ? null : r;
+  v.weight = document.getElementById('vital-edit-weight').value.trim();
+  saveVitals(list);
+  cancelVitalEdit();
+  renderVitals();
+  showToast('Updated '+v.patient,'success');
+}
+
+function removeVital(id){
+  var list = getVitals();
+  var v = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveVitals(list);
+  cancelVitalEdit();
+  renderVitals();
+  showToast((v?v.patient:'Entry')+' removed from vitals log','success');
+}
+
+function addVital(){
+  var patient = document.getElementById('vital-add-patient').value.trim();
+  var species = document.getElementById('vital-add-species').value;
+  var t = parseFloat(document.getElementById('vital-add-temp').value);
+  var h = parseFloat(document.getElementById('vital-add-hr').value);
+  var r = parseFloat(document.getElementById('vital-add-rr').value);
+  var weight = document.getElementById('vital-add-weight').value.trim();
+  if(!patient){ showToast('Patient name required','error'); return; }
+  var list = getVitals();
+  var id = 'vt' + Date.now();
+  list.push({id:id, patient:patient, species:species, temp:isNaN(t)?null:t, hr:isNaN(h)?null:h, rr:isNaN(r)?null:r, weight:weight||'—', date:new Date().toISOString().slice(0,10)});
+  saveVitals(list);
+  renderVitals();
+  document.getElementById('vital-add-patient').value='';
+  document.getElementById('vital-add-temp').value='';
+  document.getElementById('vital-add-hr').value='';
+  document.getElementById('vital-add-rr').value='';
+  document.getElementById('vital-add-weight').value='';
+  var flag = computeVitalFlag(list[list.length-1]);
+  showToast(patient+' recorded — '+flag,flag==='Normal'?'success':'error');
 }
 
 function getControlledLog(){
@@ -2974,6 +3131,7 @@ if(auth){
   renderWhiteboard();
   renderControlled();
   renderSchedule();
+  renderVitals();
 } else {
   updatePinDisplay();
 }
