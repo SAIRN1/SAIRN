@@ -1245,29 +1245,23 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-multisite-table','panel-multisite')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Locations</div>
-<div class="kpi-value">1 (expandable)</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Combined Revenue MTD</div>
-<div class="kpi-value">$187,400</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Best Performing Location</div>
-<div class="kpi-value">Main Clinic</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Shared Inventory Items</div>
-<div class="kpi-value">340</div>
-</div>
-</div>
+<div class="kpi-row" id="multisite-kpis"></div>
 <div class="card"><table id="panel-multisite-table">
 <thead><tr><th>Location</th><th>Revenue MTD</th><th>Patients Active</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Pinnacle Animal Hospital — Main</td><td>$187,400</td><td>1,847</td><td>Operating</td></tr>
-</tbody></table></div>
+<tbody id="multisite-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Location</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="ms-add-name" placeholder="Location name">
+<input type="number" step="0.01" id="ms-add-revenue" placeholder="Revenue MTD">
+<input type="number" id="ms-add-patients" placeholder="Patients Active">
+<select id="ms-add-status">
+<option>Operating</option><option>Under Renovation</option><option>Closed</option><option>Planned</option>
+</select>
+<button class="btn" onclick="addLocation()">Add Location</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Revenue and Patients Active are logged manually per location — not auto-linked to Invoicing or a shared patient roster. Locations, Revenue Logged (MTD), Best Performing Location, and Total Patients Logged are all computed from what's actually in this table. Click any row to update or remove it.</p>
+</div>
 </div>
 
 <div id="panel-documents" class="panel">
@@ -2029,6 +2023,7 @@ function gateSubmit(){
   renderReports();
   renderAnalytics();
   renderStaff();
+  renderMultisite();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -5369,6 +5364,129 @@ function addStaff(){
   showToast(name+' added','success');
 }
 
+function getLocations(){
+  try {
+    var stored = localStorage.getItem('sv_multisite');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'ms1', location:'Pinnacle Animal Hospital — Main', revenue:null, patients:null, status:'Operating'}
+  ];
+  saveLocations(seed);
+  return seed;
+}
+
+function saveLocations(list){
+  try { localStorage.setItem('sv_multisite', JSON.stringify(list)); } catch(e){}
+}
+
+function renderMultisite(){
+  var list = getLocations();
+  var tbody = document.getElementById('multisite-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(m){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openLocationEdit(m.id); };
+    var rev = typeof m.revenue==='number' ? '$'+m.revenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+    var pat = typeof m.patients==='number' ? m.patients.toLocaleString() : '—';
+    tr.innerHTML = '<td>'+escHtml(m.location)+'</td><td>'+rev+'</td><td>'+pat+'</td><td>'+escHtml(m.status)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var locations = list.length;
+  var totalRevenue = list.reduce(function(sum,m){ return sum + (typeof m.revenue==='number'?m.revenue:0); }, 0);
+  var totalPatients = list.reduce(function(sum,m){ return sum + (typeof m.patients==='number'?m.patients:0); }, 0);
+  var withRevenue = list.filter(function(m){ return typeof m.revenue==='number'; });
+  var best = '—';
+  if(withRevenue.length){
+    best = withRevenue.reduce(function(a,b){ return b.revenue>a.revenue ? b : a; }).location;
+  }
+
+  var kpis = document.getElementById('multisite-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Locations</div><div class="kpi-value">'+locations+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Revenue Logged (MTD)</div><div class="kpi-value">$'+totalRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Best Performing Location</div><div class="kpi-value">'+escHtml(best)+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Total Patients Logged</div><div class="kpi-value">'+totalPatients.toLocaleString()+'</div></div>';
+  }
+}
+
+function openLocationEdit(id){
+  var list = getLocations();
+  var m = list.find(function(x){ return x.id===id; });
+  if(!m) return;
+  var statusList = ['Operating','Under Renovation','Closed','Planned'];
+  var statusOptions = statusList.map(function(s){ return '<option'+(s===m.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="multisite-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(m.location)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Revenue MTD</label><input type="number" step="0.01" id="ms-edit-revenue" value="'+(typeof m.revenue==='number'?m.revenue:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Patients Active</label><input type="number" id="ms-edit-patients" value="'+(typeof m.patients==='number'?m.patients:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="ms-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveLocationEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelLocationEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLocation(\''+id+'\')">Remove Location</button>'+
+    '</div>';
+  var existing = document.getElementById('multisite-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-multisite-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('multisite-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelLocationEdit(){
+  var existing = document.getElementById('multisite-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveLocationEdit(id){
+  var list = getLocations();
+  var m = list.find(function(x){ return x.id===id; });
+  if(!m) return;
+  var r = parseFloat(document.getElementById('ms-edit-revenue').value);
+  var p = parseInt(document.getElementById('ms-edit-patients').value, 10);
+  m.revenue = isNaN(r) ? null : r;
+  m.patients = isNaN(p) ? null : p;
+  m.status = document.getElementById('ms-edit-status').value;
+  saveLocations(list);
+  cancelLocationEdit();
+  renderMultisite();
+  showToast('Updated '+m.location,'success');
+}
+
+function removeLocation(id){
+  var list = getLocations();
+  var m = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveLocations(list);
+  cancelLocationEdit();
+  renderMultisite();
+  showToast((m?m.location:'Location')+' removed','success');
+}
+
+function addLocation(){
+  var name = document.getElementById('ms-add-name').value.trim();
+  var r = parseFloat(document.getElementById('ms-add-revenue').value);
+  var p = parseInt(document.getElementById('ms-add-patients').value, 10);
+  var status = document.getElementById('ms-add-status').value;
+  if(!name){ showToast('Location name required','error'); return; }
+  var list = getLocations();
+  var id = 'ms' + Date.now();
+  list.push({id:id, location:name, revenue:isNaN(r)?null:r, patients:isNaN(p)?null:p, status:status});
+  saveLocations(list);
+  renderMultisite();
+  document.getElementById('ms-add-name').value='';
+  document.getElementById('ms-add-revenue').value='';
+  document.getElementById('ms-add-patients').value='';
+  showToast(name+' added','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -6090,6 +6208,7 @@ if(auth){
   renderReports();
   renderAnalytics();
   renderStaff();
+  renderMultisite();
 } else {
   updatePinDisplay();
 }
