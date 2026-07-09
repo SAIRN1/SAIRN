@@ -1055,30 +1055,24 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-clients-table','panel-clients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Total Clients</div>
-<div class="kpi-value">1,204</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">New This Month</div>
-<div class="kpi-value">28</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Lifetime Value</div>
-<div class="kpi-value">$2,140</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Retention Rate</div>
-<div class="kpi-value">91%</div>
-</div>
-</div>
+<div class="kpi-row" id="clients-kpis"></div>
 <div class="card"><table id="panel-clients-table">
 <thead><tr><th>Client</th><th>Patients</th><th>Last Visit</th><th>Balance</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Smith, John</td><td>1</td><td>2026-07-05</td><td>$0.00</td><td>Active</td></tr>
-<tr><td>Miller Dairy Farm</td><td>340 head</td><td>2026-07-07</td><td>$1,240.00</td><td>Active — Net 30</td></tr>
-</tbody></table></div>
+<tbody id="clients-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Client</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="cli-add-name" placeholder="Client name">
+<input type="text" id="cli-add-patients" placeholder="Patients, e.g. 1 or 340 head">
+<input type="date" id="cli-add-visit">
+<input type="number" step="0.01" id="cli-add-balance" placeholder="Balance">
+<select id="cli-add-status">
+<option>Active</option><option>Active — Net 30</option><option>Inactive</option><option>Prospect</option>
+</select>
+<button class="btn" onclick="addClient()">Add Client</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Total Clients, Active Clients, New This Month, and Total Outstanding Balance are all counted from what's actually in this table. Click any row to update or remove it.</p>
+</div>
 </div>
 
 <div id="panel-invoicing" class="panel">
@@ -2079,6 +2073,7 @@ function gateSubmit(){
   renderSpeciesRef();
   renderConservation();
   renderCompliance();
+  renderClientsPanel();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -4632,6 +4627,130 @@ function addComplianceItem(){
   showToast(item+' added','success');
 }
 
+function getClients(){
+  try {
+    var stored = localStorage.getItem('sv_clients');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'cl1', client:'Smith, John', patients:'1', lastVisit:'2026-07-05', balance:0.00, status:'Active', since:null},
+    {id:'cl2', client:'Miller Dairy Farm', patients:'340 head', lastVisit:'2026-07-07', balance:1240.00, status:'Active — Net 30', since:null}
+  ];
+  saveClients(seed);
+  return seed;
+}
+
+function saveClients(list){
+  try { localStorage.setItem('sv_clients', JSON.stringify(list)); } catch(e){}
+}
+
+function renderClientsPanel(){
+  var list = getClients();
+  var tbody = document.getElementById('clients-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(c){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openClientEdit(c.id); };
+    var bal = typeof c.balance==='number' ? '$'+c.balance.toFixed(2) : '—';
+    tr.innerHTML = '<td>'+escHtml(c.client)+'</td><td>'+escHtml(c.patients||'—')+'</td><td>'+escHtml(c.lastVisit||'—')+'</td><td>'+bal+'</td><td>'+escHtml(c.status)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var totalClients = list.length;
+  var activeClients = list.filter(function(c){ return c.status && c.status.indexOf('Active')===0; }).length;
+  var today = new Date().toISOString().slice(0,10);
+  var thisMonth = today.slice(0,7);
+  var newThisMonth = list.filter(function(c){ return c.since && c.since.slice(0,7)===thisMonth; }).length;
+  var totalBalance = list.reduce(function(sum,c){ return sum + (typeof c.balance==='number' ? c.balance : 0); }, 0);
+
+  var kpis = document.getElementById('clients-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Total Clients</div><div class="kpi-value">'+totalClients+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Active Clients</div><div class="kpi-value">'+activeClients+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">New This Month</div><div class="kpi-value">'+newThisMonth+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Total Outstanding Balance</div><div class="kpi-value">$'+totalBalance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>';
+  }
+}
+
+function openClientEdit(id){
+  var list = getClients();
+  var c = list.find(function(x){ return x.id===id; });
+  if(!c) return;
+  var statusList = ['Active','Active — Net 30','Inactive','Prospect'];
+  var statusOptions = statusList.map(function(s){ return '<option'+(s===c.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="clients-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(c.client)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Patients</label><input type="text" id="cli-edit-patients" value="'+escHtml(c.patients||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Last Visit</label><input type="date" id="cli-edit-visit" value="'+escHtml(c.lastVisit||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Balance</label><input type="number" step="0.01" id="cli-edit-balance" value="'+(typeof c.balance==='number'?c.balance:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="cli-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveClientEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelClientEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeClient(\''+id+'\')">Remove Client</button>'+
+    '</div>';
+  var existing = document.getElementById('clients-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-clients-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('clients-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelClientEdit(){
+  var existing = document.getElementById('clients-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveClientEdit(id){
+  var list = getClients();
+  var c = list.find(function(x){ return x.id===id; });
+  if(!c) return;
+  c.patients = document.getElementById('cli-edit-patients').value.trim();
+  c.lastVisit = document.getElementById('cli-edit-visit').value || null;
+  var b = parseFloat(document.getElementById('cli-edit-balance').value);
+  c.balance = isNaN(b) ? null : b;
+  c.status = document.getElementById('cli-edit-status').value;
+  saveClients(list);
+  cancelClientEdit();
+  renderClientsPanel();
+  showToast('Updated '+c.client,'success');
+}
+
+function removeClient(id){
+  var list = getClients();
+  var c = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveClients(list);
+  cancelClientEdit();
+  renderClientsPanel();
+  showToast((c?c.client:'Client')+' removed','success');
+}
+
+function addClient(){
+  var name = document.getElementById('cli-add-name').value.trim();
+  var patients = document.getElementById('cli-add-patients').value.trim();
+  var visit = document.getElementById('cli-add-visit').value;
+  var b = parseFloat(document.getElementById('cli-add-balance').value);
+  var status = document.getElementById('cli-add-status').value;
+  if(!name){ showToast('Client name required','error'); return; }
+  var list = getClients();
+  var id = 'cl' + Date.now();
+  list.push({id:id, client:name, patients:patients||'—', lastVisit:visit||null, balance:isNaN(b)?0:b, status:status, since:new Date().toISOString().slice(0,10)});
+  saveClients(list);
+  renderClientsPanel();
+  document.getElementById('cli-add-name').value='';
+  document.getElementById('cli-add-patients').value='';
+  document.getElementById('cli-add-visit').value='';
+  document.getElementById('cli-add-balance').value='';
+  showToast(name+' added','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -5329,6 +5448,7 @@ if(auth){
   renderSpeciesRef();
   renderConservation();
   renderCompliance();
+  renderClientsPanel();
 } else {
   updatePinDisplay();
 }
