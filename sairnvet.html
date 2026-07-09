@@ -1113,30 +1113,26 @@
 <button class="btn btn-sm" onclick="exportTableCSV('billing-table','billing')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Processed Today</div>
-<div class="kpi-value">$4,820</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Payment Plans Active</div>
-<div class="kpi-value">6</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Declined Transactions</div>
-<div class="kpi-value">1</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Days to Pay</div>
-<div class="kpi-value">11</div>
-</div>
-</div>
+<div class="kpi-row" id="billing-kpis"></div>
 <div class="card"><table id="billing-table">
 <thead><tr><th>Client</th><th>Method</th><th>Amount</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Smith, John</td><td>Card</td><td>$287.00</td><td>Approved</td></tr>
-<tr><td>Doe, Jane</td><td>Payment Plan</td><td>$95.00/mo</td><td>Active</td></tr>
-</tbody></table></div>
+<tbody id="billing-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Transaction</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="bil-add-client" placeholder="Client">
+<select id="bil-add-method">
+<option>Card</option><option>Check</option><option>Cash</option><option>ACH</option><option>Payment Plan</option>
+</select>
+<input type="number" step="0.01" id="bil-add-amount" placeholder="Amount (monthly amount if Payment Plan)">
+<select id="bil-add-status">
+<option>Approved</option><option>Declined</option><option>Active</option><option>Completed</option><option>Cancelled</option>
+</select>
+<input type="date" id="bil-add-date">
+<button class="btn" onclick="addBillingTx()">Add Transaction</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Processed Today, Payment Plans Active, Declined Transactions, and Total Collected are all computed from what's actually in this table. Click any row to update or remove it.</p>
+</div>
 </div>
 
 <div id="panel-financials" class="panel">
@@ -2069,6 +2065,7 @@ function gateSubmit(){
   renderCompliance();
   renderClientsPanel();
   renderInvoicing();
+  renderBilling();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -4873,6 +4870,128 @@ function addInvoice(){
   showToast(num+' added','success');
 }
 
+function getBillingTx(){
+  try {
+    var stored = localStorage.getItem('sv_billing');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'bl1', client:'Smith, John', method:'Card', amount:287.00, status:'Approved', date:'2026-07-05'},
+    {id:'bl2', client:'Doe, Jane', method:'Payment Plan', amount:95.00, status:'Active', date:'2026-07-01'}
+  ];
+  saveBillingTx(seed);
+  return seed;
+}
+
+function saveBillingTx(list){
+  try { localStorage.setItem('sv_billing', JSON.stringify(list)); } catch(e){}
+}
+
+function renderBilling(){
+  var list = getBillingTx();
+  var tbody = document.getElementById('billing-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(b){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openBillingEdit(b.id); };
+    var isPlan = b.method==='Payment Plan';
+    var amt = typeof b.amount==='number' ? ('$'+b.amount.toFixed(2)+(isPlan?'/mo':'')) : '—';
+    tr.innerHTML = '<td>'+escHtml(b.client)+'</td><td>'+escHtml(b.method)+'</td><td>'+amt+'</td><td>'+escHtml(b.status)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var today = new Date().toISOString().slice(0,10);
+  var processedToday = list.reduce(function(sum,b){ return sum + ((b.status==='Approved' && b.date===today && typeof b.amount==='number') ? b.amount : 0); }, 0);
+  var plansActive = list.filter(function(b){ return b.method==='Payment Plan' && b.status==='Active'; }).length;
+  var declined = list.filter(function(b){ return b.status==='Declined'; }).length;
+  var totalCollected = list.reduce(function(sum,b){ return sum + (b.status==='Approved' && typeof b.amount==='number' ? b.amount : 0); }, 0);
+
+  var kpis = document.getElementById('billing-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Processed Today</div><div class="kpi-value">$'+processedToday.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Payment Plans Active</div><div class="kpi-value">'+plansActive+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Declined Transactions</div><div class="kpi-value">'+declined+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Total Collected</div><div class="kpi-value">$'+totalCollected.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>';
+  }
+}
+
+function openBillingEdit(id){
+  var list = getBillingTx();
+  var b = list.find(function(x){ return x.id===id; });
+  if(!b) return;
+  var statusList = ['Approved','Declined','Active','Completed','Cancelled'];
+  var statusOptions = statusList.map(function(s){ return '<option'+(s===b.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="billing-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(b.client)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Amount</label><input type="number" step="0.01" id="bil-edit-amount" value="'+(typeof b.amount==='number'?b.amount:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="bil-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="bil-edit-date" value="'+escHtml(b.date||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveBillingEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelBillingEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeBillingTx(\''+id+'\')">Remove Transaction</button>'+
+    '</div>';
+  var existing = document.getElementById('billing-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('billing-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('billing-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelBillingEdit(){
+  var existing = document.getElementById('billing-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveBillingEdit(id){
+  var list = getBillingTx();
+  var b = list.find(function(x){ return x.id===id; });
+  if(!b) return;
+  var a = parseFloat(document.getElementById('bil-edit-amount').value);
+  b.amount = isNaN(a) ? null : a;
+  b.status = document.getElementById('bil-edit-status').value;
+  b.date = document.getElementById('bil-edit-date').value || null;
+  saveBillingTx(list);
+  cancelBillingEdit();
+  renderBilling();
+  showToast('Updated '+b.client,'success');
+}
+
+function removeBillingTx(id){
+  var list = getBillingTx();
+  var b = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveBillingTx(list);
+  cancelBillingEdit();
+  renderBilling();
+  showToast((b?b.client:'Transaction')+' removed','success');
+}
+
+function addBillingTx(){
+  var client = document.getElementById('bil-add-client').value.trim();
+  var method = document.getElementById('bil-add-method').value;
+  var a = parseFloat(document.getElementById('bil-add-amount').value);
+  var status = document.getElementById('bil-add-status').value;
+  var date = document.getElementById('bil-add-date').value;
+  if(!client){ showToast('Client required','error'); return; }
+  if(isNaN(a)){ showToast('Amount required','error'); return; }
+  var list = getBillingTx();
+  var id = 'bl' + Date.now();
+  list.push({id:id, client:client, method:method, amount:a, status:status, date:date||new Date().toISOString().slice(0,10)});
+  saveBillingTx(list);
+  renderBilling();
+  document.getElementById('bil-add-client').value='';
+  document.getElementById('bil-add-amount').value='';
+  document.getElementById('bil-add-date').value='';
+  showToast(client+' added','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -5572,6 +5691,7 @@ if(auth){
   renderCompliance();
   renderClientsPanel();
   renderInvoicing();
+  renderBilling();
 } else {
   updatePinDisplay();
 }
