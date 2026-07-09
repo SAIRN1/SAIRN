@@ -50,20 +50,26 @@ the database when the row is created.
 
 Once the trial ends and the plan hasn't been marked paid, `api/agent/poll.js`
 and `api/agent/enqueue.js` both refuse all further activity (HTTP 402, code
-`TRIAL_EXPIRED`) until you run:
+`TRIAL_EXPIRED`) until it's marked paid. Access resumes on the agent's very
+next poll — no restart needed on the customer's end. The agent script itself
+detects the expired state and backs off to checking once an hour instead of
+failing loudly on every poll.
+
+**Automatic conversion:** `api/agent/stripe-webhook.js` listens for
+`checkout.session.completed` and `customer.subscription.updated`/`.deleted`
+and flips `plan_status` automatically the moment Stripe confirms a real
+payment — no manual step needed once it's set up. See that file's header
+comment for the exact Stripe dashboard setup and the one thing it depends on:
+whoever creates the customer's Checkout Session or Subscription must set
+`client_reference_id` (or `metadata.agent_id`) to that agent's `id`, or the
+webhook has nothing to act on and will log a warning and no-op rather than
+guessing which agent to update.
+
+**Manual fallback**, if you ever need it without waiting on Stripe:
 
 ```
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/mark-agent-paid.js <agent_id> paid
 ```
-
-Access resumes on the agent's very next poll — no restart needed on the
-customer's end. The agent script itself detects the expired state and backs
-off to checking once an hour instead of failing loudly on every poll.
-
-**Not wired up yet:** there's no Stripe webhook that calls
-`mark-agent-paid.js` automatically when a subscription is actually paid —
-that's a documented next step, not something built here. Today, someone on
-the SAIRN side has to run it manually after confirming payment.
 
 ## Known v1 limitations (said plainly, not hidden)
 
@@ -86,3 +92,8 @@ the SAIRN side has to run it manually after confirming payment.
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` — same pair used by SAIRN's
 other Supabase-backed apps. Run `sql/agent_schema.sql` in the Supabase SQL
 editor once before any of this will function.
+
+`STRIPE_WEBHOOK_SECRET` — only needed if you're using automatic trial-to-paid
+conversion via `api/agent/stripe-webhook.js`. Get it from the Stripe dashboard
+when you add the webhook endpoint (Developers > Webhooks). Without it, the
+manual `scripts/mark-agent-paid.js` fallback still works fine on its own.
