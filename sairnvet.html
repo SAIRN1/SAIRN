@@ -955,34 +955,22 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-speciesref-table','panel-speciesref')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Species Profiles</div>
-<div class="kpi-value">140+</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Body Systems Covered</div>
-<div class="kpi-value">12</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Reference Ranges</div>
-<div class="kpi-value">800+</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Updated</div>
-<div class="kpi-value">2026-07-07</div>
-</div>
-</div>
+<div class="kpi-row" id="speciesref-kpis"></div>
 <div class="card"><table id="panel-speciesref-table">
 <thead><tr><th>Species</th><th>Normal Temp</th><th>Normal HR</th><th>Normal RR</th><th>Notes</th></tr></thead>
-<tbody>
-<tr><td>Canine</td><td>100.5-102.5°F</td><td>70-120 bpm</td><td>10-30 rpm</td><td>Varies by size/breed</td></tr>
-<tr><td>Feline</td><td>100.5-102.5°F</td><td>140-220 bpm</td><td>20-30 rpm</td><td></td></tr>
-<tr><td>Equine</td><td>99.0-101.5°F</td><td>28-44 bpm</td><td>8-16 rpm</td><td></td></tr>
-<tr><td>Bovine</td><td>101.0-102.5°F</td><td>48-84 bpm</td><td>10-30 rpm</td><td></td></tr>
-<tr><td>Rabbit</td><td>101.0-103.5°F</td><td>130-325 bpm</td><td>30-60 rpm</td><td>Prey species — handle low-stress</td></tr>
-<tr><td>Ball Python</td><td>N/A (ectotherm)</td><td>N/A</td><td>N/A</td><td>Ambient gradient 75-90°F</td></tr>
-</tbody></table></div>
+<tbody id="speciesref-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Species Profile</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="sr-add-species" placeholder="Species">
+<input type="text" id="sr-add-temp" placeholder="Normal Temp range">
+<input type="text" id="sr-add-hr" placeholder="Normal HR range">
+<input type="text" id="sr-add-rr" placeholder="Normal RR range">
+<input type="text" id="sr-add-notes" placeholder="Notes (optional)">
+<button class="btn" onclick="addSpeciesRef()">Add Species</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Species Profiles, Vitals Ranges Logged, and Updated are all counted from what's actually in this table. Click any row to edit or remove it.</p>
+</div>
 <div class="card"><h3>Ask Claude About a Species</h3><input type="text" id="ref-species" placeholder="e.g., Bearded Dragon husbandry" style="width:100%;margin:10px 0;"><button class="btn" onclick="getSpeciesRef()">Get Reference Info</button><div id="ref-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div></div>
 </div>
 
@@ -2103,6 +2091,7 @@ function gateSubmit(){
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
+  renderSpeciesRef();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -4871,6 +4860,134 @@ function generateSOAP(){
   }).catch(function(e){});
 }
 
+function getSpeciesRefs(){
+  try {
+    var stored = localStorage.getItem('sv_speciesref');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'sr1', species:'Canine', temp:'100.5-102.5°F', hr:'70-120 bpm', rr:'10-30 rpm', notes:'Varies by size/breed', updated:'2026-07-07'},
+    {id:'sr2', species:'Feline', temp:'100.5-102.5°F', hr:'140-220 bpm', rr:'20-30 rpm', notes:'', updated:'2026-07-07'},
+    {id:'sr3', species:'Equine', temp:'99.0-101.5°F', hr:'28-44 bpm', rr:'8-16 rpm', notes:'', updated:'2026-07-07'},
+    {id:'sr4', species:'Bovine', temp:'101.0-102.5°F', hr:'48-84 bpm', rr:'10-30 rpm', notes:'', updated:'2026-07-07'},
+    {id:'sr5', species:'Rabbit', temp:'101.0-103.5°F', hr:'130-325 bpm', rr:'30-60 rpm', notes:'Prey species — handle low-stress', updated:'2026-07-07'},
+    {id:'sr6', species:'Ball Python', temp:'N/A (ectotherm)', hr:'N/A', rr:'N/A', notes:'Ambient gradient 75-90°F', updated:'2026-07-07'}
+  ];
+  saveSpeciesRefs(seed);
+  return seed;
+}
+
+function saveSpeciesRefs(list){
+  try { localStorage.setItem('sv_speciesref', JSON.stringify(list)); } catch(e){}
+}
+
+function renderSpeciesRef(){
+  var list = getSpeciesRefs();
+  var tbody = document.getElementById('speciesref-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(s){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openSpeciesRefEdit(s.id); };
+    tr.innerHTML = '<td>'+escHtml(s.species)+'</td><td>'+escHtml(s.temp)+'</td><td>'+escHtml(s.hr)+'</td><td>'+escHtml(s.rr)+'</td><td>'+escHtml(s.notes||'')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var speciesProfiles = list.length;
+  var vitalsLogged = list.reduce(function(sum,s){
+    return sum + [s.temp,s.hr,s.rr].filter(function(v){ return v && v.trim()!==''; }).length;
+  }, 0);
+  var updatedDates = list.map(function(s){ return s.updated; }).filter(Boolean).sort();
+  var lastUpdated = updatedDates.length ? updatedDates[updatedDates.length-1] : '—';
+  var lookups = 0;
+  try { lookups = parseInt(localStorage.getItem('sv_speciesref_lookups'),10) || 0; } catch(e){}
+
+  var kpis = document.getElementById('speciesref-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Species Profiles</div><div class="kpi-value">'+speciesProfiles+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Vitals Ranges Logged</div><div class="kpi-value">'+vitalsLogged+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">AI Lookups Logged</div><div class="kpi-value">'+lookups+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Updated</div><div class="kpi-value">'+lastUpdated+'</div></div>';
+  }
+}
+
+function openSpeciesRefEdit(id){
+  var list = getSpeciesRefs();
+  var s = list.find(function(x){ return x.id===id; });
+  if(!s) return;
+  var html =
+    '<div class="card" id="speciesref-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(s.species)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Normal Temp</label><input type="text" id="sr-edit-temp" value="'+escHtml(s.temp||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Normal HR</label><input type="text" id="sr-edit-hr" value="'+escHtml(s.hr||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Normal RR</label><input type="text" id="sr-edit-rr" value="'+escHtml(s.rr||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Notes</label><input type="text" id="sr-edit-notes" value="'+escHtml(s.notes||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveSpeciesRefEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelSpeciesRefEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeSpeciesRef(\''+id+'\')">Remove Species</button>'+
+    '</div>';
+  var existing = document.getElementById('speciesref-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-speciesref-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('speciesref-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelSpeciesRefEdit(){
+  var existing = document.getElementById('speciesref-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveSpeciesRefEdit(id){
+  var list = getSpeciesRefs();
+  var s = list.find(function(x){ return x.id===id; });
+  if(!s) return;
+  s.temp = document.getElementById('sr-edit-temp').value.trim();
+  s.hr = document.getElementById('sr-edit-hr').value.trim();
+  s.rr = document.getElementById('sr-edit-rr').value.trim();
+  s.notes = document.getElementById('sr-edit-notes').value.trim();
+  s.updated = new Date().toISOString().slice(0,10);
+  saveSpeciesRefs(list);
+  cancelSpeciesRefEdit();
+  renderSpeciesRef();
+  showToast('Updated '+s.species,'success');
+}
+
+function removeSpeciesRef(id){
+  var list = getSpeciesRefs();
+  var s = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveSpeciesRefs(list);
+  cancelSpeciesRefEdit();
+  renderSpeciesRef();
+  showToast((s?s.species:'Species')+' removed','success');
+}
+
+function addSpeciesRef(){
+  var species = document.getElementById('sr-add-species').value.trim();
+  var temp = document.getElementById('sr-add-temp').value.trim();
+  var hr = document.getElementById('sr-add-hr').value.trim();
+  var rr = document.getElementById('sr-add-rr').value.trim();
+  var notes = document.getElementById('sr-add-notes').value.trim();
+  if(!species){ showToast('Species required','error'); return; }
+  var list = getSpeciesRefs();
+  var id = 'sr' + Date.now();
+  list.push({id:id, species:species, temp:temp||'—', hr:hr||'—', rr:rr||'—', notes:notes, updated:new Date().toISOString().slice(0,10)});
+  saveSpeciesRefs(list);
+  renderSpeciesRef();
+  document.getElementById('sr-add-species').value='';
+  document.getElementById('sr-add-temp').value='';
+  document.getElementById('sr-add-hr').value='';
+  document.getElementById('sr-add-rr').value='';
+  document.getElementById('sr-add-notes').value='';
+  showToast(species+' added','success');
+}
+
 function getSpeciesRef(){
   var species=document.getElementById('ref-species').value.trim();
   if(!species){showToast('Enter a species or topic','error');return;}
@@ -4880,6 +4997,10 @@ function getSpeciesRef(){
   callClaude(system,messages,1200).then(function(result){
     document.getElementById('ref-result').style.display='block';
     document.getElementById('ref-result').textContent=result;
+    var n = 0;
+    try { n = parseInt(localStorage.getItem('sv_speciesref_lookups'),10) || 0; } catch(e){}
+    try { localStorage.setItem('sv_speciesref_lookups', String(n+1)); } catch(e){}
+    renderSpeciesRef();
   }).catch(function(e){});
 }
 
@@ -4967,6 +5088,7 @@ if(auth){
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
+  renderSpeciesRef();
 } else {
   updatePinDisplay();
 }
