@@ -926,30 +926,24 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-wildliferehab-table','panel-wildliferehab')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Cases</div>
-<div class="kpi-value">17</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Released YTD</div>
-<div class="kpi-value">89</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Release Rate</div>
-<div class="kpi-value">71%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Species Diversity</div>
-<div class="kpi-value">24</div>
-</div>
-</div>
+<div class="kpi-row" id="wildlife-kpis"></div>
 <div class="card"><table id="panel-wildliferehab-table">
 <thead><tr><th>Animal</th><th>Species</th><th>Intake Reason</th><th>Status</th><th>Days in Care</th></tr></thead>
-<tbody>
-<tr><td>#2607-A</td><td>Red-Tailed Hawk</td><td>Vehicle strike, wing fracture</td><td>Rehab — flight conditioning</td><td>19</td></tr>
-<tr><td>#2607-B</td><td>Eastern Box Turtle</td><td>Vehicle strike, shell fracture</td><td>Healing well</td><td>34</td></tr>
-</tbody></table></div>
+<tbody id="wildlife-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Case</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="wr-add-animal" placeholder="Animal ID/name, e.g. #2607-C">
+<input type="text" id="wr-add-species" placeholder="Species">
+<input type="text" id="wr-add-reason" placeholder="Intake reason">
+<input type="date" id="wr-add-date">
+<select id="wr-add-status">
+<option>Intake — Triage</option><option>Stabilizing</option><option>Rehab — Flight Conditioning</option><option>Rehab — Physical Therapy</option><option>Ready for Release</option>
+</select>
+<button class="btn" onclick="addWildlifeCase()">Add Case</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Active Cases, Released YTD, Release Rate, and Species Diversity are all counted from what's actually in this table. Click any row to update status or log an outcome date — marking a case Released, Deceased, Euthanized, or Transferred closes it out.</p>
+</div>
 </div>
 
 <div id="panel-speciesref" class="panel">
@@ -2108,6 +2102,7 @@ function gateSubmit(){
   renderPPE();
   renderCoggins();
   renderHerdHealth();
+  renderWildlifeRehab();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -4273,6 +4268,143 @@ function addHerd(){
   showToast(name+' added','success');
 }
 
+var WILDLIFE_CLOSED_STATUSES = ['Released','Deceased','Euthanized','Transferred'];
+
+function svDaysBetween(a,b){
+  try {
+    var d1 = new Date(a+'T00:00:00Z');
+    var d2 = new Date(b+'T00:00:00Z');
+    var diff = Math.round((d2-d1)/86400000);
+    return isNaN(diff) ? null : diff;
+  } catch(e){ return null; }
+}
+
+function getWildlifeCases(){
+  try {
+    var stored = localStorage.getItem('sv_wildliferehab');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'wr1', animal:'#2607-A', species:'Red-Tailed Hawk', reason:'Vehicle strike, wing fracture', intakeDate:'2026-06-19', status:'Rehab — Flight Conditioning', releaseDate:null},
+    {id:'wr2', animal:'#2607-B', species:'Eastern Box Turtle', reason:'Vehicle strike, shell fracture', intakeDate:'2026-06-04', status:'Stabilizing', releaseDate:null}
+  ];
+  saveWildlifeCases(seed);
+  return seed;
+}
+
+function saveWildlifeCases(list){
+  try { localStorage.setItem('sv_wildliferehab', JSON.stringify(list)); } catch(e){}
+}
+
+function renderWildlifeRehab(){
+  var list = getWildlifeCases();
+  var tbody = document.getElementById('wildlife-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  var today = new Date().toISOString().slice(0,10);
+  list.forEach(function(w){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openWildlifeEdit(w.id); };
+    var endDate = w.releaseDate || today;
+    var days = svDaysBetween(w.intakeDate, endDate);
+    tr.innerHTML = '<td>'+escHtml(w.animal)+'</td><td>'+escHtml(w.species)+'</td><td>'+escHtml(w.reason)+'</td><td>'+escHtml(w.status)+'</td><td>'+(days===null?'—':days)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var activeCases = list.filter(function(w){ return WILDLIFE_CLOSED_STATUSES.indexOf(w.status)===-1; }).length;
+  var thisYear = today.slice(0,4);
+  var releasedYTD = list.filter(function(w){ return w.status==='Released' && w.releaseDate && w.releaseDate.slice(0,4)===thisYear; }).length;
+  var deceasedYTD = list.filter(function(w){ return (w.status==='Deceased'||w.status==='Euthanized') && w.releaseDate && w.releaseDate.slice(0,4)===thisYear; }).length;
+  var closedYTD = releasedYTD + deceasedYTD;
+  var releaseRate = closedYTD ? Math.round((releasedYTD/closedYTD)*100)+'%' : '—';
+  var speciesSet = {};
+  list.forEach(function(w){ if(w.species) speciesSet[w.species.trim().toLowerCase()] = true; });
+  var speciesDiversity = Object.keys(speciesSet).length;
+
+  var kpis = document.getElementById('wildlife-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Active Cases</div><div class="kpi-value">'+activeCases+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Released YTD</div><div class="kpi-value">'+releasedYTD+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Release Rate</div><div class="kpi-value">'+releaseRate+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Species Diversity</div><div class="kpi-value">'+speciesDiversity+'</div></div>';
+  }
+}
+
+function openWildlifeEdit(id){
+  var list = getWildlifeCases();
+  var w = list.find(function(x){ return x.id===id; });
+  if(!w) return;
+  var statusList = ['Intake — Triage','Stabilizing','Rehab — Flight Conditioning','Rehab — Physical Therapy','Ready for Release','Released','Deceased','Euthanized','Transferred'];
+  var statusOptions = statusList.map(function(s){ return '<option'+(s===w.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="wildlife-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(w.animal)+' — '+escHtml(w.species)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="wr-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Release/Outcome Date</label><input type="date" id="wr-edit-releasedate" value="'+escHtml(w.releaseDate||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0 0 12px;">Set the Release/Outcome date when marking a case Released, Deceased, Euthanized, or Transferred — this closes out the case and feeds Released YTD and Release Rate.</p>'+
+    '<button class="btn" onclick="saveWildlifeEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelWildlifeEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWildlifeCase(\''+id+'\')">Remove Case</button>'+
+    '</div>';
+  var existing = document.getElementById('wildlife-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-wildliferehab-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('wildlife-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelWildlifeEdit(){
+  var existing = document.getElementById('wildlife-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveWildlifeEdit(id){
+  var list = getWildlifeCases();
+  var w = list.find(function(x){ return x.id===id; });
+  if(!w) return;
+  w.status = document.getElementById('wr-edit-status').value;
+  w.releaseDate = document.getElementById('wr-edit-releasedate').value || null;
+  saveWildlifeCases(list);
+  cancelWildlifeEdit();
+  renderWildlifeRehab();
+  showToast('Updated '+w.animal,'success');
+}
+
+function removeWildlifeCase(id){
+  var list = getWildlifeCases();
+  var w = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveWildlifeCases(list);
+  cancelWildlifeEdit();
+  renderWildlifeRehab();
+  showToast((w?w.animal:'Case')+' removed','success');
+}
+
+function addWildlifeCase(){
+  var animal = document.getElementById('wr-add-animal').value.trim();
+  var species = document.getElementById('wr-add-species').value.trim();
+  var reason = document.getElementById('wr-add-reason').value.trim();
+  var date = document.getElementById('wr-add-date').value;
+  var status = document.getElementById('wr-add-status').value;
+  if(!animal){ showToast('Animal ID/name required','error'); return; }
+  if(!species){ showToast('Species required','error'); return; }
+  var list = getWildlifeCases();
+  var id = 'wr' + Date.now();
+  list.push({id:id, animal:animal, species:species, reason:reason||'—', intakeDate:date||new Date().toISOString().slice(0,10), status:status, releaseDate:null});
+  saveWildlifeCases(list);
+  renderWildlifeRehab();
+  document.getElementById('wr-add-animal').value='';
+  document.getElementById('wr-add-species').value='';
+  document.getElementById('wr-add-reason').value='';
+  document.getElementById('wr-add-date').value='';
+  showToast(animal+' logged','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -4834,6 +4966,7 @@ if(auth){
   renderPPE();
   renderCoggins();
   renderHerdHealth();
+  renderWildlifeRehab();
 } else {
   updatePinDisplay();
 }
