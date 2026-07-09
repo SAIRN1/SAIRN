@@ -44,7 +44,7 @@ module.exports = async (req, res) => {
 
   try {
     const lookupRes = await fetch(
-      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + tokenHash + '&select=id,customer_id,agent_name,status',
+      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + tokenHash + '&select=id,customer_id,agent_name,status,plan_status,trial_ends_at',
       { headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY } }
     );
     const rows = await lookupRes.json();
@@ -78,7 +78,14 @@ module.exports = async (req, res) => {
       return;
     }
 
-    res.status(200).json({ ok: true, agent_id: agent.id, agent_name: agent.agent_name, customer_id: agent.customer_id });
+    res.status(200).json({
+      ok: true,
+      agent_id: agent.id,
+      agent_name: agent.agent_name,
+      customer_id: agent.customer_id,
+      plan_status: agent.plan_status,
+      trial_ends_at: agent.trial_ends_at
+    });
   } catch (err) {
     console.error('api/agent/register error:', err);
     res.status(502).json({ error: { message: 'Upstream connection error — try again' } });

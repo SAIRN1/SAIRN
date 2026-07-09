@@ -3,6 +3,14 @@
 // commands. Returns the single oldest pending command for this agent, or
 // { command: null } if there's nothing waiting.
 //
+// TRIAL/PAYWALL: every agent gets full, unrestricted access to every
+// whitelisted operation for 30 days from creation — no feature gating during
+// the trial, only a time gate. Once trial_ends_at has passed and plan_status
+// is still 'trial' (not flipped to 'paid'), this endpoint refuses to deliver
+// any command and returns { error: { code: 'TRIAL_EXPIRED', message: ... } }
+// instead. The agent script (sairn-agent.js) checks for that code specifically
+// and stops hammering the endpoint, logging a clear message instead.
+//
 // TIMING NOTE (honest limitation, not hidden): this does a short bounded poll
 // inside the function itself (checking every 1s for up to ~8s) to reduce empty
 // round-trips, but it is NOT a true long-lived connection — Vercel serverless
@@ -52,7 +60,7 @@ module.exports = async (req, res) => {
   let agent;
   try {
     const lookupRes = await fetch(
-      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + tokenHash + '&select=id,status',
+      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + tokenHash + '&select=id,status,plan_status,trial_ends_at',
       { headers }
     );
     const rows = await lookupRes.json();
@@ -63,6 +71,16 @@ module.exports = async (req, res) => {
     agent = rows[0];
     if (agent.status === 'revoked') {
       res.status(403).json({ error: { message: 'This agent has been revoked' } });
+      return;
+    }
+    if (agent.plan_status === 'trial' && new Date(agent.trial_ends_at) < new Date()) {
+      res.status(402).json({
+        error: { code: 'TRIAL_EXPIRED', message: 'Your 30-day trial has ended. Contact SAIRN to activate a paid plan and resume access.' }
+      });
+      return;
+    }
+    if (agent.plan_status === 'canceled') {
+      res.status(402).json({ error: { code: 'PLAN_CANCELED', message: 'This agent\'s plan has been canceled.' } });
       return;
     }
   } catch (err) {

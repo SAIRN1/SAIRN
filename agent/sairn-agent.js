@@ -19,6 +19,12 @@
 // SETUP: copy config.example.json to config.json, fill in the token you were
 // given and your whitelisted operations, then `node sairn-agent.js`.
 //
+// TRIAL: every agent gets 30 days of full, unrestricted access from creation —
+// no feature gating during the trial, only a time gate. Once it expires, the
+// cloud side refuses all commands until the plan is marked paid (see
+// scripts/mark-agent-paid.js) — this script detects that state (TRIAL_EXPIRED)
+// and backs off to checking once an hour instead of failing loudly on a loop.
+//
 // v1 SCOPE (honest limitations, not hidden):
 //  - Supports two operation kinds: sql_query (via a pg/mysql2/mssql client —
 //    install whichever driver you need, see config.example.json) and file_read
@@ -62,16 +68,25 @@ async function register() {
     process.exit(1);
   }
   console.log('Registered as agent "' + data.agent_name + '" for customer ' + data.customer_id);
+  if (data.plan_status === 'trial' && data.trial_ends_at) {
+    const daysLeft = Math.ceil((new Date(data.trial_ends_at) - Date.now()) / 86400000);
+    console.log('Trial plan — ' + (daysLeft > 0 ? daysLeft + ' day(s) remaining' : 'expired') + ' (full access during trial, no feature limits).');
+  } else if (data.plan_status === 'paid') {
+    console.log('Plan status: paid — full ongoing access.');
+  }
 }
 
 async function poll() {
   const res = await fetch(BASE_URL + '/api/agent/poll', { method: 'POST', headers: authHeaders() });
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
+    const code = data.error && data.error.code;
+    if (code === 'TRIAL_EXPIRED' || code === 'PLAN_CANCELED') {
+      return { blocked: code, message: data.error.message };
+    }
     console.error('Poll error:', data.error && data.error.message);
     return null;
   }
-  const data = await res.json();
   return data.command || null;
 }
 
@@ -123,9 +138,19 @@ async function executeOperation(operation, params) {
 async function mainLoop() {
   await register();
   console.log('SAIRN Agent running. Outbound-only, polling ' + BASE_URL + '. Ctrl+C to stop.');
+  let loggedBlocked = false;
   for (;;) {
     try {
       const command = await poll();
+      if (command && command.blocked) {
+        if (!loggedBlocked) {
+          console.error('Agent access paused: ' + command.message + ' Checking again hourly in case the plan changes.');
+          loggedBlocked = true;
+        }
+        await new Promise((r) => setTimeout(r, 60 * 60 * 1000));
+        continue;
+      }
+      loggedBlocked = false;
       if (command) {
         console.log('Received command:', command.operation);
         try {

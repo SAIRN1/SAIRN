@@ -41,6 +41,30 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/create-agent.js "cus
 Prints a one-time token. Give it to the customer for their `config.json`. Only
 its SHA-256 hash is ever stored — if it's lost, provision a new agent record.
 
+## 30-day trial and paywall
+
+Every agent gets **full, unrestricted access to every whitelisted operation
+for 30 days** from the moment it's created — there is no feature-gating
+during the trial, only a time gate. `trial_ends_at` is set automatically in
+the database when the row is created.
+
+Once the trial ends and the plan hasn't been marked paid, `api/agent/poll.js`
+and `api/agent/enqueue.js` both refuse all further activity (HTTP 402, code
+`TRIAL_EXPIRED`) until you run:
+
+```
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/mark-agent-paid.js <agent_id> paid
+```
+
+Access resumes on the agent's very next poll — no restart needed on the
+customer's end. The agent script itself detects the expired state and backs
+off to checking once an hour instead of failing loudly on every poll.
+
+**Not wired up yet:** there's no Stripe webhook that calls
+`mark-agent-paid.js` automatically when a subscription is actually paid —
+that's a documented next step, not something built here. Today, someone on
+the SAIRN side has to run it manually after confirming payment.
+
 ## Known v1 limitations (said plainly, not hidden)
 
 - Only two operation kinds exist so far: `sql_query` and `file_read`.

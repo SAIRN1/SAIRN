@@ -39,7 +39,15 @@ async function main() {
       'Content-Type': 'application/json',
       Prefer: 'return=representation'
     },
-    body: JSON.stringify({ customer_id: customerId, agent_name: agentName, token_hash: tokenHash, status: 'pending' })
+    body: JSON.stringify({
+      customer_id: customerId,
+      agent_name: agentName,
+      token_hash: tokenHash,
+      status: 'pending',
+      plan_status: 'trial'
+      // trial_ends_at defaults to now() + 30 days in the schema — not set here
+      // so it's always measured from the moment the row is actually created.
+    })
   });
   const data = await res.json();
   if (!res.ok) {
@@ -48,6 +56,7 @@ async function main() {
   }
 
   console.log('Agent created:', data[0].id);
+  console.log('Trial started — full access for 30 days, ending ' + data[0].trial_ends_at);
   console.log('');
   console.log('Give this token to the customer for their agent/config.json — it will not be shown again:');
   console.log('');

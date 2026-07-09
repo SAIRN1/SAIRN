@@ -11,6 +11,16 @@
 -- own local config.json is the only place operation names are mapped to actual
 -- queries/paths/endpoints — so a compromised or malicious cloud-side caller can
 -- only invoke what that specific customer's IT already pre-approved locally.
+--
+-- Trial/paywall design: every agent gets full, unrestricted access to every
+-- whitelisted operation for 30 days from creation (plan_status='trial',
+-- trial_ends_at = created_at + 30 days). There is no feature-gating during the
+-- trial — it's a time gate only, not a capability gate. Once trial_ends_at
+-- passes and plan_status is still 'trial' (not flipped to 'paid'), poll.js and
+-- enqueue.js both refuse all further activity until plan_status = 'paid'. See
+-- scripts/mark-agent-paid.js to flip it manually; there is no automatic Stripe
+-- webhook wired up yet — that's a documented next step, not something claimed
+-- to exist here.
 
 create extension if not exists pgcrypto;
 
@@ -20,6 +30,8 @@ create table if not exists sairn_agents (
   agent_name text not null,
   token_hash text not null,              -- sha256 of the agent's bearer token — never store the raw token
   status text not null default 'pending', -- pending | active | revoked
+  plan_status text not null default 'trial', -- trial | paid | canceled
+  trial_ends_at timestamptz not null default (now() + interval '30 days'),
   last_seen_at timestamptz,
   created_at timestamptz not null default now()
 );

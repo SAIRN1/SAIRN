@@ -48,14 +48,25 @@ module.exports = async (req, res) => {
   const headers = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' };
 
   try {
-    const agentRes = await fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + agent_id + '&select=id,status', { headers });
+    const agentRes = await fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + agent_id + '&select=id,status,plan_status,trial_ends_at', { headers });
     const agents = await agentRes.json();
     if (!agentRes.ok || !Array.isArray(agents) || agents.length === 0) {
       res.status(404).json({ error: { message: 'Unknown agent_id' } });
       return;
     }
-    if (agents[0].status !== 'active') {
-      res.status(409).json({ error: { message: 'Agent is not active (status: ' + agents[0].status + ')' } });
+    const agent = agents[0];
+    if (agent.status !== 'active') {
+      res.status(409).json({ error: { message: 'Agent is not active (status: ' + agent.status + ')' } });
+      return;
+    }
+    if (agent.plan_status === 'trial' && new Date(agent.trial_ends_at) < new Date()) {
+      res.status(402).json({
+        error: { code: 'TRIAL_EXPIRED', message: 'This agent\'s 30-day trial has ended. Activate a paid plan to resume access.' }
+      });
+      return;
+    }
+    if (agent.plan_status === 'canceled') {
+      res.status(402).json({ error: { code: 'PLAN_CANCELED', message: 'This agent\'s plan has been canceled.' } });
       return;
     }
 
