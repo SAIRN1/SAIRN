@@ -1199,31 +1199,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-analytics-table','panel-analytics')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Missed Charges Detected MTD</div>
-<div class="kpi-value">$3,420</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Transaction Value</div>
-<div class="kpi-value">$287</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Client Churn Risk (flagged)</div>
-<div class="kpi-value">14</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Forecast Accuracy</div>
-<div class="kpi-value">94%</div>
-</div>
-</div>
+<div class="kpi-row" id="analytics-kpis"></div>
 <div class="card"><table id="panel-analytics-table">
 <thead><tr><th>Insight</th><th>Detail</th><th>Impact</th></tr></thead>
-<tbody>
-<tr><td>Missed charge pattern</td><td>Fecal exams billed 68% of wellness visits vs. 94% baseline</td><td>+$1,800/mo opportunity</td></tr>
-<tr><td>Churn risk</td><td>14 clients — no visit in 14+ months</td><td>Re-engagement recommended</td></tr>
-</tbody></table></div>
-<div class="card"><button class="btn" onclick="runMissedChargeScan()">Run AI Missed-Charge Scan</button><div id="missed-charge-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div></div>
+<tbody id="analytics-tbody"></tbody></table></div>
+<div class="card"><button class="btn" onclick="runMissedChargeScan()">Run AI Missed-Charge Scan</button><div id="missed-charge-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div><p style="font-size:0.85em;color:var(--text-muted,#666);margin:15px 0 0;">All KPIs and insights above are computed live from actual Clients, Invoicing, and Billing data — nothing here is estimated or assumed. The AI scan is grounded in the same real numbers, not a hypothetical practice profile.</p></div>
 </div>
 
 <div id="panel-staff" class="panel">
@@ -2053,6 +2033,7 @@ function gateSubmit(){
   renderBilling();
   renderFinancials();
   renderReports();
+  renderAnalytics();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -5226,6 +5207,55 @@ function addReport(){
   showToast(name+' added','success');
 }
 
+function renderAnalytics(){
+  var clients = getClients();
+  var invoices = getInvoices();
+  var billing = getBillingTx();
+  var today = new Date().toISOString().slice(0,10);
+
+  var amounts = invoices.filter(function(v){ return typeof v.amount==='number'; }).map(function(v){ return v.amount; });
+  var avgInvoice = amounts.length ? (amounts.reduce(function(a,b){return a+b;},0)/amounts.length) : 0;
+
+  var churnCount = clients.filter(function(c){
+    if(!c.lastVisit) return false;
+    var d = svDaysBetween(c.lastVisit, today);
+    return d!==null && d>365;
+  }).length;
+
+  var declinedCount = billing.filter(function(b){ return b.status==='Declined'; }).length;
+
+  var scans = 0;
+  try { scans = parseInt(localStorage.getItem('sv_analytics_scans'),10) || 0; } catch(e){}
+
+  var kpis = document.getElementById('analytics-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">AI Scans Run</div><div class="kpi-value">'+scans+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Invoice Value</div><div class="kpi-value">$'+avgInvoice.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Clients Flagged (No Visit 12mo+)</div><div class="kpi-value">'+churnCount+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Invoices Analyzed</div><div class="kpi-value">'+amounts.length+'</div></div>';
+  }
+
+  var rows = [];
+  if(amounts.length){
+    rows.push(['Average invoice value','$'+avgInvoice.toFixed(2)+' average across '+amounts.length+' invoice(s) logged','Baseline for tracking future invoices']);
+  }
+  if(churnCount>0){
+    rows.push(['Client re-engagement',churnCount+' client(s) — no visit in 12+ months','Re-engagement recommended']);
+  }
+  if(declinedCount>0){
+    rows.push(['Declined transactions',declinedCount+' declined transaction(s) logged in Billing','Follow-up recommended']);
+  }
+  var tbody = document.getElementById('analytics-tbody');
+  if(tbody){
+    if(rows.length){
+      tbody.innerHTML = rows.map(function(r){ return '<tr><td>'+escHtml(r[0])+'</td><td>'+escHtml(r[1])+'</td><td>'+escHtml(r[2])+'</td></tr>'; }).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="3">No insights yet — add invoices, billing transactions, or client visit data to generate insights.</td></tr>';
+    }
+  }
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -5837,12 +5867,29 @@ function getSpeciesRef(){
 }
 
 function runMissedChargeScan(){
-  showToast('Scanning recent invoices...','info');
-  var system='You are a veterinary practice management analyst. Identify likely missed-charge patterns and revenue opportunities from typical practice billing gaps.';
-  var messages=[{role:'user',content:'Our practice sees 62 new patients/month, wellness compliance 94%, avg invoice $287. Identify 3 likely missed-charge opportunities and estimate monthly revenue impact.'}];
+  showToast('Scanning practice data...','info');
+  var clients = getClients();
+  var invoices = getInvoices();
+  var billing = getBillingTx();
+  var amounts = invoices.filter(function(v){ return typeof v.amount==='number'; }).map(function(v){ return v.amount; });
+  var avgInvoice = amounts.length ? (amounts.reduce(function(a,b){return a+b;},0)/amounts.length) : 0;
+  var today = new Date().toISOString().slice(0,10);
+  var churnCount = clients.filter(function(c){
+    if(!c.lastVisit) return false;
+    var d = svDaysBetween(c.lastVisit, today);
+    return d!==null && d>365;
+  }).length;
+  var declinedCount = billing.filter(function(b){ return b.status==='Declined'; }).length;
+
+  var system='You are a veterinary practice management analyst. Identify likely missed-charge patterns and revenue opportunities based strictly on the real practice snapshot provided. Do not invent numbers beyond what is given, and say so honestly if the sample size is too small to generalize from.';
+  var messages=[{role:'user',content:'Practice snapshot: '+clients.length+' client(s) on file, average invoice value $'+avgInvoice.toFixed(2)+' across '+amounts.length+' invoice(s) logged, '+churnCount+' client(s) with no visit in over 12 months, '+declinedCount+' declined billing transaction(s) logged. Based on this real snapshot, identify likely missed-charge opportunities and revenue-recovery actions.'}];
   callClaude(system,messages,1200).then(function(result){
     document.getElementById('missed-charge-result').style.display='block';
     document.getElementById('missed-charge-result').textContent=result;
+    var n = 0;
+    try { n = parseInt(localStorage.getItem('sv_analytics_scans'),10) || 0; } catch(e){}
+    try { localStorage.setItem('sv_analytics_scans', String(n+1)); } catch(e){}
+    renderAnalytics();
     showToast('Scan complete','success');
   }).catch(function(e){});
 }
@@ -5928,6 +5975,7 @@ if(auth){
   renderBilling();
   renderFinancials();
   renderReports();
+  renderAnalytics();
 } else {
   updatePinDisplay();
 }
