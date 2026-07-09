@@ -1169,30 +1169,25 @@
 <button class="btn btn-sm" onclick="exportTableCSV('reports-table','reports')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Reports Available</div>
-<div class="kpi-value">32</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Scheduled Reports</div>
-<div class="kpi-value">5</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Last Export</div>
-<div class="kpi-value">2026-07-07</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Formats</div>
-<div class="kpi-value">CSV/PDF</div>
-</div>
-</div>
+<div class="kpi-row" id="reports-kpis"></div>
 <div class="card"><table id="reports-table">
 <thead><tr><th>Report</th><th>Category</th><th>Frequency</th><th>Last Run</th></tr></thead>
-<tbody>
-<tr><td>Monthly Revenue Summary</td><td>Financial</td><td>Monthly</td><td>2026-07-01</td></tr>
-<tr><td>Vaccination Compliance</td><td>Clinical</td><td>Weekly</td><td>2026-07-06</td></tr>
-</tbody></table></div>
+<tbody id="reports-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Report</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="rpt-add-name" placeholder="Report name">
+<select id="rpt-add-category">
+<option>Financial</option><option>Clinical</option><option>Operational</option><option>Compliance</option><option>Other</option>
+</select>
+<select id="rpt-add-frequency">
+<option>Daily</option><option>Weekly</option><option>Monthly</option><option>Manual</option>
+</select>
+<input type="date" id="rpt-add-lastrun">
+<button class="btn" onclick="addReport()">Add Report</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Reports Tracked, Scheduled Reports, Last Run, and Categories are all counted from what's actually in this table. Click any row to update or remove it.</p>
+</div>
 </div>
 
 <div id="panel-analytics" class="panel">
@@ -2057,6 +2052,7 @@ function gateSubmit(){
   renderInvoicing();
   renderBilling();
   renderFinancials();
+  renderReports();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -5110,6 +5106,126 @@ function addFinancialLine(){
   showToast(category+' added','success');
 }
 
+function getReports(){
+  try {
+    var stored = localStorage.getItem('sv_reports');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'rp1', report:'Monthly Revenue Summary', category:'Financial', frequency:'Monthly', lastRun:'2026-07-01'},
+    {id:'rp2', report:'Vaccination Compliance', category:'Clinical', frequency:'Weekly', lastRun:'2026-07-06'}
+  ];
+  saveReports(seed);
+  return seed;
+}
+
+function saveReports(list){
+  try { localStorage.setItem('sv_reports', JSON.stringify(list)); } catch(e){}
+}
+
+function renderReports(){
+  var list = getReports();
+  var tbody = document.getElementById('reports-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openReportEdit(r.id); };
+    tr.innerHTML = '<td>'+escHtml(r.report)+'</td><td>'+escHtml(r.category)+'</td><td>'+escHtml(r.frequency)+'</td><td>'+escHtml(r.lastRun||'—')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var reportsTracked = list.length;
+  var scheduled = list.filter(function(r){ return r.frequency && r.frequency!=='Manual'; }).length;
+  var lastRunDates = list.map(function(r){ return r.lastRun; }).filter(Boolean).sort();
+  var lastRun = lastRunDates.length ? lastRunDates[lastRunDates.length-1] : '—';
+  var categorySet = {};
+  list.forEach(function(r){ if(r.category) categorySet[r.category.trim().toLowerCase()] = true; });
+  var categories = Object.keys(categorySet).length;
+
+  var kpis = document.getElementById('reports-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Reports Tracked</div><div class="kpi-value">'+reportsTracked+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Scheduled Reports</div><div class="kpi-value">'+scheduled+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Last Run</div><div class="kpi-value">'+lastRun+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Categories</div><div class="kpi-value">'+categories+'</div></div>';
+  }
+}
+
+function openReportEdit(id){
+  var list = getReports();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  var catList = ['Financial','Clinical','Operational','Compliance','Other'];
+  var catOptions = catList.map(function(c){ return '<option'+(c===r.category?' selected':'')+'>'+c+'</option>'; }).join('');
+  var freqList = ['Daily','Weekly','Monthly','Manual'];
+  var freqOptions = freqList.map(function(f){ return '<option'+(f===r.frequency?' selected':'')+'>'+f+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="reports-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(r.report)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Category</label><select id="rpt-edit-category" style="width:100%;">'+catOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Frequency</label><select id="rpt-edit-frequency" style="width:100%;">'+freqOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Last Run</label><input type="date" id="rpt-edit-lastrun" value="'+escHtml(r.lastRun||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveReportEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelReportEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeReport(\''+id+'\')">Remove Report</button>'+
+    '</div>';
+  var existing = document.getElementById('reports-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('reports-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('reports-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelReportEdit(){
+  var existing = document.getElementById('reports-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveReportEdit(id){
+  var list = getReports();
+  var r = list.find(function(x){ return x.id===id; });
+  if(!r) return;
+  r.category = document.getElementById('rpt-edit-category').value;
+  r.frequency = document.getElementById('rpt-edit-frequency').value;
+  r.lastRun = document.getElementById('rpt-edit-lastrun').value || null;
+  saveReports(list);
+  cancelReportEdit();
+  renderReports();
+  showToast('Updated '+r.report,'success');
+}
+
+function removeReport(id){
+  var list = getReports();
+  var r = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveReports(list);
+  cancelReportEdit();
+  renderReports();
+  showToast((r?r.report:'Report')+' removed','success');
+}
+
+function addReport(){
+  var name = document.getElementById('rpt-add-name').value.trim();
+  var category = document.getElementById('rpt-add-category').value;
+  var frequency = document.getElementById('rpt-add-frequency').value;
+  var lastRun = document.getElementById('rpt-add-lastrun').value;
+  if(!name){ showToast('Report name required','error'); return; }
+  var list = getReports();
+  var id = 'rp' + Date.now();
+  list.push({id:id, report:name, category:category, frequency:frequency, lastRun:lastRun||null});
+  saveReports(list);
+  renderReports();
+  document.getElementById('rpt-add-name').value='';
+  document.getElementById('rpt-add-lastrun').value='';
+  showToast(name+' added','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -5811,6 +5927,7 @@ if(auth){
   renderInvoicing();
   renderBilling();
   renderFinancials();
+  renderReports();
 } else {
   updatePinDisplay();
 }
