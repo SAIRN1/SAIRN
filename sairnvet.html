@@ -1084,30 +1084,24 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-invoicing-table','panel-invoicing')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Invoiced Today</div>
-<div class="kpi-value">$4,820</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Outstanding</div>
-<div class="kpi-value">$12,340</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Invoice</div>
-<div class="kpi-value">$287</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Collection Rate</div>
-<div class="kpi-value">96%</div>
-</div>
-</div>
+<div class="kpi-row" id="invoicing-kpis"></div>
 <div class="card"><table id="panel-invoicing-table">
 <thead><tr><th>Invoice #</th><th>Client</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-<tbody>
-<tr><td>INV-10422</td><td>Smith, John</td><td>$287.00</td><td>Paid</td><td>2026-07-05</td></tr>
-<tr><td>INV-10419</td><td>Miller Dairy Farm</td><td>$1,240.00</td><td>Net 30 — Open</td><td>2026-06-30</td></tr>
-</tbody></table></div>
+<tbody id="invoicing-tbody"></tbody></table></div>
+<div class="card">
+<h3>Add Invoice</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<input type="text" id="inv-add-num" placeholder="Invoice #, e.g. INV-10423">
+<input type="text" id="inv-add-client" placeholder="Client">
+<input type="number" step="0.01" id="inv-add-amount" placeholder="Amount">
+<select id="inv-add-status">
+<option>Paid</option><option>Net 30 — Open</option><option>Overdue</option><option>Void</option>
+</select>
+<input type="date" id="inv-add-date">
+<button class="btn" onclick="addInvoice()">Add Invoice</button>
+</div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0;">Invoiced Today, Outstanding, Avg Invoice, and Collection Rate are all computed from what's actually in this table — by dollar amount, not guessed. Click any row to update status/amount or remove it.</p>
+</div>
 </div>
 
 <div id="billing" class="panel">
@@ -2074,6 +2068,7 @@ function gateSubmit(){
   renderConservation();
   renderCompliance();
   renderClientsPanel();
+  renderInvoicing();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -4751,6 +4746,133 @@ function addClient(){
   showToast(name+' added','success');
 }
 
+function getInvoices(){
+  try {
+    var stored = localStorage.getItem('sv_invoicing');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'iv1', num:'INV-10422', client:'Smith, John', amount:287.00, status:'Paid', date:'2026-07-05'},
+    {id:'iv2', num:'INV-10419', client:'Miller Dairy Farm', amount:1240.00, status:'Net 30 — Open', date:'2026-06-30'}
+  ];
+  saveInvoices(seed);
+  return seed;
+}
+
+function saveInvoices(list){
+  try { localStorage.setItem('sv_invoicing', JSON.stringify(list)); } catch(e){}
+}
+
+function renderInvoicing(){
+  var list = getInvoices();
+  var tbody = document.getElementById('invoicing-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(v){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openInvoiceEdit(v.id); };
+    var amt = typeof v.amount==='number' ? '$'+v.amount.toFixed(2) : '—';
+    tr.innerHTML = '<td>'+escHtml(v.num)+'</td><td>'+escHtml(v.client)+'</td><td>'+amt+'</td><td>'+escHtml(v.status)+'</td><td>'+escHtml(v.date||'—')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var today = new Date().toISOString().slice(0,10);
+  var invoicedToday = list.reduce(function(sum,v){ return sum + ((v.date===today && typeof v.amount==='number') ? v.amount : 0); }, 0);
+  var outstanding = list.reduce(function(sum,v){ return sum + ((v.status!=='Paid' && v.status!=='Void' && typeof v.amount==='number') ? v.amount : 0); }, 0);
+  var validAmounts = list.filter(function(v){ return typeof v.amount==='number'; });
+  var avgInvoice = validAmounts.length ? (validAmounts.reduce(function(s,v){return s+v.amount;},0)/validAmounts.length) : 0;
+  var billable = list.filter(function(v){ return v.status!=='Void'; });
+  var billableTotal = billable.reduce(function(s,v){ return s + (typeof v.amount==='number'?v.amount:0); }, 0);
+  var paidTotal = billable.reduce(function(s,v){ return s + (v.status==='Paid' && typeof v.amount==='number' ? v.amount : 0); }, 0);
+  var collectionRate = billableTotal>0 ? Math.round((paidTotal/billableTotal)*100)+'%' : '—';
+
+  var kpis = document.getElementById('invoicing-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Invoiced Today</div><div class="kpi-value">$'+invoicedToday.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Outstanding</div><div class="kpi-value">$'+outstanding.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Invoice</div><div class="kpi-value">$'+avgInvoice.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Collection Rate</div><div class="kpi-value">'+collectionRate+'</div></div>';
+  }
+}
+
+function openInvoiceEdit(id){
+  var list = getInvoices();
+  var v = list.find(function(x){ return x.id===id; });
+  if(!v) return;
+  var statusList = ['Paid','Net 30 — Open','Overdue','Void'];
+  var statusOptions = statusList.map(function(s){ return '<option'+(s===v.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="invoicing-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(v.num)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Amount</label><input type="number" step="0.01" id="inv-edit-amount" value="'+(typeof v.amount==='number'?v.amount:'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="inv-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="inv-edit-date" value="'+escHtml(v.date||'')+'" style="width:100%;"></div>'+
+    '</div>'+
+    '<button class="btn" onclick="saveInvoiceEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelInvoiceEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeInvoice(\''+id+'\')">Remove Invoice</button>'+
+    '</div>';
+  var existing = document.getElementById('invoicing-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-invoicing-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('invoicing-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelInvoiceEdit(){
+  var existing = document.getElementById('invoicing-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveInvoiceEdit(id){
+  var list = getInvoices();
+  var v = list.find(function(x){ return x.id===id; });
+  if(!v) return;
+  var a = parseFloat(document.getElementById('inv-edit-amount').value);
+  v.amount = isNaN(a) ? null : a;
+  v.status = document.getElementById('inv-edit-status').value;
+  v.date = document.getElementById('inv-edit-date').value || null;
+  saveInvoices(list);
+  cancelInvoiceEdit();
+  renderInvoicing();
+  showToast('Updated '+v.num,'success');
+}
+
+function removeInvoice(id){
+  var list = getInvoices();
+  var v = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  saveInvoices(list);
+  cancelInvoiceEdit();
+  renderInvoicing();
+  showToast((v?v.num:'Invoice')+' removed','success');
+}
+
+function addInvoice(){
+  var num = document.getElementById('inv-add-num').value.trim();
+  var client = document.getElementById('inv-add-client').value.trim();
+  var a = parseFloat(document.getElementById('inv-add-amount').value);
+  var status = document.getElementById('inv-add-status').value;
+  var date = document.getElementById('inv-add-date').value;
+  if(!num){ showToast('Invoice # required','error'); return; }
+  if(!client){ showToast('Client required','error'); return; }
+  if(isNaN(a)){ showToast('Amount required','error'); return; }
+  var list = getInvoices();
+  var id = 'iv' + Date.now();
+  list.push({id:id, num:num, client:client, amount:a, status:status, date:date||new Date().toISOString().slice(0,10)});
+  saveInvoices(list);
+  renderInvoicing();
+  document.getElementById('inv-add-num').value='';
+  document.getElementById('inv-add-client').value='';
+  document.getElementById('inv-add-amount').value='';
+  document.getElementById('inv-add-date').value='';
+  showToast(num+' added','success');
+}
+
 function getControlledLog(){
   try {
     var stored = localStorage.getItem('sv_controlled');
@@ -5449,6 +5571,7 @@ if(auth){
   renderConservation();
   renderCompliance();
   renderClientsPanel();
+  renderInvoicing();
 } else {
   updatePinDisplay();
 }
