@@ -1155,32 +1155,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('revenue')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Charges</div>
-                    <div class="kpi-value">$4.2M</div>
-                    <div class="kpi-detail">YTD</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Collections</div>
-                    <div class="kpi-value">$3.8M</div>
-                    <div class="kpi-detail">Realized</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Payer Mix</div>
-                    <div class="kpi-value">42%/38%/20%</div>
-                    <div class="kpi-detail">Com/Gov/Other</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Cash Conversion</div>
-                    <div class="kpi-value">90.5%</div>
-                    <div class="kpi-detail">Collection ratio</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Trend</div>
-                    <div class="kpi-value">+8.3%</div>
-                    <div class="kpi-detail">vs last year</div>
-                </div>
+            <div class="kpi-grid" id="revenue-kpis"></div>
+            <div class="table-container">
+                <table id="revenueTable">
+                    <thead><tr><th>Payer Type</th><th>Charge</th><th>Collected</th><th>Date</th><th></th></tr></thead>
+                    <tbody id="revenue-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <select id="rev-add-payer"><option>Commercial</option><option>Government</option><option>Other</option></select>
+                <input type="number" step="0.01" id="rev-add-charge" placeholder="Charge amount" class="search-input">
+                <input type="number" step="0.01" id="rev-add-collected" placeholder="Collected amount" class="search-input">
+                <input type="date" id="rev-add-date" class="search-input">
+                <button class="btn btn-primary" onclick="addRevenueEntry()">Add Entry</button>
             </div>
         </div>
 
@@ -1456,6 +1443,64 @@
             showToast('CSV exported: ' + panel);
         }
 
+        function getRevenueEntries(){
+            try { var s = localStorage.getItem('sc_revenue'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'rv1', payer:'Commercial', charge:2450.00, collected:2200.00, date:'2026-01-15'},
+                {id:'rv2', payer:'Government', charge:1825.50, collected:1650.00, date:'2026-01-16'}
+            ];
+            saveRevenueEntries(seed);
+            return seed;
+        }
+        function saveRevenueEntries(list){ try { localStorage.setItem('sc_revenue', JSON.stringify(list)); } catch(e){} }
+        function renderRevenue(){
+            var list = getRevenueEntries();
+            var tbody = document.getElementById('revenue-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(r){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(r.payer)+'</td><td>$'+r.charge.toFixed(2)+'</td><td>$'+r.collected.toFixed(2)+'</td><td>'+escHtml(r.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeRevenueEntry(\''+r.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var totalCharges = list.reduce(function(s,r){return s+r.charge;},0);
+            var totalCollected = list.reduce(function(s,r){return s+r.collected;},0);
+            var byPayer = {Commercial:0, Government:0, Other:0};
+            list.forEach(function(r){ byPayer[r.payer] = (byPayer[r.payer]||0) + r.charge; });
+            var mix = totalCharges > 0
+                ? Math.round(byPayer.Commercial/totalCharges*100)+'%/'+Math.round(byPayer.Government/totalCharges*100)+'%/'+Math.round(byPayer.Other/totalCharges*100)+'%'
+                : '—';
+            var conversion = totalCharges > 0 ? (totalCollected/totalCharges*100).toFixed(1)+'%' : '—';
+            var kpis = document.getElementById('revenue-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Total Charges</div><div class="kpi-value">$'+totalCharges.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Collections</div><div class="kpi-value">$'+totalCollected.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Payer Mix</div><div class="kpi-value">'+mix+'</div><div class="kpi-detail">Com/Gov/Other</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Cash Conversion</div><div class="kpi-value">'+conversion+'</div><div class="kpi-detail">Collection ratio</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Entries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Charge records</div></div>';
+            }
+        }
+        function removeRevenueEntry(id){
+            var list = getRevenueEntries().filter(function(r){ return r.id !== id; });
+            saveRevenueEntries(list);
+            renderRevenue();
+        }
+        function addRevenueEntry(){
+            var payer = document.getElementById('rev-add-payer').value;
+            var charge = parseFloat(document.getElementById('rev-add-charge').value);
+            var collected = parseFloat(document.getElementById('rev-add-collected').value);
+            var date = document.getElementById('rev-add-date').value;
+            if (isNaN(charge)) { showToast('Charge amount required'); return; }
+            var list = getRevenueEntries();
+            list.push({id:'rv'+Date.now(), payer:payer, charge:charge, collected:isNaN(collected)?0:collected, date:date||new Date().toISOString().slice(0,10)});
+            saveRevenueEntries(list);
+            renderRevenue();
+            document.getElementById('rev-add-charge').value = '';
+            document.getElementById('rev-add-collected').value = '';
+            showToast('Entry added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1539,6 +1584,7 @@
         window.addEventListener('load', () => {
             const lastPanel = localStorage.getItem('sc_last_panel') || 'dashboard';
             showPanel(lastPanel);
+            renderRevenue();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
