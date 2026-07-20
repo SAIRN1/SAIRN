@@ -550,32 +550,20 @@
                 <button class="btn btn-primary" onclick="exportCSV('prebill')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Errors Detected</div>
-                    <div class="kpi-value">47</div>
-                    <div class="kpi-detail">This month</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Prevented Denials</div>
-                    <div class="kpi-value">$94K</div>
-                    <div class="kpi-detail">Value protected</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Accuracy Rate</div>
-                    <div class="kpi-value">99.2%</div>
-                    <div class="kpi-detail">AI detection</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Claims Scrubbed</div>
-                    <div class="kpi-value">1,189</div>
-                    <div class="kpi-detail">YTD processed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Time Saved</div>
-                    <div class="kpi-value">4.2 min</div>
-                    <div class="kpi-detail">Per claim</div>
-                </div>
+            <div class="kpi-grid" id="prebill-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Claim Ref</th><th>Error Type</th><th>Value Protected</th><th>Time Saved</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="prebill-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="pb-add-claim" placeholder="Claim ref" class="search-input">
+                <input type="text" id="pb-add-error" placeholder="Error type" class="search-input">
+                <input type="number" step="0.01" id="pb-add-value" placeholder="Value protected $" class="search-input">
+                <input type="number" step="0.1" id="pb-add-time" placeholder="Time saved (min)" class="search-input">
+                <select id="pb-add-status"><option>Detected</option><option>Resolved</option></select>
+                <button class="btn btn-primary" onclick="addScrubEntry()">Add</button>
             </div>
         </div>
 
@@ -1596,6 +1584,61 @@
             }
         }
 
+        function getScrubEntries(){
+            try { var s = localStorage.getItem('sc_prebill'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'pb1', claim:'CLM-2601', error:'Missing modifier', value:850, time:3.5, status:'Resolved'},
+                {id:'pb2', claim:'CLM-2609', error:'Mismatched diagnosis code', value:1200, time:5.0, status:'Detected'}
+            ];
+            saveScrubEntries(seed);
+            return seed;
+        }
+        function saveScrubEntries(list){ try { localStorage.setItem('sc_prebill', JSON.stringify(list)); } catch(e){} }
+        function renderPrebill(){
+            var list = getScrubEntries();
+            var tbody = document.getElementById('prebill-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(p){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(p.claim)+'</td><td>'+escHtml(p.error)+'</td><td>$'+p.value.toLocaleString()+'</td><td>'+p.time+' min</td><td>'+escHtml(p.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeScrubEntry(\''+p.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var resolved = list.filter(function(p){return p.status==='Resolved';});
+            var valueProtected = resolved.reduce(function(s,p){return s+p.value;},0);
+            var avgTime = list.length ? (list.reduce(function(s,p){return s+p.time;},0)/list.length).toFixed(1)+' min' : '—';
+            var kpis = document.getElementById('prebill-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Errors Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Value Protected</div><div class="kpi-value">$'+valueProtected.toLocaleString()+'</div><div class="kpi-detail">From resolved entries</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Resolved</div><div class="kpi-value">'+resolved.length+'</div><div class="kpi-detail">Of '+list.length+' logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Claims Scrubbed</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Unique entries logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Avg Time Saved</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-detail">Per logged entry</div></div>';
+            }
+        }
+        function removeScrubEntry(id){
+            saveScrubEntries(getScrubEntries().filter(function(p){return p.id!==id;}));
+            renderPrebill();
+        }
+        function addScrubEntry(){
+            var claim = document.getElementById('pb-add-claim').value.trim();
+            var error = document.getElementById('pb-add-error').value.trim();
+            var value = parseFloat(document.getElementById('pb-add-value').value);
+            var time = parseFloat(document.getElementById('pb-add-time').value);
+            var status = document.getElementById('pb-add-status').value;
+            if (!claim || !error) { showToast('Claim ref and error type required'); return; }
+            var list = getScrubEntries();
+            list.push({id:'pb'+Date.now(), claim:claim, error:error, value:isNaN(value)?0:value, time:isNaN(time)?0:time, status:status});
+            saveScrubEntries(list);
+            renderPrebill();
+            document.getElementById('pb-add-claim').value = '';
+            document.getElementById('pb-add-error').value = '';
+            document.getElementById('pb-add-value').value = '';
+            document.getElementById('pb-add-time').value = '';
+            showToast('Scrub entry added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1684,6 +1727,7 @@
             renderCompliance();
             renderFraud();
             renderDashboard();
+            renderPrebill();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
