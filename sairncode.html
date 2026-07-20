@@ -620,32 +620,20 @@
                 <button class="btn btn-primary" onclick="exportCSV('query')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Queries Sent</div>
-                    <div class="kpi-value">62</div>
-                    <div class="kpi-detail">YTD</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Response Rate</div>
-                    <div class="kpi-value">91.9%</div>
-                    <div class="kpi-detail">Physician replies</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Compliant Queries</div>
-                    <div class="kpi-value">100%</div>
-                    <div class="kpi-detail">AHIMA standards</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Days Pending</div>
-                    <div class="kpi-value">3.2</div>
-                    <div class="kpi-detail">Awaiting response</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Value Impacted</div>
-                    <div class="kpi-value">$127K</div>
-                    <div class="kpi-detail">Query-driven revenue</div>
-                </div>
+            <div class="kpi-grid" id="query-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Patient</th><th>Physician</th><th>Query Type</th><th>Value Impact</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="query-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="qry-add-patient" placeholder="Patient ref" class="search-input">
+                <input type="text" id="qry-add-physician" placeholder="Physician" class="search-input">
+                <input type="text" id="qry-add-type" placeholder="Query type" class="search-input">
+                <input type="number" step="0.01" id="qry-add-value" placeholder="Value impact $" class="search-input">
+                <select id="qry-add-status"><option>Pending</option><option>Responded</option></select>
+                <button class="btn btn-primary" onclick="addQueryEntry()">Add</button>
             </div>
         </div>
 
@@ -1722,6 +1710,62 @@
             showToast('DRG entry added');
         }
 
+        function getQueryEntries(){
+            try { var s = localStorage.getItem('sc_query'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'qr1', patient:'PT-4021', physician:'Dr. Alvarez', type:'Diagnosis clarification', value:1800, status:'Responded'},
+                {id:'qr2', patient:'PT-4033', physician:'Dr. Kim', type:'Specificity - laterality', value:0, status:'Pending'}
+            ];
+            saveQueryEntries(seed);
+            return seed;
+        }
+        function saveQueryEntries(list){ try { localStorage.setItem('sc_query', JSON.stringify(list)); } catch(e){} }
+        function renderQuery(){
+            var list = getQueryEntries();
+            var tbody = document.getElementById('query-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(q){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(q.patient)+'</td><td>'+escHtml(q.physician)+'</td><td>'+escHtml(q.type)+'</td><td>$'+q.value.toLocaleString()+'</td><td>'+escHtml(q.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeQueryEntry(\''+q.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var responded = list.filter(function(q){return q.status==='Responded';});
+            var pending = list.filter(function(q){return q.status==='Pending';});
+            var responseRate = list.length ? (responded.length/list.length*100).toFixed(1)+'%' : '—';
+            var valueImpacted = responded.reduce(function(s,q){return s+q.value;},0);
+            var kpis = document.getElementById('query-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Queries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Response Rate</div><div class="kpi-value">'+responseRate+'</div><div class="kpi-detail">Physician replies</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">'+pending.length+'</div><div class="kpi-detail">Awaiting response</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Responded</div><div class="kpi-value">'+responded.length+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Value Impacted</div><div class="kpi-value">$'+valueImpacted.toLocaleString()+'</div><div class="kpi-detail">From responded queries</div></div>';
+            }
+        }
+        function removeQueryEntry(id){
+            saveQueryEntries(getQueryEntries().filter(function(q){return q.id!==id;}));
+            renderQuery();
+        }
+        function addQueryEntry(){
+            var patient = document.getElementById('qry-add-patient').value.trim();
+            var physician = document.getElementById('qry-add-physician').value.trim();
+            var type = document.getElementById('qry-add-type').value.trim();
+            var value = parseFloat(document.getElementById('qry-add-value').value);
+            var status = document.getElementById('qry-add-status').value;
+            if (!patient || !type) { showToast('Patient and query type required'); return; }
+            var list = getQueryEntries();
+            list.push({id:'qr'+Date.now(), patient:patient, physician:physician||'—', type:type, value:isNaN(value)?0:value, status:status});
+            saveQueryEntries(list);
+            renderQuery();
+            document.getElementById('qry-add-patient').value = '';
+            document.getElementById('qry-add-physician').value = '';
+            document.getElementById('qry-add-type').value = '';
+            document.getElementById('qry-add-value').value = '';
+            showToast('Query added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1813,6 +1857,7 @@
             renderPrebill();
             renderHcc();
             renderDrg();
+            renderQuery();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
