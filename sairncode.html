@@ -645,32 +645,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('encoder')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">ICD-10 Codes</div>
-                    <div class="kpi-value">79</div>
-                    <div class="kpi-detail">Active codes</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">CPT Codes</div>
-                    <div class="kpi-value">156</div>
-                    <div class="kpi-detail">Indexed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">HCPCS Codes</div>
-                    <div class="kpi-value">43</div>
-                    <div class="kpi-detail">Common modifiers</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Bundling Alerts</div>
-                    <div class="kpi-value">23</div>
-                    <div class="kpi-detail">Unbundling prevented</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Search Speed</div>
-                    <div class="kpi-value">&lt;100ms</div>
-                    <div class="kpi-detail">Avg lookup time</div>
-                </div>
+            <div class="kpi-grid" id="encoder-kpis"></div>
+            <div class="table-container">
+                <table id="encoderTable">
+                    <thead><tr><th>Code</th><th>Type</th><th>Description</th><th>Bundling Note</th><th></th></tr></thead>
+                    <tbody id="encoder-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="enc-add-code" placeholder="Code" class="search-input">
+                <select id="enc-add-type"><option>ICD-10</option><option>CPT</option><option>HCPCS</option></select>
+                <input type="text" id="enc-add-desc" placeholder="Description" class="search-input">
+                <input type="text" id="enc-add-bundling" placeholder="Bundling note (optional)" class="search-input">
+                <button class="btn btn-primary" onclick="addEncoderCode()">Add</button>
             </div>
         </div>
 
@@ -1766,6 +1753,61 @@
             showToast('Query added');
         }
 
+        function getEncoderCodes(){
+            try { var s = localStorage.getItem('sc_encoder'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'ec1', code:'E11.9', type:'ICD-10', desc:'Type 2 diabetes without complications', bundling:''},
+                {id:'ec2', code:'99214', type:'CPT', desc:'Office visit, established patient, moderate complexity', bundling:'Do not bill with 99213 same visit'},
+                {id:'ec3', code:'G0463', type:'HCPCS', desc:'Hospital outpatient clinic visit', bundling:''}
+            ];
+            saveEncoderCodes(seed);
+            return seed;
+        }
+        function saveEncoderCodes(list){ try { localStorage.setItem('sc_encoder', JSON.stringify(list)); } catch(e){} }
+        function renderEncoder(){
+            var list = getEncoderCodes();
+            var tbody = document.getElementById('encoder-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(c){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(c.code)+'</td><td>'+escHtml(c.type)+'</td><td>'+escHtml(c.desc)+'</td><td>'+escHtml(c.bundling||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeEncoderCode(\''+c.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var icd = list.filter(function(c){return c.type==='ICD-10';}).length;
+            var cpt = list.filter(function(c){return c.type==='CPT';}).length;
+            var hcpcs = list.filter(function(c){return c.type==='HCPCS';}).length;
+            var bundlingAlerts = list.filter(function(c){return c.bundling && c.bundling.trim()!=='';}).length;
+            var kpis = document.getElementById('encoder-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">ICD-10 Codes</div><div class="kpi-value">'+icd+'</div><div class="kpi-detail">In this reference set</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">CPT Codes</div><div class="kpi-value">'+cpt+'</div><div class="kpi-detail">In this reference set</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">HCPCS Codes</div><div class="kpi-value">'+hcpcs+'</div><div class="kpi-detail">In this reference set</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Bundling Alerts</div><div class="kpi-value">'+bundlingAlerts+'</div><div class="kpi-detail">Codes with a bundling note</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Total Codes Indexed</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">This reference set</div></div>';
+            }
+        }
+        function removeEncoderCode(id){
+            saveEncoderCodes(getEncoderCodes().filter(function(c){return c.id!==id;}));
+            renderEncoder();
+        }
+        function addEncoderCode(){
+            var code = document.getElementById('enc-add-code').value.trim();
+            var type = document.getElementById('enc-add-type').value;
+            var desc = document.getElementById('enc-add-desc').value.trim();
+            var bundling = document.getElementById('enc-add-bundling').value.trim();
+            if (!code || !desc) { showToast('Code and description required'); return; }
+            var list = getEncoderCodes();
+            list.push({id:'ec'+Date.now(), code:code, type:type, desc:desc, bundling:bundling});
+            saveEncoderCodes(list);
+            renderEncoder();
+            document.getElementById('enc-add-code').value = '';
+            document.getElementById('enc-add-desc').value = '';
+            document.getElementById('enc-add-bundling').value = '';
+            showToast('Code added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1858,6 +1900,7 @@
             renderHcc();
             renderDrg();
             renderQuery();
+            renderEncoder();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
