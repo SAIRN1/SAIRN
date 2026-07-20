@@ -574,32 +574,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('hcc')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">RAF Score</div>
-                    <div class="kpi-value">1.247</div>
-                    <div class="kpi-detail">Risk adjustment factor</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">HCC Categories</div>
-                    <div class="kpi-value">34</div>
-                    <div class="kpi-detail">Identified</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Gap Analysis</div>
-                    <div class="kpi-value">12</div>
-                    <div class="kpi-detail">Unrecorded diagnoses</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Potential Impact</div>
-                    <div class="kpi-value">$156K</div>
-                    <div class="kpi-detail">Revenue opportunity</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Capture Rate</div>
-                    <div class="kpi-value">87.3%</div>
-                    <div class="kpi-detail">Current documentation</div>
-                </div>
+            <div class="kpi-grid" id="hcc-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>HCC Category</th><th>Patient Ref</th><th>Potential Value</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="hcc-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="hcc-add-cat" placeholder="HCC category" class="search-input">
+                <input type="text" id="hcc-add-patient" placeholder="Patient ref" class="search-input">
+                <input type="number" step="0.01" id="hcc-add-value" placeholder="Potential value $" class="search-input">
+                <select id="hcc-add-status"><option>Gap Identified</option><option>Documented</option><option>Captured</option></select>
+                <button class="btn btn-primary" onclick="addHccEntry()">Add</button>
             </div>
         </div>
 
@@ -1639,6 +1626,61 @@
             showToast('Scrub entry added');
         }
 
+        function getHccEntries(){
+            try { var s = localStorage.getItem('sc_hcc'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'hc1', cat:'HCC 18 - Diabetes w/ Complications', patient:'PT-4021', value:3200, status:'Gap Identified'},
+                {id:'hc2', cat:'HCC 85 - Congestive Heart Failure', patient:'PT-4033', value:4100, status:'Captured'}
+            ];
+            saveHccEntries(seed);
+            return seed;
+        }
+        function saveHccEntries(list){ try { localStorage.setItem('sc_hcc', JSON.stringify(list)); } catch(e){} }
+        function renderHcc(){
+            var list = getHccEntries();
+            var tbody = document.getElementById('hcc-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(h){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(h.cat)+'</td><td>'+escHtml(h.patient)+'</td><td>$'+h.value.toLocaleString()+'</td><td>'+escHtml(h.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeHccEntry(\''+h.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var gaps = list.filter(function(h){return h.status==='Gap Identified';});
+            var captured = list.filter(function(h){return h.status==='Captured';});
+            var potentialImpact = gaps.reduce(function(s,h){return s+h.value;},0);
+            var closedOut = gaps.length + captured.length;
+            var captureRate = closedOut > 0 ? (captured.length/closedOut*100).toFixed(1)+'%' : '—';
+            var kpis = document.getElementById('hcc-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">HCC Entries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Gaps Identified</div><div class="kpi-value">'+gaps.length+'</div><div class="kpi-detail">Open</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Potential Impact</div><div class="kpi-value">$'+potentialImpact.toLocaleString()+'</div><div class="kpi-detail">From open gaps</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Captured</div><div class="kpi-value">'+captured.length+'</div><div class="kpi-detail">Confirmed</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Capture Rate</div><div class="kpi-value">'+captureRate+'</div><div class="kpi-detail">Captured vs identified</div></div>';
+            }
+        }
+        function removeHccEntry(id){
+            saveHccEntries(getHccEntries().filter(function(h){return h.id!==id;}));
+            renderHcc();
+        }
+        function addHccEntry(){
+            var cat = document.getElementById('hcc-add-cat').value.trim();
+            var patient = document.getElementById('hcc-add-patient').value.trim();
+            var value = parseFloat(document.getElementById('hcc-add-value').value);
+            var status = document.getElementById('hcc-add-status').value;
+            if (!cat || isNaN(value)) { showToast('Category and value required'); return; }
+            var list = getHccEntries();
+            list.push({id:'hc'+Date.now(), cat:cat, patient:patient||'—', value:value, status:status});
+            saveHccEntries(list);
+            renderHcc();
+            document.getElementById('hcc-add-cat').value = '';
+            document.getElementById('hcc-add-patient').value = '';
+            document.getElementById('hcc-add-value').value = '';
+            showToast('HCC entry added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1728,6 +1770,7 @@
             renderFraud();
             renderDashboard();
             renderPrebill();
+            renderHcc();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
