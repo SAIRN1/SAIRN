@@ -899,32 +899,18 @@
                 <button class="btn btn-primary" onclick="exportCSV('compliance')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">OIG Work Plan</div>
-                    <div class="kpi-value">4</div>
-                    <div class="kpi-detail">Focus areas</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Audit Schedule</div>
-                    <div class="kpi-value">12</div>
-                    <div class="kpi-detail">Planned audits</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Compliance Score</div>
-                    <div class="kpi-value">94.7%</div>
-                    <div class="kpi-detail">Overall rating</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Training Complete</div>
-                    <div class="kpi-value">100%</div>
-                    <div class="kpi-detail">Staff certified</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Policy Updates</div>
-                    <div class="kpi-value">23</div>
-                    <div class="kpi-detail">Current year</div>
-                </div>
+            <div class="kpi-grid" id="compliance-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Item</th><th>Category</th><th>Status</th><th>Date</th><th></th></tr></thead>
+                    <tbody id="compliance-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="comp-add-item" placeholder="Item description" class="search-input">
+                <select id="comp-add-cat"><option>OIG Focus Area</option><option>Audit</option><option>Training</option><option>Policy</option></select>
+                <select id="comp-add-status"><option>Scheduled</option><option>In Progress</option><option>Complete</option></select>
+                <button class="btn btn-primary" onclick="addComplianceItem()">Add</button>
             </div>
         </div>
 
@@ -1514,6 +1500,58 @@
             showToast('Denial record added');
         }
 
+        function getComplianceItems(){
+            try { var s = localStorage.getItem('sc_compliance'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'cp1', item:'Documentation accuracy review', cat:'OIG Focus Area', status:'In Progress', date:'2026-01-10'},
+                {id:'cp2', item:'Q1 internal chart audit', cat:'Audit', status:'Scheduled', date:'2026-02-01'},
+                {id:'cp3', item:'HIPAA refresher training', cat:'Training', status:'Complete', date:'2026-01-05'}
+            ];
+            saveComplianceItems(seed);
+            return seed;
+        }
+        function saveComplianceItems(list){ try { localStorage.setItem('sc_compliance', JSON.stringify(list)); } catch(e){} }
+        function renderCompliance(){
+            var list = getComplianceItems();
+            var tbody = document.getElementById('compliance-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(c){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(c.item)+'</td><td>'+escHtml(c.cat)+'</td><td>'+escHtml(c.status)+'</td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeComplianceItem(\''+c.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var oig = list.filter(function(c){return c.cat==='OIG Focus Area';}).length;
+            var audits = list.filter(function(c){return c.cat==='Audit';}).length;
+            var complete = list.filter(function(c){return c.status==='Complete';}).length;
+            var policy = list.filter(function(c){return c.cat==='Policy';}).length;
+            var kpis = document.getElementById('compliance-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Items Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">OIG Focus Areas</div><div class="kpi-value">'+oig+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Audits Logged</div><div class="kpi-value">'+audits+'</div><div class="kpi-detail">Scheduled/complete</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Items Complete</div><div class="kpi-value">'+complete+'</div><div class="kpi-detail">Of '+list.length+' logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Policy Updates</div><div class="kpi-value">'+policy+'</div><div class="kpi-detail">Logged</div></div>';
+            }
+        }
+        function removeComplianceItem(id){
+            saveComplianceItems(getComplianceItems().filter(function(c){return c.id!==id;}));
+            renderCompliance();
+        }
+        function addComplianceItem(){
+            var item = document.getElementById('comp-add-item').value.trim();
+            var cat = document.getElementById('comp-add-cat').value;
+            var status = document.getElementById('comp-add-status').value;
+            if (!item) { showToast('Item description required'); return; }
+            var list = getComplianceItems();
+            list.push({id:'cp'+Date.now(), item:item, cat:cat, status:status, date:new Date().toISOString().slice(0,10)});
+            saveComplianceItems(list);
+            renderCompliance();
+            document.getElementById('comp-add-item').value = '';
+            showToast('Compliance item added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1599,6 +1637,7 @@
             showPanel(lastPanel);
             renderRevenue();
             renderDenial();
+            renderCompliance();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
