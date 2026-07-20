@@ -403,33 +403,7 @@
                 <button class="btn btn-primary" onclick="exportCSV('dashboard')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Claims Volume</div>
-                    <div class="kpi-value">1,247</div>
-                    <div class="kpi-detail">YTD submissions</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Clean Claim Rate</div>
-                    <div class="kpi-value">94.2%</div>
-                    <div class="kpi-detail">First pass accuracy</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Revenue at Risk</div>
-                    <div class="kpi-value">$287K</div>
-                    <div class="kpi-detail">Pending denials</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Denial Rate</div>
-                    <div class="kpi-value">3.8%</div>
-                    <div class="kpi-detail">Down 0.2% MoM</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Days to Pay</div>
-                    <div class="kpi-value">18.3</div>
-                    <div class="kpi-detail">Cash flow metric</div>
-                </div>
-            </div>
+            <div class="kpi-grid" id="dashboard-kpis"></div>
         </div>
 
         <!-- AI Chat Panel -->
@@ -1468,6 +1442,7 @@
         function removeDenialEntry(id){
             saveDenialEntries(getDenialEntries().filter(function(d){return d.id!==id;}));
             renderDenial();
+            renderDashboard();
         }
         function addDenialEntry(){
             var code = document.getElementById('den-add-code').value.trim();
@@ -1480,6 +1455,7 @@
             list.push({id:'dn'+Date.now(), code:code, cause:cause||'—', count:count, amount:amount, status:status});
             saveDenialEntries(list);
             renderDenial();
+            renderDashboard();
             document.getElementById('den-add-code').value = '';
             document.getElementById('den-add-cause').value = '';
             document.getElementById('den-add-count').value = '';
@@ -1575,6 +1551,7 @@
         function removeFraudAlert(id){
             saveFraudAlerts(getFraudAlerts().filter(function(f){return f.id!==id;}));
             renderFraud();
+            renderDashboard();
         }
         function addFraudAlert(){
             var desc = document.getElementById('frd-add-desc').value.trim();
@@ -1586,10 +1563,37 @@
             list.push({id:'fr'+Date.now(), desc:desc, conf:conf, amount:amount, status:status});
             saveFraudAlerts(list);
             renderFraud();
+            renderDashboard();
             document.getElementById('frd-add-desc').value = '';
             document.getElementById('frd-add-conf').value = '';
             document.getElementById('frd-add-amount').value = '';
             showToast('Fraud alert logged');
+        }
+
+        function renderDashboard(){
+            var claimsTable = document.getElementById('claimsTable');
+            var claimRows = claimsTable ? claimsTable.querySelectorAll('tbody tr') : [];
+            var claimsVolume = claimRows.length;
+            var cleanCount = claimsTable ? claimsTable.querySelectorAll('tbody .status-clean').length : 0;
+            var cleanRate = claimsVolume > 0 ? (cleanCount/claimsVolume*100).toFixed(1)+'%' : '—';
+
+            var denials = getDenialEntries();
+            var totalDenialCount = denials.reduce(function(s,d){return s+d.count;},0);
+            var pendingDenialAmount = denials.filter(function(d){return d.status!=='Resolved';}).reduce(function(s,d){return s+d.amount;},0);
+            var denialRate = claimsVolume > 0 ? (totalDenialCount/claimsVolume*100).toFixed(1)+'%' : '—';
+
+            var fraud = getFraudAlerts();
+            var openFraud = fraud.filter(function(f){return f.status==='Under Review'||f.status==='Flagged';}).length;
+
+            var kpis = document.getElementById('dashboard-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Claims Volume</div><div class="kpi-value">'+claimsVolume+'</div><div class="kpi-detail">Logged in Claims panel</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Clean Claim Rate</div><div class="kpi-value">'+cleanRate+'</div><div class="kpi-detail">Of logged claims</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Denial Amount Pending</div><div class="kpi-value">$'+pendingDenialAmount.toLocaleString()+'</div><div class="kpi-detail">From Denial panel, unresolved</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Denial Rate</div><div class="kpi-value">'+denialRate+'</div><div class="kpi-detail">Denials logged vs claims logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Fraud Alerts Open</div><div class="kpi-value">'+openFraud+'</div><div class="kpi-detail">From Fraud panel</div></div>';
+            }
         }
 
         function filterTable(tableId, searchInputId) {
@@ -1679,6 +1683,7 @@
             renderDenial();
             renderCompliance();
             renderFraud();
+            renderDashboard();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
