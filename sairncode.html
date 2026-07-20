@@ -668,32 +668,18 @@
                 <button class="btn btn-primary" onclick="exportCSV('rac')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Active Audits</div>
-                    <div class="kpi-value">7</div>
-                    <div class="kpi-detail">In progress</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Overpayments Found</div>
-                    <div class="kpi-value">$43K</div>
-                    <div class="kpi-detail">Repayment requests</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Appeals Filed</div>
-                    <div class="kpi-value">5</div>
-                    <div class="kpi-detail">Under review</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Disputed Amount</div>
-                    <div class="kpi-value">$18K</div>
-                    <div class="kpi-detail">Appealing</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Reopened Claims</div>
-                    <div class="kpi-value">2</div>
-                    <div class="kpi-detail">Secondary audits</div>
-                </div>
+            <div class="kpi-grid" id="rac-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Audit Ref</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="rac-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="rac-add-ref" placeholder="Audit ref" class="search-input">
+                <input type="number" step="0.01" id="rac-add-amount" placeholder="Amount $" class="search-input">
+                <select id="rac-add-status"><option>Active</option><option>Appealing</option><option>Reopened</option><option>Closed</option></select>
+                <button class="btn btn-primary" onclick="addRacEntry()">Add</button>
             </div>
         </div>
 
@@ -1808,6 +1794,59 @@
             showToast('Code added');
         }
 
+        function getRacEntries(){
+            try { var s = localStorage.getItem('sc_rac'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'ra1', ref:'RAC-2026-014', amount:12500, status:'Active'},
+                {id:'ra2', ref:'RAC-2026-009', amount:6200, status:'Appealing'}
+            ];
+            saveRacEntries(seed);
+            return seed;
+        }
+        function saveRacEntries(list){ try { localStorage.setItem('sc_rac', JSON.stringify(list)); } catch(e){} }
+        function renderRac(){
+            var list = getRacEntries();
+            var tbody = document.getElementById('rac-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(r){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(r.ref)+'</td><td>$'+r.amount.toLocaleString()+'</td><td>'+escHtml(r.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeRacEntry(\''+r.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var active = list.filter(function(r){return r.status==='Active';});
+            var appealing = list.filter(function(r){return r.status==='Appealing';});
+            var reopened = list.filter(function(r){return r.status==='Reopened';});
+            var overpayments = list.reduce(function(s,r){return s+r.amount;},0);
+            var disputed = appealing.reduce(function(s,r){return s+r.amount;},0);
+            var kpis = document.getElementById('rac-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Active Audits</div><div class="kpi-value">'+active.length+'</div><div class="kpi-detail">In progress</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Overpayments Found</div><div class="kpi-value">$'+overpayments.toLocaleString()+'</div><div class="kpi-detail">All logged audits</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Appeals Filed</div><div class="kpi-value">'+appealing.length+'</div><div class="kpi-detail">Under review</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Disputed Amount</div><div class="kpi-value">$'+disputed.toLocaleString()+'</div><div class="kpi-detail">Appealing</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Reopened Claims</div><div class="kpi-value">'+reopened.length+'</div><div class="kpi-detail">Secondary audits</div></div>';
+            }
+        }
+        function removeRacEntry(id){
+            saveRacEntries(getRacEntries().filter(function(r){return r.id!==id;}));
+            renderRac();
+        }
+        function addRacEntry(){
+            var ref = document.getElementById('rac-add-ref').value.trim();
+            var amount = parseFloat(document.getElementById('rac-add-amount').value);
+            var status = document.getElementById('rac-add-status').value;
+            if (!ref || isNaN(amount)) { showToast('Audit ref and amount required'); return; }
+            var list = getRacEntries();
+            list.push({id:'ra'+Date.now(), ref:ref, amount:amount, status:status});
+            saveRacEntries(list);
+            renderRac();
+            document.getElementById('rac-add-ref').value = '';
+            document.getElementById('rac-add-amount').value = '';
+            showToast('Audit entry added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1901,6 +1940,7 @@
             renderDrg();
             renderQuery();
             renderEncoder();
+            renderRac();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
