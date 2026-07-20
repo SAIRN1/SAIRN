@@ -597,32 +597,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('drg')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Grouper Accuracy</div>
-                    <div class="kpi-value">98.7%</div>
-                    <div class="kpi-detail">DRG assignments</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Base DRG</div>
-                    <div class="kpi-value">847</div>
-                    <div class="kpi-detail">Cases processed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">CC Cases</div>
-                    <div class="kpi-value">156</div>
-                    <div class="kpi-detail">Complication/comorbidity</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">MCC Cases</div>
-                    <div class="kpi-value">89</div>
-                    <div class="kpi-detail">Major complication</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Payment/Case</div>
-                    <div class="kpi-value">$8,342</div>
-                    <div class="kpi-detail">DRG-based</div>
-                </div>
+            <div class="kpi-grid" id="drg-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>DRG Code</th><th>Patient Ref</th><th>Tier</th><th>Payment</th><th></th></tr></thead>
+                    <tbody id="drg-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="drg-add-code" placeholder="DRG code" class="search-input">
+                <input type="text" id="drg-add-patient" placeholder="Patient ref" class="search-input">
+                <select id="drg-add-tier"><option>Base</option><option>CC</option><option>MCC</option></select>
+                <input type="number" step="0.01" id="drg-add-payment" placeholder="Payment $" class="search-input">
+                <button class="btn btn-primary" onclick="addDrgEntry()">Add</button>
             </div>
         </div>
 
@@ -1681,6 +1668,60 @@
             showToast('HCC entry added');
         }
 
+        function getDrgEntries(){
+            try { var s = localStorage.getItem('sc_drg'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'dg1', code:'DRG-291', patient:'PT-4021', tier:'MCC', payment:9800},
+                {id:'dg2', code:'DRG-392', patient:'PT-4033', tier:'Base', payment:5200}
+            ];
+            saveDrgEntries(seed);
+            return seed;
+        }
+        function saveDrgEntries(list){ try { localStorage.setItem('sc_drg', JSON.stringify(list)); } catch(e){} }
+        function renderDrg(){
+            var list = getDrgEntries();
+            var tbody = document.getElementById('drg-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(d){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(d.code)+'</td><td>'+escHtml(d.patient)+'</td><td>'+escHtml(d.tier)+'</td><td>$'+d.payment.toLocaleString()+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDrgEntry(\''+d.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var base = list.filter(function(d){return d.tier==='Base';}).length;
+            var cc = list.filter(function(d){return d.tier==='CC';}).length;
+            var mcc = list.filter(function(d){return d.tier==='MCC';}).length;
+            var avgPayment = list.length ? (list.reduce(function(s,d){return s+d.payment;},0)/list.length) : 0;
+            var kpis = document.getElementById('drg-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Cases Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Base DRG</div><div class="kpi-value">'+base+'</div><div class="kpi-detail">Cases logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">CC Cases</div><div class="kpi-value">'+cc+'</div><div class="kpi-detail">Complication/comorbidity</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">MCC Cases</div><div class="kpi-value">'+mcc+'</div><div class="kpi-detail">Major complication</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Avg Payment/Case</div><div class="kpi-value">$'+avgPayment.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-detail">Logged cases</div></div>';
+            }
+        }
+        function removeDrgEntry(id){
+            saveDrgEntries(getDrgEntries().filter(function(d){return d.id!==id;}));
+            renderDrg();
+        }
+        function addDrgEntry(){
+            var code = document.getElementById('drg-add-code').value.trim();
+            var patient = document.getElementById('drg-add-patient').value.trim();
+            var tier = document.getElementById('drg-add-tier').value;
+            var payment = parseFloat(document.getElementById('drg-add-payment').value);
+            if (!code || isNaN(payment)) { showToast('Code and payment required'); return; }
+            var list = getDrgEntries();
+            list.push({id:'dg'+Date.now(), code:code, patient:patient||'—', tier:tier, payment:payment});
+            saveDrgEntries(list);
+            renderDrg();
+            document.getElementById('drg-add-code').value = '';
+            document.getElementById('drg-add-patient').value = '';
+            document.getElementById('drg-add-payment').value = '';
+            showToast('DRG entry added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1771,6 +1812,7 @@
             renderDashboard();
             renderPrebill();
             renderHcc();
+            renderDrg();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
