@@ -724,32 +724,20 @@
                 <button class="btn btn-primary" onclick="exportCSV('telehealth')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Telehealth Claims</div>
-                    <div class="kpi-value">387</div>
-                    <div class="kpi-detail">YTD coded</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">POS Code Accuracy</div>
-                    <div class="kpi-value">99.5%</div>
-                    <div class="kpi-detail">Correct modifiers</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Modifier Compliance</div>
-                    <div class="kpi-value">98.2%</div>
-                    <div class="kpi-detail">Payer requirements</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">GQ / GT Codes</div>
-                    <div class="kpi-value">156</div>
-                    <div class="kpi-detail">Telehealth modifiers</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Compliance Value</div>
-                    <div class="kpi-value">$89K</div>
-                    <div class="kpi-detail">Prevented errors</div>
-                </div>
+            <div class="kpi-grid" id="telehealth-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Claim Ref</th><th>POS Code</th><th>Modifier</th><th>Value</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="telehealth-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="th-add-claim" placeholder="Claim ref" class="search-input">
+                <input type="text" id="th-add-pos" placeholder="POS code" class="search-input">
+                <input type="text" id="th-add-mod" placeholder="Modifier (GQ/GT/etc)" class="search-input">
+                <input type="number" step="0.01" id="th-add-value" placeholder="Value $" class="search-input">
+                <select id="th-add-status"><option>Coded</option><option>Flagged</option></select>
+                <button class="btn btn-primary" onclick="addTelehealthEntry()">Add</button>
             </div>
         </div>
 
@@ -1847,6 +1835,62 @@
             showToast('Audit entry added');
         }
 
+        function getTelehealthEntries(){
+            try { var s = localStorage.getItem('sc_telehealth'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'tl1', claim:'CLM-2610', pos:'02', mod:'GT', value:180, status:'Coded'},
+                {id:'tl2', claim:'CLM-2611', pos:'10', mod:'—', value:0, status:'Flagged'}
+            ];
+            saveTelehealthEntries(seed);
+            return seed;
+        }
+        function saveTelehealthEntries(list){ try { localStorage.setItem('sc_telehealth', JSON.stringify(list)); } catch(e){} }
+        function renderTelehealth(){
+            var list = getTelehealthEntries();
+            var tbody = document.getElementById('telehealth-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(t){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(t.claim)+'</td><td>'+escHtml(t.pos)+'</td><td>'+escHtml(t.mod)+'</td><td>$'+t.value.toLocaleString()+'</td><td>'+escHtml(t.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeTelehealthEntry(\''+t.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var coded = list.filter(function(t){return t.status==='Coded';});
+            var flagged = list.filter(function(t){return t.status==='Flagged';});
+            var gqgt = list.filter(function(t){return /GQ|GT/i.test(t.mod);}).length;
+            var complianceValue = coded.reduce(function(s,t){return s+t.value;},0);
+            var kpis = document.getElementById('telehealth-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Telehealth Claims Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Correctly Coded</div><div class="kpi-value">'+coded.length+'</div><div class="kpi-detail">Of '+list.length+' logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Flagged</div><div class="kpi-value">'+flagged.length+'</div><div class="kpi-detail">Needs review</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">GQ / GT Codes</div><div class="kpi-value">'+gqgt+'</div><div class="kpi-detail">Telehealth modifiers used</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Compliance Value</div><div class="kpi-value">$'+complianceValue.toLocaleString()+'</div><div class="kpi-detail">From correctly coded entries</div></div>';
+            }
+        }
+        function removeTelehealthEntry(id){
+            saveTelehealthEntries(getTelehealthEntries().filter(function(t){return t.id!==id;}));
+            renderTelehealth();
+        }
+        function addTelehealthEntry(){
+            var claim = document.getElementById('th-add-claim').value.trim();
+            var pos = document.getElementById('th-add-pos').value.trim();
+            var mod = document.getElementById('th-add-mod').value.trim();
+            var value = parseFloat(document.getElementById('th-add-value').value);
+            var status = document.getElementById('th-add-status').value;
+            if (!claim) { showToast('Claim ref required'); return; }
+            var list = getTelehealthEntries();
+            list.push({id:'tl'+Date.now(), claim:claim, pos:pos||'—', mod:mod||'—', value:isNaN(value)?0:value, status:status});
+            saveTelehealthEntries(list);
+            renderTelehealth();
+            document.getElementById('th-add-claim').value = '';
+            document.getElementById('th-add-pos').value = '';
+            document.getElementById('th-add-mod').value = '';
+            document.getElementById('th-add-value').value = '';
+            showToast('Telehealth entry added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1941,6 +1985,7 @@
             renderQuery();
             renderEncoder();
             renderRac();
+            renderTelehealth();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
