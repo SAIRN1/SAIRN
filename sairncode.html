@@ -571,7 +571,7 @@
         <!-- Prebill Panel -->
         <div id="panel-prebill" class="panel">
             <h1 class="panel-title">AI Prebill Scrubber</h1>
-            <div class="patent-badge">Patent Pending: AI Error Detection Engine</div>
+            <div class="patent-badge">Patent Candidate — Not Yet Filed</div>
             <div class="toolbar">
                 <button class="btn btn-primary" onclick="exportCSV('prebill')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
@@ -1011,37 +1011,24 @@
         <!-- Fraud Detection Panel -->
         <div id="panel-fraud" class="panel">
             <h1 class="panel-title">AI Fraud Detection Engine</h1>
-            <div class="patent-badge">Patent Pending: Pattern Memory AI</div>
+            <div class="patent-badge">Patent Candidate — Not Yet Filed</div>
             <div class="toolbar">
                 <button class="btn btn-primary" onclick="exportCSV('fraud')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Anomalies Detected</div>
-                    <div class="kpi-value">23</div>
-                    <div class="kpi-detail">This month</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Fraud Confidence</div>
-                    <div class="kpi-value">87.3%</div>
-                    <div class="kpi-detail">Avg probability</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Pattern Memory</div>
-                    <div class="kpi-value">1.2M</div>
-                    <div class="kpi-detail">Patterns indexed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Verified Fraud</div>
-                    <div class="kpi-value">3</div>
-                    <div class="kpi-detail">Confirmed cases</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Prevented Loss</div>
-                    <div class="kpi-value">$187K</div>
-                    <div class="kpi-detail">Year to date</div>
-                </div>
+            <div class="kpi-grid" id="fraud-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Description</th><th>Confidence</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="fraud-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="frd-add-desc" placeholder="Anomaly description" class="search-input">
+                <input type="number" id="frd-add-conf" placeholder="Confidence %" class="search-input">
+                <input type="number" step="0.01" id="frd-add-amount" placeholder="Amount at risk" class="search-input">
+                <select id="frd-add-status"><option>Flagged</option><option>Under Review</option><option>Verified Fraud</option><option>Cleared</option></select>
+                <button class="btn btn-primary" onclick="addFraudAlert()">Add</button>
             </div>
         </div>
 
@@ -1552,6 +1539,59 @@
             showToast('Compliance item added');
         }
 
+        function getFraudAlerts(){
+            try { var s = localStorage.getItem('sc_fraud'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'fr1', desc:'Duplicate billing pattern, same CPT/date', conf:82, amount:4200, status:'Under Review'},
+                {id:'fr2', desc:'Unbundled procedure codes', conf:71, amount:1850, status:'Flagged'}
+            ];
+            saveFraudAlerts(seed);
+            return seed;
+        }
+        function saveFraudAlerts(list){ try { localStorage.setItem('sc_fraud', JSON.stringify(list)); } catch(e){} }
+        function renderFraud(){
+            var list = getFraudAlerts();
+            var tbody = document.getElementById('fraud-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(f){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(f.desc)+'</td><td>'+f.conf+'%</td><td>$'+f.amount.toLocaleString()+'</td><td>'+escHtml(f.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeFraudAlert(\''+f.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var avgConf = list.length ? (list.reduce(function(s,f){return s+f.conf;},0)/list.length).toFixed(1)+'%' : '—';
+            var verified = list.filter(function(f){return f.status==='Verified Fraud';});
+            var preventedLoss = verified.reduce(function(s,f){return s+f.amount;},0);
+            var kpis = document.getElementById('fraud-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Anomalies Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Avg Confidence</div><div class="kpi-value">'+avgConf+'</div><div class="kpi-detail">Logged alerts</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Under Review</div><div class="kpi-value">'+list.filter(function(f){return f.status==='Under Review'||f.status==='Flagged';}).length+'</div><div class="kpi-detail">Open</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Verified Fraud</div><div class="kpi-value">'+verified.length+'</div><div class="kpi-detail">Confirmed</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Prevented Loss</div><div class="kpi-value">$'+preventedLoss.toLocaleString()+'</div><div class="kpi-detail">From verified cases</div></div>';
+            }
+        }
+        function removeFraudAlert(id){
+            saveFraudAlerts(getFraudAlerts().filter(function(f){return f.id!==id;}));
+            renderFraud();
+        }
+        function addFraudAlert(){
+            var desc = document.getElementById('frd-add-desc').value.trim();
+            var conf = parseFloat(document.getElementById('frd-add-conf').value);
+            var amount = parseFloat(document.getElementById('frd-add-amount').value);
+            var status = document.getElementById('frd-add-status').value;
+            if (!desc || isNaN(conf) || isNaN(amount)) { showToast('Description, confidence, and amount required'); return; }
+            var list = getFraudAlerts();
+            list.push({id:'fr'+Date.now(), desc:desc, conf:conf, amount:amount, status:status});
+            saveFraudAlerts(list);
+            renderFraud();
+            document.getElementById('frd-add-desc').value = '';
+            document.getElementById('frd-add-conf').value = '';
+            document.getElementById('frd-add-amount').value = '';
+            showToast('Fraud alert logged');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1638,6 +1678,7 @@
             renderRevenue();
             renderDenial();
             renderCompliance();
+            renderFraud();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
