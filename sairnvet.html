@@ -1273,30 +1273,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-petinsurance-table','panel-petinsurance')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Claims Submitted MTD</div>
-<div class="kpi-value">18</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Reimbursement</div>
-<div class="kpi-value">76%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Turnaround</div>
-<div class="kpi-value">9 days</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Providers Supported</div>
-<div class="kpi-value">12</div>
-</div>
-</div>
+<div class="kpi-row" id="pi-kpis"></div>
 <div class="card"><table id="panel-petinsurance-table">
 <thead><tr><th>Patient</th><th>Provider</th><th>Claim Amount</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Max</td><td>Trupanion</td><td>$412.00</td><td>Submitted</td></tr>
-<tr><td>Whiskers</td><td>Healthy Paws</td><td>$189.00</td><td>Reimbursed</td></tr>
-</tbody></table></div>
+<tbody id="pi-tbody"></tbody></table></div>
+<div class="card"><h3>Log a Claim</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="pi-add-patient" placeholder="Patient name"><input type="text" id="pi-add-provider" placeholder="Provider"><input type="number" id="pi-add-amount" placeholder="Claim amount ($)"><button class="btn" onclick="addClaim()">Submit Claim</button></div></div>
 </div>
 
 <div id="panel-portal" class="panel">
@@ -1889,6 +1870,7 @@ function gateSubmit(){
   renderComms();
   renderDocuments();
   renderMobileVet();
+  renderPetInsurance();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -4102,6 +4084,71 @@ function addMobileStop(){
   document.getElementById('mv-add-location').value='';
   document.getElementById('mv-add-miles').value='';
   showToast('Arrival logged for '+unit,'success');
+}
+
+function getClaims(){
+  try {
+    var stored = localStorage.getItem('sv_petinsurance');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {id:'pi1', patient:'Max', provider:'Trupanion', amount:412.00, status:'Submitted', submitted:'2026-07-05', reimbursed:null, reimbursedDate:null},
+    {id:'pi2', patient:'Whiskers', provider:'Healthy Paws', amount:189.00, status:'Reimbursed', submitted:'2026-06-20', reimbursed:143.64, reimbursedDate:'2026-06-29'}
+  ];
+  saveClaims(seed);
+  return seed;
+}
+
+function saveClaims(list){
+  try { localStorage.setItem('sv_petinsurance', JSON.stringify(list)); } catch(e){}
+}
+
+function renderPetInsurance(){
+  var list = getClaims();
+  var tbody = document.getElementById('pi-tbody');
+  if(tbody){
+    tbody.innerHTML = '';
+    list.slice().reverse().forEach(function(c){
+      var sc = c.status==='Reimbursed'?'bg':c.status==='Denied'?'br':'bb';
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escHtml(c.patient)+'</td><td>'+escHtml(c.provider)+'</td><td>$'+c.amount.toFixed(2)+'</td><td><span class="badge '+sc+'">'+escHtml(c.status)+'</span></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var mtd = list.filter(function(c){ return c.submitted && c.submitted.slice(0,7)===thisMonth; }).length;
+  var reimbursedClaims = list.filter(function(c){ return typeof c.reimbursed==='number'; });
+  var avgReimb = reimbursedClaims.length ? Math.round(reimbursedClaims.reduce(function(s,c){ return s+(c.reimbursed/c.amount*100); },0)/reimbursedClaims.length) : null;
+  var turnarounds = reimbursedClaims.filter(function(c){ return c.reimbursedDate; }).map(function(c){ return (new Date(c.reimbursedDate)-new Date(c.submitted))/86400000; });
+  var avgTurn = turnarounds.length ? Math.round(turnarounds.reduce(function(a,b){return a+b;},0)/turnarounds.length) : null;
+  var providers = {}; list.forEach(function(c){ providers[c.provider]=1; });
+  var providerCount = Object.keys(providers).length;
+
+  var kpis = document.getElementById('pi-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Claims Submitted MTD</div><div class="kpi-value">'+mtd+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Reimbursement</div><div class="kpi-value">'+(avgReimb!==null?avgReimb+'%':'--')+'</div><div class="kpi-change">Of reimbursed claims</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Turnaround</div><div class="kpi-value">'+(avgTurn!==null?avgTurn+' days':'--')+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Providers Used</div><div class="kpi-value">'+providerCount+'</div></div>';
+  }
+}
+
+function addClaim(){
+  var patient = document.getElementById('pi-add-patient').value.trim();
+  var provider = document.getElementById('pi-add-provider').value.trim();
+  var amount = parseFloat(document.getElementById('pi-add-amount').value)||0;
+  if(!patient||!provider||!amount){ showToast('Patient, provider, and amount required','error'); return; }
+  var list = getClaims();
+  list.push({id:'pi'+Date.now(), patient:patient, provider:provider, amount:amount, status:'Submitted', submitted:new Date().toISOString().slice(0,10), reimbursed:null, reimbursedDate:null});
+  saveClaims(list);
+  renderPetInsurance();
+  document.getElementById('pi-add-patient').value='';
+  document.getElementById('pi-add-provider').value='';
+  document.getElementById('pi-add-amount').value='';
+  showToast('Claim submitted for '+patient,'success');
 }
 
 function getCogginsTests(){
@@ -6574,6 +6621,7 @@ if(auth){
   renderComms();
   renderDocuments();
   renderMobileVet();
+  renderPetInsurance();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
