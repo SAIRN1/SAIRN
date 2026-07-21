@@ -1289,30 +1289,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-portal-table','panel-portal')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Portal Users</div>
-<div class="kpi-value">892</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Requests This Week</div>
-<div class="kpi-value">41</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Response Time</div>
-<div class="kpi-value">2.1 hrs</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Adoption Rate</div>
-<div class="kpi-value">74%</div>
-</div>
-</div>
+<div class="kpi-row" id="portal-kpis"></div>
 <div class="card"><table id="panel-portal-table">
 <thead><tr><th>Client</th><th>Request</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Smith, John</td><td>Appointment request — annual exam</td><td>Confirmed</td></tr>
-<tr><td>Doe, Jane</td><td>Records request — vaccine history</td><td>Sent</td></tr>
-</tbody></table></div>
+<tbody id="portal-tbody"></tbody></table></div>
+<div class="card"><h3>Log a Request</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="pt-add-client" placeholder="Client name"><input type="text" id="pt-add-request" placeholder="Request description"><button class="btn" onclick="addPortalRequest()">Log</button></div></div>
 </div>
 
 <div id="panel-boarding" class="panel">
@@ -1871,6 +1852,7 @@ function gateSubmit(){
   renderDocuments();
   renderMobileVet();
   renderPetInsurance();
+  renderPortal();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -4149,6 +4131,67 @@ function addClaim(){
   document.getElementById('pi-add-provider').value='';
   document.getElementById('pi-add-amount').value='';
   showToast('Claim submitted for '+patient,'success');
+}
+
+function getPortalRequests(){
+  try {
+    var stored = localStorage.getItem('sv_portal');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {id:'pt1', client:'Smith, John', request:'Appointment request — annual exam', status:'Confirmed', requested:'2026-07-06T09:00:00', responded:'2026-07-06T10:15:00'},
+    {id:'pt2', client:'Doe, Jane', request:'Records request — vaccine history', status:'Sent', requested:'2026-07-07T14:00:00', responded:'2026-07-07T14:45:00'}
+  ];
+  savePortalRequests(seed);
+  return seed;
+}
+
+function savePortalRequests(list){
+  try { localStorage.setItem('sv_portal', JSON.stringify(list)); } catch(e){}
+}
+
+function renderPortal(){
+  var list = getPortalRequests();
+  var tbody = document.getElementById('portal-tbody');
+  if(tbody){
+    tbody.innerHTML = '';
+    list.slice().reverse().forEach(function(p){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escHtml(p.client)+'</td><td>'+escHtml(p.request)+'</td><td>'+escHtml(p.status)+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var now = new Date();
+  var weekAgo = new Date(now.getTime()-7*86400000);
+  var thisWeek = list.filter(function(p){ return new Date(p.requested) >= weekAgo; }).length;
+  var distinctClients = {}; list.forEach(function(p){ distinctClients[p.client]=1; });
+  var responded = list.filter(function(p){ return p.responded; });
+  var respTimes = responded.map(function(p){ return (new Date(p.responded)-new Date(p.requested))/3600000; });
+  var avgResp = respTimes.length ? (respTimes.reduce(function(a,b){return a+b;},0)/respTimes.length).toFixed(1)+' hrs' : '--';
+  var respRate = list.length ? Math.round(responded.length/list.length*100) : 0;
+
+  var kpis = document.getElementById('portal-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Distinct Clients</div><div class="kpi-value">'+Object.keys(distinctClients).length+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Requests This Week</div><div class="kpi-value">'+thisWeek+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Response Time</div><div class="kpi-value">'+avgResp+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Response Rate</div><div class="kpi-value">'+respRate+'%</div></div>';
+  }
+}
+
+function addPortalRequest(){
+  var client = document.getElementById('pt-add-client').value.trim();
+  var request = document.getElementById('pt-add-request').value.trim();
+  if(!client||!request){ showToast('Client and request required','error'); return; }
+  var list = getPortalRequests();
+  list.push({id:'pt'+Date.now(), client:client, request:request, status:'Sent', requested:new Date().toISOString(), responded:null});
+  savePortalRequests(list);
+  renderPortal();
+  document.getElementById('pt-add-client').value='';
+  document.getElementById('pt-add-request').value='';
+  showToast('Logged request from '+client,'success');
 }
 
 function getCogginsTests(){
@@ -6622,6 +6665,7 @@ if(auth){
   renderDocuments();
   renderMobileVet();
   renderPetInsurance();
+  renderPortal();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
