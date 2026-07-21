@@ -54,9 +54,15 @@ Session 63 handoff undercounted the scope: on inspection, **14 of the ~18 "remai
 - `diagnoses` — real 465-entry `VET_DIAGNOSES` database, live search, count matches the claimed 465 exactly
 - `drugdb` — real 485-entry `VET_DRUGS` database, count matches claimed 485 exactly, careful species-specific safety flags (e.g. explicitly refuses to show a calculated numeric dose for carfentanil/etorphine rather than guessing)
 
-**Still remaining — same static-HTML treatment needed:** `prepurchase`, `referrals`, `reminders`, `reproduction`, `wellness` (5 panels). Not yet inspected in detail this session, but given the pattern found in the other 14, assume they are fully static with hardcoded KPIs until checked.
+**UPDATE — SAIRNvet is now fully done, all 54/54 panels.** The remaining 5 from the table above turned out to split further:
+- `prepurchase` and `reproduction` already had real render functions from an earlier session (`renderPPE`/`renderRepro`) — inspected, confirmed honest, no fix needed. The "assume static" note above was an overcount; always check for an existing `render<Name>()`/`get<Name>()` function before assuming a panel needs a rebuild.
+- `referrals`, `reminders`, `wellness` were genuinely fully static and have been fixed, one commit: `dd27d4eb530d63837b29082baade4503db56fed2`. Dropped fabricated claims: referrals' "18 specialist network / 88% return rate", reminders' "54 auto-sent / 71% response rate" (no automated send system exists), wellness' "312 active plans / $18,700 MRR / 82% utilization / 89% renewal" (only 2 demo rows existed behind those numbers).
 
-Guardian clean throughout every commit above: `node --check` pass, 0 duplicate ids, div balance verified (grew from 1169/1169 to 1185/1185 as panels gained real content), 54/54 nav↔panel reconciliation maintained at every step. Every commit independently byte-verified against GitHub after push.
+Also fixed in the same batch of sessions, not yet listed in the table above: `petinsurance` (`dd722156f27b8a0316233931ef0fdbf22c946476`) and `portal` (`2cf6499f9612882ac386b1ebe3e18172bf3bb792` — dropped an unfounded "892 portal users / 74% adoption rate," no client user-account system exists in this app).
+
+**Master HEAD as of this update: `dd27d4eb530d63837b29082baade4503db56fed2`.**
+
+Guardian clean throughout every commit: `node --check` pass, 0 duplicate ids, div balance grew from 1169/1169 to 1191/1191 as panels gained real content, 54/54 nav↔panel reconciliation maintained at every single step. Every commit independently byte-verified against GitHub after push.
 
 ## Standard workflow (proven across this session and prior ones — follow exactly)
 1. Confirm master HEAD unchanged since last known commit before touching anything (`GET /git/refs/heads/master`).
@@ -78,10 +84,10 @@ Guardian clean throughout every commit above: `node --check` pass, 0 duplicate i
 GitHub REST API only (blob→tree→commit→ref, never `git push` directly) · no Unicode box-drawing chars in JS · no dark backgrounds · no `alert()` (showToast only) · all new localStorage keys app-prefixed · Claude calls through proxy only · Guardian-equivalent scan **after every edit**, not just before push · Chat/session stops rather than compacts — produce a handoff instead.
 
 ## What's next, in priority order
-1. Finish SAIRNvet: `prepurchase`, `referrals`, `reminders`, `reproduction`, `wellness` — assume fully static until checked, same treatment as the 8 fixed this session.
-2. Michael has explicitly said the goal is **every SAIRN app**, one at a time, brought to "100% complete, could be put on someone's computer" standard before moving to the next app. Do not move to another app until SAIRNvet's full panel list is clean AND the whole file has had a `node --check` pass confirming no hidden syntax bugs anywhere (not just in the panels touched this session).
-3. After SAIRNvet: re-verify SAIRNcode with the same `node --check`-first rigor — it was marked "fully completed, 20/20 panels" in Session 63, but SAIRNbiz was *also* assumed fine until it wasn't. A basic syntax check on SAIRNcode has not yet been done with this level of scrutiny this session (the check was started, found clean — `node --check` passed, 0 dup ids, div balance 492/492, 20/20 nav-panel reconciliation on `showPanel()` targets — but a full fabricated-KPI re-audit was not completed before the session pivoted to this handoff).
-4. Then the remaining platform apps in whatever order Michael prioritizes.
+1. ~~Finish SAIRNvet~~ — **done.** All 54/54 panels have real backing data models, zero static/fabricated content remains anywhere in the app.
+2. Re-verify SAIRNcode with the same `node --check`-first rigor before touching anything else. It was marked "fully completed, 20/20 panels" in Session 63, but SAIRNbiz was *also* assumed fine until it wasn't. A basic syntax/reconciliation check was started this session and came back clean (`node --check` pass, 0 dup ids, div balance 492/492, 20/20 nav-panel reconciliation on `showPanel()` targets) — but a full fabricated-KPI re-audit of its 20 panels, matching the SAIRNbiz/SAIRNvet rigor, has not been done yet.
+3. Michael has explicitly said the goal is **every SAIRN app**, one at a time, brought to "100% complete, could be put on someone's computer" standard before moving to the next app.
+4. Then the remaining platform apps (StoneDesk, SAIRNgrounds, SAIRNdesign, SAIRNmechanical, and the rest of the 11-app roadmap) in whatever order Michael prioritizes.
 
 ## Deploy
 Local machine: `C:\Users\marsh` (repo root is the home directory itself), plain CMD (never PowerShell):
