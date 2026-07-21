@@ -1363,30 +1363,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-boarding-table','panel-boarding')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Kennels Occupied</div>
-<div class="kpi-value">12/20</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Grooming Today</div>
-<div class="kpi-value">5</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Stay</div>
-<div class="kpi-value">3.2 days</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue MTD</div>
-<div class="kpi-value">$14,200</div>
-</div>
-</div>
+<div class="kpi-row" id="boarding-kpis"></div>
 <div class="card"><table id="panel-boarding-table">
 <thead><tr><th>Patient</th><th>Service</th><th>Check-In</th><th>Check-Out</th></tr></thead>
-<tbody>
-<tr><td>Bella</td><td>Boarding</td><td>2026-07-05</td><td>2026-07-09</td></tr>
-<tr><td>Kiwi</td><td>Bath + Nail Trim</td><td>2026-07-07</td><td>2026-07-07</td></tr>
-</tbody></table></div>
+<tbody id="boarding-tbody"></tbody></table></div>
+<div class="card"><h3>Quick Add</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="bd-add-patient" placeholder="Patient name"><select id="bd-add-service"><option>Boarding</option><option>Bath + Nail Trim</option><option>Full Groom</option></select><input type="date" id="bd-add-checkin"><input type="date" id="bd-add-checkout"><input type="number" id="bd-add-rate" placeholder="Rate ($/day or flat)"><button class="btn" onclick="addBoarding()">Add</button></div></div>
 </div>
 
 <div id="panel-wellness" class="panel">
@@ -1961,6 +1942,7 @@ function gateSubmit(){
   renderPPE();
   renderPatients();
   renderSoap();
+  renderBoarding();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -6049,7 +6031,88 @@ function renderSoap(){
   }
 }
 
+var BOARDING_TOTAL_KENNELS = 20;
 var soapPendingNote = null;
+
+function getBoarding(){
+  try {
+    var stored = localStorage.getItem('sv_boarding');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {id:'bd1', patient:'Bella', service:'Boarding', checkin:'2026-07-05', checkout:'2026-07-09', rate:45},
+    {id:'bd2', patient:'Kiwi', service:'Bath + Nail Trim', checkin:'2026-07-07', checkout:'2026-07-07', rate:55}
+  ];
+  saveBoarding(seed);
+  return seed;
+}
+
+function saveBoarding(list){
+  try { localStorage.setItem('sv_boarding', JSON.stringify(list)); } catch(e){}
+}
+
+function renderBoarding(){
+  var list = getBoarding();
+  var tbody = document.getElementById('boarding-tbody');
+  if(tbody){
+    tbody.innerHTML = '';
+    list.forEach(function(b){
+      var tr = document.createElement('tr');
+      tr.style.cursor='pointer';
+      tr.onclick=function(){ if(confirm('Remove '+b.patient+' — '+b.service+'?')) removeBoarding(b.id); };
+      tr.innerHTML = '<td>'+escHtml(b.patient)+'</td><td>'+escHtml(b.service)+'</td><td>'+escHtml(b.checkin)+'</td><td>'+escHtml(b.checkout)+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var today = new Date().toISOString().slice(0,10);
+  var occupied = list.filter(function(b){ return b.service==='Boarding' && b.checkin<=today && b.checkout>=today; }).length;
+  var groomingToday = list.filter(function(b){ return b.service!=='Boarding' && b.checkin===today; }).length;
+  var stays = list.filter(function(b){ return b.service==='Boarding'; }).map(function(b){
+    var d = (new Date(b.checkout)-new Date(b.checkin))/86400000;
+    return d>0?d:1;
+  });
+  var avgStay = stays.length ? (stays.reduce(function(a,b){return a+b;},0)/stays.length).toFixed(1)+' days' : '--';
+  var thisMonth = today.slice(0,7);
+  var revenue = list.filter(function(b){ return b.checkin.slice(0,7)===thisMonth; }).reduce(function(s,b){
+    var days = b.service==='Boarding' ? Math.max(1,(new Date(b.checkout)-new Date(b.checkin))/86400000) : 1;
+    return s + (b.rate||0)*days;
+  },0);
+
+  var kpis = document.getElementById('boarding-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Kennels Occupied</div><div class="kpi-value">'+occupied+'/'+BOARDING_TOTAL_KENNELS+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Grooming Today</div><div class="kpi-value">'+groomingToday+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Stay</div><div class="kpi-value">'+avgStay+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Revenue MTD</div><div class="kpi-value">$'+revenue.toLocaleString()+'</div></div>';
+  }
+}
+
+function removeBoarding(id){
+  var list = getBoarding().filter(function(x){ return x.id!==id; });
+  saveBoarding(list);
+  renderBoarding();
+  showToast('Removed','success');
+}
+
+function addBoarding(){
+  var patient = document.getElementById('bd-add-patient').value.trim();
+  var service = document.getElementById('bd-add-service').value;
+  var checkin = document.getElementById('bd-add-checkin').value;
+  var checkout = document.getElementById('bd-add-checkout').value || checkin;
+  var rate = parseFloat(document.getElementById('bd-add-rate').value)||0;
+  if(!patient||!checkin){ showToast('Patient name and check-in date required','error'); return; }
+  var list = getBoarding();
+  list.push({id:'bd'+Date.now(), patient:patient, service:service, checkin:checkin, checkout:checkout, rate:rate});
+  saveBoarding(list);
+  renderBoarding();
+  document.getElementById('bd-add-patient').value='';
+  document.getElementById('bd-add-checkin').value='';
+  document.getElementById('bd-add-checkout').value='';
+  document.getElementById('bd-add-rate').value='';
+  showToast(patient+' added','success');
+}
 
 function onSoapSignoff(){
   if(document.getElementById('soap-vet-accepted').checked){
@@ -6340,6 +6403,7 @@ if(auth){
   renderPPE();
   renderPatients();
   renderSoap();
+  renderBoarding();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
