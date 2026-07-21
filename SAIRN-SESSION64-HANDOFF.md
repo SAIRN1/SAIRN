@@ -85,9 +85,9 @@ GitHub REST API only (blob→tree→commit→ref, never `git push` directly) · 
 
 ## What's next, in priority order
 1. ~~Finish SAIRNvet~~ — **done.** All 54/54 panels have real backing data models, zero static/fabricated content remains anywhere in the app.
-2. Re-verify SAIRNcode with the same `node --check`-first rigor before touching anything else. It was marked "fully completed, 20/20 panels" in Session 63, but SAIRNbiz was *also* assumed fine until it wasn't. A basic syntax/reconciliation check was started this session and came back clean (`node --check` pass, 0 dup ids, div balance 492/492, 20/20 nav-panel reconciliation on `showPanel()` targets) — but a full fabricated-KPI re-audit of its 20 panels, matching the SAIRNbiz/SAIRNvet rigor, has not been done yet.
-3. Michael has explicitly said the goal is **every SAIRN app**, one at a time, brought to "100% complete, could be put on someone's computer" standard before moving to the next app.
-4. Then the remaining platform apps (StoneDesk, SAIRNgrounds, SAIRNdesign, SAIRNmechanical, and the rest of the 11-app roadmap) in whatever order Michael prioritizes.
+2. ~~Re-verify SAIRNcode~~ — **done, and it holds up.** Independently checked (not just trusted): `node --check` clean, 0 dup ids, div balance 492/492, 20/20 nav-panel reconciliation, Dashboard/Prebill/Providers spot-checked in full and genuinely compute live from real data, both "Patent Pending" corrections still present, all 8 CSV buttons point at real panels, Claims panel's static seed-data KPIs verified to exactly match its actual table rows, AI chat uses the real proxy correctly, all 16 render functions properly hooked into init. **No fixes needed, no commit made.**
+3. Michael has explicitly said the goal is **every SAIRN app**, one at a time, brought to "100% complete, could be put on someone's computer" standard before moving to the next app. Both SAIRNbiz and SAIRNvet are now at that standard; SAIRNcode was confirmed already there.
+4. Next: the remaining platform apps (StoneDesk, SAIRNgrounds, SAIRNdesign, SAIRNmechanical, and the rest of the 11-app roadmap) in whatever order Michael prioritizes. Apply the same workflow: `node --check` first, then full fabricated-KPI audit, don't trust a prior "complete" claim without independently re-verifying it.
 
 ## Deploy
 Local machine: `C:\Users\marsh` (repo root is the home directory itself), plain CMD (never PowerShell):
