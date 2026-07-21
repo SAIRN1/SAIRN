@@ -1222,31 +1222,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-documents-table','panel-documents')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Templates</div>
-<div class="kpi-value">46</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Signed This Month</div>
-<div class="kpi-value">112</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">E-Signature Enabled</div>
-<div class="kpi-value">Yes</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Storage Used</div>
-<div class="kpi-value">2.1 GB</div>
-</div>
-</div>
+<div class="kpi-row" id="docs-kpis"></div>
 <div class="card"><table id="panel-documents-table">
-<thead><tr><th>Document</th><th>Type</th><th>Last Updated</th></tr></thead>
-<tbody>
-<tr><td>Surgical Consent — General</td><td>Consent</td><td>2026-05-10</td></tr>
-<tr><td>Discharge Instructions — Spay/Neuter</td><td>Discharge</td><td>2026-05-10</td></tr>
-<tr><td>Boarding Agreement</td><td>Agreement</td><td>2026-04-22</td></tr>
-</tbody></table></div>
+<thead><tr><th>Document</th><th>Type</th><th>Last Updated</th><th>Used This Month</th></tr></thead>
+<tbody id="docs-tbody"></tbody></table></div>
+<div class="card"><h3>Add Document</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="dc-add-name" placeholder="Document name"><select id="dc-add-type"><option>Consent</option><option>Discharge</option><option>Agreement</option><option>Policy</option><option>Other</option></select><button class="btn" onclick="addDocument()">Add</button></div></div>
 </div>
 
 <div id="panel-referrals" class="panel">
@@ -1925,6 +1905,7 @@ function gateSubmit(){
   renderSoap();
   renderBoarding();
   renderComms();
+  renderDocuments();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -3982,6 +3963,78 @@ function addPatient(){
   document.getElementById('pt-add-owner').value='';
   document.getElementById('pt-add-age').value='';
   showToast(name+' added to roster','success');
+}
+
+function getDocuments(){
+  try {
+    var stored = localStorage.getItem('sv_documents');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {id:'dc1', name:'Surgical Consent — General', type:'Consent', updated:'2026-05-10', usedDates:[]},
+    {id:'dc2', name:'Discharge Instructions — Spay/Neuter', type:'Discharge', updated:'2026-05-10', usedDates:[]},
+    {id:'dc3', name:'Boarding Agreement', type:'Agreement', updated:'2026-04-22', usedDates:[]}
+  ];
+  saveDocuments(seed);
+  return seed;
+}
+
+function saveDocuments(list){
+  try { localStorage.setItem('sv_documents', JSON.stringify(list)); } catch(e){}
+}
+
+function renderDocuments(){
+  var list = getDocuments();
+  var tbody = document.getElementById('docs-tbody');
+  var today = new Date();
+  var thisMonth = today.toISOString().slice(0,7);
+  if(tbody){
+    tbody.innerHTML = '';
+    list.forEach(function(d){
+      var usedThisMonth = (d.usedDates||[]).filter(function(u){ return u.slice(0,7)===thisMonth; }).length;
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escHtml(d.name)+'</td><td>'+escHtml(d.type)+'</td><td>'+escHtml(d.updated)+'</td><td>'+usedThisMonth+' <button class="btn btn-sm" onclick="logDocUse(\''+d.id+'\')">Log Use</button></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var signedThisMonth = list.reduce(function(s,d){ return s + (d.usedDates||[]).filter(function(u){ return u.slice(0,7)===thisMonth; }).length; },0);
+  var types = {}; list.forEach(function(d){ types[d.type]=1; });
+  var typeCount = Object.keys(types).length;
+  var ages = list.map(function(d){ return (today-new Date(d.updated))/86400000; });
+  var avgAge = ages.length ? Math.round(ages.reduce(function(a,b){return a+b;},0)/ages.length) : 0;
+
+  var kpis = document.getElementById('docs-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Templates</div><div class="kpi-value">'+list.length+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Used This Month</div><div class="kpi-value">'+signedThisMonth+'</div><div class="kpi-change">Logged uses</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Document Types</div><div class="kpi-value">'+typeCount+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Days Since Update</div><div class="kpi-value">'+avgAge+'</div><div class="kpi-change">Lower is fresher</div></div>';
+  }
+}
+
+function logDocUse(id){
+  var list = getDocuments();
+  var d = list.find(function(x){ return x.id===id; });
+  if(!d) return;
+  d.usedDates = d.usedDates||[];
+  d.usedDates.push(new Date().toISOString().slice(0,10));
+  saveDocuments(list);
+  renderDocuments();
+  showToast('Logged use of '+d.name,'success');
+}
+
+function addDocument(){
+  var name = document.getElementById('dc-add-name').value.trim();
+  var type = document.getElementById('dc-add-type').value;
+  if(!name){ showToast('Document name required','error'); return; }
+  var list = getDocuments();
+  list.push({id:'dc'+Date.now(), name:name, type:type, updated:new Date().toISOString().slice(0,10), usedDates:[]});
+  saveDocuments(list);
+  renderDocuments();
+  document.getElementById('dc-add-name').value='';
+  showToast(name+' added','success');
 }
 
 function getCogginsTests(){
@@ -6452,6 +6505,7 @@ if(auth){
   renderSoap();
   renderBoarding();
   renderComms();
+  renderDocuments();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
