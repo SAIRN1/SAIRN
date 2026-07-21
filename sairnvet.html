@@ -380,34 +380,10 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-soap-table','panel-soap')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Notes This Week</div>
-<div class="kpi-value">94</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Completion Time</div>
-<div class="kpi-value">3.2 min</div>
-<div class="kpi-change">With AI assist</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Templates</div>
-<div class="kpi-value">12</div>
-<div class="kpi-change">By species/visit type</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Signed</div>
-<div class="kpi-value">100%</div>
-<div class="kpi-change">Compliance</div>
-</div>
-</div>
+<div class="kpi-row" id="soap-kpis"></div>
 <div class="card"><table id="panel-soap-table">
 <thead><tr><th>Date</th><th>Patient</th><th>Complaint</th><th>Author</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>2026-07-07</td><td>Max</td><td>Annual wellness</td><td>Dr. Mitchell</td><td>Signed</td></tr>
-<tr><td>2026-07-06</td><td>Star</td><td>Lameness eval</td><td>Dr. Mitchell</td><td>Signed</td></tr>
-<tr><td>2026-07-05</td><td>Bessie</td><td>Herd health check</td><td>Dr. Mitchell</td><td>Draft</td></tr>
-</tbody></table></div>
+<tbody id="soap-tbody"></tbody></table></div>
 <div class="card"><h3>Generate SOAP Note with Claude</h3><label>Patient / Species</label><input type="text" id="soap-patient" placeholder="e.g., Max, canine" style="width:100%;margin:8px 0;"><label>Subjective (owner-reported)</label><textarea id="soap-subj" placeholder="e.g., limping on left hind for 2 days"></textarea><label>Objective findings</label><textarea id="soap-obj" placeholder="e.g., T 101.9F, mild swelling left stifle, pain on flexion"></textarea><button class="btn" onclick="generateSOAP()" style="margin-top:10px;">Generate SOAP Note</button><div id="soap-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div><div id="soap-signoff" style="display:none;margin-top:15px;padding-top:15px;border-top:1px solid #E5E7EB;"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="soap-vet-accepted" onchange="onSoapSignoff()"> I have reviewed and edited this note and confirm it as accurate for this patient</label></div></div>
 </div>
 
@@ -1984,6 +1960,7 @@ function gateSubmit(){
   renderEquineDental();
   renderPPE();
   renderPatients();
+  renderSoap();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -6028,9 +6005,66 @@ function getProtocolFromClaude(){
   }).catch(function(e){});
 }
 
+function getSoapNotes(){
+  try {
+    var stored = localStorage.getItem('sv_soapnotes');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [];
+  saveSoapNotes(seed);
+  return seed;
+}
+
+function saveSoapNotes(list){
+  try { localStorage.setItem('sv_soapnotes', JSON.stringify(list)); } catch(e){}
+}
+
+function renderSoap(){
+  var list = getSoapNotes();
+  var tbody = document.getElementById('soap-tbody');
+  if(tbody){
+    tbody.innerHTML = '';
+    list.slice().reverse().forEach(function(n){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escHtml(n.date)+'</td><td>'+escHtml(n.patient)+'</td><td>'+escHtml(n.complaint)+'</td><td>'+escHtml(n.author)+'</td><td>'+escHtml(n.status)+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var now = new Date();
+  var weekAgo = new Date(now.getTime()-7*86400000);
+  var thisWeek = list.filter(function(n){ return new Date(n.date) >= weekAgo; }).length;
+  var signed = list.filter(function(n){ return n.status==='Signed'; });
+  var times = signed.map(function(n){ return n.completionMin; }).filter(function(t){ return typeof t==='number'; });
+  var avgTime = times.length ? (times.reduce(function(a,b){return a+b;},0)/times.length).toFixed(1)+' min' : '--';
+  var signedPct = list.length ? Math.round(signed.length/list.length*100) : 0;
+
+  var kpis = document.getElementById('soap-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Notes This Week</div><div class="kpi-value">'+thisWeek+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Completion Time</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-change">Generate to sign-off</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Total Notes Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-change">All time</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Signed</div><div class="kpi-value">'+signedPct+'%</div><div class="kpi-change">Of notes logged</div></div>';
+  }
+}
+
+var soapPendingNote = null;
+
 function onSoapSignoff(){
   if(document.getElementById('soap-vet-accepted').checked){
     logDoseAudit({type:'soap_signoff', patient:document.getElementById('soap-patient').value, action:'vet_accepted'});
+    if(soapPendingNote){
+      var list = getSoapNotes();
+      var n = list.find(function(x){ return x.id===soapPendingNote.id; });
+      if(n){
+        n.status = 'Signed';
+        n.completionMin = Math.round(((Date.now()-soapPendingNote.genStart)/60000)*10)/10;
+        saveSoapNotes(list);
+        renderSoap();
+      }
+      soapPendingNote = null;
+    }
     showToast('Confirmed for this patient','success');
   }
 }
@@ -6046,10 +6080,18 @@ function generateSOAP(){
   var messages=[{role:'user',content:'Patient/species: '+patient+'. Subjective: '+subj+'. Objective: '+obj+'. Write the full SOAP note including a ranked differential and a treatment plan.'}];
   showToast('Generating SOAP note...','info');
   logDoseAudit({type:'soap_generate', patient:patient});
+  var genStart = Date.now();
   callClaude(system,messages,1800).then(function(result){
     document.getElementById('soap-result').style.display='block';
     document.getElementById('soap-result').textContent=result;
     document.getElementById('soap-signoff').style.display='block';
+    var list = getSoapNotes();
+    var id = 'sn'+Date.now();
+    var author = (document.getElementById('userRole')?document.getElementById('userRole').textContent:'')||'Doctor';
+    list.push({id:id, date:new Date().toISOString().slice(0,10), patient:patient, complaint:subj.slice(0,60), author:author, status:'Draft'});
+    saveSoapNotes(list);
+    soapPendingNote = {id:id, genStart:genStart};
+    renderSoap();
     showToast('Draft ready — review before use','success');
   }).catch(function(e){});
 }
@@ -6297,6 +6339,7 @@ if(auth){
   renderEquineDental();
   renderPPE();
   renderPatients();
+  renderSoap();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
