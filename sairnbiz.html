@@ -301,7 +301,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Total Applicants</div><div class="kval" id="h-apps">0</div><div class="kt">All stages</div></div>
     <div class="kpi"><div class="klbl">Interviews Set</div><div class="kval" id="h-int">0</div><div class="kt">This week</div></div>
     <div class="kpi"><div class="klbl">Offers Out</div><div class="kval" id="h-off">0</div><div class="kt">Pending acceptance</div></div>
-    <div class="kpi"><div class="klbl">Avg Time to Hire</div><div class="kval" id="h-tth">0d</div><div class="kt">Industry avg 21d</div></div>
+    <div class="kpi"><div class="klbl">Avg Days Open</div><div class="kval" id="h-tth">0d</div><div class="kt">Industry avg 21d to fill</div></div>
   </div>
   <div class="card"><div class="cb">
     <table><thead><tr><th>Position</th><th>Department</th><th>Applicants</th><th>Stage</th><th>Posted</th><th>Target Rate</th><th>Status</th><th>Actions</th></tr></thead>
@@ -410,9 +410,9 @@ textarea{resize:vertical;min-height:80px;}
   <div class="krow">
     <div class="kpi"><div class="klbl">Certs Active</div><div class="kval" id="tr-cert">0</div><div class="kt">All employees</div></div>
     <div class="kpi"><div class="klbl">Expiring 90 Days</div><div class="kval" id="tr-exp">0</div><div class="kt d">Needs renewal</div></div>
-    <div class="kpi"><div class="klbl">Training Hours YTD</div><div class="kval" id="tr-hrs">0</div><div class="kt">All staff</div></div>
+    <div class="kpi"><div class="klbl">Training Hours Logged</div><div class="kval" id="tr-hrs">0</div><div class="kt">All staff</div></div>
     <div class="kpi"><div class="klbl">Safety Incidents</div><div class="kval" id="tr-safe">0</div><div class="kt">YTD OSHA log</div></div>
-    <div class="kpi"><div class="klbl">Training Budget</div><div class="kval" id="tr-bud">$0</div><div class="kt">Remaining</div></div>
+    <div class="kpi"><div class="klbl">Training Spend</div><div class="kval" id="tr-bud">$0</div><div class="kt">Recorded</div></div>
   </div>
   <div class="card"><div class="cb">
     <table><thead><tr><th>Employee</th><th>Training / Cert</th><th>Completed</th><th>Expires</th><th>Provider</th><th>Cost</th><th>Status</th></tr></thead>
@@ -425,10 +425,10 @@ textarea{resize:vertical;min-height:80px;}
   <div class="ph"><div><div class="ptitle">P&amp;L Overview</div><div class="psub">Profit &amp; Loss &middot; Year to Date 2026</div></div>
   <div class="pa"><button class="btn bo bs" onclick="csv('pl')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
   <div class="krow">
-    <div class="kpi"><div class="klbl">YTD Revenue</div><div class="kval" id="pl-rev">$0</div><div class="kt">vs prior year</div></div>
-    <div class="kpi"><div class="klbl">YTD COGS</div><div class="kval" id="pl-cogs">$0</div><div class="kt">Materials + Labor</div></div>
+    <div class="kpi"><div class="klbl">Revenue Recorded</div><div class="kval" id="pl-rev">$0</div><div class="kt">All invoices</div></div>
+    <div class="kpi"><div class="klbl">COGS Recorded</div><div class="kval" id="pl-cogs">$0</div><div class="kt">Materials</div></div>
     <div class="kpi"><div class="klbl">Gross Profit</div><div class="kval" id="pl-gp">$0</div><div class="kt">Gross margin</div></div>
-    <div class="kpi"><div class="klbl">Operating Expenses</div><div class="kval" id="pl-opex">$0</div><div class="kt">Overhead</div></div>
+    <div class="kpi"><div class="klbl">Operating Expenses</div><div class="kval" id="pl-opex">$0</div><div class="kt">Labor + overhead</div></div>
     <div class="kpi"><div class="klbl">Net Income</div><div class="kval" id="pl-net">$0</div><div class="kt">Bottom line</div></div>
   </div>
   <div class="g2">
@@ -466,10 +466,10 @@ textarea{resize:vertical;min-height:80px;}
   <div class="pa"><button class="btn bo bs" onclick="csv('expenses')">Export CSV</button><button class="btn bp bs" onclick="toast('Add expense - coming next build')">+ Add Expense</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">This Month</div><div class="kval" id="ex-month">$0</div><div class="kt">All categories</div></div>
-    <div class="kpi"><div class="klbl">YTD Expenses</div><div class="kval" id="ex-ytd">$0</div><div class="kt">Running total</div></div>
+    <div class="kpi"><div class="klbl">Total Recorded</div><div class="kval" id="ex-ytd">$0</div><div class="kt">Running total</div></div>
     <div class="kpi"><div class="klbl">Largest Category</div><div class="kval" id="ex-top">--</div><div class="kt">This month</div></div>
     <div class="kpi"><div class="klbl">Pending Receipts</div><div class="kval" id="ex-pend">0</div><div class="kt d">Needs review</div></div>
-    <div class="kpi"><div class="klbl">Tax Deductible</div><div class="kval" id="ex-ded">$0</div><div class="kt">Estimated YTD</div></div>
+    <div class="kpi"><div class="klbl">Tax Deductible</div><div class="kval" id="ex-ded">$0</div><div class="kt">Recorded to date</div></div>
   </div>
   <div class="card"><div class="cb">
     <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Vendor</th><th>Amount</th><th>Deductible</th><th>Receipt</th><th>Status</th></tr></thead>
@@ -533,10 +533,10 @@ textarea{resize:vertical;min-height:80px;}
   <div class="ph"><div><div class="ptitle">Tax &amp; Compliance</div><div class="psub">Federal, state, and local obligations</div></div>
   <div class="pa"><button class="btn bo bs" onclick="csv('tax')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
   <div class="krow">
-    <div class="kpi"><div class="klbl">Taxes Paid YTD</div><div class="kval" id="tx-paid">$0</div><div class="kt">All obligations</div></div>
-    <div class="kpi"><div class="klbl">Est. Q3 Liability</div><div class="kval" id="tx-q3">$0</div><div class="kt">Due Sep 15</div></div>
-    <div class="kpi"><div class="klbl">Sales Tax Collected</div><div class="kval" id="tx-sales">$0</div><div class="kt">Ohio rate 6.5%</div></div>
-    <div class="kpi"><div class="klbl">Payroll Tax YTD</div><div class="kval" id="tx-payroll">$0</div><div class="kt">Employer share</div></div>
+    <div class="kpi"><div class="klbl">Taxes Paid</div><div class="kval" id="tx-paid">$0</div><div class="kt">Not yet tracked</div></div>
+    <div class="kpi"><div class="klbl">Est. Total Liability</div><div class="kval" id="tx-q3">$0</div><div class="kt">All obligations, est.</div></div>
+    <div class="kpi"><div class="klbl">Sales Tax (Est.)</div><div class="kval" id="tx-sales">$0</div><div class="kt">Ohio rate 6.5%</div></div>
+    <div class="kpi"><div class="klbl">Payroll Tax (Est.)</div><div class="kval" id="tx-payroll">$0</div><div class="kt">Employer share</div></div>
     <div class="kpi"><div class="klbl">Next Filing Due</div><div class="kval" id="tx-next">--</div><div class="kt">Mark calendar</div></div>
   </div>
   <div class="card"><div class="cb">
@@ -695,22 +695,22 @@ function nav(id){
 function seed(){
   if(ld('sb_seeded',false))return;
   st('sb_emps',[
-    {id:'E001',fn:'Marcus',ln:'Thompson',role:'Shop Foreman',dept:'Fabrication',type:'Full Time',rate:28.50,start:'2019-03-15',phone:'(440) 555-0101',email:'mthompson@pinnaclesd.com',status:'Active',ec:'Linda Thompson (440) 555-0102',notes:'OSHA 30 certified'},
-    {id:'E002',fn:'Jose',ln:'Ramirez',role:'Lead Fabricator',dept:'Fabrication',type:'Full Time',rate:24.00,start:'2020-07-01',phone:'(440) 555-0103',email:'jramirez@pinnaclesd.com',status:'Active',ec:'Maria Ramirez (440) 555-0104',notes:''},
-    {id:'E003',fn:'Tyler',ln:'Novak',role:'Fabricator',dept:'Fabrication',type:'Full Time',rate:20.50,start:'2021-11-08',phone:'(440) 555-0105',email:'tnovak@pinnaclesd.com',status:'Active',ec:'Karen Novak (440) 555-0106',notes:''},
-    {id:'E004',fn:'Derek',ln:'Sullivan',role:'Installer',dept:'Installation',type:'Full Time',rate:26.00,start:'2018-06-20',phone:'(440) 555-0107',email:'dsullivan@pinnaclesd.com',status:'Active',ec:'Pat Sullivan (440) 555-0108',notes:'Lead installer'},
-    {id:'E005',fn:'Amir',ln:'Patel',role:'Installer',dept:'Installation',type:'Full Time',rate:22.00,start:'2022-02-14',phone:'(440) 555-0109',email:'apatel@pinnaclesd.com',status:'Active',ec:'Priya Patel (440) 555-0110',notes:''},
-    {id:'E006',fn:'Sarah',ln:'Kovacs',role:'Office Manager / HR',dept:'Administration',type:'Full Time',rate:23.00,start:'2017-09-05',phone:'(440) 555-0111',email:'skovacs@pinnaclesd.com',status:'Active',ec:'Tom Kovacs (440) 555-0112',notes:'SHRM certified'},
-    {id:'E007',fn:'Rachel',ln:'Monroe',role:'Sales Representative',dept:'Sales',type:'Full Time',rate:18.00,start:'2023-01-09',phone:'(440) 555-0113',email:'rmonroe@pinnaclesd.com',status:'Active',ec:'Greg Monroe (440) 555-0114',notes:''},
-    {id:'E008',fn:'Kevin',ln:'Walsh',role:'Delivery Driver',dept:'Fabrication',type:'Part Time',rate:16.50,start:'2023-08-21',phone:'(440) 555-0115',email:'kwalsh@pinnaclesd.com',status:'Active',ec:'Donna Walsh (440) 555-0116',notes:''}
+    {id:'E001',fn:'Marcus',ln:'Thompson',role:'Shop Foreman',dept:'Fabrication',type:'Full Time',rate:28.50,start:'2019-03-15',phone:'(440) 555-0101',email:'mthompson@pinnaclesd.com',status:'Active',ec:'Linda Thompson (440) 555-0102',notes:'OSHA 30 certified',ben:{health:true,dental:true,k401:true,cost:640}},
+    {id:'E002',fn:'Jose',ln:'Ramirez',role:'Lead Fabricator',dept:'Fabrication',type:'Full Time',rate:24.00,start:'2020-07-01',phone:'(440) 555-0103',email:'jramirez@pinnaclesd.com',status:'Active',ec:'Maria Ramirez (440) 555-0104',notes:'',ben:{health:true,dental:true,k401:true,cost:610}},
+    {id:'E003',fn:'Tyler',ln:'Novak',role:'Fabricator',dept:'Fabrication',type:'Full Time',rate:20.50,start:'2021-11-08',phone:'(440) 555-0105',email:'tnovak@pinnaclesd.com',status:'Active',ec:'Karen Novak (440) 555-0106',notes:'',ben:{health:true,dental:false,k401:true,cost:480}},
+    {id:'E004',fn:'Derek',ln:'Sullivan',role:'Installer',dept:'Installation',type:'Full Time',rate:26.00,start:'2018-06-20',phone:'(440) 555-0107',email:'dsullivan@pinnaclesd.com',status:'Active',ec:'Pat Sullivan (440) 555-0108',notes:'Lead installer',ben:{health:true,dental:true,k401:true,cost:610}},
+    {id:'E005',fn:'Amir',ln:'Patel',role:'Installer',dept:'Installation',type:'Full Time',rate:22.00,start:'2022-02-14',phone:'(440) 555-0109',email:'apatel@pinnaclesd.com',status:'Active',ec:'Priya Patel (440) 555-0110',notes:'',ben:{health:true,dental:false,k401:false,cost:420}},
+    {id:'E006',fn:'Sarah',ln:'Kovacs',role:'Office Manager / HR',dept:'Administration',type:'Full Time',rate:23.00,start:'2017-09-05',phone:'(440) 555-0111',email:'skovacs@pinnaclesd.com',status:'Active',ec:'Tom Kovacs (440) 555-0112',notes:'SHRM certified',ben:{health:true,dental:true,k401:true,cost:610}},
+    {id:'E007',fn:'Rachel',ln:'Monroe',role:'Sales Representative',dept:'Sales',type:'Full Time',rate:18.00,start:'2023-01-09',phone:'(440) 555-0113',email:'rmonroe@pinnaclesd.com',status:'Active',ec:'Greg Monroe (440) 555-0114',notes:'',ben:{health:false,dental:false,k401:true,cost:60}},
+    {id:'E008',fn:'Kevin',ln:'Walsh',role:'Delivery Driver',dept:'Fabrication',type:'Part Time',rate:16.50,start:'2023-08-21',phone:'(440) 555-0115',email:'kwalsh@pinnaclesd.com',status:'Active',ec:'Donna Walsh (440) 555-0116',notes:'',ben:{health:false,dental:false,k401:false,cost:0}}
   ]);
   st('sb_invs',[
-    {id:'INV-2601',cust:'Hartley Custom Homes',date:'2026-06-01',due:'2026-07-01',amt:8420,paid:8420,status:'Paid'},
-    {id:'INV-2602',cust:'Lakewood Kitchen & Bath',date:'2026-06-05',due:'2026-07-05',amt:3890,paid:0,status:'Sent'},
-    {id:'INV-2603',cust:'Westside Remodeling Group',date:'2026-06-10',due:'2026-07-10',amt:12750,paid:6000,status:'Partial'},
-    {id:'INV-2604',cust:'Premier Properties LLC',date:'2026-05-15',due:'2026-06-15',amt:5200,paid:0,status:'Overdue'},
-    {id:'INV-2605',cust:'Rocky River Renovations',date:'2026-06-18',due:'2026-07-18',amt:4100,paid:4100,status:'Paid'},
-    {id:'INV-2606',cust:'Avon Lake Home Builders',date:'2026-06-22',due:'2026-07-22',amt:9640,paid:0,status:'Draft'}
+    {id:'INV-2601',cust:'Hartley Custom Homes',date:'2026-06-01',due:'2026-07-01',amt:8420,paid:8420,status:'Paid',cat:'Kitchen Countertops',paidDate:'2026-06-24'},
+    {id:'INV-2602',cust:'Lakewood Kitchen & Bath',date:'2026-06-05',due:'2026-07-05',amt:3890,paid:0,status:'Sent',cat:'Bathroom Vanities'},
+    {id:'INV-2603',cust:'Westside Remodeling Group',date:'2026-06-10',due:'2026-07-10',amt:12750,paid:6000,status:'Partial',cat:'Commercial Projects'},
+    {id:'INV-2604',cust:'Premier Properties LLC',date:'2026-05-15',due:'2026-06-15',amt:5200,paid:0,status:'Overdue',cat:'Repairs & Remnants'},
+    {id:'INV-2605',cust:'Rocky River Renovations',date:'2026-06-18',due:'2026-07-18',amt:4100,paid:4100,status:'Paid',cat:'Bathroom Vanities',paidDate:'2026-06-27'},
+    {id:'INV-2606',cust:'Avon Lake Home Builders',date:'2026-06-22',due:'2026-07-22',amt:9640,paid:0,status:'Draft',cat:'Kitchen Countertops'}
   ]);
   st('sb_exps',[
     {date:'2026-06-02',desc:'Granite slab - Bianco Antico',cat:'Materials',vendor:'Midwest Stone Supply',amt:4200,ded:'Yes',receipt:'Yes',status:'Approved'},
@@ -738,19 +738,20 @@ function seed(){
     {vendor:'Eagle Plumbing Co',inv:'EP-0882',date:'2026-06-18',due:'2026-07-03',amt:1850,bal:1850,status:'Open'}
   ]);
   st('sb_train',[
-    {emp:'Marcus Thompson',cert:'OSHA 30-Hour Construction',done:'2025-04-10',exp:'2028-04-10',prov:'National Safety Council',cost:180,status:'Active'},
-    {emp:'Jose Ramirez',cert:'Stone Fabrication Safety Level 2',done:'2024-11-01',exp:'2026-11-01',prov:'ISFA',cost:250,status:'Active'},
-    {emp:'Tyler Novak',cert:'Forklift Operator Certification',done:'2025-01-15',exp:'2028-01-15',prov:'Safety Solutions',cost:95,status:'Active'},
-    {emp:'Derek Sullivan',cert:'OSHA 10-Hour',done:'2023-08-20',exp:'2026-08-20',prov:'National Safety Council',cost:80,status:'Expiring Soon'},
-    {emp:'Amir Patel',cert:'Wet Saw Operations',done:'2024-03-01',exp:'2027-03-01',prov:'Internal',cost:0,status:'Active'},
-    {emp:'Sarah Kovacs',cert:'HR Fundamentals Certificate',done:'2025-06-01',exp:'2028-06-01',prov:'SHRM',cost:320,status:'Active'}
+    {emp:'Marcus Thompson',cert:'OSHA 30-Hour Construction',done:'2025-04-10',exp:'2028-04-10',prov:'National Safety Council',cost:180,hrs:30,status:'Active'},
+    {emp:'Jose Ramirez',cert:'Stone Fabrication Safety Level 2',done:'2024-11-01',exp:'2026-11-01',prov:'ISFA',cost:250,hrs:16,status:'Active'},
+    {emp:'Tyler Novak',cert:'Forklift Operator Certification',done:'2025-01-15',exp:'2028-01-15',prov:'Safety Solutions',cost:95,hrs:8,status:'Active'},
+    {emp:'Derek Sullivan',cert:'OSHA 10-Hour',done:'2023-08-20',exp:'2026-08-20',prov:'National Safety Council',cost:80,hrs:10,status:'Expiring Soon'},
+    {emp:'Amir Patel',cert:'Wet Saw Operations',done:'2024-03-01',exp:'2027-03-01',prov:'Internal',cost:0,hrs:4,status:'Active'},
+    {emp:'Sarah Kovacs',cert:'HR Fundamentals Certificate',done:'2025-06-01',exp:'2028-06-01',prov:'SHRM',cost:320,hrs:12,status:'Active'}
   ]);
+  st('sb_incidents',[]);
   st('sb_perf',[
-    {emp:'Marcus Thompson',type:'Annual Review',due:'2026-08-01',rev:'Owner',score:'4.8',status:'Scheduled'},
-    {emp:'Jose Ramirez',type:'Annual Review',due:'2026-09-01',rev:'Marcus Thompson',score:'4.5',status:'Scheduled'},
-    {emp:'Sarah Kovacs',type:'Mid-Year Check-in',due:'2026-07-15',rev:'Owner',score:'--',status:'Upcoming'},
-    {emp:'Tyler Novak',type:'90-Day Review',due:'2026-07-01',rev:'Marcus Thompson',score:'3.9',status:'Completed'},
-    {emp:'Rachel Monroe',type:'Annual Review',due:'2026-10-01',rev:'Owner',score:'--',status:'Upcoming'}
+    {emp:'Marcus Thompson',type:'Annual Review',due:'2026-08-01',rev:'Owner',score:'4.8',raise:true,pip:false,status:'Scheduled'},
+    {emp:'Jose Ramirez',type:'Annual Review',due:'2026-09-01',rev:'Marcus Thompson',score:'4.5',raise:true,pip:false,status:'Scheduled'},
+    {emp:'Sarah Kovacs',type:'Mid-Year Check-in',due:'2026-07-15',rev:'Owner',score:'--',raise:false,pip:false,status:'Upcoming'},
+    {emp:'Tyler Novak',type:'90-Day Review',due:'2026-07-01',rev:'Marcus Thompson',score:'3.9',raise:false,pip:false,status:'Completed'},
+    {emp:'Rachel Monroe',type:'Annual Review',due:'2026-10-01',rev:'Owner',score:'--',raise:false,pip:false,status:'Upcoming'}
   ]);
   st('sb_hire',[
     {pos:'Senior Fabricator',dept:'Fabrication',apps:7,stage:'Interviewing',posted:'2026-06-01',rate:'$26-30/hr',status:'Active'},
@@ -775,8 +776,8 @@ function init(){
 function pbar(pct,color){return '<div class="pbar"><div class="pfill" style="width:'+pct+'%;'+(color?'background:'+color:'')+'"></div></div>';}
 
 function rDash(){
-  var emps=ld('sb_emps',[]),invs=ld('sb_invs',[]),exps=ld('sb_exps',[]);
-  var rev=invs.reduce(function(s,i){return s+(i.paid||0);},0)+28000;
+  var emps=ld('sb_emps',[]),invs=ld('sb_invs',[]),exps=ld('sb_exps',[]),bills=ld('sb_ap',[]),tr=ld('sb_train',[]),h=ld('sb_hire',[]),pf=ld('sb_perf',[]);
+  var rev=invs.reduce(function(s,i){return s+(i.paid||0);},0);
   var pay=emps.reduce(function(s,e){return s+(e.type==='Full Time'?e.rate*80:e.rate*32);},0);
   var oinv=invs.filter(function(i){return i.status!=='Paid';});
   var oamt=oinv.reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
@@ -787,16 +788,25 @@ function rDash(){
   $('k-invamt').textContent=fmt(oamt)+' outstanding';$('k-margin').textContent=mgn+'%';
   var depts={};emps.forEach(function(e){depts[e.dept]=(depts[e.dept]||0)+1;});
   $('d-dept').innerHTML=Object.keys(depts).map(function(d){var p=Math.round(depts[d]/emps.length*100);return'<div class="srow"><span class="slbl">'+H(d)+'</span><span class="sval">'+depts[d]+' employees</span></div>'+pbar(p);}).join('');
-  var revArr=[68000,72000,81000,76000,89000,rev];
-  $('d-rev').innerHTML=['Jan','Feb','Mar','Apr','May','Jun'].map(function(m,i){return'<div class="srow"><span class="slbl">'+m+'</span><span class="sval">'+fmt(revArr[i])+'</span></div>'+pbar(Math.round(revArr[i]/100000*100),'var(--ok)');}).join('');
-  $('d-activity').innerHTML=[
-    {t:'Payroll processed - '+fmt(pay),s:'2 hours ago'},{t:'INV-2603 partial payment $6,000',s:'Yesterday'},
-    {t:'Tyler Novak 90-day review 3.9/5',s:'2 days ago'},{t:'MSS-44821 bill entered $12,400',s:'3 days ago'},{t:'INV-2605 paid in full $4,100',s:'June 22'}
-  ].map(function(a){return'<div class="srow"><span class="slbl">'+H(a.t)+'</span><span class="sval" style="font-size:11px;color:var(--muted)">'+a.s+'</span></div>';}).join('');
-  $('d-actions').innerHTML=[
-    {t:'INV-2604 overdue - $5,200 Premier Properties',b:'Overdue',c:'br'},{t:'Derek Sullivan OSHA cert expiring Aug 2026',b:'90 Days',c:'bw'},
-    {t:'3 open hiring positions active',b:'Hiring',c:'bb'},{t:'Tooling Pros AP overdue $380',b:'Past Due',c:'br'},{t:'5 performance reviews due next 60 days',b:'HR',c:'bb'}
-  ].map(function(a){return'<div class="srow"><span class="slbl">'+H(a.t)+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join('');
+  var byMonth={};invs.forEach(function(i){var mo=(i.date||'').slice(0,7);if(!mo)return;byMonth[mo]=(byMonth[mo]||0)+(i.paid||0);});
+  var months=Object.keys(byMonth).sort();
+  var maxRev=Math.max.apply(null,months.map(function(m){return byMonth[m];}).concat([1]));
+  $('d-rev').innerHTML=months.length?months.map(function(m){var v=byMonth[m];var lbl=new Date(m+'-01').toLocaleDateString('en-US',{month:'short',year:'numeric'});return'<div class="srow"><span class="slbl">'+lbl+'</span><span class="sval">'+fmt(v)+'</span></div>'+pbar(Math.round(v/maxRev*100),'var(--ok)');}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No invoice history recorded yet</div>';
+  var acts=[];
+  invs.forEach(function(i){if(i.paid>0)acts.push({t:H(i.id)+' - '+H(i.cust)+' - '+fmt(i.paid)+(i.status==='Paid'?' paid in full':' received'),d:i.paidDate||i.date});});
+  exps.forEach(function(e){acts.push({t:H(e.desc)+' - '+fmt(e.amt)+' ('+H(e.vendor)+')',d:e.date});});
+  bills.forEach(function(b){acts.push({t:H(b.inv)+' entered - '+fmt(b.amt)+' ('+H(b.vendor)+')',d:b.date});});
+  pf.filter(function(p){return p.status==='Completed';}).forEach(function(p){acts.push({t:H(p.emp)+' '+H(p.type)+' completed'+(p.score&&p.score!=='--'?' - '+p.score+'/5.0':''),d:p.due});});
+  acts.sort(function(a,b){return new Date(b.d)-new Date(a.d);});
+  $('d-activity').innerHTML=acts.length?acts.slice(0,5).map(function(a){return'<div class="srow"><span class="slbl">'+a.t+'</span><span class="sval" style="font-size:11px;color:var(--muted)">'+fdate(a.d)+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No activity recorded yet</div>';
+  var actions=[];
+  invs.filter(function(i){return i.status==='Overdue';}).forEach(function(i){actions.push({t:H(i.id)+' overdue - '+fmt(i.amt-(i.paid||0))+' '+H(i.cust),b:'Overdue',c:'br'});});
+  bills.filter(function(b){return b.status==='Overdue';}).forEach(function(b){actions.push({t:H(b.vendor)+' AP overdue '+fmt(b.bal),b:'Past Due',c:'br'});});
+  tr.filter(function(t){return t.status==='Expiring Soon';}).forEach(function(t){actions.push({t:H(t.emp)+' '+H(t.cert)+' expiring '+fdate(t.exp),b:'90 Days',c:'bw'});});
+  if(h.length)actions.push({t:h.length+' open hiring position'+(h.length===1?'':'s')+' active',b:'Hiring',c:'bb'});
+  var duePf=pf.filter(function(p){return p.status==='Scheduled'||p.status==='Upcoming';}).length;
+  if(duePf)actions.push({t:duePf+' performance review'+(duePf===1?'':'s')+' due',b:'HR',c:'bb'});
+  $('d-actions').innerHTML=actions.length?actions.map(function(a){return'<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
 }
 
 function rEmps(){
@@ -814,7 +824,7 @@ function rEmps(){
 }
 function rEmpTbl(emps){
   var tb=$('etbody');if(!emps.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No employees found</td></tr>';return;}
-  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong><div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(''+H(e.id||'')+'')">Edit</button></td></tr>';}).join('');
+  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong><div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(\''+H(e.id||'')+'\')">Edit</button></td></tr>';}).join('');
 }
 function filterEmps(){
   var q=($('esrch').value||'').toLowerCase(),dept=$('edept').value;
@@ -860,12 +870,26 @@ function rPay(){
   }).join('');
   $('py-gross').textContent=fmt(gross);$('py-tax').textContent=fmt(taxes);$('py-ben').textContent=fmt(bens*emps.length);
   $('py-total').textContent=fmt(gross+taxes+bens*emps.length);$('py-ytd').textContent=fmt(gross*13);
-  var rev=498000,cogs=199000,gp=rev-cogs,opex=gross*6+84000,net=gp-opex;
+  var invs=ld('sb_invs',[]),exps=ld('sb_exps',[]);
+  var rev=invs.reduce(function(s,i){return s+i.amt;},0);
+  var cogs=exps.filter(function(e){return e.cat==='Materials';}).reduce(function(s,e){return s+e.amt;},0);
+  var gp=rev-cogs;
+  var otherExp=exps.filter(function(e){return e.cat!=='Materials';}).reduce(function(s,e){return s+e.amt;},0);
+  var opex=gross+otherExp;
+  var net=gp-opex;
   $('pl-rev').textContent=fmt(rev);$('pl-cogs').textContent=fmt(cogs);$('pl-gp').textContent=fmt(gp);$('pl-opex').textContent=fmt(opex);$('pl-net').textContent=fmt(net);
-  $('pl-revbk').innerHTML=[{l:'Kitchen Countertops',a:241000},{l:'Bathroom Vanities',a:118000},{l:'Commercial Projects',a:89000},{l:'Repairs & Remnants',a:50000}].map(function(r){var p=Math.round(r.a/rev*100);return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval">'+fmt(r.a)+' ('+p+'%)</span></div>'+pbar(p);}).join('');
-  $('pl-expbk').innerHTML=[{l:'Labor',a:opex},{l:'Materials',a:cogs},{l:'Rent',a:34200},{l:'Equipment',a:18900},{l:'Other',a:21000}].map(function(r){var t=opex+cogs+74100;var p=Math.round(r.a/t*100);return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval">'+fmt(r.a)+'</span></div>'+pbar(p,'var(--warn)');}).join('');
-  $('pl-monthly').innerHTML=['Jan','Feb','Mar','Apr','May','Jun'].map(function(m,i){var a=[68000,72000,81000,76000,89000,83000][i];return'<div class="srow"><span class="slbl">'+m+'</span><span class="sval">'+fmt(a)+'</span></div>'+pbar(Math.round(a/100000*100),'var(--ok)');}).join('');
-  $('pl-margin').innerHTML=[{l:'Gross Margin',v:Math.round(gp/rev*100)+'%'},{l:'Operating Margin',v:Math.round(net/rev*100)+'%'},{l:'Industry Avg Gross',v:'45%'},{l:'Industry Avg Net',v:'18%'},{l:'Your Net vs Industry',v:(Math.round(net/rev*100)-18)+'pp'}].map(function(r){return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval"><strong>'+r.v+'</strong></span></div>';}).join('');
+  var revCats={};invs.forEach(function(i){var c=i.cat||'Uncategorized';revCats[c]=(revCats[c]||0)+i.amt;});
+  var rcKeys=Object.keys(revCats).sort(function(a,b){return revCats[b]-revCats[a];});
+  $('pl-revbk').innerHTML=rcKeys.length?rcKeys.map(function(c){var p=rev>0?Math.round(revCats[c]/rev*100):0;return'<div class="srow"><span class="slbl">'+H(c)+'</span><span class="sval">'+fmt(revCats[c])+' ('+p+'%)</span></div>'+pbar(p);}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No invoices recorded yet</div>';
+  var expCats={Labor:gross};exps.forEach(function(e){expCats[e.cat]=(expCats[e.cat]||0)+e.amt;});
+  var expTot=Object.keys(expCats).reduce(function(s,k){return s+expCats[k];},0);
+  $('pl-expbk').innerHTML=Object.keys(expCats).sort(function(a,b){return expCats[b]-expCats[a];}).map(function(c){var p=expTot>0?Math.round(expCats[c]/expTot*100):0;return'<div class="srow"><span class="slbl">'+H(c)+'</span><span class="sval">'+fmt(expCats[c])+'</span></div>'+pbar(p,'var(--warn)');}).join('');
+  var byMonth={};invs.forEach(function(i){var mo=(i.date||'').slice(0,7);if(!mo)return;byMonth[mo]=(byMonth[mo]||0)+i.amt;});
+  var months=Object.keys(byMonth).sort();
+  var maxM=Math.max.apply(null,months.map(function(m){return byMonth[m];}).concat([1]));
+  $('pl-monthly').innerHTML=months.length?months.map(function(m){var v=byMonth[m];var lbl=new Date(m+'-01').toLocaleDateString('en-US',{month:'short',year:'numeric'});return'<div class="srow"><span class="slbl">'+lbl+'</span><span class="sval">'+fmt(v)+'</span></div>'+pbar(Math.round(v/maxM*100),'var(--ok)');}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No invoice history recorded yet</div>';
+  var gpm=rev>0?Math.round(gp/rev*100):0,npm=rev>0?Math.round(net/rev*100):0;
+  $('pl-margin').innerHTML=[{l:'Gross Margin',v:gpm+'%'},{l:'Operating Margin',v:npm+'%'},{l:'Industry Avg Gross',v:'45%'},{l:'Industry Avg Net',v:'18%'},{l:'Your Net vs Industry',v:(npm-18)+'pp'}].map(function(r){return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval"><strong>'+r.v+'</strong></span></div>';}).join('');
 }
 function runPayroll(){toast('Payroll approved - ACH transfers initiated');}
 
@@ -875,11 +899,13 @@ function rInvs(){
   var curr=invs.filter(function(i){return i.status==='Sent';}).reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
   var over=invs.filter(function(i){return i.status==='Overdue';}).reduce(function(s,i){return s+i.amt;},0);
   var paid=invs.filter(function(i){return i.status==='Paid';}).reduce(function(s,i){return s+i.amt;},0);
-  $('iv-out').textContent=fmt(out);$('iv-curr').textContent=fmt(curr);$('iv-over').textContent=fmt(over);$('iv-paid').textContent=fmt(paid);$('iv-dtp').textContent='22d';
+  var paidWithDate=invs.filter(function(i){return i.status==='Paid'&&i.paidDate;});
+  var dtp=paidWithDate.length?Math.round(paidWithDate.reduce(function(s,i){return s+(new Date(i.paidDate)-new Date(i.date))/86400000;},0)/paidWithDate.length):null;
+  $('iv-out').textContent=fmt(out);$('iv-curr').textContent=fmt(curr);$('iv-over').textContent=fmt(over);$('iv-paid').textContent=fmt(paid);$('iv-dtp').textContent=dtp!==null?dtp+'d':'--';
   rInvTbl(invs);
 }
 function rInvTbl(invs){
-  $('ivtbody').innerHTML=invs.map(function(i){var b=i.amt-(i.paid||0);var sc={Paid:'bg',Sent:'bb',Draft:'bx',Overdue:'br',Partial:'bw'}[i.status]||'bx';return'<tr><td><strong>'+H(i.id)+'</strong></td><td>'+H(i.cust)+'</td><td>'+fdate(i.date)+'</td><td>'+fdate(i.due)+'</td><td>'+fmt(i.amt)+'</td><td>'+fmt(i.paid||0)+'</td><td><strong>'+fmt(b)+'</strong></td><td><span class="badge '+sc+'">'+H(i.status)+'</span></td><td><button class="btn bo bs" onclick="toast('Invoice view - next build')">View</button></td></tr>';}).join('');
+  $('ivtbody').innerHTML=invs.map(function(i){var b=i.amt-(i.paid||0);var sc={Paid:'bg',Sent:'bb',Draft:'bx',Overdue:'br',Partial:'bw'}[i.status]||'bx';return'<tr><td><strong>'+H(i.id)+'</strong></td><td>'+H(i.cust)+'</td><td>'+fdate(i.date)+'</td><td>'+fdate(i.due)+'</td><td>'+fmt(i.amt)+'</td><td>'+fmt(i.paid||0)+'</td><td><strong>'+fmt(b)+'</strong></td><td><span class="badge '+sc+'">'+H(i.status)+'</span></td><td><button class="btn bo bs" onclick="toast(\'Invoice view - next build\')">View</button></td></tr>';}).join('');
 }
 function filterInv(){
   var q=($('ivsrch').value||'').toLowerCase(),s=$('ivstat').value;
@@ -893,7 +919,7 @@ function rExps(){
   var pend=exps.filter(function(e){return e.status==='Pending';}).length;
   var cats={};exps.forEach(function(e){cats[e.cat]=(cats[e.cat]||0)+e.amt;});
   var top=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];})[0]||'--';
-  $('ex-month').textContent=fmt(m);$('ex-ytd').textContent=fmt(m*6);$('ex-top').textContent=top;$('ex-pend').textContent=pend;$('ex-ded').textContent=fmt(ded*6);
+  $('ex-month').textContent=fmt(m);$('ex-ytd').textContent=fmt(m);$('ex-top').textContent=top;$('ex-pend').textContent=pend;$('ex-ded').textContent=fmt(ded);
   $('extbody').innerHTML=exps.map(function(e){var sc=e.status==='Approved'?'bg':'bw';return'<tr><td>'+fdate(e.date)+'</td><td>'+H(e.desc)+'</td><td>'+H(e.cat)+'</td><td>'+H(e.vendor)+'</td><td><strong>'+fmt(e.amt)+'</strong></td><td><span class="badge '+(e.ded==='Yes'?'bg':'bx')+'">'+H(e.ded)+'</span></td><td><span class="badge '+(e.receipt==='Yes'?'bg':'bw')+'">'+H(e.receipt)+'</span></td><td><span class="badge '+sc+'">'+H(e.status)+'</span></td></tr>';}).join('');
 }
 
@@ -905,16 +931,24 @@ function rAP(){
   var pd=bills.filter(function(b){return b.status==='Paid';}).reduce(function(s,b){return s+b.amt;},0);
   var top=bills.filter(function(b){return b.bal>0;}).sort(function(a,b){return b.bal-a.bal;})[0];
   $('ap-total').textContent=fmt(tot);$('ap-week').textContent=fmt(wk);$('ap-over').textContent=ov;$('ap-paid').textContent=fmt(pd);$('ap-top').textContent=top?top.vendor:'--';
-  $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td><button class="btn bo bs" onclick="toast('Marked paid')">Pay</button></td></tr>';}).join('');
+  $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td><button class="btn bo bs" onclick="toast(\'Marked paid\')">Pay</button></td></tr>';}).join('');
 }
 
 function rAR(){
   var invs=ld('sb_invs',[]);
-  var out=invs.reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
-  var curr=invs.filter(function(i){return i.status==='Sent';}).reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
-  var over=invs.filter(function(i){return i.status==='Overdue';}).reduce(function(s,i){return s+i.amt;},0);
-  $('ar-total').textContent=fmt(out);$('ar-curr').textContent=fmt(curr);$('ar-60').textContent=fmt(6750);$('ar-90').textContent=fmt(over);$('ar-rate').textContent='97%';
-  $('artbody').innerHTML=invs.filter(function(i){return i.status!=='Paid';}).map(function(i){var b=i.amt-(i.paid||0);var age=i.status==='Overdue'?'43 days':'12 days';var sc=i.status==='Overdue'?'br':'bb';return'<tr><td>'+H(i.cust)+'</td><td>'+H(i.id)+'</td><td>'+fdate(i.date)+'</td><td>'+fdate(i.due)+'</td><td>'+fmt(i.amt)+'</td><td><strong>'+fmt(b)+'</strong></td><td>'+age+'</td><td><span class="badge '+sc+'">'+H(i.status)+'</span></td></tr>';}).join('');
+  var open=invs.filter(function(i){return i.status!=='Paid'&&i.status!=='Draft';});
+  var now=new Date();
+  function daysLate(i){return Math.floor((now-new Date(i.due))/86400000);}
+  var out=open.reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var curr=open.filter(function(i){return daysLate(i)<=30;}).reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var b60=open.filter(function(i){return daysLate(i)>30&&daysLate(i)<=60;}).reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var b90=open.filter(function(i){return daysLate(i)>60;}).reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
+  var billable=invs.filter(function(i){return i.status!=='Draft';});
+  var totBilled=billable.reduce(function(s,i){return s+i.amt;},0);
+  var totCollected=billable.reduce(function(s,i){return s+(i.paid||0);},0);
+  var rate=totBilled>0?Math.round(totCollected/totBilled*100):0;
+  $('ar-total').textContent=fmt(out);$('ar-curr').textContent=fmt(curr);$('ar-60').textContent=fmt(b60);$('ar-90').textContent=fmt(b90);$('ar-rate').textContent=rate+'%';
+  $('artbody').innerHTML=open.map(function(i){var b=i.amt-(i.paid||0);var dl=daysLate(i);var age=dl>0?dl+' days late':Math.abs(dl)+' days left';var sc=dl>0?'br':'bb';return'<tr><td>'+H(i.cust)+'</td><td>'+H(i.id)+'</td><td>'+fdate(i.date)+'</td><td>'+fdate(i.due)+'</td><td>'+fmt(i.amt)+'</td><td><strong>'+fmt(b)+'</strong></td><td>'+age+'</td><td><span class="badge '+sc+'">'+H(i.status)+'</span></td></tr>';}).join('');
 }
 
 function rVends(){
@@ -933,45 +967,74 @@ function rBud(){
 }
 
 function rTax(){
+  var invs=ld('sb_invs',[]),emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+  var rev=invs.reduce(function(s,i){return s+i.amt;},0);
+  var gross=emps.reduce(function(s,e){return s+(e.type==='Full Time'?e.rate*80:e.rate*32);},0);
+  var fica=gross*0.0765,futa=gross*0.006,suta=gross*0.027;
+  var salesTax=rev*0.065,fedIncome=gross*0.10,ohioIncome=gross*0.025;
+  var now=new Date();
+  var deadlines=[[3,15],[6,15],[9,15],[12,15]];
+  var nd=null;
+  for(var i=0;i<deadlines.length;i++){var dl=new Date(now.getFullYear(),deadlines[i][0]-1,deadlines[i][1]);if(dl>=now){nd=dl;break;}}
+  if(!nd)nd=new Date(now.getFullYear()+1,2,15);
   var taxes=[
-    {t:'Federal Income Tax (Quarterly)',f:'Quarterly',d:'Sep 15, 2026',e:18400,y:36800,s:'Current'},
-    {t:'Ohio State Income Tax',f:'Quarterly',d:'Sep 15, 2026',e:4200,y:8400,s:'Current'},
-    {t:'FICA Payroll Tax (Employer)',f:'Semi-Weekly',d:'Ongoing',e:2800,y:33600,s:'Current'},
-    {t:'Ohio Sales Tax (6.5%)',f:'Monthly',d:'Jul 23, 2026',e:3100,y:16800,s:'Current'},
-    {t:'FUTA Federal Unemployment',f:'Quarterly',d:'Jul 31, 2026',e:840,y:840,s:'Due Soon'},
-    {t:'SUTA Ohio Unemployment',f:'Quarterly',d:'Jul 31, 2026',e:620,y:1240,s:'Due Soon'},
-    {t:'Commercial Activity Tax CAT',f:'Annual',d:'May 10, 2027',e:1200,y:0,s:'Filed'}
+    {t:'Federal Income Tax (Quarterly Est.)',f:'Quarterly',d:nd,e:Math.round(fedIncome),cat:'Income'},
+    {t:'Ohio State Income Tax (Quarterly Est.)',f:'Quarterly',d:nd,e:Math.round(ohioIncome),cat:'Income'},
+    {t:'FICA Payroll Tax (Employer Share)',f:'Per Pay Period',d:null,e:Math.round(fica),cat:'Payroll'},
+    {t:'Ohio Sales Tax (6.5%, Est.)',f:'Monthly',d:null,e:Math.round(salesTax),cat:'Sales'},
+    {t:'FUTA Federal Unemployment (0.6%)',f:'Quarterly',d:nd,e:Math.round(futa),cat:'Payroll'},
+    {t:'SUTA Ohio Unemployment (2.7%)',f:'Quarterly',d:nd,e:Math.round(suta),cat:'Payroll'}
   ];
-  $('tx-paid').textContent=fmt(97680);$('tx-q3').textContent=fmt(22600);$('tx-sales').textContent=fmt(16800);$('tx-payroll').textContent=fmt(33600);$('tx-next').textContent='Jul 23';
-  $('txtbody').innerHTML=taxes.map(function(x){var sc=x.s==='Current'?'bg':x.s==='Due Soon'?'bw':x.s==='Filed'?'bb':'br';return'<tr><td><strong>'+H(x.t)+'</strong></td><td>'+H(x.f)+'</td><td>'+H(x.d)+'</td><td>'+fmt(x.e)+'</td><td>'+fmt(x.y)+'</td><td><span class="badge '+sc+'">'+H(x.s)+'</span></td></tr>';}).join('');
+  var payrollTot=Math.round(fica+futa+suta);
+  var estLiability=Math.round(fedIncome+ohioIncome+payrollTot+salesTax);
+  $('tx-paid').textContent='--';$('tx-q3').textContent=fmt(estLiability);$('tx-sales').textContent=fmt(Math.round(salesTax));$('tx-payroll').textContent=fmt(payrollTot);$('tx-next').textContent=nd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  $('txtbody').innerHTML=taxes.map(function(x){
+    var due=x.d?x.d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Ongoing';
+    var daysOut=x.d?Math.round((x.d-now)/86400000):null;
+    var status=daysOut===null?'Ongoing':(daysOut<14?'Due Soon':'Upcoming');
+    var sc=status==='Due Soon'?'bw':status==='Ongoing'?'bb':'bg';
+    return'<tr><td><strong>'+H(x.t)+'</strong></td><td>'+H(x.f)+'</td><td>'+due+'</td><td>'+fmt(x.e)+'</td><td>--</td><td><span class="badge '+sc+'">'+status+'</span></td></tr>';
+  }).join('');
 }
 
 function rBenKPIs(){
   var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
-  var ft=emps.filter(function(e){return e.type==='Full Time';});
-  $('bn-health').textContent=ft.length;$('bn-dental').textContent=ft.length;
-  $('bn-401k').textContent=Math.floor(ft.length*0.75);$('bn-cost').textContent=fmt(ft.length*520);$('bn-cpe').textContent=fmt(520);
+  var health=emps.filter(function(e){return e.ben&&e.ben.health;});
+  var dental=emps.filter(function(e){return e.ben&&e.ben.dental;});
+  var k401=emps.filter(function(e){return e.ben&&e.ben.k401;});
+  var enrolled=emps.filter(function(e){return e.ben&&(e.ben.health||e.ben.dental||e.ben.k401);});
+  var totCost=emps.reduce(function(s,e){return s+(e.ben&&e.ben.cost?e.ben.cost:0);},0);
+  $('bn-health').textContent=health.length;$('bn-dental').textContent=dental.length;
+  $('bn-401k').textContent=k401.length;$('bn-cost').textContent=fmt(totCost);
+  $('bn-cpe').textContent=enrolled.length?fmt(Math.round(totCost/enrolled.length)):'$0';
 }
 
 function rHire(){
   var h=ld('sb_hire',[]);var apps=h.reduce(function(s,x){return s+x.apps;},0);
   var ints=h.filter(function(x){return x.stage==='Interviewing';}).length;
   var offs=h.filter(function(x){return x.stage==='Offer Out';}).length;
-  $('h-open').textContent=h.length;$('h-apps').textContent=apps;$('h-int').textContent=ints;$('h-off').textContent=offs;$('h-tth').textContent='16d';
-  $('htbody').innerHTML=h.map(function(x){var sc={Active:'bg',Paused:'bw',Closed:'bx'}[x.status]||'bx';var ss={Screening:'bb',Interviewing:'bw','Offer Out':'bg',Closed:'bx'}[x.stage]||'bx';return'<tr><td><strong>'+H(x.pos)+'</strong></td><td>'+H(x.dept)+'</td><td style="text-align:center;">'+x.apps+'</td><td><span class="badge '+ss+'">'+H(x.stage)+'</span></td><td>'+fdate(x.posted)+'</td><td>'+H(x.rate)+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast('Applicants - next build')">View</button></td></tr>';}).join('');
+  var now=new Date();
+  var openDays=h.map(function(x){return Math.floor((now-new Date(x.posted))/86400000);});
+  var avgOpen=openDays.length?Math.round(openDays.reduce(function(a,b){return a+b;},0)/openDays.length):0;
+  $('h-open').textContent=h.length;$('h-apps').textContent=apps;$('h-int').textContent=ints;$('h-off').textContent=offs;$('h-tth').textContent=avgOpen+'d';
+  $('htbody').innerHTML=h.map(function(x){var sc={Active:'bg',Paused:'bw',Closed:'bx'}[x.status]||'bx';var ss={Screening:'bb',Interviewing:'bw','Offer Out':'bg',Closed:'bx'}[x.stage]||'bx';return'<tr><td><strong>'+H(x.pos)+'</strong></td><td>'+H(x.dept)+'</td><td style="text-align:center;">'+x.apps+'</td><td><span class="badge '+ss+'">'+H(x.stage)+'</span></td><td>'+fdate(x.posted)+'</td><td>'+H(x.rate)+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast(\'Applicants - next build\')">View</button></td></tr>';}).join('');
 }
 
 function rTrain(){
   var tr=ld('sb_train',[]);var exp=tr.filter(function(t){return t.status==='Expiring Soon';}).length;
-  $('tr-cert').textContent=tr.length;$('tr-exp').textContent=exp;$('tr-hrs').textContent=284;$('tr-safe').textContent=0;$('tr-bud').textContent=fmt(2800);
+  var hrs=tr.reduce(function(s,t){return s+(t.hrs||0);},0);
+  var spend=tr.reduce(function(s,t){return s+(t.cost||0);},0);
+  var incidents=ld('sb_incidents',[]).length;
+  $('tr-cert').textContent=tr.length;$('tr-exp').textContent=exp;$('tr-hrs').textContent=hrs;$('tr-safe').textContent=incidents;$('tr-bud').textContent=fmt(spend);
   $('trtbody').innerHTML=tr.map(function(t){var sc=t.status==='Active'?'bg':t.status==='Expiring Soon'?'bw':'br';return'<tr><td>'+H(t.emp)+'</td><td><strong>'+H(t.cert)+'</strong></td><td>'+fdate(t.done)+'</td><td>'+fdate(t.exp)+'</td><td>'+H(t.prov)+'</td><td>'+(t.cost?fmt(t.cost):'Internal')+'</td><td><span class="badge '+sc+'">'+H(t.status)+'</span></td></tr>';}).join('');
 }
 
 function rPerf(){
   var p=ld('sb_perf',[]);var due=p.filter(function(x){return x.status==='Scheduled';}).length;var done=p.filter(function(x){return x.status==='Completed';}).length;
   var sc=p.filter(function(x){return x.score&&x.score!=='--';});var avg=sc.length?sc.reduce(function(s,x){return s+parseFloat(x.score);},0)/sc.length:0;
-  $('pf-due').textContent=due;$('pf-done').textContent=done;$('pf-avg').textContent=avg.toFixed(1);$('pf-raises').textContent=2;$('pf-pip').textContent=0;
-  $('pftbody').innerHTML=p.map(function(x){var sc={Scheduled:'bb',Upcoming:'bw',Completed:'bg'}[x.status]||'bx';return'<tr><td><strong>'+H(x.emp)+'</strong></td><td>'+H(x.type)+'</td><td>'+fdate(x.due)+'</td><td>'+H(x.rev)+'</td><td>'+(x.score&&x.score!=='--'?'<strong>'+x.score+'/5.0</strong>':'--')+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast('Review form - next build')">Start</button></td></tr>';}).join('');
+  var raises=p.filter(function(x){return x.raise;}).length;var pips=p.filter(function(x){return x.pip;}).length;
+  $('pf-due').textContent=due;$('pf-done').textContent=done;$('pf-avg').textContent=avg.toFixed(1);$('pf-raises').textContent=raises;$('pf-pip').textContent=pips;
+  $('pftbody').innerHTML=p.map(function(x){var sc={Scheduled:'bb',Upcoming:'bw',Completed:'bg'}[x.status]||'bx';return'<tr><td><strong>'+H(x.emp)+'</strong></td><td>'+H(x.type)+'</td><td>'+fdate(x.due)+'</td><td>'+H(x.rev)+'</td><td>'+(x.score&&x.score!=='--'?'<strong>'+x.score+'/5.0</strong>':'--')+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast(\'Review form - next build\')">Start</button></td></tr>';}).join('');
 }
 
 function sendAI(){var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
