@@ -1394,29 +1394,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-mobilevet-table','panel-mobilevet')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Units Active</div>
-<div class="kpi-value">2</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Calls Today</div>
-<div class="kpi-value">9</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Time On-Site</div>
-<div class="kpi-value">34 min</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Miles Today</div>
-<div class="kpi-value">62</div>
-</div>
-</div>
+<div class="kpi-row" id="mv-kpis"></div>
 <div class="card"><table id="panel-mobilevet-table">
-<thead><tr><th>Unit</th><th>Vet</th><th>Current Stop</th><th>ETA Next</th></tr></thead>
-<tbody>
-<tr><td>Mobile Unit 1</td><td>Dr. Mitchell</td><td>Miller Dairy Farm</td><td>9:45 AM — Green Pastures Ranch</td></tr>
-</tbody></table></div>
+<thead><tr><th>Unit</th><th>Vet</th><th>Location</th><th>Arrived</th><th>Departed</th></tr></thead>
+<tbody id="mv-tbody"></tbody></table></div>
+<div class="card"><h3>Log a Stop</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="mv-add-unit" placeholder="Unit (e.g., Mobile Unit 1)"><input type="text" id="mv-add-vet" placeholder="Vet name"><input type="text" id="mv-add-location" placeholder="Location"><input type="number" id="mv-add-miles" placeholder="Miles (optional)"><button class="btn" onclick="addMobileStop()">Log Arrival</button></div></div>
 </div>
 
 <div id="panel-communications" class="panel">
@@ -1906,6 +1888,7 @@ function gateSubmit(){
   renderBoarding();
   renderComms();
   renderDocuments();
+  renderMobileVet();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -4035,6 +4018,90 @@ function addDocument(){
   renderDocuments();
   document.getElementById('dc-add-name').value='';
   showToast(name+' added','success');
+}
+
+function getMobileStops(){
+  try {
+    var stored = localStorage.getItem('sv_mobilevet');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var today = new Date().toISOString().slice(0,10);
+  var seed = [
+    {id:'mv1', unit:'Mobile Unit 1', vet:'Dr. Mitchell', location:'Miller Dairy Farm', date:today, arrival:'08:15', departure:null, miles:null}
+  ];
+  saveMobileStops(seed);
+  return seed;
+}
+
+function saveMobileStops(list){
+  try { localStorage.setItem('sv_mobilevet', JSON.stringify(list)); } catch(e){}
+}
+
+function renderMobileVet(){
+  var list = getMobileStops();
+  var tbody = document.getElementById('mv-tbody');
+  var today = new Date().toISOString().slice(0,10);
+  if(tbody){
+    tbody.innerHTML = '';
+    list.slice().reverse().forEach(function(m){
+      var tr = document.createElement('tr');
+      tr.style.cursor='pointer';
+      tr.onclick=function(){ if(!m.departure && confirm('Mark '+m.unit+' departed now?')) departMobileStop(m.id); };
+      tr.innerHTML = '<td>'+escHtml(m.unit)+'</td><td>'+escHtml(m.vet)+'</td><td>'+escHtml(m.location)+'</td><td>'+escHtml(m.arrival||'--')+'</td><td>'+(m.departure?escHtml(m.departure):'<em>On-site</em>')+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var todayStops = list.filter(function(m){ return m.date===today; });
+  var activeUnits = {}; todayStops.forEach(function(m){ if(!m.departure) activeUnits[m.unit]=1; });
+  var unitsActive = Object.keys(activeUnits).length;
+  var callsToday = todayStops.length;
+  var completed = todayStops.filter(function(m){ return m.departure; });
+  var onSiteMins = completed.map(function(m){
+    var a = m.arrival.split(':'), d = m.departure.split(':');
+    return (parseInt(d[0])*60+parseInt(d[1])) - (parseInt(a[0])*60+parseInt(a[1]));
+  }).filter(function(x){ return x>=0; });
+  var avgOnSite = onSiteMins.length ? Math.round(onSiteMins.reduce(function(a,b){return a+b;},0)/onSiteMins.length) : null;
+  var milesToday = todayStops.reduce(function(s,m){ return s+(typeof m.miles==='number'?m.miles:0); },0);
+
+  var kpis = document.getElementById('mv-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Units Active</div><div class="kpi-value">'+unitsActive+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Calls Today</div><div class="kpi-value">'+callsToday+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Time On-Site</div><div class="kpi-value">'+(avgOnSite!==null?avgOnSite+' min':'--')+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Miles Today (Logged)</div><div class="kpi-value">'+milesToday+'</div></div>';
+  }
+}
+
+function departMobileStop(id){
+  var list = getMobileStops();
+  var m = list.find(function(x){ return x.id===id; });
+  if(!m) return;
+  var now = new Date();
+  m.departure = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  saveMobileStops(list);
+  renderMobileVet();
+  showToast(m.unit+' marked departed','success');
+}
+
+function addMobileStop(){
+  var unit = document.getElementById('mv-add-unit').value.trim();
+  var vet = document.getElementById('mv-add-vet').value.trim();
+  var location = document.getElementById('mv-add-location').value.trim();
+  var milesRaw = document.getElementById('mv-add-miles').value;
+  var miles = milesRaw!==''?parseFloat(milesRaw):null;
+  if(!unit||!location){ showToast('Unit and location required','error'); return; }
+  var now = new Date();
+  var list = getMobileStops();
+  list.push({id:'mv'+Date.now(), unit:unit, vet:vet||'--', location:location, date:now.toISOString().slice(0,10), arrival:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'), departure:null, miles:miles});
+  saveMobileStops(list);
+  renderMobileVet();
+  document.getElementById('mv-add-unit').value='';
+  document.getElementById('mv-add-vet').value='';
+  document.getElementById('mv-add-location').value='';
+  document.getElementById('mv-add-miles').value='';
+  showToast('Arrival logged for '+unit,'success');
 }
 
 function getCogginsTests(){
@@ -6506,6 +6573,7 @@ if(auth){
   renderBoarding();
   renderComms();
   renderDocuments();
+  renderMobileVet();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
