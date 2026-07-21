@@ -794,33 +794,7 @@
                 <button class="btn btn-primary" onclick="exportCSV('auth')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Active Auths</div>
-                    <div class="kpi-value">47</div>
-                    <div class="kpi-detail">Valid today</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Expiring Soon</div>
-                    <div class="kpi-value">8</div>
-                    <div class="kpi-detail">Within 30 days</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Expired</div>
-                    <div class="kpi-value">3</div>
-                    <div class="kpi-detail">Renewal pending</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Appeal Log</div>
-                    <div class="kpi-value">6</div>
-                    <div class="kpi-detail">Documented</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Approval Rate</div>
-                    <div class="kpi-value">96.2%</div>
-                    <div class="kpi-detail">Granted auths</div>
-                </div>
-            </div>
+            <div class="kpi-grid" id="auth-kpis"></div>
             <div class="table-container">
                 <table id="authTable">
                     <thead>
@@ -830,53 +804,18 @@
                             <th>Expiration</th>
                             <th>Units</th>
                             <th>Status</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>AUTH-001</td>
-                            <td>Hip Replacement</td>
-                            <td>2026-08-15</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-clean">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-002</td>
-                            <td>Cardiac Catheterization</td>
-                            <td>2026-07-20</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-clean">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-003</td>
-                            <td>MRI Scan</td>
-                            <td>2026-07-10</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-pending">Expiring Soon</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-004</td>
-                            <td>Physical Therapy</td>
-                            <td>2026-06-30</td>
-                            <td>20</td>
-                            <td><span class="status-badge status-clean">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-005</td>
-                            <td>Knee Arthroscopy</td>
-                            <td>2026-09-01</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-clean">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-006</td>
-                            <td>Ultrasound</td>
-                            <td>2026-06-15</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-pending">Expiring Soon</span></td>
-                        </tr>
-                    </tbody>
+                    <tbody id="auth-tbody"></tbody>
                 </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="auth-add-id" placeholder="Auth ID" class="search-input">
+                <input type="text" id="auth-add-proc" placeholder="Procedure" class="search-input">
+                <input type="date" id="auth-add-exp" class="search-input">
+                <input type="number" id="auth-add-units" placeholder="Units" class="search-input">
+                <button class="btn btn-primary" onclick="addAuthEntry()">Add</button>
             </div>
         </div>
 
@@ -1938,6 +1877,81 @@
             showToast('Anesthesia case added');
         }
 
+        function getAuthEntries(){
+            try { var s = localStorage.getItem('sc_auth'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'at1', authId:'AUTH-001', proc:'Hip Replacement', exp:'2026-08-15', units:1},
+                {id:'at2', authId:'AUTH-002', proc:'Cardiac Catheterization', exp:'2026-07-20', units:1},
+                {id:'at3', authId:'AUTH-003', proc:'MRI Scan', exp:'2026-07-10', units:1},
+                {id:'at4', authId:'AUTH-004', proc:'Physical Therapy', exp:'2026-06-30', units:20},
+                {id:'at5', authId:'AUTH-005', proc:'Knee Arthroscopy', exp:'2026-09-01', units:1},
+                {id:'at6', authId:'AUTH-006', proc:'Ultrasound', exp:'2026-06-15', units:1}
+            ];
+            saveAuthEntries(seed);
+            return seed;
+        }
+        function saveAuthEntries(list){ try { localStorage.setItem('sc_auth', JSON.stringify(list)); } catch(e){} }
+        function authStatusFor(exp, today){
+            var expDate = new Date(exp+'T00:00:00Z');
+            var todayDate = new Date(today+'T00:00:00Z');
+            var days = Math.round((expDate-todayDate)/86400000);
+            if (days < 0) return 'Expired';
+            if (days <= 30) return 'Expiring Soon';
+            return 'Active';
+        }
+        function authBadgeClass(status){
+            if (status==='Active') return 'status-clean';
+            if (status==='Expired') return 'status-denied';
+            return 'status-pending';
+        }
+        function renderAuth(){
+            var list = getAuthEntries();
+            var tbody = document.getElementById('auth-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            var today = new Date().toISOString().slice(0,10);
+            var active = 0, expiringSoon = 0, expired = 0, totalUnits = 0;
+            list.forEach(function(a){
+                var status = authStatusFor(a.exp, today);
+                if (status==='Active') active++;
+                else if (status==='Expiring Soon') expiringSoon++;
+                else expired++;
+                totalUnits += a.units;
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(a.authId)+'</td><td>'+escHtml(a.proc)+'</td><td>'+escHtml(a.exp)+'</td><td>'+a.units+'</td><td><span class="status-badge '+authBadgeClass(status)+'">'+status+'</span></td><td><button class="btn" style="padding:2px 8px;" onclick="removeAuthEntry(\''+a.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var kpis = document.getElementById('auth-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Active Auths</div><div class="kpi-value">'+active+'</div><div class="kpi-detail">Computed from expiration date</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Expiring Soon</div><div class="kpi-value">'+expiringSoon+'</div><div class="kpi-detail">Within 30 days</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Expired</div><div class="kpi-value">'+expired+'</div><div class="kpi-detail">Renewal needed</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Auths Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Units Authorized</div><div class="kpi-value">'+totalUnits+'</div><div class="kpi-detail">Sum, all logged</div></div>';
+            }
+        }
+        function removeAuthEntry(id){
+            saveAuthEntries(getAuthEntries().filter(function(a){return a.id!==id;}));
+            renderAuth();
+        }
+        function addAuthEntry(){
+            var authId = document.getElementById('auth-add-id').value.trim();
+            var proc = document.getElementById('auth-add-proc').value.trim();
+            var exp = document.getElementById('auth-add-exp').value;
+            var units = parseInt(document.getElementById('auth-add-units').value, 10);
+            if (!authId || !proc || !exp) { showToast('Auth ID, procedure, and expiration required'); return; }
+            var list = getAuthEntries();
+            list.push({id:'at'+Date.now(), authId:authId, proc:proc, exp:exp, units:isNaN(units)?1:units});
+            saveAuthEntries(list);
+            renderAuth();
+            document.getElementById('auth-add-id').value = '';
+            document.getElementById('auth-add-proc').value = '';
+            document.getElementById('auth-add-exp').value = '';
+            document.getElementById('auth-add-units').value = '';
+            showToast('Authorization added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -2034,6 +2048,7 @@
             renderRac();
             renderTelehealth();
             renderAnesthesia();
+            renderAuth();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
