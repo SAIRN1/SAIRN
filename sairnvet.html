@@ -364,39 +364,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-patients-table','panel-patients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Patients</div>
-<div class="kpi-value">1,847</div>
-<div class="kpi-change">All species</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">New This Month</div>
-<div class="kpi-value">62</div>
-<div class="kpi-change">Across all hubs</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Visits/Yr</div>
-<div class="kpi-value">2.4</div>
-<div class="kpi-change">Per patient</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Chart Completion</div>
-<div class="kpi-value">97%</div>
-<div class="kpi-change">SOAP compliance</div>
-</div>
-</div>
+<div class="kpi-row" id="patients-kpis"></div>
 <div class="card"><table id="panel-patients-table">
 <thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Max</td><td>Canine</td><td>Golden Retriever</td><td>Smith, John</td><td>5y</td><td>2026-07-05</td><td>Healthy</td></tr>
-<tr><td>Whiskers</td><td>Feline</td><td>Persian</td><td>Doe, Jane</td><td>8y</td><td>2026-07-04</td><td>Follow-up</td></tr>
-<tr><td>Star</td><td>Equine</td><td>Quarter Horse</td><td>Johnson, Sarah</td><td>12y</td><td>2026-06-28</td><td>Healthy</td></tr>
-<tr><td>Bessie</td><td>Bovine</td><td>Holstein</td><td>Miller Dairy Farm</td><td>4y</td><td>2026-06-30</td><td>Herd Check</td></tr>
-<tr><td>Kiwi</td><td>Avian</td><td>African Grey</td><td>Nguyen, Lisa</td><td>15y</td><td>2026-07-02</td><td>Wellness</td></tr>
-<tr><td>Shelly</td><td>Chelonian</td><td>Sulcata Tortoise</td><td>Park, David</td><td>20y</td><td>2026-06-15</td><td>MBD Recheck</td></tr>
-</tbody></table></div>
-<div class="card"><h3>Quick Add Patient</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:15px 0;"><input type="text" placeholder="Patient name"><input type="text" placeholder="Species"><input type="text" placeholder="Breed"><input type="text" placeholder="Owner last name"><input type="number" placeholder="Age (years)"><button class="btn" onclick="showToast('Patient added to demo roster','success')">Add Patient</button></div></div>
+<tbody id="patients-tbody"></tbody></table></div>
+<div class="card"><h3>Quick Add Patient</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:15px 0;"><input type="text" id="pt-add-name" placeholder="Patient name"><input type="text" id="pt-add-species" placeholder="Species"><input type="text" id="pt-add-breed" placeholder="Breed"><input type="text" id="pt-add-owner" placeholder="Owner last name"><input type="number" id="pt-add-age" placeholder="Age (years)"><button class="btn" onclick="addPatient()">Add Patient</button></div></div>
 </div>
 
 <div id="panel-soap" class="panel">
@@ -2011,6 +1983,7 @@ function gateSubmit(){
   renderRepro();
   renderEquineDental();
   renderPPE();
+  renderPatients();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -3941,6 +3914,133 @@ function addPPE(){
   document.getElementById('ppe-add-pages').value='';
   document.getElementById('ppe-add-radiographs').checked=false;
   showToast(horse+' PPE logged','success');
+}
+
+function getPatients(){
+  try {
+    var stored = localStorage.getItem('sv_patients');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  // Default demo seed — only used the first time, before any localStorage data exists
+  var seed = [
+    {id:'pt1', name:'Max', species:'Canine', breed:'Golden Retriever', owner:'Smith, John', age:5, lastVisit:'2026-07-05', status:'Healthy', added:'2025-03-12', visitsThisYear:3, chartComplete:true},
+    {id:'pt2', name:'Whiskers', species:'Feline', breed:'Persian', owner:'Doe, Jane', age:8, lastVisit:'2026-07-04', status:'Follow-up', added:'2023-11-02', visitsThisYear:2, chartComplete:true},
+    {id:'pt3', name:'Star', species:'Equine', breed:'Quarter Horse', owner:'Johnson, Sarah', age:12, lastVisit:'2026-06-28', status:'Healthy', added:'2021-05-19', visitsThisYear:4, chartComplete:true},
+    {id:'pt4', name:'Bessie', species:'Bovine', breed:'Holstein', owner:'Miller Dairy Farm', age:4, lastVisit:'2026-06-30', status:'Herd Check', added:'2024-01-08', visitsThisYear:6, chartComplete:true},
+    {id:'pt5', name:'Kiwi', species:'Avian', breed:'African Grey', owner:'Nguyen, Lisa', age:15, lastVisit:'2026-07-02', status:'Wellness', added:'2022-09-14', visitsThisYear:1, chartComplete:true},
+    {id:'pt6', name:'Shelly', species:'Chelonian', breed:'Sulcata Tortoise', owner:'Park, David', age:20, lastVisit:'2026-06-15', status:'MBD Recheck', added:'2026-07-01', visitsThisYear:1, chartComplete:false}
+  ];
+  savePatients(seed);
+  return seed;
+}
+
+function savePatients(list){
+  try { localStorage.setItem('sv_patients', JSON.stringify(list)); } catch(e){}
+}
+
+function renderPatients(){
+  var list = getPatients();
+  var tbody = document.getElementById('patients-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  list.forEach(function(p){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openPatientEdit(p.id); };
+    tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.species)+'</td><td>'+escHtml(p.breed)+'</td><td>'+escHtml(p.owner)+'</td><td>'+(p.age||'—')+'y</td><td>'+escHtml(p.lastVisit||'—')+'</td><td>'+escHtml(p.status||'—')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var newThisMonth = list.filter(function(p){ return p.added && p.added.slice(0,7)===thisMonth; }).length;
+  var visits = list.map(function(p){ return p.visitsThisYear||0; });
+  var avgVisits = visits.length ? (visits.reduce(function(a,b){return a+b;},0)/visits.length).toFixed(1) : '0.0';
+  var complete = list.filter(function(p){ return p.chartComplete; }).length;
+  var completionPct = list.length ? Math.round(complete/list.length*100) : 0;
+
+  var kpis = document.getElementById('patients-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Active Patients</div><div class="kpi-value">'+list.length+'</div><div class="kpi-change">All species</div></div>'+
+      '<div class="kpi"><div class="kpi-label">New This Month</div><div class="kpi-value">'+newThisMonth+'</div><div class="kpi-change">This roster</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Visits/Yr</div><div class="kpi-value">'+avgVisits+'</div><div class="kpi-change">Per patient</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Chart Completion</div><div class="kpi-value">'+completionPct+'%</div><div class="kpi-change">SOAP compliance</div></div>';
+  }
+}
+
+function openPatientEdit(id){
+  var list = getPatients();
+  var p = list.find(function(x){ return x.id===id; });
+  if(!p) return;
+  var statusOptions = ['Healthy','Follow-up','Herd Check','Wellness','MBD Recheck','Sick','Deceased'].map(function(s){ return '<option'+(s===p.status?' selected':'')+'>'+s+'</option>'; }).join('');
+  var html =
+    '<div class="card" id="pt-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(p.name)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="pt-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
+    '<div><label style="display:block;margin-bottom:6px;">Last Visit</label><input type="date" id="pt-edit-visit" value="'+(p.lastVisit||'')+'" style="width:100%;"></div>'+
+    '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="pt-edit-chart"'+(p.chartComplete?' checked':'')+'> Chart complete</label></div>'+
+    '</div>'+
+    '<button class="btn" onclick="savePatientEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelPatientEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removePatient(\''+id+'\')">Remove</button>'+
+    '</div>';
+  var existing = document.getElementById('pt-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-patients-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('pt-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelPatientEdit(){
+  var existing = document.getElementById('pt-edit-card');
+  if(existing) existing.remove();
+}
+
+function savePatientEdit(id){
+  var list = getPatients();
+  var p = list.find(function(x){ return x.id===id; });
+  if(!p) return;
+  var newVisit = document.getElementById('pt-edit-visit').value;
+  if(newVisit && newVisit!==p.lastVisit) p.visitsThisYear = (p.visitsThisYear||0)+1;
+  p.status = document.getElementById('pt-edit-status').value;
+  p.lastVisit = newVisit || p.lastVisit;
+  p.chartComplete = document.getElementById('pt-edit-chart').checked;
+  savePatients(list);
+  cancelPatientEdit();
+  renderPatients();
+  showToast('Updated '+p.name,'success');
+}
+
+function removePatient(id){
+  var list = getPatients();
+  var p = list.find(function(x){ return x.id===id; });
+  list = list.filter(function(x){ return x.id!==id; });
+  savePatients(list);
+  cancelPatientEdit();
+  renderPatients();
+  showToast((p?p.name:'Patient')+' removed','success');
+}
+
+function addPatient(){
+  var name = document.getElementById('pt-add-name').value.trim();
+  var species = document.getElementById('pt-add-species').value.trim();
+  var breed = document.getElementById('pt-add-breed').value.trim();
+  var owner = document.getElementById('pt-add-owner').value.trim();
+  var age = parseInt(document.getElementById('pt-add-age').value,10)||null;
+  if(!name){ showToast('Patient name required','error'); return; }
+  var list = getPatients();
+  var id = 'pt' + Date.now();
+  list.push({id:id, name:name, species:species||'—', breed:breed||'—', owner:owner||'—', age:age, lastVisit:new Date().toISOString().slice(0,10), status:'Healthy', added:new Date().toISOString().slice(0,10), visitsThisYear:1, chartComplete:false});
+  savePatients(list);
+  renderPatients();
+  document.getElementById('pt-add-name').value='';
+  document.getElementById('pt-add-species').value='';
+  document.getElementById('pt-add-breed').value='';
+  document.getElementById('pt-add-owner').value='';
+  document.getElementById('pt-add-age').value='';
+  showToast(name+' added to roster','success');
 }
 
 function getCogginsTests(){
@@ -6196,6 +6296,7 @@ if(auth){
   renderRepro();
   renderEquineDental();
   renderPPE();
+  renderPatients();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
