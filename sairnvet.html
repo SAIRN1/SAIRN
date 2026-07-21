@@ -1238,30 +1238,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-referrals-table','panel-referrals')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Referrals</div>
-<div class="kpi-value">6</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Turnaround</div>
-<div class="kpi-value">3.2 days</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Specialist Network</div>
-<div class="kpi-value">18</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Return Rate</div>
-<div class="kpi-value">88%</div>
-</div>
-</div>
+<div class="kpi-row" id="ref-kpis"></div>
 <div class="card"><table id="panel-referrals-table">
 <thead><tr><th>Patient</th><th>Specialist</th><th>Reason</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Milo</td><td>Metro Veterinary Cardiology</td><td>DCM workup</td><td>Consult scheduled</td></tr>
-<tr><td>Rex</td><td>Regional Ortho Referral</td><td>TPLO consult</td><td>Awaiting records transfer</td></tr>
-</tbody></table></div>
+<tbody id="ref-tbody"></tbody></table></div>
+<div class="card"><h3>Log a Referral</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="ref-add-patient" placeholder="Patient"><input type="text" id="ref-add-specialist" placeholder="Specialist"><input type="text" id="ref-add-reason" placeholder="Reason"><button class="btn" onclick="addReferral()">Log</button></div></div>
 </div>
 
 <div id="panel-petinsurance" class="panel">
@@ -1321,30 +1302,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-wellness-table','panel-wellness')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Plans</div>
-<div class="kpi-value">312</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Monthly Recurring Revenue</div>
-<div class="kpi-value">$18,700</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Utilization Rate</div>
-<div class="kpi-value">82%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Renewal Rate</div>
-<div class="kpi-value">89%</div>
-</div>
-</div>
+<div class="kpi-row" id="well-kpis"></div>
 <div class="card"><table id="panel-wellness-table">
 <thead><tr><th>Patient</th><th>Plan</th><th>Monthly</th><th>Renewal Date</th></tr></thead>
-<tbody>
-<tr><td>Max</td><td>Adult Wellness Plus</td><td>$52.00</td><td>2027-01-15</td></tr>
-<tr><td>Whiskers</td><td>Senior Wellness</td><td>$68.00</td><td>2026-11-02</td></tr>
-</tbody></table></div>
+<tbody id="well-tbody"></tbody></table></div>
+<div class="card"><h3>Enroll a Patient</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="well-add-patient" placeholder="Patient"><input type="text" id="well-add-plan" placeholder="Plan name"><input type="number" id="well-add-monthly" placeholder="Monthly ($)"><input type="date" id="well-add-renewal"><button class="btn" onclick="addWellnessPlan()">Enroll</button></div></div>
 </div>
 
 <div id="panel-mobilevet" class="panel">
@@ -1388,30 +1350,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-reminders-table','panel-reminders')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Due This Week</div>
-<div class="kpi-value">67</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Overdue</div>
-<div class="kpi-value">12</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Auto-Sent</div>
-<div class="kpi-value">54</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Response Rate</div>
-<div class="kpi-value">71%</div>
-</div>
-</div>
+<div class="kpi-row" id="rem-kpis"></div>
 <div class="card"><table id="panel-reminders-table">
 <thead><tr><th>Patient</th><th>Reminder</th><th>Due Date</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>Max</td><td>Rabies Booster</td><td>2026-07-15</td><td>Scheduled</td></tr>
-<tr><td>Star</td><td>Coggins Renewal</td><td>2026-08-01</td><td>Not yet contacted</td></tr>
-</tbody></table></div>
+<tbody id="rem-tbody"></tbody></table></div>
+<div class="card"><h3>Log a Reminder</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="rem-add-patient" placeholder="Patient"><input type="text" id="rem-add-type" placeholder="Reminder type"><input type="date" id="rem-add-due"><button class="btn" onclick="addReminder()">Log</button></div></div>
 </div>
 
 <div id="settings" class="panel">
@@ -1853,6 +1796,9 @@ function gateSubmit(){
   renderMobileVet();
   renderPetInsurance();
   renderPortal();
+  renderReferrals();
+  renderReminders();
+  renderWellness();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -4192,6 +4138,187 @@ function addPortalRequest(){
   document.getElementById('pt-add-client').value='';
   document.getElementById('pt-add-request').value='';
   showToast('Logged request from '+client,'success');
+}
+
+function getReferrals(){
+  try {
+    var stored = localStorage.getItem('sv_referrals');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {id:'rf1', patient:'Milo', specialist:'Metro Veterinary Cardiology', reason:'DCM workup', status:'Consult scheduled', sent:'2026-07-05', returned:null},
+    {id:'rf2', patient:'Rex', specialist:'Regional Ortho Referral', reason:'TPLO consult', status:'Awaiting records transfer', sent:'2026-07-02', returned:null}
+  ];
+  saveReferrals(seed);
+  return seed;
+}
+
+function saveReferrals(list){
+  try { localStorage.setItem('sv_referrals', JSON.stringify(list)); } catch(e){}
+}
+
+function renderReferrals(){
+  var list = getReferrals();
+  var tbody = document.getElementById('ref-tbody');
+  if(tbody){
+    tbody.innerHTML = '';
+    list.slice().reverse().forEach(function(r){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escHtml(r.patient)+'</td><td>'+escHtml(r.specialist)+'</td><td>'+escHtml(r.reason)+'</td><td>'+escHtml(r.status)+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var active = list.filter(function(r){ return !r.returned; }).length;
+  var completed = list.filter(function(r){ return r.returned; });
+  var turnarounds = completed.map(function(r){ return (new Date(r.returned)-new Date(r.sent))/86400000; });
+  var avgTurn = turnarounds.length ? (turnarounds.reduce(function(a,b){return a+b;},0)/turnarounds.length).toFixed(1)+' days' : '--';
+  var specialists = {}; list.forEach(function(r){ specialists[r.specialist]=1; });
+  var returnRate = list.length ? Math.round(completed.length/list.length*100)+'%' : '--';
+
+  var kpis = document.getElementById('ref-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Active Referrals</div><div class="kpi-value">'+active+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Turnaround</div><div class="kpi-value">'+avgTurn+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Specialists Used</div><div class="kpi-value">'+Object.keys(specialists).length+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Case Return Rate</div><div class="kpi-value">'+returnRate+'</div></div>';
+  }
+}
+
+function addReferral(){
+  var patient = document.getElementById('ref-add-patient').value.trim();
+  var specialist = document.getElementById('ref-add-specialist').value.trim();
+  var reason = document.getElementById('ref-add-reason').value.trim();
+  if(!patient||!specialist){ showToast('Patient and specialist required','error'); return; }
+  var list = getReferrals();
+  list.push({id:'rf'+Date.now(), patient:patient, specialist:specialist, reason:reason||'--', status:'Consult scheduled', sent:new Date().toISOString().slice(0,10), returned:null});
+  saveReferrals(list);
+  renderReferrals();
+  document.getElementById('ref-add-patient').value='';
+  document.getElementById('ref-add-specialist').value='';
+  document.getElementById('ref-add-reason').value='';
+  showToast('Referral logged for '+patient,'success');
+}
+
+function getReminders(){
+  try {
+    var stored = localStorage.getItem('sv_reminders');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {id:'rm1', patient:'Max', type:'Rabies Booster', due:'2026-07-15', status:'Scheduled', contacted:true},
+    {id:'rm2', patient:'Star', type:'Coggins Renewal', due:'2026-08-01', status:'Not yet contacted', contacted:false}
+  ];
+  saveReminders(seed);
+  return seed;
+}
+
+function saveReminders(list){
+  try { localStorage.setItem('sv_reminders', JSON.stringify(list)); } catch(e){}
+}
+
+function renderReminders(){
+  var list = getReminders();
+  var tbody = document.getElementById('rem-tbody');
+  if(tbody){
+    tbody.innerHTML = '';
+    list.forEach(function(r){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escHtml(r.patient)+'</td><td>'+escHtml(r.type)+'</td><td>'+escHtml(r.due)+'</td><td>'+escHtml(r.status)+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var now = new Date();
+  var weekOut = new Date(now.getTime()+7*86400000);
+  var dueThisWeek = list.filter(function(r){ var d=new Date(r.due); return d>=now && d<=weekOut; }).length;
+  var overdue = list.filter(function(r){ return new Date(r.due) < now && r.status!=='Completed'; }).length;
+  var contacted = list.filter(function(r){ return r.contacted; }).length;
+  var contactRate = list.length ? Math.round(contacted/list.length*100)+'%' : '--';
+
+  var kpis = document.getElementById('rem-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Due This Week</div><div class="kpi-value">'+dueThisWeek+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value">'+overdue+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Total Logged</div><div class="kpi-value">'+list.length+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Contacted Rate</div><div class="kpi-value">'+contactRate+'</div></div>';
+  }
+}
+
+function addReminder(){
+  var patient = document.getElementById('rem-add-patient').value.trim();
+  var type = document.getElementById('rem-add-type').value.trim();
+  var due = document.getElementById('rem-add-due').value;
+  if(!patient||!type||!due){ showToast('Patient, type, and due date required','error'); return; }
+  var list = getReminders();
+  list.push({id:'rm'+Date.now(), patient:patient, type:type, due:due, status:'Not yet contacted', contacted:false});
+  saveReminders(list);
+  renderReminders();
+  document.getElementById('rem-add-patient').value='';
+  document.getElementById('rem-add-type').value='';
+  document.getElementById('rem-add-due').value='';
+  showToast('Reminder logged for '+patient,'success');
+}
+
+function getWellnessPlans(){
+  try {
+    var stored = localStorage.getItem('sv_wellness');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {id:'wp1', patient:'Max', plan:'Adult Wellness Plus', monthly:52.00, renewal:'2027-01-15', active:true},
+    {id:'wp2', patient:'Whiskers', plan:'Senior Wellness', monthly:68.00, renewal:'2026-11-02', active:true}
+  ];
+  saveWellnessPlans(seed);
+  return seed;
+}
+
+function saveWellnessPlans(list){
+  try { localStorage.setItem('sv_wellness', JSON.stringify(list)); } catch(e){}
+}
+
+function renderWellness(){
+  var list = getWellnessPlans();
+  var tbody = document.getElementById('well-tbody');
+  if(tbody){
+    tbody.innerHTML = '';
+    list.forEach(function(w){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escHtml(w.patient)+'</td><td>'+escHtml(w.plan)+'</td><td>$'+w.monthly.toFixed(2)+'</td><td>'+escHtml(w.renewal)+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var active = list.filter(function(w){ return w.active; });
+  var mrr = active.reduce(function(s,w){ return s+w.monthly; },0);
+
+  var kpis = document.getElementById('well-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Active Plans</div><div class="kpi-value">'+active.length+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Monthly Recurring Revenue</div><div class="kpi-value">$'+mrr.toFixed(2)+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Avg Plan Value</div><div class="kpi-value">'+(active.length?'$'+(mrr/active.length).toFixed(2):'--')+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Total Enrolled</div><div class="kpi-value">'+list.length+'</div></div>';
+  }
+}
+
+function addWellnessPlan(){
+  var patient = document.getElementById('well-add-patient').value.trim();
+  var plan = document.getElementById('well-add-plan').value.trim();
+  var monthly = parseFloat(document.getElementById('well-add-monthly').value)||0;
+  var renewal = document.getElementById('well-add-renewal').value;
+  if(!patient||!plan||!monthly){ showToast('Patient, plan, and monthly amount required','error'); return; }
+  var list = getWellnessPlans();
+  list.push({id:'wp'+Date.now(), patient:patient, plan:plan, monthly:monthly, renewal:renewal||'--', active:true});
+  saveWellnessPlans(list);
+  renderWellness();
+  document.getElementById('well-add-patient').value='';
+  document.getElementById('well-add-plan').value='';
+  document.getElementById('well-add-monthly').value='';
+  document.getElementById('well-add-renewal').value='';
+  showToast(patient+' enrolled in '+plan,'success');
 }
 
 function getCogginsTests(){
@@ -6666,6 +6793,9 @@ if(auth){
   renderMobileVet();
   renderPetInsurance();
   renderPortal();
+  renderReferrals();
+  renderReminders();
+  renderWellness();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
