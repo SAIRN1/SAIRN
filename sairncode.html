@@ -942,33 +942,7 @@
                 <button class="btn btn-primary" onclick="exportCSV('providers')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Providers</div>
-                    <div class="kpi-value">4</div>
-                    <div class="kpi-detail">Active</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Credentialed</div>
-                    <div class="kpi-value">100%</div>
-                    <div class="kpi-detail">Current</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Performance</div>
-                    <div class="kpi-value">96.4%</div>
-                    <div class="kpi-detail">Efficiency</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Appointments</div>
-                    <div class="kpi-value">523</div>
-                    <div class="kpi-detail">This month</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Patient Satisfaction</div>
-                    <div class="kpi-value">4.8/5</div>
-                    <div class="kpi-detail">Average rating</div>
-                </div>
-            </div>
+            <div class="kpi-grid" id="providers-kpis"></div>
             <div class="table-container">
                 <table>
                     <thead>
@@ -978,39 +952,19 @@
                             <th>License</th>
                             <th>Credentialed</th>
                             <th>Performance</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Dr. Michael Chen</td>
-                            <td>Internal Medicine</td>
-                            <td>MD-2847291</td>
-                            <td>Yes</td>
-                            <td>97.2%</td>
-                        </tr>
-                        <tr>
-                            <td>Dr. Sarah Martinez</td>
-                            <td>Cardiology</td>
-                            <td>MD-2947382</td>
-                            <td>Yes</td>
-                            <td>98.1%</td>
-                        </tr>
-                        <tr>
-                            <td>Dr. James Patel</td>
-                            <td>Orthopedic Surgery</td>
-                            <td>MD-3047291</td>
-                            <td>Yes</td>
-                            <td>96.8%</td>
-                        </tr>
-                        <tr>
-                            <td>NP Rachel Kim</td>
-                            <td>Family Practice</td>
-                            <td>NP-3147382</td>
-                            <td>Yes</td>
-                            <td>94.3%</td>
-                        </tr>
-                    </tbody>
+                    <tbody id="providers-tbody"></tbody>
                 </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="prov-add-name" placeholder="Name" class="search-input">
+                <input type="text" id="prov-add-specialty" placeholder="Specialty" class="search-input">
+                <input type="text" id="prov-add-license" placeholder="License #" class="search-input">
+                <select id="prov-add-cred"><option>Yes</option><option>No</option></select>
+                <input type="number" step="0.1" id="prov-add-perf" placeholder="Performance %" class="search-input">
+                <button class="btn btn-primary" onclick="addProviderEntry()">Add</button>
             </div>
         </div>
 
@@ -1998,6 +1952,65 @@
             showToast('A/R entry added');
         }
 
+        function getProviderEntries(){
+            try { var s = localStorage.getItem('sc_providers'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'pv1', name:'Dr. Michael Chen', specialty:'Internal Medicine', license:'MD-2847291', cred:'Yes', perf:97.2},
+                {id:'pv2', name:'Dr. Sarah Martinez', specialty:'Cardiology', license:'MD-2947382', cred:'Yes', perf:98.1},
+                {id:'pv3', name:'Dr. James Patel', specialty:'Orthopedic Surgery', license:'MD-3047291', cred:'Yes', perf:96.8},
+                {id:'pv4', name:'NP Rachel Kim', specialty:'Family Practice', license:'NP-3147382', cred:'Yes', perf:94.3}
+            ];
+            saveProviderEntries(seed);
+            return seed;
+        }
+        function saveProviderEntries(list){ try { localStorage.setItem('sc_providers', JSON.stringify(list)); } catch(e){} }
+        function renderProviders(){
+            var list = getProviderEntries();
+            var tbody = document.getElementById('providers-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(p){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.specialty)+'</td><td>'+escHtml(p.license)+'</td><td>'+escHtml(p.cred)+'</td><td>'+p.perf+'%</td><td><button class="btn" style="padding:2px 8px;" onclick="removeProviderEntry(\''+p.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var credentialed = list.filter(function(p){return p.cred==='Yes';});
+            var credPct = list.length ? (credentialed.length/list.length*100).toFixed(1)+'%' : '—';
+            var avgPerf = list.length ? (list.reduce(function(s,p){return s+p.perf;},0)/list.length).toFixed(1)+'%' : '—';
+            var specialties = {};
+            list.forEach(function(p){ if (p.specialty) specialties[p.specialty.trim().toLowerCase()] = true; });
+            var kpis = document.getElementById('providers-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Total Providers</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Credentialed</div><div class="kpi-value">'+credPct+'</div><div class="kpi-detail">Of logged providers</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Avg Performance</div><div class="kpi-value">'+avgPerf+'</div><div class="kpi-detail">Logged providers</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Specialties Represented</div><div class="kpi-value">'+Object.keys(specialties).length+'</div><div class="kpi-detail">Distinct</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Non-Credentialed</div><div class="kpi-value">'+(list.length-credentialed.length)+'</div><div class="kpi-detail">Needs review</div></div>';
+            }
+        }
+        function removeProviderEntry(id){
+            saveProviderEntries(getProviderEntries().filter(function(p){return p.id!==id;}));
+            renderProviders();
+        }
+        function addProviderEntry(){
+            var name = document.getElementById('prov-add-name').value.trim();
+            var specialty = document.getElementById('prov-add-specialty').value.trim();
+            var license = document.getElementById('prov-add-license').value.trim();
+            var cred = document.getElementById('prov-add-cred').value;
+            var perf = parseFloat(document.getElementById('prov-add-perf').value);
+            if (!name || !specialty) { showToast('Name and specialty required'); return; }
+            var list = getProviderEntries();
+            list.push({id:'pv'+Date.now(), name:name, specialty:specialty, license:license||'—', cred:cred, perf:isNaN(perf)?0:perf});
+            saveProviderEntries(list);
+            renderProviders();
+            document.getElementById('prov-add-name').value = '';
+            document.getElementById('prov-add-specialty').value = '';
+            document.getElementById('prov-add-license').value = '';
+            document.getElementById('prov-add-perf').value = '';
+            showToast('Provider added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -2096,6 +2109,7 @@
             renderAnesthesia();
             renderAuth();
             renderAr();
+            renderProviders();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
