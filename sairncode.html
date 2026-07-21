@@ -748,32 +748,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('anesthesia')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Cases Calculated</div>
-                    <div class="kpi-value">923</div>
-                    <div class="kpi-detail">YTD</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Base Units Avg</div>
-                    <div class="kpi-value">8.7</div>
-                    <div class="kpi-detail">Per procedure</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Time Units Avg</div>
-                    <div class="kpi-value">3.2</div>
-                    <div class="kpi-detail">Per 15 minutes</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">QC Modifiers</div>
-                    <div class="kpi-value">34</div>
-                    <div class="kpi-detail">Quality codes</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Billing Accuracy</div>
-                    <div class="kpi-value">97.8%</div>
-                    <div class="kpi-detail">Correct units</div>
-                </div>
+            <div class="kpi-grid" id="anesthesia-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Case Ref</th><th>Base Units</th><th>Minutes</th><th>Time Units</th><th>QC Modifier</th><th>Total Units</th><th></th></tr></thead>
+                    <tbody id="anesthesia-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="an-add-case" placeholder="Case ref" class="search-input">
+                <input type="number" step="0.1" id="an-add-base" placeholder="Base units" class="search-input">
+                <input type="number" id="an-add-minutes" placeholder="Minutes" class="search-input">
+                <input type="text" id="an-add-qc" placeholder="QC modifier (optional)" class="search-input">
+                <button class="btn btn-primary" onclick="addAnesthesiaEntry()">Add</button>
             </div>
         </div>
 
@@ -1891,6 +1878,66 @@
             showToast('Telehealth entry added');
         }
 
+        function getAnesthesiaEntries(){
+            try { var s = localStorage.getItem('sc_anesthesia'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'an1', caseRef:'CLM-2612', base:5, minutes:90, qc:'QS'},
+                {id:'an2', caseRef:'CLM-2613', base:6, minutes:60, qc:''}
+            ];
+            saveAnesthesiaEntries(seed);
+            return seed;
+        }
+        function saveAnesthesiaEntries(list){ try { localStorage.setItem('sc_anesthesia', JSON.stringify(list)); } catch(e){} }
+        function renderAnesthesia(){
+            var list = getAnesthesiaEntries();
+            var tbody = document.getElementById('anesthesia-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            var totalBase = 0, totalTime = 0, totalUnitsAll = 0, qcCount = 0;
+            list.forEach(function(a){
+                var timeUnits = a.minutes / 15;
+                var totalUnits = a.base + timeUnits;
+                totalBase += a.base;
+                totalTime += timeUnits;
+                totalUnitsAll += totalUnits;
+                if (a.qc && a.qc.trim() !== '') qcCount++;
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(a.caseRef)+'</td><td>'+a.base+'</td><td>'+a.minutes+'</td><td>'+timeUnits.toFixed(2)+'</td><td>'+escHtml(a.qc||'—')+'</td><td>'+totalUnits.toFixed(2)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAnesthesiaEntry(\''+a.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var avgBase = list.length ? (totalBase/list.length).toFixed(1) : '—';
+            var avgTime = list.length ? (totalTime/list.length).toFixed(1) : '—';
+            var kpis = document.getElementById('anesthesia-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Cases Calculated</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Base Units Avg</div><div class="kpi-value">'+avgBase+'</div><div class="kpi-detail">Per logged case</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Time Units Avg</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-detail">Per 15 minutes</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">QC Modifiers</div><div class="kpi-value">'+qcCount+'</div><div class="kpi-detail">Quality codes logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Total Units Billed</div><div class="kpi-value">'+totalUnitsAll.toFixed(2)+'</div><div class="kpi-detail">Sum, all logged cases</div></div>';
+            }
+        }
+        function removeAnesthesiaEntry(id){
+            saveAnesthesiaEntries(getAnesthesiaEntries().filter(function(a){return a.id!==id;}));
+            renderAnesthesia();
+        }
+        function addAnesthesiaEntry(){
+            var caseRef = document.getElementById('an-add-case').value.trim();
+            var base = parseFloat(document.getElementById('an-add-base').value);
+            var minutes = parseFloat(document.getElementById('an-add-minutes').value);
+            var qc = document.getElementById('an-add-qc').value.trim();
+            if (!caseRef || isNaN(base) || isNaN(minutes)) { showToast('Case ref, base units, and minutes required'); return; }
+            var list = getAnesthesiaEntries();
+            list.push({id:'an'+Date.now(), caseRef:caseRef, base:base, minutes:minutes, qc:qc});
+            saveAnesthesiaEntries(list);
+            renderAnesthesia();
+            document.getElementById('an-add-case').value = '';
+            document.getElementById('an-add-base').value = '';
+            document.getElementById('an-add-minutes').value = '';
+            document.getElementById('an-add-qc').value = '';
+            showToast('Anesthesia case added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1986,6 +2033,7 @@
             renderEncoder();
             renderRac();
             renderTelehealth();
+            renderAnesthesia();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
