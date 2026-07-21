@@ -850,32 +850,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('ar')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total A/R</div>
-                    <div class="kpi-value">$1.2M</div>
-                    <div class="kpi-detail">Outstanding</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">0-30 Days</div>
-                    <div class="kpi-value">$687K</div>
-                    <div class="kpi-detail">Current</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">31-60 Days</div>
-                    <div class="kpi-value">$342K</div>
-                    <div class="kpi-detail">Aging</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">60+ Days</div>
-                    <div class="kpi-value">$171K</div>
-                    <div class="kpi-detail">Delinquent</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Collection Rate</div>
-                    <div class="kpi-value">92.1%</div>
-                    <div class="kpi-detail">Within 90 days</div>
-                </div>
+            <div class="kpi-grid" id="ar-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Patient Ref</th><th>Amount</th><th>Days Outstanding</th><th>Bucket</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="ar-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="ar-add-patient" placeholder="Patient ref" class="search-input">
+                <input type="number" step="0.01" id="ar-add-amount" placeholder="Amount $" class="search-input">
+                <input type="number" id="ar-add-days" placeholder="Days outstanding" class="search-input">
+                <select id="ar-add-status"><option>Open</option><option>Collected</option><option>Written Off</option></select>
+                <button class="btn btn-primary" onclick="addArEntry()">Add</button>
             </div>
         </div>
 
@@ -1952,6 +1939,70 @@
             showToast('Authorization added');
         }
 
+        function getArEntries(){
+            try { var s = localStorage.getItem('sc_ar'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'ar1', patient:'PT-4021', amount:850, days:18, status:'Open'},
+                {id:'ar2', patient:'PT-4033', amount:1240, days:45, status:'Open'},
+                {id:'ar3', patient:'PT-4040', amount:620, days:75, status:'Open'}
+            ];
+            saveArEntries(seed);
+            return seed;
+        }
+        function saveArEntries(list){ try { localStorage.setItem('sc_ar', JSON.stringify(list)); } catch(e){} }
+        function arBucketFor(days){
+            if (days <= 30) return '0-30 Days';
+            if (days <= 60) return '31-60 Days';
+            return '60+ Days';
+        }
+        function renderAr(){
+            var list = getArEntries();
+            var tbody = document.getElementById('ar-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            var totalAr = 0, b1 = 0, b2 = 0, b3 = 0;
+            list.forEach(function(a){
+                var bucket = arBucketFor(a.days);
+                if (a.status === 'Open') {
+                    totalAr += a.amount;
+                    if (bucket==='0-30 Days') b1 += a.amount;
+                    else if (bucket==='31-60 Days') b2 += a.amount;
+                    else b3 += a.amount;
+                }
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(a.patient)+'</td><td>$'+a.amount.toLocaleString()+'</td><td>'+a.days+'</td><td>'+bucket+'</td><td>'+escHtml(a.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeArEntry(\''+a.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var kpis = document.getElementById('ar-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Total A/R</div><div class="kpi-value">$'+totalAr.toLocaleString()+'</div><div class="kpi-detail">Open accounts</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">0-30 Days</div><div class="kpi-value">$'+b1.toLocaleString()+'</div><div class="kpi-detail">Current</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">31-60 Days</div><div class="kpi-value">$'+b2.toLocaleString()+'</div><div class="kpi-detail">Aging</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">60+ Days</div><div class="kpi-value">$'+b3.toLocaleString()+'</div><div class="kpi-detail">Delinquent</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Accounts Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>';
+            }
+        }
+        function removeArEntry(id){
+            saveArEntries(getArEntries().filter(function(a){return a.id!==id;}));
+            renderAr();
+        }
+        function addArEntry(){
+            var patient = document.getElementById('ar-add-patient').value.trim();
+            var amount = parseFloat(document.getElementById('ar-add-amount').value);
+            var days = parseInt(document.getElementById('ar-add-days').value, 10);
+            var status = document.getElementById('ar-add-status').value;
+            if (!patient || isNaN(amount) || isNaN(days)) { showToast('Patient, amount, and days required'); return; }
+            var list = getArEntries();
+            list.push({id:'ar'+Date.now(), patient:patient, amount:amount, days:days, status:status});
+            saveArEntries(list);
+            renderAr();
+            document.getElementById('ar-add-patient').value = '';
+            document.getElementById('ar-add-amount').value = '';
+            document.getElementById('ar-add-days').value = '';
+            showToast('A/R entry added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -2049,6 +2100,7 @@
             renderTelehealth();
             renderAnesthesia();
             renderAuth();
+            renderAr();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
