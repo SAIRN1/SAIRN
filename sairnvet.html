@@ -1448,30 +1448,11 @@
 <button class="btn btn-sm" onclick="exportTableCSV('panel-communications-table','panel-communications')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Messages Sent Today</div>
-<div class="kpi-value">84</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Open Rate</div>
-<div class="kpi-value">61%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">SMS Enabled</div>
-<div class="kpi-value">Yes</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Campaigns Active</div>
-<div class="kpi-value">2</div>
-</div>
-</div>
+<div class="kpi-row" id="comms-kpis"></div>
 <div class="card"><table id="panel-communications-table">
 <thead><tr><th>Type</th><th>Recipients</th><th>Sent</th><th>Open Rate</th></tr></thead>
-<tbody>
-<tr><td>Appointment Reminder</td><td>28</td><td>2026-07-07 7:00 AM</td><td>94%</td></tr>
-<tr><td>Wellness Plan Renewal Campaign</td><td>46</td><td>2026-07-06</td><td>58%</td></tr>
-</tbody></table></div>
+<tbody id="comms-tbody"></tbody></table></div>
+<div class="card"><h3>Log a Send</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="cm-add-type" placeholder="e.g., Appointment Reminder"><input type="number" id="cm-add-recip" placeholder="Recipients"><input type="number" id="cm-add-openrate" placeholder="Open rate % (optional)"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cm-add-campaign"> Ongoing campaign</label><button class="btn" onclick="addComm()">Log</button></div></div>
 </div>
 
 <div id="panel-reminders" class="panel">
@@ -1943,6 +1924,7 @@ function gateSubmit(){
   renderPatients();
   renderSoap();
   renderBoarding();
+  renderComms();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
@@ -6034,6 +6016,71 @@ function renderSoap(){
 var BOARDING_TOTAL_KENNELS = 20;
 var soapPendingNote = null;
 
+function getComms(){
+  try {
+    var stored = localStorage.getItem('sv_comms');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  var seed = [
+    {id:'cm1', type:'Appointment Reminder', recipients:28, sent:'2026-07-07', openRate:94, campaign:false},
+    {id:'cm2', type:'Wellness Plan Renewal Campaign', recipients:46, sent:'2026-07-06', openRate:58, campaign:true}
+  ];
+  saveComms(seed);
+  return seed;
+}
+
+function saveComms(list){
+  try { localStorage.setItem('sv_comms', JSON.stringify(list)); } catch(e){}
+}
+
+function renderComms(){
+  var list = getComms();
+  var tbody = document.getElementById('comms-tbody');
+  if(tbody){
+    tbody.innerHTML = '';
+    list.slice().reverse().forEach(function(c){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escHtml(c.type)+'</td><td>'+c.recipients+'</td><td>'+escHtml(c.sent)+'</td><td>'+(typeof c.openRate==='number'?c.openRate+'%':'--')+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var today = new Date().toISOString().slice(0,10);
+  var thisMonth = today.slice(0,7);
+  var sentToday = list.filter(function(c){ return c.sent===today; }).reduce(function(s,c){ return s+(c.recipients||0); },0);
+  var withRate = list.filter(function(c){ return typeof c.openRate==='number'; });
+  var avgOpen = withRate.length ? Math.round(withRate.reduce(function(s,c){return s+c.openRate;},0)/withRate.length)+'%' : '--';
+  var recipMonth = list.filter(function(c){ return c.sent && c.sent.slice(0,7)===thisMonth; }).reduce(function(s,c){ return s+(c.recipients||0); },0);
+  var activeCampaigns = list.filter(function(c){ return c.campaign; }).length;
+
+  var kpis = document.getElementById('comms-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Messages Sent Today</div><div class="kpi-value">'+sentToday+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Open Rate</div><div class="kpi-value">'+avgOpen+'</div><div class="kpi-change">Of logged sends with data</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Recipients This Month</div><div class="kpi-value">'+recipMonth+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Active Campaigns</div><div class="kpi-value">'+activeCampaigns+'</div></div>';
+  }
+}
+
+function addComm(){
+  var type = document.getElementById('cm-add-type').value.trim();
+  var recip = parseInt(document.getElementById('cm-add-recip').value,10)||0;
+  var openRateRaw = document.getElementById('cm-add-openrate').value;
+  var openRate = openRateRaw!==''?parseFloat(openRateRaw):null;
+  var campaign = document.getElementById('cm-add-campaign').checked;
+  if(!type||!recip){ showToast('Type and recipient count required','error'); return; }
+  var list = getComms();
+  list.push({id:'cm'+Date.now(), type:type, recipients:recip, sent:new Date().toISOString().slice(0,10), openRate:openRate, campaign:campaign});
+  saveComms(list);
+  renderComms();
+  document.getElementById('cm-add-type').value='';
+  document.getElementById('cm-add-recip').value='';
+  document.getElementById('cm-add-openrate').value='';
+  document.getElementById('cm-add-campaign').checked=false;
+  showToast('Logged','success');
+}
+
 function getBoarding(){
   try {
     var stored = localStorage.getItem('sv_boarding');
@@ -6404,6 +6451,7 @@ if(auth){
   renderPatients();
   renderSoap();
   renderBoarding();
+  renderComms();
   renderCoggins();
   renderHerdHealth();
   renderWildlifeRehab();
