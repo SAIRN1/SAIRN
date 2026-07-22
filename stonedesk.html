@@ -1307,7 +1307,7 @@ body.is-exec .exec-only-block{display:block}
 <script>
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 window.escHtml=escHtml;
-function sdLoad(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+function sdLoad(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
 window.sdLoad=sdLoad;
 function renderCustomers(){if(typeof window.sdCustRender==='function')window.sdCustRender();}
 window.renderCustomers=renderCustomers;
@@ -28817,7 +28817,6 @@ shRenderHistory();
 
 // -- SHARED HELPERS ----------------------------------------------
 function sdStore(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
-function sdLoad(key,def){try{var r=localStorage.getItem(key);return r?JSON.parse(r):def;}catch(e){return def;}}
 function sdFmt(n){return '$'+(parseFloat(n)||0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0});}
 function sdFmtHrs(ms){var h=ms/3600000;return h<1?(Math.round(h*60))+'m':h.toFixed(1)+'h';}
 function sdAgo(ts){var d=Math.floor((Date.now()-new Date(ts).getTime())/86400000);return d===0?'Today':d===1?'Yesterday':d+'d ago';}
