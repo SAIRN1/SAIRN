@@ -27747,7 +27747,7 @@ function sbNav(id) {
     if(id==='priceintel'&&typeof piInit==='function')piInit();
     if(id==='equipment'&&typeof eqRender==='function')eqRender();
     if(id==='empdirectory'&&typeof empRender==='function')empRender();
-    if(id==='stoneyard'&&typeof syRender==='function')syRender();
+    if(id==='stoneyard'&&typeof window.sdYardRender==='function')window.sdYardRender();
     if(id==='subcontractor'&&typeof subRender==='function')subRender();
     if(id==='bidboard'&&typeof bbRender==='function')bbRender();
     if(id==='it'&&typeof itRender==='function')itRender();
