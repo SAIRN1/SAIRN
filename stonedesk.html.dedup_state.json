@@ -34,7 +34,8 @@
     "bidboard",
     "damage",
     "training",
-    "bulletin"
+    "bulletin",
+    "waste"
   ],
   "deleted_original_lines": [
     4118,
@@ -124,7 +125,9 @@
     25041,
     25042,
     25176,
-    25177
+    25177,
+    25303,
+    25304
   ],
   "deadcode_done": false
 }
