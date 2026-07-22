@@ -10,7 +10,8 @@
     "fieldmap",
     "inventory",
     "sintered",
-    "contractor"
+    "contractor",
+    "subcontractor"
   ],
   "deleted_original_lines": [
     4118,
@@ -48,6 +49,9 @@
     23775,
     23776,
     23777,
+    24522,
+    24523,
+    24524,
     24783,
     24784,
     24785,
