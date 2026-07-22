@@ -21203,6 +21203,27 @@ function getSDSupabase() {
   return _sdSupa;
 }
 
+// === SD-DATA ENDPOINT CLIENT ===
+// StoneDesk cross-device sync now goes through the server endpoint
+// (service-role, license-scoped) instead of the browser anon client, which
+// cannot reach these tables. Auth is the license key as a bearer token; the
+// endpoint returns { ok, data } where `data` matches the shapes the old
+// sb.from(...) calls returned. Returns `data` (or null on any failure).
+async function sdData(action, resource, payload) {
+  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+  if (!licKey) return null;
+  try {
+    const res = await fetch('/api/sd-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey },
+      body: JSON.stringify({ action: action, resource: resource, payload: payload })
+    });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return (j && j.ok) ? j.data : null;
+  } catch (e) { return null; }
+}
+
 // === BUSINESS PROFILE ===
 let _sdBizProfile = null;
 
@@ -21215,34 +21236,19 @@ function loadSDProfile() {
 }
 
 async function syncSDProfileFromSupabase() {
-  const sb = getSDSupabase();
-  if (!sb) return;
-  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
-  if (!licKey) return;
-  try {
-    const { data, error } = await sb
-      .from('business_profiles')
-      .select('*')
-      .eq('license_key', licKey)
-      .single();
-    if (!error && data) {
-      _sdBizProfile = data;
-      localStorage.setItem('stonedesk:business_profile', JSON.stringify(data));
-    }
-  } catch(e) {}
+  const data = await sdData('read', 'profile', {});
+  if (data) {
+    _sdBizProfile = data;
+    localStorage.setItem('stonedesk:business_profile', JSON.stringify(data));
+  }
 }
 
 async function saveSDProfile(profile) {
   _sdBizProfile = profile;
   localStorage.setItem('stonedesk:business_profile', JSON.stringify(profile));
-  const sb = getSDSupabase();
-  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
-  if (sb && licKey) {
-    try {
-      const payload = { ...profile, license_key: licKey, app_id: 'stonedesk' };
-      await sb.from('business_profiles').upsert(payload, { onConflict: 'license_key' });
-    } catch(e) {}
-  }
+  // Endpoint scopes by the bearer license (license_hash) and stamps app_id
+  // server-side; the client just sends the profile object as the payload.
+  await sdData('write', 'profile', profile);
 }
 
 // === AI MEMORY ENGINE ===
@@ -21257,30 +21263,19 @@ function loadSDMemories() {
 }
 
 async function syncSDMemoriesFromSupabase() {
-  const sb = getSDSupabase();
-  if (!sb) return;
-  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
-  if (!licKey) return;
-  try {
-    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
-    if (!prof) return;
-    const { data, error } = await sb.from('ai_memories')
-      .select('*')
-      .eq('shop_id', prof.shop_id)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    if (!error && data) {
-      _sdMemories = data;
-      localStorage.setItem('stonedesk:ai_memories', JSON.stringify(data));
-    }
-  } catch(e) {}
+  // Endpoint returns the last 10 memories for this license (it resolves the
+  // shop_id link server-side), so no client-side profile lookup is needed.
+  const data = await sdData('read', 'memory', {});
+  if (Array.isArray(data)) {
+    _sdMemories = data;
+    localStorage.setItem('stonedesk:ai_memories', JSON.stringify(data));
+  }
 }
 
 async function writeSDMemory() {
   // Ask Claude to summarize the session into a memory
-  const sb = getSDSupabase();
   const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
-  if (!sb || !licKey || !chatHistory || chatHistory.length < 4) return;
+  if (!licKey || !chatHistory || chatHistory.length < 4) return;
   try {
     const summaryRes = await fetch('https://sairn.vercel.app/api/claude', {
       method: 'POST',
@@ -21300,10 +21295,8 @@ async function writeSDMemory() {
     _sdMemories.unshift(mem);
     if (_sdMemories.length > 20) _sdMemories = _sdMemories.slice(0, 20);
     localStorage.setItem('stonedesk:ai_memories', JSON.stringify(_sdMemories));
-    const { data: prof } = await sb.from('business_profiles').select('shop_id').eq('license_key', licKey).single();
-    if (prof) {
-      await sb.from('ai_memories').insert({ ...mem, shop_id: prof.shop_id });
-    }
+    // Endpoint stamps shop_id (from the profile) and license_hash server-side.
+    await sdData('write', 'memory', mem);
   } catch(e) {}
 }
 
@@ -26677,14 +26670,13 @@ function slabLicKey(){
 }
 
 async function slabSyncFromSupabase(){
-  if(typeof getSDSupabase!=='function') return;
-  var sb=getSDSupabase(); if(!sb) return;
+  if(typeof sdData!=='function') return;
   var lic=slabLicKey(); if(!lic) return;
   try{
-    var res=await sb.from('slabs').select('*').eq('license_key',lic);
-    if(!res.error && res.data && res.data.length){
+    var data=await sdData('read','slabs',{});
+    if(Array.isArray(data) && data.length){
       var byId={}; sdSlabs.forEach(function(s){byId[s.id]=s;});
-      res.data.forEach(function(s){byId[s.id]=s;});
+      data.forEach(function(s){byId[s.id]=s;});
       sdSlabs=Object.values(byId);
       saveSlabs();
       slabRender();
@@ -26693,11 +26685,11 @@ async function slabSyncFromSupabase(){
 }
 
 async function slabSyncOne(slab){
-  if(typeof getSDSupabase!=='function') return;
-  var sb=getSDSupabase(); if(!sb) return;
+  if(typeof sdData!=='function') return;
   var lic=slabLicKey(); if(!lic) return;
   try{
-    await sb.from('slabs').upsert(Object.assign({}, slab, {license_key:lic, app_id:'stonedesk'}), {onConflict:'id'});
+    // Endpoint upserts by slab.id within this license and stamps app_id server-side.
+    await sdData('write','slabs',slab);
   }catch(e){}
 }
 
@@ -30395,15 +30387,15 @@ function taxExport(){
     return _bsupa;
   }
 
-  // Load employees from SAIRNbiz Supabase into StoneDesk timesheet + jobcost
+  // Load employees from SAIRNbiz into StoneDesk timesheet + jobcost, via the
+  // server endpoint (scoped by the license's customer_email server-side).
   window.loadBizEmployees=function(cb){
-    var s=getBizSupa();
-    if(!s){if(cb)cb([]);return;}
-    s.from('employees').select('*').eq('source_app','sairnbiz').eq('status','Active')
-    .then(function(res){
-      if(res&&res.data&&res.data.length){
-        if(cb)cb(res.data);
-        showToast('Loaded '+res.data.length+' employees from SAIRNbiz');
+    if(typeof sdData!=='function'){if(cb)cb([]);return;}
+    sdData('read','employees',{})
+    .then(function(data){
+      if(Array.isArray(data)&&data.length){
+        if(cb)cb(data);
+        showToast('Loaded '+data.length+' employees from SAIRNbiz');
       } else {
         if(cb)cb([]);
       }
