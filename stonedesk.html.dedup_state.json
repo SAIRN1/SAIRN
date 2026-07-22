@@ -26,7 +26,8 @@
     "veinmatch",
     "seamai",
     "reviews",
-    "referral"
+    "referral",
+    "priceintel"
   ],
   "deleted_original_lines": [
     4118,
@@ -94,6 +95,8 @@
     23777,
     23913,
     23914,
+    24036,
+    24037,
     24522,
     24523,
     24524,
