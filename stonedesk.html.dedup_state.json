@@ -7,7 +7,8 @@
     "safety",
     "itadmin",
     "customers",
-    "fieldmap"
+    "fieldmap",
+    "inventory"
   ],
   "deleted_original_lines": [
     4118,
@@ -20,6 +21,9 @@
     4840,
     4841,
     4842,
+    4992,
+    4993,
+    4994,
     5403,
     5404,
     5405,
