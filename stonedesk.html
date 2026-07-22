@@ -1517,7 +1517,6 @@ var SAIRN_SEC = {
   appName: document.title || 'SAIRN App',
   allowedDomains: [
     'sairn.vercel.app',
-    'fabricor-production.up.railway.app',
     'fonts.googleapis.com',
     'fonts.gstatic.com',
     'cdn.jsdelivr.net',
@@ -1765,7 +1764,7 @@ window.XMLHttpRequest = function() {
 (function() {
   var csp = document.createElement('meta');
   csp.httpEquiv = 'Content-Security-Policy';
-  csp.content = "default-src 'self' https://sairn.vercel.app https://fabricor-production.up.railway.app https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://wttr.in; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self' https://sairn.vercel.app https://fabricor-production.up.railway.app https://wttr.in https://api.github.com;";
+  csp.content = "default-src 'self' https://sairn.vercel.app https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://wttr.in; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self' https://sairn.vercel.app https://wttr.in https://api.github.com;";
   var firstMeta = document.querySelector('meta');
   if (firstMeta) {
     document.head.insertBefore(csp, firstMeta);
@@ -7079,7 +7078,6 @@ const SYSTEM = "You are StoneDesk™ AI, the world's most advanced AI platform b
 
 // == STATE ======================================================
 let CODES = { sales: '1234', admin: '9999' };
-const RAILWAY='https://fabricor-production.up.railway.app';
 let currentUser=null;
 
 // SAIRN Standard PIN Login
@@ -7578,53 +7576,28 @@ function fmRenderOverview(){
 })();
 var edgeAssignments = {};
 
-// == RAILWAY DB SYNC ===========================================
+// == DB SYNC (legacy Railway backend decommissioned) ============
+// The fabricor-production.up.railway.app backend was retired; these
+// syncs are now no-ops so no customer data leaves the browser to a
+// dead host. Persistence is local (localStorage) only. Kept as
+// stubs because they are still called from save/load/boot paths.
 async function dbSaveQuoteHistory(){
   if(!currentUser) return;
-  try{ await fetch(RAILWAY+'/api/quote-history',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,history:quoteHistory})}); }catch(e){}
 }
 async function dbLoadQuoteHistory(){
   if(!currentUser) return;
-  try{
-    const r=await fetch(RAILWAY+'/api/quote-history',{credentials:'include'});
-    if(r.ok){const d=await r.json();if(d.history&&d.history.length){quoteHistory=d.history;renderHistory();}}
-  }catch(e){}
 }
 async function dbSaveSettings(){
   if(!currentUser) return;
-  const settings={
-    shopName:localStorage.getItem('fab_shop_name')||'',
-    shopEmail:localStorage.getItem('fab_shop_email')||'',
-    shopPhone:localStorage.getItem('fab_shop_phone')||'',
-    shopAddr:localStorage.getItem('fab_shop_addr')||''
-  };
-  try{ await fetch(RAILWAY+'/api/shop-settings',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,settings})}); }catch(e){}
 }
 async function dbLoadSettings(){
   if(!currentUser) return;
-  try{
-    const r=await fetch(RAILWAY+'/api/shop-settings',{credentials:'include'});
-    if(r.ok){
-      const d=await r.json();
-      if(d.settings&&Object.keys(d.settings).length){
-        if(d.settings.shopName){dbSaveSettings();localStorage.setItem('fab_shop_name',d.settings.shopName);}
-        if(d.settings.shopEmail){localStorage.setItem('fab_shop_email',d.settings.shopEmail);}
-        if(d.settings.shopPhone){localStorage.setItem('fab_shop_phone',d.settings.shopPhone);}
-        if(d.settings.shopAddr){localStorage.setItem('fab_shop_addr',d.settings.shopAddr);}
-      }
-    }
-  }catch(e){}
 }
 async function dbSaveBizData(data){
   if(!currentUser) return;
-  try{ await fetch(RAILWAY+'/api/biz-data',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:"stonedesk",is_demo:true,data})}); }catch(e){}
 }
 async function dbLoadBizData(){
   if(!currentUser) return;
-  try{
-    const r=await fetch(RAILWAY+'/api/biz-data',{credentials:'include'});
-    if(r.ok){const d=await r.json();if(d.data&&Object.keys(d.data).length){localStorage.setItem('stondesk_biz',JSON.stringify(d.data));}}
-  }catch(e){}
 }
 async function dbLoadAll(){
   await Promise.all([dbLoadQuoteHistory(),dbLoadSettings(),dbLoadBizData()]);
@@ -7639,7 +7612,8 @@ async function dbLoadAll(){
 // Showing the login screen first and firing the legacy call in the background (never awaited,
 // errors swallowed) makes Sign Out instant regardless of that host's state.
 function doLogout() {
-  try { fetch('https://fabricor-production.up.railway.app/api/auth/logout', {method:'POST', credentials:'include'}).catch(()=>{}); } catch(e) {}
+  // Legacy Railway logout call removed -- that backend is decommissioned and
+  // PIN auth never went through it; sign-out is purely local state.
   currentUser = null;
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app').classList.remove('visible');
@@ -17066,27 +17040,14 @@ function loadAlertSettingsUI() {
 
 function sendAlertEmail(subject, level) {
   if (!sdAlertSettings.email) return;
-  const color = level==='red'?'#dc2626':level==='yellow'?'#ca8a04':'#16a34a';
-  fetch(RAILWAY + '/api/alerts/email', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    credentials: 'include',
-    body: JSON.stringify({app_id:"stonedesk",is_demo:true,
-      to: sdAlertSettings.email,
-      subject: '🔔 StoneDesk Alert: ' + subject,
-      html: '<div style="font-family:Arial,sans-serif;padding:24px"><h2 style="color:' + color + '">StoneDesk™ Alert</h2><p style="font-size:15px">' + subject + '</p><p style="font-size:12px;color:#666">Sent from StoneDesk™ — SAIRN Technologies™</p></div>'
-    })
-  }).catch(() => {});
+  // Legacy Railway alert endpoint (/api/alerts/email) was never implemented and
+  // is decommissioned -- no-op so no recipient PII leaves the browser to a dead host.
 }
 
 function sendAlertSMS(message) {
   if (!sdAlertSettings.phone) return;
-  fetch(RAILWAY + '/api/alerts/sms', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    credentials: 'include',
-    body: JSON.stringify({app_id:"stonedesk",is_demo:true, to: sdAlertSettings.phone, message: 'StoneDesk Alert: ' + message })
-  }).catch(() => {});
+  // Legacy Railway alert endpoint (/api/alerts/sms) was never implemented and
+  // is decommissioned -- no-op so no recipient PII leaves the browser to a dead host.
 }
 
 function testAlertEmail() {
