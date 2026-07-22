@@ -12,7 +12,8 @@
     "sintered",
     "contractor",
     "subcontractor",
-    "warranty"
+    "warranty",
+    "schedule"
   ],
   "deleted_original_lines": [
     4118,
@@ -24,6 +25,8 @@
     4256,
     4381,
     4382,
+    4729,
+    4730,
     4840,
     4841,
     4842,
