@@ -16,7 +16,8 @@
     "schedule",
     "slabs",
     "comms",
-    "crm"
+    "crm",
+    "jobcost"
   ],
   "deleted_original_lines": [
     4118,
@@ -58,6 +59,8 @@
     6047,
     21769,
     21770,
+    21925,
+    21926,
     23142,
     23143,
     23144,
