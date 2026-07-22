@@ -28,7 +28,8 @@
     "reviews",
     "referral",
     "priceintel",
-    "equipment"
+    "equipment",
+    "employees"
   ],
   "deleted_original_lines": [
     4118,
@@ -100,6 +101,8 @@
     24037,
     24155,
     24156,
+    24284,
+    24285,
     24522,
     24523,
     24524,
