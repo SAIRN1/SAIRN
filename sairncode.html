@@ -44,12 +44,33 @@
         }
         .nav {
             display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            padding: 1rem 2rem;
+            flex-direction: column;
+            gap: 0;
+            padding: 0.5rem 2rem;
             background: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
-            overflow-x: auto;
+        }
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px 0;
+        }
+        .nav-group + .nav-group {
+            border-top: 1px solid #eef1f4;
+        }
+        .nav-group-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            padding: 0 2px;
+        }
+        .nav-group-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
         .nav-btn {
             background: #fff;
@@ -402,26 +423,56 @@
     </div>
 
     <div class="nav" id="navbar">
-        <button class="nav-btn active" onclick="showPanel('dashboard')" data-tip="Overview of coding volume, denial rates, and revenue metrics">Dashboard</button>
-        <button class="nav-btn" onclick="showPanel('ai')" data-tip="Ask the AI coding expert about ICD-10, CPT, HCC, or billing rules">AI Chat</button>
-        <button class="nav-btn" onclick="showPanel('claims')" data-tip="Review and manage submitted claims">Claims</button>
-        <button class="nav-btn" onclick="showPanel('prebill')" data-tip="Check claims for coding errors before they're billed">Prebill</button>
-        <button class="nav-btn" onclick="showPanel('hcc')" data-tip="Hierarchical Condition Category coding for risk adjustment">HCC</button>
-        <button class="nav-btn" onclick="showPanel('drg')" data-tip="Diagnosis-Related Group assignment and validation">DRG</button>
-        <button class="nav-btn" onclick="showPanel('query')" data-tip="Send and track clarification requests to physicians">Physician Query</button>
-        <button class="nav-btn" onclick="showPanel('encoder')" data-tip="Look up and verify ICD-10, CPT, and HCPCS codes">Encoder</button>
-        <button class="nav-btn" onclick="showPanel('rac')" data-tip="Claims flagged for Recovery Audit Contractor review">RAC Audit</button>
-        <button class="nav-btn" onclick="showPanel('denial')" data-tip="Manage and appeal denied claims">Denials</button>
-        <button class="nav-btn" onclick="showPanel('telehealth')" data-tip="Coding and billing rules for telehealth visits">Telehealth</button>
-        <button class="nav-btn" onclick="showPanel('anesthesia')" data-tip="Anesthesia-specific coding and time-unit calculations">Anesthesia</button>
-        <button class="nav-btn" onclick="showPanel('compliance')" data-tip="Monitor coding compliance and audit risk">Compliance</button>
-        <button class="nav-btn" onclick="showPanel('auth')" data-tip="Track prior authorization requests and approvals">Authorizations</button>
-        <button class="nav-btn" onclick="showPanel('fraud')" data-tip="Flag claims with potential fraud or billing irregularities">Fraud Detection</button>
-        <button class="nav-btn" onclick="showPanel('ar')" data-tip="Outstanding balances by payer">A/R</button>
-        <button class="nav-btn" onclick="showPanel('revenue')" data-tip="End-to-end view of billing and collections">Revenue Cycle</button>
-        <button class="nav-btn" onclick="showPanel('reports')" data-tip="Generate coding and billing performance reports">Reports</button>
-        <button class="nav-btn" onclick="showPanel('providers')" data-tip="Manage provider records and specialties">Providers</button>
-        <button class="nav-btn" onclick="showPanel('settings')" data-tip="Account, users, and preferences">Settings</button>
+        <div class="nav-group">
+            <div class="nav-group-label">Overview</div>
+            <div class="nav-group-row">
+                <button class="nav-btn active" onclick="showPanel('dashboard')" data-tip="Overview of coding volume, denial rates, and revenue metrics">Dashboard</button>
+                <button class="nav-btn" onclick="showPanel('ai')" data-tip="Ask the AI coding expert about ICD-10, CPT, HCC, or billing rules">AI Chat</button>
+            </div>
+        </div>
+        <div class="nav-group">
+            <div class="nav-group-label">Coding</div>
+            <div class="nav-group-row">
+                <button class="nav-btn" onclick="showPanel('claims')" data-tip="Review and manage submitted claims">Claims</button>
+                <button class="nav-btn" onclick="showPanel('prebill')" data-tip="Check claims for coding errors before they're billed">Prebill</button>
+                <button class="nav-btn" onclick="showPanel('hcc')" data-tip="Hierarchical Condition Category coding for risk adjustment">HCC</button>
+                <button class="nav-btn" onclick="showPanel('drg')" data-tip="Diagnosis-Related Group assignment and validation">DRG</button>
+                <button class="nav-btn" onclick="showPanel('encoder')" data-tip="Look up and verify ICD-10, CPT, and HCPCS codes">Encoder</button>
+                <button class="nav-btn" onclick="showPanel('query')" data-tip="Send and track clarification requests to physicians">Physician Query</button>
+            </div>
+        </div>
+        <div class="nav-group">
+            <div class="nav-group-label">Audit &amp; Compliance</div>
+            <div class="nav-group-row">
+                <button class="nav-btn" onclick="showPanel('rac')" data-tip="Claims flagged for Recovery Audit Contractor review">RAC Audit</button>
+                <button class="nav-btn" onclick="showPanel('denial')" data-tip="Manage and appeal denied claims">Denials</button>
+                <button class="nav-btn" onclick="showPanel('compliance')" data-tip="Monitor coding compliance and audit risk">Compliance</button>
+                <button class="nav-btn" onclick="showPanel('fraud')" data-tip="Flag claims with potential fraud or billing irregularities">Fraud Detection</button>
+                <button class="nav-btn" onclick="showPanel('auth')" data-tip="Track prior authorization requests and approvals">Authorizations</button>
+            </div>
+        </div>
+        <div class="nav-group">
+            <div class="nav-group-label">Specialty</div>
+            <div class="nav-group-row">
+                <button class="nav-btn" onclick="showPanel('telehealth')" data-tip="Coding and billing rules for telehealth visits">Telehealth</button>
+                <button class="nav-btn" onclick="showPanel('anesthesia')" data-tip="Anesthesia-specific coding and time-unit calculations">Anesthesia</button>
+            </div>
+        </div>
+        <div class="nav-group">
+            <div class="nav-group-label">Finance</div>
+            <div class="nav-group-row">
+                <button class="nav-btn" onclick="showPanel('ar')" data-tip="Outstanding balances by payer">A/R</button>
+                <button class="nav-btn" onclick="showPanel('revenue')" data-tip="End-to-end view of billing and collections">Revenue Cycle</button>
+                <button class="nav-btn" onclick="showPanel('reports')" data-tip="Generate coding and billing performance reports">Reports</button>
+            </div>
+        </div>
+        <div class="nav-group">
+            <div class="nav-group-label">Admin</div>
+            <div class="nav-group-row">
+                <button class="nav-btn" onclick="showPanel('providers')" data-tip="Manage provider records and specialties">Providers</button>
+                <button class="nav-btn" onclick="showPanel('settings')" data-tip="Account, users, and preferences">Settings</button>
+            </div>
+        </div>
     </div>
 
     <div class="container">
