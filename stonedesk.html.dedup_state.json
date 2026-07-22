@@ -19,7 +19,8 @@
     "crm",
     "jobcost",
     "remnant",
-    "po"
+    "po",
+    "receiving"
   ],
   "deleted_original_lines": [
     4118,
@@ -67,6 +68,8 @@
     22286,
     22416,
     22417,
+    22537,
+    22538,
     23142,
     23143,
     23144,
