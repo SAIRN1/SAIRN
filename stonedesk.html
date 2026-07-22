@@ -7700,7 +7700,7 @@ function showPanel(id) {
   if (id === 'client') buildEstimate();
   if (id === 'draw') { initDrawPanel(); initDCCanvas(); }
   if (id === 'quote') initKTCanvas();
-  if (id === 'fieldmap') fmSwitchTab(fmCurrentTab);
+  if (id === 'fieldmap' && typeof window.sdFieldmapRender === 'function') window.sdFieldmapRender();
   if (id === 'intake') intakeInit();
 }
 
