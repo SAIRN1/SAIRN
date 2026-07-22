@@ -11,7 +11,8 @@
     "inventory",
     "sintered",
     "contractor",
-    "subcontractor"
+    "subcontractor",
+    "warranty"
   ],
   "deleted_original_lines": [
     4118,
@@ -21,6 +22,8 @@
     4254,
     4255,
     4256,
+    4381,
+    4382,
     4840,
     4841,
     4842,
