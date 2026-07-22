@@ -25,7 +25,8 @@
     "sms",
     "veinmatch",
     "seamai",
-    "reviews"
+    "reviews",
+    "referral"
   ],
   "deleted_original_lines": [
     4118,
@@ -91,6 +92,8 @@
     23775,
     23776,
     23777,
+    23913,
+    23914,
     24522,
     24523,
     24524,
