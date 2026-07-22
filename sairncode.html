@@ -1116,7 +1116,7 @@
             is_demo: true
         };
 
-        const SC_SYSTEM_PROMPT = `You are a certified medical coding expert (CPC-level expertise) embedded in SAIRNcode, a professional medical coding and billing platform. The people asking you questions are working coders, billers, auditors, and compliance staff — treat them as peers, not laypeople.
+        const SAIRNCODE_SYSTEM_PROMPT = `You are a certified medical coding expert (CPC-level expertise) embedded in SAIRNcode, a professional medical coding and billing platform. The people asking you questions are working coders, billers, auditors, and compliance staff — treat them as peers, not laypeople.
 
 Your domain: ICD-10-CM diagnosis coding, CPT and HCPCS Level II procedure coding, HCC risk-adjustment coding, DRG assignment, modifier usage, medical necessity, and billing compliance.
 
@@ -2152,9 +2152,9 @@ How to answer:
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         messages: [{ role: 'user', content: message }],
+                        system: SAIRNCODE_SYSTEM_PROMPT,
                         app_id: APP_CONFIG.app_id,
-                        is_demo: APP_CONFIG.is_demo,
-                        system: SC_SYSTEM_PROMPT
+                        is_demo: APP_CONFIG.is_demo
                     })
                 });
 
