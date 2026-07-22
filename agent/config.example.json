@@ -1,0 +1,21 @@
+{
+  "base_url": "https://sairn.vercel.app",
+  "token": "PASTE-YOUR-AGENT-TOKEN-HERE",
+
+  "_comment": "Only operations listed below can ever be invoked by the cloud side — by name only, never by raw query/path/command. Add one entry per approved integration.",
+
+  "operations": {
+    "get_customer_balance": {
+      "kind": "sql_query",
+      "driver": "pg",
+      "connection_string": "postgres://readonly_user:password@localhost:5432/legacy_billing",
+      "query_template": "SELECT balance FROM customers WHERE customer_number = $1",
+      "param_order": ["customer_number"]
+    },
+    "read_daily_export": {
+      "kind": "file_read",
+      "path": "C:/Exports/daily_summary.csv",
+      "max_bytes": 500000
+    }
+  }
+}

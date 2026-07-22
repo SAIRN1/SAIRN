@@ -366,7 +366,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">SAIRN Code</div>
+        <div><div class="logo">SAIRN Code</div><div style="font-size:0.7rem;color:#94a3b8;font-style:italic;margin-top:2px;">by SAIRN Technologies™</div></div>
         <div class="header-right">
             <div class="demo-badge">Demo: SC-PINNACLE-2026</div>
         </div>
@@ -403,33 +403,7 @@
                 <button class="btn btn-primary" onclick="exportCSV('dashboard')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Claims Volume</div>
-                    <div class="kpi-value">1,247</div>
-                    <div class="kpi-detail">YTD submissions</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Clean Claim Rate</div>
-                    <div class="kpi-value">94.2%</div>
-                    <div class="kpi-detail">First pass accuracy</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Revenue at Risk</div>
-                    <div class="kpi-value">$287K</div>
-                    <div class="kpi-detail">Pending denials</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Denial Rate</div>
-                    <div class="kpi-value">3.8%</div>
-                    <div class="kpi-detail">Down 0.2% MoM</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Days to Pay</div>
-                    <div class="kpi-value">18.3</div>
-                    <div class="kpi-detail">Cash flow metric</div>
-                </div>
-            </div>
+            <div class="kpi-grid" id="dashboard-kpis"></div>
         </div>
 
         <!-- AI Chat Panel -->
@@ -571,37 +545,25 @@
         <!-- Prebill Panel -->
         <div id="panel-prebill" class="panel">
             <h1 class="panel-title">AI Prebill Scrubber</h1>
-            <div class="patent-badge">Patent Pending: AI Error Detection Engine</div>
+            <div class="patent-badge">Patent Candidate — Not Yet Filed</div>
             <div class="toolbar">
                 <button class="btn btn-primary" onclick="exportCSV('prebill')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Errors Detected</div>
-                    <div class="kpi-value">47</div>
-                    <div class="kpi-detail">This month</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Prevented Denials</div>
-                    <div class="kpi-value">$94K</div>
-                    <div class="kpi-detail">Value protected</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Accuracy Rate</div>
-                    <div class="kpi-value">99.2%</div>
-                    <div class="kpi-detail">AI detection</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Claims Scrubbed</div>
-                    <div class="kpi-value">1,189</div>
-                    <div class="kpi-detail">YTD processed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Time Saved</div>
-                    <div class="kpi-value">4.2 min</div>
-                    <div class="kpi-detail">Per claim</div>
-                </div>
+            <div class="kpi-grid" id="prebill-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Claim Ref</th><th>Error Type</th><th>Value Protected</th><th>Time Saved</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="prebill-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="pb-add-claim" placeholder="Claim ref" class="search-input">
+                <input type="text" id="pb-add-error" placeholder="Error type" class="search-input">
+                <input type="number" step="0.01" id="pb-add-value" placeholder="Value protected $" class="search-input">
+                <input type="number" step="0.1" id="pb-add-time" placeholder="Time saved (min)" class="search-input">
+                <select id="pb-add-status"><option>Detected</option><option>Resolved</option></select>
+                <button class="btn btn-primary" onclick="addScrubEntry()">Add</button>
             </div>
         </div>
 
@@ -612,32 +574,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('hcc')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">RAF Score</div>
-                    <div class="kpi-value">1.247</div>
-                    <div class="kpi-detail">Risk adjustment factor</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">HCC Categories</div>
-                    <div class="kpi-value">34</div>
-                    <div class="kpi-detail">Identified</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Gap Analysis</div>
-                    <div class="kpi-value">12</div>
-                    <div class="kpi-detail">Unrecorded diagnoses</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Potential Impact</div>
-                    <div class="kpi-value">$156K</div>
-                    <div class="kpi-detail">Revenue opportunity</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Capture Rate</div>
-                    <div class="kpi-value">87.3%</div>
-                    <div class="kpi-detail">Current documentation</div>
-                </div>
+            <div class="kpi-grid" id="hcc-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>HCC Category</th><th>Patient Ref</th><th>Potential Value</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="hcc-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="hcc-add-cat" placeholder="HCC category" class="search-input">
+                <input type="text" id="hcc-add-patient" placeholder="Patient ref" class="search-input">
+                <input type="number" step="0.01" id="hcc-add-value" placeholder="Potential value $" class="search-input">
+                <select id="hcc-add-status"><option>Gap Identified</option><option>Documented</option><option>Captured</option></select>
+                <button class="btn btn-primary" onclick="addHccEntry()">Add</button>
             </div>
         </div>
 
@@ -648,32 +597,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('drg')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Grouper Accuracy</div>
-                    <div class="kpi-value">98.7%</div>
-                    <div class="kpi-detail">DRG assignments</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Base DRG</div>
-                    <div class="kpi-value">847</div>
-                    <div class="kpi-detail">Cases processed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">CC Cases</div>
-                    <div class="kpi-value">156</div>
-                    <div class="kpi-detail">Complication/comorbidity</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">MCC Cases</div>
-                    <div class="kpi-value">89</div>
-                    <div class="kpi-detail">Major complication</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Payment/Case</div>
-                    <div class="kpi-value">$8,342</div>
-                    <div class="kpi-detail">DRG-based</div>
-                </div>
+            <div class="kpi-grid" id="drg-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>DRG Code</th><th>Patient Ref</th><th>Tier</th><th>Payment</th><th></th></tr></thead>
+                    <tbody id="drg-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="drg-add-code" placeholder="DRG code" class="search-input">
+                <input type="text" id="drg-add-patient" placeholder="Patient ref" class="search-input">
+                <select id="drg-add-tier"><option>Base</option><option>CC</option><option>MCC</option></select>
+                <input type="number" step="0.01" id="drg-add-payment" placeholder="Payment $" class="search-input">
+                <button class="btn btn-primary" onclick="addDrgEntry()">Add</button>
             </div>
         </div>
 
@@ -684,32 +620,20 @@
                 <button class="btn btn-primary" onclick="exportCSV('query')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Queries Sent</div>
-                    <div class="kpi-value">62</div>
-                    <div class="kpi-detail">YTD</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Response Rate</div>
-                    <div class="kpi-value">91.9%</div>
-                    <div class="kpi-detail">Physician replies</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Compliant Queries</div>
-                    <div class="kpi-value">100%</div>
-                    <div class="kpi-detail">AHIMA standards</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Days Pending</div>
-                    <div class="kpi-value">3.2</div>
-                    <div class="kpi-detail">Awaiting response</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Value Impacted</div>
-                    <div class="kpi-value">$127K</div>
-                    <div class="kpi-detail">Query-driven revenue</div>
-                </div>
+            <div class="kpi-grid" id="query-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Patient</th><th>Physician</th><th>Query Type</th><th>Value Impact</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="query-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="qry-add-patient" placeholder="Patient ref" class="search-input">
+                <input type="text" id="qry-add-physician" placeholder="Physician" class="search-input">
+                <input type="text" id="qry-add-type" placeholder="Query type" class="search-input">
+                <input type="number" step="0.01" id="qry-add-value" placeholder="Value impact $" class="search-input">
+                <select id="qry-add-status"><option>Pending</option><option>Responded</option></select>
+                <button class="btn btn-primary" onclick="addQueryEntry()">Add</button>
             </div>
         </div>
 
@@ -721,32 +645,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('encoder')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">ICD-10 Codes</div>
-                    <div class="kpi-value">79</div>
-                    <div class="kpi-detail">Active codes</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">CPT Codes</div>
-                    <div class="kpi-value">156</div>
-                    <div class="kpi-detail">Indexed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">HCPCS Codes</div>
-                    <div class="kpi-value">43</div>
-                    <div class="kpi-detail">Common modifiers</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Bundling Alerts</div>
-                    <div class="kpi-value">23</div>
-                    <div class="kpi-detail">Unbundling prevented</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Search Speed</div>
-                    <div class="kpi-value">&lt;100ms</div>
-                    <div class="kpi-detail">Avg lookup time</div>
-                </div>
+            <div class="kpi-grid" id="encoder-kpis"></div>
+            <div class="table-container">
+                <table id="encoderTable">
+                    <thead><tr><th>Code</th><th>Type</th><th>Description</th><th>Bundling Note</th><th></th></tr></thead>
+                    <tbody id="encoder-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="enc-add-code" placeholder="Code" class="search-input">
+                <select id="enc-add-type"><option>ICD-10</option><option>CPT</option><option>HCPCS</option></select>
+                <input type="text" id="enc-add-desc" placeholder="Description" class="search-input">
+                <input type="text" id="enc-add-bundling" placeholder="Bundling note (optional)" class="search-input">
+                <button class="btn btn-primary" onclick="addEncoderCode()">Add</button>
             </div>
         </div>
 
@@ -757,32 +668,18 @@
                 <button class="btn btn-primary" onclick="exportCSV('rac')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Active Audits</div>
-                    <div class="kpi-value">7</div>
-                    <div class="kpi-detail">In progress</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Overpayments Found</div>
-                    <div class="kpi-value">$43K</div>
-                    <div class="kpi-detail">Repayment requests</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Appeals Filed</div>
-                    <div class="kpi-value">5</div>
-                    <div class="kpi-detail">Under review</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Disputed Amount</div>
-                    <div class="kpi-value">$18K</div>
-                    <div class="kpi-detail">Appealing</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Reopened Claims</div>
-                    <div class="kpi-value">2</div>
-                    <div class="kpi-detail">Secondary audits</div>
-                </div>
+            <div class="kpi-grid" id="rac-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Audit Ref</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="rac-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="rac-add-ref" placeholder="Audit ref" class="search-input">
+                <input type="number" step="0.01" id="rac-add-amount" placeholder="Amount $" class="search-input">
+                <select id="rac-add-status"><option>Active</option><option>Appealing</option><option>Reopened</option><option>Closed</option></select>
+                <button class="btn btn-primary" onclick="addRacEntry()">Add</button>
             </div>
         </div>
 
@@ -794,33 +691,7 @@
                 <button class="btn btn-primary" onclick="exportCSV('denial')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Denials</div>
-                    <div class="kpi-value">156</div>
-                    <div class="kpi-detail">YTD</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Root Causes</div>
-                    <div class="kpi-value">5</div>
-                    <div class="kpi-detail">Top categories</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Appeal Success Rate</div>
-                    <div class="kpi-value">68.4%</div>
-                    <div class="kpi-detail">Overturned</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">AI Appeal Drafts</div>
-                    <div class="kpi-value">89</div>
-                    <div class="kpi-detail">Generated</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Recovery Value</div>
-                    <div class="kpi-value">$287K</div>
-                    <div class="kpi-detail">Recovered YTD</div>
-                </div>
-            </div>
+            <div class="kpi-grid" id="denial-kpis"></div>
             <div class="table-container">
                 <table>
                     <thead>
@@ -830,46 +701,19 @@
                             <th>Count</th>
                             <th>Amount</th>
                             <th>Status</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>CO-4</td>
-                            <td>Lack of documentation</td>
-                            <td>34</td>
-                            <td>$47,500</td>
-                            <td><span class="status-badge status-pending">In Appeal</span></td>
-                        </tr>
-                        <tr>
-                            <td>CO-97</td>
-                            <td>Medical necessity</td>
-                            <td>28</td>
-                            <td>$38,200</td>
-                            <td><span class="status-badge status-pending">In Appeal</span></td>
-                        </tr>
-                        <tr>
-                            <td>PR-1</td>
-                            <td>Not covered service</td>
-                            <td>22</td>
-                            <td>$29,800</td>
-                            <td><span class="status-badge status-denied">Denied</span></td>
-                        </tr>
-                        <tr>
-                            <td>N479</td>
-                            <td>Duplicate claim</td>
-                            <td>18</td>
-                            <td>$24,100</td>
-                            <td><span class="status-badge status-clean">Resolved</span></td>
-                        </tr>
-                        <tr>
-                            <td>CO-16</td>
-                            <td>Claim form errors</td>
-                            <td>16</td>
-                            <td>$21,400</td>
-                            <td><span class="status-badge status-pending">Correcting</span></td>
-                        </tr>
-                    </tbody>
+                    <tbody id="denial-tbody"></tbody>
                 </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="den-add-code" placeholder="Denial code" class="search-input">
+                <input type="text" id="den-add-cause" placeholder="Root cause" class="search-input">
+                <input type="number" id="den-add-count" placeholder="Count" class="search-input">
+                <input type="number" step="0.01" id="den-add-amount" placeholder="Amount" class="search-input">
+                <select id="den-add-status"><option>In Appeal</option><option>Denied</option><option>Resolved</option><option>Correcting</option></select>
+                <button class="btn btn-primary" onclick="addDenialEntry()">Add</button>
             </div>
         </div>
 
@@ -880,32 +724,20 @@
                 <button class="btn btn-primary" onclick="exportCSV('telehealth')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Telehealth Claims</div>
-                    <div class="kpi-value">387</div>
-                    <div class="kpi-detail">YTD coded</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">POS Code Accuracy</div>
-                    <div class="kpi-value">99.5%</div>
-                    <div class="kpi-detail">Correct modifiers</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Modifier Compliance</div>
-                    <div class="kpi-value">98.2%</div>
-                    <div class="kpi-detail">Payer requirements</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">GQ / GT Codes</div>
-                    <div class="kpi-value">156</div>
-                    <div class="kpi-detail">Telehealth modifiers</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Compliance Value</div>
-                    <div class="kpi-value">$89K</div>
-                    <div class="kpi-detail">Prevented errors</div>
-                </div>
+            <div class="kpi-grid" id="telehealth-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Claim Ref</th><th>POS Code</th><th>Modifier</th><th>Value</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="telehealth-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="th-add-claim" placeholder="Claim ref" class="search-input">
+                <input type="text" id="th-add-pos" placeholder="POS code" class="search-input">
+                <input type="text" id="th-add-mod" placeholder="Modifier (GQ/GT/etc)" class="search-input">
+                <input type="number" step="0.01" id="th-add-value" placeholder="Value $" class="search-input">
+                <select id="th-add-status"><option>Coded</option><option>Flagged</option></select>
+                <button class="btn btn-primary" onclick="addTelehealthEntry()">Add</button>
             </div>
         </div>
 
@@ -916,32 +748,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('anesthesia')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Cases Calculated</div>
-                    <div class="kpi-value">923</div>
-                    <div class="kpi-detail">YTD</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Base Units Avg</div>
-                    <div class="kpi-value">8.7</div>
-                    <div class="kpi-detail">Per procedure</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Time Units Avg</div>
-                    <div class="kpi-value">3.2</div>
-                    <div class="kpi-detail">Per 15 minutes</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">QC Modifiers</div>
-                    <div class="kpi-value">34</div>
-                    <div class="kpi-detail">Quality codes</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Billing Accuracy</div>
-                    <div class="kpi-value">97.8%</div>
-                    <div class="kpi-detail">Correct units</div>
-                </div>
+            <div class="kpi-grid" id="anesthesia-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Case Ref</th><th>Base Units</th><th>Minutes</th><th>Time Units</th><th>QC Modifier</th><th>Total Units</th><th></th></tr></thead>
+                    <tbody id="anesthesia-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="an-add-case" placeholder="Case ref" class="search-input">
+                <input type="number" step="0.1" id="an-add-base" placeholder="Base units" class="search-input">
+                <input type="number" id="an-add-minutes" placeholder="Minutes" class="search-input">
+                <input type="text" id="an-add-qc" placeholder="QC modifier (optional)" class="search-input">
+                <button class="btn btn-primary" onclick="addAnesthesiaEntry()">Add</button>
             </div>
         </div>
 
@@ -952,32 +771,18 @@
                 <button class="btn btn-primary" onclick="exportCSV('compliance')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">OIG Work Plan</div>
-                    <div class="kpi-value">4</div>
-                    <div class="kpi-detail">Focus areas</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Audit Schedule</div>
-                    <div class="kpi-value">12</div>
-                    <div class="kpi-detail">Planned audits</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Compliance Score</div>
-                    <div class="kpi-value">94.7%</div>
-                    <div class="kpi-detail">Overall rating</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Training Complete</div>
-                    <div class="kpi-value">100%</div>
-                    <div class="kpi-detail">Staff certified</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Policy Updates</div>
-                    <div class="kpi-value">23</div>
-                    <div class="kpi-detail">Current year</div>
-                </div>
+            <div class="kpi-grid" id="compliance-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Item</th><th>Category</th><th>Status</th><th>Date</th><th></th></tr></thead>
+                    <tbody id="compliance-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="comp-add-item" placeholder="Item description" class="search-input">
+                <select id="comp-add-cat"><option>OIG Focus Area</option><option>Audit</option><option>Training</option><option>Policy</option></select>
+                <select id="comp-add-status"><option>Scheduled</option><option>In Progress</option><option>Complete</option></select>
+                <button class="btn btn-primary" onclick="addComplianceItem()">Add</button>
             </div>
         </div>
 
@@ -989,33 +794,7 @@
                 <button class="btn btn-primary" onclick="exportCSV('auth')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Active Auths</div>
-                    <div class="kpi-value">47</div>
-                    <div class="kpi-detail">Valid today</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Expiring Soon</div>
-                    <div class="kpi-value">8</div>
-                    <div class="kpi-detail">Within 30 days</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Expired</div>
-                    <div class="kpi-value">3</div>
-                    <div class="kpi-detail">Renewal pending</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Appeal Log</div>
-                    <div class="kpi-value">6</div>
-                    <div class="kpi-detail">Documented</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Approval Rate</div>
-                    <div class="kpi-value">96.2%</div>
-                    <div class="kpi-detail">Granted auths</div>
-                </div>
-            </div>
+            <div class="kpi-grid" id="auth-kpis"></div>
             <div class="table-container">
                 <table id="authTable">
                     <thead>
@@ -1025,90 +804,42 @@
                             <th>Expiration</th>
                             <th>Units</th>
                             <th>Status</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>AUTH-001</td>
-                            <td>Hip Replacement</td>
-                            <td>2026-08-15</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-clean">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-002</td>
-                            <td>Cardiac Catheterization</td>
-                            <td>2026-07-20</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-clean">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-003</td>
-                            <td>MRI Scan</td>
-                            <td>2026-07-10</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-pending">Expiring Soon</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-004</td>
-                            <td>Physical Therapy</td>
-                            <td>2026-06-30</td>
-                            <td>20</td>
-                            <td><span class="status-badge status-clean">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-005</td>
-                            <td>Knee Arthroscopy</td>
-                            <td>2026-09-01</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-clean">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>AUTH-006</td>
-                            <td>Ultrasound</td>
-                            <td>2026-06-15</td>
-                            <td>1</td>
-                            <td><span class="status-badge status-pending">Expiring Soon</span></td>
-                        </tr>
-                    </tbody>
+                    <tbody id="auth-tbody"></tbody>
                 </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="auth-add-id" placeholder="Auth ID" class="search-input">
+                <input type="text" id="auth-add-proc" placeholder="Procedure" class="search-input">
+                <input type="date" id="auth-add-exp" class="search-input">
+                <input type="number" id="auth-add-units" placeholder="Units" class="search-input">
+                <button class="btn btn-primary" onclick="addAuthEntry()">Add</button>
             </div>
         </div>
 
         <!-- Fraud Detection Panel -->
         <div id="panel-fraud" class="panel">
             <h1 class="panel-title">AI Fraud Detection Engine</h1>
-            <div class="patent-badge">Patent Pending: Pattern Memory AI</div>
+            <div class="patent-badge">Patent Candidate — Not Yet Filed</div>
             <div class="toolbar">
                 <button class="btn btn-primary" onclick="exportCSV('fraud')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Anomalies Detected</div>
-                    <div class="kpi-value">23</div>
-                    <div class="kpi-detail">This month</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Fraud Confidence</div>
-                    <div class="kpi-value">87.3%</div>
-                    <div class="kpi-detail">Avg probability</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Pattern Memory</div>
-                    <div class="kpi-value">1.2M</div>
-                    <div class="kpi-detail">Patterns indexed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Verified Fraud</div>
-                    <div class="kpi-value">3</div>
-                    <div class="kpi-detail">Confirmed cases</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Prevented Loss</div>
-                    <div class="kpi-value">$187K</div>
-                    <div class="kpi-detail">Year to date</div>
-                </div>
+            <div class="kpi-grid" id="fraud-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Description</th><th>Confidence</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="fraud-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="frd-add-desc" placeholder="Anomaly description" class="search-input">
+                <input type="number" id="frd-add-conf" placeholder="Confidence %" class="search-input">
+                <input type="number" step="0.01" id="frd-add-amount" placeholder="Amount at risk" class="search-input">
+                <select id="frd-add-status"><option>Flagged</option><option>Under Review</option><option>Verified Fraud</option><option>Cleared</option></select>
+                <button class="btn btn-primary" onclick="addFraudAlert()">Add</button>
             </div>
         </div>
 
@@ -1119,32 +850,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('ar')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total A/R</div>
-                    <div class="kpi-value">$1.2M</div>
-                    <div class="kpi-detail">Outstanding</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">0-30 Days</div>
-                    <div class="kpi-value">$687K</div>
-                    <div class="kpi-detail">Current</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">31-60 Days</div>
-                    <div class="kpi-value">$342K</div>
-                    <div class="kpi-detail">Aging</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">60+ Days</div>
-                    <div class="kpi-value">$171K</div>
-                    <div class="kpi-detail">Delinquent</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Collection Rate</div>
-                    <div class="kpi-value">92.1%</div>
-                    <div class="kpi-detail">Within 90 days</div>
-                </div>
+            <div class="kpi-grid" id="ar-kpis"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Patient Ref</th><th>Amount</th><th>Days Outstanding</th><th>Bucket</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="ar-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="ar-add-patient" placeholder="Patient ref" class="search-input">
+                <input type="number" step="0.01" id="ar-add-amount" placeholder="Amount $" class="search-input">
+                <input type="number" id="ar-add-days" placeholder="Days outstanding" class="search-input">
+                <select id="ar-add-status"><option>Open</option><option>Collected</option><option>Written Off</option></select>
+                <button class="btn btn-primary" onclick="addArEntry()">Add</button>
             </div>
         </div>
 
@@ -1155,32 +873,19 @@
                 <button class="btn btn-primary" onclick="exportCSV('revenue')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Charges</div>
-                    <div class="kpi-value">$4.2M</div>
-                    <div class="kpi-detail">YTD</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Collections</div>
-                    <div class="kpi-value">$3.8M</div>
-                    <div class="kpi-detail">Realized</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Payer Mix</div>
-                    <div class="kpi-value">42%/38%/20%</div>
-                    <div class="kpi-detail">Com/Gov/Other</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Cash Conversion</div>
-                    <div class="kpi-value">90.5%</div>
-                    <div class="kpi-detail">Collection ratio</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Trend</div>
-                    <div class="kpi-value">+8.3%</div>
-                    <div class="kpi-detail">vs last year</div>
-                </div>
+            <div class="kpi-grid" id="revenue-kpis"></div>
+            <div class="table-container">
+                <table id="revenueTable">
+                    <thead><tr><th>Payer Type</th><th>Charge</th><th>Collected</th><th>Date</th><th></th></tr></thead>
+                    <tbody id="revenue-tbody"></tbody>
+                </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <select id="rev-add-payer"><option>Commercial</option><option>Government</option><option>Other</option></select>
+                <input type="number" step="0.01" id="rev-add-charge" placeholder="Charge amount" class="search-input">
+                <input type="number" step="0.01" id="rev-add-collected" placeholder="Collected amount" class="search-input">
+                <input type="date" id="rev-add-date" class="search-input">
+                <button class="btn btn-primary" onclick="addRevenueEntry()">Add Entry</button>
             </div>
         </div>
 
@@ -1193,44 +898,39 @@
             </div>
             <div class="kpi-grid">
                 <div class="kpi-card">
-                    <div class="kpi-label">Report 1</div>
+                    <div class="kpi-label">Claims</div>
                     <div class="kpi-value">Claims Volume</div>
-                    <div class="kpi-detail" onclick="exportCSV('report1')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                    <div class="kpi-detail" onclick="exportCSV('claims')" style="cursor:pointer;color:#F87171;">Download CSV</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">Report 2</div>
+                    <div class="kpi-label">Denials</div>
                     <div class="kpi-value">Denial Analysis</div>
-                    <div class="kpi-detail" onclick="exportCSV('report2')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                    <div class="kpi-detail" onclick="exportCSV('denial')" style="cursor:pointer;color:#F87171;">Download CSV</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">Report 3</div>
+                    <div class="kpi-label">Providers</div>
                     <div class="kpi-value">Provider Performance</div>
-                    <div class="kpi-detail" onclick="exportCSV('report3')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                    <div class="kpi-detail" onclick="exportCSV('providers')" style="cursor:pointer;color:#F87171;">Download CSV</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">Report 4</div>
+                    <div class="kpi-label">Revenue</div>
                     <div class="kpi-value">Revenue Cycle</div>
-                    <div class="kpi-detail" onclick="exportCSV('report4')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                    <div class="kpi-detail" onclick="exportCSV('revenue')" style="cursor:pointer;color:#F87171;">Download CSV</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">Report 5</div>
+                    <div class="kpi-label">Compliance</div>
                     <div class="kpi-value">Compliance Audit</div>
-                    <div class="kpi-detail" onclick="exportCSV('report5')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                    <div class="kpi-detail" onclick="exportCSV('compliance')" style="cursor:pointer;color:#F87171;">Download CSV</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">Report 6</div>
+                    <div class="kpi-label">HCC</div>
                     <div class="kpi-value">HCC Capture Rate</div>
-                    <div class="kpi-detail" onclick="exportCSV('report6')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                    <div class="kpi-detail" onclick="exportCSV('hcc')" style="cursor:pointer;color:#F87171;">Download CSV</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">Report 7</div>
+                    <div class="kpi-label">A/R</div>
                     <div class="kpi-value">A/R Aging</div>
-                    <div class="kpi-detail" onclick="exportCSV('report7')" style="cursor:pointer;color:#F87171;">Download CSV</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Report 8</div>
-                    <div class="kpi-value">Payer Scorecard</div>
-                    <div class="kpi-detail" onclick="exportCSV('report8')" style="cursor:pointer;color:#F87171;">Download CSV</div>
+                    <div class="kpi-detail" onclick="exportCSV('ar')" style="cursor:pointer;color:#F87171;">Download CSV</div>
                 </div>
             </div>
         </div>
@@ -1242,33 +942,7 @@
                 <button class="btn btn-primary" onclick="exportCSV('providers')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Providers</div>
-                    <div class="kpi-value">4</div>
-                    <div class="kpi-detail">Active</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Credentialed</div>
-                    <div class="kpi-value">100%</div>
-                    <div class="kpi-detail">Current</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Avg Performance</div>
-                    <div class="kpi-value">96.4%</div>
-                    <div class="kpi-detail">Efficiency</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Appointments</div>
-                    <div class="kpi-value">523</div>
-                    <div class="kpi-detail">This month</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Patient Satisfaction</div>
-                    <div class="kpi-value">4.8/5</div>
-                    <div class="kpi-detail">Average rating</div>
-                </div>
-            </div>
+            <div class="kpi-grid" id="providers-kpis"></div>
             <div class="table-container">
                 <table>
                     <thead>
@@ -1278,39 +952,19 @@
                             <th>License</th>
                             <th>Credentialed</th>
                             <th>Performance</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Dr. Michael Chen</td>
-                            <td>Internal Medicine</td>
-                            <td>MD-2847291</td>
-                            <td>Yes</td>
-                            <td>97.2%</td>
-                        </tr>
-                        <tr>
-                            <td>Dr. Sarah Martinez</td>
-                            <td>Cardiology</td>
-                            <td>MD-2947382</td>
-                            <td>Yes</td>
-                            <td>98.1%</td>
-                        </tr>
-                        <tr>
-                            <td>Dr. James Patel</td>
-                            <td>Orthopedic Surgery</td>
-                            <td>MD-3047291</td>
-                            <td>Yes</td>
-                            <td>96.8%</td>
-                        </tr>
-                        <tr>
-                            <td>NP Rachel Kim</td>
-                            <td>Family Practice</td>
-                            <td>NP-3147382</td>
-                            <td>Yes</td>
-                            <td>94.3%</td>
-                        </tr>
-                    </tbody>
+                    <tbody id="providers-tbody"></tbody>
                 </table>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="prov-add-name" placeholder="Name" class="search-input">
+                <input type="text" id="prov-add-specialty" placeholder="Specialty" class="search-input">
+                <input type="text" id="prov-add-license" placeholder="License #" class="search-input">
+                <select id="prov-add-cred"><option>Yes</option><option>No</option></select>
+                <input type="number" step="0.1" id="prov-add-perf" placeholder="Performance %" class="search-input">
+                <button class="btn btn-primary" onclick="addProviderEntry()">Add</button>
             </div>
         </div>
 
@@ -1456,6 +1110,907 @@
             showToast('CSV exported: ' + panel);
         }
 
+        function getRevenueEntries(){
+            try { var s = localStorage.getItem('sc_revenue'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'rv1', payer:'Commercial', charge:2450.00, collected:2200.00, date:'2026-01-15'},
+                {id:'rv2', payer:'Government', charge:1825.50, collected:1650.00, date:'2026-01-16'}
+            ];
+            saveRevenueEntries(seed);
+            return seed;
+        }
+        function saveRevenueEntries(list){ try { localStorage.setItem('sc_revenue', JSON.stringify(list)); } catch(e){} }
+        function renderRevenue(){
+            var list = getRevenueEntries();
+            var tbody = document.getElementById('revenue-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(r){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(r.payer)+'</td><td>$'+r.charge.toFixed(2)+'</td><td>$'+r.collected.toFixed(2)+'</td><td>'+escHtml(r.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeRevenueEntry(\''+r.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var totalCharges = list.reduce(function(s,r){return s+r.charge;},0);
+            var totalCollected = list.reduce(function(s,r){return s+r.collected;},0);
+            var byPayer = {Commercial:0, Government:0, Other:0};
+            list.forEach(function(r){ byPayer[r.payer] = (byPayer[r.payer]||0) + r.charge; });
+            var mix = totalCharges > 0
+                ? Math.round(byPayer.Commercial/totalCharges*100)+'%/'+Math.round(byPayer.Government/totalCharges*100)+'%/'+Math.round(byPayer.Other/totalCharges*100)+'%'
+                : '—';
+            var conversion = totalCharges > 0 ? (totalCollected/totalCharges*100).toFixed(1)+'%' : '—';
+            var kpis = document.getElementById('revenue-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Total Charges</div><div class="kpi-value">$'+totalCharges.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Collections</div><div class="kpi-value">$'+totalCollected.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Payer Mix</div><div class="kpi-value">'+mix+'</div><div class="kpi-detail">Com/Gov/Other</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Cash Conversion</div><div class="kpi-value">'+conversion+'</div><div class="kpi-detail">Collection ratio</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Entries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Charge records</div></div>';
+            }
+        }
+        function removeRevenueEntry(id){
+            var list = getRevenueEntries().filter(function(r){ return r.id !== id; });
+            saveRevenueEntries(list);
+            renderRevenue();
+        }
+        function addRevenueEntry(){
+            var payer = document.getElementById('rev-add-payer').value;
+            var charge = parseFloat(document.getElementById('rev-add-charge').value);
+            var collected = parseFloat(document.getElementById('rev-add-collected').value);
+            var date = document.getElementById('rev-add-date').value;
+            if (isNaN(charge)) { showToast('Charge amount required'); return; }
+            var list = getRevenueEntries();
+            list.push({id:'rv'+Date.now(), payer:payer, charge:charge, collected:isNaN(collected)?0:collected, date:date||new Date().toISOString().slice(0,10)});
+            saveRevenueEntries(list);
+            renderRevenue();
+            document.getElementById('rev-add-charge').value = '';
+            document.getElementById('rev-add-collected').value = '';
+            showToast('Entry added');
+        }
+
+        function getDenialEntries(){
+            try { var s = localStorage.getItem('sc_denial'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'dn1', code:'CO-4', cause:'Lack of documentation', count:34, amount:47500, status:'In Appeal'},
+                {id:'dn2', code:'CO-97', cause:'Medical necessity', count:28, amount:38200, status:'In Appeal'},
+                {id:'dn3', code:'PR-1', cause:'Not covered service', count:22, amount:29800, status:'Denied'},
+                {id:'dn4', code:'N479', cause:'Duplicate claim', count:18, amount:24100, status:'Resolved'},
+                {id:'dn5', code:'CO-16', cause:'Claim form errors', count:16, amount:21400, status:'Correcting'}
+            ];
+            saveDenialEntries(seed);
+            return seed;
+        }
+        function saveDenialEntries(list){ try { localStorage.setItem('sc_denial', JSON.stringify(list)); } catch(e){} }
+        function statusBadgeClass(status){
+            if (status==='Resolved') return 'status-clean';
+            if (status==='Denied') return 'status-denied';
+            return 'status-pending';
+        }
+        function renderDenial(){
+            var list = getDenialEntries();
+            var tbody = document.getElementById('denial-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(d){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(d.code)+'</td><td>'+escHtml(d.cause)+'</td><td>'+d.count+'</td><td>$'+d.amount.toLocaleString()+'</td><td><span class="status-badge '+statusBadgeClass(d.status)+'">'+escHtml(d.status)+'</span></td><td><button class="btn" style="padding:2px 8px;" onclick="removeDenialEntry(\''+d.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var totalDenials = list.reduce(function(s,d){return s+d.count;},0);
+            var rootCauses = list.length;
+            var resolved = list.filter(function(d){return d.status==='Resolved';});
+            var closedOut = list.filter(function(d){return d.status==='Resolved'||d.status==='Denied';});
+            var successRate = closedOut.length > 0 ? (resolved.length/closedOut.length*100).toFixed(1)+'%' : '—';
+            var recoveryValue = resolved.reduce(function(s,d){return s+d.amount;},0);
+            var kpis = document.getElementById('denial-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Total Denials</div><div class="kpi-value">'+totalDenials+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Root Causes</div><div class="kpi-value">'+rootCauses+'</div><div class="kpi-detail">Categories logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Appeal Success Rate</div><div class="kpi-value">'+successRate+'</div><div class="kpi-detail">Resolved vs closed</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Recovery Value</div><div class="kpi-value">$'+recoveryValue.toLocaleString()+'</div><div class="kpi-detail">From resolved entries</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Entries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Denial records</div></div>';
+            }
+        }
+        function removeDenialEntry(id){
+            saveDenialEntries(getDenialEntries().filter(function(d){return d.id!==id;}));
+            renderDenial();
+            renderDashboard();
+        }
+        function addDenialEntry(){
+            var code = document.getElementById('den-add-code').value.trim();
+            var cause = document.getElementById('den-add-cause').value.trim();
+            var count = parseInt(document.getElementById('den-add-count').value, 10);
+            var amount = parseFloat(document.getElementById('den-add-amount').value);
+            var status = document.getElementById('den-add-status').value;
+            if (!code || isNaN(count) || isNaN(amount)) { showToast('Code, count, and amount required'); return; }
+            var list = getDenialEntries();
+            list.push({id:'dn'+Date.now(), code:code, cause:cause||'—', count:count, amount:amount, status:status});
+            saveDenialEntries(list);
+            renderDenial();
+            renderDashboard();
+            document.getElementById('den-add-code').value = '';
+            document.getElementById('den-add-cause').value = '';
+            document.getElementById('den-add-count').value = '';
+            document.getElementById('den-add-amount').value = '';
+            showToast('Denial record added');
+        }
+
+        function getComplianceItems(){
+            try { var s = localStorage.getItem('sc_compliance'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'cp1', item:'Documentation accuracy review', cat:'OIG Focus Area', status:'In Progress', date:'2026-01-10'},
+                {id:'cp2', item:'Q1 internal chart audit', cat:'Audit', status:'Scheduled', date:'2026-02-01'},
+                {id:'cp3', item:'HIPAA refresher training', cat:'Training', status:'Complete', date:'2026-01-05'}
+            ];
+            saveComplianceItems(seed);
+            return seed;
+        }
+        function saveComplianceItems(list){ try { localStorage.setItem('sc_compliance', JSON.stringify(list)); } catch(e){} }
+        function renderCompliance(){
+            var list = getComplianceItems();
+            var tbody = document.getElementById('compliance-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(c){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(c.item)+'</td><td>'+escHtml(c.cat)+'</td><td>'+escHtml(c.status)+'</td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeComplianceItem(\''+c.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var oig = list.filter(function(c){return c.cat==='OIG Focus Area';}).length;
+            var audits = list.filter(function(c){return c.cat==='Audit';}).length;
+            var complete = list.filter(function(c){return c.status==='Complete';}).length;
+            var policy = list.filter(function(c){return c.cat==='Policy';}).length;
+            var kpis = document.getElementById('compliance-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Items Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">OIG Focus Areas</div><div class="kpi-value">'+oig+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Audits Logged</div><div class="kpi-value">'+audits+'</div><div class="kpi-detail">Scheduled/complete</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Items Complete</div><div class="kpi-value">'+complete+'</div><div class="kpi-detail">Of '+list.length+' logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Policy Updates</div><div class="kpi-value">'+policy+'</div><div class="kpi-detail">Logged</div></div>';
+            }
+        }
+        function removeComplianceItem(id){
+            saveComplianceItems(getComplianceItems().filter(function(c){return c.id!==id;}));
+            renderCompliance();
+        }
+        function addComplianceItem(){
+            var item = document.getElementById('comp-add-item').value.trim();
+            var cat = document.getElementById('comp-add-cat').value;
+            var status = document.getElementById('comp-add-status').value;
+            if (!item) { showToast('Item description required'); return; }
+            var list = getComplianceItems();
+            list.push({id:'cp'+Date.now(), item:item, cat:cat, status:status, date:new Date().toISOString().slice(0,10)});
+            saveComplianceItems(list);
+            renderCompliance();
+            document.getElementById('comp-add-item').value = '';
+            showToast('Compliance item added');
+        }
+
+        function getFraudAlerts(){
+            try { var s = localStorage.getItem('sc_fraud'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'fr1', desc:'Duplicate billing pattern, same CPT/date', conf:82, amount:4200, status:'Under Review'},
+                {id:'fr2', desc:'Unbundled procedure codes', conf:71, amount:1850, status:'Flagged'}
+            ];
+            saveFraudAlerts(seed);
+            return seed;
+        }
+        function saveFraudAlerts(list){ try { localStorage.setItem('sc_fraud', JSON.stringify(list)); } catch(e){} }
+        function renderFraud(){
+            var list = getFraudAlerts();
+            var tbody = document.getElementById('fraud-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(f){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(f.desc)+'</td><td>'+f.conf+'%</td><td>$'+f.amount.toLocaleString()+'</td><td>'+escHtml(f.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeFraudAlert(\''+f.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var avgConf = list.length ? (list.reduce(function(s,f){return s+f.conf;},0)/list.length).toFixed(1)+'%' : '—';
+            var verified = list.filter(function(f){return f.status==='Verified Fraud';});
+            var preventedLoss = verified.reduce(function(s,f){return s+f.amount;},0);
+            var kpis = document.getElementById('fraud-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Anomalies Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Avg Confidence</div><div class="kpi-value">'+avgConf+'</div><div class="kpi-detail">Logged alerts</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Under Review</div><div class="kpi-value">'+list.filter(function(f){return f.status==='Under Review'||f.status==='Flagged';}).length+'</div><div class="kpi-detail">Open</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Verified Fraud</div><div class="kpi-value">'+verified.length+'</div><div class="kpi-detail">Confirmed</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Prevented Loss</div><div class="kpi-value">$'+preventedLoss.toLocaleString()+'</div><div class="kpi-detail">From verified cases</div></div>';
+            }
+        }
+        function removeFraudAlert(id){
+            saveFraudAlerts(getFraudAlerts().filter(function(f){return f.id!==id;}));
+            renderFraud();
+            renderDashboard();
+        }
+        function addFraudAlert(){
+            var desc = document.getElementById('frd-add-desc').value.trim();
+            var conf = parseFloat(document.getElementById('frd-add-conf').value);
+            var amount = parseFloat(document.getElementById('frd-add-amount').value);
+            var status = document.getElementById('frd-add-status').value;
+            if (!desc || isNaN(conf) || isNaN(amount)) { showToast('Description, confidence, and amount required'); return; }
+            var list = getFraudAlerts();
+            list.push({id:'fr'+Date.now(), desc:desc, conf:conf, amount:amount, status:status});
+            saveFraudAlerts(list);
+            renderFraud();
+            renderDashboard();
+            document.getElementById('frd-add-desc').value = '';
+            document.getElementById('frd-add-conf').value = '';
+            document.getElementById('frd-add-amount').value = '';
+            showToast('Fraud alert logged');
+        }
+
+        function renderDashboard(){
+            var claimsTable = document.getElementById('claimsTable');
+            var claimRows = claimsTable ? claimsTable.querySelectorAll('tbody tr') : [];
+            var claimsVolume = claimRows.length;
+            var cleanCount = claimsTable ? claimsTable.querySelectorAll('tbody .status-clean').length : 0;
+            var cleanRate = claimsVolume > 0 ? (cleanCount/claimsVolume*100).toFixed(1)+'%' : '—';
+
+            var denials = getDenialEntries();
+            var totalDenialCount = denials.reduce(function(s,d){return s+d.count;},0);
+            var pendingDenialAmount = denials.filter(function(d){return d.status!=='Resolved';}).reduce(function(s,d){return s+d.amount;},0);
+            var denialRate = claimsVolume > 0 ? (totalDenialCount/claimsVolume*100).toFixed(1)+'%' : '—';
+
+            var fraud = getFraudAlerts();
+            var openFraud = fraud.filter(function(f){return f.status==='Under Review'||f.status==='Flagged';}).length;
+
+            var kpis = document.getElementById('dashboard-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Claims Volume</div><div class="kpi-value">'+claimsVolume+'</div><div class="kpi-detail">Logged in Claims panel</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Clean Claim Rate</div><div class="kpi-value">'+cleanRate+'</div><div class="kpi-detail">Of logged claims</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Denial Amount Pending</div><div class="kpi-value">$'+pendingDenialAmount.toLocaleString()+'</div><div class="kpi-detail">From Denial panel, unresolved</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Denial Rate</div><div class="kpi-value">'+denialRate+'</div><div class="kpi-detail">Denials logged vs claims logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Fraud Alerts Open</div><div class="kpi-value">'+openFraud+'</div><div class="kpi-detail">From Fraud panel</div></div>';
+            }
+        }
+
+        function getScrubEntries(){
+            try { var s = localStorage.getItem('sc_prebill'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'pb1', claim:'CLM-2601', error:'Missing modifier', value:850, time:3.5, status:'Resolved'},
+                {id:'pb2', claim:'CLM-2609', error:'Mismatched diagnosis code', value:1200, time:5.0, status:'Detected'}
+            ];
+            saveScrubEntries(seed);
+            return seed;
+        }
+        function saveScrubEntries(list){ try { localStorage.setItem('sc_prebill', JSON.stringify(list)); } catch(e){} }
+        function renderPrebill(){
+            var list = getScrubEntries();
+            var tbody = document.getElementById('prebill-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(p){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(p.claim)+'</td><td>'+escHtml(p.error)+'</td><td>$'+p.value.toLocaleString()+'</td><td>'+p.time+' min</td><td>'+escHtml(p.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeScrubEntry(\''+p.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var resolved = list.filter(function(p){return p.status==='Resolved';});
+            var valueProtected = resolved.reduce(function(s,p){return s+p.value;},0);
+            var avgTime = list.length ? (list.reduce(function(s,p){return s+p.time;},0)/list.length).toFixed(1)+' min' : '—';
+            var kpis = document.getElementById('prebill-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Errors Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Value Protected</div><div class="kpi-value">$'+valueProtected.toLocaleString()+'</div><div class="kpi-detail">From resolved entries</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Resolved</div><div class="kpi-value">'+resolved.length+'</div><div class="kpi-detail">Of '+list.length+' logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Claims Scrubbed</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Unique entries logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Avg Time Saved</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-detail">Per logged entry</div></div>';
+            }
+        }
+        function removeScrubEntry(id){
+            saveScrubEntries(getScrubEntries().filter(function(p){return p.id!==id;}));
+            renderPrebill();
+        }
+        function addScrubEntry(){
+            var claim = document.getElementById('pb-add-claim').value.trim();
+            var error = document.getElementById('pb-add-error').value.trim();
+            var value = parseFloat(document.getElementById('pb-add-value').value);
+            var time = parseFloat(document.getElementById('pb-add-time').value);
+            var status = document.getElementById('pb-add-status').value;
+            if (!claim || !error) { showToast('Claim ref and error type required'); return; }
+            var list = getScrubEntries();
+            list.push({id:'pb'+Date.now(), claim:claim, error:error, value:isNaN(value)?0:value, time:isNaN(time)?0:time, status:status});
+            saveScrubEntries(list);
+            renderPrebill();
+            document.getElementById('pb-add-claim').value = '';
+            document.getElementById('pb-add-error').value = '';
+            document.getElementById('pb-add-value').value = '';
+            document.getElementById('pb-add-time').value = '';
+            showToast('Scrub entry added');
+        }
+
+        function getHccEntries(){
+            try { var s = localStorage.getItem('sc_hcc'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'hc1', cat:'HCC 18 - Diabetes w/ Complications', patient:'PT-4021', value:3200, status:'Gap Identified'},
+                {id:'hc2', cat:'HCC 85 - Congestive Heart Failure', patient:'PT-4033', value:4100, status:'Captured'}
+            ];
+            saveHccEntries(seed);
+            return seed;
+        }
+        function saveHccEntries(list){ try { localStorage.setItem('sc_hcc', JSON.stringify(list)); } catch(e){} }
+        function renderHcc(){
+            var list = getHccEntries();
+            var tbody = document.getElementById('hcc-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(h){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(h.cat)+'</td><td>'+escHtml(h.patient)+'</td><td>$'+h.value.toLocaleString()+'</td><td>'+escHtml(h.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeHccEntry(\''+h.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var gaps = list.filter(function(h){return h.status==='Gap Identified';});
+            var captured = list.filter(function(h){return h.status==='Captured';});
+            var potentialImpact = gaps.reduce(function(s,h){return s+h.value;},0);
+            var closedOut = gaps.length + captured.length;
+            var captureRate = closedOut > 0 ? (captured.length/closedOut*100).toFixed(1)+'%' : '—';
+            var kpis = document.getElementById('hcc-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">HCC Entries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Gaps Identified</div><div class="kpi-value">'+gaps.length+'</div><div class="kpi-detail">Open</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Potential Impact</div><div class="kpi-value">$'+potentialImpact.toLocaleString()+'</div><div class="kpi-detail">From open gaps</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Captured</div><div class="kpi-value">'+captured.length+'</div><div class="kpi-detail">Confirmed</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Capture Rate</div><div class="kpi-value">'+captureRate+'</div><div class="kpi-detail">Captured vs identified</div></div>';
+            }
+        }
+        function removeHccEntry(id){
+            saveHccEntries(getHccEntries().filter(function(h){return h.id!==id;}));
+            renderHcc();
+        }
+        function addHccEntry(){
+            var cat = document.getElementById('hcc-add-cat').value.trim();
+            var patient = document.getElementById('hcc-add-patient').value.trim();
+            var value = parseFloat(document.getElementById('hcc-add-value').value);
+            var status = document.getElementById('hcc-add-status').value;
+            if (!cat || isNaN(value)) { showToast('Category and value required'); return; }
+            var list = getHccEntries();
+            list.push({id:'hc'+Date.now(), cat:cat, patient:patient||'—', value:value, status:status});
+            saveHccEntries(list);
+            renderHcc();
+            document.getElementById('hcc-add-cat').value = '';
+            document.getElementById('hcc-add-patient').value = '';
+            document.getElementById('hcc-add-value').value = '';
+            showToast('HCC entry added');
+        }
+
+        function getDrgEntries(){
+            try { var s = localStorage.getItem('sc_drg'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'dg1', code:'DRG-291', patient:'PT-4021', tier:'MCC', payment:9800},
+                {id:'dg2', code:'DRG-392', patient:'PT-4033', tier:'Base', payment:5200}
+            ];
+            saveDrgEntries(seed);
+            return seed;
+        }
+        function saveDrgEntries(list){ try { localStorage.setItem('sc_drg', JSON.stringify(list)); } catch(e){} }
+        function renderDrg(){
+            var list = getDrgEntries();
+            var tbody = document.getElementById('drg-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(d){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(d.code)+'</td><td>'+escHtml(d.patient)+'</td><td>'+escHtml(d.tier)+'</td><td>$'+d.payment.toLocaleString()+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDrgEntry(\''+d.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var base = list.filter(function(d){return d.tier==='Base';}).length;
+            var cc = list.filter(function(d){return d.tier==='CC';}).length;
+            var mcc = list.filter(function(d){return d.tier==='MCC';}).length;
+            var avgPayment = list.length ? (list.reduce(function(s,d){return s+d.payment;},0)/list.length) : 0;
+            var kpis = document.getElementById('drg-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Cases Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Base DRG</div><div class="kpi-value">'+base+'</div><div class="kpi-detail">Cases logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">CC Cases</div><div class="kpi-value">'+cc+'</div><div class="kpi-detail">Complication/comorbidity</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">MCC Cases</div><div class="kpi-value">'+mcc+'</div><div class="kpi-detail">Major complication</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Avg Payment/Case</div><div class="kpi-value">$'+avgPayment.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-detail">Logged cases</div></div>';
+            }
+        }
+        function removeDrgEntry(id){
+            saveDrgEntries(getDrgEntries().filter(function(d){return d.id!==id;}));
+            renderDrg();
+        }
+        function addDrgEntry(){
+            var code = document.getElementById('drg-add-code').value.trim();
+            var patient = document.getElementById('drg-add-patient').value.trim();
+            var tier = document.getElementById('drg-add-tier').value;
+            var payment = parseFloat(document.getElementById('drg-add-payment').value);
+            if (!code || isNaN(payment)) { showToast('Code and payment required'); return; }
+            var list = getDrgEntries();
+            list.push({id:'dg'+Date.now(), code:code, patient:patient||'—', tier:tier, payment:payment});
+            saveDrgEntries(list);
+            renderDrg();
+            document.getElementById('drg-add-code').value = '';
+            document.getElementById('drg-add-patient').value = '';
+            document.getElementById('drg-add-payment').value = '';
+            showToast('DRG entry added');
+        }
+
+        function getQueryEntries(){
+            try { var s = localStorage.getItem('sc_query'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'qr1', patient:'PT-4021', physician:'Dr. Alvarez', type:'Diagnosis clarification', value:1800, status:'Responded'},
+                {id:'qr2', patient:'PT-4033', physician:'Dr. Kim', type:'Specificity - laterality', value:0, status:'Pending'}
+            ];
+            saveQueryEntries(seed);
+            return seed;
+        }
+        function saveQueryEntries(list){ try { localStorage.setItem('sc_query', JSON.stringify(list)); } catch(e){} }
+        function renderQuery(){
+            var list = getQueryEntries();
+            var tbody = document.getElementById('query-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(q){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(q.patient)+'</td><td>'+escHtml(q.physician)+'</td><td>'+escHtml(q.type)+'</td><td>$'+q.value.toLocaleString()+'</td><td>'+escHtml(q.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeQueryEntry(\''+q.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var responded = list.filter(function(q){return q.status==='Responded';});
+            var pending = list.filter(function(q){return q.status==='Pending';});
+            var responseRate = list.length ? (responded.length/list.length*100).toFixed(1)+'%' : '—';
+            var valueImpacted = responded.reduce(function(s,q){return s+q.value;},0);
+            var kpis = document.getElementById('query-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Queries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Response Rate</div><div class="kpi-value">'+responseRate+'</div><div class="kpi-detail">Physician replies</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">'+pending.length+'</div><div class="kpi-detail">Awaiting response</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Responded</div><div class="kpi-value">'+responded.length+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Value Impacted</div><div class="kpi-value">$'+valueImpacted.toLocaleString()+'</div><div class="kpi-detail">From responded queries</div></div>';
+            }
+        }
+        function removeQueryEntry(id){
+            saveQueryEntries(getQueryEntries().filter(function(q){return q.id!==id;}));
+            renderQuery();
+        }
+        function addQueryEntry(){
+            var patient = document.getElementById('qry-add-patient').value.trim();
+            var physician = document.getElementById('qry-add-physician').value.trim();
+            var type = document.getElementById('qry-add-type').value.trim();
+            var value = parseFloat(document.getElementById('qry-add-value').value);
+            var status = document.getElementById('qry-add-status').value;
+            if (!patient || !type) { showToast('Patient and query type required'); return; }
+            var list = getQueryEntries();
+            list.push({id:'qr'+Date.now(), patient:patient, physician:physician||'—', type:type, value:isNaN(value)?0:value, status:status});
+            saveQueryEntries(list);
+            renderQuery();
+            document.getElementById('qry-add-patient').value = '';
+            document.getElementById('qry-add-physician').value = '';
+            document.getElementById('qry-add-type').value = '';
+            document.getElementById('qry-add-value').value = '';
+            showToast('Query added');
+        }
+
+        function getEncoderCodes(){
+            try { var s = localStorage.getItem('sc_encoder'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'ec1', code:'E11.9', type:'ICD-10', desc:'Type 2 diabetes without complications', bundling:''},
+                {id:'ec2', code:'99214', type:'CPT', desc:'Office visit, established patient, moderate complexity', bundling:'Do not bill with 99213 same visit'},
+                {id:'ec3', code:'G0463', type:'HCPCS', desc:'Hospital outpatient clinic visit', bundling:''}
+            ];
+            saveEncoderCodes(seed);
+            return seed;
+        }
+        function saveEncoderCodes(list){ try { localStorage.setItem('sc_encoder', JSON.stringify(list)); } catch(e){} }
+        function renderEncoder(){
+            var list = getEncoderCodes();
+            var tbody = document.getElementById('encoder-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(c){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(c.code)+'</td><td>'+escHtml(c.type)+'</td><td>'+escHtml(c.desc)+'</td><td>'+escHtml(c.bundling||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeEncoderCode(\''+c.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var icd = list.filter(function(c){return c.type==='ICD-10';}).length;
+            var cpt = list.filter(function(c){return c.type==='CPT';}).length;
+            var hcpcs = list.filter(function(c){return c.type==='HCPCS';}).length;
+            var bundlingAlerts = list.filter(function(c){return c.bundling && c.bundling.trim()!=='';}).length;
+            var kpis = document.getElementById('encoder-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">ICD-10 Codes</div><div class="kpi-value">'+icd+'</div><div class="kpi-detail">In this reference set</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">CPT Codes</div><div class="kpi-value">'+cpt+'</div><div class="kpi-detail">In this reference set</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">HCPCS Codes</div><div class="kpi-value">'+hcpcs+'</div><div class="kpi-detail">In this reference set</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Bundling Alerts</div><div class="kpi-value">'+bundlingAlerts+'</div><div class="kpi-detail">Codes with a bundling note</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Total Codes Indexed</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">This reference set</div></div>';
+            }
+        }
+        function removeEncoderCode(id){
+            saveEncoderCodes(getEncoderCodes().filter(function(c){return c.id!==id;}));
+            renderEncoder();
+        }
+        function addEncoderCode(){
+            var code = document.getElementById('enc-add-code').value.trim();
+            var type = document.getElementById('enc-add-type').value;
+            var desc = document.getElementById('enc-add-desc').value.trim();
+            var bundling = document.getElementById('enc-add-bundling').value.trim();
+            if (!code || !desc) { showToast('Code and description required'); return; }
+            var list = getEncoderCodes();
+            list.push({id:'ec'+Date.now(), code:code, type:type, desc:desc, bundling:bundling});
+            saveEncoderCodes(list);
+            renderEncoder();
+            document.getElementById('enc-add-code').value = '';
+            document.getElementById('enc-add-desc').value = '';
+            document.getElementById('enc-add-bundling').value = '';
+            showToast('Code added');
+        }
+
+        function getRacEntries(){
+            try { var s = localStorage.getItem('sc_rac'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'ra1', ref:'RAC-2026-014', amount:12500, status:'Active'},
+                {id:'ra2', ref:'RAC-2026-009', amount:6200, status:'Appealing'}
+            ];
+            saveRacEntries(seed);
+            return seed;
+        }
+        function saveRacEntries(list){ try { localStorage.setItem('sc_rac', JSON.stringify(list)); } catch(e){} }
+        function renderRac(){
+            var list = getRacEntries();
+            var tbody = document.getElementById('rac-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(r){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(r.ref)+'</td><td>$'+r.amount.toLocaleString()+'</td><td>'+escHtml(r.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeRacEntry(\''+r.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var active = list.filter(function(r){return r.status==='Active';});
+            var appealing = list.filter(function(r){return r.status==='Appealing';});
+            var reopened = list.filter(function(r){return r.status==='Reopened';});
+            var overpayments = list.reduce(function(s,r){return s+r.amount;},0);
+            var disputed = appealing.reduce(function(s,r){return s+r.amount;},0);
+            var kpis = document.getElementById('rac-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Active Audits</div><div class="kpi-value">'+active.length+'</div><div class="kpi-detail">In progress</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Overpayments Found</div><div class="kpi-value">$'+overpayments.toLocaleString()+'</div><div class="kpi-detail">All logged audits</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Appeals Filed</div><div class="kpi-value">'+appealing.length+'</div><div class="kpi-detail">Under review</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Disputed Amount</div><div class="kpi-value">$'+disputed.toLocaleString()+'</div><div class="kpi-detail">Appealing</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Reopened Claims</div><div class="kpi-value">'+reopened.length+'</div><div class="kpi-detail">Secondary audits</div></div>';
+            }
+        }
+        function removeRacEntry(id){
+            saveRacEntries(getRacEntries().filter(function(r){return r.id!==id;}));
+            renderRac();
+        }
+        function addRacEntry(){
+            var ref = document.getElementById('rac-add-ref').value.trim();
+            var amount = parseFloat(document.getElementById('rac-add-amount').value);
+            var status = document.getElementById('rac-add-status').value;
+            if (!ref || isNaN(amount)) { showToast('Audit ref and amount required'); return; }
+            var list = getRacEntries();
+            list.push({id:'ra'+Date.now(), ref:ref, amount:amount, status:status});
+            saveRacEntries(list);
+            renderRac();
+            document.getElementById('rac-add-ref').value = '';
+            document.getElementById('rac-add-amount').value = '';
+            showToast('Audit entry added');
+        }
+
+        function getTelehealthEntries(){
+            try { var s = localStorage.getItem('sc_telehealth'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'tl1', claim:'CLM-2610', pos:'02', mod:'GT', value:180, status:'Coded'},
+                {id:'tl2', claim:'CLM-2611', pos:'10', mod:'—', value:0, status:'Flagged'}
+            ];
+            saveTelehealthEntries(seed);
+            return seed;
+        }
+        function saveTelehealthEntries(list){ try { localStorage.setItem('sc_telehealth', JSON.stringify(list)); } catch(e){} }
+        function renderTelehealth(){
+            var list = getTelehealthEntries();
+            var tbody = document.getElementById('telehealth-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(t){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(t.claim)+'</td><td>'+escHtml(t.pos)+'</td><td>'+escHtml(t.mod)+'</td><td>$'+t.value.toLocaleString()+'</td><td>'+escHtml(t.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeTelehealthEntry(\''+t.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var coded = list.filter(function(t){return t.status==='Coded';});
+            var flagged = list.filter(function(t){return t.status==='Flagged';});
+            var gqgt = list.filter(function(t){return /GQ|GT/i.test(t.mod);}).length;
+            var complianceValue = coded.reduce(function(s,t){return s+t.value;},0);
+            var kpis = document.getElementById('telehealth-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Telehealth Claims Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Correctly Coded</div><div class="kpi-value">'+coded.length+'</div><div class="kpi-detail">Of '+list.length+' logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Flagged</div><div class="kpi-value">'+flagged.length+'</div><div class="kpi-detail">Needs review</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">GQ / GT Codes</div><div class="kpi-value">'+gqgt+'</div><div class="kpi-detail">Telehealth modifiers used</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Compliance Value</div><div class="kpi-value">$'+complianceValue.toLocaleString()+'</div><div class="kpi-detail">From correctly coded entries</div></div>';
+            }
+        }
+        function removeTelehealthEntry(id){
+            saveTelehealthEntries(getTelehealthEntries().filter(function(t){return t.id!==id;}));
+            renderTelehealth();
+        }
+        function addTelehealthEntry(){
+            var claim = document.getElementById('th-add-claim').value.trim();
+            var pos = document.getElementById('th-add-pos').value.trim();
+            var mod = document.getElementById('th-add-mod').value.trim();
+            var value = parseFloat(document.getElementById('th-add-value').value);
+            var status = document.getElementById('th-add-status').value;
+            if (!claim) { showToast('Claim ref required'); return; }
+            var list = getTelehealthEntries();
+            list.push({id:'tl'+Date.now(), claim:claim, pos:pos||'—', mod:mod||'—', value:isNaN(value)?0:value, status:status});
+            saveTelehealthEntries(list);
+            renderTelehealth();
+            document.getElementById('th-add-claim').value = '';
+            document.getElementById('th-add-pos').value = '';
+            document.getElementById('th-add-mod').value = '';
+            document.getElementById('th-add-value').value = '';
+            showToast('Telehealth entry added');
+        }
+
+        function getAnesthesiaEntries(){
+            try { var s = localStorage.getItem('sc_anesthesia'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'an1', caseRef:'CLM-2612', base:5, minutes:90, qc:'QS'},
+                {id:'an2', caseRef:'CLM-2613', base:6, minutes:60, qc:''}
+            ];
+            saveAnesthesiaEntries(seed);
+            return seed;
+        }
+        function saveAnesthesiaEntries(list){ try { localStorage.setItem('sc_anesthesia', JSON.stringify(list)); } catch(e){} }
+        function renderAnesthesia(){
+            var list = getAnesthesiaEntries();
+            var tbody = document.getElementById('anesthesia-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            var totalBase = 0, totalTime = 0, totalUnitsAll = 0, qcCount = 0;
+            list.forEach(function(a){
+                var timeUnits = a.minutes / 15;
+                var totalUnits = a.base + timeUnits;
+                totalBase += a.base;
+                totalTime += timeUnits;
+                totalUnitsAll += totalUnits;
+                if (a.qc && a.qc.trim() !== '') qcCount++;
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(a.caseRef)+'</td><td>'+a.base+'</td><td>'+a.minutes+'</td><td>'+timeUnits.toFixed(2)+'</td><td>'+escHtml(a.qc||'—')+'</td><td>'+totalUnits.toFixed(2)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAnesthesiaEntry(\''+a.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var avgBase = list.length ? (totalBase/list.length).toFixed(1) : '—';
+            var avgTime = list.length ? (totalTime/list.length).toFixed(1) : '—';
+            var kpis = document.getElementById('anesthesia-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Cases Calculated</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Base Units Avg</div><div class="kpi-value">'+avgBase+'</div><div class="kpi-detail">Per logged case</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Time Units Avg</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-detail">Per 15 minutes</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">QC Modifiers</div><div class="kpi-value">'+qcCount+'</div><div class="kpi-detail">Quality codes logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Total Units Billed</div><div class="kpi-value">'+totalUnitsAll.toFixed(2)+'</div><div class="kpi-detail">Sum, all logged cases</div></div>';
+            }
+        }
+        function removeAnesthesiaEntry(id){
+            saveAnesthesiaEntries(getAnesthesiaEntries().filter(function(a){return a.id!==id;}));
+            renderAnesthesia();
+        }
+        function addAnesthesiaEntry(){
+            var caseRef = document.getElementById('an-add-case').value.trim();
+            var base = parseFloat(document.getElementById('an-add-base').value);
+            var minutes = parseFloat(document.getElementById('an-add-minutes').value);
+            var qc = document.getElementById('an-add-qc').value.trim();
+            if (!caseRef || isNaN(base) || isNaN(minutes)) { showToast('Case ref, base units, and minutes required'); return; }
+            var list = getAnesthesiaEntries();
+            list.push({id:'an'+Date.now(), caseRef:caseRef, base:base, minutes:minutes, qc:qc});
+            saveAnesthesiaEntries(list);
+            renderAnesthesia();
+            document.getElementById('an-add-case').value = '';
+            document.getElementById('an-add-base').value = '';
+            document.getElementById('an-add-minutes').value = '';
+            document.getElementById('an-add-qc').value = '';
+            showToast('Anesthesia case added');
+        }
+
+        function getAuthEntries(){
+            try { var s = localStorage.getItem('sc_auth'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'at1', authId:'AUTH-001', proc:'Hip Replacement', exp:'2026-08-15', units:1},
+                {id:'at2', authId:'AUTH-002', proc:'Cardiac Catheterization', exp:'2026-07-20', units:1},
+                {id:'at3', authId:'AUTH-003', proc:'MRI Scan', exp:'2026-07-10', units:1},
+                {id:'at4', authId:'AUTH-004', proc:'Physical Therapy', exp:'2026-06-30', units:20},
+                {id:'at5', authId:'AUTH-005', proc:'Knee Arthroscopy', exp:'2026-09-01', units:1},
+                {id:'at6', authId:'AUTH-006', proc:'Ultrasound', exp:'2026-06-15', units:1}
+            ];
+            saveAuthEntries(seed);
+            return seed;
+        }
+        function saveAuthEntries(list){ try { localStorage.setItem('sc_auth', JSON.stringify(list)); } catch(e){} }
+        function authStatusFor(exp, today){
+            var expDate = new Date(exp+'T00:00:00Z');
+            var todayDate = new Date(today+'T00:00:00Z');
+            var days = Math.round((expDate-todayDate)/86400000);
+            if (days < 0) return 'Expired';
+            if (days <= 30) return 'Expiring Soon';
+            return 'Active';
+        }
+        function authBadgeClass(status){
+            if (status==='Active') return 'status-clean';
+            if (status==='Expired') return 'status-denied';
+            return 'status-pending';
+        }
+        function renderAuth(){
+            var list = getAuthEntries();
+            var tbody = document.getElementById('auth-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            var today = new Date().toISOString().slice(0,10);
+            var active = 0, expiringSoon = 0, expired = 0, totalUnits = 0;
+            list.forEach(function(a){
+                var status = authStatusFor(a.exp, today);
+                if (status==='Active') active++;
+                else if (status==='Expiring Soon') expiringSoon++;
+                else expired++;
+                totalUnits += a.units;
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(a.authId)+'</td><td>'+escHtml(a.proc)+'</td><td>'+escHtml(a.exp)+'</td><td>'+a.units+'</td><td><span class="status-badge '+authBadgeClass(status)+'">'+status+'</span></td><td><button class="btn" style="padding:2px 8px;" onclick="removeAuthEntry(\''+a.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var kpis = document.getElementById('auth-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Active Auths</div><div class="kpi-value">'+active+'</div><div class="kpi-detail">Computed from expiration date</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Expiring Soon</div><div class="kpi-value">'+expiringSoon+'</div><div class="kpi-detail">Within 30 days</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Expired</div><div class="kpi-value">'+expired+'</div><div class="kpi-detail">Renewal needed</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Auths Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Units Authorized</div><div class="kpi-value">'+totalUnits+'</div><div class="kpi-detail">Sum, all logged</div></div>';
+            }
+        }
+        function removeAuthEntry(id){
+            saveAuthEntries(getAuthEntries().filter(function(a){return a.id!==id;}));
+            renderAuth();
+        }
+        function addAuthEntry(){
+            var authId = document.getElementById('auth-add-id').value.trim();
+            var proc = document.getElementById('auth-add-proc').value.trim();
+            var exp = document.getElementById('auth-add-exp').value;
+            var units = parseInt(document.getElementById('auth-add-units').value, 10);
+            if (!authId || !proc || !exp) { showToast('Auth ID, procedure, and expiration required'); return; }
+            var list = getAuthEntries();
+            list.push({id:'at'+Date.now(), authId:authId, proc:proc, exp:exp, units:isNaN(units)?1:units});
+            saveAuthEntries(list);
+            renderAuth();
+            document.getElementById('auth-add-id').value = '';
+            document.getElementById('auth-add-proc').value = '';
+            document.getElementById('auth-add-exp').value = '';
+            document.getElementById('auth-add-units').value = '';
+            showToast('Authorization added');
+        }
+
+        function getArEntries(){
+            try { var s = localStorage.getItem('sc_ar'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'ar1', patient:'PT-4021', amount:850, days:18, status:'Open'},
+                {id:'ar2', patient:'PT-4033', amount:1240, days:45, status:'Open'},
+                {id:'ar3', patient:'PT-4040', amount:620, days:75, status:'Open'}
+            ];
+            saveArEntries(seed);
+            return seed;
+        }
+        function saveArEntries(list){ try { localStorage.setItem('sc_ar', JSON.stringify(list)); } catch(e){} }
+        function arBucketFor(days){
+            if (days <= 30) return '0-30 Days';
+            if (days <= 60) return '31-60 Days';
+            return '60+ Days';
+        }
+        function renderAr(){
+            var list = getArEntries();
+            var tbody = document.getElementById('ar-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            var totalAr = 0, b1 = 0, b2 = 0, b3 = 0;
+            list.forEach(function(a){
+                var bucket = arBucketFor(a.days);
+                if (a.status === 'Open') {
+                    totalAr += a.amount;
+                    if (bucket==='0-30 Days') b1 += a.amount;
+                    else if (bucket==='31-60 Days') b2 += a.amount;
+                    else b3 += a.amount;
+                }
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(a.patient)+'</td><td>$'+a.amount.toLocaleString()+'</td><td>'+a.days+'</td><td>'+bucket+'</td><td>'+escHtml(a.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeArEntry(\''+a.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var kpis = document.getElementById('ar-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Total A/R</div><div class="kpi-value">$'+totalAr.toLocaleString()+'</div><div class="kpi-detail">Open accounts</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">0-30 Days</div><div class="kpi-value">$'+b1.toLocaleString()+'</div><div class="kpi-detail">Current</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">31-60 Days</div><div class="kpi-value">$'+b2.toLocaleString()+'</div><div class="kpi-detail">Aging</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">60+ Days</div><div class="kpi-value">$'+b3.toLocaleString()+'</div><div class="kpi-detail">Delinquent</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Accounts Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>';
+            }
+        }
+        function removeArEntry(id){
+            saveArEntries(getArEntries().filter(function(a){return a.id!==id;}));
+            renderAr();
+        }
+        function addArEntry(){
+            var patient = document.getElementById('ar-add-patient').value.trim();
+            var amount = parseFloat(document.getElementById('ar-add-amount').value);
+            var days = parseInt(document.getElementById('ar-add-days').value, 10);
+            var status = document.getElementById('ar-add-status').value;
+            if (!patient || isNaN(amount) || isNaN(days)) { showToast('Patient, amount, and days required'); return; }
+            var list = getArEntries();
+            list.push({id:'ar'+Date.now(), patient:patient, amount:amount, days:days, status:status});
+            saveArEntries(list);
+            renderAr();
+            document.getElementById('ar-add-patient').value = '';
+            document.getElementById('ar-add-amount').value = '';
+            document.getElementById('ar-add-days').value = '';
+            showToast('A/R entry added');
+        }
+
+        function getProviderEntries(){
+            try { var s = localStorage.getItem('sc_providers'); if (s) return JSON.parse(s); } catch(e){}
+            var seed = [
+                {id:'pv1', name:'Dr. Michael Chen', specialty:'Internal Medicine', license:'MD-2847291', cred:'Yes', perf:97.2},
+                {id:'pv2', name:'Dr. Sarah Martinez', specialty:'Cardiology', license:'MD-2947382', cred:'Yes', perf:98.1},
+                {id:'pv3', name:'Dr. James Patel', specialty:'Orthopedic Surgery', license:'MD-3047291', cred:'Yes', perf:96.8},
+                {id:'pv4', name:'NP Rachel Kim', specialty:'Family Practice', license:'NP-3147382', cred:'Yes', perf:94.3}
+            ];
+            saveProviderEntries(seed);
+            return seed;
+        }
+        function saveProviderEntries(list){ try { localStorage.setItem('sc_providers', JSON.stringify(list)); } catch(e){} }
+        function renderProviders(){
+            var list = getProviderEntries();
+            var tbody = document.getElementById('providers-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(p){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.specialty)+'</td><td>'+escHtml(p.license)+'</td><td>'+escHtml(p.cred)+'</td><td>'+p.perf+'%</td><td><button class="btn" style="padding:2px 8px;" onclick="removeProviderEntry(\''+p.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var credentialed = list.filter(function(p){return p.cred==='Yes';});
+            var credPct = list.length ? (credentialed.length/list.length*100).toFixed(1)+'%' : '—';
+            var avgPerf = list.length ? (list.reduce(function(s,p){return s+p.perf;},0)/list.length).toFixed(1)+'%' : '—';
+            var specialties = {};
+            list.forEach(function(p){ if (p.specialty) specialties[p.specialty.trim().toLowerCase()] = true; });
+            var kpis = document.getElementById('providers-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Total Providers</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Credentialed</div><div class="kpi-value">'+credPct+'</div><div class="kpi-detail">Of logged providers</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Avg Performance</div><div class="kpi-value">'+avgPerf+'</div><div class="kpi-detail">Logged providers</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Specialties Represented</div><div class="kpi-value">'+Object.keys(specialties).length+'</div><div class="kpi-detail">Distinct</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Non-Credentialed</div><div class="kpi-value">'+(list.length-credentialed.length)+'</div><div class="kpi-detail">Needs review</div></div>';
+            }
+        }
+        function removeProviderEntry(id){
+            saveProviderEntries(getProviderEntries().filter(function(p){return p.id!==id;}));
+            renderProviders();
+        }
+        function addProviderEntry(){
+            var name = document.getElementById('prov-add-name').value.trim();
+            var specialty = document.getElementById('prov-add-specialty').value.trim();
+            var license = document.getElementById('prov-add-license').value.trim();
+            var cred = document.getElementById('prov-add-cred').value;
+            var perf = parseFloat(document.getElementById('prov-add-perf').value);
+            if (!name || !specialty) { showToast('Name and specialty required'); return; }
+            var list = getProviderEntries();
+            list.push({id:'pv'+Date.now(), name:name, specialty:specialty, license:license||'—', cred:cred, perf:isNaN(perf)?0:perf});
+            saveProviderEntries(list);
+            renderProviders();
+            document.getElementById('prov-add-name').value = '';
+            document.getElementById('prov-add-specialty').value = '';
+            document.getElementById('prov-add-license').value = '';
+            document.getElementById('prov-add-perf').value = '';
+            showToast('Provider added');
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -1539,6 +2094,22 @@
         window.addEventListener('load', () => {
             const lastPanel = localStorage.getItem('sc_last_panel') || 'dashboard';
             showPanel(lastPanel);
+            renderRevenue();
+            renderDenial();
+            renderCompliance();
+            renderFraud();
+            renderDashboard();
+            renderPrebill();
+            renderHcc();
+            renderDrg();
+            renderQuery();
+            renderEncoder();
+            renderRac();
+            renderTelehealth();
+            renderAnesthesia();
+            renderAuth();
+            renderAr();
+            renderProviders();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();

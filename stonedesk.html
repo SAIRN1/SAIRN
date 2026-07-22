@@ -2031,7 +2031,7 @@ window.saWipeAllData = function() {
     document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
   });
   saLog('L27-WIPE', 'User-initiated data wipe completed', 'info');
-  alert('All data wiped. Reloading...');
+  showToast('All data wiped. Reloading...');
   location.reload();
 };
 
@@ -2073,7 +2073,7 @@ window.saDeclinePrivacy = function() {
   saLog('L28-DECLINE', 'Privacy consent declined', 'info');
   var n = document.getElementById('sairn-privacy-notice');
   if (n) n.remove();
-  alert('SAIRN requires localStorage consent to function. Some features may not work.');
+  showToast('SAIRN requires localStorage consent to function. Some features may not work.');
 };
 
 // LAYER 29 — Security Audit Log
@@ -2110,12 +2110,12 @@ window.saShowSecurityStatus = function() {
     'Prompt injection: Active\n' +
     'Rate limiting: 30 calls/min\n\n' +
     'Recent events:\n' + logs.slice(-5).map(function(l) { return l.ts.slice(11,19) + ' [' + l.layer + '] ' + l.msg; }).join('\n');
-  alert(report);
+  showToast(report);
 };
 
 // == INITIALIZATION MESSAGE =================================
 saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
-console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'background:#1E1B4B;color:#16C76299;font-weight:bold;padding:4px 8px;border-radius:4px');
+
 
 })(); // End SAIRN Security IIFE
 
@@ -2534,7 +2534,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     if(h.length>200)h=h.slice(0,200);
     try{localStorage.setItem('sd_quote_history',JSON.stringify(h));}catch(e){}
     updateKPIs();
-    alert('Quote saved to history for '+name+'!');
+    showToast('Quote saved to history for '+name+'!');
   };
   updateKPIs();
   setInterval(updateKPIs,5000);
@@ -2867,7 +2867,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 (function(){
   window.sdDrawPrint=function(){
     var canvas=document.getElementById('draw-canvas')||document.querySelector('canvas');
-    if(!canvas){alert('No drawing canvas found.');return;}
+    if(!canvas){showToast('No drawing canvas found.');return;}
     var w=window.open('','_blank');
     var jobName=(document.getElementById('draw-job-name')||document.getElementById('draw-job-n')||{value:'Drawing'}).value||'Drawing';
     w.document.write('<html><head><title>Drawing - Pinnacle Stone</title><style>body{margin:20px;font-family:Arial,sans-serif;color:#1e293b}img{max-width:100%;border:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
@@ -4066,7 +4066,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     });
     html+='</div>';
     document.getElementById('cust-list').innerHTML=html;
-  }catch(e){console.log("sdCustRender error:",e)}};
+  }catch(e){}};
   window.sdCustAdd=function(){
     var name=prompt('Customer name:');
     if(!name)return;
@@ -4113,7 +4113,18 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
 })();
 </script>
 </div>
-<div style="padding:20px 24px;max-height:75vh;overflow-y:auto" id="cdm-body"></div>
+<div id="cust-detail-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:12px;max-width:800px;width:92%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div id="cdm-name" style="font-size:18px;font-weight:700;"></div>
+        <div id="cdm-project" style="font-size:13px;color:var(--muted);"></div>
+      </div>
+      <button class="q-btn" onclick="custCloseDetail()" style="font-size:20px;line-height:1;padding:4px 10px;">&times;</button>
+    </div>
+    <div style="padding:20px 24px;max-height:75vh;overflow-y:auto" id="cdm-body"></div>
+  </div>
+</div>
 
   <!-- == PHOTOS PANEL == -->
   <div class="panel" id="panel-photos">
@@ -4499,22 +4510,22 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     var statusColors={Connected:"#dcfce7","Pending Setup":"#fef3c7",Disconnected:"#fee2e2"};
     var statusText={Connected:"#166534","Pending Setup":"#92400e",Disconnected:"#991b1b"};
     document.getElementById("integ-list").innerHTML=filtered.map(function(x){
-      return "<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px">"
-        +"<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">"
-        +"<div style="display:flex;align-items:center;gap:8px">"
-        +"<div style="font-size:24px">"+(ICONS[x.cat]||"🔌")+"</div>"
-        +"<div><div style="font-weight:700;font-size:13px">"+escHtml(x.name)+"</div>"
-        +"<div style="font-size:11px;color:var(--muted)">"+x.cat+"</div></div></div>"
-        +"<span style="background:"+(statusColors[x.status]||"#f3f4f6")+";color:"+(statusText[x.status]||"#374151")+";padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700">"+x.status+"</span>"
+      return "<div style='background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px'>"
+        +"<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px'>"
+        +"<div style='display:flex;align-items:center;gap:8px'>"
+        +"<div style='font-size:24px'>"+(ICONS[x.cat]||"🔌")+"</div>"
+        +"<div><div style='font-weight:700;font-size:13px'>"+escHtml(x.name)+"</div>"
+        +"<div style='font-size:11px;color:var(--muted)'>"+x.cat+"</div></div></div>"
+        +"<span style='background:"+(statusColors[x.status]||"#f3f4f6")+";color:"+(statusText[x.status]||"#374151")+";padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700'>"+x.status+"</span>"
         +"</div>"
-        +(x.records?"<div style="font-size:11px;color:var(--muted);margin-bottom:4px">"+x.records.toLocaleString()+" records synced</div>":"")
-        +"<div style="font-size:11px;color:var(--muted)">Last sync: "+x.sync+"</div>"
-        +(x.errors?"<div style="font-size:11px;color:#dc2626;margin-top:4px;font-weight:700">⚠ "+x.errors+" sync error(s)</div>":"")
-        +"<div style="display:flex;gap:6px;margin-top:10px">"
-        +"<button class="q-btn" style="font-size:11px;padding:3px 8px;flex:1" onclick="sdIntegSyncOne("+x.id+")">🔄 Sync</button>"
-        +"<button class="q-btn" style="font-size:11px;padding:3px 8px;flex:1;background:#fee2e2;color:#991b1b;border-color:#fca5a5" onclick="sdIntegRemove("+x.id+")">Remove</button>"
+        +(x.records?"<div style='font-size:11px;color:var(--muted);margin-bottom:4px'>"+x.records.toLocaleString()+" records synced</div>":"")
+        +"<div style='font-size:11px;color:var(--muted)'>Last sync: "+x.sync+"</div>"
+        +(x.errors?"<div style='font-size:11px;color:#dc2626;margin-top:4px;font-weight:700'>⚠ "+x.errors+" sync error(s)</div>":"")
+        +"<div style='display:flex;gap:6px;margin-top:10px'>"
+        +"<button class='q-btn' style='font-size:11px;padding:3px 8px;flex:1' onclick='sdIntegSyncOne("+x.id+")'>🔄 Sync</button>"
+        +"<button class='q-btn' style='font-size:11px;padding:3px 8px;flex:1;background:#fee2e2;color:#991b1b;border-color:#fca5a5' onclick='sdIntegRemove("+x.id+")'>Remove</button>"
         +"</div></div>";
-    }).join("")||"<div style="padding:24px;text-align:center;color:var(--muted)">No integrations match filter.</div>";
+    }).join("")||"<div style='padding:24px;text-align:center;color:var(--muted)'>No integrations match filter.</div>";
   };
   window.sdIntegConnect=function(){
     var name=document.getElementById("integ-name").value.trim();
@@ -4554,16 +4565,16 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
     fetch("https://sairn.vercel.app/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({app_id:"stonedesk",is_demo:true,messages:[{role:"user",content:"You are a stone fabrication business technology advisor. Review these integrations and recommend: (1) any gaps, (2) which to prioritize fixing, (3) 2 additional apps that would most improve operations. Current integrations: "+JSON.stringify(d)}]})
     }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML="<strong style="color:#166534">🤖 Integration Intelligence</strong><br><br>"+(r.content||r.completion||"").replace(/\n/g,"<br>");
+      out.innerHTML="<strong style='color:#166534'>🤖 Integration Intelligence</strong><br><br>"+(r.content||r.completion||"").replace(/\n/g,"<br>");
     }).catch(function(){out.textContent="AI unavailable.";});
   };
   window.sdIntegPrint=function(){
     var d=load();
     var w=window.open("","_blank");
     w.document.write("<html><head><title>Integrations</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{color:#0A3D1F}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#0A3D1F;color:#fff;padding:8px 10px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #ddd}.err{color:#dc2626;font-weight:700}</style><scr"+"ipt></scr"+"ipt></head><body>");
-    w.document.write("<h1>Pinnacle Stone &amp; Design — Integrations</h1><p style="color:#888;font-size:11px">"+new Date().toLocaleString()+"</p>");
+    w.document.write("<h1>Pinnacle Stone &amp; Design — Integrations</h1><p style='color:#888;font-size:11px'>"+new Date().toLocaleString()+"</p>");
     w.document.write("<table><tr><th>App</th><th>Category</th><th>Status</th><th>Last Sync</th><th>Records</th><th>Errors</th></tr>");
-    d.forEach(function(x){w.document.write("<tr><td>"+escHtml(x.name)+"</td><td>"+x.cat+"</td><td>"+x.status+"</td><td>"+x.sync+"</td><td>"+(x.records||0).toLocaleString()+"</td><td class=""+(x.errors?"err":"")+"">"+(x.errors||0)+"</td></tr>");});
+    d.forEach(function(x){w.document.write("<tr><td>"+escHtml(x.name)+"</td><td>"+x.cat+"</td><td>"+x.status+"</td><td>"+x.sync+"</td><td>"+(x.records||0).toLocaleString()+"</td><td class='"+(x.errors?"err":"")+"'>"+(x.errors||0)+"</td></tr>");});
     w.document.write("</table></body></html>");w.document.close();w.print();
   };
   sdIntegRender();
@@ -5662,7 +5673,7 @@ console.log('%c SAIRN Security v3.0 — 30-Layer Protection Active ', 'backgroun
   window.sdCommsNew=function(){
     var to=document.getElementById('comms-to').value.trim();
     var body=document.getElementById('comms-body').value.trim();
-    if(!to||!body){if(!to||!body){showToast('Enter recipient and message.');return;}
+    if(!to||!body){showToast('Enter recipient and message.');return;}
     var d=load();
     var now=new Date();
     d.push({type:document.getElementById('comms-type').value,to:to,
@@ -7420,7 +7431,7 @@ function fmSaveStop(){
   var person=document.getElementById('fm-s-person').value.trim();
   var address=document.getElementById('fm-s-address').value.trim();
   var dateStr=document.getElementById('fm-s-date').value;
-  if(!person||!address||!dateStr){ alert('Person, address, and date are required'); return; }
+  if(!person||!address||!dateStr){ showToast('Person, address, and date are required'); return; }
   var stop={
     id:'FS'+Date.now(),
     person:person,
@@ -7482,7 +7493,7 @@ function fmRunOptimize(person, dateStr, silent){
       }
       fmGenerateDaySummary(person, dateStr, finalOrder);
     })
-    .catch(function(){ if(!silent) alert('Could not optimize route -- check the Maps API key is configured.'); });
+    .catch(function(){ if(!silent) showToast('Could not optimize route -- check the Maps API key is configured.'); });
 }
 
 // Claude reasons over the already-optimized stop list to surface one practical,
@@ -7601,7 +7612,7 @@ async function dbLoadBizData(){
 }
 async function dbLoadAll(){
   await Promise.all([dbLoadQuoteHistory(),dbLoadSettings(),dbLoadBizData()]);
-  console.log('DB data loaded');
+  
 }
 // BUGFIX (June 2026 audit): this used to be `async function doLogout()` that AWAITED a fetch to
 // fabricor-production.up.railway.app/api/auth/logout before doing anything else -- that backend
@@ -7631,7 +7642,7 @@ function showWelcome() {
 
 // == PANEL NAV =================================================
 function showPanel(id) {
-  console.log('showPanel called:', id, 'panels:', document.querySelectorAll('.panel').length);
+  
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   // 'dashboard' has no panel-dashboard/page-dashboard element -- the old stub
@@ -7842,7 +7853,7 @@ function autoResize(el) {
 // Voice
 function toggleVoice() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert('Voice input is not supported in this browser. Try Chrome.');
+    showToast('Voice input is not supported in this browser. Try Chrome.');
     return;
   }
   if (isListening) {
@@ -8161,7 +8172,7 @@ function calc() {
 
 // == SAVE QUOTE ================================================
 function saveQuote() {
-  if (!lastCalc.total) return alert('Build a quote first.');
+  if (!lastCalc.total) return showToast('Build a quote first.');
   const q = {
     num: currentQuoteNum,
     client: document.getElementById('client-name').value || '(no name)',
@@ -8272,7 +8283,7 @@ function printEstimate() {
 
 // == AI QUOTE ADVICE ===========================================
 async function getAIQuoteAdvice() {
-  if (!lastCalc.total) { alert('Build a quote first.'); return; }
+  if (!lastCalc.total) { showToast('Build a quote first.'); return; }
   const c = lastCalc;
   const context = 'Job: ' + (document.getElementById('client-name').value || 'unknown') + '. Material: ' + c.mat.name + '. Project: ' + c.proj.name + '. Total LF: ' + c.totalLF.toFixed(1) + '. Implied sqft: ' + c.impliedSF.toFixed(1) + '. Total quoted: $' + c.total + '. PPSF: $' + c.impliedPPSF.toFixed(0) + '. Tier: ' + c.tier.label + '. Waterfall legs: ' + COUNTERS.wf + '. Sinks: ' + COUNTERS.sink + '.';
   showPanel('ai');
@@ -10910,13 +10921,13 @@ function printDrawCutSheet() {
     var aEl=document.getElementById('sh-answer-out')||document.querySelector('.sh-response');
     var q=qEl?qEl.value||qEl.textContent:'';
     var a=aEl?aEl.textContent:'';
-    if(!q&&!a){alert('No Q&A to save.');return;}
+    if(!q&&!a){showToast('No Q&A to save.');return;}
     var log=loadLog();
     log.unshift({id:'SH-'+Date.now(),date:new Date().toISOString(),question:q,answer:a,saved:true});
     if(log.length>500)log=log.slice(0,500);
     try{localStorage.setItem('sd_stonehub_log',JSON.stringify(log));}catch(e){}
     updateSHKPIs();
-    alert('Q&A saved to StoneHub log!');
+    showToast('Q&A saved to StoneHub log!');
   };
   updateSHKPIs();
   setInterval(updateSHKPIs,10000);
@@ -11386,19 +11397,19 @@ function saUnlock(){ var el=document.getElementById('sairn-lock-overlay'); if(el
 
 // SAIRI camera/doc/compare/profile — these are dynamically injected by SAIRI
 // Stub them so no console errors if SAIRI hasn't initialized yet
-if(typeof analyzeDocument === 'undefined') window.analyzeDocument = function(){ console.log('SAIRI doc analysis - initializing...'); };
-if(typeof analyzeImage === 'undefined') window.analyzeImage = function(){ console.log('SAIRI image analysis - initializing...'); };
-if(typeof capturePhoto === 'undefined') window.capturePhoto = function(){ console.log('SAIRI camera - initializing...'); };
+if(typeof analyzeDocument === 'undefined') window.analyzeDocument = function(){  };
+if(typeof analyzeImage === 'undefined') window.analyzeImage = function(){  };
+if(typeof capturePhoto === 'undefined') window.capturePhoto = function(){  };
 if(typeof clearDocFile === 'undefined') window.clearDocFile = function(){ var el=document.getElementById('sairn-doc-modal'); if(el)el.innerHTML=''; };
 if(typeof clearSessionMemory === 'undefined') window.clearSessionMemory = function(){ if(typeof messages !== 'undefined') messages.length=0; };
 if(typeof closeCamera === 'undefined') window.closeCamera = function(){ var el=document.getElementById('sairn-cam-modal'); if(el)el.style.display='none'; };
 if(typeof closeCompare === 'undefined') window.closeCompare = function(){ var el=document.getElementById('sairn-compare-modal'); if(el)el.style.display='none'; };
 if(typeof closeDocModal === 'undefined') window.closeDocModal = function(){ var el=document.getElementById('sairn-doc-modal'); if(el)el.style.display='none'; };
 if(typeof retakePhoto === 'undefined') window.retakePhoto = function(){ if(typeof capturePhoto==='function') capturePhoto(); };
-if(typeof runComparison === 'undefined') window.runComparison = function(){ console.log('SAIRI comparison - initializing...'); };
+if(typeof runComparison === 'undefined') window.runComparison = function(){  };
 if(typeof selectCamPrompt === 'undefined') window.selectCamPrompt = function(p){ if(typeof setMode==='function') setMode('general'); };
 if(typeof selectDocPrompt === 'undefined') window.selectDocPrompt = function(p){ if(typeof setMode==='function') setMode('general'); };
-if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){ console.log('Camera tab:',t); };
+if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 
 // ============================================================
 // FIX: window.open print functions — inline print modal
@@ -11497,7 +11508,7 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){ conso
     }
 })();
 
-console.log('StoneDesk Patch v1.1 loaded — all 18 panels verified and fixed');
+
 </script>
 
 <!-- ============================================================
@@ -12494,7 +12505,7 @@ function parseAndStress(csvText) {
 function saveCodes() {
   const s=document.getElementById('sales-code-input').value.trim();
   const a=document.getElementById('admin-code-input').value.trim();
-  if(!s||!a) return alert('Both codes required.');
+  if(!s||!a) return showToast('Both codes required.');
   CODES.sales=s; CODES.admin=a;
   const btn=document.querySelector('[onclick="saveCodes()"]');
   btn.textContent='✓ Codes Updated'; btn.style.color='#4ADE80';
@@ -12794,7 +12805,7 @@ if (dropZone) {
 
 function handleDocFile(file) {
   if (file.size > 10 * 1024 * 1024) {
-    alert('File is too large. Please upload a file under 10MB.');
+    showToast('File is too large. Please upload a file under 10MB.');
     return;
   }
 
@@ -12936,7 +12947,7 @@ window.analyzeDocument = async function() {
   } catch(e) {
     if (progress)   progress.style.display   = 'none';
     if (analyzeBtn) analyzeBtn.style.display  = 'block';
-    alert('Analysis failed. Please try again.');
+    showToast('Analysis failed. Please try again.');
   }
 };
 
@@ -14254,7 +14265,7 @@ window.runComparison = async function() {
   var prio  = document.getElementById('scm-priority')?.value || '';
 
   if (!aDesc.trim() || !bDesc.trim()) {
-    alert('Please describe both options before comparing.'); return;
+    showToast('Please describe both options before comparing.'); return;
   }
 
   var resultEl = document.getElementById('scm-result');
@@ -16044,7 +16055,7 @@ window.analyzeImage = async function() {
     if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
   } catch(e) {
     if (btn) { btn.textContent = '🧠 Claude — Analyze This →'; btn.classList.add('ready'); }
-    alert('Analysis failed — please try again.');
+    showToast('Analysis failed — please try again.');
   }
 };
 
@@ -16369,7 +16380,7 @@ function renderWarrantyAlertZone(alerts) {
   const worst = warrAlerts.some(a => a.level === 'red') ? 'red' : 'yellow';
   el.innerHTML = '<div class="urgency-banner ' + worst + '">' +
     '<span class="urgency-icon">' + (worst==='red'?'🚨':'⚠️') + '</span>' +
-    '<span>' + warrAlerts.length + ' warranty alert(s) require attention</span></div>';
+    '<span>' + warrAlerts.length + ' warranty showToast(s) require attention</span></div>';
 }
 
 function updateCustomerKPIs() {
@@ -16704,7 +16715,7 @@ function handlePhotoFiles(files) {
   const job = document.getElementById('photo-job').value.trim() || 'Unassigned';
   const cat = document.getElementById('photo-cat').value;
   const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= 10*1024*1024);
-  if (files.length !== validFiles.length) alert('Some files skipped (not images or over 10MB)');
+  if (files.length !== validFiles.length) showToast('Some files skipped (not images or over 10MB)');
   validFiles.forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -16857,7 +16868,7 @@ function addWarrantyToJob(name, price, years) {
 
 function saveWarranty() {
   const cust = document.getElementById('warr-cust').value.trim();
-  if (!cust) { alert('Customer name required'); return; }
+  if (!cust) { showToast('Customer name required'); return; }
   const installDate = document.getElementById('warr-date').value;
   const expiryDate = _warrPkgYears < 90 ? new Date(new Date(installDate).getTime() + _warrPkgYears*365*86400000).toISOString().split('T')[0] : '9999-12-31';
   const w = {
@@ -17052,7 +17063,7 @@ function sendAlertSMS(message) {
 
 function testAlertEmail() {
   const email = document.getElementById('alert-email').value.trim();
-  if (!email) { alert('Enter manager email first'); return; }
+  if (!email) { showToast('Enter manager email first'); return; }
   sendAlertEmail('Test alert from StoneDesk™ — alert system is working!', 'green');
   const el = document.getElementById('alert-save-status');
   if (el) { el.textContent = '📧 Test email sent to ' + email; el.style.color = '#16a34a'; }
@@ -17060,7 +17071,7 @@ function testAlertEmail() {
 
 function testAlertSMS() {
   const phone = document.getElementById('alert-phone').value.trim();
-  if (!phone) { alert('Enter manager phone first'); return; }
+  if (!phone) { showToast('Enter manager phone first'); return; }
   sendAlertSMS('Test SMS from StoneDesk. Alert system working.');
   const el = document.getElementById('alert-save-status');
   if (el) { el.textContent = '📱 Test SMS sent to ' + phone; el.style.color = '#16a34a'; }
@@ -17327,7 +17338,7 @@ function schedAddJob(){
 
 function schedSave(){
   var name=document.getElementById('sj-name').value.trim();
-  if(!name){alert('Customer name required');return;}
+  if(!name){showToast('Customer name required');return;}
   var templateDate=document.getElementById('sj-template').value;
   var targetDate=document.getElementById('sj-target').value;
   var job={
@@ -18118,7 +18129,7 @@ function invAddItem(){
 
 function invSaveItem(){
   var name=document.getElementById('ii-name').value.trim();
-  if(!name){alert('Item name required');return;}
+  if(!name){showToast('Item name required');return;}
   var item={
     id:'INV'+Date.now(),
     name:name,
@@ -18362,7 +18373,7 @@ function vendorBuildAutoOrder(){
   saveSD4();
   renderCart();renderVendor();
   var msg=matched>0?'Auto-order built: '+matched+' low-stock items added to cart.':'No matching products found for low-stock items. Add items manually.';
-  alert(msg);
+  showToast(msg);
 }
 
 function vendorAddCustom(){
@@ -18612,7 +18623,7 @@ function vendorPlaceOrder(){
   var items=Object.entries(sdCart).map(([id,qty])=>{
     var p=allProducts.find(x=>x.id===id);return p?{...p,qty}:null;
   }).filter(Boolean);
-  if(!items.length){alert('Cart is empty. Add items first.');return;}
+  if(!items.length){showToast('Cart is empty. Add items first.');return;}
   var total=items.reduce((s,i)=>s+i.price*i.qty,0);
   var orderText=items.map(i=>i.qty+'x '+i.name+' ('+i.sku+') @ $' + i.price.toFixed(2)+' = $' + (i.price*i.qty).toFixed(2)).join('\n');
   var subject='StoneDesk Purchase Order — $' + total.toFixed(2);
@@ -19937,7 +19948,7 @@ function remakeAdd(){
 
 function remakeSave(){
   var cust=document.getElementById('rm-cust').value.trim();
-  if(!cust){alert('Customer name required');return;}
+  if(!cust){showToast('Customer name required');return;}
   var r={
     id:'RM'+Date.now(),
     customer:cust,
@@ -20197,7 +20208,7 @@ function renderExecChat(){
 }
 
 function execSend(){
-  if(!document.body.classList.contains('is-exec')){alert('Executive access required');return;}
+  if(!document.body.classList.contains('is-exec')){showToast('Executive access required');return;}
   var inp=document.getElementById('exec-msg-input');
   var text=(inp?inp.value.trim():'');
   if(!text) return;
@@ -20708,7 +20719,7 @@ function execAiClear(role){
 // == EMAIL TRIAGE ===============================================
 async function runEmailTriage(){
   var raw=document.getElementById('email-paste-input').value.trim();
-  if(!raw){alert('Paste at least one email first');return;}
+  if(!raw){showToast('Paste at least one email first');return;}
   var role=document.getElementById('triage-role').value;
   var loading=document.getElementById('triage-loading');
   var results=document.getElementById('triage-results');
@@ -21129,8 +21140,8 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
   localStorage.setItem('sairn_privacy_accepted', 'true');
   localStorage.setItem('_s_', 'demo');
 
-  console.log('%c SAIRN Demo Data Loaded Successfully ', 'background:#16C762;color:#fff;font-size:14px;padding:6px 12px;border-radius:4px;font-weight:700;');
-  console.log('Apps seeded: SAIRNhr, SAIRNacc, SAIRNbuild, SAIRNlaw, SAIRNcare, SAIRNvet, StoneDesk, SAIRNcode');
+  
+  
 
 })();
 </script>
@@ -21159,7 +21170,7 @@ function syncToSAIRNdesign() {
       if (d.ok) notify('Synced to SAIRNdesign', 'success');
     })
     .catch(function(e) {
-      console.log('Bridge sync:', e.message);
+      
     });
 }
 </script>
@@ -21653,7 +21664,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdCRMAdd=function(){
     var name=document.getElementById('crm-name').value.trim();
-    if(!name){alert('Enter customer name');return;}
+    if(!name){showToast('Enter customer name');return;}
     var d=load();
     d.push({name:name,proj:document.getElementById('crm-proj').value||'Project',
       val:parseFloat(document.getElementById('crm-val').value)||0,
@@ -21802,7 +21813,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdJCAdd=function(){
     var job=document.getElementById('jc-job').value.trim();
     var rev=parseFloat(document.getElementById('jc-rev').value)||0;
-    if(!job||!rev){alert('Enter job name and revenue');return;}
+    if(!job||!rev){showToast('Enter job name and revenue');return;}
     var d=load();
     d.push({job:job,rev:rev,mat:parseFloat(document.getElementById('jc-mat').value)||0,
       lab:parseFloat(document.getElementById('jc-lab').value)||0,
@@ -22868,10 +22879,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("aiq-today").textContent=d.filter(function(x){return x.date===today2;}).length;
     var recent=d.slice(-6).reverse();
     document.getElementById("aiq-recent").innerHTML=recent.length?recent.map(function(x){
-      return "<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">"
-        +"<div><div style="font-weight:600">"+escHtml(x.customer||"")+"</div><div style="color:var(--muted);font-size:11px">"+x.type+"</div></div>"
-        +"<span style="font-weight:800;color:#16C762">$"+(x.amount||0).toLocaleString()+"</span></div>";
-    }).join(""):"<div style="color:var(--muted);font-size:13px;padding:8px 0">No quotes yet</div>";
+      return "<div style='display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px'>"
+        +"<div><div style='font-weight:600'>"+escHtml(x.customer||"")+"</div><div style='color:var(--muted);font-size:11px'>"+x.type+"</div></div>"
+        +"<span style='font-weight:800;color:#16C762'>$"+(x.amount||0).toLocaleString()+"</span></div>";
+    }).join(""):"<div style='color:var(--muted);font-size:13px;padding:8px 0'>No quotes yet</div>";
   }
   window.sdAIQQuick=function(desc){
     document.getElementById("aiq-desc").value=desc;
@@ -22885,13 +22896,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var margin=document.getElementById("aiq-margin").value;
     if(!desc){showToast("Describe the project first.");return;}
     var out=document.getElementById("aiq-out");
-    out.innerHTML="<div style="color:var(--muted);text-align:center;padding:20px">🤖 Claude is pricing your project...</div>";
+    out.innerHTML="<div style='color:var(--muted);text-align:center;padding:20px'>🤖 Claude is pricing your project...</div>";
     fetch("https://sairn.vercel.app/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({app_id:"stonedesk",is_demo:true,messages:[{role:"user",content:"You are an expert stone fabrication estimator at Pinnacle Stone & Design in Cleveland, OH. Generate a professional detailed quote for: "+type+". Quality tier: "+tier+". Target margin: "+margin+"%. Project details: "+desc+". Provide: (1) Line items with costs (material, fabrication labor, edge work, cutouts, install, delivery), (2) Material qty estimate in sq ft, (3) Price range (low/mid/high), (4) Any scope clarifications needed, (5) Bold the TOTAL. Format clearly with line breaks between sections."}]})
     }).then(function(r){return r.json();}).then(function(r){
       var txt=r.content||r.completion||"Quote generated.";
-      out.innerHTML=txt.replace(/
-/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
+      out.innerHTML=txt.replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
       document.getElementById("aiq-actions").style.display="flex";
       var amtMatch=txt.match(/\$[\d,]+/g);
       var amts=(amtMatch||[]).map(function(a){return parseInt(a.replace(/[$,]/g,""));}).filter(function(a){return a>100;});
@@ -22909,8 +22919,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!d.length)return showToast("No quotes to export.");
     var rows=[["Customer","Type","Tier","Amount","Accepted","Date"]];
     d.forEach(function(x){rows.push([x.customer||"",x.type||"",x.tier||"",(x.amount||0),(x.accepted?"Yes":"No"),x.date||""]);});
-    var csv=rows.map(function(r){return r.map(function(c){return """+String(c).replace(/"/g,"""")+"""}).join(",");}).join("
-");
+    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
     var a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
     a.download="ai-quotes-pinnacle-"+new Date().toISOString().slice(0,10)+".csv";a.click();
   };
@@ -22923,9 +22932,9 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write("<h1>Pinnacle Stone &amp; Design</h1><p>4821 Industrial Pkwy, Cleveland, OH | (216) 847-3200</p><hr>");
     w.document.write("<h2>AI Quote Estimate — "+escHtml(type)+"</h2>");
     w.document.write("<p>Customer: <strong>"+escHtml(cust)+"</strong> &nbsp;|&nbsp; Date: "+new Date().toLocaleDateString()+"</p>");
-    w.document.write("<div class="content">"+document.getElementById("aiq-out").innerHTML+"</div>");
-    w.document.write("<br><hr><p style="font-size:11px;color:#888">This is an AI-generated estimate. Final pricing confirmed at measure. Valid 30 days.</p>");
-    w.document.write("<p style="margin-top:30px">Customer Signature: _________________________ &nbsp;&nbsp; Date: __________</p>");
+    w.document.write("<div class='content'>"+document.getElementById("aiq-out").innerHTML+"</div>");
+    w.document.write("<br><hr><p style='font-size:11px;color:#888'>This is an AI-generated estimate. Final pricing confirmed at measure. Valid 30 days.</p>");
+    w.document.write("<p style='margin-top:30px'>Customer Signature: _________________________ &nbsp;&nbsp; Date: __________</p>");
     w.document.write("</body></html>");w.document.close();w.print();
   };
   updateKPIs();
@@ -23018,7 +23027,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdSintAdd=function(){
     var name=document.getElementById('sint-name').value.trim();
-    if(!name){alert('Enter product name');return;}
+    if(!name){showToast('Enter product name');return;}
     var d=load();
     d.push({name:name,brand:document.getElementById('sint-brand').value,
       thickness:document.getElementById('sint-thickness').value||'12mm',
@@ -23642,7 +23651,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdConAdd=function(){
     var name=document.getElementById('con-name').value.trim();
-    if(!name){alert('Enter company name');return;}
+    if(!name){showToast('Enter company name');return;}
     var d=load();
     d.push({name:name,contact:document.getElementById('con-contact').value||'',
       phone:document.getElementById('con-phone').value||'',
@@ -23777,7 +23786,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdRefAdd=function(){
     var from=document.getElementById('ref-from').value.trim();
     var to=document.getElementById('ref-to').value.trim();
-    if(!from||!to){alert('Enter both referrer and referred customer');return;}
+    if(!from||!to){showToast('Enter both referrer and referred customer');return;}
     var d=load();
     d.push({from:from,to:to,phone:document.getElementById('ref-phone').value,
       status:document.getElementById('ref-status').value,
@@ -23906,7 +23915,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var mat=document.getElementById('pi-mat').value.trim();
     var mkt=parseFloat(document.getElementById('pi-mkt').value);
     var ours=parseFloat(document.getElementById('pi-ours').value);
-    if(!mat||isNaN(mkt)||isNaN(ours)){alert('Fill all fields');return;}
+    if(!mat||isNaN(mkt)||isNaN(ours)){showToast('Fill all fields');return;}
     var d=load();
     d.push({mat:mat,mkt:mkt,ours:ours,source:document.getElementById('pi-source').value||'Manual',date:new Date().toISOString().slice(0,10)});
     save(d);render();
@@ -24015,7 +24024,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdEqAdd=function(){
     var name=document.getElementById('eq-name').value.trim();
-    if(!name){alert('Enter equipment name');return;}
+    if(!name){showToast('Enter equipment name');return;}
     var d=load();
     d.push({name:name,make:document.getElementById('eq-make').value||'',
       val:parseFloat(document.getElementById('eq-val').value)||0,
@@ -24142,7 +24151,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   window.sdEmpAdd=function(){
     var name=document.getElementById('emp-name').value.trim();
-    if(!name){alert('Enter employee name');return;}
+    if(!name){showToast('Enter employee name');return;}
     var d=load();
     d.push({name:name,role:document.getElementById('emp-role').value||'Staff',
       dept:document.getElementById('emp-dept').value,
@@ -24268,7 +24277,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   window.sdYardAdd=function(){
     var mat=document.getElementById('yard-mat').value.trim();
-    if(!mat){alert('Enter material');return;}
+    if(!mat){showToast('Enter material');return;}
     var d=load();
     d.push({id:Date.now(),mat:mat,loc:document.getElementById('yard-loc').value||'TBD',
       price:parseFloat(document.getElementById('yard-price').value)||0,
@@ -24384,7 +24393,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdSubAdd=function(){
     var name=document.getElementById('sub-name').value.trim();
-    if(!name){alert('Enter company name');return;}
+    if(!name){showToast('Enter company name');return;}
     var d=load();
     d.push({name:name,trade:document.getElementById('sub-trade').value||'General',
       phone:document.getElementById('sub-phone').value||'',
@@ -24510,7 +24519,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdBidAdd=function(){
     var cust=document.getElementById('bid-cust').value.trim();
-    if(!cust){alert('Enter customer');return;}
+    if(!cust){showToast('Enter customer');return;}
     var d=load();
     d.push({cust:cust,proj:document.getElementById('bid-proj').value||'',
       val:parseFloat(document.getElementById('bid-val').value)||0,
@@ -24643,14 +24652,14 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdITTicket=function(){
     var desc=document.getElementById('it-desc').value.trim();
-    if(!desc){alert('Describe the issue');return;}
+    if(!desc){showToast('Describe the issue');return;}
     var t=loadTickets();
     t.unshift({id:'IT-0'+(45+t.length),user:document.getElementById('it-user').value,
       cat:document.getElementById('it-category').value,
       priority:document.getElementById('it-priority').value,
       desc:desc,status:'Open',date:new Date().toISOString().slice(0,10)});
     saveTickets(t);render();document.getElementById('it-desc').value='';
-    alert('Ticket opened!');
+    showToast('Ticket opened!');
   };
   window.sdITAI=function(){
     var t=loadTickets();
@@ -24751,7 +24760,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdDmgAdd=function(){
     var job=document.getElementById('dmg-job').value.trim();
-    if(!job){alert('Enter job name');return;}
+    if(!job){showToast('Enter job name');return;}
     var d=load();
     d.push({job:job,type:document.getElementById('dmg-type').value,
       amount:parseFloat(document.getElementById('dmg-amount').value)||0,
@@ -24887,7 +24896,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdTrainAdd=function(){
     var topic=document.getElementById('train-topic').value.trim();
-    if(!topic){alert('Enter training topic');return;}
+    if(!topic){showToast('Enter training topic');return;}
     var d=load();
     d.push({emp:document.getElementById('train-emp').value,topic:topic,
       type:document.getElementById('train-type').value,
@@ -25019,7 +25028,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdBulletinPost=function(){
     var t=document.getElementById('bull-title-inp').value.trim();
     var b=document.getElementById('bull-body-inp').value.trim();
-    if(!t||!b){alert('Enter title and content');return;}
+    if(!t||!b){showToast('Enter title and content');return;}
     var d=load();
     d.unshift({id:Date.now(),cat:document.getElementById('bull-cat').value,title:t,body:b,
       pinned:document.getElementById('bull-pin').checked,date:new Date().toISOString().slice(0,10),author:'You'});
@@ -25146,7 +25155,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdWasteLog=function(){
     var job=document.getElementById('waste-job').value.trim();
-    if(!job){alert('Enter job name');return;}
+    if(!job){showToast('Enter job name');return;}
     var d=load();
     d.push({job:job,material:document.getElementById('waste-material').value||'Mixed',
       lbs:parseFloat(document.getElementById('waste-lbs').value)||0,
@@ -25326,7 +25335,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.sdNPSAdd=function(){
     var cust=document.getElementById('nps-cust').value.trim();
-    if(!cust){alert('Enter customer name');return;}
+    if(!cust){showToast('Enter customer name');return;}
     var d=load();
     d.push({customer:cust,score:parseInt(document.getElementById('nps-score-inp').value),
       comment:document.getElementById('nps-comment').value,date:new Date().toISOString().slice(0,10)});
@@ -25463,7 +25472,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdAPAdd=function(){
     var vendor=document.getElementById('ap-vendor').value.trim();
     var amt=parseFloat(document.getElementById('ap-amt').value)||0;
-    if(!vendor||!amt){alert('Enter vendor and amount');return;}
+    if(!vendor||!amt){showToast('Enter vendor and amount');return;}
     var d=load();
     d.unshift({vendor:vendor,desc:document.getElementById('ap-desc').value||'',amt:amt,
       due:document.getElementById('ap-due').value||new Date().toISOString().slice(0,10),
@@ -25612,7 +25621,7 @@ document.addEventListener('DOMContentLoaded', function() {
       out.innerHTML='<strong>🤖 Tax Summary:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
-  window.sdTaxAdd1099=function(){alert('1099 contractor tracking — contact your accountant to add contractor records.');};
+  window.sdTaxAdd1099=function(){showToast('1099 contractor tracking — contact your accountant to add contractor records.');};
   window.sdTaxPrint=function(){
     var w=window.open('','_blank');
     w.document.write('<html><head><title>Tax Report</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
@@ -26081,7 +26090,7 @@ async function sdRunEmailScan() {
   var sender = document.getElementById('sd-email-sender').value;
   var subject = document.getElementById('sd-email-subject').value;
   var body = document.getElementById('sd-email-body').value;
-  if (!body && !subject) { alert('Paste the email content to scan'); return; }
+  if (!body && !subject) { showToast('Paste the email content to scan'); return; }
   var result = document.getElementById('sd-email-result');
   var verdict = document.getElementById('sd-email-verdict');
   var detail = document.getElementById('sd-email-detail');
@@ -26210,7 +26219,7 @@ async function sdRunEmailScan() {
   }).join('');
   window.sdEmailScan=function(){
     var txt=document.getElementById('email-input').value.trim();
-    if(!txt){alert('Paste email content to analyze');return;}
+    if(!txt){showToast('Paste email content to analyze');return;}
     var out=document.getElementById('email-scan-out');
     out.style.display='block';out.style.background='#f8f9fa';out.textContent='Analyzing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -27047,7 +27056,7 @@ function slabImportCsv(event){
   var reader=new FileReader();
   reader.onload=function(e){
     var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim().length;});
-    if(lines.length<2){ alert('CSV looks empty.'); return; }
+    if(lines.length<2){ showToast('CSV looks empty.'); return; }
     var headers=slabParseCsvLine(lines[0]).map(function(h){return h.trim().toLowerCase();});
     var map={
       material:['material','material type'], colorname:['colorname','color','color name','color/pattern','pattern'],
@@ -27091,7 +27100,7 @@ function slabImportCsv(event){
     }
     saveSlabs(); slabRender();
     if(typeof showToast==='function') showToast(imported+' slabs imported');
-    else alert(imported+' slabs imported');
+    else showToast(imported+' slabs imported');
     event.target.value='';
   };
   reader.readAsText(file);
@@ -28379,7 +28388,7 @@ async function invSmartReorder(){
 function invReorderSendToCart(vendorKey){
   var inv=typeof sdInventory!=='undefined'?sdInventory:[];
   var needOrder=inv.filter(function(i){return (i.vendor===vendorKey)&&(i.qty<=i.min);});
-  if(!needOrder.length){alert('No low-stock items for this vendor.');return;}
+  if(!needOrder.length){showToast('No low-stock items for this vendor.');return;}
   // Find matching products in vendor catalog and add to cart
   var vendorCatalog=typeof VENDORS!=='undefined'&&VENDORS[vendorKey]?VENDORS[vendorKey].products:[];
   var added=0;
@@ -29642,7 +29651,7 @@ function eqSaveAll(d){localStorage.setItem(EQ_KEY,JSON.stringify(d));}
 function eqShowAdd(){document.getElementById('eq-add-form').style.display='block';}
 function eqSave(){
   var name=document.getElementById('eq-name').value.trim();
-  if(!name){alert('Machine name required');return;}
+  if(!name){showToast('Machine name required');return;}
   var rec={id:Date.now(),name:name,type:document.getElementById('eq-type').value,serial:document.getElementById('eq-serial').value,lastDate:document.getElementById('eq-last-date').value,serviceType:document.getElementById('eq-service-type').value,cost:parseFloat(document.getElementById('eq-cost').value)||0,nextDate:document.getElementById('eq-next-date').value,notes:document.getElementById('eq-notes').value};
   var d=eqLoad();d.push(rec);eqSaveAll(d);
   ['eq-name','eq-serial','eq-service-type','eq-cost','eq-notes'].forEach(function(i){document.getElementById(i).value='';});
@@ -29678,7 +29687,7 @@ function eqRender(){
 }
 function eqDelete(id){var d=eqLoad().filter(function(r){return r.id!==id;});eqSaveAll(d);eqRender();}
 function eqExport(){
-  var d=eqLoad();if(!d.length){alert('No equipment to export');return;}
+  var d=eqLoad();if(!d.length){showToast('No equipment to export');return;}
   var rows=[['Name','Type','Serial','Last Date','Service','Cost','Next Due','Notes']].concat(d.map(function(r){return[r.name,r.type,r.serial,r.lastDate,r.serviceType,r.cost,r.nextDate,r.notes];}));
   var csv=rows.map(function(r){return r.map(function(c){return'"'+(c||'')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='equipment_log.csv';a.click();
@@ -29693,7 +29702,7 @@ function empDirSaveAll(d){localStorage.setItem(EMP_DIR_KEY,JSON.stringify(d));}
 function empShowAdd(){document.getElementById('emp-add-form').style.display='block';}
 function empSave(){
   var name=document.getElementById('emp-fullname').value.trim();
-  if(!name){alert('Name required');return;}
+  if(!name){showToast('Name required');return;}
   var rec={id:Date.now(),name:name,role:document.getElementById('emp-role').value,phone:document.getElementById('emp-phone').value,machines:document.getElementById('emp-machines').value,certs:document.getElementById('emp-certs').value,hireDate:document.getElementById('emp-hire-date').value,emergency:document.getElementById('emp-emergency').value,status:document.getElementById('emp-status').value};
   var d=empDirLoad();d.push(rec);empDirSaveAll(d);
   ['emp-fullname','emp-role','emp-phone','emp-machines','emp-certs','emp-hire-date','emp-emergency'].forEach(function(i){document.getElementById(i).value='';});
@@ -29744,7 +29753,7 @@ function sySaveAll(d){localStorage.setItem(SY_KEY,JSON.stringify(d));}
 function syShowAdd(){document.getElementById('sy-add-form').style.display='block';}
 function sySave(){
   var company=document.getElementById('sy-company').value.trim();
-  if(!company){alert('Company name required');return;}
+  if(!company){showToast('Company name required');return;}
   var rec={id:Date.now(),company:company,rep:document.getElementById('sy-rep').value,phone:document.getElementById('sy-phone').value,email:document.getElementById('sy-email').value,materials:document.getElementById('sy-materials').value,lead:parseInt(document.getElementById('sy-lead').value)||0,pricing:document.getElementById('sy-pricing').value,status:document.getElementById('sy-status').value,notes:document.getElementById('sy-notes').value};
   var d=syLoad();d.push(rec);sySaveAll(d);
   ['sy-company','sy-rep','sy-phone','sy-email','sy-materials','sy-lead','sy-pricing','sy-notes'].forEach(function(i){document.getElementById(i).value='';});
@@ -29794,7 +29803,7 @@ function subSaveAll(d){localStorage.setItem(SUB_KEY,JSON.stringify(d));}
 function subShowAdd(){document.getElementById('sub-add-form').style.display='block';}
 function subSave(){
   var name=document.getElementById('sub-name').value.trim();
-  if(!name){alert('Name required');return;}
+  if(!name){showToast('Name required');return;}
   var rec={id:Date.now(),name:name,contact:document.getElementById('sub-contact').value,phone:document.getElementById('sub-phone').value,specialty:document.getElementById('sub-specialty').value,rateType:document.getElementById('sub-rate-type').value,rate:parseFloat(document.getElementById('sub-rate').value)||0,avail:document.getElementById('sub-avail').value,license:document.getElementById('sub-license').value,insExp:document.getElementById('sub-ins-exp').value,notes:document.getElementById('sub-notes').value,activeJobs:0};
   var d=subLoad();d.push(rec);subSaveAll(d);
   ['sub-name','sub-contact','sub-phone','sub-rate','sub-license','sub-ins-exp','sub-notes'].forEach(function(i){document.getElementById(i).value='';});
@@ -29858,7 +29867,7 @@ function bbShowCalendar(){
 
 function bbPostSlot(){
   var date=document.getElementById('bb-date').value;
-  if(!date){alert('Date required');return;}
+  if(!date){showToast('Date required');return;}
   var slot={
     id:'BB'+Date.now(),
     date:date,
@@ -29988,7 +29997,7 @@ function bbCalNext(){if(bbCalMonth===11){bbCalMonth=0;bbCalYear++;}else{bbCalMon
 
 function bbExport(){
   var d=bbLoad().concat(bbClaimedLoad());
-  if(!d.length){alert('No slots to export');return;}
+  if(!d.length){showToast('No slots to export');return;}
   var rows=[['Date','Type','Job Type','Sqft','Rate','Priority','Status','Claimed By','Notes']].concat(d.map(function(s){return[s.date,s.type,s.jobType,s.sqft,s.rate,s.priority,s.status,s.claimedBy||'',s.notes||''];}));
   var csv=rows.map(function(r){return r.map(function(c){return'"'+(c||'')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='bid_board.csv';a.click();
@@ -30431,7 +30440,7 @@ function taxExport(){
     var banner=document.createElement('div');
     banner.id='biz-admin-banner';
     banner.style.cssText='background:#F0FDFA;border:1px solid #5EEAD4;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;';
-    banner.innerHTML='<span style="font-size:20px;">&#129302;</span><div style="flex:1"><div style="font-weight:700;font-size:13px;color:#0F766E;">Powered by SAIRNbiz</div><div style="font-size:12px;color:#64748B;">Employee roster and company profile sync from SAIRNbiz</div></div><button onclick="syncBizProfile()" style="background:#14B8A6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">Sync Profile</button><button onclick="loadBizEmployees(function(e){if(e.length)showToast(e.length+' employees loaded from SAIRNbiz');else showToast('No SAIRNbiz employees found');})" style="background:#fff;color:#14B8A6;border:1px solid #14B8A6;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;">Sync Employees</button>';
+    banner.innerHTML='<span style="font-size:20px;">&#129302;</span><div style="flex:1"><div style="font-weight:700;font-size:13px;color:#0F766E;">Powered by SAIRNbiz</div><div style="font-size:12px;color:#64748B;">Employee roster and company profile sync from SAIRNbiz</div></div><button onclick="syncBizProfile()" style="background:#14B8A6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">Sync Profile</button><button onclick="loadBizEmployees(function(e){if(e.length)showToast(e.length+\' employees loaded from SAIRNbiz\');else showToast(\'No SAIRNbiz employees found\');})" style="background:#fff;color:#14B8A6;border:1px solid #14B8A6;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;">Sync Employees</button>';
     adminPanel.insertBefore(banner,adminPanel.firstChild);
   }
 
@@ -30442,7 +30451,7 @@ function taxExport(){
     var banner=document.createElement('div');
     banner.id='biz-ts-banner';
     banner.style.cssText='background:#F0FDFA;border:1px solid #5EEAD4;border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;';
-    banner.innerHTML='<span style="font-size:16px;">&#129302;</span><span style="font-size:12px;color:#0F766E;font-weight:600;">Employee roster managed by SAIRNbiz</span><button onclick="loadBizEmployees(function(e){if(e.length)showToast(e.length+' employees loaded');else showToast('Sync employees in SAIRNbiz first');})" style="margin-left:auto;background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Sync from SAIRNbiz</button>';
+    banner.innerHTML='<span style="font-size:16px;">&#129302;</span><span style="font-size:12px;color:#0F766E;font-weight:600;">Employee roster managed by SAIRNbiz</span><button onclick="loadBizEmployees(function(e){if(e.length)showToast(e.length+\' employees loaded\');else showToast(\'Sync employees in SAIRNbiz first\');})" style="margin-left:auto;background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Sync from SAIRNbiz</button>';
     var firstChild=tsPanel.querySelector('div');
     if(firstChild)firstChild.insertBefore(banner,firstChild.firstChild);
     else tsPanel.insertBefore(banner,tsPanel.firstChild);
@@ -30455,7 +30464,7 @@ function taxExport(){
     var banner=document.createElement('div');
     banner.id='biz-jc-banner';
     banner.style.cssText='background:#F0FDFA;border:1px solid #5EEAD4;border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;';
-    banner.innerHTML='<span style="font-size:16px;">&#129302;</span><span style="font-size:12px;color:#0F766E;font-weight:600;">Labor rates powered by SAIRNbiz payroll</span><button onclick="loadBizEmployees(function(e){if(e.length){var avg=e.reduce(function(s,x){return s+(parseFloat(x.hourly_rate)||0);},0)/e.length;showToast('Avg labor rate: $'+avg.toFixed(2)+'/hr from SAIRNbiz');}else showToast('Sync employees in SAIRNbiz first');})" style="margin-left:auto;background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Get Rates from SAIRNbiz</button>';
+    banner.innerHTML='<span style="font-size:16px;">&#129302;</span><span style="font-size:12px;color:#0F766E;font-weight:600;">Labor rates powered by SAIRNbiz payroll</span><button onclick="loadBizEmployees(function(e){if(e.length){var avg=e.reduce(function(s,x){return s+(parseFloat(x.hourly_rate)||0);},0)/e.length;showToast(\'Avg labor rate: $\'+avg.toFixed(2)+\'/hr from SAIRNbiz\');}else showToast(\'Sync employees in SAIRNbiz first\');})" style="margin-left:auto;background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Get Rates from SAIRNbiz</button>';
     var firstChild=jcPanel.querySelector('div');
     if(firstChild)firstChild.insertBefore(banner,firstChild.firstChild);
     else jcPanel.insertBefore(banner,jcPanel.firstChild);
