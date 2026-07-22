@@ -7660,6 +7660,15 @@ function showPanel(id) {
   console.log('showPanel called:', id, 'panels:', document.querySelectorAll('.panel').length);
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  // 'dashboard' has no panel-dashboard/page-dashboard element -- the old stub
+  // was intentionally removed (see below) and nothing replaced it. Treat it
+  // as "clear everything back to the base view" instead of falling through
+  // to the panel-id lookup below, which crashed looking up a div that was
+  // never there.
+  if (id === 'dashboard') {
+    if (typeof window.showPage === 'function') window.showPage('__none__');
+    return;
+  }
   // FIX (Playwright/user verification): a separate leftover module (Document
   // Scanner, Check Register, Field Quote, plus a dead unfinished Dashboard
   // stub, now removed) used class="page" and is controlled by a THIRD,
