@@ -24578,6 +24578,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){w.document.write('<tr><td>'+x.cust+'</td><td>'+x.proj+'</td><td>$'+x.val.toLocaleString()+'</td><td>'+x.stage+'</td><td>'+x.close+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
+  window.sdBidRender=render;
   render();
 })();
 </script>
@@ -27752,7 +27753,7 @@ function sbNav(id) {
     if(id==='empdirectory'&&typeof empRender==='function')empRender();
     if(id==='stoneyard'&&typeof window.sdYardRender==='function')window.sdYardRender();
     if(id==='subcontractor'&&typeof window.sdSubRender==='function')window.sdSubRender();
-    if(id==='bidboard'&&typeof bbRender==='function')bbRender();
+    if(id==='bidboard'&&typeof window.sdBidRender==='function')window.sdBidRender();
     if(id==='it'&&typeof itRender==='function')itRender();
     if(id==='damage'&&typeof dmgRender==='function')dmgRender();
     if(id==='training'&&typeof trnRender==='function')trnRender();
