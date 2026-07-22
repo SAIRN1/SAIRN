@@ -35,7 +35,8 @@
     "damage",
     "training",
     "bulletin",
-    "waste"
+    "waste",
+    "nps"
   ],
   "deleted_original_lines": [
     4118,
@@ -127,7 +128,9 @@
     25176,
     25177,
     25303,
-    25304
+    25304,
+    25484,
+    25485
   ],
   "deadcode_done": false
 }
