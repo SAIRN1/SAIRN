@@ -2060,7 +2060,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        message: message,
+                        messages: [{ role: 'user', content: message }],
                         app_id: APP_CONFIG.app_id,
                         is_demo: APP_CONFIG.is_demo
                     })
@@ -2072,7 +2072,7 @@
                     const data = await response.json();
                     const assistantMsg = document.createElement('div');
                     assistantMsg.className = 'chat-message assistant';
-                    assistantMsg.innerHTML = `<div class="chat-bubble">${escHtml(data.response || 'Response received')}</div>`;
+                    assistantMsg.innerHTML = `<div class="chat-bubble">${escHtml(data.content?.[0]?.text || 'Response received')}</div>`;
                     history.appendChild(assistantMsg);
                 } else {
                     const errorMsg = document.createElement('div');
