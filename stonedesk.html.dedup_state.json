@@ -20,7 +20,8 @@
     "jobcost",
     "remnant",
     "po",
-    "receiving"
+    "receiving",
+    "manifest"
   ],
   "deleted_original_lines": [
     4118,
@@ -70,6 +71,8 @@
     22417,
     22537,
     22538,
+    22666,
+    22667,
     23142,
     23143,
     23144,
