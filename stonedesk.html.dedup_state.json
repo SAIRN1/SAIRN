@@ -24,7 +24,8 @@
     "manifest",
     "sms",
     "veinmatch",
-    "seamai"
+    "seamai",
+    "reviews"
   ],
   "deleted_original_lines": [
     4118,
@@ -85,6 +86,8 @@
     23414,
     23530,
     23531,
+    23664,
+    23665,
     23775,
     23776,
     23777,
