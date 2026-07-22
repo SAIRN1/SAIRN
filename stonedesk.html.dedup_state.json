@@ -32,7 +32,8 @@
     "employees",
     "stoneyard",
     "bidboard",
-    "damage"
+    "damage",
+    "training"
   ],
   "deleted_original_lines": [
     4118,
@@ -118,7 +119,9 @@
     24785,
     24786,
     24903,
-    24904
+    24904,
+    25041,
+    25042
   ],
   "deadcode_done": false
 }
