@@ -14,7 +14,8 @@
     "subcontractor",
     "warranty",
     "schedule",
-    "slabs"
+    "slabs",
+    "comms"
   ],
   "deleted_original_lines": [
     4118,
@@ -44,6 +45,8 @@
     5587,
     5588,
     5589,
+    5756,
+    5757,
     5899,
     5900,
     5902,
