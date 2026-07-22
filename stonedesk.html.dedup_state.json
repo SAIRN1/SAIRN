@@ -30,7 +30,8 @@
     "priceintel",
     "equipment",
     "employees",
-    "stoneyard"
+    "stoneyard",
+    "bidboard"
   ],
   "deleted_original_lines": [
     4118,
@@ -109,6 +110,8 @@
     24522,
     24523,
     24524,
+    24650,
+    24651,
     24783,
     24784,
     24785,
