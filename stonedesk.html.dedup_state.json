@@ -17,7 +17,8 @@
     "slabs",
     "comms",
     "crm",
-    "jobcost"
+    "jobcost",
+    "remnant"
   ],
   "deleted_original_lines": [
     4118,
@@ -61,6 +62,8 @@
     21770,
     21925,
     21926,
+    22285,
+    22286,
     23142,
     23143,
     23144,
