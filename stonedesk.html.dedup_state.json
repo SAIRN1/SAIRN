@@ -5,9 +5,13 @@
     "executive",
     "invoices",
     "safety",
-    "itadmin"
+    "itadmin",
+    "customers"
   ],
   "deleted_original_lines": [
+    4118,
+    4119,
+    4120,
     4253,
     4254,
     4255,
