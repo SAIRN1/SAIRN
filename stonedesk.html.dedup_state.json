@@ -2,7 +2,8 @@
   "applied_panels": [
     "photos",
     "remakes",
-    "executive"
+    "executive",
+    "invoices"
   ],
   "deleted_original_lines": [
     4253,
@@ -16,7 +17,11 @@
     5586,
     5587,
     5588,
-    5589
+    5589,
+    5899,
+    5900,
+    5902,
+    5903
   ],
   "deadcode_done": false
 }
