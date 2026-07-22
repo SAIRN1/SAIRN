@@ -1,7 +1,8 @@
 {
   "applied_panels": [
     "photos",
-    "remakes"
+    "remakes",
+    "executive"
   ],
   "deleted_original_lines": [
     4253,
@@ -11,7 +12,11 @@
     5403,
     5404,
     5405,
-    5406
+    5406,
+    5586,
+    5587,
+    5588,
+    5589
   ],
   "deadcode_done": false
 }
