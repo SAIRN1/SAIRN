@@ -7672,7 +7672,7 @@ function showPanel(id) {
   // with a non-matching id when switching to a real panel, so any
   // currently-visible .page div gets re-locked to display:none!important
   // instead of staying stuck open underneath the panel we're switching to.
-  const pageIds = { 'doc-scan':'doc-scan', 'check-register':'check-register' };
+  const pageIds = { 'doc-scan':'doc-scan', 'check-register':'check-register', 'field-quote':'field-quote' };
   if (typeof window.showPage === 'function') {
     window.showPage(pageIds[id] || '__none__');
     if (pageIds[id]) return;
