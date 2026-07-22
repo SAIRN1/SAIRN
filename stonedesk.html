@@ -24089,6 +24089,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='equipment-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   };
+  window.sdEqRender=render;
   render();
 })();
 </script>
@@ -27745,7 +27746,7 @@ function sbNav(id) {
     if(id==='contractor'&&typeof cpRender==='function')cpRender();
     if(id==='referral'&&typeof rfRender==='function')rfRender();
     if(id==='priceintel'&&typeof piInit==='function')piInit();
-    if(id==='equipment'&&typeof eqRender==='function')eqRender();
+    if(id==='equipment'&&typeof window.sdEqRender==='function')window.sdEqRender();
     if(id==='empdirectory'&&typeof empRender==='function')empRender();
     if(id==='stoneyard'&&typeof window.sdYardRender==='function')window.sdYardRender();
     if(id==='subcontractor'&&typeof subRender==='function')subRender();
