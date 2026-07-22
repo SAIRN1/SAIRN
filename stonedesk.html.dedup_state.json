@@ -6,7 +6,8 @@
     "invoices",
     "safety",
     "itadmin",
-    "customers"
+    "customers",
+    "fieldmap"
   ],
   "deleted_original_lines": [
     4118,
@@ -16,6 +17,9 @@
     4254,
     4255,
     4256,
+    4840,
+    4841,
+    4842,
     5403,
     5404,
     5405,
