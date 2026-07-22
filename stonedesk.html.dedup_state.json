@@ -27,7 +27,8 @@
     "seamai",
     "reviews",
     "referral",
-    "priceintel"
+    "priceintel",
+    "equipment"
   ],
   "deleted_original_lines": [
     4118,
@@ -97,6 +98,8 @@
     23914,
     24036,
     24037,
+    24155,
+    24156,
     24522,
     24523,
     24524,
