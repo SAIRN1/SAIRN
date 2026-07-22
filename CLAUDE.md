@@ -24,5 +24,10 @@ Always:
 - Backend: SAIRN API Proxy (Claude integration)
 - Deployment: Vercel
 
+## Response Style
+- No narration before or after actions — act, then report only the result
+- No "let me check / good news / confirmed" commentary
+- On error: state what failed and what's needed, nothing more
+
 ---
-*Last Updated: 2026-06-22*
+*Last Updated: 2026-07-22*
