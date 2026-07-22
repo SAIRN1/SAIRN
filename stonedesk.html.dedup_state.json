@@ -21,7 +21,8 @@
     "remnant",
     "po",
     "receiving",
-    "manifest"
+    "manifest",
+    "sms"
   ],
   "deleted_original_lines": [
     4118,
@@ -73,6 +74,8 @@
     22538,
     22666,
     22667,
+    22841,
+    22842,
     23142,
     23143,
     23144,
