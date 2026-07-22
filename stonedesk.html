@@ -24451,8 +24451,10 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.trade+'</td><td>'+x.phone+'</td><td>$'+x.rate+'/day</td><td>$'+(x.ytd||0)+'</td><td>'+x.ins_exp+'</td><td>'+x.status+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
+  window.sdSubRender=render;
   render();
 })();
+
 </script>
 </div><div style="display:flex;flex-direction:column;gap:10px"></div>
 
@@ -27749,7 +27751,7 @@ function sbNav(id) {
     if(id==='equipment'&&typeof window.sdEqRender==='function')window.sdEqRender();
     if(id==='empdirectory'&&typeof empRender==='function')empRender();
     if(id==='stoneyard'&&typeof window.sdYardRender==='function')window.sdYardRender();
-    if(id==='subcontractor'&&typeof subRender==='function')subRender();
+    if(id==='subcontractor'&&typeof window.sdSubRender==='function')window.sdSubRender();
     if(id==='bidboard'&&typeof bbRender==='function')bbRender();
     if(id==='it'&&typeof itRender==='function')itRender();
     if(id==='damage'&&typeof dmgRender==='function')dmgRender();
