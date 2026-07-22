@@ -8,7 +8,8 @@
     "itadmin",
     "customers",
     "fieldmap",
-    "inventory"
+    "inventory",
+    "sintered"
   ],
   "deleted_original_lines": [
     4118,
@@ -40,6 +41,9 @@
     6045,
     6046,
     6047,
+    23142,
+    23143,
+    23144,
     24783,
     24784,
     24785,
