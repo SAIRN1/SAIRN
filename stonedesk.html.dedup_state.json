@@ -29,7 +29,8 @@
     "referral",
     "priceintel",
     "equipment",
-    "employees"
+    "employees",
+    "stoneyard"
   ],
   "deleted_original_lines": [
     4118,
@@ -103,6 +104,8 @@
     24156,
     24284,
     24285,
+    24411,
+    24412,
     24522,
     24523,
     24524,
