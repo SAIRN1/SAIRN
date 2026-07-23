@@ -23588,8 +23588,39 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 })();
 </script>
+<div style="margin-top:18px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
+  <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">📨 Review Request Automation</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+    <div class="kpi"><div class="kpi-val" id="rev-kpi-sent">0</div><div class="kpi-label">Sent</div></div>
+    <div class="kpi"><div class="kpi-val" id="rev-kpi-responded">0</div><div class="kpi-label">Responded</div></div>
+    <div class="kpi"><div class="kpi-val" id="rev-kpi-pending">0</div><div class="kpi-label">Pending (7d)</div></div>
+    <div class="kpi"><div class="kpi-val" id="rev-kpi-rate">—</div><div class="kpi-label">Response Rate</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <input id="rev-google-link" placeholder="Google review link" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="revSaveConfig()">
+    <input id="rev-shop-name" placeholder="Shop name for message" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="revSaveConfig()">
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+    <input id="rev-cust" placeholder="Customer name*" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+    <input id="rev-mat" placeholder="Material (optional)" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+    <select id="rev-channel" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+      <option value="sms">SMS</option><option value="email">Email</option><option value="both">Both</option>
+    </select>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <input id="rev-phone" placeholder="Phone (for SMS)" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+    <input id="rev-email" placeholder="Email (for email)" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+  </div>
+  <button class="q-btn primary" onclick="revGenerate()">✨ Generate Message</button>
+  <div id="rev-preview" style="display:none;margin-top:12px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px">
+    <div id="rev-message-text" style="font-size:13px;color:var(--text);margin-bottom:10px;white-space:pre-wrap"></div>
+    <button class="q-btn" onclick="revRegenerateMessage()">🔄 Regenerate</button>
+    <button class="q-btn" onclick="revCopyMessage()">📋 Copy</button>
+    <button class="q-btn primary" onclick="revSend()">📤 Send</button>
+  </div>
+  <div id="rev-log" style="margin-top:14px"></div>
 </div>
-<div id="rev-log"></div>
+</div>
 
 <!-- PANEL: CONTRACTOR PORTAL -->
 <div class="panel" id="panel-contractor">
