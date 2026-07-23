@@ -111,14 +111,17 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // ── ◆ PATTERN 13 ENTITLEMENT HOOK ◆ ─────────────────────────────────────
-  // Same validated result (lic.plan_tier / lic.customer_email) that Pattern 13's
-  // gate consumes. v1 is intentionally a pass-through: any ACTIVE license may
-  // read/write its OWN data. Pattern 13 fills in tier/feature policy right here
-  // and returns 402 with { code: 'PLAN_REQUIRED' | 'TRIAL_EXPIRED' } when a
-  // resource isn't entitled — mirroring api/agent/poll.js's plan gate. Keep this
-  // the ONLY place that policy lives so the endpoint and the gate never diverge.
-  // (no-op for now)
+  // ── ◆ PATTERN 13 ENTITLEMENT GATE ◆ ─────────────────────────────────────
+  // A paid license (has a Stripe subscription) bypasses the trial entirely.
+  // Otherwise, once the trial window has passed, refuse with 402 TRIAL_EXPIRED.
+  // A null/absent trial_ends_at (e.g. before the migration, or intentionally
+  // unset) is treated as "not expired" and allowed through. Stripe wiring that
+  // sets stripe_subscription_id is a separate task; this is enforcement only.
+  const isPaid = !!lic.stripe_subscription_id;
+  if (!isPaid && lic.trial_ends_at && new Date(lic.trial_ends_at).getTime() < Date.now()) {
+    res.status(402).json({ error: { code: 'TRIAL_EXPIRED', message: 'Your trial has ended. Please subscribe to continue.' } });
+    return;
+  }
 
   // license_hash is what the StoneDesk-owned tables are keyed by (never the raw key).
   const licHash = lic.license_hash;

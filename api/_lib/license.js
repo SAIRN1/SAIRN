@@ -46,6 +46,8 @@ async function validateLicenseKey(key) {
     customer_email: null,
     plan_tier: null,
     app_id: null,
+    trial_ends_at: null,
+    stripe_subscription_id: null,
     license_hash: null,
     key: (typeof key === 'string' ? key : null)
   };
@@ -63,9 +65,11 @@ async function validateLicenseKey(key) {
   }
 
   const headers = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY };
+  // select=* so newly-added columns (e.g. trial_ends_at) are read if present
+  // and simply absent (not a 400) before their migration is applied.
   const url = SUPABASE_URL +
     '/rest/v1/license_keys?key=eq.' + encodeURIComponent(key) +
-    '&select=key,app_id,status,plan,customer_email&limit=1';
+    '&select=*&limit=1';
 
   let res;
   try {
@@ -93,6 +97,8 @@ async function validateLicenseKey(key) {
   out.customer_email = row.customer_email || null;
   out.plan_tier = row.plan || null;
   out.app_id = row.app_id || null;
+  out.trial_ends_at = row.trial_ends_at || null;
+  out.stripe_subscription_id = row.stripe_subscription_id || null;
   return out;
 }
 
