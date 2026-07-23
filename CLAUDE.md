@@ -29,5 +29,12 @@ Always:
 - No "let me check / good news / confirmed" commentary
 - On error: state what failed and what's needed, nothing more
 
+## Model Selection
+- Default: Sonnet 5 High for all routine work (implementation, debugging, most fixes)
+- Proactively recommend switching to Opus 4.8 for: hard debugging with an unclear root cause, or security-critical code
+- Proactively recommend opusplan mode for: architecture/design decisions (new systems, schema design, anything with real tradeoffs to weigh)
+- Once the Opus/opusplan-level work is done, proactively recommend switching back to Sonnet 5 High for the routine implementation that follows — don't stay on Opus by default
+- State the recommendation clearly rather than silently staying on whatever model is currently active
+
 ---
-*Last Updated: 2026-07-22*
+*Last Updated: 2026-07-23*
