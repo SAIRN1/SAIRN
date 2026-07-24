@@ -4629,7 +4629,26 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="kpi"><div class="kpi-val" id="sched-kpi4">0</div><div class="kpi-label">Delayed</div></div>
 </div>
 <div id="sched-week"></div>
-<div style="margin-top:16px" id="sched-list"></div>
+<div style="display:flex;gap:10px;margin-top:16px;margin-bottom:10px;flex-wrap:wrap">
+  <input id="sched-search" placeholder="Search customer, job #, material..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="renderSchedule()">
+  <select id="sched-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="renderSchedule()">
+    <option value="">All Stages</option>
+    <option value="templated">Templated</option>
+    <option value="cutting">CNC Cutting</option>
+    <option value="polishing">Polishing</option>
+    <option value="qa">QA</option>
+    <option value="ready">Ready</option>
+    <option value="installed">Installed</option>
+  </select>
+  <select id="sched-urgency" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="renderSchedule()">
+    <option value="">All Urgency</option>
+    <option value="red">Overdue</option>
+    <option value="yellow">Approaching Deadline</option>
+    <option value="green">On Track</option>
+    <option value="done">Done</option>
+  </select>
+</div>
+<div id="sched-list"></div>
 <div id="sched-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
 <script>
