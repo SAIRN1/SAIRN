@@ -22279,6 +22279,20 @@ document.addEventListener('DOMContentLoaded', function() {
   sdRemnantRender();
 })();
 </script>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
+  <div class="kpi"><div class="kpi-val" id="rem-kpi-count">0</div><div class="kpi-label">Pieces</div></div>
+  <div class="kpi"><div class="kpi-val" id="rem-kpi-value">$0</div><div class="kpi-label">Resale Value</div></div>
+  <div class="kpi"><div class="kpi-val" id="rem-kpi-sqft">0.0</div><div class="kpi-label">Total Sqft</div></div>
+  <div class="kpi"><div class="kpi-val" id="rem-kpi-aging">0</div><div class="kpi-label">Aging 90+ Days</div></div>
+</div>
+<div style="margin-bottom:10px">
+  <select id="rem-filter-thick" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="remRender()">
+    <option value="">All Thicknesses</option>
+    <option value="2CM">2CM</option>
+    <option value="3CM">3CM</option>
+    <option value="4CM">4CM</option>
+  </select>
+</div>
 <div id="rem-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
 </div>
 
