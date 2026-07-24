@@ -2518,8 +2518,9 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   }
   window.sdQuotePrintPDF=function(){
     var name=(document.getElementById('client-name')||{value:'Customer'}).value||'Customer';
-    var stone=(document.getElementById('stone-select')||{value:'Stone'}).value||'Stone';
-    var total=(document.getElementById('quote-total')||{textContent:'$0'}).textContent||'$0';
+    var matEl=document.getElementById('material');
+    var stone=(matEl&&matEl.selectedOptions&&matEl.selectedOptions[0]?matEl.selectedOptions[0].textContent:'')||'Stone';
+    var total=(document.getElementById('total-price')||{textContent:'$0'}).textContent||'$0';
     var w=window.open('','_blank');
     w.document.write('<html><head><title>Quote - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h2{color:#16c762}.total{font-size:24px;font-weight:800;color:#16c762;margin-top:20px}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h2>Pinnacle Stone & Design</h2><p>Quote Estimate — '+new Date().toLocaleDateString()+'</p>');
@@ -2532,8 +2533,9 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   };
   window.sdQuoteSaveHistory=function(){
     var name=(document.getElementById('client-name')||{value:''}).value||'Unknown';
-    var stone=(document.getElementById('stone-select')||{value:''}).value||'';
-    var totalEl=document.getElementById('quote-total');
+    var matEl=document.getElementById('material');
+    var stone=(matEl&&matEl.selectedOptions&&matEl.selectedOptions[0]?matEl.selectedOptions[0].textContent:'')||'';
+    var totalEl=document.getElementById('total-price');
     var totalStr=totalEl?totalEl.textContent.replace(/[^0-9.]/g,''):'0';
     var total=parseFloat(totalStr)||0;
     var h=loadQH();
