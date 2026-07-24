@@ -2875,10 +2875,10 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 <script>
 (function(){
   window.sdDrawPrint=function(){
-    var canvas=document.getElementById('draw-canvas')||document.querySelector('canvas');
+    var canvas=document.getElementById('ct-canvas');
     if(!canvas){showToast('No drawing canvas found.');return;}
     var w=window.open('','_blank');
-    var jobName=(document.getElementById('draw-job-name')||document.getElementById('draw-job-n')||{value:'Drawing'}).value||'Drawing';
+    var jobName=(document.getElementById('draw-job-name')||{value:'Drawing'}).value||'Drawing';
     w.document.write('<html><head><title>Drawing - Pinnacle Stone</title><style>body{margin:20px;font-family:Arial,sans-serif;color:#1e293b}img{max-width:100%;border:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h2 style="color:#16c762">Pinnacle Stone & Design — '+jobName+'</h2>');
     w.document.write('<p style="color:#64748b">'+new Date().toLocaleDateString()+'</p>');
@@ -2887,8 +2887,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     w.document.close();w.print();
   };
   window.sdDrawSave=function(){
-    var canvas=document.getElementById('draw-canvas')||document.querySelector('canvas');
-    var jobName=(document.getElementById('draw-job-name')||document.getElementById('draw-job-n')||{value:'Drawing'}).value||'Drawing';
+    var canvas=document.getElementById('ct-canvas');
+    var jobName=(document.getElementById('draw-job-name')||{value:'Drawing'}).value||'Drawing';
     var drawings=[];
     try{drawings=JSON.parse(localStorage.getItem('sd_drawings')||'[]');}catch(e){}
     var entry={id:'DRW-'+Date.now(),date:new Date().toISOString().slice(0,10),name:jobName};
