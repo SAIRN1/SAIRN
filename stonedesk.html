@@ -8064,7 +8064,7 @@ function qbImportFromDraw() {
 
   // Pull sink from Draw panel's sink selector
   var drawSink = (document.getElementById('draw-sink') || {}).value || 'None';
-  var sinkEl   = document.getElementById('sink');
+  var sinkEl   = document.getElementById('sink-type');
   if (sinkEl && drawSink && drawSink !== 'None') {
     // Map draw panel sink values to quote builder sink options where possible
     var sinkOpts = Array.from(sinkEl.options).map(function(o){return o.value;});
