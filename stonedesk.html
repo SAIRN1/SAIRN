@@ -4020,6 +4020,24 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     <option value="Builder">Builder</option>
   </select>
 </div>
+<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+  <select id="cust-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="renderCustomers()">
+    <option value="">All Stages</option>
+    <option value="quoted">Quoted</option>
+    <option value="approved">Approved</option>
+    <option value="templated">Templated</option>
+    <option value="fabricating">Fabricating</option>
+    <option value="scheduled">Scheduled</option>
+    <option value="complete">Complete</option>
+  </select>
+  <select id="cust-sort" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="renderCustomers()">
+    <option value="newest">Newest First</option>
+    <option value="oldest">Oldest First</option>
+    <option value="value">Highest Value</option>
+    <option value="name">Name A-Z</option>
+  </select>
+  <span style="font-size:12px;color:var(--muted);margin-left:auto">Lifetime Value: <strong id="cust-ltv" style="color:var(--text)">$0</strong></span>
+</div>
 <div id="cust-list"></div>
 <div id="cust-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
