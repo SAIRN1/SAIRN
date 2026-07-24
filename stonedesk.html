@@ -21763,7 +21763,7 @@ document.addEventListener('DOMContentLoaded', function() {
   render();
 })();
 </script>
-</div><div style="display:flex;gap:10px;margin-top:8px">
+</div><div id="crm-form" style="display:flex;gap:10px;margin-top:8px">
       <button class="q-btn primary" onclick="crmSaveLead()">Save Lead</button>
       <button class="q-btn" onclick="document.getElementById('crm-form').style.display='none'">Cancel</button>
     </div>
@@ -28959,7 +28959,7 @@ function crmAddLead(){document.getElementById('crm-form').style.display='block';
 function crmSetView(v,btn){crmView=v;document.querySelectorAll('#panel-crm .vendor-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.getElementById('crm-pipeline-board').style.display=v==='pipeline'?'flex':'none';document.getElementById('crm-list-view').style.display=v==='list'?'block':'none';crmRender();}
 function crmSaveLead(){
   var name=(document.getElementById('crm-name')||{}).value||'';name=name.trim();if(!name){showToast('Name required');return;}
-  var lead={id:'CRM'+Date.now(),name:name,phone:(document.getElementById('crm-phone')||{}).value||'',email:(document.getElementById('crm-email')||{}).value||'',project:(document.getElementById('crm-project')||{}).value||'',value:parseFloat((document.getElementById('crm-value')||{}).value)||0,source:(document.getElementById('crm-source')||{}).value||'',referrer:(document.getElementById('crm-referrer')||{}).value||'',followup:(document.getElementById('crm-followup')||{}).value||'',stage:(document.getElementById('crm-stage')||{}).value||'new',notes:(document.getElementById('crm-notes')||{}).value||'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  var lead={id:'CRM'+Date.now(),name:name,phone:(document.getElementById('crm-phone')||{}).value||'',email:(document.getElementById('crm-email')||{}).value||'',project:(document.getElementById('crm-proj')||{}).value||'',value:parseFloat((document.getElementById('crm-val')||{}).value)||0,source:(document.getElementById('crm-source')||{}).value||'',referrer:(document.getElementById('crm-referrer')||{}).value||'',followup:(document.getElementById('crm-followup')||{}).value||'',stage:(document.getElementById('crm-stage')||{}).value||'new',notes:(document.getElementById('crm-notes')||{}).value||'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   crmLeads.unshift(lead);sdStore('sd_crm_leads',crmLeads);document.getElementById('crm-form').style.display='none';crmRender();showToast('Lead saved');
 }
 function crmAdvance(id,stage){var l=crmLeads.find(function(x){return x.id===id;});if(!l)return;l.stage=stage;l.updatedAt=new Date().toISOString();sdStore('sd_crm_leads',crmLeads);crmRender();showToast(l.name+' moved to '+stage);}
