@@ -4011,8 +4011,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="kpi"><div class="kpi-val" id="cust-kpi4">0</div><div class="kpi-label">Repeat Customers</div></div>
 </div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-  <input id="cust-search" placeholder="Search name, phone, email..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="sdCustRender()">
-  <select id="cust-type-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="sdCustRender()">
+  <input id="cust-search" placeholder="Search name, phone, email..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="renderCustomers()">
+  <select id="cust-type-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="renderCustomers()">
     <option value="">All Types</option>
     <option value="Residential">Residential</option>
     <option value="Commercial">Commercial</option>
@@ -4102,7 +4102,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var id='C-'+String(data.length+1).padStart(3,'0');
     data.push({id:id,name:name,type:type||'Residential',phone:phone||'',email:email||'',address:address||'',jobs:0,ltv:0,lastJob:'',rating:5,notes:''});
     save(data);
-    sdCustRender();
+    renderCustomers();
   };
   window.sdCustAI=function(){
     var out=document.getElementById('cust-ai-out');
@@ -4134,7 +4134,6 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='customers-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   };
-  sdCustRender();
 })();
 </script>
 </div>
@@ -5662,8 +5661,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="font-weight:700;font-size:13px;color:var(--text)">Communication Log</div>
       <div style="display:flex;gap:8px">
-        <input id="comms-search" placeholder="Search..." style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;width:160px" oninput="sdCommsRender()">
-        <select id="comms-type-filter" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px" onchange="sdCommsRender()">
+        <input id="comms-search" placeholder="Search..." style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;width:160px" oninput="renderComms()">
+        <select id="comms-type-filter" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px" onchange="renderComms()">
           <option value="">All Types</option>
           <option>Email to Customer</option><option>Internal Note</option><option>Vendor Email</option><option>Follow-Up</option>
         </select>
@@ -5799,7 +5798,6 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='comms-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   };
-  sdCommsRender();
 })();
 </script>
 </div>
@@ -22166,8 +22164,8 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="kpi"><div class="kpi-val" id="rem-kpi4">$0</div><div class="kpi-label">Resale Value</div></div>
 </div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-  <input id="rem-search" placeholder="Search stone, location..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="sdRemnantRender()">
-  <select id="rem-status-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="sdRemnantRender()">
+  <input id="rem-search" placeholder="Search stone, location..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="remRender()">
+  <select id="rem-status-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="remRender()">
     <option value="">All Status</option>
     <option value="Available">Available</option>
     <option value="Reserved">Reserved</option>
@@ -22246,7 +22244,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var id='R-'+String(data.length+1).padStart(3,'0');
     data.push({id:id,stone:stone,size:size||'',sqft:sqft,status:'Available',location:location||'',price:price,age:0,origin:'',notes:notes||''});
     save(data);
-    sdRemnantRender();
+    remRender();
   };
   window.sdRemnantAI=function(){
     var out=document.getElementById('rem-ai-out');
@@ -22277,7 +22275,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='remnant-yard-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   };
-  sdRemnantRender();
 })();
 </script>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
