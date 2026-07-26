@@ -5831,7 +5831,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🧾 Invoices & A/R</h2>
   <div style="font-size:13px;color:var(--muted);margin-top:2px">Customer invoices, payment tracking, aging report</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="q-btn primary" onclick="sdInvoicesAdd()">+ Create Invoice</button>
+    <button class="q-btn primary" onclick="invCreateNew()">+ Create Invoice</button>
+    <button class="q-btn" onclick="invFromQuote()">📋 From Last Quote</button>
     <button class="q-btn" onclick="sdInvoicesAI()">🤖 AI Collections</button>
     <button class="q-btn" onclick="sdInvoicesPrint()">🖨️ Print</button>
   </div>
@@ -5842,15 +5843,47 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="kpi"><div class="kpi-val" id="inv2-kpi3">0</div><div class="kpi-label">Open Invoices</div></div>
   <div class="kpi"><div class="kpi-val" id="inv2-kpi4">$0</div><div class="kpi-label">Collected MTD</div></div>
 </div>
+<div id="inv2-form" style="display:none;background:var(--card);border:1.5px solid var(--a);border-radius:12px;padding:16px;margin-bottom:16px">
+  <div style="font-size:14px;font-weight:700;margin-bottom:12px">New Invoice</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+    <div class="fg"><label>Invoice #</label><input id="inv2-num" placeholder="INV-..."></div>
+    <div class="fg"><label>Customer *</label><input id="inv2-cust" placeholder="Customer name"></div>
+    <div class="fg"><label>Description</label><input id="inv2-desc" placeholder="Job / description"></div>
+    <div class="fg"><label>Amount ($) *</label><input id="inv2-amount" type="number" step="0.01" placeholder="0.00" oninput="invCalcBalance()"></div>
+    <div class="fg"><label>Deposit / Paid ($)</label><input id="inv2-deposit" type="number" step="0.01" placeholder="0.00" oninput="invCalcBalance()"></div>
+    <div class="fg"><label>Balance ($)</label><input id="inv2-balance" placeholder="0.00" readonly></div>
+    <div class="fg"><label>Invoice Date</label><input id="inv2-date" type="date"></div>
+    <div class="fg"><label>Due Date</label><input id="inv2-due" type="date"></div>
+    <div class="fg"><label>Payment Method</label>
+      <select id="inv2-method" onchange="invToggleCheckFields()">
+        <option value="">-- Select --</option>
+        <option>Cash</option><option>Card</option><option>Check</option><option>ACH / Wire</option><option>Other</option>
+      </select>
+    </div>
+  </div>
+  <div id="inv2-check-fields" style="display:none;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+      <div class="fg"><label>Check #</label><input id="inv2-check-num" placeholder="Check number"></div>
+      <div class="fg"><label>Bank Name</label><input id="inv2-bank-name" placeholder="Bank name"></div>
+      <div class="fg"><label>Routing #</label><input id="inv2-routing" placeholder="Routing number"></div>
+      <div class="fg"><label>Account #</label><input id="inv2-account" placeholder="Account number"></div>
+    </div>
+  </div>
+  <div class="fg" style="margin-bottom:12px"><label>Notes</label><textarea id="inv2-notes" rows="2" style="width:100%"></textarea></div>
+  <div style="display:flex;gap:8px">
+    <button class="q-btn primary" onclick="invSave()">Save Invoice</button>
+    <button class="q-btn" onclick="invSaveAndPrint()">Save &amp; Print</button>
+    <button class="q-btn" onclick="document.getElementById('inv2-form').style.display='none'">Cancel</button>
+  </div>
+</div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-  <input id="inv2-search" placeholder="Search customer, invoice #..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="sdInvoicesRender()">
-  <select id="inv2-status-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="sdInvoicesRender()">
-    <option value="">All Status</option>
-    <option value="Draft">Draft</option>
-    <option value="Sent">Sent</option>
+  <input id="inv2-search" placeholder="Search customer, invoice #..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="invRender()">
+  <select id="inv2-status-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="invSetFilter(this.value)">
+    <option value="all">All Status</option>
+    <option value="Unpaid">Unpaid</option>
+    <option value="Partial">Partial</option>
     <option value="Paid">Paid</option>
     <option value="Overdue">Overdue</option>
-    <option value="Partial">Partial</option>
   </select>
 </div>
 <div id="inv2-list"></div>
@@ -5858,114 +5891,50 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 </div>
 <script>
 (function(){
-  var SEED=[
-    {id:'INV-2024-089',job:'J-2024-089',customer:'Jim Hartwell',amount:8400,paid:0,date:'2024-06-18',due:'2024-07-03',status:'Sent',terms:'Net 15',description:'Calacatta Gold kitchen countertops — full install'},
-    {id:'INV-2024-091',job:'J-2024-091',customer:'Carla Reyes',amount:11200,paid:5600,date:'2024-06-20',due:'2024-07-05',status:'Partial',terms:'50% deposit/balance on install',description:'Statuario Extra master bath — book-matched'},
-    {id:'INV-2024-083',job:'J-2024-083',customer:'Tom Brennan',amount:6200,paid:6200,date:'2024-06-03',due:'2024-06-18',status:'Paid',terms:'Net 15',description:'Dekton Sirius outdoor kitchen'},
-    {id:'INV-2024-079',job:'J-2024-079',customer:'Nina Patel',amount:4800,paid:4800,date:'2024-05-15',due:'2024-05-30',status:'Paid',terms:'Due on install',description:'Taj Mahal leathered vanity'},
-    {id:'INV-2024-071',job:'J-2024-071',customer:'City Cafe',amount:14200,paid:0,date:'2024-04-10',due:'2024-05-10',status:'Overdue',terms:'Net 30',description:'Commercial granite package — restaurant'},
-    {id:'INV-2024-085',job:'J-2024-085',customer:'Stone Barn LLC',amount:9800,paid:4900,date:'2024-05-28',due:'2024-06-27',status:'Partial',terms:'50% deposit',description:'Black Galaxy commercial install'},
-    {id:'INV-2024-087',job:'J-2024-087',customer:'Sandra Kim',amount:1800,paid:1800,date:'2024-06-15',due:'2024-06-30',status:'Paid',terms:'Due on install',description:'Laundry quartz top'}
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_invoices')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_invoices',JSON.stringify(d));}catch(e){}}
-  var data=load();
-  var STATUS_COLOR={Draft:'#94a3b8',Sent:'#6366f1',Paid:'#16c762',Overdue:'#ef4444',Partial:'#f59e0b'};
-  function daysOverdue(due){return Math.floor((new Date()-new Date(due))/(1000*60*60*24));}
-  window.sdInvoicesRender=function(){
-    var q=(document.getElementById('inv2-search')||{value:''}).value.toLowerCase();
-    var sf=(document.getElementById('inv2-status-filter')||{value:''}).value;
-    var rows=data.filter(function(i){
-      var match=(i.id+i.customer+i.job).toLowerCase().includes(q);
-      var st=!sf||i.status===sf;
-      return match&&st;
-    });
-    var open=data.filter(function(i){return i.status!=='Paid'&&i.status!=='Draft';});
-    var outstanding=open.reduce(function(a,i){return a+(i.amount-i.paid);},0);
-    var overdue=data.filter(function(i){return i.status==='Overdue';}).reduce(function(a,i){return a+(i.amount-i.paid);},0);
-    var collectedMTD=data.filter(function(i){return i.status==='Paid';}).reduce(function(a,i){return a+i.paid;},0);
-    document.getElementById('inv2-kpi1').textContent='$'+outstanding.toLocaleString();
-    document.getElementById('inv2-kpi2').textContent='$'+overdue.toLocaleString();
-    document.getElementById('inv2-kpi3').textContent=open.length;
-    document.getElementById('inv2-kpi4').textContent='$'+collectedMTD.toLocaleString();
-    var html='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc">'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Invoice</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Customer</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Description</th>'
-      +'<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Amount</th>'
-      +'<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Paid</th>'
-      +'<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Balance</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Due</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Status</th>'
-      +'</tr></thead><tbody>';
-    rows.forEach(function(i,idx){
-      var bg=idx%2===0?'#fff':'#f8fafc';
-      var bal=i.amount-i.paid;
-      var sc=STATUS_COLOR[i.status]||'#6b7280';
-      var dueLabel=i.due;
-      if(i.status==='Overdue'){var od=daysOverdue(i.due);dueLabel='<span style="color:#ef4444;font-weight:700">'+od+'d overdue</span>';}
-      html+='<tr style="background:'+bg+'">'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--a)">'+i.id+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+i.customer+'<div style="font-size:11px;color:var(--muted)">'+i.job+'</div></td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)">'+i.description+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:600">$'+i.amount.toLocaleString()+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;color:#16c762">$'+i.paid.toLocaleString()+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:'+(bal>0?'#ef4444':'var(--text)')+'">$'+bal.toLocaleString()+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px">'+dueLabel+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+sc+'20;color:'+sc+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+i.status+'</span></td>'
-        +'</tr>';
-    });
-    html+='</tbody></table>';
-    document.getElementById('inv2-list').innerHTML=html;
-  };
-  window.sdInvoicesAdd=function(){
-    var customer=prompt('Customer name:');
-    if(!customer)return;
-    var job=prompt('Job number:','J-2024-099');
-    var amount=parseFloat(prompt('Invoice amount ($):','5000')||'5000');
-    var desc=prompt('Description:','Stone installation');
-    var terms=prompt('Terms:','Net 15');
-    var id='INV-'+new Date().getFullYear()+'-'+String(data.length+1).padStart(3,'0');
-    var date=new Date().toISOString().slice(0,10);
-    var daysNet=parseInt(terms.replace('Net ',''))||15;
-    var due=new Date(Date.now()+daysNet*24*3600*1000).toISOString().slice(0,10);
-    data.push({id:id,job:job||'',customer:customer,amount:amount,paid:0,date:date,due:due,status:'Draft',terms:terms||'Net 15',description:desc||''});
-    save(data);
-    sdInvoicesRender();
-  };
+  // Schema A (the old sdInvoicesRender/sdInvoicesAdd system + its 7-invoice
+  // fake seed) removed 2026-07-26 -- consolidated onto the real, more
+  // deeply-integrated system (invRender/invUpdateKPIs/invCreateNew/invSave,
+  // global sd_invoices), the same schema panel-executive's A/R calc and
+  // histMakeInvoice()/the customer-detail "create invoice" quick action
+  // already depend on. See SAIRN-SESSION65-HANDOFF.md for the two-schema
+  // finding this resolves.
   window.sdInvoicesAI=function(){
     var out=document.getElementById('inv2-ai-out');
     out.style.display='block';out.textContent='Analyzing A/R...';
-    var overdue=data.filter(function(i){return i.status==='Overdue';});
+    var overdue=sd_invoices.filter(function(i){return i.status!=='Paid'&&i.due&&i.due<new Date().toISOString().slice(0,10);});
+    var outstanding=sd_invoices.filter(function(i){return i.status!=='Paid';}).reduce(function(a,i){return a+(i.balance||0);},0);
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are an A/R collections advisor for Pinnacle Stone & Design. Invoice data: total outstanding $'+data.filter(function(i){return i.status!=="Paid";}).reduce(function(a,i){return a+(i.amount-i.paid);},0).toLocaleString()+'. Overdue invoices: '+overdue.map(function(i){return i.customer+' $'+(i.amount-i.paid)+' ('+Math.floor((new Date()-new Date(i.due))/(1000*60*60*24))+'d)';}).join(', ')+'. Provide: 1) Collections call script for each overdue account, 2) Escalation recommendations, 3) Payment plan suggestions, 4) Prevention strategies (deposit policy, credit checks), 5) DSO (days sales outstanding) improvement tips.'}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are an A/R collections advisor for a stone fabrication shop. Invoice data: total outstanding $'+outstanding.toLocaleString()+'. Overdue invoices: '+(overdue.length?overdue.map(function(i){return i.customer+' $'+(i.balance||0)+' (due '+i.due+')';}).join(', '):'none currently overdue')+'. Provide: 1) Collections call script for each overdue account, 2) Escalation recommendations, 3) Payment plan suggestions, 4) Prevention strategies (deposit policy, credit checks), 5) DSO (days sales outstanding) improvement tips.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
     }).catch(function(){out.textContent='AI unavailable. Call overdue accounts immediately and offer payment plans for balances over $3,000.';});
   };
   window.sdInvoicesPrint=function(){
     var w=window.open('','_blank');
-    var outstanding=data.filter(function(i){return i.status!=='Paid';}).reduce(function(a,i){return a+(i.amount-i.paid);},0);
+    var unpaid=sd_invoices.filter(function(i){return i.status!=='Paid';});
+    var outstanding=unpaid.reduce(function(a,i){return a+(i.balance||0);},0);
     w.document.write('<html><head><title>Invoices - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}.overdue{color:#ef4444;font-weight:700}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h2 style="color:#16c762">Accounts Receivable Aging</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>Outstanding: $'+outstanding.toLocaleString()+'</p>');
-    w.document.write('<table><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Due Date</th><th>Status</th></tr>');
-    data.filter(function(i){return i.status!=='Paid';}).forEach(function(i){
-      w.document.write('<tr><td>'+i.id+'</td><td>'+i.customer+'</td><td>$'+i.amount.toLocaleString()+'</td><td>$'+i.paid.toLocaleString()+'</td><td class="'+(i.status==="Overdue"?"overdue":"")+'">$'+(i.amount-i.paid).toLocaleString()+'</td><td>'+i.due+'</td><td>'+i.status+'</td></tr>');
+    w.document.write('<h2 style="color:#16c762">Accounts Receivable Aging</h2><p style="color:#64748b">'+new Date().toLocaleDateString()+'<br>Outstanding: $'+outstanding.toLocaleString()+'</p>');
+    w.document.write('<table><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Deposit</th><th>Balance</th><th>Due Date</th><th>Status</th></tr>');
+    unpaid.forEach(function(i){
+      w.document.write('<tr><td>'+i.num+'</td><td>'+i.customer+'</td><td>$'+i.amount.toLocaleString()+'</td><td>$'+(i.deposit||0).toLocaleString()+'</td><td class="'+(i.status==='Overdue'?'overdue':'')+'">$'+(i.balance||0).toLocaleString()+'</td><td>'+i.due+'</td><td>'+i.status+'</td></tr>');
     });
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
-  sdInvoicesRender();
 })();
 </script>
 </div>
-<div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
-            <button class="q-btn primary" onclick="window.print()">🖨️ Print / PDF</button>
-            <button class="q-btn" onclick="invMarkPaid(window._invPrintId)">✅ Mark Paid</button>
-            <button class="q-btn" onclick="document.getElementById('inv2-print-modal').style.display='none'">Close</button>
-          </div>
-
-
+<div id="inv2-print-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;max-width:640px;width:92%;max-height:85vh;overflow-y:auto;padding:24px">
+    <div id="inv2-print-content"></div>
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+      <button class="q-btn primary" onclick="window.print()">🖨️ Print / PDF</button>
+      <button class="q-btn" onclick="invMarkPaid(window._invPrintId)">✅ Mark Paid</button>
+      <button class="q-btn" onclick="document.getElementById('inv2-print-modal').style.display='none'">Close</button>
+    </div>
+  </div>
+</div>
 
 
   <!-- ============================================================ -->
