@@ -25653,12 +25653,22 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px">
-      <div style="font-weight:700;margin-bottom:12px;color:var(--text)">Sales Tax by Month</div>
+      <div style="font-weight:700;margin-bottom:12px;color:var(--text)">Sales Tax Entries</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;margin-bottom:12px">
+        <select id="tax-state" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+          <option value="">State</option>
+          <option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>FL</option><option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option>
+        </select>
+        <input id="tax-jurisdiction" placeholder="Jurisdiction (optional)" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+        <input id="tax-taxable" type="number" step="0.01" placeholder="Taxable $" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+        <input id="tax-rate" type="number" step="0.01" placeholder="Rate %" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+        <button class="q-btn primary" style="font-size:12px" onclick="if(typeof taxAddEntry==='function')taxAddEntry();">+ Add</button>
+      </div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr style="background:#f8f9fa">
-          <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Month</th>
+          <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Jurisdiction</th>
           <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Taxable Sales</th>
-          <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Tax (8.5%)</th>
+          <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Tax</th>
           <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
         </tr></thead>
         <tbody id="tax-table"></tbody>
@@ -25704,61 +25714,56 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 <script>
 (function(){
-  var months=['Jan','Feb','Mar','Apr','May','Jun'];
-  var sales=[42000,38500,51000,47800,55200,62400];
-  var ytd=0;
-  var rows='';
-  sales.forEach(function(s,i){
-    var tax=Math.round(s*0.085);ytd+=tax;
-    var done=i<5;
-    rows+='<tr><td style="padding:8px;border-bottom:1px solid var(--border)">'+months[i]+' 2024</td>'
-      +'<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">$'+s.toLocaleString()+'</td>'
-      +'<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-weight:700">$'+tax.toLocaleString()+'</td>'
-      +'<td style="padding:8px;border-bottom:1px solid var(--border)"><span style="background:'+(done?'#dcfce7':'#fef3c7')+';padding:2px 8px;border-radius:10px;font-size:11px">'+(done?'Filed':'Pending')+'</span></td></tr>';
-  });
-  document.getElementById('tax-table').innerHTML=rows;
-  document.getElementById('tax-ytd').textContent='$'+ytd.toLocaleString();
-  document.getElementById('tax-est').textContent='$'+Math.round(ytd/6*12).toLocaleString();
-  document.getElementById('tax-due').textContent='Jun 20';
-  var contractors=[
-    {name:'Mike\'s Tile Install',paid:18400,threshold:600},
-    {name:'Pro Templating LLC',paid:24000,threshold:600},
-    {name:'Edge & Finish Co.',paid:9800,threshold:600},
-  ];
-  document.getElementById('tax-1099').textContent=contractors.filter(function(x){return x.paid>=x.threshold;}).length;
-  document.getElementById('tax-1099-list').innerHTML=contractors.map(function(x){
-    var needs=x.paid>=x.threshold;
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">'
-      +'<span>'+x.name+'</span>'
-      +'<span style="display:flex;align-items:center;gap:8px"><strong>$'+x.paid.toLocaleString()+'</strong>'
-      +'<span style="background:'+(needs?'#fee2e2':'#dcfce7')+';padding:2px 8px;border-radius:10px;font-size:11px">'+(needs?'1099 Required':'Under Threshold')+'</span></span>'
-      +'</div>';
-  }).join('');
+  // Fabricated content removed 2026-07-26: this IIFE used to run a hardcoded
+  // 6-month fake sales array ($42k-$62k "Jan-Jun 2024") through a fake 8.5%
+  // rate to produce "YTD Tax Collected"/"Est. Annual Tax", plus 3 entirely
+  // fictional 1099 contractors ("Mike's Tile Install $18,400", etc.)
+  // presented as real payment tracking -- none of it backed by any real
+  // data anywhere in this app. Real, honest replacement: this panel shares
+  // its visible KPI/table ids with the real taxRender() function (computed
+  // from actual sd_invoices/apBills/taxEntries, already correctly wired to
+  // the nav trigger for this panel) -- extending that one real function to
+  // also populate these ids, deferred to window 'load' since taxRender()
+  // and its data sources are declared in a later script block.
+  // taxRender() (defined later in this file) now populates every id this
+  // panel shows -- both its own tax-kpi-* ids and these legacy tax-ytd/
+  // tax-est/tax-due/tax-1099/tax-table/tax-1099-list ids -- from real
+  // sd_invoices/apBills/taxEntries data. Just needs one deferred call so
+  // it runs after that later script block (and its data) has executed.
+  function bootLegacyTax(){ if(typeof taxRender==='function') taxRender(); }
+  if(document.readyState==='complete') bootLegacyTax();
+  else window.addEventListener('load', bootLegacyTax);
+
   window.sdTaxCalc=function(){
     var out=document.getElementById('tax-ai-out');
     out.style.display='block';out.textContent='Calculating...';
+    var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
+    var bills=(typeof apBills!=='undefined')?apBills:[];
+    var profit=invoices.reduce(function(s,i){return s+(i.amount||0);},0)-bills.reduce(function(s,b){return s+(b.amount||0);},0);
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Give a quick tax overview for a stone fabrication company with $'+ytd.toLocaleString()+' YTD sales tax collected. Cover: estimated annual liability, quarterly payment schedule, 1099 obligations, and top 3 deductions to maximize.'}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Give a quick tax overview for a stone fabrication company. Actual tracked data: revenue minus expenses (profit) of $'+Math.round(profit).toLocaleString()+' this period ('+invoices.length+' invoices, '+bills.length+' bills on file -- if this looks sparse, say more data is needed rather than guessing). Cover: estimated annual liability, quarterly payment schedule, 1099 obligations, and top 3 deductions to maximize.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 Tax Summary:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdTaxAdd1099=function(){showToast('1099 contractor tracking — contact your accountant to add contractor records.');};
   window.sdTaxPrint=function(){
+    var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
+    var bills=(typeof apBills!=='undefined')?apBills:[];
+    var entries=(typeof taxEntries!=='undefined')?taxEntries:[];
+    var salesTaxYTD=entries.reduce(function(s,e){return s+(e.tax||0);},0);
+    var profit=invoices.reduce(function(s,i){return s+(i.amount||0);},0)-bills.reduce(function(s,b){return s+(b.amount||0);},0);
     var w=window.open('','_blank');
     w.document.write('<html><head><title>Tax Report</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h1>Pinnacle Stone & Design — Tax Report</h1><p>YTD through Jun 2024 &bull; '+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<p><strong>YTD Sales Tax Collected:</strong> $'+ytd.toLocaleString()+'</p>');
-    w.document.write('<p><strong>Projected Annual:</strong> $'+Math.round(ytd/6*12).toLocaleString()+'</p>');
+    w.document.write('<h1>Pinnacle Stone & Design — Tax Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
+    w.document.write('<p><strong>YTD Sales Tax Collected (logged entries):</strong> $'+Math.round(salesTaxYTD).toLocaleString()+'</p>');
+    w.document.write('<p><strong>Est. Annual Tax (28% of tracked profit):</strong> $'+Math.round(Math.max(0,profit*0.28)).toLocaleString()+'</p>');
     w.document.write('<br><p><em>This report is for internal tracking only. Consult your CPA for tax filings.</em></p>');
     w.document.close();w.print();
   };
   window.sdTaxExport=function(){
-    var rows=[['Period','Revenue','Taxable','Tax Rate','Tax Owed','Status']];
-    var d=load();d.forEach(function(x){rows.push([x.period||'',('$'+(x.revenue||0)),('$'+(x.taxable||0)),(x.rate||''),('$'+(x.taxOwed||0)),x.status||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-    var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='tax-report-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    if(typeof taxExport==='function'){taxExport();return;}
+    showToast('Export unavailable.');
   };
 })();
 </script>
@@ -30507,6 +30512,29 @@ function taxRender(){
   var profit=invTotal-expTotal;var taxEst=Math.max(0,profit*0.28);
   function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
   sv('tax-kpi-revenue',sdFmt(invTotal));sv('tax-kpi-expenses',sdFmt(expTotal));sv('tax-kpi-profit',sdFmt(profit));sv('tax-kpi-tax-est',sdFmt(taxEst));
+  // Legacy panel-tax header ids (tax-ytd/tax-est/tax-due/tax-1099/tax-table/
+  // tax-1099-list) -- consolidated here 2026-07-26 so there's one real
+  // computation instead of the fabricated one this used to run separately.
+  var salesTaxYTD=taxEntries.reduce(function(s,e){return s+(e.tax||0);},0);
+  sv('tax-ytd','$'+Math.round(salesTaxYTD).toLocaleString());
+  sv('tax-est','$'+Math.round(taxEst).toLocaleString());
+  sv('tax-1099','0');
+  var today=new Date();
+  var deadlines=[[0,15,'Jan 15'],[3,15,'Apr 15'],[5,15,'Jun 15'],[8,15,'Sep 15']].map(function(d){
+    var y=today.getMonth()>d[0]||(today.getMonth()===d[0]&&today.getDate()>d[1])?today.getFullYear()+(d[0]===0?1:0):today.getFullYear();
+    return {date:new Date(y,d[0],d[1]),label:d[2]};
+  }).sort(function(a,b){return a.date-b.date;});
+  var nextDue=deadlines.find(function(d){return d.date>=today;})||deadlines[0];
+  sv('tax-due',nextDue.label);
+  var legacyTableEl=document.getElementById('tax-table');
+  if(legacyTableEl)legacyTableEl.innerHTML=taxEntries.length?taxEntries.map(function(x){
+    return '<tr><td style="padding:8px;border-bottom:1px solid var(--border)">'+escHtml(x.state||'')+' '+escHtml(x.jurisdiction||'')+'</td>'
+      +'<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">$'+(x.taxable||0).toLocaleString()+'</td>'
+      +'<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-weight:700">$'+(x.tax||0).toLocaleString()+'</td>'
+      +'<td style="padding:8px;border-bottom:1px solid var(--border)"><span style="background:#fef3c7;padding:2px 8px;border-radius:10px;font-size:11px">Logged</span></td></tr>';
+  }).join(''):'<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted)">No sales tax entries logged yet. Add one above.</td></tr>';
+  var legacy1099El=document.getElementById('tax-1099-list');
+  if(legacy1099El)legacy1099El.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">No 1099 contractor records tracked in this app yet — consult your accountant to determine which contractors crossed the $600 threshold this year.</div>';
   var el=document.getElementById('tax-entries');
   if(el)el.innerHTML=taxEntries.length?'<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden">'+
     '<div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 1fr 1fr;padding:8px 12px;background:var(--surface-2);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase"><span>State</span><span>Jurisdiction</span><span>Taxable</span><span>Rate</span><span>Tax Owed</span></div>'+
