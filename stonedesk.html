@@ -29638,7 +29638,7 @@ function revSend(){
 }
 function revUpdateKPIs(){
   function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('rev-kpi-sent',revLog.length);sv('rev-kpi-responded',Math.round(revLog.length*0.35));sv('rev-kpi-pending',revLog.filter(function(r){return Date.now()-new Date(r.ts).getTime()<7*86400000;}).length);sv('rev-kpi-rate',revLog.length?'~35%':'—');
+  sv('rev-kpi-sent',revLog.length);sv('rev-kpi-responded','--');sv('rev-kpi-pending',revLog.filter(function(r){return Date.now()-new Date(r.ts).getTime()<7*86400000;}).length);sv('rev-kpi-rate','--');
 }
 function revRenderLog(){
   var el=document.getElementById('rev-log');if(!el)return;
