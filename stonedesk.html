@@ -6215,8 +6215,11 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var out=document.getElementById('fin-ai-out');
     if(!out){out=document.createElement('div');out.id='fin-ai-out';out.style.cssText='margin:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap';document.getElementById('panel-financial').querySelector('[style*="max-width:1100px"]').appendChild(out);}
     out.textContent='Analyzing financial data...';
+    var jobs=(typeof sdFinJobs!=='undefined')?sdFinJobs:[];
+    var avgMargin=jobs.length?Math.round(jobs.reduce(function(s,j){return s+j.margin;},0)/jobs.length):0;
+    var revenue=jobs.reduce(function(s,j){return s+j.quote;},0);
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a CFO advisor for Pinnacle Stone & Design, a stone fabrication company (Jim Hartwell, owner). Revenue ~$1.8M annual, gross margin ~38%, net margin ~12%. Key financial KPIs visible in the Financial Intelligence dashboard. Provide: 1) P&L health assessment, 2) Cash flow observations, 3) Tax optimization opportunities, 4) 3 specific cost reduction levers, 5) Revenue growth levers. Be specific to stone fabrication industry.'}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a CFO advisor for a stone fabrication company. Here is the actual tracked data: '+jobs.length+' jobs tracked, average gross margin '+avgMargin+'%, total tracked quoted revenue $'+revenue.toLocaleString()+'. (If this looks sparse, say so and note that adding more job costs will improve the accuracy of this analysis, rather than guessing.) Provide: 1) P&L health assessment based on the actual numbers above, 2) Cash flow observations, 3) Tax optimization opportunities, 4) 3 specific cost reduction levers, 5) Revenue growth levers. Be specific to stone fabrication industry.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
     }).catch(function(){out.textContent='AI unavailable. Review material cost as % of revenue and identify jobs with margin below 30%.';});
@@ -19875,8 +19878,8 @@ function finAskCFO(){
   var vendorDiscs=Object.entries(sdPricingRules.vendorDiscounts||{}).filter(function(e){return e[1]>0;}).length;
   sbNav('ai');
   setTimeout(function(){
-    var input=document.getElementById('userInput');
-    if(input){input.value='Act as a Fortune 500 CFO advising my stone countertop fabrication shop. Here is my financial situation: '+jobs+' jobs tracked, average gross margin '+avgMargin+'%, total tracked revenue $'+revenue.toLocaleString()+', '+vendorDiscs+' vendor pricing deals active. Industry benchmarks: gross margin 35-45%, material cost 30-35% of revenue, labor 20-25%. Tell me: (1) How do I compare to industry? (2) Top 3 things I should do to improve profitability this quarter, (3) What should my pricing strategy be for the next 90 days given current tariffs on Indian quartz?';sendMessage();}
+    var input=document.getElementById('ai-input');
+    if(input){input.value='Act as a Fortune 500 CFO advising my stone countertop fabrication shop. Here is my financial situation: '+jobs+' jobs tracked, average gross margin '+avgMargin+'%, total tracked revenue $'+revenue.toLocaleString()+', '+vendorDiscs+' vendor pricing deals active. Industry benchmarks: gross margin 35-45%, material cost 30-35% of revenue, labor 20-25%. Tell me: (1) How do I compare to industry? (2) Top 3 things I should do to improve profitability this quarter, (3) What should my pricing strategy be for the next 90 days given current tariffs on Indian quartz?';if(typeof sdAISend==='function')sdAISend();}
   },400);
 }
 
