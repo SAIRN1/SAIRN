@@ -15,8 +15,24 @@
 // cold start, so this does NOT reliably cap usage or cost across real traffic. Before this proxy is
 // exposed to real demo/customer traffic at scale, replace this with a persistent counter (Vercel KV
 // or the Supabase project already used elsewhere in SAIRN) keyed by app_id + day.
+//
+// CORRECTED 2026-07-26: KNOWN_APP_IDS was missing 9 of 13 live apps (SAIRNscape, SAIRNbuild,
+// SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNfuneral, SAIRNmechanical, SAIRNhr, SAIRNacc) — those apps'
+// AI features were returning a 400 "unrecognized app_id" error against this proxy. Cross-referenced
+// against sairn-guardian-v2's App File Map (the platform's own source of truth for which apps exist)
+// rather than guessing. Guardian's Check 3 now also verifies an app_id exists in THIS list, not just
+// that the app's own frontend code includes an app_id — the two are different checks, and only the
+// first one was covered before.
+//
+// Accepts image content blocks in `messages` unmodified — this proxy has always forwarded `messages`
+// straight through to the Anthropic API without inspecting shape, so vision (base64 image + text in a
+// message) works with zero changes here once an app's frontend sends it in the standard API format.
 
-const KNOWN_APP_IDS = ['stonedesk', 'sairnbiz', 'sairncode', 'sairnvet'];
+const KNOWN_APP_IDS = [
+  'stonedesk', 'sairnbiz', 'sairnscape', 'sairncode', 'sairnbuild',
+  'sairnlaw', 'sairndesign', 'sairncare', 'sairnvet', 'sairnfuneral',
+  'sairnmechanical', 'sairnhr', 'sairnacc'
+];
 
 // Best-effort only — see limitation note above. Resets on cold start / differs per instance.
 const demoCallCounts = {};
