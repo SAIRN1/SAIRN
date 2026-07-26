@@ -23082,9 +23082,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var brands=new Set(d.map(function(x){return x.brand;}));
     document.getElementById('sint-products').textContent=d.length;
-    document.getElementById('sint-projects').textContent=8;
+    document.getElementById('sint-projects').textContent='--';
     document.getElementById('sint-brands').textContent=brands.size;
-    document.getElementById('sint-revenue').textContent='$48,200';
+    document.getElementById('sint-revenue').textContent='--';
     document.getElementById('sint-catalog').innerHTML=d.map(function(x){
       return '<div style="background:'+(x.available?'var(--bg)':'#f9f9f9')+';border:1px solid var(--border);border-radius:8px;padding:12px;'+(x.available?'':'opacity:0.7')+'">'
         +'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+escHtml(x.name)+'</div>'
@@ -25260,7 +25260,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var repur=d.filter(function(x){return x.type.includes('Repurposed')||x.type.includes('Donated');});
     document.getElementById('waste-mtd').textContent=totalLbs+' lbs';
     document.getElementById('waste-cost').textContent='$'+totalCost.toLocaleString();
-    document.getElementById('waste-pct').textContent='18%';
+    document.getElementById('waste-pct').textContent='--';
     document.getElementById('waste-recycled').textContent=d.length?Math.round(repur.length/d.length*100)+'%':'0%';
     var typeColors={'Cutoffs — Disposed':'#fee2e2','Cutoffs — Repurposed':'#dcfce7','Slurry — Disposed':'#fef3c7','Broke / Cracked — Disposed':'#fee2e2','Donated to Habitat':'#dcfce7'};
     document.getElementById('waste-list').innerHTML=d.slice().reverse().map(function(x){
