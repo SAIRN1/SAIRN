@@ -5989,8 +5989,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="kpi"><div class="kpi-val" id="safe-kpi1">0</div><div class="kpi-label">Days Since Incident</div></div>
   <div class="kpi"><div class="kpi-val" id="safe-kpi2">0</div><div class="kpi-label">YTD Incidents</div></div>
   <div class="kpi"><div class="kpi-val" id="safe-kpi3">0</div><div class="kpi-label">Open Action Items</div></div>
-  <div class="kpi"><div class="kpi-val" id="safe-kpi4">0%</div><div class="kpi-label">PPE Compliance</div></div>
-  <div class="kpi"><div class="kpi-val" id="safe-kpi5">✓</div><div class="kpi-label">OSHA 300 Status</div></div>
+  <div class="kpi"><div class="kpi-val" id="safe-kpi4">--</div><div class="kpi-label">PPE Compliance</div></div>
+  <div class="kpi"><div class="kpi-val" id="safe-kpi5">--</div><div class="kpi-label">OSHA 300 Status</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
@@ -6031,8 +6031,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     document.getElementById('safe-kpi1').textContent=daysSince;
     document.getElementById('safe-kpi2').textContent=data.length;
     document.getElementById('safe-kpi3').textContent=open;
-    document.getElementById('safe-kpi4').textContent='94%';
-    document.getElementById('safe-kpi5').textContent='Current';
+    document.getElementById('safe-kpi4').textContent='--';
+    document.getElementById('safe-kpi5').textContent='--';
     var ppeHtml=PPE.map(function(item){return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>'+item+'</div>';}).join('');
     document.getElementById('safe-ppe-list').innerHTML=ppeHtml;
     var html='<div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px">Incident Log</div>'
@@ -23183,7 +23183,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="care-guides">0</div><div class="kpi-label">Guides Created</div></div>
   <div class="kpi"><div class="kpi-val" id="care-sent">0</div><div class="kpi-label">Sent to Customers</div></div>
-  <div class="kpi"><div class="kpi-val" id="care-types">9</div><div class="kpi-label">Stone Types</div></div>
+  <div class="kpi"><div class="kpi-val" id="care-types">0</div><div class="kpi-label">Stone Types</div></div>
   <div class="kpi"><div class="kpi-val" id="care-custom">0</div><div class="kpi-label">Custom Guides</div></div>
   <div class="kpi"><div class="kpi-val" style="color:#16C762">✓</div><div class="kpi-label">Print Ready</div></div>
 </div>
@@ -23257,6 +23257,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("care-custom").textContent=d.length;
     var sent=d.filter(function(x){return x.sent;}).length;
     document.getElementById("care-sent").textContent=sent;
+    var stoneSel=document.getElementById("care-stone");
+    var typesEl=document.getElementById("care-types");
+    if(stoneSel&&typesEl) typesEl.textContent=stoneSel.options.length;
     var hist=document.getElementById("care-history");
     if(hist){
       hist.innerHTML=d.slice(-5).reverse().map(function(x){
