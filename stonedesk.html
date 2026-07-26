@@ -26275,10 +26275,10 @@ async function sdRunEmailScan() {
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="email-blocked" style="color:#16C762">0</div><div class="kpi-label">Threats Blocked MTD</div></div>
+  <div class="kpi"><div class="kpi-val" id="email-blocked" style="color:#16C762">0</div><div class="kpi-label">Scans Flagged</div></div>
   <div class="kpi"><div class="kpi-val" id="email-phish">0</div><div class="kpi-label">Phishing Attempts</div></div>
-  <div class="kpi"><div class="kpi-val" id="email-score">A+</div><div class="kpi-label">Security Score</div></div>
-  <div class="kpi"><div class="kpi-val" id="email-trained">0%</div><div class="kpi-label">Staff Trained</div></div>
+  <div class="kpi"><div class="kpi-val" id="email-score">--</div><div class="kpi-label">Security Score</div></div>
+  <div class="kpi"><div class="kpi-val" id="email-trained">--</div><div class="kpi-label">Staff Trained</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
   <div>
@@ -26289,7 +26289,7 @@ async function sdRunEmailScan() {
       <div id="email-scan-out" style="display:none;margin-top:12px;padding:14px;border-radius:8px;font-size:13px;line-height:1.6"></div>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
-      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Recent Threats Blocked</div>
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Flagged Scans</div>
       <div id="email-threats"></div>
     </div>
   </div>
@@ -26314,45 +26314,57 @@ async function sdRunEmailScan() {
 </div>
 <script>
 (function(){
-  var THREATS=[
-    {type:'Phishing',from:'accounting@stone-supply-llc.net',subject:'Invoice #4821 Overdue — URGENT',blocked:'2024-06-14',risk:'High'},
-    {type:'BEC Fraud',from:'jim.hartwell@pinnaclesd-secure.com',subject:'Wire transfer request — confidential',blocked:'2024-06-12',risk:'Critical'},
-    {type:'Malware',from:'noreply@fedex-delivery.track.ru',subject:'Your package could not be delivered',blocked:'2024-06-10',risk:'High'},
-    {type:'Phishing',from:'support@quickbooks-verify.net',subject:'Action required: Verify your QB account',blocked:'2024-06-08',risk:'Medium'},
+  var THREATS_KEY='sd_email_threats';
+  var CHECKLIST_KEY='sd_email_checklist';
+  var CHECKLIST_ITEMS=[
+    {id:'spf',item:'SPF Record configured'},
+    {id:'dkim',item:'DKIM signing enabled'},
+    {id:'dmarc',item:'DMARC policy set to reject'},
+    {id:'mfa',item:'MFA enabled for all accounts'},
+    {id:'training',item:'Phishing simulation training done'},
+    {id:'backup',item:'Email backup & archive enabled'},
+    {id:'adminsep',item:'Admin account separate from daily use'}
   ];
-  var CHECKLIST=[
-    {item:'SPF Record configured',status:true},
-    {item:'DKIM signing enabled',status:true},
-    {item:'DMARC policy set to reject',status:true},
-    {item:'MFA enabled for all accounts',status:true},
-    {item:'Phishing simulation training done',status:false},
-    {item:'Email backup & archive enabled',status:true},
-    {item:'Admin account separate from daily use',status:false},
-  ];
-  document.getElementById('email-blocked').textContent=THREATS.length;
-  document.getElementById('email-phish').textContent=THREATS.filter(function(x){return x.type==='Phishing';}).length;
-  document.getElementById('email-trained').textContent='75%';
-  var done=CHECKLIST.filter(function(x){return x.status;}).length;
-  var score=done>=6?'A+':done>=5?'A':done>=4?'B':'C';
-  document.getElementById('email-score').textContent=score;
+  function loadThreats(){try{return JSON.parse(localStorage.getItem(THREATS_KEY)||'[]');}catch(e){return [];}}
+  function saveThreats(d){try{localStorage.setItem(THREATS_KEY,JSON.stringify(d));}catch(e){}}
+  function loadChecklist(){try{return JSON.parse(localStorage.getItem(CHECKLIST_KEY)||'{}');}catch(e){return {};}}
+  function saveChecklist(d){try{localStorage.setItem(CHECKLIST_KEY,JSON.stringify(d));}catch(e){}}
   var rColors={Critical:'#fee2e2',High:'#fef3c7',Medium:'#dbeafe',Low:'#f3f4f6'};
-  document.getElementById('email-threats').innerHTML=THREATS.map(function(x){
-    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-      +'<span style="font-weight:700;font-size:13px;color:#dc2626">'+x.type+'</span>'
-      +'<span style="background:'+(rColors[x.risk]||'#f3f4f6')+';font-size:10px;padding:2px 8px;border-radius:8px">'+x.risk+'</span>'
-      +'</div>'
-      +'<div style="font-size:12px;color:var(--muted)">From: '+escHtml(x.from)+'</div>'
-      +'<div style="font-size:12px;font-style:italic;margin-top:2px">'+escHtml(x.subject)+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">Blocked: '+x.blocked+'</div>'
-      +'</div>';
-  }).join('');
-  document.getElementById('email-checklist').innerHTML=CHECKLIST.map(function(x){
-    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">'
-      +'<span style="font-size:18px">'+(x.status?'✅':'❌')+'</span>'
-      +'<span style="color:'+(x.status?'var(--text)':'#dc2626')+'">'+x.item+'</span>'
-      +'</div>';
-  }).join('');
+
+  function render(){
+    var threats=loadThreats();
+    document.getElementById('email-blocked').textContent=threats.length;
+    document.getElementById('email-phish').textContent=threats.filter(function(x){return x.type==='Phishing';}).length;
+    var cl=loadChecklist();
+    var done=CHECKLIST_ITEMS.filter(function(x){return cl[x.id];}).length;
+    document.getElementById('email-score').textContent=done===0?'--':(done>=6?'A+':done>=5?'A':done>=4?'B':'C');
+    document.getElementById('email-trained').textContent='--';
+    document.getElementById('email-threats').innerHTML=threats.length?threats.map(function(x){
+      return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        +'<span style="font-weight:700;font-size:13px;color:#dc2626">'+escHtml(x.type)+'</span>'
+        +'<span style="background:'+(rColors[x.risk]||'#f3f4f6')+';font-size:10px;padding:2px 8px;border-radius:8px">'+x.risk+'</span>'
+        +'</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+escHtml(x.summary)+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:2px">Flagged: '+x.date+'</div>'
+        +'</div>';
+    }).join(''):'<div style="color:var(--muted);font-size:13px;padding:12px 0">No scans flagged yet — use Scan Email to analyze a suspicious message.</div>';
+    document.getElementById('email-checklist').innerHTML=CHECKLIST_ITEMS.map(function(x){
+      var on=!!cl[x.id];
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer" onclick="emailToggleChecklist(\''+x.id+'\')">'
+        +'<span style="font-size:18px">'+(on?'✅':'❌')+'</span>'
+        +'<span style="color:'+(on?'var(--text)':'#dc2626')+'">'+escHtml(x.item)+'</span>'
+        +'</div>';
+    }).join('');
+  }
+
+  window.emailToggleChecklist=function(id){
+    var cl=loadChecklist();
+    cl[id]=!cl[id];
+    saveChecklist(cl);
+    render();
+  };
+
   window.sdEmailScan=function(){
     var txt=document.getElementById('email-input').value.trim();
     if(!txt){showToast('Paste email content to analyze');return;}
@@ -26362,10 +26374,19 @@ async function sdRunEmailScan() {
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze this email for phishing, fraud, or social engineering. Rate risk Low/Medium/High/Critical. List red flags and recommended action:\n'+txt}]})
     }).then(function(r){return r.json();}).then(function(r){
       var result=r.content||r.completion||'';
-      var isHigh=result.toLowerCase().includes('high')||result.toLowerCase().includes('critical');
+      var lower=result.toLowerCase();
+      var risk=lower.includes('critical')?'Critical':lower.includes('high')?'High':lower.includes('medium')?'Medium':'Low';
+      var isHigh=risk==='High'||risk==='Critical';
       out.style.background=isHigh?'#fef2f2':'#f0fdf4';
       out.style.border='1px solid '+(isHigh?'#fca5a5':'#86efac');
       out.innerHTML='<strong>🤖 Security Analysis:</strong><br>'+result.replace(/\n/g,'<br>');
+      if(risk!=='Low'){
+        var threats=loadThreats();
+        threats.unshift({type:lower.includes('phish')?'Phishing':'Suspicious',risk:risk,summary:txt.slice(0,120),date:new Date().toISOString().slice(0,10)});
+        if(threats.length>100)threats=threats.slice(0,100);
+        saveThreats(threats);
+        render();
+      }
     }).catch(function(){out.textContent='AI unavailable.';});
   };
   window.sdEmailAI=function(){
@@ -26381,10 +26402,11 @@ async function sdRunEmailScan() {
     var w=window.open('','_blank');
     w.document.write('<html><head><title>Email Security</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Email Security Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<h2>Threats Blocked</h2><table><tr><th>Type</th><th>From</th><th>Subject</th><th>Risk</th><th>Blocked</th></tr>');
-    THREATS.forEach(function(x){w.document.write('<tr><td>'+x.type+'</td><td>'+x.from+'</td><td>'+x.subject+'</td><td>'+x.risk+'</td><td>'+x.blocked+'</td></tr>');});
+    w.document.write('<h2>Flagged Scans</h2><table><tr><th>Type</th><th>Risk</th><th>Summary</th><th>Date</th></tr>');
+    loadThreats().forEach(function(x){w.document.write('<tr><td>'+x.type+'</td><td>'+x.risk+'</td><td>'+x.summary+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
+  render();
 })();
 </script>
   </div>
