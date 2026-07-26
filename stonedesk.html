@@ -22699,7 +22699,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="sms-sent">0</div><div class="kpi-label">Messages Sent</div></div>
   <div class="kpi"><div class="kpi-val" id="sms-today">0</div><div class="kpi-label">Today</div></div>
-  <div class="kpi"><div class="kpi-val" id="sms-delivered" style="color:#16C762">98%</div><div class="kpi-label">Delivery Rate</div></div>
+  <div class="kpi"><div class="kpi-val" id="sms-delivered" style="color:#16C762">0</div><div class="kpi-label">Sent This Month</div></div>
   <div class="kpi"><div class="kpi-val" id="sms-templates">6</div><div class="kpi-label">Templates</div></div>
   <div class="kpi"><div class="kpi-val" id="sms-recipients">0</div><div class="kpi-label">Unique Recipients</div></div>
 </div>
@@ -22754,24 +22754,19 @@ document.addEventListener('DOMContentLoaded', function() {
     review:`'Hi [Name], we\`d love your feedback! Leave us a Google review: [link]. Thank you for choosing Pinnacle Stone!'`,
     balance:`'Hi [Name], a balance of $[Amount] is due for your Pinnacle Stone project. Pay online or call (555) 847-3200. Thank you!`
   };
-  var SEED=[
-    {to:'Marcus Webb',phone:'(555) 234-1111',msg:'Your countertops are ready for installation!',date:'2024-06-14 10:22',status:'Delivered'},
-    {to:'Sarah Johnson',phone:'(555) 234-2222',msg:'Appointment reminder: Tomorrow 9 AM for template measure.',date:'2024-06-13 15:40',status:'Delivered'},
-    {to:'David Park',phone:'(555) 234-3333',msg:'Your quote is ready — $6,200 for outdoor kitchen. Reply for details.',date:'2024-06-12 11:15',status:'Delivered'},
-    {to:'Emma Rodriguez',phone:'(555) 234-4444',msg:'Thank you for choosing Pinnacle Stone! Please leave us a review.',date:'2024-06-10 09:00',status:'Delivered'},
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_sms_log')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_sms_log')||'[]');}catch(e){return [];}}
   function save(d){try{localStorage.setItem('sd_sms_log',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
     document.getElementById('sms-sent').textContent=d.length;
     var today=new Date().toISOString().slice(0,10);
+    var monthPrefix=today.slice(0,7);
     document.getElementById('sms-today').textContent=d.filter(function(x){return x.date.startsWith(today);}).length;
-    document.getElementById('sms-delivered').textContent='98%';
+    document.getElementById('sms-delivered').textContent=d.filter(function(x){return x.date.startsWith(monthPrefix);}).length;
     document.getElementById('sms-log').innerHTML=d.slice().reverse().map(function(x){
       return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
         +'<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">'
-        +'<span><strong style="color:var(--text)">'+escHtml(x.to)+'</strong> '+x.phone+'</span><span>'+x.date+'</span></div>'
+        +'<span><strong style="color:var(--text)">'+escHtml(x.to)+'</strong> '+escHtml(x.phone)+'</span><span>'+x.date+'</span></div>'
         +'<div style="font-size:13px;color:var(--text)">'+escHtml(x.msg)+'</div>'
         +'<div style="font-size:11px;color:#16C762;margin-top:4px">'+x.status+'</div>'
         +'</div>';
@@ -22787,15 +22782,22 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdSMSSend=function(){
     var to=document.getElementById('sms-to').value.trim();
     var msg=document.getElementById('sms-msg').value.trim();
+    var phone=document.getElementById('sms-phone').value.trim();
     if(!to||!msg){showToast('Enter recipient and message.');return;}
+    // No real SMS-sending API integration exists in this app -- this opens the
+    // device's own native SMS composer (same as the phone's Messages app would),
+    // pre-filled, so the shop actually sends it themselves. There is no way to
+    // confirm delivery from here, so the log honestly says "Sent" (composer
+    // opened), never "Delivered" (that would be an unverifiable claim).
+    if(phone){window.location.href='sms:'+encodeURIComponent(phone)+'?body='+encodeURIComponent(msg);}
     var d=load();
     var now=new Date();
-    d.push({to:to,phone:document.getElementById('sms-phone').value||'N/A',msg:msg,
-      date:now.toISOString().slice(0,10)+' '+now.toTimeString().slice(0,5),status:'Delivered'});
+    d.push({to:to,phone:phone||'N/A',msg:msg,
+      date:now.toISOString().slice(0,10)+' '+now.toTimeString().slice(0,5),status:'Sent'});
     save(d);render();
     document.getElementById('sms-to').value='';document.getElementById('sms-msg').value='';
     document.getElementById('sms-phone').value='';
-    showToast('SMS logged for '+escHtml(to)+'.');
+    showToast(phone?'Opening SMS app for '+escHtml(to)+'...':'Logged for '+escHtml(to)+' (no phone number, could not open SMS app).');
   };
   window.sdSMSAI=function(){
     var to=document.getElementById('sms-to').value||'customer';
