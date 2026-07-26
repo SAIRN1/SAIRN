@@ -5468,11 +5468,11 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 </div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
-    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">Revenue vs Target</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">Revenue (Trailing 6 Months)</div>
     <div id="exec-rev-chart"></div>
   </div>
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
-    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">Revenue by Stone Type</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">Jobs by Material (MTD)</div>
     <div id="exec-stone-chart"></div>
   </div>
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
@@ -5494,132 +5494,145 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 </div>
 <script>
 (function(){
-  var DATA={
-    revMTD:142800,revTarget:155000,margin:0.38,jobsMTD:14,arOutstanding:24100,
-    months:['Jan','Feb','Mar','Apr','May','Jun'],
-    rev:[88200,104500,97800,118400,131200,142800],
-    target:[95000,100000,105000,115000,130000,155000],
-    stones:[
-      {name:'Marble/Calacatta',rev:52400,pct:37},
-      {name:'Quartzite',rev:35700,pct:25},
-      {name:'Sintered/Dekton',rev:28600,pct:20},
-      {name:'Granite',rev:17100,pct:12},
-      {name:'Other',rev:9000,pct:6}
-    ],
-    ops:{remake_rate:2.1,on_time:94,nps:71,csat:4.7,safety_days:38,crew_util:87},
-    customers:[
-      {name:'Robert Wallace (Contractor)',rev:68400,jobs:7},
-      {name:'Stone Barn LLC',rev:42600,jobs:4},
-      {name:'City Cafe',rev:14200,jobs:1},
-      {name:'Jim Hartwell',rev:12800,jobs:2},
-      {name:'Carla Reyes',rev:11200,jobs:1}
-    ],
-    pipeline:[
-      {stage:'Leads',count:24,value:380000},
-      {stage:'Quoted',count:11,value:198000},
-      {stage:'Approved',count:5,value:87000},
-      {stage:'Scheduled',count:7,value:112000},
-      {stage:'In Progress',count:3,value:44000}
-    ]
-  };
-  function bar(val,max,color,height){
-    height=height||28;
-    var pct=max?Math.min(100,Math.round(val/max*100)):0;
-    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-      +'<div style="flex:1;background:#f1f5f9;border-radius:4px;height:'+height+'px;overflow:hidden">'
-      +'<div style="height:100%;width:'+pct+'%;background:'+color+';border-radius:4px;transition:width .3s"></div></div>'
-      +'<div style="font-size:12px;color:var(--text);min-width:50px;text-align:right">'+pct+'%</div></div>';
+  // Real data model, computed live from the same sources the rest of the app
+  // already uses -- no invented figures. Any metric with no honest real
+  // source anywhere in this app (a target/budget number, CSAT, crew
+  // utilization, on-time-delivery %) is left out entirely rather than faked.
+  function getReal(){
+    var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
+    var jobs=(typeof sdJobs!=='undefined')?sdJobs:[];
+    var customers=(typeof sdCustomers!=='undefined')?sdCustomers:[];
+    var leads=(typeof crmLeads!=='undefined')?crmLeads:[];
+    var remakes=(typeof sdRemakes!=='undefined')?sdRemakes:[];
+    var nps=(typeof npsFeedback!=='undefined')?npsFeedback:[];
+    var finJobs=(typeof sdFinJobs!=='undefined')?sdFinJobs:[];
+    var safety={incidents:[]}; try{safety=JSON.parse(localStorage.getItem('sd_safety')||'{"incidents":[]}');}catch(e){}
+    var now=new Date(), monthPrefix=now.toISOString().slice(0,7);
+
+    var invMTD=invoices.filter(function(i){return (i.date||'').startsWith(monthPrefix);});
+    var revMTD=invMTD.reduce(function(s,i){return s+(i.amount||0);},0);
+    var arOutstanding=invoices.filter(function(i){return i.status!=='Paid';}).reduce(function(s,i){return s+(i.balance||0);},0);
+    var jobsCompletedMTD=jobs.filter(function(j){return j.stage==='installed'&&j.installedAt&&j.installedAt.startsWith(monthPrefix);}).length;
+    var margin=finJobs.length?Math.round(finJobs.reduce(function(s,j){return s+(j.margin||0);},0)/finJobs.length):null;
+
+    // Trailing 6 calendar months of real invoiced revenue
+    var months=[];
+    for(var i=5;i>=0;i--){var d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({label:d.toLocaleString('en-US',{month:'short'}),prefix:d.toISOString().slice(0,7)});}
+    var revByMonth=months.map(function(m){return {label:m.label,rev:invoices.filter(function(iv){return (iv.date||'').startsWith(m.prefix);}).reduce(function(s,iv){return s+(iv.amount||0);},0)};});
+
+    // Job count by material this month (real, but a count -- not a revenue
+    // split, since invoices don't carry a material field to join against)
+    var matCounts={};
+    jobs.filter(function(j){return j.date&&j.date.startsWith(monthPrefix);}).forEach(function(j){var m=j.material||'Unspecified';matCounts[m]=(matCounts[m]||0)+1;});
+    var jobsByMaterial=Object.keys(matCounts).map(function(k){return {name:k,count:matCounts[k]};}).sort(function(a,b){return b.count-a.count;});
+
+    var daysSinceIncident=null;
+    if(safety.incidents&&safety.incidents.length){
+      var dates=safety.incidents.map(function(x){return new Date(x.date);});
+      daysSinceIncident=Math.floor((now-Math.max.apply(null,dates))/86400000);
+    }
+    var openRemakes=remakes.filter(function(r){return r.status==='open';}).length;
+    var avgNps=nps.length?Math.round(nps.reduce(function(s,r){return s+(r.score||0);},0)/nps.length*10)/10:null;
+
+    var topCustomers=customers.filter(function(c){return c.quote;}).sort(function(a,b){return (b.quote||0)-(a.quote||0);}).slice(0,5);
+
+    var stageOrder=['new','contacted','quoted','site_visit','approved'];
+    var stageLabels={new:'New Lead',contacted:'Contacted',quoted:'Quoted',site_visit:'Site Visit',approved:'Approved'};
+    var pipeline=stageOrder.map(function(s){
+      var atStage=leads.filter(function(l){return l.stage===s;});
+      return {stage:stageLabels[s],count:atStage.length,value:atStage.reduce(function(sum,l){return sum+(l.value||0);},0)};
+    });
+
+    return {revMTD:revMTD,arOutstanding:arOutstanding,jobsCompletedMTD:jobsCompletedMTD,margin:margin,
+      revByMonth:revByMonth,jobsByMaterial:jobsByMaterial,daysSinceIncident:daysSinceIncident,
+      openRemakes:openRemakes,avgNps:avgNps,topCustomers:topCustomers,pipeline:pipeline};
   }
+
   window.sdExecRender=function(){
-    document.getElementById('exec-kpi1').textContent='$'+DATA.revMTD.toLocaleString();
-    document.getElementById('exec-kpi2').textContent=Math.round(DATA.margin*100)+'%';
-    document.getElementById('exec-kpi3').textContent=DATA.jobsMTD;
-    document.getElementById('exec-kpi4').textContent='$'+DATA.arOutstanding.toLocaleString();
-    var maxRev=Math.max.apply(null,DATA.target);
-    var revHtml='';
-    DATA.months.forEach(function(m,i){
-      var actPct=Math.round(DATA.rev[i]/maxRev*100);
-      var tgtPct=Math.round(DATA.target[i]/maxRev*100);
-      revHtml+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-        +'<div style="font-size:11px;color:var(--muted);min-width:28px">'+m+'</div>'
-        +'<div style="flex:1;position:relative;height:16px">'
-        +'<div style="background:#f1f5f9;border-radius:3px;height:16px;overflow:hidden">'
-        +'<div style="height:100%;width:'+actPct+'%;background:#16c762;border-radius:3px"></div></div>'
-        +'<div style="position:absolute;top:0;left:0;height:16px;border-left:2px dashed #f59e0b;opacity:.7" style="left:'+tgtPct+'%"></div>'
-        +'</div>'
-        +'<div style="font-size:11px;color:var(--text);min-width:56px;text-align:right">$'+(DATA.rev[i]/1000).toFixed(0)+'k</div></div>';
-    });
-    revHtml+='<div style="font-size:10px;color:var(--muted);margin-top:4px">Green=Actual &bull; Dashed=Target</div>';
+    var d=getReal();
+    document.getElementById('exec-kpi1').textContent='$'+d.revMTD.toLocaleString();
+    document.getElementById('exec-kpi2').textContent=(d.margin==null)?'--':d.margin+'%';
+    document.getElementById('exec-kpi3').textContent=d.jobsCompletedMTD;
+    document.getElementById('exec-kpi4').textContent='$'+d.arOutstanding.toLocaleString();
+
+    var maxRev=Math.max.apply(null,d.revByMonth.map(function(m){return m.rev;}))||1;
+    var revHtml=d.revByMonth.map(function(m){
+      var pct=Math.round(m.rev/maxRev*100);
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+        +'<div style="font-size:11px;color:var(--muted);min-width:28px">'+m.label+'</div>'
+        +'<div style="flex:1;background:#f1f5f9;border-radius:3px;height:16px;overflow:hidden">'
+        +'<div style="height:100%;width:'+pct+'%;background:#16c762;border-radius:3px"></div></div>'
+        +'<div style="font-size:11px;color:var(--text);min-width:56px;text-align:right">$'+(m.rev/1000).toFixed(1)+'k</div></div>';
+    }).join('')+'<div style="font-size:10px;color:var(--muted);margin-top:4px">Actual invoiced revenue, trailing 6 months. No budget/target figure exists in this app to compare against.</div>';
     document.getElementById('exec-rev-chart').innerHTML=revHtml;
-    var maxStone=DATA.stones[0].rev;
-    var stoneHtml='';
-    DATA.stones.forEach(function(s){
-      stoneHtml+='<div style="margin-bottom:6px">'
-        +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">'
-        +'<span style="color:var(--text)">'+s.name+'</span><span style="color:var(--muted)">$'+(s.rev/1000).toFixed(0)+'k ('+s.pct+'%)</span></div>'
+
+    var maxMat=d.jobsByMaterial.length?d.jobsByMaterial[0].count:0;
+    var matHtml=d.jobsByMaterial.length?d.jobsByMaterial.map(function(m){
+      var pct=maxMat?Math.round(m.count/maxMat*100):0;
+      return '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">'
+        +'<span style="color:var(--text)">'+escHtml(m.name)+'</span><span style="color:var(--muted)">'+m.count+' job(s)</span></div>'
         +'<div style="background:#f1f5f9;border-radius:3px;height:12px;overflow:hidden">'
-        +'<div style="height:100%;width:'+s.pct+'%;background:var(--a);border-radius:3px"></div></div></div>';
-    });
-    document.getElementById('exec-stone-chart').innerHTML=stoneHtml;
-    var ops=DATA.ops;
-    var opsHtml=[
-      {label:'On-Time Delivery',val:ops.on_time,max:100,good:90,unit:'%'},
-      {label:'Crew Utilization',val:ops.crew_util,max:100,good:80,unit:'%'},
-      {label:'NPS Score',val:ops.nps,max:100,good:50,unit:''},
-      {label:'CSAT Rating',val:ops.csat*20,max:100,good:80,unit:'',display:ops.csat+'/5'},
-      {label:'Remake Rate',val:100-ops.remake_rate*10,max:100,good:90,unit:'',display:ops.remake_rate+'%'},
-      {label:'Safety (days)',val:Math.min(100,ops.safety_days/2),max:100,good:50,unit:'',display:ops.safety_days+'d'}
-    ].map(function(o){
-      var color=o.val>=o.good?'#16c762':'#f59e0b';
+        +'<div style="height:100%;width:'+pct+'%;background:var(--a);border-radius:3px"></div></div></div>';
+    }).join(''):'<div style="color:var(--muted);font-size:12px">No jobs scheduled this month yet.</div>';
+    document.getElementById('exec-stone-chart').innerHTML=matHtml;
+
+    var opsRows=[];
+    opsRows.push({label:'Open Remakes',display:d.openRemakes});
+    opsRows.push({label:'Days Since Safety Incident',display:d.daysSinceIncident==null?'--':d.daysSinceIncident+'d'});
+    opsRows.push({label:'Avg NPS Score',display:d.avgNps==null?'--':d.avgNps});
+    document.getElementById('exec-ops').innerHTML=opsRows.map(function(o){
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">'
-        +'<span style="color:var(--text)">'+o.label+'</span>'
-        +'<span style="color:'+color+';font-weight:700">'+(o.display||o.val+o.unit)+'</span></div>';
+        +'<span style="color:var(--text)">'+o.label+'</span><span style="color:var(--text);font-weight:700">'+o.display+'</span></div>';
     }).join('');
-    document.getElementById('exec-ops').innerHTML=opsHtml;
-    var custHtml='';
-    DATA.customers.forEach(function(c,i){
-      var pct=Math.round(c.rev/DATA.customers[0].rev*100);
-      custHtml+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">'
-        +'<span style="color:var(--text);font-weight:'+(i===0?700:400)+'">'+c.name+'</span>'
-        +'<span style="color:var(--a);font-weight:600">$'+c.rev.toLocaleString()+'</span></div>'
+
+    document.getElementById('exec-top-cust').innerHTML=d.topCustomers.length?d.topCustomers.map(function(c,i){
+      var pct=Math.round((c.quote||0)/(d.topCustomers[0].quote||1)*100);
+      return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">'
+        +'<span style="color:var(--text);font-weight:'+(i===0?700:400)+'">'+escHtml(c.name)+'</span>'
+        +'<span style="color:var(--a);font-weight:600">$'+(c.quote||0).toLocaleString()+'</span></div>'
         +'<div style="background:#f1f5f9;border-radius:3px;height:10px;overflow:hidden">'
         +'<div style="height:100%;width:'+pct+'%;background:'+(i===0?'#16c762':'var(--a)')+';border-radius:3px"></div></div></div>';
-    });
-    document.getElementById('exec-top-cust').innerHTML=custHtml;
-    var maxPipe=DATA.pipeline[0].count;
-    var pipeHtml='';
-    DATA.pipeline.forEach(function(p){
+    }).join(''):'<div style="color:var(--muted);font-size:12px">No customers with a quote value on file yet.</div>';
+
+    var maxPipe=Math.max.apply(null,d.pipeline.map(function(p){return p.count;}))||1;
+    document.getElementById('exec-pipeline').innerHTML=d.pipeline.map(function(p){
       var pct=Math.round(p.count/maxPipe*100);
-      pipeHtml+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">'
+      return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">'
         +'<span style="color:var(--text)">'+p.stage+'</span>'
-        +'<span style="color:var(--muted)">'+p.count+' jobs / $'+p.value.toLocaleString()+'</span></div>'
+        +'<span style="color:var(--muted)">'+p.count+' lead(s) / $'+p.value.toLocaleString()+'</span></div>'
         +'<div style="background:#f1f5f9;border-radius:3px;height:14px;overflow:hidden">'
-        +'<div style="height:100%;width:'+pct+'%;background:var(--a);opacity:'+(0.4+pct*0.006)+';border-radius:3px"></div></div></div>';
-    });
-    document.getElementById('exec-pipeline').innerHTML=pipeHtml;
+        +'<div style="height:100%;width:'+pct+'%;background:var(--a);border-radius:3px"></div></div></div>';
+    }).join('');
   };
   window.sdExecAI=function(){
     var out=document.getElementById('exec-ai-out');
     out.style.display='block';out.textContent='Preparing executive brief...';
+    var d=getReal();
+    var summary='Revenue MTD $'+d.revMTD.toLocaleString()+'. Gross margin '+(d.margin==null?'not tracked yet':d.margin+'%')+'. '
+      +d.jobsCompletedMTD+' jobs completed this month. A/R outstanding $'+d.arOutstanding.toLocaleString()+'. '
+      +'Avg NPS '+(d.avgNps==null?'not tracked yet':d.avgNps)+'. Open remakes: '+d.openRemakes+'. '
+      +'Pipeline: '+d.pipeline.map(function(p){return p.count+' '+p.stage;}).join(', ')+'.';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a business advisor for Jim Hartwell, owner of Pinnacle Stone & Design. Monthly business snapshot: Revenue MTD $142,800 (vs $155k target, 92% attainment). Gross margin 38%. 14 jobs completed. A/R outstanding $24,100. NPS 71. On-time delivery 94%. Remake rate 2.1%. Crew utilization 87%. Top customer: Robert Wallace (contractor) at $68.4k LTV. Pipeline: 24 leads / 11 quoted / 5 approved / 7 scheduled. Revenue trend 6 months: Jan $88k, Feb $104k, Mar $98k, Apr $118k, May $131k, Jun $143k. Key concerns: below revenue target, $14.2k overdue from City Cafe. Provide a concise executive summary (5-7 bullet points) covering: performance vs plan, key risks, opportunities, and 3 top priorities for next 30 days.'}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a business advisor for a stone fabrication shop owner. Here is the actual tracked data this month: '+summary+' If any figure says "not tracked yet," say plainly that more data is needed rather than guessing at it. Provide a concise executive summary (5-7 bullet points) covering: performance based on the real numbers above, key risks, opportunities, and 3 top priorities for next 30 days.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
-    }).catch(function(){out.textContent='AI unavailable. Revenue tracking 92% to plan. Collect City Cafe overdue balance and close 2 approved quotes to hit target.';});
+    }).catch(function(){out.textContent='AI unavailable. Review the KPI row above directly: revenue MTD, A/R outstanding, and open remakes are the fastest health check.';});
   };
   window.sdExecPrint=function(){
+    var d=getReal();
     var w=window.open('','_blank');
     w.document.write('<html><head><title>Executive Report - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}.kpis{display:flex;gap:20px;margin-bottom:24px}.kpi{background:#f8fafc;padding:14px 20px;border-radius:8px;text-align:center;min-width:120px}.kv{font-size:24px;font-weight:800;color:#16c762}.kl{font-size:11px;color:#64748b;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}h3{color:#16c762;margin-top:24px}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h2 style="color:#16c762;margin-bottom:4px">Executive Dashboard Report</h2><p style="color:#64748b;margin-top:0">Pinnacle Stone & Design — Jim Hartwell — '+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<div class="kpis"><div class="kpi"><div class="kv">$142.8k</div><div class="kl">Revenue MTD</div></div><div class="kpi"><div class="kv">38%</div><div class="kl">Gross Margin</div></div><div class="kpi"><div class="kv">14</div><div class="kl">Jobs MTD</div></div><div class="kpi"><div class="kv">71</div><div class="kl">NPS</div></div><div class="kpi"><div class="kv">94%</div><div class="kl">On-Time</div></div></div>');
-    w.document.write('<h3>Top Customers</h3><table><tr><th>Customer</th><th>Revenue</th><th>Jobs</th></tr>');
-    DATA.customers.forEach(function(c){w.document.write('<tr><td>'+c.name+'</td><td>$'+c.rev.toLocaleString()+'</td><td>'+c.jobs+'</td></tr>');});
+    w.document.write('<h2 style="color:#16c762;margin-bottom:4px">Executive Dashboard Report</h2><p style="color:#64748b;margin-top:0">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
+    w.document.write('<div class="kpis"><div class="kpi"><div class="kv">$'+d.revMTD.toLocaleString()+'</div><div class="kl">Revenue MTD</div></div><div class="kpi"><div class="kv">'+(d.margin==null?'--':d.margin+'%')+'</div><div class="kl">Gross Margin</div></div><div class="kpi"><div class="kv">'+d.jobsCompletedMTD+'</div><div class="kl">Jobs MTD</div></div><div class="kpi"><div class="kv">'+(d.avgNps==null?'--':d.avgNps)+'</div><div class="kl">NPS</div></div><div class="kpi"><div class="kv">$'+d.arOutstanding.toLocaleString()+'</div><div class="kl">A/R Outstanding</div></div></div>');
+    w.document.write('<h3>Top Customers</h3><table><tr><th>Customer</th><th>Quote Value</th></tr>');
+    d.topCustomers.forEach(function(c){w.document.write('<tr><td>'+c.name+'</td><td>$'+(c.quote||0).toLocaleString()+'</td></tr>');});
     w.document.write('</table><h3>Pipeline</h3><table><tr><th>Stage</th><th>Count</th><th>Value</th></tr>');
-    DATA.pipeline.forEach(function(p){w.document.write('<tr><td>'+p.stage+'</td><td>'+p.count+'</td><td>$'+p.value.toLocaleString()+'</td></tr>');});
+    d.pipeline.forEach(function(p){w.document.write('<tr><td>'+p.stage+'</td><td>'+p.count+'</td><td>$'+p.value.toLocaleString()+'</td></tr>');});
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
-  sdExecRender();
+  if(document.readyState==='complete') sdExecRender();
+  else window.addEventListener('load', sdExecRender);
 })();
 </script>
 <div class="exec-only-block" style="margin-top:18px;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;max-height:420px">
