@@ -3331,12 +3331,26 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="adm-users">8</div><div class="kpi-label">Users</div></div>
-  <div class="kpi"><div class="kpi-val" id="adm-storage" style="color:#16C762">12%</div><div class="kpi-label">Storage Used</div></div>
-  <div class="kpi"><div class="kpi-val" id="adm-backup">Today</div><div class="kpi-label">Last Backup</div></div>
+  <div class="kpi"><div class="kpi-val" id="adm-users">0</div><div class="kpi-label">Users</div></div>
+  <div class="kpi"><div class="kpi-val" id="adm-storage" style="color:#16C762">0%</div><div class="kpi-label">Storage Used</div></div>
+  <div class="kpi"><div class="kpi-val" id="adm-backup">--</div><div class="kpi-label">Last Backup</div></div>
   <div class="kpi"><div class="kpi-val" id="adm-version">v52</div><div class="kpi-label">Build</div></div>
   <div class="kpi"><div class="kpi-val" style="color:#16C762">✓</div><div class="kpi-label">API Connected</div></div>
 </div>
+<script>
+(function(){
+  function renderAdminOverviewKPIs(){
+    var users=[]; try{users=JSON.parse(localStorage.getItem('sd_emp_directory_v1')||'[]');}catch(e){}
+    var uEl=document.getElementById('adm-users'); if(uEl) uEl.textContent=users.length;
+    var totalBytes=0; for(var k in localStorage){ try{ totalBytes+=(localStorage[k]||'').length*2; }catch(e){} }
+    var pct=Math.min(100, Math.round((totalBytes/1024/5120)*100));
+    var sEl=document.getElementById('adm-storage'); if(sEl) sEl.textContent=pct+'%';
+    var lastBackup=localStorage.getItem('sd_last_backup');
+    var bEl=document.getElementById('adm-backup'); if(bEl) bEl.textContent=lastBackup?new Date(lastBackup).toLocaleDateString():'--';
+  }
+  renderAdminOverviewKPIs();
+})();
+</script>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
