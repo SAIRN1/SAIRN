@@ -127,6 +127,21 @@ re-checked at that point. Two acceptable resolutions, no third option of
 Never let a dormant panel just continue existing unmentioned — that's exactly
 how a fabricated-KPI panel goes live undetected months later.
 
+**0d-multi-function. When a panel has more than one candidate function, check
+nav-trigger status independently for EACH one before calling anything dormant.**
+Added 2026-07-26, straight from a real miss: StoneDesk's panel-tax has both an
+add/create function (`taxAddEntry()`) and a separate render/display function
+(`taxRender()`). An earlier pass checked only `taxAddEntry()`'s callers, found
+none, and classified the whole panel dormant — but `taxRender()` had its own,
+separate nav trigger and was live the entire time, quietly running a fully
+fabricated 6-month fake sales trend and 3 fictional 1099 contractors on every
+real page load. Checking one function and stopping is exactly the gap that let
+this slip past Check 0b. A panel is only safely "dormant" once *every* function
+that could plausibly back its visible content — add, save, render, update,
+delete, whatever exists — has been checked for nav callers independently and
+all of them come back zero. Finding one dormant function is not evidence the
+others are; check them all, separately, every time.
+
 **0c. Multi-codebase drift check — do this once per app, first time you touch it.**
 Before assuming a single canonical codebase, check whether more than one repo or
 deployment target claims to be the same product. Found this session: StoneDesk had
