@@ -12,7 +12,7 @@ Platform-wide code quality enforcement for all 11 SAIRN apps. Mechanical. Automa
 ### Architecture (5)
 1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly
 2. **Bridge rule** — all cross-app data uses sairn.vercel.app/api/bridge, never rebuilt inline
-3. **App ID present** — every API fetch includes app_id matching the file's app
+3. **App ID present AND registered** — two separate checks, not one. (a) Every API fetch in the app's own frontend code includes `app_id` matching that app. (b) That same `app_id` string must also exist in `api/claude.js`'s `KNOWN_APP_IDS` array server-side — a frontend can pass a perfectly correct `app_id` and still get a 400 "unrecognized app_id" if the backend's allowlist doesn't know about it. Found 2026-07-26: `KNOWN_APP_IDS` had only 4 of 13 live apps (stonedesk, sairnbiz, sairncode, sairnvet) — the other 9 (SAIRNscape, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNfuneral, SAIRNmechanical, SAIRNhr, SAIRNacc) were calling their own AI proxy correctly and still failing every time. Checking the frontend alone would have missed this entirely — it only shows up by also reading `api/claude.js` and diffing its allowlist against the full App File Map above. After any fix here, verify live against the real endpoint (`curl -X POST https://sairn.vercel.app/api/claude` with that app's real `app_id`) rather than trusting the allowlist edit alone — a passing code review is not the same as a 200 from the actual proxy.
 4. **is_demo flag** — every API fetch includes is_demo:true
 5. **No service_role key** — Supabase anon key only in browser code
 
