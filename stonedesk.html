@@ -4426,20 +4426,20 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🔌 Integrations</h2>
-  <div style="font-size:13px;color:var(--muted);margin-top:2px">Connected apps, API status &amp; data sync management</div></div>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Track which outside apps you use and their setup status — a manual checklist, not a live data sync</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdIntegConnect()">+ Connect App</button>
-    <button class="q-btn" onclick="sdIntegSyncAll()">🔄 Sync All</button>
+    <button class="q-btn" onclick="sdIntegSyncAll()">✓ Mark All Reviewed</button>
     <button class="q-btn" onclick="sdIntegAI()">🤖 AI Recommendations</button>
     <button class="q-btn" onclick="sdIntegPrint()">🖨️ Print</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="integ-connected" style="color:#16C762">0</div><div class="kpi-label">Connected</div></div>
-  <div class="kpi"><div class="kpi-val" id="integ-syncing">0</div><div class="kpi-label">Syncing</div></div>
+  <div class="kpi"><div class="kpi-val" id="integ-syncing">0</div><div class="kpi-label">Reviewed</div></div>
   <div class="kpi"><div class="kpi-val" id="integ-errors" style="color:#ef4444">0</div><div class="kpi-label">Errors</div></div>
   <div class="kpi"><div class="kpi-val" id="integ-pending" style="color:#f59e0b">0</div><div class="kpi-label">Pending Setup</div></div>
-  <div class="kpi"><div class="kpi-val" id="integ-last">—</div><div class="kpi-label">Last Sync</div></div>
+  <div class="kpi"><div class="kpi-val" id="integ-last">—</div><div class="kpi-label">Last Reviewed</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
   <div>
@@ -4499,13 +4499,9 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       <button class="q-btn primary" style="width:100%" onclick="sdIntegConnect()">Add Integration</button>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
-      <div style="font-weight:700;margin-bottom:10px;font-size:13px">Sync Log</div>
+      <div style="font-weight:700;margin-bottom:10px;font-size:13px">Review Log</div>
       <div id="integ-log" style="font-size:11px;color:var(--muted);line-height:2;max-height:160px;overflow-y:auto">
-        <div>08:00 — QuickBooks synced (142 records)</div>
-        <div>08:00 — Podium synced (8 messages)</div>
-        <div>07:30 — Stripe synced (3 payments)</div>
-        <div>06:00 — Google Drive synced (ok)</div>
-        <div style="color:#ef4444">05:00 — Houzz Pro sync error (retry)</div>
+        <div style="color:var(--muted)">No integrations reviewed yet. This app does not connect to any external service automatically — add an app below and mark it reviewed yourself.</div>
       </div>
     </div>
     <div id="integ-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.7"></div>
@@ -4515,17 +4511,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 <script>
 (function(){
   var ICONS={Accounting:"📊",CRM:"👥",Payment:"💳",Communication:"💬","File Storage":"📁","E-Commerce":"🛒",Other:"🔌"};
-  var SEED=[
-    {id:1,name:"QuickBooks Online",cat:"Accounting",status:"Connected",sync:"Today 08:00",errors:0,records:1842},
-    {id:2,name:"Google Workspace",cat:"Communication",status:"Connected",sync:"Today 09:00",errors:0,records:240},
-    {id:3,name:"Stripe",cat:"Payment",status:"Connected",sync:"Today 07:30",errors:0,records:87},
-    {id:4,name:"Google Drive",cat:"File Storage",status:"Connected",sync:"Today 08:45",errors:0,records:312},
-    {id:5,name:"Houzz Pro",cat:"E-Commerce",status:"Connected",sync:"Yesterday 14:00",errors:1,records:54},
-    {id:6,name:"Podium",cat:"Communication",status:"Connected",sync:"Today 08:00",errors:0,records:198},
-    {id:7,name:"Yelp Business",cat:"CRM",status:"Pending Setup",sync:"—",errors:0,records:0},
-    {id:8,name:"Instagram Business",cat:"E-Commerce",status:"Disconnected",sync:"—",errors:2,records:0},
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem("sd_integrations")||"null")||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem("sd_integrations")||"[]");}catch(e){return [];}}
   function save(d){try{localStorage.setItem("sd_integrations",JSON.stringify(d));}catch(e){}}
   function updateKPIs(d){
     var conn=d.filter(function(x){return x.status==="Connected";});
@@ -4557,11 +4543,10 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
         +"<div style='font-size:11px;color:var(--muted)'>"+x.cat+"</div></div></div>"
         +"<span style='background:"+(statusColors[x.status]||"#f3f4f6")+";color:"+(statusText[x.status]||"#374151")+";padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700'>"+x.status+"</span>"
         +"</div>"
-        +(x.records?"<div style='font-size:11px;color:var(--muted);margin-bottom:4px'>"+x.records.toLocaleString()+" records synced</div>":"")
-        +"<div style='font-size:11px;color:var(--muted)'>Last sync: "+x.sync+"</div>"
-        +(x.errors?"<div style='font-size:11px;color:#dc2626;margin-top:4px;font-weight:700'>⚠ "+x.errors+" sync error(s)</div>":"")
+        +"<div style='font-size:11px;color:var(--muted)'>Last reviewed: "+x.sync+"</div>"
+        +(x.errors?"<div style='font-size:11px;color:#dc2626;margin-top:4px;font-weight:700'>⚠ "+x.errors+" issue(s) noted</div>":"")
         +"<div style='display:flex;gap:6px;margin-top:10px'>"
-        +"<button class='q-btn' style='font-size:11px;padding:3px 8px;flex:1' onclick='sdIntegSyncOne("+x.id+")'>🔄 Sync</button>"
+        +"<button class='q-btn' style='font-size:11px;padding:3px 8px;flex:1' onclick='sdIntegSyncOne("+x.id+")'>✓ Mark Reviewed</button>"
         +"<button class='q-btn' style='font-size:11px;padding:3px 8px;flex:1;background:#fee2e2;color:#991b1b;border-color:#fca5a5' onclick='sdIntegRemove("+x.id+")'>Remove</button>"
         +"</div></div>";
     }).join("")||"<div style='padding:24px;text-align:center;color:var(--muted)'>No integrations match filter.</div>";
@@ -4585,12 +4570,12 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var d=load();var x=d.find(function(i){return i.id===id;});
     if(!x)return;
     x.sync="Just now";x.errors=0;
-    save(d);sdIntegRender();showToast(escHtml(x.name)+" synced.");
+    save(d);sdIntegRender();showToast(escHtml(x.name)+" marked reviewed.");
   };
   window.sdIntegSyncAll=function(){
     var d=load();
     d.filter(function(x){return x.status==="Connected";}).forEach(function(x){x.sync="Just now";x.errors=0;});
-    save(d);sdIntegRender();showToast("All integrations synced.");
+    save(d);sdIntegRender();showToast("All connected integrations marked reviewed.");
   };
   window.sdIntegRemove=function(id){
     var d=load();var x=d.find(function(i){return i.id===id;});
@@ -22700,7 +22685,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">💬 SMS Communications</h2>
-  <div style="font-size:13px;color:var(--muted);margin-top:2px">Customer text messaging, reminders & automated notifications</div></div>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Draft messages and open them in your phone's SMS app to send — no automated sending</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdSMSSend()">+ Send SMS</button>
     <button class="q-btn" onclick="sdSMSAI()">🤖 AI Draft</button>
