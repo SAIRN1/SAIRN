@@ -24697,7 +24697,7 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="it-uptime" style="color:#16C762">99.8%</div><div class="kpi-label">System Uptime</div></div>
+  <div class="kpi"><div class="kpi-val" id="it-uptime" style="color:#16C762">0</div><div class="kpi-label">Tickets Resolved</div></div>
   <div class="kpi"><div class="kpi-val" id="it-users">0</div><div class="kpi-label">Active Users</div></div>
   <div class="kpi"><div class="kpi-val" id="it-tickets">0</div><div class="kpi-label">Open Tickets</div></div>
   <div class="kpi"><div class="kpi-val" id="it-licenses">0</div><div class="kpi-label">Licenses</div></div>
@@ -24751,7 +24751,10 @@ document.addEventListener('DOMContentLoaded', function() {
   function render(){
     var t=loadTickets();
     var open=t.filter(function(x){return x.status!=='Resolved';});
-    document.getElementById('it-users').textContent=8;
+    var resolved=t.filter(function(x){return x.status==='Resolved';});
+    var empCount=0; try{empCount=(JSON.parse(localStorage.getItem('sd_emp_directory_v1')||'[]')||[]).length;}catch(e){}
+    document.getElementById('it-uptime').textContent=resolved.length;
+    document.getElementById('it-users').textContent=empCount;
     document.getElementById('it-tickets').textContent=open.length;
     document.getElementById('it-licenses').textContent=LICENSES.length;
     var pColors={Critical:'#fee2e2',High:'#fef3c7',Medium:'#dbeafe',Low:'#f3f4f6'};
