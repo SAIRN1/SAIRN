@@ -5666,10 +5666,20 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="kpi"><div class="kpi-val" id="comms-sent">0</div><div class="kpi-label">Total Sent</div></div>
   <div class="kpi"><div class="kpi-val" id="comms-today">0</div><div class="kpi-label">Today</div></div>
   <div class="kpi"><div class="kpi-val" id="comms-customers">0</div><div class="kpi-label">Unique Recipients</div></div>
-  <div class="kpi"><div class="kpi-val" id="comms-templates">8</div><div class="kpi-label">Templates</div></div>
+  <div class="kpi"><div class="kpi-val" id="comms-templates">0</div><div class="kpi-label">Templates</div></div>
   <div class="kpi"><div class="kpi-val" style="color:#16C762" id="comms-ai-gen">0</div><div class="kpi-label">AI Drafted</div></div>
   <span id="comms-unread" style="display:none"></span>
 </div>
+<script>
+(function(){
+  function renderCommsTemplateCount(){
+    var n=(typeof COMMS_TEMPLATES!=='undefined')?Object.keys(COMMS_TEMPLATES).length:0;
+    var el=document.getElementById('comms-templates'); if(el) el.textContent=n;
+  }
+  if(document.readyState==='complete') renderCommsTemplateCount();
+  else window.addEventListener('load', renderCommsTemplateCount);
+})();
+</script>
 <div style="display:grid;grid-template-columns:1fr 340px;gap:16px">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
@@ -22573,7 +22583,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="kpi"><div class="kpi-val" id="mfst-today">0</div><div class="kpi-label">Today's Jobs</div></div>
   <div class="kpi"><div class="kpi-val" id="mfst-done">0</div><div class="kpi-label">Completed</div></div>
   <div class="kpi"><div class="kpi-val" id="mfst-pending">0</div><div class="kpi-label">Pending</div></div>
-  <div class="kpi"><div class="kpi-val" id="mfst-crews">2</div><div class="kpi-label">Active Crews</div></div>
+  <div class="kpi"><div class="kpi-val" id="mfst-crews">0</div><div class="kpi-label">Active Crews</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
@@ -22620,6 +22630,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('mfst-today').textContent=tod.length;
     document.getElementById('mfst-done').textContent=tod.filter(function(x){return x.status==='Completed';}).length;
     document.getElementById('mfst-pending').textContent=tod.filter(function(x){return x.status==='Scheduled';}).length;
+    var crews=new Set(tod.filter(function(x){return x.status!=='Completed';}).map(function(x){return x.crew;}).filter(Boolean));
+    document.getElementById('mfst-crews').textContent=crews.size;
   }
   window.sdManifestRender=function(){
     var d=load();
