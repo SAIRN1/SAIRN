@@ -28739,7 +28739,7 @@ async function miRefresh(){
           if((r.loan_type||r.type||'').toString().indexOf('15')>-1)miSetKpi('mortgage15',(r.rate||r.interest_rate||'--').toString()+'%','','');
         });
       }
-    }catch(e){miSetKpi('mortgage30','7.02%','see FRED','flat');miSetKpi('mortgage15','6.41%','see FRED','flat');}
+    }catch(e){miSetKpi('mortgage30','--','unavailable','flat');miSetKpi('mortgage15','--','unavailable','flat');}
 
     setTimeout(function(){
       miDrawChart('mi-chart-starts',fred.starts?fred.starts.slice(-12):[],'#16C762');
