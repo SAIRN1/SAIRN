@@ -23357,10 +23357,10 @@ document.addEventListener('DOMContentLoaded', function() {
   function save(d){try{localStorage.setItem('sd_veinmatch',JSON.stringify(d));}catch(e){}}
   function updateKPIs(){
     var d=load();
-    document.getElementById('vein-jobs').textContent=d.length||6;
-    document.getElementById('vein-match').textContent='96%';
-    document.getElementById('vein-waste').textContent='14%';
-    document.getElementById('vein-saved').textContent='$'+(((d.length||6)*240)).toLocaleString();
+    document.getElementById('vein-jobs').textContent=d.length;
+    document.getElementById('vein-match').textContent='--';
+    document.getElementById('vein-waste').textContent='--';
+    document.getElementById('vein-saved').textContent='$'+((d.length*240)).toLocaleString();
   }
   window.sdVeinAnalyze=function(){
     var proj=document.getElementById('vein-proj').value.trim()||'Project';
@@ -23471,10 +23471,10 @@ document.addEventListener('DOMContentLoaded', function() {
   function save(d){try{localStorage.setItem('sd_seamai',JSON.stringify(d));}catch(e){}}
   function updateKPIs(){
     var d=load();
-    document.getElementById('seam-analyzed').textContent=d.length||8;
-    document.getElementById('seam-approved').textContent='94%';
+    document.getElementById('seam-analyzed').textContent=d.length;
+    document.getElementById('seam-approved').textContent=d.length?Math.round((d.filter(function(x){return !x.remake;}).length/d.length)*100)+'%':'--';
     document.getElementById('seam-remakes').textContent=d.filter(function(x){return x.remake;}).length;
-    document.getElementById('seam-savings').textContent='$'+((d.length||8)*180).toLocaleString();
+    document.getElementById('seam-savings').textContent='$'+(d.length*180).toLocaleString();
   }
   window.sdSeamAnalyze=function(){
     var job=document.getElementById('seam-job').value.trim()||'Project';
@@ -27870,11 +27870,9 @@ function sbNav(id) {
     if(id==='referral'&&typeof rfRender==='function')rfRender();
     if(id==='priceintel'&&typeof piInit==='function')piInit();
     if(id==='equipment'&&typeof window.sdEqRender==='function')window.sdEqRender();
-    if(id==='empdirectory'&&typeof empRender==='function')empRender();
     if(id==='stoneyard'&&typeof window.sdYardRender==='function')window.sdYardRender();
     if(id==='subcontractor'&&typeof window.sdSubRender==='function')window.sdSubRender();
     if(id==='bidboard'&&typeof window.sdBidRender==='function')window.sdBidRender();
-    if(id==='it'&&typeof itRender==='function')itRender();
     if(id==='damage'&&typeof dmgRender==='function')dmgRender();
     if(id==='training'&&typeof trnRender==='function')trnRender();
     if(id==='bulletin'&&typeof bltnRender==='function')bltnRender();
@@ -27884,6 +27882,12 @@ function sbNav(id) {
     if(id==='stonehub'&&typeof shRenderHistory==='function')shRenderHistory();
     if(id==='tax'&&typeof taxRender==='function')taxRender();
     if(id==='emailsecurity'&&typeof esRender==='function')esRender();
+    if(id==='ap'&&typeof apRender==='function')apRender();
+    if(id==='employees'&&typeof empRender==='function')empRender();
+    if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();}
+    if(id==='template'&&typeof tmRender==='function'){tmRender();if(typeof tmUpdateKPIs==='function')tmUpdateKPIs();}
+    if(id==='templates'&&typeof tmplRender==='function')tmplRender();
+    if(id==='business'&&typeof calcBiz==='function')calcBiz();
   }, 50);
   // Auto-expand the section containing this panel
   var section = SB_PANEL_SECTION[id];
