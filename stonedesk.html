@@ -29668,7 +29668,8 @@ function sintSetMat(key,btn){
     '<div><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">MARKET PRICE</div><div style="font-size:13px;font-weight:800;color:var(--a)">'+m.range+'</div></div>'+
     '</div>';
   var sl=document.getElementById('sint-safety-list');
-  if(sl)sl.innerHTML=m.safety.split('.').filter(function(s){return s.trim().length>5;}).map(function(s){return '<div style="font-size:12px;line-height:1.6">&#9888;&#65039; '+s.trim()+'.</div>';}).join('');
+  if(sl)sl.innerHTML='<div style="grid-column:1/-1;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Cutting &amp; Safety Reference — '+m.name+'</div>'
+    +m.safety.split('.').filter(function(s){return s.trim().length>5;}).map(function(s){return '<div style="font-size:12px;line-height:1.6">&#9888;&#65039; '+s.trim()+'.</div>';}).join('');
   sintCalc();
 }
 function sintCalc(){
