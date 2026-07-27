@@ -1,4 +1,5 @@
 {
+  "outputStyle": "silent",
   "permissions": {
     "allow": [
       "Read",
