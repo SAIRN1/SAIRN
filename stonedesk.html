@@ -8423,7 +8423,15 @@ function saveQuote() {
         rs.reservedFor = q.client;
         if (typeof saveSlabs === 'function') saveSlabs();
         if (typeof slabSyncOne === 'function') slabSyncOne(rs);
-        if (typeof slabRender === 'function') slabRender();
+        // NOTE: slabRender() was removed here -- it targets #slab-grid, which does not
+        // exist anywhere in the document (confirmed via grep), and unconditionally does
+        // grid.innerHTML=... with no null guard. Calling it here threw a synchronous,
+        // uncaught TypeError on every quote save that had a slab reserved, aborting the
+        // rest of saveQuote() before the quote itself was ever pushed to quoteHistory --
+        // i.e. reserving a slab could silently prevent the quote from saving at all.
+        // The actual reservation (rs.status/rs.reservedFor/saveSlabs/slabSyncOne above)
+        // is unaffected and still persists correctly; only the (crashing, and separately
+        // disconnected-data-model) re-render call was removed.
       }
     }
     qbReservedSlabId = null;
