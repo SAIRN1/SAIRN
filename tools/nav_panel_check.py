@@ -33,8 +33,16 @@ if __name__ == '__main__':
             nav_targets_from_buttons.add(m_nav.group(1))
     nav_targets = set(re.findall(r"sbNav\('([a-zA-Z0-9_-]+)'\)", html))
 
+    # showPanel() has a documented, working delegation (the `pageIds` map, ~line 7901)
+    # for a THIRD nav system: class="page" divs (id="page-X") shown/hidden by a separate
+    # window.showPage(), not the panel-X/showPanel() mechanism this script otherwise
+    # checks. These ids legitimately have no panel-X div and never will -- confirmed by
+    # reading showPanel()/showPage() directly during SESSION67, not assumed. Keep this
+    # list in sync with the literal `pageIds` object in stonedesk.html if it ever changes.
+    PAGE_SYSTEM_IDS = {'doc-scan', 'check-register', 'field-quote'}
+
     # Check 17: every sbNav('X') call site has a matching panel-X div.
-    orphan_nav_targets = sorted(nav_targets - set(panel_ids))
+    orphan_nav_targets = sorted(nav_targets - set(panel_ids) - PAGE_SYSTEM_IDS)
     if orphan_nav_targets:
         fails.append(f"NAV_TARGETS_WITH_NO_PANEL:{orphan_nav_targets}")
 
@@ -45,8 +53,9 @@ if __name__ == '__main__':
     if panels_without_sb_button:
         fails.append(f"PANELS_WITH_NO_SIDEBAR_BUTTON:{panels_without_sb_button}")
 
-    # sb-X buttons whose id has no matching panel at all (dead nav button).
-    sb_ids_without_panel = sorted(sb_ids - set(panel_ids))
+    # sb-X buttons whose id has no matching panel at all (dead nav button) --
+    # excluding the page-system ids, which are real buttons wired to page-X divs instead.
+    sb_ids_without_panel = sorted(sb_ids - set(panel_ids) - PAGE_SYSTEM_IDS)
     if sb_ids_without_panel:
         fails.append(f"SIDEBAR_BUTTONS_WITH_NO_PANEL:{sb_ids_without_panel}")
 
