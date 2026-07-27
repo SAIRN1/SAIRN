@@ -11227,7 +11227,6 @@ function printDrawCutSheet() {
     </div>
     <div class="sh-answer-actions">
       <button class="sh-action-btn" onclick="shPrint()">&#128438; Print</button>
-      <button class="sh-action-btn" onclick="shSave()">&#128190; Save to History</button>
       <button class="sh-action-btn" onclick="shCopy()">&#128203; Copy</button>
       <button class="sh-action-btn" onclick="shAskFollowup()">&#128172; Ask Follow-up</button>
     </div>
@@ -29120,7 +29119,10 @@ function shPrint(){
   w.document.close();w.print();
 }
 
-function shSave(){if(typeof showToast==='function')showToast('Question saved to history');}
+// shSave()/the "Save to History" button were removed here: shAsk() already
+// unconditionally saves every Q&A to sd_stonehead_history the moment an
+// answer comes back (see shAsk() above) -- the button did nothing but show
+// a "Question saved to history" toast claiming an action it never took.
 
 function shCopy(){
   var a=document.getElementById('sh-answer-text');
