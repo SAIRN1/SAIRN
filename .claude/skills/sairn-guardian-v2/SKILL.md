@@ -153,6 +153,42 @@ the abandoned one — don't let it silently rot and confuse a future session.
 
 ---
 
+## Exhaustive Root-Cause Diagnosis
+
+Added after two real misses in one session, both from stopping at the first
+plausible cause instead of enumerating every candidate that matches the exact
+observed symptom (specific error text, specific hook/matcher/event name).
+
+Before reporting a root cause: **list every candidate that matches the exact
+symptom as stated — not just the first one found — then check each.** A
+symptom description usually names something precise (an error string, a
+matcher, an event name); treat that precision as the thing to search on, not
+just the general area of the system it points to.
+
+Tonight's two misses, as the standard to beat:
+- **Output-style stale-checkout issue** took several rounds because the first
+  check stopped at "the key exists in settings.json and is valid JSON" — a
+  real fact, but not the whole candidate set. It didn't also check whether
+  the working directory/checkout the setting was being read from was actually
+  fresh. Both "is the value correct" and "is the copy being read current"
+  are separate candidates for the same symptom ("setting doesn't seem to be
+  taking effect") and both needed checking, not just the first.
+- **A hook error citing "PreToolUse:Bash"** got answered by inspecting the
+  redaction hook — which is matched on `Write|Edit`, not `Bash`. The error
+  named its matcher exactly (`Bash`); the actually-named Bash-matched hook
+  (the git-push-master guard) is a different hook entirely and is what
+  should have been checked first, by name, before looking anywhere else.
+
+**Applying this going forward:** when asked to verify multiple related things
+in one pass (e.g. "check X, Y, Z, and W before doing the merge"), do all of
+them in one complete sweep and report all four together — don't answer one,
+stop, and let a follow-up question surface that the others were never
+actually checked. Incremental partial answers are exactly how a matcher
+mismatch like the Bash/redaction-hook case above survives past the first
+round of investigation.
+
+---
+
 ## App File Map
 
 **Corrected 2026-07-26** — this table was missing SAIRNhr and SAIRNacc despite
