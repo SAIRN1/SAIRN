@@ -66,6 +66,16 @@ arrived here through this file rather than a trigger word:
 - No "let me check / good news / confirmed" commentary
 - On error: state what failed and what's needed, nothing more
 
+## Push Protocol — standing rule, both directions, no exceptions
+1. **Before pushing:** run full Check 0 + all 26 sairn-guardian-v2 checks
+   locally against the changed file(s). Do not push on a partial check or
+   on "syntax passed" alone — syntax-clean is necessary, not sufficient.
+2. **After pushing:** live-verify the specific fix against
+   `sairn.vercel.app/stonedesk` directly (real `curl` or equivalent), never
+   assumed from the push itself succeeding. A clean `git push` output is
+   not proof the live app reflects the change.
+Neither step is optional, going forward, regardless of how small the change looks.
+
 ## Model Selection
 - Default: Sonnet 5 High for all routine work (implementation, debugging, most fixes)
 - Proactively recommend switching to Opus 4.8 for: hard debugging with an unclear root cause, or security-critical code
