@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"C:/Users/marsh/tools/redaction_check.py\"",
+            "command": "python tools/redaction_check.py",
             "timeout": 10
           }
         ]
