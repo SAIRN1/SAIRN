@@ -69,6 +69,10 @@ arrived here through this file rather than a trigger word:
 - Backend: SAIRN API Proxy (Claude integration)
 - Deployment: Vercel
 
+## Environment Notes
+- Use `python`, not `python3`, on this machine — python3 resolves to the
+  Microsoft Store stub, not the real install at C:\Python314\python.exe.
+
 ## Response Style
 - No narration before or after actions — act, then report only the result
 - No "let me check / good news / confirmed" commentary
