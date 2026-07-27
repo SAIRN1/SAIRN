@@ -4028,13 +4028,6 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 </div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
   <input id="cust-search" placeholder="Search name, phone, email..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="renderCustomers()">
-  <select id="cust-type-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="renderCustomers()">
-    <option value="">All Types</option>
-    <option value="Residential">Residential</option>
-    <option value="Commercial">Commercial</option>
-    <option value="Contractor">Contractor</option>
-    <option value="Builder">Builder</option>
-  </select>
 </div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
   <select id="cust-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="renderCustomers()">
@@ -4059,48 +4052,65 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 </div>
 <script>
 (function(){
-  var SEED=[
-    {id:'C-001',name:'Jim Hartwell',type:'Residential',phone:'(770) 555-0142',email:'jim.hartwell@email.com',address:'142 Oak Ridge Dr, Marietta GA',jobs:2,ltv:12800,lastJob:'2024-06-18',rating:5,notes:'Excellent client — prefers Calacatta/Statuario'},
-    {id:'C-002',name:'Carla Reyes',type:'Residential',phone:'(404) 555-0287',email:'carla.reyes@email.com',address:'87 Peachtree Hills, Atlanta GA',jobs:1,ltv:11200,lastJob:'2024-06-20',rating:5,notes:'New client — master bath renovation'},
-    {id:'C-003',name:'Tom Brennan',type:'Residential',phone:'(678) 555-0355',email:'tom.b@email.com',address:'215 Magnolia Ln, Alpharetta GA',jobs:3,ltv:18500,lastJob:'2024-06-03',rating:4,notes:'Outdoor kitchen specialist — repeat client'},
-    {id:'C-004',name:'Nina Patel',type:'Residential',phone:'(770) 555-0418',email:'nina.patel@email.com',address:'33 River Oaks Dr, Roswell GA',jobs:1,ltv:4800,lastJob:'2024-05-15',rating:5,notes:'Referred by Tom Brennan'},
-    {id:'C-005',name:'Stone Barn LLC',type:'Commercial',phone:'(404) 555-0521',email:'orders@stonebarn.com',address:'600 Industrial Blvd, Atlanta GA',jobs:4,ltv:42600,lastJob:'2024-05-28',rating:3,notes:'Commercial account — large volume, payment issues'},
-    {id:'C-006',name:'City Cafe',type:'Commercial',phone:'(404) 555-0634',email:'mgr@citycafe.com',address:'45 Main St, Decatur GA',jobs:1,ltv:14200,lastJob:'2024-04-10',rating:4,notes:'Restaurant client — overdue invoice'},
-    {id:'C-007',name:'Sandra Kim',type:'Residential',phone:'(678) 555-0712',email:'sandra.kim@email.com',address:'90 Willow Way, Smyrna GA',jobs:2,ltv:4200,lastJob:'2024-06-15',rating:5,notes:'Small jobs — very satisfied'},
-    {id:'C-008',name:'Robert Wallace',type:'Contractor',phone:'(770) 555-0899',email:'rwallace@rwbuild.com',address:'215 Magnolia Ln, Alpharetta GA',jobs:7,ltv:68400,lastJob:'2024-06-21',rating:4,notes:'General contractor — steady pipeline'}
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_customers')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_customers',JSON.stringify(d));}catch(e){}}
-  var data=load();
+  // sd_customers canonical shape is the Tier-3 pipeline shape (see loadSD3Data/
+  // saveSD3Data below in the file): {id,name,phone,email,project,material,
+  // quote,status,referral,rating,createdAt,commLog,timeline}. jobs/ltv/lastJob
+  // are NOT stored -- computed live from sdJobs/sd_invoices, name-matched
+  // (the same linkage already used elsewhere in this file, e.g. line ~6720;
+  // there is no customerId FK on jobs/invoices in this codebase).
+  function custComputeStats(name){
+    var jobs=0, ltv=0, lastJob=null;
+    var n=(name||'').toLowerCase();
+    if(typeof sdJobs!=='undefined'&&n){
+      var custJobs=sdJobs.filter(function(j){return j.customer&&j.customer.toLowerCase()===n;});
+      jobs=custJobs.length;
+      custJobs.forEach(function(j){
+        var d=j.installedAt||j.targetDate||j.createdAt;
+        if(d&&(!lastJob||new Date(d)>new Date(lastJob)))lastJob=d;
+      });
+    }
+    if(typeof sd_invoices!=='undefined'&&n){
+      ltv=sd_invoices.filter(function(iv){return iv.customer&&iv.customer.toLowerCase()===n;})
+        .reduce(function(s,iv){return s+(iv.amount||0);},0);
+    }
+    return {jobs:jobs,ltv:ltv,lastJob:lastJob};
+  }
+  var STAGE_COLOR={quoted:'#ca8a04',approved:'#16a34a',templated:'#2563eb',fabricating:'#7c3aed',scheduled:'#0891b2',complete:'#16C762'};
+  var STAGE_LABEL={quoted:'Awaiting Approval',approved:'Approved',templated:'Templated',fabricating:'In Fabrication',scheduled:'Scheduled',complete:'Completed'};
   window.sdCustRender=function(){try{
+    var list=(typeof sdCustomers!=='undefined')?sdCustomers:[];
     var q=(document.getElementById('cust-search')||{value:''}).value.toLowerCase();
-    var tf=(document.getElementById('cust-type-filter')||{value:''}).value;
-    var rows=data.filter(function(c){
-      var match=(c.name+c.phone+c.email+(c.notes||'')).toLowerCase().includes(q);
-      var type=!tf||c.type===tf;
-      return match&&type;
+    var tf=(document.getElementById('cust-filter')||{value:''}).value;
+    var rows=list.filter(function(c){
+      var match=((c.name||'')+(c.phone||'')+(c.email||'')+(c.notes||'')).toLowerCase().includes(q);
+      var stage=!tf||c.status===tf;
+      return match&&stage;
     });
-    var active=data.filter(function(c){return c.lastJob&&(new Date()-new Date(c.lastJob))<90*24*3600*1000;}).length;
-    var avgLtv=data.length?Math.round(data.reduce(function(a,c){return a+c.ltv;},0)/data.length):0;
-    var repeat=data.filter(function(c){return c.jobs>1;}).length;
-    document.getElementById('cust-kpi1').textContent=data.length;
+    var stats=list.map(function(c){return custComputeStats(c.name);});
+    var active=stats.filter(function(s){return s.lastJob&&(new Date()-new Date(s.lastJob))<90*24*3600*1000;}).length;
+    var totalLtv=stats.reduce(function(a,s){return a+s.ltv;},0);
+    var avgLtv=list.length?Math.round(totalLtv/list.length):0;
+    var repeat=stats.filter(function(s){return s.jobs>1;}).length;
+    document.getElementById('cust-kpi1').textContent=list.length;
     document.getElementById('cust-kpi2').textContent=active;
     document.getElementById('cust-kpi3').textContent='$'+avgLtv.toLocaleString();
     document.getElementById('cust-kpi4').textContent=repeat;
+    var ltvEl=document.getElementById('cust-ltv'); if(ltvEl) ltvEl.textContent='$'+totalLtv.toLocaleString();
     var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">';
     rows.forEach(function(c){
-      var stars='';for(var i=1;i<=5;i++) stars+='<span style="color:'+(i<=c.rating?'#f59e0b':'#d1d5db')+'">&#9733;</span>';
-      var typeColor={Residential:'#6366f1',Commercial:'#f59e0b',Contractor:'#16c762',Builder:'#8b5cf6'};
-      var tc=typeColor[c.type]||'#6b7280';
+      var s=custComputeStats(c.name);
+      var stars='';for(var i=1;i<=5;i++) stars+='<span style="color:'+(c.rating&&i<=c.rating?'#f59e0b':'#d1d5db')+'">&#9733;</span>';
+      var sc=STAGE_COLOR[c.status]||'#6b7280';
+      var sl=STAGE_LABEL[c.status]||(c.status||'--');
       html+='<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
         +'<div><div style="font-weight:700;font-size:15px;color:var(--text)">'+escHtml(c.name)+'</div>'
-        +'<span style="background:'+tc+'20;color:'+tc+';font-size:10px;padding:1px 7px;border-radius:8px;font-weight:700">'+escHtml(c.type)+'</span></div>'
-        +'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:var(--a)">$'+(c.ltv||0).toLocaleString()+'</div><div style="font-size:10px;color:var(--muted)">LTV</div></div></div>'
-        +'<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(c.phone)+' &bull; '+escHtml(c.email)+'</div>'
-        +'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+escHtml(c.address)+'</div>'
+        +'<span style="background:'+sc+'20;color:'+sc+';font-size:10px;padding:1px 7px;border-radius:8px;font-weight:700">'+escHtml(sl)+'</span></div>'
+        +'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:var(--a)">$'+(s.ltv||0).toLocaleString()+'</div><div style="font-size:10px;color:var(--muted)">LTV</div></div></div>'
+        +'<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(c.phone||'')+' &bull; '+escHtml(c.email||'')+'</div>'
+        +'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+escHtml(c.address||'')+'</div>'
         +'<div style="display:flex;justify-content:space-between;align-items:center">'
-        +'<div style="font-size:12px;color:var(--muted)">'+c.jobs+' job'+(c.jobs!==1?'s':'')+' &bull; Last: '+escHtml(c.lastJob)+'</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+s.jobs+' job'+(s.jobs!==1?'s':'')+' &bull; Last: '+escHtml(s.lastJob||'--')+'</div>'
         +'<div style="font-size:13px">'+stars+'</div></div>'
         +(c.notes?'<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">'+escHtml(c.notes)+'</div>':'')
         +'</div>';
@@ -4117,7 +4127,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var material=prompt('Material:','');
     if(typeof sdCustomers!=='undefined'){
       sdCustomers.unshift({id:'C'+Date.now(),name:name,phone:phone||'',email:email||'',project:project||'',
-        material:material||'',quote:0,status:'quoted',referral:'',createdAt:new Date().toISOString()});
+        material:material||'',quote:0,status:'quoted',referral:'',rating:null,createdAt:new Date().toISOString()});
       if(typeof saveSD3Data==='function')saveSD3Data();
       if(typeof renderCustomers==='function')renderCustomers();
     }
@@ -4125,29 +4135,34 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   window.sdCustAI=function(){
     var out=document.getElementById('cust-ai-out');
     out.style.display='block';out.textContent='Analyzing customer base...';
-    var top=data.slice().sort(function(a,b){return b.ltv-a.ltv;}).slice(0,5);
+    var list=(typeof sdCustomers!=='undefined')?sdCustomers:[];
+    var withStats=list.map(function(c){var s=custComputeStats(c.name);return {name:c.name,ltv:s.ltv,jobs:s.jobs,status:c.status};});
+    var top=withStats.slice().sort(function(a,b){return b.ltv-a.ltv;}).slice(0,5);
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a customer success advisor for Pinnacle Stone & Design. Customer base: '+data.length+' customers, '+data.filter(function(c){return c.jobs>1;}).length+' repeat. Top by LTV: '+top.map(function(c){return c.name+'($'+c.ltv+','+c.jobs+' jobs,'+c.type+')';}).join(', ')+'. Provide: 1) VIP customer outreach recommendations, 2) At-risk customer identification, 3) Segmentation strategy (Residential vs Commercial vs Contractor), 4) Cross-sell opportunities, 5) Referral program recommendations.'}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a customer success advisor for Pinnacle Stone & Design. Customer base: '+list.length+' customers, '+withStats.filter(function(c){return c.jobs>1;}).length+' repeat. Top by LTV: '+top.map(function(c){return c.name+'($'+c.ltv+','+c.jobs+' jobs,'+(c.status||'')+')';}).join(', ')+'. Provide: 1) VIP customer outreach recommendations, 2) At-risk customer identification, 3) Segmentation strategy (by pipeline stage), 4) Cross-sell opportunities, 5) Referral program recommendations.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
     }).catch(function(){out.textContent='AI unavailable. Focus retention efforts on top 20% of customers by LTV — they likely represent 80% of revenue.';});
   };
   window.sdCustPrint=function(){
     var w=window.open('','_blank');
-    var totalLtv=data.reduce(function(a,c){return a+c.ltv;},0);
+    var list=(typeof sdCustomers!=='undefined')?sdCustomers:[];
+    var withStats=list.map(function(c){return {c:c,s:custComputeStats(c.name)};});
+    var totalLtv=withStats.reduce(function(a,x){return a+x.s.ltv;},0);
     w.document.write('<html><head><title>Customers - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h2 style="color:#16c762">Customer Directory</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>'+data.length+' customers | Total LTV: $'+totalLtv.toLocaleString()+'</p>');
-    w.document.write('<table><tr><th>Name</th><th>Type</th><th>Phone</th><th>Email</th><th>Jobs</th><th>LTV</th><th>Last Job</th></tr>');
-    data.slice().sort(function(a,b){return b.ltv-a.ltv;}).forEach(function(c){
-      w.document.write('<tr><td>'+escHtml(c.name)+'</td><td>'+escHtml(c.type)+'</td><td>'+escHtml(c.phone)+'</td><td>'+escHtml(c.email)+'</td><td>'+c.jobs+'</td><td>$'+(c.ltv||0).toLocaleString()+'</td><td>'+escHtml(c.lastJob)+'</td></tr>');
+    w.document.write('<h2 style="color:#16c762">Customer Directory</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>'+list.length+' customers | Total LTV: $'+totalLtv.toLocaleString()+'</p>');
+    w.document.write('<table><tr><th>Name</th><th>Stage</th><th>Phone</th><th>Email</th><th>Jobs</th><th>LTV</th><th>Last Job</th></tr>');
+    withStats.sort(function(a,b){return b.s.ltv-a.s.ltv;}).forEach(function(x){
+      var sl=STAGE_LABEL[x.c.status]||(x.c.status||'');
+      w.document.write('<tr><td>'+escHtml(x.c.name)+'</td><td>'+escHtml(sl)+'</td><td>'+escHtml(x.c.phone)+'</td><td>'+escHtml(x.c.email)+'</td><td>'+x.s.jobs+'</td><td>$'+(x.s.ltv||0).toLocaleString()+'</td><td>'+escHtml(x.s.lastJob||'')+'</td></tr>');
     });
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
   window.sdCustExport=function(){
-    var d=load();
-    var rows=[['ID','Name','Type','Phone','Email','Address','Jobs','LTV','Last Job','Rating']];
-    d.forEach(function(c){rows.push([c.id,c.name,c.type,c.phone,c.email||'',c.address||'',c.jobs,(c.ltv||0),c.lastJob||'',(c.rating||0)]);});
+    var list=(typeof sdCustomers!=='undefined')?sdCustomers:[];
+    var rows=[['ID','Name','Stage','Phone','Email','Address','Jobs','LTV','Last Job','Rating']];
+    list.forEach(function(c){var s=custComputeStats(c.name);rows.push([c.id,c.name,c.status||'',c.phone||'',c.email||'',c.address||'',s.jobs,(s.ltv||0),s.lastJob||'',(c.rating||0)]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='customers-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
