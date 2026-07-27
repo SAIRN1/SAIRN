@@ -1,0 +1,41 @@
+# SAIRN — Session 67 Handoff
+
+Written mid-session, before capacity ran out, per explicit instruction not to wait until cut off. Follows Session 66's own standard: claims below are what was independently verified against the actual repo/live site during this session, not carried forward from what was asserted at the start of a task. Two items requested for this handoff did not survive verification and are corrected below rather than silently repeated — see §5.
+
+## 1. Verified current state
+
+- **`origin/main` HEAD:** `376311c` ("settings.json: activate silent output style project-wide"). Confirmed via `git fetch origin` + `git rev-parse origin/main`, and `git diff HEAD origin/main` returns empty (local worktree, branch `sairn-session66-work`, is exactly in sync with `origin/main`).
+- **Panel count: 61**, recounted directly via `grep -oE 'id="panel-[a-zA-Z0-9_-]+"' stonedesk.html | sort -u | wc -l` against the current file. This is 60 pre-`panel-pos` (itself independently verified earlier this session against commit `f8979b8`) + the new `panel-pos`. See §5 for the 63 figure some earlier context referenced — it does not reconcile against anything checked this session.
+- **`tools/div_balance_check.py` and `tools/nav_panel_check.py`**: referenced by the standing push-protocol checklist but confirmed via `git log --all -- <path>` to have **never been committed to this repo** — not lost, never existed here. Recreated this session, tested against the live file, committed at `31e2dcc`. **Do not trust that recreation blindly on restart** — re-run both against the current `stonedesk.html` and confirm the output still matches what's described in §2/§4 before relying on them; a script that looked correct once can still have blind spots (the first version of `nav_panel_check.py` had a regex bug that falsely flagged sidebar chrome elements like `collapse-btn`/`search` as broken nav buttons — fixed before commit, but it's the kind of thing that should be spot-checked again, not assumed permanent).
+- **`outputStyle: "silent"`** is now genuinely set in `.claude/settings.json` at HEAD (commit `376311c`), verified present via `git diff HEAD origin/main` showing no difference after push. A fresh session (local or cloud) reading this repo should start silent from message one. **Confirm this is actually true on restart** — this session cannot observe its own next-session behavior, only that the config is correctly committed.
+
+## 2. Tonight's commits, in order, ending at `376311c`
+
+1. `6e89e89` — Promote silent output-style (`.claude/output-styles/silent.md`) and panel-auditor agent (`.claude/agents/panel-auditor.md`) from user-level `~/.claude/` config to repo level, so any session reading this repo inherits them without needing the personal user-level directory.
+2. `034acc7` — CLAUDE.md: codify the standing push protocol (full Check 0 + 26 checks before every push, live-verify against `sairn.vercel.app/stonedesk` after every push — no exceptions, both directions).
+3. `178dfcc` — Add `panel-pos` (Mobile POS) + fix 23 panels flagged FABRICATED/DORMANT by a 4-way panel-auditor sweep (crm, jobcost, contractor, bulletin, careguide, sms, aiquote, emailsecurity, comms, damage, training, intake, remakes, safety, vendors, history, warranty, inventory, plus `customers`/`schedule` merged onto their more-integrated canonical system per explicit direction). Bundled into one commit because the 23-panel fixes were already sitting uncommitted in the same working tree when `panel-pos` was built — noted plainly in the commit message rather than silently split.
+4. `31e2dcc` — Recreate `tools/div_balance_check.py` and `tools/nav_panel_check.py` (see §1). Running the recreated `nav_panel_check.py` is what surfaced the `check-register`/`doc-scan` gap in §4.
+5. `376311c` — Activate `outputStyle: "silent"` in `.claude/settings.json` (see §1).
+
+## 3. `panel-pos` — what it is and what it explicitly is not
+
+Built as **record-only** sale entry — customer name, line items rolling into a live total, payment method, optional slab/job link, signature capture, "Complete Sale" button. No live payment processing exists or was attempted.
+
+- **Reused, not duplicated:** pricing/schema is the exact same `sd_invoices` schema-B fields panel-invoices already uses (verified against `invSave()` before building — no second pricing model); persistence goes through the real `invSaveStore()`/`invGenNum()`; slab linking generalizes the existing `qbOpenSlabPicker()`/`qbPickSlab()` with a `'pos'` context flag rather than a second picker.
+- **New, because reuse was structurally impossible:** signature capture. `esigApprove()`/`esigClear()` are hardcoded to one canvas id (`#esig-canvas`) — reusing them directly would have meant a duplicate-ID violation. Followed this app's own existing precedent for a *second* signature surface (`panel-agreements`' `ag-esig-canvas`, a copied-with-new-prefix version of the same drawing mechanics) rather than inventing a new pattern.
+- **Bridge event:** posts a `pos_sale` event (`app_id`, `event_type`, `source_device`, `timestamp`, `payload`) to `/api/bridge` on sale completion, per the shape given for this task. **`/api/bridge` returns a live 404 in production** (verified via curl before building) — three other existing call sites in this file already POST three mutually-different payload shapes to that same endpoint, so there was no single real standard to match. The sale itself saves and appears in panel-invoices correctly regardless of bridge availability; only cross-device pickup won't work until that endpoint exists server-side.
+- **Explicitly deferred, not decided:** live payment processing (Stripe Terminal or equivalent card-present/card-reader integration). This is a separate, real, not-yet-made decision — do not assume record-only was a placeholder for "we'll obviously do Stripe next"; that choice hasn't been made.
+
+## 4. NEW open bug — next priority, not yet fixed
+
+`check-register` and `doc-scan` each have a sidebar nav button and an `SB_PANEL_SECTION`/nav-target entry, but **no corresponding `panel-check-register` / `panel-doc-scan` div exists anywhere in the document.** Clicking either sidebar button does nothing (or errors, depending on what `showPanel()` does with a missing target — not independently re-checked this session, just confirmed the panel div itself is absent). Found via the recreated `nav_panel_check.py`, confirmed by direct grep. Not touched this session — out of scope for panel-pos, flagging clearly as the next thing to fix.
+
+## 5. Corrections to claims made earlier tonight — verify before repeating
+
+- **The 63-panel-count reference is stale and unexplained.** 60 (pre-panel-pos) and 61 (current) are both independently verified against actual repo state this session; 63 does not reconcile against anything checked. Treat 61 as the real number and stop chasing 63 — it likely came from context outside what this session had access to, not a live discrepancy in the repo.
+- **The "sairn-toast duplicate ID (Check 8)" item from earlier tonight does not reproduce.** A full duplicate-ID scan of the current `stonedesk.html` (`grep -oE 'id="[^"]+"' | sort | uniq -c` filtered to count>1) returns **zero results file-wide.** `#sairn-toast` exists exactly once in markup (line ~11752); the only other reference is a defensive `if (!t) { t = document.createElement('div'); t.id='sairn-toast'; ... }` fallback in JS that only fires if `getElementById('sairn-toast')` returns null — which it doesn't, since the real element already exists. **This is not an open bug.** Removed from the open-issues list; do not carry it forward as if still real without re-verifying first.
+
+## 6. Standing rules in effect (real, in CLAUDE.md, not just this handoff)
+
+- Push protocol (§2 commit `034acc7`): full Check 0 + 26 checks before every push, live-verify against the deployed site after every push, no exceptions either direction.
+- Response style: no narration before/after actions, report only results — now enforced two ways (CLAUDE.md's own "Response Style" section, and, as of `376311c`, the actual `outputStyle: silent` mechanism).
