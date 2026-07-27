@@ -25791,6 +25791,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'</tr>';
     }).join('');
   }
+  window.sdAPRender=render;
   window.sdAPAdd=function(){
     var vendor=document.getElementById('ap-vendor').value.trim();
     var amt=parseFloat(document.getElementById('ap-amt').value)||0;
@@ -28093,7 +28094,7 @@ function sbNav(id) {
     if(id==='stonehub'&&typeof shRenderHistory==='function')shRenderHistory();
     if(id==='tax'&&typeof taxRender==='function')taxRender();
     if(id==='emailsecurity'&&typeof window.sdEmailRender==='function')window.sdEmailRender();
-    if(id==='ap'&&typeof apRender==='function')apRender();
+    if(id==='ap'&&typeof window.sdAPRender==='function')window.sdAPRender();
     if(id==='employees'&&typeof window.sdEmpRender==='function')window.sdEmpRender();
     if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();}
     if(id==='template'&&typeof tmRender==='function'){tmRender();if(typeof tmUpdateKPIs==='function')tmUpdateKPIs();}
