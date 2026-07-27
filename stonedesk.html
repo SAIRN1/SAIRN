@@ -2204,6 +2204,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
         <button class="sb-btn"        id="sb-crm"      onclick="sbNav('crm')">     <span class="sb-icon">&#127942;</span><span class="sb-text">Lead Pipeline</span></button>
         <button class="sb-btn"        id="sb-customers" onclick="sbNav('customers')"><span class="sb-icon">&#128101;</span><span class="sb-text">Customers</span></button>
         <button class="sb-btn"        id="sb-client"   onclick="sbNav('client')">  <span class="sb-icon">&#128275;</span><span class="sb-text">Client View</span></button>
+        <button class="sb-btn"        id="sb-pos"      onclick="sbNav('pos')">     <span class="sb-icon">&#128241;</span><span class="sb-text">Mobile POS</span></button>
       </div>
     </div>
 
@@ -3922,6 +3923,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var d=load();
     var today=new Date().toISOString().slice(0,10);
     var weekAgo=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+    document.getElementById('int-total').textContent=d.length;
     document.getElementById('int-today').textContent=d.filter(function(x){return x.date===today;}).length;
     document.getElementById('int-week').textContent=d.filter(function(x){return x.date>=weekAgo;}).length;
     var conv=d.filter(function(x){return x.converted;}).length;
@@ -4109,14 +4111,16 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   window.sdCustAdd=function(){
     var name=prompt('Customer name:');
     if(!name)return;
-    var type=prompt('Type (Residential/Commercial/Contractor/Builder):','Residential');
+    var project=prompt('Project (e.g. Kitchen Countertops):','Kitchen Countertops');
     var phone=prompt('Phone:','');
     var email=prompt('Email:','');
-    var address=prompt('Address:','');
-    var id='C-'+String(data.length+1).padStart(3,'0');
-    data.push({id:id,name:name,type:type||'Residential',phone:phone||'',email:email||'',address:address||'',jobs:0,ltv:0,lastJob:'',rating:5,notes:''});
-    save(data);
-    renderCustomers();
+    var material=prompt('Material:','');
+    if(typeof sdCustomers!=='undefined'){
+      sdCustomers.unshift({id:'C'+Date.now(),name:name,phone:phone||'',email:email||'',project:project||'',
+        material:material||'',quote:0,status:'quoted',referral:'',createdAt:new Date().toISOString()});
+      if(typeof saveSD3Data==='function')saveSD3Data();
+      if(typeof renderCustomers==='function')renderCustomers();
+    }
   };
   window.sdCustAI=function(){
     var out=document.getElementById('cust-ai-out');
@@ -4162,6 +4166,210 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     </div>
     <div style="padding:20px 24px;max-height:75vh;overflow-y:auto" id="cdm-body"></div>
   </div>
+</div>
+
+  <!-- == MOBILE POS PANEL == -->
+  <div class="panel" id="panel-pos">
+<div style="padding:16px;max-width:520px;margin:0 auto">
+  <div style="margin-bottom:16px">
+    <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">📱 Mobile POS</h2>
+    <div style="font-size:13px;color:var(--muted);margin-top:2px">Record a completed sale on the spot — no live card processing yet</div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <label style="font-size:13px;font-weight:700;color:var(--text);display:block;margin-bottom:6px">Customer Name</label>
+    <input id="pos-cust" placeholder="Customer name" style="width:100%;padding:14px;font-size:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <button class="q-btn" style="width:100%;padding:14px;font-size:15px" onclick="qbOpenSlabPicker('pos')">📦 Link Slab / Job (optional)</button>
+    <div id="pos-slab-chip" style="margin-top:10px;font-size:13px"></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <label style="font-size:13px;font-weight:700;color:var(--text);display:block;margin-bottom:10px">Line Items</label>
+    <div id="pos-items"></div>
+    <button class="q-btn" style="width:100%;padding:12px;font-size:14px;margin-top:6px" onclick="posAddItem()">+ Add Line Item</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <span style="font-size:15px;font-weight:700;color:var(--text)">Total</span>
+      <span id="pos-total" style="font-size:24px;font-weight:900;color:#16C762">$0.00</span>
+    </div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <label style="font-size:13px;font-weight:700;color:var(--text);display:block;margin-bottom:6px">Payment Method</label>
+    <select id="pos-method" onchange="posToggleCheckFields()" style="width:100%;padding:14px;font-size:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);margin-bottom:10px">
+      <option value="">-- Select --</option>
+      <option>Cash</option><option>Card</option><option>Check</option><option>ACH / Wire</option><option>Other</option>
+    </select>
+    <div id="pos-check-fields" style="display:none;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg"><label style="font-size:12px">Check #</label><input id="pos-check-num" placeholder="Check number" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+        <div class="fg"><label style="font-size:12px">Bank Name</label><input id="pos-bank-name" placeholder="Bank name" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+        <div class="fg"><label style="font-size:12px">Routing #</label><input id="pos-routing" placeholder="Routing number" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+        <div class="fg"><label style="font-size:12px">Account #</label><input id="pos-account" placeholder="Account number" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+      </div>
+    </div>
+    <label style="font-size:13px;font-weight:700;color:var(--text);display:block;margin-bottom:6px">Amount Collected</label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="pos-deposit" type="number" placeholder="0.00" style="flex:1;padding:14px;font-size:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <button class="q-btn" style="padding:14px 12px;font-size:13px;white-space:nowrap" onclick="posCollectFull()">Full Amount</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">Balance remaining: <strong id="pos-balance">$0.00</strong></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <label style="font-size:13px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Customer Signature</label>
+    <canvas id="pos-esig-canvas" width="600" height="140" style="border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:crosshair;width:100%;max-width:100%;touch-action:none;display:block"></canvas>
+    <button onclick="posEsigClear()" style="margin-top:8px;font-size:12px;padding:6px 14px;background:rgba(100,100,100,0.1);border:none;border-radius:6px;cursor:pointer;color:var(--text)">Clear Signature</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6">By signing, customer confirms this sale record is accurate. This is a record-keeping signature only — no payment is processed through this screen.</div>
+  </div>
+
+  <div id="pos-err" style="color:#dc2626;font-size:13px;margin-bottom:10px;min-height:16px"></div>
+  <button class="q-btn primary" style="width:100%;padding:18px;font-size:17px;font-weight:800;position:sticky;bottom:12px" onclick="posCompleteSale()">✅ Complete Sale</button>
+  <div id="pos-confirm" style="display:none;margin-top:14px;padding:14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:13px;color:var(--text)"></div>
+</div>
+<script>
+(function(){
+  var posItems=[{desc:'',amt:0}];
+  var _posEsigDrawing=false,_posEsigCtx=null;
+
+  function posRenderItems(){
+    var wrap=document.getElementById('pos-items');
+    wrap.innerHTML=posItems.map(function(it,i){
+      return '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">'
+        +'<input placeholder="Description" value="'+escHtml(it.desc)+'" oninput="posUpdateItem('+i+',\'desc\',this.value)" style="flex:2;padding:12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box">'
+        +'<input type="number" placeholder="0.00" value="'+(it.amt||'')+'" oninput="posUpdateItem('+i+',\'amt\',this.value)" style="flex:1;padding:12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box;max-width:110px">'
+        +(posItems.length>1?'<button onclick="posRemoveItem('+i+')" style="padding:10px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;cursor:pointer;font-size:13px">✕</button>':'')
+        +'</div>';
+    }).join('');
+    posUpdateTotal();
+  }
+  function posUpdateTotal(){
+    var total=posItems.reduce(function(a,it){return a+(parseFloat(it.amt)||0);},0);
+    document.getElementById('pos-total').textContent='$'+total.toFixed(2);
+    var dep=parseFloat(document.getElementById('pos-deposit').value)||0;
+    document.getElementById('pos-balance').textContent='$'+Math.max(0,total-dep).toFixed(2);
+    return total;
+  }
+  window.posAddItem=function(){ posItems.push({desc:'',amt:0}); posRenderItems(); };
+  window.posRemoveItem=function(i){ posItems.splice(i,1); if(!posItems.length)posItems.push({desc:'',amt:0}); posRenderItems(); };
+  window.posUpdateItem=function(i,field,val){ posItems[i][field]=field==='amt'?(parseFloat(val)||0):val; posUpdateTotal(); };
+  window.posCollectFull=function(){ document.getElementById('pos-deposit').value=posUpdateTotal().toFixed(2); posUpdateTotal(); };
+
+  window.posToggleCheckFields=function(){
+    var m=document.getElementById('pos-method').value;
+    document.getElementById('pos-check-fields').style.display=(m==='Check'||m==='ACH / Wire')?'block':'none';
+  };
+
+  function posInitEsigCanvas(){
+    var c=document.getElementById('pos-esig-canvas');
+    if(!c)return;
+    _posEsigCtx=c.getContext('2d');
+    _posEsigCtx.strokeStyle='#111';_posEsigCtx.lineWidth=2;_posEsigCtx.lineCap='round';_posEsigCtx.lineJoin='round';
+    if(c._posSigBound)return;
+    c._posSigBound=true;
+    function getPos(e,touch){
+      var r=c.getBoundingClientRect();
+      var sx=c.width/r.width, sy=c.height/r.height;
+      var src=touch?e.touches[0]:e;
+      return {x:(src.clientX-r.left)*sx,y:(src.clientY-r.top)*sy};
+    }
+    c.addEventListener('mousedown',function(e){_posEsigDrawing=true;var p=getPos(e);_posEsigCtx.beginPath();_posEsigCtx.moveTo(p.x,p.y);});
+    c.addEventListener('mousemove',function(e){if(!_posEsigDrawing)return;var p=getPos(e);_posEsigCtx.lineTo(p.x,p.y);_posEsigCtx.stroke();});
+    c.addEventListener('mouseup',function(){_posEsigDrawing=false;});
+    c.addEventListener('mouseleave',function(){_posEsigDrawing=false;});
+    c.addEventListener('touchstart',function(e){e.preventDefault();_posEsigDrawing=true;var p=getPos(e,1);_posEsigCtx.beginPath();_posEsigCtx.moveTo(p.x,p.y);},{passive:false});
+    c.addEventListener('touchmove',function(e){e.preventDefault();if(!_posEsigDrawing)return;var p=getPos(e,1);_posEsigCtx.lineTo(p.x,p.y);_posEsigCtx.stroke();},{passive:false});
+    c.addEventListener('touchend',function(){_posEsigDrawing=false;});
+  }
+  window.posEsigClear=function(){
+    var c=document.getElementById('pos-esig-canvas');
+    if(c&&_posEsigCtx)_posEsigCtx.clearRect(0,0,c.width,c.height);
+  };
+  function posEsigIsBlank(){
+    var c=document.getElementById('pos-esig-canvas');
+    if(!c)return true;
+    var px=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+    for(var i=3;i<px.length;i+=4){ if(px[i]!==0) return false; }
+    return true;
+  }
+
+  window.posResetForm=function(){
+    posItems=[{desc:'',amt:0}];
+    posReservedSlabId=null;
+    document.getElementById('pos-cust').value='';
+    document.getElementById('pos-slab-chip').innerHTML='';
+    document.getElementById('pos-method').value='';
+    document.getElementById('pos-check-num').value='';
+    document.getElementById('pos-bank-name').value='';
+    document.getElementById('pos-routing').value='';
+    document.getElementById('pos-account').value='';
+    document.getElementById('pos-check-fields').style.display='none';
+    document.getElementById('pos-deposit').value='';
+    document.getElementById('pos-err').textContent='';
+    document.getElementById('pos-confirm').style.display='none';
+    posRenderItems();
+    posInitEsigCanvas();
+    window.posEsigClear();
+  };
+
+  window.posCompleteSale=function(){
+    var errEl=document.getElementById('pos-err');
+    errEl.textContent='';
+    var cust=document.getElementById('pos-cust').value.trim();
+    var total=posUpdateTotal();
+    var method=document.getElementById('pos-method').value;
+    var dep=parseFloat(document.getElementById('pos-deposit').value)||0;
+    if(!cust){errEl.textContent='Enter customer name';return;}
+    if(!total||total<=0){errEl.textContent='Add at least one line item with an amount';return;}
+    if(!method){errEl.textContent='Select a payment method';return;}
+    if(posEsigIsBlank()){errEl.textContent='Get customer signature before completing sale';return;}
+    var desc=posItems.filter(function(it){return it.desc;}).map(function(it){return it.desc;}).join(', ')||'Mobile POS sale';
+    var canvas=document.getElementById('pos-esig-canvas');
+    var sigDataUrl=canvas?canvas.toDataURL('image/png'):'';
+    var inv={
+      id:'INV-'+Date.now(),
+      num:invGenNum(),
+      customer:cust,
+      desc:desc,
+      amount:total,
+      deposit:dep,
+      balance:Math.max(0,total-dep),
+      date:new Date().toISOString().split('T')[0],
+      due:new Date().toISOString().split('T')[0],
+      method:method,
+      checkNum:(document.getElementById('pos-check-num').value||'').trim(),
+      bankName:(document.getElementById('pos-bank-name').value||'').trim(),
+      routing:(document.getElementById('pos-routing').value||'').trim(),
+      accountNum:(document.getElementById('pos-account').value||'').trim(),
+      notes:'Recorded via Mobile POS'+(posReservedSlabId?' — slab '+posReservedSlabId:''),
+      status:dep>=total?'Paid':dep>0?'Partial':'Unpaid',
+      created:new Date().toISOString(),
+      payments:dep>0?[{amount:dep,date:new Date().toISOString().split('T')[0],method:method,note:'Mobile POS'}]:[],
+      source:'mobile_pos',
+      reservedSlabId:posReservedSlabId||null,
+      signature:sigDataUrl
+    };
+    sd_invoices.unshift(inv);
+    invSaveStore();
+    if(posReservedSlabId && typeof sdSlabs!=='undefined'){
+      var rs=sdSlabs.find(function(x){return x.id===posReservedSlabId;});
+      if(rs){ rs.status='reserved'; rs.reservedFor=cust; if(typeof saveSlabs==='function') saveSlabs(); }
+    }
+    fetch('https://sairn.vercel.app/api/bridge',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'stonedesk',event_type:'pos_sale',source_device:'mobile',timestamp:new Date().toISOString(),payload:inv})
+    }).catch(function(){ /* bridge sync optional -- sale is already saved locally */ });
+    document.getElementById('pos-confirm').style.display='block';
+    document.getElementById('pos-confirm').innerHTML='✅ Sale recorded as <strong>'+inv.num+'</strong> — $'+total.toFixed(2)+' ('+inv.status+')';
+    if(typeof showToast==='function') showToast('Sale '+inv.num+' recorded');
+    setTimeout(window.posResetForm,2500);
+  };
+
+  posRenderItems();
+  posInitEsigCanvas();
+})();
+</script>
 </div>
 
   <!-- == PHOTOS PANEL == -->
@@ -4670,14 +4878,6 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   window.sdScheduleRender=function(){
     var weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay());
     var weekEnd=new Date(weekStart);weekEnd.setDate(weekEnd.getDate()+6);
-    var thisWeek=data.filter(function(s){var d=new Date(s.date);return d>=weekStart&&d<=weekEnd;});
-    var inProg=data.filter(function(s){return s.status==='In Progress';}).length;
-    var done=data.filter(function(s){return s.status==='Completed';}).length;
-    var delayed=data.filter(function(s){return s.status==='Delayed';}).length;
-    document.getElementById('sched-kpi1').textContent=thisWeek.length;
-    document.getElementById('sched-kpi2').textContent=inProg;
-    document.getElementById('sched-kpi3').textContent=done;
-    document.getElementById('sched-kpi4').textContent=delayed;
     var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var weekHtml='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px">';
     for(var i=0;i<7;i++){
@@ -4695,33 +4895,6 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     }
     weekHtml+='</div>';
     document.getElementById('sched-week').innerHTML=weekHtml;
-    var sorted=data.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-    var html='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc">'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Date</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Job</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Customer</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Address</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Type</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Crew</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Status</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Notes</th>'
-      +'</tr></thead><tbody>';
-    sorted.forEach(function(s,i){
-      var bg=i%2===0?'#fff':'#f8fafc';
-      var sc=STATUS_COLOR[s.status]||'#6b7280';
-      html+='<tr style="background:'+bg+'">'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:600;color:'+(s.date===today.toISOString().slice(0,10)?'#16c762':'var(--text)')+'">'+s.date+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--a);font-weight:600">'+s.job+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+s.customer+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)">'+s.address+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+s.type+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px">'+s.crew.join(', ')+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+sc+'20;color:'+sc+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+s.status+'</span></td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)">'+s.notes+'</td>'
-        +'</tr>';
-    });
-    html+='</tbody></table>';
-    document.getElementById('sched-list').innerHTML=html;
   };
   window.sdScheduleAdd=function(){
     var job=prompt('Job number:','J-2024-099');
@@ -5383,7 +5556,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     document.getElementById('rm-total').textContent=d.length;
     document.getElementById('rm-mtd').textContent=mtd.length;
     document.getElementById('rm-cost').textContent='$'+d.reduce(function(a,x){return a+(x.cost||0);},0).toLocaleString();
-    document.getElementById('rm-rate').textContent='2.8%';
+    document.getElementById('rm-rate').textContent='--';
     var causes={};
     d.forEach(function(x){causes[x.cause]=(causes[x.cause]||0)+1;});
     var top=Object.entries(causes).sort(function(a,b){return b[1]-a[1];})[0];
@@ -7103,10 +7276,10 @@ function histExportCSV() {
   window.showPanel = function(id) {
     if (_origSP) _origSP(id);
     if (id === 'invoices') { invUpdateKPIs(); invRender(); }
-    if (id === 'history') { histRender(); }
+    if (id === 'history') { if(typeof window.sdHistoryRender==='function')window.sdHistoryRender(); }
     if (id === 'ai') { aiLoadDashKPIs(); }
     if (id === 'photos') { renderPhotos(); photoUpdateKPIs(); }
-    if (id === 'warranty') { renderWarranties(); warrUpdateKPIs(); }
+    if (id === 'warranty') { if(typeof window.sdWarrantyRender==='function')window.sdWarrantyRender(); }
     if (id === 'customers') { renderCustomers(); }
     if (id === 'comms') { renderComms(); commsUpdateKPIs(); commsUpdateSidebarBadge(); }
   };
@@ -16444,12 +16617,21 @@ function renderWarrantyAlertZone(alerts) {
 
 function updateCustomerKPIs() {
   const total = sdCustomers.length;
-  const active = sdCustomers.filter(c => ['approved','templated','fabricating','scheduled'].includes(c.status)).length;
+  const active90 = sdCustomers.filter(c => c.createdAt && (Date.now()-new Date(c.createdAt).getTime()) < 90*24*3600*1000).length;
+  const avgLtv = total ? Math.round(sdCustomers.reduce((s,c)=>s+(c.quote||0),0)/total) : 0;
+  const nameCounts = {};
+  sdCustomers.forEach(c => { var k=(c.name||'').toLowerCase(); if(k) nameCounts[k]=(nameCounts[k]||0)+1; });
+  const repeat = Object.values(nameCounts).filter(n => n>1).length;
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  set('cust-kpi1', total);
+  set('cust-kpi2', active90);
+  set('cust-kpi3', '$'+avgLtv.toLocaleString());
+  set('cust-kpi4', repeat);
+  // legacy ids, kept in case any other code still reads them
   const pending = sdCustomers.filter(c => c.status === 'quoted').length;
   const overdue = sdCustomers.filter(c => c.status === 'quoted' && hoursAgo(c.createdAt) >= 24).length;
-  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
   set('cust-total', total);
-  set('cust-active', active);
+  set('cust-active', active90);
   set('cust-pending', pending);
   set('cust-overdue', overdue);
 }
@@ -17492,7 +17674,19 @@ function schedDelete(id){
   }
 }
 
+function schedUpdateKPIs(){
+  var s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  var weekStart=new Date();weekStart.setHours(0,0,0,0);weekStart.setDate(weekStart.getDate()-weekStart.getDay());
+  var weekEnd=new Date(weekStart);weekEnd.setDate(weekEnd.getDate()+7);
+  var thisWeek=sdJobs.filter(function(j){if(!j.templateDate)return false;var d=new Date(j.templateDate);return d>=weekStart&&d<weekEnd;}).length;
+  var inProgress=sdJobs.filter(function(j){return j.stage==='cutting'||j.stage==='polishing'||j.stage==='qa';}).length;
+  var now=new Date();
+  var completedMTD=sdJobs.filter(function(j){return j.stage==='installed'&&j.installedAt&&new Date(j.installedAt).getMonth()===now.getMonth()&&new Date(j.installedAt).getFullYear()===now.getFullYear();}).length;
+  var delayed=sdJobs.filter(function(j){return schedUrgency(j)==='red';}).length;
+  s('sched-kpi1',thisWeek);s('sched-kpi2',inProgress);s('sched-kpi3',completedMTD);s('sched-kpi4',delayed);
+}
 function renderSchedule(){
+  schedUpdateKPIs();
   var search=(document.getElementById('sched-search')||{}).value||'';
   var filter=(document.getElementById('sched-filter')||{}).value||'';
   var urgFilter=(document.getElementById('sched-urgency')||{}).value||'';
@@ -19870,8 +20064,8 @@ function finAskCFO(){
   var _origSP2 = window.showPanel;
   window.showPanel = function(id) {
     if(_origSP2) _origSP2(id);
-    if(id==='vendors') { vendorUpdateKPIs(); }
-    if(id==='safety') { safetyUpdateKPIs(); safetyRenderTraining(); }
+    if(id==='vendors') { vendorUpdateKPIs(); if(typeof window.sdVendorsRender==='function')window.sdVendorsRender(); }
+    if(id==='safety') { safetyUpdateKPIs(); safetyRenderTraining(); if(typeof window.sdSafetyRender==='function')window.sdSafetyRender(); }
     if(id==='nesting') { setTimeout(nestingInit,100); nestingRenderSaved(); nestingUpdateKPIs(); }
     if(id==='financial') { finUpdateKPIs(); finRenderJobs(); }
   };
@@ -20488,7 +20682,7 @@ function commsUpdateSidebarBadge() {
   }
 }
 
-function renderComms() {
+function renderCommsThreads() {
   var isExec = document.body.classList.contains('is-exec');
   var catF = (document.getElementById('comms-filter-cat')||{}).value||'';
   var srch = ((document.getElementById('comms-search')||{}).value||'').toLowerCase();
@@ -21714,6 +21908,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'<td style="padding:8px;border-bottom:1px solid var(--border);color:var(--muted)">'+x.source+'</td></tr>';
     }).join('');
   }
+  window.sdCRMRender=render;
   window.sdCRMAdd=function(){
     var name=document.getElementById('crm-name').value.trim();
     if(!name){showToast('Enter customer name');return;}
@@ -21862,6 +22057,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'</tr>';
     }).join('');
   }
+  window.sdJCRender=render;
   window.sdJCAdd=function(){
     var job=document.getElementById('jc-job').value.trim();
     var rev=parseFloat(document.getElementById('jc-rev').value)||0;
@@ -22954,6 +23150,8 @@ document.addEventListener('DOMContentLoaded', function() {
         +"<span style='font-weight:800;color:#16C762'>$"+(x.amount||0).toLocaleString()+"</span></div>";
     }).join(""):"<div style='color:var(--muted);font-size:13px;padding:8px 0'>No quotes yet</div>";
   }
+  window.sdAIQRender=updateKPIs;
+  updateKPIs();
   window.sdAIQQuick=function(desc){
     document.getElementById("aiq-desc").value=desc;
     sdAIQGenerate();
@@ -23239,6 +23437,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }).join("")||"<div style=\"color:var(--muted)\">No guides yet</div>";
     }
   }
+  window.sdCareRender=updateKPIs;
   window.sdCareGenerate=function(){
     var stone=document.getElementById("care-stone").value;
     var cust=(document.getElementById("care-cust").value||"").trim();
@@ -23754,6 +23953,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'</div>';
     }).join('');
   }
+  window.sdConRender=render;
   window.sdConAdd=function(){
     var name=document.getElementById('con-name').value.trim();
     if(!name){showToast('Enter company name');return;}
@@ -25144,6 +25344,7 @@ document.addEventListener('DOMContentLoaded', function() {
       +'<div style="font-size:11px;color:var(--muted)">'+x.author+' &bull; '+x.date+'</div>'
       +'</div>';
   }
+  window.sdBulletinRender=render;
   window.sdBulletinPost=function(){
     var t=document.getElementById('bull-title-inp').value.trim();
     var b=document.getElementById('bull-body-inp').value.trim();
@@ -26398,6 +26599,7 @@ async function sdRunEmailScan() {
     loadThreats().forEach(function(x){w.document.write('<tr><td>'+x.type+'</td><td>'+x.risk+'</td><td>'+x.summary+'</td><td>'+x.date+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
+  window.sdEmailRender=render;
   render();
 })();
 </script>
@@ -27355,14 +27557,17 @@ function slabUpdateDashAlert(){
   el.style.display='block';
 }
 var qbReservedSlabId = null;
-function qbOpenSlabPicker(){
+var posReservedSlabId = null;
+var _slabPickerCtx = 'quote';
+function qbOpenSlabPicker(ctx){
+  _slabPickerCtx = ctx || 'quote';
   if(!_slabLoaded){ loadSlabs(); _slabLoaded=true; }
   var available=sdSlabs.filter(function(s){return s.status==='in-stock';});
   var body=document.getElementById('slab-action-modal-body');
   if(!available.length){
     body.innerHTML='<div style="font-size:13px;color:var(--muted)">No in-stock slabs yet. Add some in the Slabs tab.</div><button class="q-btn" style="margin-top:12px" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Close</button>';
   } else {
-    body.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:12px">Pick a Slab for this Quote</div>'+
+    body.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:12px">Pick a Slab for this '+(_slabPickerCtx==='pos'?'Sale':'Quote')+'</div>'+
       '<div style="max-height:320px;overflow-y:auto">'+available.map(function(s){
         return '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">'+
           '<div style="font-size:12px"><b>'+escHtml(s.colorName||'')+'</b> — '+slabMaterialLabel(s.material)+', '+(s.usableSqft||0)+' sqft</div>'+
@@ -27374,10 +27579,16 @@ function qbOpenSlabPicker(){
   document.getElementById('slab-action-modal').style.display='flex';
 }
 function qbPickSlab(id){
-  qbReservedSlabId=id;
   var s=sdSlabs.find(function(x){return x.id===id;});
-  var chip=document.getElementById('qb-slab-chip');
-  if(chip && s) chip.innerHTML='📦 Reserved: <b>'+escHtml(s.colorName||'')+'</b> ('+slabMaterialLabel(s.material)+') <a href="#" onclick="qbReservedSlabId=null;document.getElementById(\'qb-slab-chip\').innerHTML=\'\';return false;" style="margin-left:6px;color:var(--muted)">remove</a>';
+  if(_slabPickerCtx==='pos'){
+    posReservedSlabId=id;
+    var posChip=document.getElementById('pos-slab-chip');
+    if(posChip && s) posChip.innerHTML='📦 Reserved: <b>'+escHtml(s.colorName||'')+'</b> ('+slabMaterialLabel(s.material)+') <a href="#" onclick="posReservedSlabId=null;document.getElementById(\'pos-slab-chip\').innerHTML=\'\';return false;" style="margin-left:6px;color:var(--muted)">remove</a>';
+  } else {
+    qbReservedSlabId=id;
+    var chip=document.getElementById('qb-slab-chip');
+    if(chip && s) chip.innerHTML='📦 Reserved: <b>'+escHtml(s.colorName||'')+'</b> ('+slabMaterialLabel(s.material)+') <a href="#" onclick="qbReservedSlabId=null;document.getElementById(\'qb-slab-chip\').innerHTML=\'\';return false;" style="margin-left:6px;color:var(--muted)">remove</a>';
+  }
   document.getElementById('slab-action-modal').style.display='none';
 }
 </script>
@@ -27704,7 +27915,7 @@ var _sbCollapsed = false;
 
 // Panel → section mapping for auto-expand
 var SB_PANEL_SECTION = {
-  'ai':'sales','aiquote':'sales','quote':'sales','draw':'sales','intake':'sales','crm':'sales','customers':'sales','client':'sales','history':'sales',
+  'ai':'sales','aiquote':'sales','quote':'sales','draw':'sales','intake':'sales','crm':'sales','customers':'sales','client':'sales','history':'sales','pos':'sales',
   'schedule':'production','fieldmap':'production','manifest':'production','remakes':'production','damage':'production','waste':'production','nesting':'production',
   'slabs':'materials','remnant':'materials','inventory':'materials','vendors':'materials','po':'materials','receiving':'materials','stoneyard':'materials','templates':'materials',
   'comms':'customers','sms':'customers','photos':'customers','warranty':'customers','reviews':'customers','nps':'customers','referral':'customers','careguide':'customers',
@@ -27725,6 +27936,7 @@ var SB_ALL_PANELS = [
   {id:'crm',icon:'&#127942;',label:'Lead Pipeline',section:'Sales'},
   {id:'customers',icon:'&#128101;',label:'Customers',section:'Sales'},
   {id:'client',icon:'&#128275;',label:'Client View',section:'Sales'},
+  {id:'pos',icon:'&#128241;',label:'Mobile POS',section:'Sales'},
   {id:'schedule',icon:'&#128197;',label:'Schedule',section:'Production'},
   {id:'history',icon:'&#128220;',label:'Job History',section:'Production'},
   {id:'fieldmap',icon:'&#128506;',label:'Field Map',section:'Production'},
@@ -27853,35 +28065,34 @@ function sbNav(id) {
   // Render hooks (consolidated - replaces all window.sbNav IIFE wrappers)
   setTimeout(function(){
     if(id==='agreements'&&typeof agRender==='function')agRender();
-    if(id==='crm'&&typeof crmRender==='function')crmRender();
-    if(id==='jobcost'&&typeof jcRender==='function')jcRender();
-    if(id==='timesheet'&&typeof tsRender==='function')tsRender();
-    if(id==='remnant'&&typeof remRender==='function')remRender();
+    if(id==='crm'&&typeof window.sdCRMRender==='function')window.sdCRMRender();
+    if(id==='jobcost'&&typeof window.sdJCRender==='function')window.sdJCRender();
+    if(id==='timesheet'&&typeof window.sdTSRender==='function')window.sdTSRender();
+    if(id==='remnant'){if(typeof remRender==='function')remRender();if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();}
+    if(id==='inventory'&&typeof window.sdInvRender==='function')window.sdInvRender();
     if(id==='po'&&typeof poRender==='function')poRender();
     if(id==='receiving'&&typeof rcvRender==='function')rcvRender();
     if(id==='manifest'&&typeof mfRender==='function')mfRender();
-    if(id==='sms'&&typeof smsRenderTemplates==='function')smsRenderTemplates();
-    if(id==='aiquote'&&typeof aiqRenderHistory==='function')aiqRenderHistory();
+    if(id==='sms'&&typeof window.sdSMSRender==='function')window.sdSMSRender();
+    if(id==='aiquote'&&typeof window.sdAIQRender==='function')window.sdAIQRender();
     if(id==='sintered'&&typeof sintSetMat==='function')sintSetMat(sintCurrent||'quartz');
-    if(id==='careguide'&&typeof cgRenderHistory==='function')cgRenderHistory();
+    if(id==='careguide'&&typeof window.sdCareRender==='function')window.sdCareRender();
     if(id==='reviews'&&typeof revUpdateKPIs==='function')revUpdateKPIs();
     if(id==='executive'&&typeof renderExecChat==='function')renderExecChat();
-    if(id==='contractor'&&typeof cpRender==='function')cpRender();
+    if(id==='contractor'&&typeof window.sdConRender==='function')window.sdConRender();
     if(id==='referral'&&typeof rfRender==='function')rfRender();
     if(id==='priceintel'&&typeof piInit==='function')piInit();
     if(id==='equipment'&&typeof window.sdEqRender==='function')window.sdEqRender();
     if(id==='stoneyard'&&typeof window.sdYardRender==='function')window.sdYardRender();
     if(id==='subcontractor'&&typeof window.sdSubRender==='function')window.sdSubRender();
     if(id==='bidboard'&&typeof window.sdBidRender==='function')window.sdBidRender();
-    if(id==='damage'&&typeof dmgRender==='function')dmgRender();
-    if(id==='training'&&typeof trnRender==='function')trnRender();
-    if(id==='bulletin'&&typeof bltnRender==='function')bltnRender();
+    if(id==='bulletin'&&typeof window.sdBulletinRender==='function')window.sdBulletinRender();
     if(id==='waste'&&typeof wstRender==='function')wstRender();
     if(id==='nps'&&typeof npsRender==='function')npsRender();
     if(id==='market'&&typeof miRefresh==='function'&&typeof MI_STATE!=='undefined'&&!MI_STATE.lastFetch)miRefresh();
     if(id==='stonehub'&&typeof shRenderHistory==='function')shRenderHistory();
     if(id==='tax'&&typeof taxRender==='function')taxRender();
-    if(id==='emailsecurity'&&typeof esRender==='function')esRender();
+    if(id==='emailsecurity'&&typeof window.sdEmailRender==='function')window.sdEmailRender();
     if(id==='ap'&&typeof apRender==='function')apRender();
     if(id==='employees'&&typeof empRender==='function')empRender();
     if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();}
