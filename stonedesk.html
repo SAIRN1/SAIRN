@@ -25475,6 +25475,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'</div>';
     }).join('');
   }
+  window.sdWasteRender=render;
   window.sdWasteLog=function(){
     var job=document.getElementById('waste-job').value.trim();
     if(!job){showToast('Enter job name');return;}
@@ -28089,7 +28090,7 @@ function sbNav(id) {
     if(id==='subcontractor'&&typeof window.sdSubRender==='function')window.sdSubRender();
     if(id==='bidboard'&&typeof window.sdBidRender==='function')window.sdBidRender();
     if(id==='bulletin'&&typeof window.sdBulletinRender==='function')window.sdBulletinRender();
-    if(id==='waste'&&typeof wstRender==='function')wstRender();
+    if(id==='waste'&&typeof window.sdWasteRender==='function')window.sdWasteRender();
     if(id==='nps'&&typeof npsRender==='function')npsRender();
     if(id==='market'&&typeof miRefresh==='function'&&typeof MI_STATE!=='undefined'&&!MI_STATE.lastFetch)miRefresh();
     if(id==='stonehub'&&typeof shRenderHistory==='function')shRenderHistory();
