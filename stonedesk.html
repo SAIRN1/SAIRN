@@ -4094,15 +4094,15 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       var tc=typeColor[c.type]||'#6b7280';
       html+='<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
-        +'<div><div style="font-weight:700;font-size:15px;color:var(--text)">'+c.name+'</div>'
-        +'<span style="background:'+tc+'20;color:'+tc+';font-size:10px;padding:1px 7px;border-radius:8px;font-weight:700">'+c.type+'</span></div>'
+        +'<div><div style="font-weight:700;font-size:15px;color:var(--text)">'+escHtml(c.name)+'</div>'
+        +'<span style="background:'+tc+'20;color:'+tc+';font-size:10px;padding:1px 7px;border-radius:8px;font-weight:700">'+escHtml(c.type)+'</span></div>'
         +'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:var(--a)">$'+(c.ltv||0).toLocaleString()+'</div><div style="font-size:10px;color:var(--muted)">LTV</div></div></div>'
-        +'<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+c.phone+' &bull; '+c.email+'</div>'
-        +'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+c.address+'</div>'
+        +'<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(c.phone)+' &bull; '+escHtml(c.email)+'</div>'
+        +'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+escHtml(c.address)+'</div>'
         +'<div style="display:flex;justify-content:space-between;align-items:center">'
-        +'<div style="font-size:12px;color:var(--muted)">'+c.jobs+' job'+(c.jobs!==1?'s':'')+' &bull; Last: '+c.lastJob+'</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+c.jobs+' job'+(c.jobs!==1?'s':'')+' &bull; Last: '+escHtml(c.lastJob)+'</div>'
         +'<div style="font-size:13px">'+stars+'</div></div>'
-        +(c.notes?'<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">'+c.notes+'</div>':'')
+        +(c.notes?'<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">'+escHtml(c.notes)+'</div>':'')
         +'</div>';
     });
     html+='</div>';
@@ -4139,7 +4139,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     w.document.write('<h2 style="color:#16c762">Customer Directory</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>'+data.length+' customers | Total LTV: $'+totalLtv.toLocaleString()+'</p>');
     w.document.write('<table><tr><th>Name</th><th>Type</th><th>Phone</th><th>Email</th><th>Jobs</th><th>LTV</th><th>Last Job</th></tr>');
     data.slice().sort(function(a,b){return b.ltv-a.ltv;}).forEach(function(c){
-      w.document.write('<tr><td>'+c.name+'</td><td>'+c.type+'</td><td>'+c.phone+'</td><td>'+c.email+'</td><td>'+c.jobs+'</td><td>$'+(c.ltv||0).toLocaleString()+'</td><td>'+c.lastJob+'</td></tr>');
+      w.document.write('<tr><td>'+escHtml(c.name)+'</td><td>'+escHtml(c.type)+'</td><td>'+escHtml(c.phone)+'</td><td>'+escHtml(c.email)+'</td><td>'+c.jobs+'</td><td>$'+(c.ltv||0).toLocaleString()+'</td><td>'+escHtml(c.lastJob)+'</td></tr>');
     });
     w.document.write('</table></body></html>');
     w.document.close();w.print();
@@ -5787,7 +5787,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     w.document.write('<h2 style="color:#16c762;margin-bottom:4px">Executive Dashboard Report</h2><p style="color:#64748b;margin-top:0">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
     w.document.write('<div class="kpis"><div class="kpi"><div class="kv">$'+d.revMTD.toLocaleString()+'</div><div class="kl">Revenue MTD</div></div><div class="kpi"><div class="kv">'+(d.margin==null?'--':d.margin+'%')+'</div><div class="kl">Gross Margin</div></div><div class="kpi"><div class="kv">'+d.jobsCompletedMTD+'</div><div class="kl">Jobs MTD</div></div><div class="kpi"><div class="kv">'+(d.avgNps==null?'--':d.avgNps)+'</div><div class="kl">NPS</div></div><div class="kpi"><div class="kv">$'+d.arOutstanding.toLocaleString()+'</div><div class="kl">A/R Outstanding</div></div></div>');
     w.document.write('<h3>Top Customers</h3><table><tr><th>Customer</th><th>Quote Value</th></tr>');
-    d.topCustomers.forEach(function(c){w.document.write('<tr><td>'+c.name+'</td><td>$'+(c.quote||0).toLocaleString()+'</td></tr>');});
+    d.topCustomers.forEach(function(c){w.document.write('<tr><td>'+escHtml(c.name)+'</td><td>$'+(c.quote||0).toLocaleString()+'</td></tr>');});
     w.document.write('</table><h3>Pipeline</h3><table><tr><th>Stage</th><th>Count</th><th>Value</th></tr>');
     d.pipeline.forEach(function(p){w.document.write('<tr><td>'+p.stage+'</td><td>'+p.count+'</td><td>$'+p.value.toLocaleString()+'</td></tr>');});
     w.document.write('</table></body></html>');
@@ -16728,16 +16728,16 @@ function custOpenDetail(id) {
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Contact</div>'+
       '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">'+
-        (c.phone?'<span style="font-size:13px">&#128222; <a href="tel:'+c.phone+'" style="color:var(--a)">'+c.phone+'</a></span>':'')+
-        (c.email?'<span style="font-size:13px">&#9993; <a href="mailto:'+c.email+'" style="color:var(--a)">'+c.email+'</a></span>':'')+
-        (c.address?'<span style="font-size:13px">&#128205; '+c.address+'</span>':'')+
-        (c.referral?'<span style="font-size:13px">&#128279; '+c.referral+'</span>':'')+
-        (c.material?'<span style="font-size:13px">&#129298; '+c.material+'</span>':'')+
+        (c.phone?'<span style="font-size:13px">&#128222; <a href="tel:'+escHtml(c.phone)+'" style="color:var(--a)">'+escHtml(c.phone)+'</a></span>':'')+
+        (c.email?'<span style="font-size:13px">&#9993; <a href="mailto:'+escHtml(c.email)+'" style="color:var(--a)">'+escHtml(c.email)+'</a></span>':'')+
+        (c.address?'<span style="font-size:13px">&#128205; '+escHtml(c.address)+'</span>':'')+
+        (c.referral?'<span style="font-size:13px">&#128279; '+escHtml(c.referral)+'</span>':'')+
+        (c.material?'<span style="font-size:13px">&#129298; '+escHtml(c.material)+'</span>':'')+
       '</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-        (c.phone?'<a href="tel:'+c.phone+'" class="q-btn" style="text-decoration:none">&#128222; Call</a>':'')+
-        (c.phone?'<a href="sms:'+c.phone+'" class="q-btn" style="text-decoration:none">&#128172; Text</a>':'')+
-        (c.email?'<a href="mailto:'+c.email+'" class="q-btn" style="text-decoration:none">&#9993; Email</a>':'')+
+        (c.phone?'<a href="tel:'+escHtml(c.phone)+'" class="q-btn" style="text-decoration:none">&#128222; Call</a>':'')+
+        (c.phone?'<a href="sms:'+escHtml(c.phone)+'" class="q-btn" style="text-decoration:none">&#128172; Text</a>':'')+
+        (c.email?'<a href="mailto:'+escHtml(c.email)+'" class="q-btn" style="text-decoration:none">&#9993; Email</a>':'')+
         '<button class="q-btn" onclick="custFollowUpAI(' + id + ')">&#129504; AI Follow-Up</button>'+
         '<button class="q-btn primary" onclick="custCreateInvoiceFrom(' + id + ')">&#129534; Invoice</button>'+
       '</div>'+
@@ -16765,7 +16765,7 @@ function custOpenDetail(id) {
       (c.commLog&&c.commLog.length?c.commLog.slice().reverse().map(function(l){
         return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'+
           '<span style="font-size:16px">'+(l.type==='call'?'&#128222;':l.type==='text'?'&#128172;':l.type==='email'?'&#9993;':l.type==='visit'?'&#127968;':'&#128221;')+'</span>'+
-          '<div><div style="font-size:13px;font-weight:600">'+l.note+'</div>'+
+          '<div><div style="font-size:13px;font-weight:600">'+escHtml(l.note)+'</div>'+
           '<div style="font-size:11px;color:var(--muted)">'+new Date(l.date).toLocaleString()+' &middot; '+l.rep+'</div></div>'+
         '</div>';
       }).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px 0">No contacts logged yet.</div>')+
@@ -16776,14 +16776,14 @@ function custOpenDetail(id) {
       (timeline.length?timeline.map(function(t){
         return '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">'+
           '<span style="font-size:12px;color:#16C762;font-weight:900;min-width:12px">&#9679;</span>'+
-          '<div><div style="font-size:13px;font-weight:600">'+t.action+'</div>'+
+          '<div><div style="font-size:13px;font-weight:600">'+escHtml(t.action)+'</div>'+
           '<div style="font-size:11px;color:var(--muted)">'+new Date(t.date).toLocaleString()+'</div></div>'+
         '</div>';
       }).join(''):'<div style="font-size:13px;color:var(--muted)">No timeline events yet.</div>')+
     '</div>'+
     (c.notes?'<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Notes</div>'+
-      '<div style="font-size:13px;line-height:1.6">'+c.notes+'</div>'+
+      '<div style="font-size:13px;line-height:1.6">'+escHtml(c.notes)+'</div>'+
     '</div>':'')+
     '<div style="display:flex;justify-content:flex-end;margin-top:8px">'+
       '<button class="q-btn" onclick="custDelete(' + id + ');custCloseDetail();" style="color:#dc2626;border-color:#dc2626">&#128465;&#65039; Delete</button>'+
@@ -16856,8 +16856,8 @@ function renderCustKanban(){
       '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+cards.length+' &middot; $'+value.toLocaleString()+'</div>'+
       cards.map(function(c){
         return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer" onclick="custOpenDetail(' + c.id + ')">'+
-          '<div style="font-size:13px;font-weight:700">'+c.name+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);">'+(c.project||'')+'</div>'+
+          '<div style="font-size:13px;font-weight:700">'+escHtml(c.name)+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);">'+escHtml(c.project||'')+'</div>'+
           (c.quote?'<div style="font-size:12px;font-weight:700;color:#16C762;margin-top:4px">$'+c.quote.toLocaleString()+'</div>':'')+
         '</div>';
       }).join('')+
@@ -17323,10 +17323,9 @@ function testAlertSMS() {
 }
 
 // == INIT =====================================================
-function escHtml(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+// escHtml is defined once, at line 1308 -- duplicate (weaker: missed
+// single-quote escaping) removed here since it silently overrode the
+// stronger definition for every escHtml() call in the file.
 
 (function initSD3() {
   loadSD3Data();
