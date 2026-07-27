@@ -52,6 +52,18 @@
           }
         ]
       }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"PreCompact fired: if a StoneDesk handoff is overdue (see sairn-session-handoff skill), write SAIRN-SESSION-N-HANDOFF.md now -- self-contained, independently re-verified -- before this compaction erases working context.\"},\"suppressOutput\":true}'",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

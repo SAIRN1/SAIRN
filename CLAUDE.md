@@ -27,6 +27,14 @@ and re-verify that independently each session rather than trusting this
 line indefinitely, the same way this line itself corrects an earlier wrong
 claim about which branch was stale.
 
+## Session Handoffs
+Before starting any work, check the repo root for the most recent
+`SAIRN-SESSION-N-HANDOFF.md` (highest N) and read it first — CLAUDE.md
+is static and only reflects what was true when last edited; the
+handoff carries the latest verified state, open items, and corrections.
+See the `sairn-session-handoff` skill for the template and naming
+convention.
+
 ## Known resolved issues (don't rediscover these)
 - `sairn-app-scaffold` was claimed built in an earlier session's handoff but
   never actually existed in `.claude/skills/` — if it's referenced anywhere,
