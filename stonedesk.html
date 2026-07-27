@@ -28094,7 +28094,7 @@ function sbNav(id) {
     if(id==='tax'&&typeof taxRender==='function')taxRender();
     if(id==='emailsecurity'&&typeof window.sdEmailRender==='function')window.sdEmailRender();
     if(id==='ap'&&typeof apRender==='function')apRender();
-    if(id==='employees'&&typeof empRender==='function')empRender();
+    if(id==='employees'&&typeof window.sdEmpRender==='function')window.sdEmpRender();
     if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();}
     if(id==='template'&&typeof tmRender==='function'){tmRender();if(typeof tmUpdateKPIs==='function')tmUpdateKPIs();}
     if(id==='templates'&&typeof tmplRender==='function')tmplRender();
