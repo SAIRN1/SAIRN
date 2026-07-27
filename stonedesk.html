@@ -6661,6 +6661,7 @@ function tmLoad(){
   tmRender();tmUpdateKPIs();
 }
 function tmSave(){localStorage.setItem(TM_KEY,JSON.stringify(tmRecords));}
+tmLoad();
 
 function tmOpenUpload(){
   document.getElementById('tm-modal').style.display='flex';
