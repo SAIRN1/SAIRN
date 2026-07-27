@@ -2,6 +2,33 @@
 
 Written mid-session, before capacity ran out, per explicit instruction not to wait until cut off. Follows Session 66's own standard: claims below are what was independently verified against the actual repo/live site during this session, not carried forward from what was asserted at the start of a task. Two items requested for this handoff did not survive verification and are corrected below rather than silently repeated — see §5.
 
+**Update, same session, after §4/§5 were written:** real capacity remained, so the resumed sweep described as a plan in §4/§5 was actually executed — see §7 for what it found and fixed. `origin/main` HEAD moved from `376311c` to `50fc591` as a result. §1-§6 below are left as originally written (they were accurate at the time); §7 is the continuation, not a correction of them.
+
+## 7. Resumed sweep, executed — 18 genuinely-unconfirmed panels audited, 7 fixed, 1 deferred
+
+Per §1/§5's own standard: "confirmed clean" required a real recount, not an estimate. Recounted directly: of 61 panels, only 43 had actually been through a real Check-0 pass this session (21 audited CLEAN + 22 fixed-and-reverified). The other 18 were either never independently audited this session (16 panels fixed by *prior* sessions, trusted via git-diff presence only, not re-audited) or brand new (`panel-pos`, never audited at all) or still openly flagged (`slabs`). Spawned 4 panel-auditor subagents against exactly those 18, split 5/5/4/4.
+
+**Results — 10 CLEAN (no action):** market, invoices, tax, financial, reviews, integrations, templates, panel-pos, veinmatch, seamai. (veinmatch/seamai have a soft note: their "Material Savings" KPIs are flat per-entry constants, e.g. `d.length*240`, not real computed savings — didn't rise to FABRICATED since a real function does drive the number, but worth knowing.)
+
+**Results — 7 fixed, each its own full commit/push/live-verify cycle:**
+1. **`executive`** (`e12788d`) — top KPI tiles/charts/pipeline (`window.sdExecRender`) only ever ran once on page load, zero nav callers, went stale after first view. Added the missing nav call.
+2. **`ap`** (`caa75b8`) — nav called an orphaned `apRender()` targeting nonexistent ids; real renderer had zero nav callers. Exposed real one as `window.sdAPRender`, rewired dispatch.
+3. **`employees`** (`88a3adb`) — **actively crashed.** Nav called the wrong global `empRender()`, which unconditionally set `.textContent` on ids that don't exist — threw a TypeError on every single visit to this panel. Rewired to the real `window.sdEmpRender`.
+4. **`itadmin`** (`51de3e8`) — real ticket/license renderer had zero nav callers (a separate, legitimate user-management/audit-log subsystem was already correctly wired and left untouched). Exposed as `window.sdITRender`, added to dispatch.
+5. **`waste`** (`c1cdbe9`) — same orphan-nav class as `ap`. Exposed real renderer as `window.sdWasteRender`, rewired dispatch.
+6. **`template`** (`9151aed`) — saved template records vanished on every reload. `tmLoad()` (the only function that reads `sd_templates` back from localStorage) had zero callers anywhere. Added one call.
+7. **`slabs`** (`50fc591`) — **the most severe finding of this round.** `saveQuote()` called `slabRender()` after reserving a slab via the quote panel's slab picker; `slabRender()` does `document.getElementById('slab-grid').innerHTML=...` with **no null guard**, and `#slab-grid` does not exist anywhere in the document. This threw synchronously and **aborted the rest of `saveQuote()` before the quote was pushed to `quoteHistory`** — reserving a slab on a quote could silently prevent the quote itself from ever saving. Removed the crashing call; the actual reservation logic (`sdSlabs` array update, `saveSlabs()`, `slabSyncOne()`) was already correct and is untouched. Did **not** paper over the underlying data-model duplication noted below.
+
+**Deferred, not fixed, documented:**
+- **`slabs`' orphaned duplicate module** (`slabInit`/`slabRender`/QR labels/Supabase sync) is a second, more advanced slab-management subsystem with its own differently-shaped local `data` (stone/vendor/status:Available|Allocated) that has nothing to do with the real `sdSlabs` global (colorName/status:in-stock|reserved|consumed) used by the quote-builder slab picker. Same class of issue as the `customers`/`schedule` data-model collisions fixed earlier this session — a real architecture decision (which model is canonical, or whether to keep both for different purposes), not a mechanical fix. Only the crash it caused is fixed; the duplication itself is untouched.
+- **`sintered`** — nav calls `sintSetMat(sintCurrent||'quartz')` on every visit, which overwrites `#sint-safety-list` with one hardcoded material's (`dekton`) cutting-safety notes regardless of what's actually in the catalog. Verified **not a crash risk** — every DOM access inside `sintSetMat()`/`sintCalc()` is properly null-guarded. Real content, wrong context, cosmetic mismatch only. Fixing it properly means building a material-picker UI that no longer exists in this panel (a small feature addition, not a bug fix) — deferred rather than force a partial fix.
+
+**Real final count: 60 of 61 panels confirmed clean.** Only `sintered` remains flagged, and it's now a fully-understood, low-severity, non-crashing, documented gap — not a mystery for the next session to re-discover.
+
+`tools/nav_panel_check.py` was also taught the `pageIds`/`showPage()` exception in this round (commit `a11144e`, before the sweep above) so it stops false-flagging `doc-scan`/`check-register` — see the correction already in §4.
+
+All 7 fixes above followed the full standing-rule cycle individually: edit → `checkblocks.py` (119/119 throughout) → `div_balance_check.py` (PASS, 4583/4583 throughout) → `nav_panel_check.py` (PASS throughout) → commit → push → poll `sairn.vercel.app/stonedesk` until byte-identical to the pushed file → confirmed live before starting the next one. One push (`caa75b8`) hit a transient "could not connect to github.com" network failure — the commit itself succeeded locally first, retried the push a few times until connectivity returned, then verified as normal. No edit was ever left uncommitted across any of this.
+
 ## 1. Verified current state
 
 - **`origin/main` HEAD:** `376311c` ("settings.json: activate silent output style project-wide"). Confirmed via `git fetch origin` + `git rev-parse origin/main`, and `git diff HEAD origin/main` returns empty (local worktree, branch `sairn-session66-work`, is exactly in sync with `origin/main`).
