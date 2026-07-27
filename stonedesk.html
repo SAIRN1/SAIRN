@@ -24966,6 +24966,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'</div>';
     }).join('');
   }
+  window.sdITRender=render;
   window.sdITTicket=function(){
     var desc=document.getElementById('it-desc').value.trim();
     if(!desc){showToast('Describe the issue');return;}
@@ -28096,7 +28097,7 @@ function sbNav(id) {
     if(id==='emailsecurity'&&typeof window.sdEmailRender==='function')window.sdEmailRender();
     if(id==='ap'&&typeof window.sdAPRender==='function')window.sdAPRender();
     if(id==='employees'&&typeof window.sdEmpRender==='function')window.sdEmpRender();
-    if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();}
+    if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();if(typeof window.sdITRender==='function')window.sdITRender();}
     if(id==='template'&&typeof tmRender==='function'){tmRender();if(typeof tmUpdateKPIs==='function')tmUpdateKPIs();}
     if(id==='templates'&&typeof tmplRender==='function')tmplRender();
     if(id==='business'&&typeof calcBiz==='function')calcBiz();
