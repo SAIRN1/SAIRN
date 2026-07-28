@@ -2585,7 +2585,6 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
             <div class="q-field">
               <label>Client Name</label>
               <input type="text" id="client-name" placeholder="e.g. Johnson Residence" oninput="calc()">
-              <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">client</label><input type="text" id="client" class="form-control"></div>
             </div>
             <div class="q-field">
               <label>Quote #</label>
@@ -4027,8 +4026,14 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   render();
 })();
 </script>
-</div><div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap" id="intake-analyze-actions"></div>
+</div><div id="intake-analyze-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;" data-auto-container="missing-dom-fix">
+  <div style="background:var(--card);border-radius:12px;max-width:480px;width:92%;max-height:85vh;overflow-y:auto;padding:20px 24px;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text)">📷 Photo Analysis</div>
+    <div id="intake-analyze-result" style="margin-bottom:12px" data-auto-container="missing-dom-fix"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap" id="intake-analyze-actions"></div>
         <button class="q-btn" style="margin-top:10px;width:100%" onclick="document.getElementById('intake-analyze-modal').style.display='none'">Close</button>
+  </div>
+</div>
 
   <!-- == CUSTOMERS PANEL == -->
   <div class="panel" id="panel-customers">
@@ -7175,9 +7180,13 @@ function histRender() {
 function histReopen(idx) {
   var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
   var q = quotes[idx]; if (!q) return;
-  // Seed quote builder fields
-  if (q.client) { var el = document.getElementById('client'); if(el) el.value = q.client; }
-  if (q.project) { var el2 = document.getElementById('projectType'); if(el2) el2.value = q.project; }
+  // Seed quote builder fields. Real ids are client-name/project-type (confirmed
+  // in the Quote Builder panel markup) -- this previously read 'client'/
+  // 'projectType', which never existed, so Reopen silently wrote into nothing
+  // and the Quote Builder's real fields (and calc(), bound to their input/
+  // change events) never got the reopened quote's data or re-fired.
+  if (q.client) { var el = document.getElementById('client-name'); if(el) el.value = q.client; }
+  if (q.project) { var el2 = document.getElementById('project-type'); if(el2) el2.value = q.project; }
   sbNav('quote');
   notify('Quote loaded into Quote Builder', '');
 }
@@ -8405,7 +8414,17 @@ function saveQuote() {
 }
 
 function renderHistory() {
+  // history-list was never built anywhere in this file -- this call was an
+  // unguarded, synchronous TypeError on EVERY saveQuote(), same class as the
+  // slab-reservation crash documented in the comment just above this
+  // function: it aborted the rest of saveQuote() (quote counter increment,
+  // #quote-num reset, "Saved!" flash) before those ever ran. The quote
+  // itself (quoteHistory.unshift/localStorage/dbSaveQuoteHistory above)
+  // already happened by the time this runs, so it was unaffected -- only
+  // the crashing re-render (a redundant duplicate of the real, working
+  // History panel's own sdHistoryRender()) is neutralized here.
   const el = document.getElementById('history-list');
+  if (!el) return;
   if (!quoteHistory.length) {
     el.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">No saved quotes yet.</div>';
     return;
@@ -11109,8 +11128,12 @@ function printDrawCutSheet() {
     w.document.close();w.print();
   };
   window.sdStonehubSaveQA=function(){
-    var qEl=document.getElementById('sh-question')||document.querySelector('.sh-input');
-    var aEl=document.getElementById('sh-answer-out')||document.querySelector('.sh-response');
+    // Real Ask Stonehead widget ids are sh-question-input/sh-answer-text --
+    // this previously read sh-question/sh-answer-out (neither ever existed)
+    // with a fallback to .sh-input/.sh-response (neither of those classes
+    // exist anywhere either), so "Save Q&A" always saved a blank record.
+    var qEl=document.getElementById('sh-question-input');
+    var aEl=document.getElementById('sh-answer-text');
     var q=qEl?qEl.value||qEl.textContent:'';
     var a=aEl?aEl.textContent:'';
     if(!q&&!a){showToast('No Q&A to save.');return;}
