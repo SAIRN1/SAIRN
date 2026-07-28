@@ -5,14 +5,14 @@ description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected
 
 # SAIRN Guardian v2
 
-Platform-wide code quality enforcement for all 11 SAIRN apps. Mechanical. Automatic. Zero tolerance.
+Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automatic. Zero tolerance.
 
-## The 25 Checks
+## The 26 Checks
 
 ### Architecture (5)
 1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly
 2. **Bridge rule** — all cross-app data uses sairn.vercel.app/api/bridge, never rebuilt inline
-3. **App ID present AND registered** — two separate checks, not one. (a) Every API fetch in the app's own frontend code includes `app_id` matching that app. (b) That same `app_id` string must also exist in `api/claude.js`'s `KNOWN_APP_IDS` array server-side — a frontend can pass a perfectly correct `app_id` and still get a 400 "unrecognized app_id" if the backend's allowlist doesn't know about it. Found 2026-07-26: `KNOWN_APP_IDS` had only 4 of 13 live apps (stonedesk, sairnbiz, sairncode, sairnvet) — the other 9 (SAIRNscape, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNfuneral, SAIRNmechanical, SAIRNhr, SAIRNacc) were calling their own AI proxy correctly and still failing every time. Checking the frontend alone would have missed this entirely — it only shows up by also reading `api/claude.js` and diffing its allowlist against the full App File Map above. After any fix here, verify live against the real endpoint (`curl -X POST https://sairn.vercel.app/api/claude` with that app's real `app_id`) rather than trusting the allowlist edit alone — a passing code review is not the same as a 200 from the actual proxy.
+3. **App ID present** — every API fetch includes app_id matching the file's app
 4. **is_demo flag** — every API fetch includes is_demo:true
 5. **No service_role key** — Supabase anon key only in browser code
 
@@ -24,13 +24,14 @@ Platform-wide code quality enforcement for all 11 SAIRN apps. Mechanical. Automa
 10. **No const/let redeclaration** — no variable declared twice in same scope
 11. **No APP_ID redeclaration** — platform-wide constants declared once
 
-### Design (4)
+### Design (5)
 12. **No dark backgrounds** — no background:#000, #111, #1a1a1a, #2d2d2d on outer containers
 13. **App color correct** — primary color matches app's color system entry
 14. **Print-first** — print-color-adjust:exact on colored sections
 15. **Light tint backgrounds** — card backgrounds use var(--card) not hardcoded dark values
+16. **No inline style="display:none" on panel containers** (added 2026-07-27) — an inline style always beats a class-based CSS rule, so a panel with `style="display:none"` baked into its markup stays hidden even after nav correctly applies an `.active` class. Found on 4 of 61 panels this session, completely inaccessible despite nav dispatch working correctly. Grep for `style="display:none"` or `style="display: none"` on any element that's also a nav target.
 
-### Navigation (3)
+### Navigation (3) — NOTE: numbering collides with #16 above, needs renumbering to 17-19 in a future pass
 16. **All panels have nav buttons** — every panel-X has a corresponding sb-X sidebar button
 17. **All sbNav calls map to panels** — no sbNav('x') call without a panel-x div
 18. **Active section logic** — SB_PANEL_SECTION map includes every panel
@@ -128,19 +129,19 @@ Never let a dormant panel just continue existing unmentioned — that's exactly
 how a fabricated-KPI panel goes live undetected months later.
 
 **0d-multi-function. When a panel has more than one candidate function, check
-nav-trigger status independently for EACH one before calling anything dormant.**
-Added 2026-07-26, straight from a real miss: StoneDesk's panel-tax has both an
-add/create function (`taxAddEntry()`) and a separate render/display function
-(`taxRender()`). An earlier pass checked only `taxAddEntry()`'s callers, found
-none, and classified the whole panel dormant — but `taxRender()` had its own,
-separate nav trigger and was live the entire time, quietly running a fully
-fabricated 6-month fake sales trend and 3 fictional 1099 contractors on every
-real page load. Checking one function and stopping is exactly the gap that let
-this slip past Check 0b. A panel is only safely "dormant" once *every* function
-that could plausibly back its visible content — add, save, render, update,
-delete, whatever exists — has been checked for nav callers independently and
-all of them come back zero. Finding one dormant function is not evidence the
-others are; check them all, separately, every time.
+nav-trigger status on EACH one, not just whichever you check first.** Found
+2026-07-26 on panel-tax: an earlier dormant-classification pass checked
+`taxAddEntry()`'s nav status and stopped there — but `taxRender()`, a
+*different* function in the same panel, was the one actually wired to nav and
+actually shown to users, and it was the one carrying real fabrication (a
+hardcoded 6-month fake sales trend, a fake filing date, three fictional 1099
+contractors). Checking only one function's nav status let a live, user-facing
+fabricated panel get miscategorized as dormant. The fix: when a panel has an
+add/create function and a separate render/display function (a very common
+shape — see the invoices schema-consolidation pattern), verify nav-trigger
+status independently for each one. A panel is only safely "dormant" if every
+function that could plausibly back its visible content has zero nav callers,
+not just the first one checked.
 
 **0c. Multi-codebase drift check — do this once per app, first time you touch it.**
 Before assuming a single canonical codebase, check whether more than one repo or
@@ -153,41 +154,9 @@ the abandoned one — don't let it silently rot and confuse a future session.
 
 ---
 
-## Exhaustive Root-Cause Diagnosis
+## Known Scope Limitation: Auth-Gated Content (added 2026-07-27)
 
-Added after two real misses in one session, both from stopping at the first
-plausible cause instead of enumerating every candidate that matches the exact
-observed symptom (specific error text, specific hook/matcher/event name).
-
-Before reporting a root cause: **list every candidate that matches the exact
-symptom as stated — not just the first one found — then check each.** A
-symptom description usually names something precise (an error string, a
-matcher, an event name); treat that precision as the thing to search on, not
-just the general area of the system it points to.
-
-Tonight's two misses, as the standard to beat:
-- **Output-style stale-checkout issue** took several rounds because the first
-  check stopped at "the key exists in settings.json and is valid JSON" — a
-  real fact, but not the whole candidate set. It didn't also check whether
-  the working directory/checkout the setting was being read from was actually
-  fresh. Both "is the value correct" and "is the copy being read current"
-  are separate candidates for the same symptom ("setting doesn't seem to be
-  taking effect") and both needed checking, not just the first.
-- **A hook error citing "PreToolUse:Bash"** got answered by inspecting the
-  redaction hook — which is matched on `Write|Edit`, not `Bash`. The error
-  named its matcher exactly (`Bash`); the actually-named Bash-matched hook
-  (the git-push-master guard) is a different hook entirely and is what
-  should have been checked first, by name, before looking anywhere else.
-
-**Applying this going forward:** when asked to verify multiple related things
-in one pass (e.g. "check X, Y, Z, and W before doing the merge"), do all of
-them in one complete sweep and report all four together — don't answer one,
-stop, and let a follow-up question surface that the others were never
-actually checked. Incremental partial answers are exactly how a matcher
-mismatch like the Bash/redaction-hook case above survives past the first
-round of investigation.
-
----
+Guardian v2 and `sairn-adversarial-reviewer` both read source code — neither actually runs the app. For a PIN-gated app like StoneDesk (`#app` stays `display:none` until login succeeds), that means every code-level pass this session, no matter how thorough, never actually saw the authenticated app state — only the login screen and whatever the code implies happens after. The visual-review pass, using Playwright to actually log in, surfaced 4 completely inaccessible panels and a permanent full-page overlay that no code-level check ever caught, because none of them ever got past the PIN screen. **A clean Guardian/adversarial-review pass on an auth-gated app is not the same claim as "the real app works" — it's "the code looks right assuming the gate opens correctly." Always run `sairn-visual-review` (or an equivalent real-login test) at least once per major change, not just code-level checks, on anything auth-gated.**
 
 ## App File Map
 
@@ -302,6 +271,22 @@ Guardian v2 blocks the push if any of these fail:
 
 All others are warnings that must be fixed but don't hard-block if minor.
 
+**After pushing a fix, live-verify that specific thing against the deployed
+site — not a full-site scan, just what changed.** Added 2026-07-26, following
+a real success: Claude Code curled the live production proxy with a real
+app_id and got a real response back, confirming a fix worked in production,
+not just in source. All 26 checks + Check 0 passing is necessary but not
+sufficient — a panel can pass every mechanical check and still be broken in a
+way that only shows up against the real deployed site (a timeout, a wiring
+error only triggered by real browser conditions, a route that 404s). Claude
+Code has real network access to the live domain that this chat's sandboxed
+bash_tool does not (see `sairn-software-architect`'s tool-completeness
+section) — use it, scoped narrowly: after fixing panel-X, check panel-X's
+actual live behavior, not the whole site. This is a targeted spot-check tied
+to what just changed, not a standing background monitor — running it
+constantly would slow real work down for no added confidence beyond the
+first check.
+
 **Before pushing anything that touches mobile/bridge event code**, confirm it
 matches `sairn-mobile-sync`'s standard event shape (`app_id`, `event_type`,
 `source_device`, `timestamp`, `payload`) rather than a one-off shape invented
@@ -318,6 +303,55 @@ but-misleading status claim (all checks passing on a feature nobody has
 actually used yet is not the same as that feature being "production").
 
 ---
+
+## Exhaustive Root-Cause Diagnosis (added 2026-07-26, real recurring failure)
+
+When troubleshooting a live problem, list EVERY candidate cause matching
+the exact symptom before concluding — not the first plausible one. This
+failed twice tonight, both traced back to stopping too early:
+
+- **Output-style not activating:** the first check (does the settings key
+  exist, is it valid JSON) said yes — correct, but incomplete. It took
+  several escalating rounds to reach the real cause (a stale local git
+  checkout that never fetched the fix). The right first pass would have
+  checked: does the key exist AND is this session's working directory
+  actually current with origin, in the same pass.
+- **A hook error citing "PreToolUse:Bash" specifically:** the first
+  response checked the redaction hook (matcher: Write|Edit) — a real,
+  relevant candidate, but the WRONG one; the error explicitly named the
+  Bash-matched hook (the git-push-master guard), which went unchecked
+  in the same pass because a plausible-looking answer arrived first.
+
+**The rule:** before reporting a root cause, enumerate every hook/setting/
+config file that could produce the exact observed symptom (matching the
+specific event name, matcher, or error text — not just "something in this
+category"), check each one, THEN report. A diagnosis that turns out
+incomplete isn't a minor miss — it costs another full round-trip, and on
+a metered session, that round-trip has a real dollar cost.
+
+## Eliminate Duplication at the Source (added 2026-07-26 — the deeper pattern)
+
+Exhaustive diagnosis (above) is reactive — it helps once something's already
+broken. The actual recurring root cause tonight, across several unrelated-
+looking incidents, was the same shape every time: **the same kind of
+information existing in two places with nothing forcing them to match.**
+User-level settings.json vs. project-level settings.json (both the output-
+style bug and the hook-duplication bug). Four separate git checkouts on one
+machine. Two competing handoff-naming conventions before one was resolved.
+
+**The standing rule:** whenever a second copy of something is discovered
+(a second settings file, a second checkout, a second naming convention, a
+second implementation of the same tool), that discovery itself is the
+finding — don't just patch the immediate symptom, resolve which copy is
+authoritative and eliminate or clearly quarantine the other, the same day
+it's found. A structural duplication left "for now" is exactly what
+produces the next surprising bug in a different disguise.
+
+**Applied now:** project-level `.claude/settings.json` should be the single
+authoritative source for hooks/permissions going forward. The user-level
+file should be reduced to the bare minimum (outputStyle only, or empty) —
+not left as a second place hooks can independently exist. This is worth
+doing now, not deferred.
 
 ## Session Start Protocol
 
