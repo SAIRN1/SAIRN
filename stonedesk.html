@@ -2196,6 +2196,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     <div class="topbar-nav"><!-- nav hidden; sidebar below --></div>
     <div class="topbar-right">
       <span id="role-badge-display" class="role-badge sales"></span><span id="user-label">Sales</span>
+      <span id="user-chip" data-auto-container="missing-dom-fix">0</span>
       <button class="topbar-logout" onclick="doLogout()">Sign out</button>
     </div>
   </div>
@@ -2584,6 +2585,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
             <div class="q-field">
               <label>Client Name</label>
               <input type="text" id="client-name" placeholder="e.g. Johnson Residence" oninput="calc()">
+              <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">client</label><input type="text" id="client" class="form-control"></div>
             </div>
             <div class="q-field">
               <label>Quote #</label>
@@ -4164,6 +4166,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 </script>
 </div>
 <div id="cust-detail-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;">
+<div id="cust-form-wrap" style="display:none" data-auto-container="missing-dom-fix"></div>
   <div style="background:var(--card);border-radius:12px;max-width:800px;width:92%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;">
     <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
       <div>
@@ -4487,6 +4490,9 @@ window.sdPhotosExport=function(){
 </script>
 </div>
 <div id="photo-ai-result" style="font-size:13px;line-height:1.7;color:var(--text)">Analyzing...</div>
+<div id="photo-ai-modal" style="display:none" data-auto-container="missing-dom-fix"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">photo-job</label><input type="text" id="photo-job" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">photo-cat</label><input type="text" id="photo-cat" class="form-control"></div>
           <button class="q-btn" style="margin-top:16px;width:100%" onclick="document.getElementById('photo-ai-modal').style.display='none'">Close</button>
 
   <!-- == WARRANTY PANEL == -->
@@ -4943,6 +4949,21 @@ window.sdPhotosExport=function(){
   </div>
 </div>
 <div id="fm-alerts-zone" style="margin-bottom:14px"></div>
+<div id="fm-form" style="display:none" data-auto-container="missing-dom-fix"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-pipe-start</label><input type="text" id="fm-pipe-start" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-pipe-end</label><input type="text" id="fm-pipe-end" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-overview-date</label><input type="text" id="fm-overview-date" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-pipe-person</label><input type="text" id="fm-pipe-person" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-person-select</label><input type="text" id="fm-person-select" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-pipe-type</label><input type="text" id="fm-pipe-type" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-date-select</label><input type="text" id="fm-date-select" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-s-date</label><input type="text" id="fm-s-date" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-s-person</label><input type="text" id="fm-s-person" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-s-address</label><input type="text" id="fm-s-address" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-s-type</label><input type="text" id="fm-s-type" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-s-time</label><input type="text" id="fm-s-time" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-s-customer</label><input type="text" id="fm-s-customer" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">fm-s-notes</label><input type="text" id="fm-s-notes" class="form-control"></div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="fmap-kpi1">0</div><div class="kpi-label">Crews Out Today</div></div>
   <div class="kpi"><div class="kpi-val" id="fmap-kpi2">0</div><div class="kpi-label">Jobs In Progress</div></div>
@@ -5399,6 +5420,7 @@ function sdInvExport(){
 </div>
 <div class="order-cart" id="floating-cart" onclick="document.getElementById('vendor-cart-summary').scrollIntoView({behavior:'smooth'})">
     🛒 <span id="cart-count">0</span> items — <span id="cart-float-total">$0.00</span>
+    <div id="cart-items" style="display:none" data-auto-container="missing-dom-fix"></div>
   </div>
 
 
@@ -5450,6 +5472,17 @@ function sdInvExport(){
       <button class="q-btn primary" style="width:100%" onclick="sdRMAdd()">Log Remake</button>
     </div>
     <div id="rm-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
+    <div id="rm-slab-chip" style="display:none" data-auto-container="missing-dom-fix"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-filter-status</label><input type="text" id="rm-filter-status" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-reason</label><input type="text" id="rm-reason" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-assign</label><input type="text" id="rm-assign" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-start</label><input type="text" id="rm-start" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-priority</label><input type="text" id="rm-priority" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-sqft</label><input type="text" id="rm-sqft" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-address</label><input type="text" id="rm-address" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-visitdate</label><input type="text" id="rm-visitdate" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-slab-id</label><input type="text" id="rm-slab-id" class="form-control"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rm-filter-type</label><input type="text" id="rm-filter-type" class="form-control"></div>
   </div>
 </div>
 </div>
@@ -5534,6 +5567,7 @@ window.sdRMExport=function(){
 };
 </script>
 </div><div id="remake-trend-bars"></div>
+<div id="remake-form" style="display:none" data-auto-container="missing-dom-fix"></div>
 
   <!-- == EXECUTIVE SUITE == -->
   <div class="panel" id="panel-executive">
@@ -5788,6 +5822,8 @@ window.sdRMExport=function(){
       <input id="comms-to" placeholder="To (customer / person)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <input id="comms-subj" placeholder="Subject" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <textarea id="comms-body" rows="5" placeholder="Message..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box;resize:vertical"></textarea>
+      <div id="comms-announce-btn" style="display:none" data-auto-container="missing-dom-fix"></div>
+      <div id="comms-pinned-zone" data-auto-container="missing-dom-fix"></div>
       <div style="display:flex;gap:8px">
         <button class="q-btn" onclick="sdCommsAI()" style="flex:1">🤖 AI Draft</button>
         <button class="q-btn primary" onclick="sdCommsNew()" style="flex:1">Send</button>
@@ -21710,6 +21746,9 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div id="crm-form" style="display:flex;gap:10px;margin-top:8px">
+<div id="crm-list-view" style="display:none" data-auto-container="missing-dom-fix"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">crm-referrer</label><input type="text" id="crm-referrer" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">crm-followup</label><input type="text" id="crm-followup" class="form-control"></div>
       <button class="q-btn primary" onclick="crmSaveLead()">Save Lead</button>
       <button class="q-btn" onclick="document.getElementById('crm-form').style.display='none'">Cancel</button>
     </div>
@@ -21868,6 +21907,7 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div id="jc-ai-result" style="margin-top:16px"></div>
+<div id="jc-list" data-auto-container="missing-dom-fix"></div>
   <button class="q-btn" style="margin-top:10px;background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.3);color:#7c3aed" onclick="jcAIAnalyze()">&#129504; Claude — Analyze My Job Margins</button>
 </div>
 
@@ -21958,6 +21998,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <div id="ts-ot-alerts" style="font-size:12px;color:var(--muted)"></div>
     </div>
     <div id="ts-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.7"></div>
+    <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">ts-search</label><input type="text" id="ts-search" class="form-control"></div>
   </div>
 </div>
 </div>
@@ -22240,6 +22281,7 @@ document.addEventListener('DOMContentLoaded', function() {
   </select>
 </div>
 <div id="rem-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
+<div id="rem-form" style="display:none" data-auto-container="missing-dom-fix"></div>
 </div>
 
 <!-- PANEL: PURCHASE ORDERS -->
@@ -22882,6 +22924,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
       <div style="font-weight:700;margin-bottom:12px;color:var(--text);font-size:13px">Recent AI Quotes</div>
       <div id="aiq-recent"></div>
+      <div id="aiq-history" data-auto-container="missing-dom-fix"></div>
     </div>
   </div>
 </div>
@@ -23092,6 +23135,10 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;line-height:1.7" id="sint-safety-list"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">sint-sqft</label><input type="text" id="sint-sqft" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">sint-edge-lf</label><input type="text" id="sint-edge-lf" class="form-control"></div>
+<div id="sint-mat-info" data-auto-container="missing-dom-fix"></div>
+<div id="sint-result" data-auto-container="missing-dom-fix"></div>
 </div>
 
 <!-- PANEL: CARE GUIDE AI -->
@@ -23480,6 +23527,7 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 </div><div id="sa-result" style="display:none"></div>
+<div id="sa-runs-container" data-auto-container="missing-dom-fix"></div>
 
 <!-- PANEL: REVIEW AUTOMATION -->
 <div class="panel" id="panel-reviews">
@@ -23889,6 +23937,8 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div id="rf-list"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rf-source-chart</label><input type="text" id="rf-source-chart" class="form-control"></div>
+<div id="rf-top-referrers" data-auto-container="missing-dom-fix"></div>
 </div>
 
 <!-- PANEL: PRICE INTELLIGENCE -->
@@ -24010,6 +24060,7 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px" id="pi-rate-inputs"></div>
+<div id="pi-market-rates" data-auto-container="missing-dom-fix"></div>
     <button class="q-btn primary" style="margin-top:10px" onclick="piSaveRates()">Save My Rates</button>
 </div>
 
@@ -24759,6 +24810,9 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div id="ita-audit-log" style="max-height:300px;overflow-y:auto"></div>
+<div id="ita-users-list" data-auto-container="missing-dom-fix"></div>
+<div id="ita-storage-detail" data-auto-container="missing-dom-fix"></div>
+<div id="ita-license-info" data-auto-container="missing-dom-fix"></div>
 </div>
 
 <!-- PANEL: DAMAGE CLAIMS -->
@@ -25730,6 +25784,9 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div id="tax-ai-result" style="margin-bottom:16px"></div>
+<div id="tax-entries" data-auto-container="missing-dom-fix"></div>
+<div id="tax-total-row" data-auto-container="missing-dom-fix"></div>
+<div id="tax-quarterly" data-auto-container="missing-dom-fix"></div>
 </div>
 
 
