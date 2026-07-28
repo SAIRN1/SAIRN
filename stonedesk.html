@@ -2364,7 +2364,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="ai-queries">0</div><div class="kpi-label">Queries Today</div></div>
   <div class="kpi"><div class="kpi-val" id="ai-total">0</div><div class="kpi-label">Total Queries</div></div>
-  <div class="kpi"><div class="kpi-val" id="ai-topics">6</div><div class="kpi-label">Quick Topics</div></div>
+  <div class="kpi"><div class="kpi-val" id="ai-topics">0</div><div class="kpi-label">Quick Topics</div></div>
   <div class="kpi"><div class="kpi-val" id="ai-model">Claude</div><div class="kpi-label">AI Model</div></div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
@@ -2398,7 +2398,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
       <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Quick Topics</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
+      <div id="ai-quick-topics-list" style="display:flex;flex-direction:column;gap:6px">
         <button class="q-btn" style="text-align:left;font-size:12px" onclick="sdAIQuick('What are the current market prices for Calacatta Gold marble countertops?')">💰 Market pricing for Calacatta Gold</button>
         <button class="q-btn" style="text-align:left;font-size:12px" onclick="sdAIQuick('Give me tips to reduce fabrication waste and improve material yield.')">♻️ Reduce fabrication waste</button>
         <button class="q-btn" style="text-align:left;font-size:12px" onclick="sdAIQuick('How should I price a kitchen countertop project with 55 sq ft of Quartzite?')">📊 Price a 55 sqft Quartzite job</button>
@@ -2427,6 +2427,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   try{var sc=JSON.parse(localStorage.getItem('sd_ai_counts')||'{}');counts=sc;}catch(e){}
   document.getElementById('ai-queries').textContent=counts.today||0;
   document.getElementById('ai-total').textContent=counts.total||0;
+  var qtList=document.getElementById('ai-quick-topics-list');
+  document.getElementById('ai-topics').textContent=qtList?qtList.children.length:0;
   function appendMsg(role,text){
     var d=document.getElementById('ai-chat');
     var isUser=role==='user';
