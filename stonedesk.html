@@ -5051,7 +5051,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">📦 Supplies & Hardware Inventory</h2>
   <div style="font-size:13px;color:var(--muted);margin-top:2px">Consumables, tools, adhesives, hardware — real-time stock</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="q-btn primary" onclick="sdInvAdd()">+ Add Item</button>
+    <button class="q-btn primary" onclick="invAddItem()">+ Add Item</button>
     <button class="q-btn" onclick="sdInvAI()">🤖 AI Reorder</button>
     <button class="q-btn" onclick="sdInvExport()">📊 Export CSV</button>
     <button class="q-btn" onclick="sdInvPrint()">🖨️ Print</button>
@@ -5064,15 +5064,16 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="kpi"><div class="kpi-val" id="inv-kpi4">0</div><div class="kpi-label">Out of Stock</div></div>
 </div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-  <input id="inv-search" placeholder="Search items..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="sdInvRender()">
-  <select id="inv-cat-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="sdInvRender()">
-    <option value="">All Categories</option>
-    <option value="Adhesive">Adhesive</option>
-    <option value="Blade">Blade</option>
-    <option value="Hardware">Hardware</option>
-    <option value="Chemical">Chemical</option>
-    <option value="Safety">Safety</option>
-    <option value="Tool">Tool</option>
+  <input id="inv-search" placeholder="Search items..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="renderInventory()">
+  <select id="inv-cat-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="sdInvCat=this.value;renderInventory()">
+    <option value="all">All Categories</option>
+    <option value="adhesives">Adhesives</option>
+    <option value="abrasives">Abrasives</option>
+    <option value="blades">Blades</option>
+    <option value="hardware">Hardware</option>
+    <option value="chemicals">Chemicals</option>
+    <option value="safety">Safety</option>
+    <option value="tooling">Tooling</option>
   </select>
 </div>
 <div id="inv-best-value" style="display:none;margin-bottom:12px"></div>
@@ -5080,116 +5081,53 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 <div id="inv-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
 <script>
-(function(){
-  var SEED=[
-    {id:'INV-001',name:'Tenax Transparent Adhesive',category:'Adhesive',sku:'TX-TRANS-1L',qty:14,min:8,unit:'liter',cost:22,vendor:'Tenax USA'},
-    {id:'INV-002',name:'Diamond Bridge Saw Blade 14"',category:'Blade',sku:'BLD-14-DIA',qty:3,min:2,unit:'ea',cost:185,vendor:'Diamond Tool Co'},
-    {id:'INV-003',name:'Sink Undermount Clips (pkg/50)',category:'Hardware',sku:'HW-SINK-50',qty:22,min:10,unit:'pkg',cost:18,vendor:'Stone Hardware Plus'},
-    {id:'INV-004',name:'Stone Color Enhancer Sealer',category:'Chemical',sku:'CHM-ENH-1G',qty:5,min:4,unit:'gallon',cost:54,vendor:'Akemi'},
-    {id:'INV-005',name:'Safety Goggles (ANSI Z87)',category:'Safety',sku:'SAF-GOG-Z87',qty:2,min:6,unit:'ea',cost:12,vendor:'Safety First Supply'},
-    {id:'INV-006',name:'Angle Grinder 4.5" Discs',category:'Blade',sku:'BLD-45-GRN',qty:31,min:15,unit:'ea',cost:4,vendor:'Diamond Tool Co'},
-    {id:'INV-007',name:'Epoxy 5-Minute Clear',category:'Adhesive',sku:'EP-5MIN-CL',qty:9,min:5,unit:'ea',cost:8,vendor:'Tenax USA'},
-    {id:'INV-008',name:'Respirator N95 (box/20)',category:'Safety',sku:'SAF-N95-20',qty:0,min:3,unit:'box',cost:28,vendor:'Safety First Supply'},
-    {id:'INV-009',name:'Router Bit Set (10pc)',category:'Tool',sku:'TL-RTRBT-10',qty:2,min:2,unit:'set',cost:145,vendor:'Weha Tools'},
-    {id:'INV-010',name:'Penetrating Stone Sealer',category:'Chemical',sku:'CHM-SEAL-1G',qty:7,min:4,unit:'gallon',cost:48,vendor:'Akemi'}
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_inventory')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_inventory',JSON.stringify(d));}catch(e){}}
-  var data=load();
-  window.sdInvRender=function(){
-    var q=(document.getElementById('inv-search')||{value:''}).value.toLowerCase();
-    var cf=(document.getElementById('inv-cat-filter')||{value:''}).value;
-    var rows=data.filter(function(i){
-      var match=(i.name+i.sku+i.vendor).toLowerCase().includes(q);
-      var cat=!cf||i.category===cf;
-      return match&&cat;
-    });
-    var low=data.filter(function(i){return i.qty>0&&i.qty<=i.min;}).length;
-    var oos=data.filter(function(i){return i.qty===0;}).length;
-    var val=data.reduce(function(a,i){return a+i.qty*i.cost;},0);
-    document.getElementById('inv-kpi1').textContent=data.length;
-    document.getElementById('inv-kpi2').textContent=low;
-    document.getElementById('inv-kpi3').textContent='$'+val.toLocaleString();
-    document.getElementById('inv-kpi4').textContent=oos;
-    var html='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc">'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Item</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Category</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">SKU</th>'
-      +'<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Qty</th>'
-      +'<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Min</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Status</th>'
-      +'<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Unit Cost</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Vendor</th>'
-      +'</tr></thead><tbody>';
-    rows.forEach(function(i,idx){
-      var bg=idx%2===0?'#fff':'#f8fafc';
-      var status=i.qty===0?'Out of Stock':i.qty<=i.min?'Low Stock':'In Stock';
-      var scolor=i.qty===0?'#ef4444':i.qty<=i.min?'#f59e0b':'#16c762';
-      html+='<tr style="background:'+bg+'">'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:600">'+i.name+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+i.category+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:monospace;font-size:11px">'+i.sku+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:700">'+i.qty+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;color:var(--muted)">'+i.min+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+scolor+'20;color:'+scolor+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+status+'</span></td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right">$'+i.cost.toLocaleString()+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+i.vendor+'</td>'
-        +'</tr>';
-    });
-    html+='</tbody></table>';
-    document.getElementById('inv-list').innerHTML=html;
-  };
-  window.sdInvAdd=function(){
-    var name=prompt('Item name:');
-    if(!name)return;
-    var qty=parseInt(prompt('Current quantity:','10')||'10');
-    var min=parseInt(prompt('Minimum stock level:','5')||'5');
-    var cost=parseFloat(prompt('Unit cost ($):','20')||'20');
-    var vendor=prompt('Vendor:','');
-    var cat=prompt('Category (Adhesive/Blade/Hardware/Chemical/Safety/Tool):','Hardware');
-    var id='INV-'+String(data.length+1).padStart(3,'0');
-    data.push({id:id,name:name,category:cat||'Hardware',sku:id,qty:qty,min:min,unit:'ea',cost:cost,vendor:vendor||''});
-    save(data);
-    sdInvRender();
-  };
-  window.sdInvAI=function(){
-    var out=document.getElementById('inv-ai-out');
-    out.style.display='block';out.textContent='Analyzing inventory...';
-    var low=data.filter(function(i){return i.qty<=i.min;});
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a supply chain advisor for Pinnacle Stone & Design, a stone fabrication company. Current inventory: '+JSON.stringify(data.map(function(i){return{name:i.name,qty:i.qty,min:i.min,category:i.category}}))+'. Low/out of stock: '+low.map(function(i){return i.name+'('+i.qty+')'}).join(', ')+'. Provide: 1) Priority reorder list with suggested quantities, 2) Cost optimization tips, 3) Vendor consolidation opportunities, 4) Safety stock recommendations.'}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
-    }).catch(function(){out.textContent='AI unavailable. Manually review items below minimum stock and place reorders with regular vendors.';});
-  };
-  window.sdInvPrint=function(){
-    var w=window.open('','_blank');
-    var low=data.filter(function(i){return i.qty<=i.min;}).length;
-    var val=data.reduce(function(a,i){return a+i.qty*i.cost;},0);
-    w.document.write('<html><head><title>Inventory - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}.low{color:#f59e0b;font-weight:700}.oos{color:#ef4444;font-weight:700}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h2 style="color:#16c762">Inventory Report</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<p><strong>'+data.length+'</strong> SKUs | <strong>'+low+'</strong> need reorder | Value: <strong>$'+val.toLocaleString()+'</strong></p>');
-    w.document.write('<table><tr><th>Item</th><th>SKU</th><th>Qty</th><th>Min</th><th>Unit Cost</th><th>Total</th><th>Vendor</th></tr>');
-    data.forEach(function(i){
-      var cls=i.qty===0?'oos':i.qty<=i.min?'low':'';
-      w.document.write('<tr><td>'+i.name+'</td><td>'+i.sku+'</td><td class="'+cls+'">'+i.qty+'</td><td>'+i.min+'</td><td>$'+i.cost+'</td><td>$'+(i.qty*i.cost).toLocaleString()+'</td><td>'+i.vendor+'</td></tr>');
-    });
-    w.document.write('</table></body></html>');
-    w.document.close();w.print();
-  };
-  window.sdInvExport=function(){
-    var d=load();
-    var rows=[['ID','Item','Category','SKU','Qty','Min','Unit','Unit Cost','Total Value','Vendor','Status']];
-    d.forEach(function(i){
-      var st=i.qty===0?'Out of Stock':i.qty<=i.min?'Low Stock':'In Stock';
-      rows.push([i.id,i.name,i.category,i.sku,i.qty,i.min,i.unit,('$'+i.cost),('$'+(i.qty*i.cost).toLocaleString()),i.vendor,st]);
-    });
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-    var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='inventory-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
-  };
-  sdInvRender();
-})();
+// The IIFE-scoped SEED/load/save/data/sdInvRender/sdInvAdd module that
+// used to live here is deleted, not fixed: it held its own private,
+// stale copy of 'sd_inventory' (a different shape -- .category instead
+// of .cat -- from the real, more deeply-integrated sdInventory/saveSD4()
+// system used by vendor PO matching, job-material consumption, and
+// low-stock alerts elsewhere in this file). It ran on both page load and
+// nav, always after the real system's own load-time render, so it always
+// won the visible #inv-list -- meaning the real system's quantity +/-,
+// delete, and stock-urgency coloring were unreachable through normal use
+// even though their code was correct. sdInvAI/sdInvPrint/sdInvExport
+// below are real, button-wired, and rebuilt against the canonical
+// sdInventory global instead.
+function sdInvAI(){
+  var out=document.getElementById('inv-ai-out');
+  out.style.display='block';out.textContent='Analyzing inventory...';
+  var low=sdInventory.filter(function(i){return i.qty<=i.min;});
+  fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a supply chain advisor for Pinnacle Stone & Design, a stone fabrication company. Current inventory: '+JSON.stringify(sdInventory.map(function(i){return{name:i.name,qty:i.qty,min:i.min,category:i.cat}}))+'. Low/out of stock: '+low.map(function(i){return i.name+'('+i.qty+')'}).join(', ')+'. Provide: 1) Priority reorder list with suggested quantities, 2) Cost optimization tips, 3) Vendor consolidation opportunities, 4) Safety stock recommendations.'}]})
+  }).then(function(r){return r.json();}).then(function(r){
+    out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
+  }).catch(function(){out.textContent='AI unavailable. Manually review items below minimum stock and place reorders with regular vendors.';});
+}
+function sdInvPrint(){
+  var w=window.open('','_blank');
+  var low=sdInventory.filter(function(i){return i.qty<=i.min;}).length;
+  var val=sdInventory.reduce(function(a,i){return a+i.qty*i.cost;},0);
+  w.document.write('<html><head><title>Inventory - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}.low{color:#f59e0b;font-weight:700}.oos{color:#ef4444;font-weight:700}</style><scr'+'ipt></scr'+'ipt></head><body>');
+  w.document.write('<h2 style="color:#16c762">Inventory Report</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
+  w.document.write('<p><strong>'+sdInventory.length+'</strong> SKUs | <strong>'+low+'</strong> need reorder | Value: <strong>$'+val.toLocaleString()+'</strong></p>');
+  w.document.write('<table><tr><th>Item</th><th>SKU</th><th>Qty</th><th>Min</th><th>Unit Cost</th><th>Total</th><th>Vendor</th></tr>');
+  sdInventory.forEach(function(i){
+    var cls=i.qty===0?'oos':i.qty<=i.min?'low':'';
+    w.document.write('<tr><td>'+escHtml(i.name)+'</td><td>'+escHtml(i.sku)+'</td><td class="'+cls+'">'+i.qty+'</td><td>'+i.min+'</td><td>$'+i.cost+'</td><td>$'+(i.qty*i.cost).toLocaleString()+'</td><td>'+escHtml(i.vendor)+'</td></tr>');
+  });
+  w.document.write('</table></body></html>');
+  w.document.close();w.print();
+}
+function sdInvExport(){
+  var rows=[['ID','Item','Category','SKU','Qty','Min','Unit','Unit Cost','Total Value','Vendor','Status']];
+  sdInventory.forEach(function(i){
+    var st=i.qty===0?'Out of Stock':i.qty<=i.min?'Low Stock':'In Stock';
+    rows.push([i.id,i.name,i.cat,i.sku,i.qty,i.min,i.unit,('$'+i.cost),('$'+(i.qty*i.cost).toLocaleString()),i.vendor,st]);
+  });
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='inventory-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
 </script>
 </div>
 <div id="inv-reorder-items" style="margin-top:12px"></div>
@@ -18368,27 +18306,32 @@ function invLevelColor(item){
 }
 
 function invAddItem(){
-  document.getElementById('inv-form').style.display='block';
-  document.getElementById('inv-form').scrollIntoView({behavior:'smooth'});
-}
-
-function invSaveItem(){
-  var name=document.getElementById('ii-name').value.trim();
-  if(!name){showToast('Item name required');return;}
+  // Prompt-based, matching the established add-flow pattern used
+  // elsewhere in this file (e.g. sdCustAdd) -- no #inv-form/ii-* markup
+  // exists to back a form-based flow (invSaveItem referenced it but it
+  // was never built, so that form-based path could never have worked;
+  // removed rather than left as a landmine).
+  var name=prompt('Item name:');
+  if(!name)return;
+  var cat=prompt('Category (adhesives/abrasives/blades/hardware/chemicals/safety/tooling):','hardware');
+  var vendor=prompt('Vendor:','');
+  var qty=parseInt(prompt('Current quantity:','10')||'10')||0;
+  var min=parseInt(prompt('Minimum stock level:','2')||'2')||0;
+  var cost=parseFloat(prompt('Unit cost ($):','0')||'0')||0;
+  var sku=prompt('SKU (optional):','')||'';
   var item={
     id:'INV'+Date.now(),
     name:name,
-    cat:document.getElementById('ii-cat').value,
-    vendor:document.getElementById('ii-vendor').value,
-    qty:parseInt(document.getElementById('ii-qty').value)||0,
-    min:parseInt(document.getElementById('ii-min').value)||2,
-    unit:document.getElementById('ii-unit').value.trim()||'each',
-    cost:parseFloat(document.getElementById('ii-cost').value)||0,
-    reorderQty:parseInt(document.getElementById('ii-reorder').value)||5,
-    sku:document.getElementById('ii-sku').value.trim()
+    cat:(cat||'hardware').trim(),
+    vendor:(vendor||'').trim(),
+    qty:qty,
+    min:min,
+    unit:'each',
+    cost:cost,
+    reorderQty:Math.max(min,1),
+    sku:sku.trim()
   };
   sdInventory.push(item);saveSD4();
-  document.getElementById('inv-form').style.display='none';
   renderInventory();
 }
 
@@ -18413,15 +18356,17 @@ function invSetTab(cat,btn){
 }
 
 function renderInventory(){
-  var list=sdInventory;
-  if(sdInvCat!=='all') list=list.filter(i=>i.cat===sdInvCat);
+  var list=sdInventory.slice();
+  if(sdInvCat&&sdInvCat!=='all') list=list.filter(i=>i.cat===sdInvCat);
+  var q=(document.getElementById('inv-search')||{value:''}).value.toLowerCase();
+  if(q) list=list.filter(i=>((i.name||'')+(i.sku||'')+(i.vendor||'')).toLowerCase().includes(q));
   // Sort: red first, yellow, green
   list.sort((a,b)=>{
     var ord={red:0,yellow:1,green:2};
     return ord[invLevelColor(a)]-ord[invLevelColor(b)];
   });
   var el=document.getElementById('inv-list');if(!el) return;
-  if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px">No items in this category.</div>';return;}
+  if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px">No items match.</div>';return;}
   var vNames={gmr:'GMR',granquartz:'GranQuartz',braxton:'Braxton-Bragg',bbindustries:'BB Industries',tenax:'Tenax',akemi:'Akemi',integra:'Integra',weha:'Weha',aardwolf:'Aardwolf',abaco:'Abaco',grainger:'Grainger',other:'Other'};
   el.innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+
     '<div style="display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px;padding:10px 14px;background:var(--surface-2);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">'+
@@ -18432,7 +18377,7 @@ function renderInventory(){
       var pct=Math.min(100,Math.round((item.qty/Math.max(1,item.min*2))*100));
       return '<div class="inv-row" style="display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px;align-items:center">'+
         '<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+escHtml(item.name)+'</div>'+
-          '<div style="font-size:11px;color:var(--muted)">'+vNames[item.vendor]+(item.sku?' · '+item.sku:'')+'</div></div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+escHtml(vNames[item.vendor]||item.vendor||'')+(item.sku?' · '+escHtml(item.sku):'')+'</div></div>'+
         '<span class="item-urgency '+color+'">'+
           (color==='red'?(item.qty<=0?'Out':'Low'):color==='yellow'?'Warning':'OK')+'</span>'+
         '<div class="inv-level"><div class="inv-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>'+
@@ -18450,8 +18395,11 @@ function renderInventory(){
   var low=all.filter(i=>invLevelColor(i)==='red').length;
   var warn=all.filter(i=>invLevelColor(i)==='yellow').length;
   var ok=all.filter(i=>invLevelColor(i)==='green').length;
+  var oos=all.filter(i=>(i.qty||0)<=0).length;
+  var stockValue=all.reduce((s,i)=>s+(i.qty||0)*(i.cost||0),0);
   var sv=(id,v)=>{var el=document.getElementById(id);if(el)el.textContent=v;};
   sv('inv-low',low);sv('inv-warn',warn);sv('inv-ok',ok);
+  sv('inv-kpi1',all.length);sv('inv-kpi2',low);sv('inv-kpi3','$'+stockValue.toLocaleString());sv('inv-kpi4',oos);
   // Best-value cross-vendor analysis
   renderBestValueAlerts();
 }
@@ -27435,7 +27383,7 @@ function sbNav(id) {
     if(id==='jobcost'&&typeof window.sdJCRender==='function')window.sdJCRender();
     if(id==='timesheet'&&typeof window.sdTSRender==='function')window.sdTSRender();
     if(id==='remnant'){if(typeof remRender==='function')remRender();if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();}
-    if(id==='inventory'&&typeof window.sdInvRender==='function')window.sdInvRender();
+    if(id==='inventory'&&typeof renderInventory==='function')renderInventory();
     if(id==='po'&&typeof poRender==='function')poRender();
     if(id==='receiving'&&typeof rcvRender==='function')rcvRender();
     if(id==='manifest'&&typeof mfRender==='function')mfRender();
