@@ -26860,6 +26860,24 @@ function slabConfirmConsume(id){
 }
 
 // -- DASHBOARD LOW-STOCK ALERT ----------------------------------
+// slabLowStockGroups() was called here but never defined anywhere in
+// the file -- confirmed via full-file grep, not assumed -- throwing
+// "slabLowStockGroups is not defined" every time loadSlabs() ran
+// (page load and any slab status change, per the comment below).
+// Groups in-stock slabs by material+colorName (slabs are unique
+// physical pieces, not restockable SKUs with their own min field, so
+// "low stock" here means few matching pieces left of that material/
+// color combination) and flags groups at 2 or fewer remaining.
+function slabLowStockGroups(){
+  var groups={};
+  (typeof sdSlabs!=='undefined'?sdSlabs:[]).forEach(function(s){
+    if(s.status!=='in-stock') return;
+    var key=(s.material||'')+'|'+(s.colorName||'');
+    if(!groups[key]) groups[key]={material:s.material,color:s.colorName,count:0};
+    groups[key].count++;
+  });
+  return Object.values(groups).filter(function(g){return g.count<=2;});
+}
 // Called on load and any status change so the main AI panel
 // always reflects real inventory state.
 function slabUpdateDashAlert(){
