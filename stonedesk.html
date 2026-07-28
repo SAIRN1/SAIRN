@@ -4400,113 +4400,90 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="kpi"><div class="kpi-val" id="photos-kpi4">0</div><div class="kpi-label">Damage Docs</div></div>
 </div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-  <input id="photos-search" placeholder="Search job, type, tag..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="sdPhotosRender()">
-  <select id="photos-type-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="sdPhotosRender()">
-    <option value="">All Types</option>
-    <option value="Before">Before</option>
-    <option value="After">After</option>
-    <option value="Progress">Progress</option>
-    <option value="Damage">Damage</option>
-    <option value="Portfolio">Portfolio</option>
+  <input id="photos-search" placeholder="Search job, name, note..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="renderPhotos()">
+  <select id="photos-type-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="renderPhotos()">
+    <option value="">All Categories</option>
+    <option value="template">Template</option>
+    <option value="material">Material</option>
+    <option value="fabrication">Fab</option>
+    <option value="install">Install</option>
+    <option value="final">Final</option>
+    <option value="damage">Damage</option>
+    <option value="before">Before</option>
+    <option value="after">After</option>
   </select>
 </div>
 <div id="photos-list"></div>
 <div id="photos-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
 <script>
-(function(){
-  var SEED=[
-    {id:'PH-001',job:'J-2024-089',customer:'Jim Hartwell',type:'Before',date:'2024-06-05',tag:'Kitchen',description:'Existing laminate countertop before demolition',portfolio:false,damage:false,fileRef:'ph_001_before.jpg'},
-    {id:'PH-002',job:'J-2024-089',customer:'Jim Hartwell',type:'After',date:'2024-06-18',tag:'Kitchen',description:'Calacatta Gold install — final reveal. Stunning vein match.',portfolio:true,damage:false,fileRef:'ph_002_after.jpg'},
-    {id:'PH-003',job:'J-2024-089',customer:'Jim Hartwell',type:'Progress',date:'2024-06-12',tag:'Kitchen',description:'Template phase — measuring for island overhang',portfolio:false,damage:false,fileRef:'ph_003_progress.jpg'},
-    {id:'PH-004',job:'J-2024-091',customer:'Carla Reyes',type:'Before',date:'2024-06-08',tag:'Master Bath',description:'Old marble slab showing significant etching',portfolio:false,damage:false,fileRef:'ph_004_before.jpg'},
-    {id:'PH-005',job:'J-2024-091',customer:'Carla Reyes',type:'After',date:'2024-06-20',tag:'Master Bath',description:'Statuario Extra — book-matched, perfect seam',portfolio:true,damage:false,fileRef:'ph_005_after.jpg'},
-    {id:'PH-006',job:'J-2024-085',customer:'Stone Barn LLC',type:'Damage',date:'2024-05-28',tag:'Commercial',description:'Corner chip discovered during delivery — documented for claim',portfolio:false,damage:true,fileRef:'ph_006_damage.jpg'},
-    {id:'PH-007',job:'J-2024-083',customer:'Tom Brennan',type:'Portfolio',date:'2024-06-02',tag:'Outdoor Kitchen',description:'Dekton Sirius — waterfall edge outdoor kitchen',portfolio:true,damage:false,fileRef:'ph_007_portfolio.jpg'},
-    {id:'PH-008',job:'J-2024-079',customer:'Nina Patel',type:'After',date:'2024-05-15',tag:'Bathroom',description:'Taj Mahal leathered vanity top — natural texture perfect',portfolio:true,damage:false,fileRef:'ph_008_after.jpg'}
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_photos')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_photos',JSON.stringify(d));}catch(e){}}
-  var data=load();
-  var TYPE_COLOR={Before:'#6366f1',After:'#16c762',Progress:'#f59e0b',Damage:'#ef4444',Portfolio:'#8b5cf6'};
-  window.sdPhotosRender=function(){
-    var q=(document.getElementById('photos-search')||{value:''}).value.toLowerCase();
-    var tf=(document.getElementById('photos-type-filter')||{value:''}).value;
-    var rows=data.filter(function(p){
-      var match=(p.job+p.customer+p.tag+p.description).toLowerCase().includes(q);
-      var type=!tf||p.type===tf;
-      return match&&type;
-    });
-    var portfolio=data.filter(function(p){return p.portfolio;}).length;
-    var jobs=[...new Set(data.map(function(p){return p.job;}))].length;
-    var damage=data.filter(function(p){return p.damage;}).length;
-    document.getElementById('photos-kpi1').textContent=data.length;
-    document.getElementById('photos-kpi2').textContent=portfolio;
-    document.getElementById('photos-kpi3').textContent=jobs;
-    document.getElementById('photos-kpi4').textContent=damage;
-    var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
-    rows.forEach(function(p){
-      var tc=TYPE_COLOR[p.type]||'#6b7280';
-      html+='<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:0;overflow:hidden">'
-        +'<div style="background:linear-gradient(135deg,'+tc+'15,'+tc+'30);height:120px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border)">'
-        +'<div style="text-align:center"><div style="font-size:36px">'+(p.damage?'⚠️':p.portfolio?'🌟':p.type==='After'?'✅':p.type==='Before'?'📷':'🔄')+'</div>'
-        +'<div style="font-size:11px;color:'+tc+';font-weight:700;margin-top:4px">'+p.type.toUpperCase()+'</div></div></div>'
-        +'<div style="padding:12px">'
-        +'<div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px">'+p.customer+'</div>'
-        +'<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+p.job+' &bull; '+p.tag+' &bull; '+p.date+'</div>'
-        +'<div style="font-size:12px;color:var(--text);line-height:1.4">'+p.description+'</div>'
-        +'<div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:monospace">'+p.fileRef+'</div>'
-        +'</div></div>';
-    });
-    html+='</div>';
-    document.getElementById('photos-list').innerHTML=html;
+// The IIFE-scoped SEED/load/save/data/sdPhotosRender/sdPhotosAdd module
+// that used to live here is deleted, not fixed: it wrote 'sd_photos' with
+// its own shape ({id,job,customer,type,date,tag,description,portfolio,
+// damage,fileRef} -- fileRef was always a fake string, no real image ever
+// stored) while the canonical sdPhotos/saveSD3Data() system (real
+// FileReader-based image upload -- handlePhotoFiles()/photoFilePick(),
+// shape {id,job,cat,name,size,data,date}) is what nav dispatch actually
+// calls (renderPhotos()+photoUpdateKPIs(), confirmed in showPanel()).
+// That real system's own targets (photo-grid/photo-filter/photo-search/
+// photo-sort/photo-kpi-*) never existed in markup though -- confirmed via
+// grep -- so it silently no-op'd on every nav, while this old IIFE's
+// working markup (photos-list/photos-kpi1-4/photos-search/
+// photos-type-filter) only ever showed content when the user touched the
+// search/filter inputs, not on normal nav. Retargeted renderPhotos()/
+// photoUpdateKPIs() below to the real, working markup instead.
+// Real file-upload UI (an actual <input type=file>, plus photo-job/
+// photo-cat fields) still doesn't exist -- handlePhotoFiles()/
+// photoFilePick() remain real but unreachable; sdPhotosAdd() below is
+// prompt-based (matching sdCustAdd/invAddItem/sdRMAdd/sdSafetyAdd) and
+// creates a real canonical-shaped record but without actual image data,
+// same disclosed limitation as the rest of this session's prompt-based
+// add flows. Wiring a real file picker is separate feature work.
+window.sdPhotosAdd=function(){
+  var job=prompt('Job number (e.g. J-2024-099):','J-2024-099');
+  if(!job)return;
+  var cat=prompt('Category (template/material/fabrication/install/final/damage/before/after):','after');
+  var name=prompt('Label / short name for this entry:','');
+  var photo={
+    id:'P'+Date.now(),
+    job:job,
+    cat:(cat||'after').trim(),
+    name:name||'',
+    size:0,
+    data:null,
+    date:new Date().toISOString()
   };
-  window.sdPhotosAdd=function(){
-    var job=prompt('Job number (e.g. J-2024-099):','J-2024-099');
-    if(!job)return;
-    var customer=prompt('Customer name:','');
-    var type=prompt('Photo type (Before/After/Progress/Damage/Portfolio):','After');
-    var tag=prompt('Tag (Kitchen/Bathroom/Master Bath/etc.):','Kitchen');
-    var desc=prompt('Description:','');
-    var id='PH-'+String(data.length+1).padStart(3,'0');
-    var date=new Date().toISOString().slice(0,10);
-    var portfolio=type==='After'||type==='Portfolio';
-    var damage=type==='Damage';
-    data.push({id:id,job:job,customer:customer||'',type:type||'Progress',date:date,tag:tag||'',description:desc||'',portfolio:portfolio,damage:damage,fileRef:id.toLowerCase().replace('-','_')+'.jpg'});
-    save(data);
-    sdPhotosRender();
-  };
-  window.sdPhotosAI=function(){
-    var out=document.getElementById('photos-ai-out');
-    out.style.display='block';out.textContent='Analyzing photo portfolio...';
-    var portfolio=data.filter(function(p){return p.portfolio;});
-    var afters=data.filter(function(p){return p.type==='After';});
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a marketing advisor for Pinnacle Stone & Design. Photo library: '+data.length+' total entries, '+portfolio.length+' portfolio-ready, '+afters.length+' after shots. Jobs photographed: '+[...new Set(data.map(function(p){return p.job;}))].length+'. Stone types captured: '+[...new Set(data.map(function(p){return p.tag;}))].join(', ')+'. Top shots: '+portfolio.map(function(p){return p.description;}).slice(0,3).join('; ')+'. Suggest: 1) Social media content plan, 2) Website portfolio recommendations, 3) Before/after gaps to fill, 4) Google Business Photo strategy, 5) Video walkthrough opportunities.'}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
-    }).catch(function(){out.textContent='AI unavailable. Focus on capturing before/after pairs for every install and post weekly to Google Business and Instagram.';});
-  };
-  window.sdPhotosPrint=function(){
-    var w=window.open('','_blank');
-    var portfolio=data.filter(function(p){return p.portfolio;}).length;
-    w.document.write('<html><head><title>Photo Log - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h2 style="color:#16c762">Job Photo Log</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>'+data.length+' entries | '+portfolio+' portfolio-ready</p>');
-    w.document.write('<table><tr><th>ID</th><th>Job</th><th>Customer</th><th>Type</th><th>Date</th><th>Tag</th><th>Description</th><th>File</th></tr>');
-    data.forEach(function(p){w.document.write('<tr><td>'+escHtml(p.id)+'</td><td>'+escHtml(p.job)+'</td><td>'+escHtml(p.customer)+'</td><td>'+escHtml(p.type)+'</td><td>'+escHtml(p.date)+'</td><td>'+escHtml(p.tag)+'</td><td>'+escHtml(p.description)+'</td><td>'+escHtml(p.fileRef)+'</td></tr>');});
-    w.document.write('</table></body></html>');
-    w.document.close();w.print();
-  };
-  window.sdPhotosExport=function(){
-    var d=load();
-    var rows=[['ID','Job','Customer','Type','Date','Tag','Description','Portfolio','Damage','File']];
-    d.forEach(function(p){rows.push([p.id,p.job,p.customer,p.type,p.date,p.tag,p.description,(p.portfolio?'Yes':'No'),(p.damage?'Yes':'No'),p.fileRef]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-    var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='photo-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
-  };
-  sdPhotosRender();
-})();
+  sdPhotos.unshift(photo);
+  saveSD3Data();
+  renderPhotos();photoUpdateKPIs();
+};
+window.sdPhotosAI=function(){
+  var out=document.getElementById('photos-ai-out');
+  out.style.display='block';out.textContent='Analyzing photo portfolio...';
+  var finals=sdPhotos.filter(function(p){return p.cat==='final'||p.cat==='after';});
+  fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a marketing advisor for Pinnacle Stone & Design. Photo library: '+sdPhotos.length+' total entries, '+finals.length+' final/after shots. Jobs photographed: '+[...new Set(sdPhotos.map(function(p){return p.job;}))].length+'. Suggest: 1) Social media content plan, 2) Website portfolio recommendations, 3) Before/after gaps to fill, 4) Google Business Photo strategy, 5) Video walkthrough opportunities.'}]})
+  }).then(function(r){return r.json();}).then(function(r){
+    out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
+  }).catch(function(){out.textContent='AI unavailable. Focus on capturing before/after pairs for every install and post weekly to Google Business and Instagram.';});
+};
+window.sdPhotosPrint=function(){
+  var w=window.open('','_blank');
+  var finals=sdPhotos.filter(function(p){return p.cat==='final'||p.cat==='after';}).length;
+  w.document.write('<html><head><title>Photo Log - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
+  w.document.write('<h2 style="color:#16c762">Job Photo Log</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>'+sdPhotos.length+' entries | '+finals+' final/after</p>');
+  w.document.write('<table><tr><th>ID</th><th>Job</th><th>Category</th><th>Name</th><th>Date</th></tr>');
+  sdPhotos.forEach(function(p){w.document.write('<tr><td>'+escHtml(p.id)+'</td><td>'+escHtml(p.job)+'</td><td>'+escHtml(p.cat)+'</td><td>'+escHtml(p.name)+'</td><td>'+escHtml((p.date||'').slice(0,10))+'</td></tr>');});
+  w.document.write('</table></body></html>');
+  w.document.close();w.print();
+};
+window.sdPhotosExport=function(){
+  var rows=[['ID','Job','Category','Name','Date']];
+  sdPhotos.forEach(function(p){rows.push([p.id,p.job,p.cat,p.name,(p.date||'').slice(0,10)]);});
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='photo-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+};
 </script>
 </div>
 <div id="photo-ai-result" style="font-size:13px;line-height:1.7;color:var(--text)">Analyzing...</div>
@@ -16936,44 +16913,44 @@ function photoUpdateKPIs() {
   var final2 = sdPhotos.filter(function(p){return p.cat==='final'||p.cat==='after';}).length;
   var damage = sdPhotos.filter(function(p){return p.cat==='damage';}).length;
   var jobs = [...new Set(sdPhotos.map(function(p){return p.job;}))].length;
-  var analyzed = sdPhotos.filter(function(p){return p.aiAnalysis;}).length;
   function s(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
-  s('photo-kpi-total',total);s('photo-kpi-final',final2);s('photo-kpi-damage',damage);
-  s('photo-kpi-jobs',jobs);s('photo-kpi-analyzed',analyzed);
+  // Retargeted to the real, existing markup ids -- photo-kpi-total/-final/
+  // -damage/-jobs/-analyzed never existed anywhere (confirmed via grep),
+  // so this silently no-op'd every time despite being nav-dispatched.
+  s('photos-kpi1',total);s('photos-kpi2',final2);s('photos-kpi3',jobs);s('photos-kpi4',damage);
 }
 
 function renderPhotos() {
-  var filter=(document.getElementById('photo-filter')||{}).value||'';
-  var srch=((document.getElementById('photo-search')||{}).value||'').toLowerCase();
-  var sort=(document.getElementById('photo-sort')||{}).value||'newest';
+  // Retargeted to the real, existing markup (photos-search/
+  // photos-type-filter/photos-list) -- this function's own intended
+  // targets (photo-filter/photo-search/photo-sort/photo-grid/photo-empty)
+  // never existed anywhere (confirmed via grep), so it silently no-op'd
+  // on every nav despite being the one nav dispatch actually calls.
+  var srch=((document.getElementById('photos-search')||{}).value||'').toLowerCase();
+  var filter=(document.getElementById('photos-type-filter')||{}).value||'';
   var photos=sdPhotos.slice();
   if(filter)photos=photos.filter(function(p){return p.cat===filter;});
-  if(srch)photos=photos.filter(function(p){return (p.job+p.name+(p.note||'')).toLowerCase().includes(srch);});
-  photos.sort(function(a,b){
-    if(sort==='oldest')return new Date(a.date)-new Date(b.date);
-    if(sort==='job')return (a.job||'').localeCompare(b.job||'');
-    return new Date(b.date)-new Date(a.date);
-  });
-  var grid=document.getElementById('photo-grid');
-  var empty=document.getElementById('photo-empty');
-  if(!grid)return;
-  if(!photos.length){grid.innerHTML='';if(empty)empty.style.display='block';photoUpdateKPIs();return;}
-  if(empty)empty.style.display='none';
+  if(srch)photos=photos.filter(function(p){return ((p.job||'')+(p.name||'')+(p.note||'')).toLowerCase().includes(srch);});
+  photos.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+  var list=document.getElementById('photos-list');
+  if(!list)return;
+  if(!photos.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No photo entries found.</div>';photoUpdateKPIs();return;}
   var catColors={template:'#6B7280',material:'#7c3aed',fabrication:'#f97316',install:'#0891b2',final:'#16a34a',damage:'#dc2626',before:'#ca8a04',after:'#16C762'};
   var catLabels={template:'Template',material:'Material',fabrication:'Fab',install:'Install',final:'Final',damage:'Damage',before:'Before',after:'After'};
-  grid.innerHTML=photos.map(function(p){
+  list.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">'+photos.map(function(p){
     var cc=catColors[p.cat]||'#6B7280';
-    return '<div class="photo-thumb" style="position:relative;cursor:pointer">'+
-      '<img src="'+p.data+'" alt="'+escHtml(p.name)+'" onclick="photoLightbox(' + p.id + ')" style="cursor:pointer;width:100%;height:140px;object-fit:cover;border-radius:8px;display:block" loading="lazy">'+
-      '<button class="photo-thumb-del" onclick="event.stopPropagation();photoDelete(' + p.id + ')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;width:22px;height:22px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#10005;</button>'+
-      '<button onclick="event.stopPropagation();photoAnalyze(' + p.id + ')" style="position:absolute;top:6px;left:6px;background:'+(p.aiAnalysis?'#16C762':'rgba(0,0,0,.6)')+';color:#fff;border:none;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;cursor:pointer">'+(p.aiAnalysis?'&#129504; Done':'&#129504; Analyze')+'</button>'+
-      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:18px 8px 6px;border-radius:0 0 8px 8px">'+
-        '<div style="font-size:10px;font-weight:700;color:'+cc+';margin-bottom:1px">'+catLabels[p.cat]+'</div>'+
-        '<div style="font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.job)+'</div>'+
-        (p.note?'<div style="font-size:10px;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.note)+'</div>':'')+
+    return '<div class="photo-thumb" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:0;overflow:hidden;position:relative">'+
+      (p.data?'<img src="'+escHtml(p.data)+'" alt="'+escHtml(p.name)+'" onclick="photoLightbox(\''+p.id+'\')" style="cursor:pointer;width:100%;height:140px;object-fit:cover;display:block" loading="lazy">'
+        :'<div style="height:140px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,'+cc+'15,'+cc+'30)"><div style="font-size:36px">📷</div></div>')+
+      '<button class="photo-thumb-del" onclick="event.stopPropagation();photoDelete(\''+p.id+'\')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;width:22px;height:22px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#10005;</button>'+
+      (p.data?'<button onclick="event.stopPropagation();photoAnalyze(\''+p.id+'\')" style="position:absolute;top:6px;left:6px;background:'+(p.aiAnalysis?'#16C762':'rgba(0,0,0,.6)')+';color:#fff;border:none;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;cursor:pointer">'+(p.aiAnalysis?'&#129504; Done':'&#129504; Analyze')+'</button>':'')+
+      '<div style="padding:10px">'+
+        '<div style="font-size:10px;font-weight:700;color:'+cc+';margin-bottom:2px">'+escHtml(catLabels[p.cat]||p.cat)+'</div>'+
+        '<div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.job)+(p.name?' &bull; '+escHtml(p.name):'')+'</div>'+
+        (p.note?'<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.note)+'</div>':'')+
       '</div>'+
     '</div>';
-  }).join('');
+  }).join('')+'</div>';
   photoUpdateKPIs();
 }
 
@@ -20074,7 +20051,26 @@ function loadSD5Data(){
 }
 function saveSD5(){
   localStorage.setItem('sd_remakes',JSON.stringify(sdRemakes));
-  localStorage.setItem('sd_comms',JSON.stringify(sdCommsThreads));
+  // sd_comms write removed here (was: localStorage.setItem('sd_comms',
+  // JSON.stringify(sdCommsThreads))) -- confirmed real, active data-loss
+  // bug: sdCommsThreads is only loaded from sd_comms ONCE at page load
+  // (initSD5's loadSD5Data() call), but the real, reachable comms UI
+  // (renderComms()->sdCommsRender(), its own working comms-log/comms-to/
+  // comms-subj/comms-body markup) writes sd_comms directly through its
+  // own private save(d), bypassing sdCommsThreads entirely. Any comm sent
+  // via that real UI after page load made sdCommsThreads stale, and the
+  // next saveSD5() call (e.g. adding/approving a remake, which shares
+  // this same function) would silently overwrite sd_comms with that
+  // stale, pre-page-load snapshot -- permanently losing the comm that
+  // was just sent. sdCommsThreads/renderCommsThreads() (a real, richer
+  // threaded-comms system: priority, category, replies, pinned
+  // announcements) has zero working markup anywhere (confirmed via grep)
+  // and is not called by nav dispatch -- fully unreachable today, so
+  // this write served no purpose except causing the data loss above.
+  // The old system (real, reachable, working) is canonical for sd_comms
+  // until the threaded system gets real UI built for it -- a genuine
+  // feature-completion project, not a mechanical fix, same as the
+  // safety training/inspections/checklist gap logged earlier tonight.
   localStorage.setItem('sd_exec_msgs',JSON.stringify(sdExecMsgs));
 }
 
