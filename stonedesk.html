@@ -27508,7 +27508,16 @@ function sbNav(id) {
     if(id==='bidboard'&&typeof window.sdBidRender==='function')window.sdBidRender();
     if(id==='bulletin'&&typeof window.sdBulletinRender==='function')window.sdBulletinRender();
     if(id==='waste'&&typeof window.sdWasteRender==='function')window.sdWasteRender();
-    if(id==='nps'&&typeof npsRender==='function')npsRender();
+    // npsRender() (an orphaned parallel NPS-feedback system, localStorage key
+    // sd_nps_feedback, ids nps-cust/nps-form/nps-kpi-*/nps-score-btns -- none
+    // ever built as real UI, no button anywhere calls npsLog()/npsSave()) was
+    // wired here and, every time this panel opened, clobbered the REAL NPS
+    // system's live #nps-list (localStorage key sd_nps, populated by its own
+    // self-contained render() at panel-nps line ~25441) with its own
+    // always-empty npsFeedback array. Confirmed live data-clobber, same
+    // class as the sd_photos/sd_comms bugs fixed earlier this session.
+    // Dispatch call removed; npsRender()/npsSave()/npsDelete()/npsLog() are
+    // left in place but now fully unreachable (quarantined, not deleted).
     if(id==='market'&&typeof miRefresh==='function'&&typeof MI_STATE!=='undefined'&&!MI_STATE.lastFetch)miRefresh();
     if(id==='stonehub'&&typeof shRenderHistory==='function')shRenderHistory();
     if(id==='tax'&&typeof taxRender==='function')taxRender();
