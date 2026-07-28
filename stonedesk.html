@@ -5422,11 +5422,13 @@ function sdInvExport(){
   </div>
 </div>
 <div id="remake-alerts-zone" style="margin-bottom:14px"></div>
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="rm-total">0</div><div class="kpi-label">Total Remakes</div></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:18px">
+  <div class="kpi"><div class="kpi-val" id="rm-total">0</div><div class="kpi-label">Open Remakes</div></div>
   <div class="kpi"><div class="kpi-val" id="rm-mtd">0</div><div class="kpi-label">MTD</div></div>
-  <div class="kpi"><div class="kpi-val" id="rm-cost">$0</div><div class="kpi-label">Material Cost</div></div>
-  <div class="kpi"><div class="kpi-val" id="rm-rate">0%</div><div class="kpi-label">Remake Rate</div></div>
+  <div class="kpi"><div class="kpi-val" id="rm-overdue">0</div><div class="kpi-label">Overdue</div></div>
+  <div class="kpi"><div class="kpi-val" id="rm-warn">0</div><div class="kpi-label">Approaching Limit</div></div>
+  <div class="kpi"><div class="kpi-val" id="rm-approved">0</div><div class="kpi-label">Approved Ext.</div></div>
+  <div class="kpi"><div class="kpi-val" id="rm-complete">0</div><div class="kpi-label">Completed Today</div></div>
   <div class="kpi"><div class="kpi-val" id="rm-top">—</div><div class="kpi-label">Top Cause</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
@@ -5458,85 +5460,84 @@ function sdInvExport(){
 </div>
 </div>
 <script>
-(function(){
-  var SEED=[
-    {job:'Webb Kitchen',material:'Calacatta Gold 3cm',cause:'Customer Change Order',cost:850,notes:'Customer changed sink cutout location after template.',date:'2024-06-10'},
-    {job:'Chen Full Kitchen',material:'Silestone White',cause:'Measurement Error',cost:420,notes:'Island piece 2 inches short — measurement off on L-corner.',date:'2024-06-05'},
-    {job:'Torres Bathroom',material:'Carrara White 2cm',cause:'Material Crack/Break',cost:320,notes:'Slab cracked during cutting — natural fissure not visible until cut.',date:'2024-05-28'},
-    {job:'Park Outdoor',material:'Black Galaxy 3cm',cause:'Template Error',cost:640,notes:'Template did not account for out-of-square wall.',date:'2024-05-20'},
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_remakes')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_remakes',JSON.stringify(d));}catch(e){}}
-  function render(){
-    var d=load();
-    var today=new Date().toISOString().slice(0,10);
-    var mtd=d.filter(function(x){return x.date>=today.slice(0,7);});
-    document.getElementById('rm-total').textContent=d.length;
-    document.getElementById('rm-mtd').textContent=mtd.length;
-    document.getElementById('rm-cost').textContent='$'+d.reduce(function(a,x){return a+(x.cost||0);},0).toLocaleString();
-    document.getElementById('rm-rate').textContent='--';
-    var causes={};
-    d.forEach(function(x){causes[x.cause]=(causes[x.cause]||0)+1;});
-    var top=Object.entries(causes).sort(function(a,b){return b[1]-a[1];})[0];
-    document.getElementById('rm-top').textContent=top?top[0].split(' ')[0]:'—';
-    var causeColors={'Measurement Error':'#fee2e2','Template Error':'#fef3c7','CNC Programming':'#dbeafe','Material Crack/Break':'#fed7aa','Customer Change Order':'#dcfce7','Edge Damage':'#f3e8ff'};
-    document.getElementById('rm-list').innerHTML=d.slice().reverse().map(function(x){
-      return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-        +'<span style="font-weight:700;font-size:13px">'+escHtml(x.job)+'</span>'
-        +'<span style="background:'+(causeColors[x.cause]||'#f3f4f6')+';font-size:11px;padding:2px 8px;border-radius:8px">'+x.cause+'</span>'
-        +'</div>'
-        +'<div style="font-size:12px;color:var(--muted)">'+escHtml(x.material)+' &bull; <strong style="color:#dc2626">$'+x.cost+'</strong> &bull; '+x.date+'</div>'
-        +(x.notes?'<div style="font-size:12px;color:#555;margin-top:4px;font-style:italic">'+escHtml(x.notes)+'</div>':'')
-        +'</div>';
-    }).join('');
-    document.getElementById('rm-causes').innerHTML=Object.entries(causes).sort(function(a,b){return b[1]-a[1];}).map(function(e){
-      var pct=Math.round(e[1]/d.length*100);
-      return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">'
-        +'<span>'+e[0]+'</span><span style="font-weight:700">'+e[1]+' ('+pct+'%)</span></div>'
-        +'<div style="background:#f3f4f6;border-radius:4px;height:8px"><div style="background:#dc2626;width:'+pct+'%;height:8px;border-radius:4px"></div></div></div>';
-    }).join('');
-  }
-  window.sdRMAdd=function(){
-    var job=document.getElementById('rm-job').value.trim();
-    if(!job){showToast('Enter job name.');return;}
-    var d=load();
-    d.push({job:job,material:document.getElementById('rm-material').value||'',
-      cause:document.getElementById('rm-cause').value,
-      cost:parseFloat(document.getElementById('rm-cost-inp').value)||0,
-      notes:document.getElementById('rm-notes').value,date:new Date().toISOString().slice(0,10)});
-    save(d);render();
-    ['rm-job','rm-material','rm-cost-inp','rm-notes'].forEach(function(id){document.getElementById(id).value='';});
+// The IIFE-scoped SEED/load/save/render/sdRMAdd module that used to
+// live here is deleted, not fixed: it held its own private, stale copy
+// of 'sd_remakes' in a different, older shape from the real, far more
+// integrated sdRemakes/renderRemakes() system (urgency/overdue tracking,
+// slab-reservation linkage, exec approval workflow, auto-reoptimization
+// dispatch) used everywhere else remakes are touched in this file. It
+// self-invoked on page load, writing rm-total/rm-list/etc. before nav
+// dispatch's renderRemakes() ran and overwrote them (nav dispatch was
+// already correctly wired to renderRemakes(), unlike the customers/
+// inventory cases) -- so this old render was pure wasted work, not a
+// live UI collision the way inventory's was, but the shape mismatch on
+// the shared sd_remakes key was real regardless.
+//
+// The real, already-working "Log Remake" form (rm-job/rm-material/
+// rm-cause/rm-cost-inp/rm-notes) is kept as-is rather than replaced with
+// prompts -- unlike inventory/customers, this form's markup genuinely
+// exists and works, so sdRMAdd() below just now writes the canonical
+// shape instead of the old one.
+var RM_CAUSE_TO_REASON={'Measurement Error':'measure_error','Template Error':'design_change','CNC Programming':'cut_error','Material Crack/Break':'material_defect','Customer Change Order':'customer_change','Edge Damage':'edge_error','Other':'other'};
+window.sdRMAdd=function(){
+  var job=document.getElementById('rm-job').value.trim();
+  if(!job){showToast('Enter job name.');return;}
+  var cause=document.getElementById('rm-cause').value;
+  var r={
+    id:'RM'+Date.now(),
+    customer:job,
+    jobNum:'',
+    type:'remake',
+    material:document.getElementById('rm-material').value||'',
+    reason:RM_CAUSE_TO_REASON[cause]||'other',
+    assignedTo:'',
+    startTime:new Date().toISOString(),
+    priority:'normal',
+    sqft:0,
+    address:'',
+    visitDate:'',
+    notes:document.getElementById('rm-notes').value||'',
+    cost:parseFloat(document.getElementById('rm-cost-inp').value)||0,
+    reservedSlabId:null,
+    status:'open',
+    approvedExtension:false,
+    approvedBy:'',
+    approvedAt:'',
+    completedAt:'',
+    createdAt:new Date().toISOString()
   };
-  window.sdRMAI=function(){
-    var d=load();
-    var out=document.getElementById('rm-ai-out');
-    out.style.display='block';out.textContent='Analyzing remakes...';
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these remake records for a stone fabrication company. Identify root causes, recommend preventive measures, and estimate annual cost savings from prevention:\n'+JSON.stringify(d)}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Root Cause Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
-    }).catch(function(){out.textContent='AI unavailable.';});
-  };
-  window.sdRMPrint=function(){
-    var d=load();
-    var w=window.open('','_blank');
-    w.document.write('<html><head><title>Remake Log</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h1>Pinnacle Stone — Remake Log</h1><p>'+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<table><tr><th>Job</th><th>Material</th><th>Cause</th><th>Cost</th><th>Notes</th><th>Date</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.job)+'</td><td>'+escHtml(x.material)+'</td><td>'+escHtml(x.cause)+'</td><td>$'+x.cost+'</td><td>'+escHtml(x.notes)+'</td><td>'+escHtml(x.date)+'</td></tr>');});
-    w.document.write('</table></body></html>');w.document.close();w.print();
-  };
-  window.sdRMExport=function(){
-    var d=load();
-    var rows=[['Job','Material','Cause','Cost','Notes','Date']];
-    d.forEach(function(x){rows.push([x.job,x.material,x.cause,('$'+(x.cost||0)),x.notes||'',x.date]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-    var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='remakes-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
-  };
-  render();
-})();
+  sdRemakes.unshift(r);
+  saveSD5();
+  renderRemakes();runRemakeAlerts();
+  ['rm-job','rm-material','rm-cost-inp','rm-notes'].forEach(function(id){document.getElementById(id).value='';});
+};
+window.sdRMAI=function(){
+  var d=sdRemakes;
+  var out=document.getElementById('rm-ai-out');
+  out.style.display='block';out.textContent='Analyzing remakes...';
+  fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Analyze these remake records for a stone fabrication company. Identify root causes, recommend preventive measures, and estimate annual cost savings from prevention:\n'+JSON.stringify(d)}]})
+  }).then(function(r){return r.json();}).then(function(r){
+    out.innerHTML='<strong>🤖 Root Cause Analysis:</strong><br>'+(r.content||r.completion||'').replace(/\n/g,'<br>');
+  }).catch(function(){out.textContent='AI unavailable.';});
+};
+window.sdRMPrint=function(){
+  var d=sdRemakes;
+  var w=window.open('','_blank');
+  w.document.write('<html><head><title>Remake Log</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
+  w.document.write('<h1>Pinnacle Stone — Remake Log</h1><p>'+new Date().toLocaleDateString()+'</p>');
+  w.document.write('<table><tr><th>Customer</th><th>Material</th><th>Reason</th><th>Status</th><th>Notes</th><th>Date</th></tr>');
+  d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.customer)+'</td><td>'+escHtml(x.material)+'</td><td>'+escHtml(x.reason)+'</td><td>'+escHtml(x.status)+'</td><td>'+escHtml(x.notes)+'</td><td>'+escHtml((x.createdAt||'').slice(0,10))+'</td></tr>');});
+  w.document.write('</table></body></html>');w.document.close();w.print();
+};
+window.sdRMExport=function(){
+  var d=sdRemakes;
+  var rows=[['Customer','Material','Reason','Status','Notes','Created']];
+  d.forEach(function(x){rows.push([x.customer,x.material,x.reason,x.status,x.notes||'',(x.createdAt||'').slice(0,10)]);});
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='remakes-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+};
 </script>
 </div><div id="remake-trend-bars"></div>
 
@@ -6047,7 +6048,7 @@ function sdInvExport(){
   <div class="kpi"><div class="kpi-val" id="safe-kpi1">0</div><div class="kpi-label">Days Since Incident</div></div>
   <div class="kpi"><div class="kpi-val" id="safe-kpi2">0</div><div class="kpi-label">YTD Incidents</div></div>
   <div class="kpi"><div class="kpi-val" id="safe-kpi3">0</div><div class="kpi-label">Open Action Items</div></div>
-  <div class="kpi"><div class="kpi-val" id="safe-kpi4">--</div><div class="kpi-label">PPE Compliance</div></div>
+  <div class="kpi"><div class="kpi-val" id="safe-kpi4">--</div><div class="kpi-label">Compliance Score</div></div>
   <div class="kpi"><div class="kpi-val" id="safe-kpi5">--</div><div class="kpi-label">OSHA 300 Status</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
@@ -6062,106 +6063,106 @@ function sdInvExport(){
   </div>
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">PPE Checklist — Daily</div>
-    <div id="safe-ppe-list"></div>
+    <div id="safe-ppe-list"><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Safety goggles (ANSI Z87.1)</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>N95/N100 respirator (silica)</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Hearing protection (105dB+)</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Cut-resistant gloves</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Steel-toe boots</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Hard hat (overhead work)</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>High-vis vest (delivery/yard)</div></div>
   </div>
 </div>
 <div id="safe-list"></div>
 <div id="safe-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
 <script>
-(function(){
-  var PPE=['Safety goggles (ANSI Z87.1)','N95/N100 respirator (silica)','Hearing protection (105dB+)','Cut-resistant gloves','Steel-toe boots','Hard hat (overhead work)','High-vis vest (delivery/yard)'];
-  var SEED=[
-    {id:'INC-001',date:'2024-05-14',type:'Near Miss',employee:'Carlos M.',description:'Slab slipped during unload — no injury. Grip gloves not worn.',action:'Mandatory glove use during all unloading. Safety meeting held.',status:'Closed',severity:'Low'},
-    {id:'INC-002',date:'2024-04-03',type:'First Aid',employee:'Josh T.',description:'Minor laceration on palm from blade contact while changing disc.',action:'Lockout/tagout procedure reinforced. Blade change protocol updated.',status:'Closed',severity:'Low'},
-    {id:'INC-003',date:'2024-03-11',type:'Near Miss',employee:'Mike S.',description:'Forklift path blocked by material — almost struck pedestrian.',action:'Forklift lane markings painted. Spotter required for all moves.',status:'Closed',severity:'Medium'},
-    {id:'INC-004',date:'2024-02-20',type:'Property Damage',employee:'Dave K.',description:'Slab dropped and cracked during shop move. No injuries.',action:'Slab handling SOP revised. A-frame carts now mandatory.',status:'Closed',severity:'Low'}
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_safety')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_safety',JSON.stringify(d));}catch(e){}}
-  var data=load();
-  var SEV_COLOR={Low:'#16c762',Medium:'#f59e0b',High:'#ef4444'};
-  window.sdSafetyRender=function(){
-    var dates=data.map(function(i){return new Date(i.date);});
-    var lastIncident=dates.length?Math.max.apply(null,dates):null;
-    var daysSince=lastIncident?Math.floor((new Date()-lastIncident)/(1000*60*60*24)):365;
-    var open=data.filter(function(i){return i.status==='Open';}).length;
-    document.getElementById('safe-kpi1').textContent=daysSince;
-    document.getElementById('safe-kpi2').textContent=data.length;
-    document.getElementById('safe-kpi3').textContent=open;
-    document.getElementById('safe-kpi4').textContent='--';
-    document.getElementById('safe-kpi5').textContent='--';
-    var ppeHtml=PPE.map(function(item){return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>'+item+'</div>';}).join('');
-    document.getElementById('safe-ppe-list').innerHTML=ppeHtml;
-    var html='<div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px">Incident Log</div>'
-      +'<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc">'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">ID</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Date</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Type</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Employee</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Description</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Action Taken</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Severity</th>'
-      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Status</th>'
-      +'</tr></thead><tbody>';
-    data.forEach(function(i,idx){
-      var bg=idx%2===0?'#fff':'#f8fafc';
-      var sc=SEV_COLOR[i.severity]||'#6b7280';
-      html+='<tr style="background:'+bg+'">'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--a)">'+i.id+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+i.date+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+i.type+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+i.employee+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px">'+i.description+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)">'+i.action+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+sc+'20;color:'+sc+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+i.severity+'</span></td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+(i.status==='Closed'?'#16c76220':'#f59e0b20')+';color:'+(i.status==='Closed'?'#16c762':'#f59e0b')+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+i.status+'</span></td>'
-        +'</tr>';
-    });
-    html+='</tbody></table>';
-    document.getElementById('safe-list').innerHTML=html;
+// The IIFE-scoped SEED/load/save/data/sdSafetyRender/sdSafetyAdd module
+// that used to live here is deleted, not fixed: it stored 'sd_safety' as
+// a flat array, incompatible with the real, richer sdSafetyData object
+// shape ({training,incidents,inspections,checklists,ecp}) used by
+// safetyUpdateKPIs/safetyRenderTraining -- both already nav-dispatched
+// for id==='safety', confirmed via grep, alongside this old render. Real
+// collision risk: if this old save(d) ever ran after the new system
+// wrote an object, sd_safety would become a flat array and every
+// sdSafetyData.incidents/.training/etc. read would break. PPE checklist
+// was static, non-data-driven content -- inlined directly into markup
+// above, no JS needed for it at all. safetyRenderIncidents() below is
+// retargeted to #safe-list (the one real, working container that
+// existed) since its own intended target (#safe-incident-list) was
+// never built into markup -- confirmed via grep before assuming so,
+// same as the missing #inv-form/#remake-form found in the inventory/
+// remakes fixes. safetyUpdateKPIs() extended to also populate the
+// existing safe-kpi1..5 tiles it can honestly compute; the two it can't
+// (Open Action Items, OSHA 300 Status -- no equivalent field in the
+// canonical shape) are left as '--', not fabricated.
+var SAFETY_TYPE_LABELS={near_miss:'Near Miss',first_aid:'First Aid',recordable:'OSHA Recordable',lost_time:'Lost Time',property:'Property Damage',exposure:'Silica/Chemical Exposure',equipment:'Equipment Failure'};
+var SAFETY_TYPE_COLORS={near_miss:'#ca8a04',first_aid:'#f97316',recordable:'#dc2626',lost_time:'#7F1D1D',property:'#6B7280',exposure:'#7c3aed',equipment:'#0891b2'};
+function safetyRenderIncidents(){
+  var el=document.getElementById('safe-list');if(!el)return;
+  var incidents=sdSafetyData.incidents;
+  if(!incidents.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">&#9989;</div><div style="font-size:15px;font-weight:700">No incidents logged</div><div style="font-size:13px;margin-top:6px">Log all near misses and incidents. OSHA requires records to be kept.</div></div>';return;}
+  el.innerHTML='<div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px">Incident Log</div>'+incidents.map(function(inc){
+    var tc=SAFETY_TYPE_COLORS[inc.type]||'#6B7280';
+    return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+tc+';border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
+        '<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+escHtml(SAFETY_TYPE_LABELS[inc.type]||inc.type)+(inc.oshaReportable==='yes'?' <span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:100px">OSHA REPORTABLE</span>':'')+'</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+escHtml(inc.datetime)+(inc.employee?' &middot; '+escHtml(inc.employee):'')+'</div></div>' +
+        '<button onclick="safetyDeleteIncident(\'' + inc.id + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer">&#10005;</button>' +
+      '</div>' +
+      '<div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:6px">'+escHtml(inc.desc)+'</div>' +
+      (inc.cause?'<div style="font-size:12px;color:var(--muted)"><strong>Root cause:</strong> '+escHtml(inc.cause)+'</div>':'') +
+      (inc.actions?'<div style="font-size:12px;color:var(--muted)"><strong>Actions taken:</strong> '+escHtml(inc.actions)+'</div>':'') +
+    '</div>';
+  }).join('');
+}
+window.sdSafetyAdd=function(){
+  // Prompt-based, matching the established pattern (sdCustAdd,
+  // invAddItem, sdRMAdd) -- no incident-log form markup exists for the
+  // canonical system either, confirmed before writing this.
+  var type=prompt('Incident type (near_miss/first_aid/recordable/lost_time/property/exposure/equipment):','near_miss');
+  if(!type)return;
+  var employee=prompt('Employee involved:','');
+  var desc=prompt('Description:','');
+  var cause=prompt('Root cause (optional):','');
+  var actions=prompt('Corrective actions taken (optional):','');
+  var oshaReportable=prompt('OSHA reportable? (yes/no):','no');
+  var inc={
+    id:'INC'+Date.now(),
+    type:(type||'near_miss').trim(),
+    employee:employee||'',
+    desc:desc||'',
+    cause:cause||'',
+    actions:actions||'',
+    oshaReportable:(oshaReportable||'no').trim().toLowerCase(),
+    datetime:new Date().toISOString()
   };
-  window.sdSafetyAdd=function(){
-    var type=prompt('Incident type (Near Miss/First Aid/Recordable/Property Damage):','Near Miss');
-    if(!type)return;
-    var employee=prompt('Employee involved:','');
-    var desc=prompt('Description:','');
-    var action=prompt('Corrective action taken:','');
-    var severity=prompt('Severity (Low/Medium/High):','Low');
-    var id='INC-'+String(data.length+1).padStart(3,'0');
-    var date=new Date().toISOString().slice(0,10);
-    data.push({id:id,date:date,type:type,employee:employee||'',description:desc||'',action:action||'',status:'Open',severity:severity||'Low'});
-    save(data);
-    sdSafetyRender();
-  };
-  window.sdSafetyAI=function(){
-    var out=document.getElementById('safe-ai-out');
-    out.style.display='block';out.textContent='Performing safety audit...';
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are an OSHA safety consultant for Pinnacle Stone & Design, a stone fabrication shop. Key hazards: crystalline silica dust (engineered stone), heavy slab handling, power tools, forklifts. Incident history: '+JSON.stringify(data.map(function(i){return{type:i.type,date:i.date,description:i.description,severity:i.severity}}))+'. Provide: 1) Top 3 risk areas requiring immediate attention, 2) OSHA 1926.1153 silica compliance checklist status, 3) Training recommendations, 4) Leading indicator KPIs to track, 5) Incident pattern analysis.'}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
-    }).catch(function(){out.textContent='AI unavailable. Review OSHA 1926.1153 silica standard compliance and ensure all wet-cutting procedures are documented.';});
-  };
-  window.sdSafetyPrint=function(){
-    var w=window.open('','_blank');
-    w.document.write('<html><head><title>Safety Report - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h2 style="color:#16c762">Safety & Compliance Report</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<table><tr><th>ID</th><th>Date</th><th>Type</th><th>Employee</th><th>Description</th><th>Severity</th><th>Status</th></tr>');
-    data.forEach(function(i){w.document.write('<tr><td>'+escHtml(i.id)+'</td><td>'+escHtml(i.date)+'</td><td>'+escHtml(i.type)+'</td><td>'+escHtml(i.employee)+'</td><td>'+escHtml(i.description)+'</td><td>'+escHtml(i.severity)+'</td><td>'+escHtml(i.status)+'</td></tr>');});
-    w.document.write('</table></body></html>');
-    w.document.close();w.print();
-  };
-  window.sdSafetyExport=function(){
-    var d=load();
-    var rows=[['ID','Date','Type','Employee','Description','Action Taken','Severity','Status']];
-    d.forEach(function(i){rows.push([i.id,i.date,i.type,i.employee,i.description,i.action||'',i.severity,i.status]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-    var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='safety-incidents-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
-  };
-  sdSafetyRender();
-})();
+  sdSafetyData.incidents.unshift(inc);
+  saveSafetyData();
+  safetyRenderIncidents();
+  safetyUpdateKPIs();
+};
+window.sdSafetyAI=function(){
+  var d=sdSafetyData.incidents;
+  var out=document.getElementById('safe-ai-out');
+  out.style.display='block';out.textContent='Performing safety audit...';
+  fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are an OSHA safety consultant for Pinnacle Stone & Design, a stone fabrication shop. Key hazards: crystalline silica dust (engineered stone), heavy slab handling, power tools, forklifts. Incident history: '+JSON.stringify(d.map(function(i){return{type:i.type,date:i.datetime,description:i.desc}}))+'. Provide: 1) Top 3 risk areas requiring immediate attention, 2) OSHA 1926.1153 silica compliance checklist status, 3) Training recommendations, 4) Leading indicator KPIs to track, 5) Incident pattern analysis.'}]})
+  }).then(function(r){return r.json();}).then(function(r){
+    out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
+  }).catch(function(){out.textContent='AI unavailable. Review OSHA 1926.1153 silica standard compliance and ensure all wet-cutting procedures are documented.';});
+};
+window.sdSafetyPrint=function(){
+  var d=sdSafetyData.incidents;
+  var w=window.open('','_blank');
+  w.document.write('<html><head><title>Safety Report - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
+  w.document.write('<h2 style="color:#16c762">Safety & Compliance Report</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
+  w.document.write('<table><tr><th>Date</th><th>Type</th><th>Employee</th><th>Description</th><th>OSHA Reportable</th></tr>');
+  d.forEach(function(i){w.document.write('<tr><td>'+escHtml((i.datetime||'').slice(0,10))+'</td><td>'+escHtml(SAFETY_TYPE_LABELS[i.type]||i.type)+'</td><td>'+escHtml(i.employee)+'</td><td>'+escHtml(i.desc)+'</td><td>'+escHtml(i.oshaReportable)+'</td></tr>');});
+  w.document.write('</table></body></html>');
+  w.document.close();w.print();
+};
+window.sdSafetyExport=function(){
+  var d=sdSafetyData.incidents;
+  var rows=[['ID','Date','Type','Employee','Description','Root Cause','Actions','OSHA Reportable']];
+  d.forEach(function(i){rows.push([i.id,(i.datetime||'').slice(0,10),i.type,i.employee,i.desc,i.cause||'',i.actions||'',i.oshaReportable||'']);});
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='safety-incidents-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+};
 </script>
 </div>
 <div id="ecp-save-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
@@ -19250,6 +19251,19 @@ function safetyUpdateKPIs() {
   s('safe-kpi-incidents',incidents);
   s('safe-kpi-inspections',inspDue,'#ca8a04');
   s('safe-kpi-score',score+'%',scoreColor);
+  // Also populate the pre-existing safe-kpi1..5 tiles (the only ones
+  // actually present in markup -- safe-kpi-trained/-overdue/etc above
+  // don't exist as elements, confirmed before writing this, so those
+  // five s() calls are harmless no-ops today but kept for when/if that
+  // markup gets built).
+  var incDates=sdSafetyData.incidents.map(function(i){return new Date(i.datetime);});
+  var lastInc=incDates.length?Math.max.apply(null,incDates):null;
+  var daysSince=lastInc?Math.floor((new Date()-lastInc)/(1000*60*60*24)):365;
+  s('safe-kpi1',daysSince);
+  s('safe-kpi2',incidents);
+  s('safe-kpi3','--');
+  s('safe-kpi4',score+'%',scoreColor);
+  s('safe-kpi5','--');
 }
 
 function safetyAddTraining() {
@@ -20007,7 +20021,7 @@ function finAskCFO(){
   window.showPanel = function(id) {
     if(_origSP2) _origSP2(id);
     if(id==='vendors') { vendorUpdateKPIs(); if(typeof window.sdVendorsRender==='function')window.sdVendorsRender(); }
-    if(id==='safety') { safetyUpdateKPIs(); safetyRenderTraining(); if(typeof window.sdSafetyRender==='function')window.sdSafetyRender(); }
+    if(id==='safety') { safetyUpdateKPIs(); safetyRenderTraining(); if(typeof safetyRenderIncidents==='function')safetyRenderIncidents(); }
     if(id==='nesting') { setTimeout(nestingInit,100); nestingRenderSaved(); nestingUpdateKPIs(); }
     if(id==='financial') { finUpdateKPIs(); finRenderJobs(); }
   };
@@ -20132,14 +20146,14 @@ function remakeUrgency(r){
   return 'green';
 }
 
-function remakeAdd(){
-  var form=document.getElementById('remake-form');
-  form.style.display='block';
-  var now=new Date();
-  now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
-  document.getElementById('rm-start').value=now.toISOString().slice(0,16);
-  form.scrollIntoView({behavior:'smooth'});
-}
+// remakeAdd() (a #remake-form reveal function) is deleted, not fixed:
+// that form's markup was never built (remakeSave() referenced rm-cust/
+// rm-job/etc. ids that don't exist anywhere), so it could never have
+// worked, and it was unreachable anyway (no button called it). The real,
+// already-working "Log Remake" form (rm-job/rm-material/rm-cause/
+// rm-cost-inp/rm-notes) already exists in markup and is button-wired --
+// sdRMAdd() below (moved out of the old IIFE) now reads that real form
+// and writes the canonical sdRemakes shape instead of the old one.
 
 function remakeSave(){
   var cust=document.getElementById('rm-cust').value.trim();
@@ -20220,7 +20234,7 @@ function renderRemakes(){
   var list=sdRemakes;
   if(typeF) list=list.filter(r=>r.type===typeF);
   if(statF) list=list.filter(r=>r.status===statF);
-  var el=document.getElementById('remake-list');if(!el) return;
+  var el=document.getElementById('rm-list');if(!el) return;
   if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px">No remakes on record.</div>';return;}
   var typeLabels={remake:'Standard Remake',shower:'Shower Piece',repair:'Repair',rework:'Rework'};
   var reasonLabels={measure_error:'Measure Error',cut_error:'Cut Error',edge_error:'Edge Error',customer_change:'Customer Change',material_defect:'Material Defect',installer_damage:'Installer Damage',design_change:'Design Change',other:'Other'};
@@ -20265,6 +20279,11 @@ function renderRemakes(){
   sv('rm-approved',open.filter(r=>r.approvedExtension).length);
   var today=new Date().toDateString();
   sv('rm-complete',sdRemakes.filter(r=>r.status==='complete'&&r.completedAt&&new Date(r.completedAt).toDateString()===today).length);
+  sv('rm-mtd',sdRemakes.filter(r=>(r.createdAt||'').slice(0,7)===new Date().toISOString().slice(0,7)).length);
+  var reasonCounts={};
+  sdRemakes.forEach(r=>{if(r.reason)reasonCounts[r.reason]=(reasonCounts[r.reason]||0)+1;});
+  var topReason=Object.entries(reasonCounts).sort((a,b)=>b[1]-a[1])[0];
+  sv('rm-top',topReason?(reasonLabels[topReason[0]]||topReason[0]):'—');
 }
 
 function runRemakeAlerts(){
