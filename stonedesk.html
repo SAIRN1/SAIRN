@@ -2195,6 +2195,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     </div>
     <div class="topbar-nav"><!-- nav hidden; sidebar below --></div>
     <div class="topbar-right">
+      <span id="tavtr" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;font-size:11px;font-weight:700;margin-right:6px" data-auto-container="missing-dom-fix"></span>
       <span id="role-badge-display" class="role-badge sales"></span><span id="user-label">Sales</span>
       <span id="user-chip" data-auto-container="missing-dom-fix">0</span>
       <button class="topbar-logout" onclick="doLogout()">Sign out</button>
@@ -2379,6 +2380,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     <button class="q-btn" onclick="sdAIPrint()">🖨️ Print Chat</button>
   </div>
 </div>
+<div id="slab-dash-alert" style="display:none;background:#fef3c7;color:#92400e;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600" data-auto-container="missing-dom-fix">⚠️ Low slab stock: <span id="slab-dash-alert-text" style="font-weight:400" data-auto-container="missing-dom-fix"></span></div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="ai-queries">0</div><div class="kpi-label">Queries Today</div></div>
   <div class="kpi"><div class="kpi-val" id="ai-total">0</div><div class="kpi-label">Total Queries</div></div>
@@ -4849,6 +4851,13 @@ window.sdPhotosExport=function(){
     <option value="green">On Track</option>
     <option value="done">Done</option>
   </select>
+  <!-- sched-crew-filter's options are populated by renderSchedule()'s monkey-
+       patch; note its selected value isn't currently read back to filter
+       #sched-list -- write-only today, same as before this fix. Building
+       that consumer is separate follow-up work, not part of this container fix. -->
+  <select id="sched-crew-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" data-auto-container="missing-dom-fix">
+    <option value="">All Crew</option>
+  </select>
 </div>
 <div id="sched-list"></div>
 <div id="sched-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
@@ -6102,6 +6111,8 @@ window.sdRMExport=function(){
   </div>
 </div>
 <div id="safe-list"></div>
+<div style="font-weight:700;font-size:14px;color:var(--text);margin:18px 0 10px" data-auto-container="missing-dom-fix">Training Records</div>
+<div id="safe-training-list" data-auto-container="missing-dom-fix"></div>
 <div id="safe-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
 <script>
@@ -23160,6 +23171,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;line-height:1.7" id="sint-safety-list"></div>
 <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">sint-sqft</label><input type="text" id="sint-sqft" class="form-control"></div>
 <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">sint-edge-lf</label><input type="text" id="sint-edge-lf" class="form-control"></div>
+<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">sint-mat-cost</label><input type="text" id="sint-mat-cost" class="form-control"></div>
 <div id="sint-mat-info" data-auto-container="missing-dom-fix"></div>
 <div id="sint-result" data-auto-container="missing-dom-fix"></div>
 </div>
@@ -24085,6 +24097,13 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px" id="pi-rate-inputs"></div>
 <div id="pi-market-rates" data-auto-container="missing-dom-fix"></div>
     <button class="q-btn primary" style="margin-top:10px" onclick="piSaveRates()">Save My Rates</button>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px" data-auto-container="missing-dom-fix">
+  <div class="kpi"><div class="kpi-val" id="pi-kpi-avg">—</div><div class="kpi-label">Your Avg</div></div>
+  <div class="kpi"><div class="kpi-val" id="pi-kpi-market">—</div><div class="kpi-label">Market Avg</div></div>
+  <div class="kpi"><div class="kpi-val" id="pi-kpi-position">—</div><div class="kpi-label">Position</div></div>
+  <div class="kpi"><div class="kpi-val" id="pi-kpi-opportunity">—</div><div class="kpi-label">Opportunity</div></div>
+</div>
+<div id="pi-comparison" style="margin-top:12px" data-auto-container="missing-dom-fix"></div>
 </div>
 
 
@@ -26684,9 +26703,11 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     if (tb) tb.style.cssText = 'display:flex!important';
     // Show first page
     showPage(FIRST_PAGE);
-    // Update user display
+    // Update user display. trole's real target is the existing #user-label
+    // span (topbar, next to #role-badge-display) -- confirmed via grep, no
+    // other element was ever wired to receive this text.
     var tavtr = document.getElementById('tavtr');
-    var trole = document.getElementById('trole');
+    var trole = document.getElementById('user-label');
     var uc    = document.getElementById('uc') || document.getElementById('user-chip');
     if (tavtr) tavtr.textContent = ROLE_INITS[currentRole] || currentRole.substring(0,2).toUpperCase();
     if (trole) trole.textContent = ROLE_LABELS[currentRole] || currentRole;
