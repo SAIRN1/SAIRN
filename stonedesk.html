@@ -183,6 +183,23 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
   transition:width .2s ease;
 }
 .sidebar.collapsed{width:52px}
+/* Mobile: no @media rule existed for .sidebar at all (confirmed via grep
+   before writing this) -- the 220px sidebar consumed roughly half of a
+   real 390px viewport on every one of the 61 panels, found during the
+   sairn-visual-review full pass. Applies the exact same icon-rail rules
+   already used for the desktop .collapsed state to the base .sidebar
+   below 768px, so mobile gets the narrow rail by default with zero JS/
+   toggle-state changes -- purely additive CSS, no risk to desktop or to
+   sbToggle()'s existing behavior. */
+@media (max-width:768px){
+  .sidebar{width:52px}
+  .sidebar .sb-label{opacity:0}
+  .sidebar .sb-text,.sidebar .sb-label,.sidebar .sb-section-hdr span:first-child,.sidebar .sb-caret{display:none}
+  .sidebar .sb-section-hdr{justify-content:center;padding:8px}
+  .sidebar .sb-btn{padding:8px;justify-content:center}
+  .sidebar .sb-search-wrap{display:none}
+  .sidebar.collapsed{width:0;border-right:none;overflow:hidden}
+}
 .sidebar::-webkit-scrollbar{width:4px}
 .sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
 
