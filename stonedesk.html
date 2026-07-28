@@ -6893,7 +6893,15 @@ function invMarkPaid(id) {
   notify('Invoice marked as Paid', '');
 }
 
-function invDelete(id) {
+function invDeleteInvoice(id) {
+  // Renamed from invDelete -- a second, unrelated invDelete(id) for
+  // inventory-item deletion was defined later in the file (same global
+  // scope, no module boundary between <script> blocks), silently
+  // shadowing this one. Found via a systematic sweep for duplicate
+  // top-level function declarations across the whole file -- the same
+  // bug class as the escHtml/renderCustomers/safetyRenderIncidents
+  // duplicates found and fixed earlier this session, this time caught
+  // by name collision rather than by a live test surfacing wrong output.
   if (!confirm('Delete this invoice?')) return;
   sd_invoices = sd_invoices.filter(function(i) { return i.id !== id; });
   invSaveStore();
@@ -6996,9 +7004,9 @@ function invRender() {
         '<div style="font-size:11px;color:var(--muted);margin-top:3px">Due ' + inv.due + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<button class="q-btn" onclick="invPrint('+inv.id+')" title="View & Print">🖨️</button>' +
-        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid('+inv.id+')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
-        '<button class="q-btn" onclick="invDelete('+inv.id+')" title="Delete" style="color:#dc2626">🗑️</button>' +
+        '<button class="q-btn" onclick="invPrint(\''+inv.id+'\')" title="View & Print">🖨️</button>' +
+        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid(\''+inv.id+'\')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
+        '<button class="q-btn" onclick="invDeleteInvoice(\''+inv.id+'\')" title="Delete" style="color:#dc2626">🗑️</button>' +
       '</div>' +
     '</div>';
   }).join('');
