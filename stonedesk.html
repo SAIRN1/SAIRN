@@ -6089,26 +6089,13 @@ window.sdRMExport=function(){
 // existing safe-kpi1..5 tiles it can honestly compute; the two it can't
 // (Open Action Items, OSHA 300 Status -- no equivalent field in the
 // canonical shape) are left as '--', not fabricated.
-var SAFETY_TYPE_LABELS={near_miss:'Near Miss',first_aid:'First Aid',recordable:'OSHA Recordable',lost_time:'Lost Time',property:'Property Damage',exposure:'Silica/Chemical Exposure',equipment:'Equipment Failure'};
-var SAFETY_TYPE_COLORS={near_miss:'#ca8a04',first_aid:'#f97316',recordable:'#dc2626',lost_time:'#7F1D1D',property:'#6B7280',exposure:'#7c3aed',equipment:'#0891b2'};
-function safetyRenderIncidents(){
-  var el=document.getElementById('safe-list');if(!el)return;
-  var incidents=sdSafetyData.incidents;
-  if(!incidents.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">&#9989;</div><div style="font-size:15px;font-weight:700">No incidents logged</div><div style="font-size:13px;margin-top:6px">Log all near misses and incidents. OSHA requires records to be kept.</div></div>';return;}
-  el.innerHTML='<div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px">Incident Log</div>'+incidents.map(function(inc){
-    var tc=SAFETY_TYPE_COLORS[inc.type]||'#6B7280';
-    return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+tc+';border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
-        '<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+escHtml(SAFETY_TYPE_LABELS[inc.type]||inc.type)+(inc.oshaReportable==='yes'?' <span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:100px">OSHA REPORTABLE</span>':'')+'</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+escHtml(inc.datetime)+(inc.employee?' &middot; '+escHtml(inc.employee):'')+'</div></div>' +
-        '<button onclick="safetyDeleteIncident(\'' + inc.id + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer">&#10005;</button>' +
-      '</div>' +
-      '<div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:6px">'+escHtml(inc.desc)+'</div>' +
-      (inc.cause?'<div style="font-size:12px;color:var(--muted)"><strong>Root cause:</strong> '+escHtml(inc.cause)+'</div>':'') +
-      (inc.actions?'<div style="font-size:12px;color:var(--muted)"><strong>Actions taken:</strong> '+escHtml(inc.actions)+'</div>':'') +
-    '</div>';
-  }).join('');
-}
+// safetyRenderIncidents() itself is defined once, for real, further
+// down in the file (retargeted there from #safe-incident-list to
+// #safe-list) -- a duplicate definition was almost added here, which
+// would have silently shadowed it exactly like the escHtml/
+// renderCustomers duplicates found earlier this session. Caught by a
+// live Playwright test showing #safe-list stayed empty after a direct
+// safetyRenderIncidents() call, traced to this duplicate, removed.
 window.sdSafetyAdd=function(){
   // Prompt-based, matching the established pattern (sdCustAdd,
   // invAddItem, sdRMAdd) -- no incident-log form markup exists for the
@@ -6151,7 +6138,7 @@ window.sdSafetyPrint=function(){
   w.document.write('<html><head><title>Safety Report - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
   w.document.write('<h2 style="color:#16c762">Safety & Compliance Report</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
   w.document.write('<table><tr><th>Date</th><th>Type</th><th>Employee</th><th>Description</th><th>OSHA Reportable</th></tr>');
-  d.forEach(function(i){w.document.write('<tr><td>'+escHtml((i.datetime||'').slice(0,10))+'</td><td>'+escHtml(SAFETY_TYPE_LABELS[i.type]||i.type)+'</td><td>'+escHtml(i.employee)+'</td><td>'+escHtml(i.desc)+'</td><td>'+escHtml(i.oshaReportable)+'</td></tr>');});
+  d.forEach(function(i){w.document.write('<tr><td>'+escHtml((i.datetime||'').slice(0,10))+'</td><td>'+escHtml(i.type)+'</td><td>'+escHtml(i.employee)+'</td><td>'+escHtml(i.desc)+'</td><td>'+escHtml(i.oshaReportable)+'</td></tr>');});
   w.document.write('</table></body></html>');
   w.document.close();w.print();
 };
@@ -19430,7 +19417,7 @@ function safetyAIRootCause() {
 }
 
 function safetyRenderIncidents() {
-  var el=document.getElementById('safe-incident-list');if(!el)return;
+  var el=document.getElementById('safe-list');if(!el)return;
   var typeLabels={'near_miss':'Near Miss','first_aid':'First Aid','recordable':'OSHA Recordable','lost_time':'Lost Time','property':'Property Damage','exposure':'Silica/Chemical Exposure','equipment':'Equipment Failure'};
   var typeColors={'near_miss':'#ca8a04','first_aid':'#f97316','recordable':'#dc2626','lost_time':'#7F1D1D','property':'#6B7280','exposure':'#7c3aed','equipment':'#0891b2'};
   if(!sdSafetyData.incidents.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">&#9989;</div><div style="font-size:15px;font-weight:700">No incidents logged</div><div style="font-size:13px;margin-top:6px">Log all near misses and incidents. OSHA requires records to be kept.</div></div>';return;}
@@ -19440,7 +19427,7 @@ function safetyRenderIncidents() {
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
         '<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+(typeLabels[inc.type]||inc.type)+(inc.oshaReportable==='yes'?' <span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:100px">OSHA REPORTABLE</span>':'')+'</div>' +
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+inc.datetime+(inc.employee?' &middot; '+escHtml(inc.employee):'')+'</div></div>' +
-        '<button onclick="safetyDeleteIncident(' + inc.id + ')" style="background:none;border:none;color:#dc2626;cursor:pointer">&#10005;</button>' +
+        '<button onclick="safetyDeleteIncident(\'' + inc.id + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer">&#10005;</button>' +
       '</div>' +
       '<div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:6px">'+escHtml(inc.desc)+'</div>' +
       (inc.cause?'<div style="font-size:12px;color:var(--muted)"><strong>Root cause:</strong> '+escHtml(inc.cause)+'</div>':'') +
