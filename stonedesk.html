@@ -4474,7 +4474,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     w.document.write('<html><head><title>Photo Log - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h2 style="color:#16c762">Job Photo Log</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>'+data.length+' entries | '+portfolio+' portfolio-ready</p>');
     w.document.write('<table><tr><th>ID</th><th>Job</th><th>Customer</th><th>Type</th><th>Date</th><th>Tag</th><th>Description</th><th>File</th></tr>');
-    data.forEach(function(p){w.document.write('<tr><td>'+p.id+'</td><td>'+p.job+'</td><td>'+p.customer+'</td><td>'+p.type+'</td><td>'+p.date+'</td><td>'+p.tag+'</td><td>'+p.description+'</td><td>'+p.fileRef+'</td></tr>');});
+    data.forEach(function(p){w.document.write('<tr><td>'+escHtml(p.id)+'</td><td>'+escHtml(p.job)+'</td><td>'+escHtml(p.customer)+'</td><td>'+escHtml(p.type)+'</td><td>'+escHtml(p.date)+'</td><td>'+escHtml(p.tag)+'</td><td>'+escHtml(p.description)+'</td><td>'+escHtml(p.fileRef)+'</td></tr>');});
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
@@ -4601,7 +4601,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     w.document.write('<html><head><title>Warranty Report - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h2 style="color:#16c762">Warranty Report</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>ID</th><th>Customer</th><th>Stone</th><th>Installed</th><th>Expires</th><th>Status</th><th>Claims</th><th>Claim Cost</th></tr>');
-    data.forEach(function(wr){w.document.write('<tr><td>'+wr.id+'</td><td>'+wr.customer+'</td><td>'+wr.stone+'</td><td>'+wr.install+'</td><td>'+wr.expires+'</td><td>'+wr.status+'</td><td>'+wr.claims+'</td><td>$'+wr.claimCost+'</td></tr>');});
+    data.forEach(function(wr){w.document.write('<tr><td>'+escHtml(wr.id)+'</td><td>'+escHtml(wr.customer)+'</td><td>'+escHtml(wr.stone)+'</td><td>'+escHtml(wr.install)+'</td><td>'+escHtml(wr.expires)+'</td><td>'+escHtml(wr.status)+'</td><td>'+escHtml(wr.claims)+'</td><td>$'+wr.claimCost+'</td></tr>');});
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
@@ -4915,7 +4915,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     w.document.write('<h2 style="color:#16c762">Install Schedule</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Date</th><th>Job</th><th>Customer</th><th>Address</th><th>Type</th><th>Crew</th><th>Status</th><th>Notes</th></tr>');
     data.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);}).forEach(function(s){
-      w.document.write('<tr><td>'+s.date+'</td><td>'+s.job+'</td><td>'+s.customer+'</td><td>'+s.address+'</td><td>'+s.type+'</td><td>'+s.crew.join(', ')+'</td><td>'+s.status+'</td><td>'+s.notes+'</td></tr>');
+      w.document.write('<tr><td>'+escHtml(s.date)+'</td><td>'+escHtml(s.job)+'</td><td>'+escHtml(s.customer)+'</td><td>'+escHtml(s.address)+'</td><td>'+escHtml(s.type)+'</td><td>'+escHtml(s.crew.join(', '))+'</td><td>'+escHtml(s.status)+'</td><td>'+escHtml(s.notes)+'</td></tr>');
     });
     w.document.write('</table></body></html>');
     w.document.close();w.print();
@@ -5031,7 +5031,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     w.document.write('<html><head><title>Field Dispatch - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h2 style="color:#16c762">Field Dispatch — '+today+'</h2><p style="color:#64748b">Pinnacle Stone & Design</p>');
     w.document.write('<table><tr><th>Crew</th><th>Customer</th><th>Address</th><th>Type</th><th>Stone</th><th>ETA</th><th>Status</th></tr>');
-    data.forEach(function(d){w.document.write('<tr><td>'+d.crew+'</td><td>'+d.customer+'</td><td>'+d.address+'</td><td>'+d.type+'</td><td>'+d.stone+'</td><td>'+d.eta+'</td><td>'+d.status+'</td></tr>');});
+    data.forEach(function(d){w.document.write('<tr><td>'+escHtml(d.crew)+'</td><td>'+escHtml(d.customer)+'</td><td>'+escHtml(d.address)+'</td><td>'+escHtml(d.type)+'</td><td>'+escHtml(d.stone)+'</td><td>'+escHtml(d.eta)+'</td><td>'+escHtml(d.status)+'</td></tr>');});
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
@@ -5252,7 +5252,7 @@ function sdInvExport(){
     w.document.write('<h2 style="color:#16c762;margin-bottom:4px">Slab Inventory Report</h2><p style="color:#64748b;margin-top:0">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
     w.document.write('<div class="kpis"><div class="kpi"><div class="kv">'+data.length+'</div><div class="kl">Total</div></div><div class="kpi"><div class="kv">'+avail+'</div><div class="kl">Available</div></div><div class="kpi"><div class="kv">$'+val.toLocaleString()+'</div><div class="kl">Value</div></div></div>');
     w.document.write('<table><tr><th>ID</th><th>Stone</th><th>Vendor</th><th>Size</th><th>Location</th><th>Status</th><th>Cost</th><th>Job</th></tr>');
-    data.forEach(function(s){w.document.write('<tr><td>'+s.id+'</td><td>'+s.stone+'</td><td>'+s.vendor+'</td><td>'+s.size+'</td><td>'+s.location+'</td><td>'+s.status+'</td><td>$'+s.cost.toLocaleString()+'</td><td>'+(s.job||'—')+'</td></tr>');});
+    data.forEach(function(s){w.document.write('<tr><td>'+escHtml(s.id)+'</td><td>'+escHtml(s.stone)+'</td><td>'+escHtml(s.vendor)+'</td><td>'+escHtml(s.size)+'</td><td>'+escHtml(s.location)+'</td><td>'+escHtml(s.status)+'</td><td>$'+s.cost.toLocaleString()+'</td><td>'+escHtml(s.job||'—')+'</td></tr>');});
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
@@ -5384,7 +5384,7 @@ function sdInvExport(){
     w.document.write('<h2 style="color:#16c762">Vendor Report</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>YTD Total Spend: $'+spend.toLocaleString()+'</p>');
     w.document.write('<table><tr><th>Vendor</th><th>Type</th><th>Contact</th><th>Terms</th><th>YTD Spend</th><th>Rating</th><th>Preferred</th></tr>');
     data.sort(function(a,b){return b.ytdSpend-a.ytdSpend;}).forEach(function(v){
-      w.document.write('<tr><td>'+v.name+'</td><td>'+v.type+'</td><td>'+v.contact+'</td><td>'+v.terms+'</td><td>$'+v.ytdSpend.toLocaleString()+'</td><td>'+v.rating+'</td><td>'+(v.preferred?'Yes':'')+'</td></tr>');
+      w.document.write('<tr><td>'+escHtml(v.name)+'</td><td>'+escHtml(v.type)+'</td><td>'+escHtml(v.contact)+'</td><td>'+escHtml(v.terms)+'</td><td>$'+v.ytdSpend.toLocaleString()+'</td><td>'+escHtml(v.rating)+'</td><td>'+(v.preferred?'Yes':'')+'</td></tr>');
     });
     w.document.write('</table></body></html>');
     w.document.close();w.print();
@@ -5522,7 +5522,7 @@ function sdInvExport(){
     w.document.write('<html><head><title>Remake Log</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Remake Log</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Job</th><th>Material</th><th>Cause</th><th>Cost</th><th>Notes</th><th>Date</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.job+'</td><td>'+x.material+'</td><td>'+x.cause+'</td><td>$'+x.cost+'</td><td>'+x.notes+'</td><td>'+x.date+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.job)+'</td><td>'+escHtml(x.material)+'</td><td>'+escHtml(x.cause)+'</td><td>$'+x.cost+'</td><td>'+escHtml(x.notes)+'</td><td>'+escHtml(x.date)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdRMExport=function(){
@@ -6006,7 +6006,7 @@ function sdInvExport(){
     w.document.write('<h2 style="color:#16c762">Accounts Receivable Aging</h2><p style="color:#64748b">'+new Date().toLocaleDateString()+'<br>Outstanding: $'+outstanding.toLocaleString()+'</p>');
     w.document.write('<table><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Deposit</th><th>Balance</th><th>Due Date</th><th>Status</th></tr>');
     unpaid.forEach(function(i){
-      w.document.write('<tr><td>'+i.num+'</td><td>'+i.customer+'</td><td>$'+i.amount.toLocaleString()+'</td><td>$'+(i.deposit||0).toLocaleString()+'</td><td class="'+(i.status==='Overdue'?'overdue':'')+'">$'+(i.balance||0).toLocaleString()+'</td><td>'+i.due+'</td><td>'+i.status+'</td></tr>');
+      w.document.write('<tr><td>'+escHtml(i.num)+'</td><td>'+escHtml(i.customer)+'</td><td>$'+i.amount.toLocaleString()+'</td><td>$'+(i.deposit||0).toLocaleString()+'</td><td class="'+(i.status==='Overdue'?'overdue':'')+'">$'+(i.balance||0).toLocaleString()+'</td><td>'+escHtml(i.due)+'</td><td>'+escHtml(i.status)+'</td></tr>');
     });
     w.document.write('</table></body></html>');
     w.document.close();w.print();
@@ -6146,7 +6146,7 @@ function sdInvExport(){
     w.document.write('<html><head><title>Safety Report - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#16c762;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h2 style="color:#16c762">Safety & Compliance Report</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>ID</th><th>Date</th><th>Type</th><th>Employee</th><th>Description</th><th>Severity</th><th>Status</th></tr>');
-    data.forEach(function(i){w.document.write('<tr><td>'+i.id+'</td><td>'+i.date+'</td><td>'+i.type+'</td><td>'+i.employee+'</td><td>'+i.description+'</td><td>'+i.severity+'</td><td>'+i.status+'</td></tr>');});
+    data.forEach(function(i){w.document.write('<tr><td>'+escHtml(i.id)+'</td><td>'+escHtml(i.date)+'</td><td>'+escHtml(i.type)+'</td><td>'+escHtml(i.employee)+'</td><td>'+escHtml(i.description)+'</td><td>'+escHtml(i.severity)+'</td><td>'+escHtml(i.status)+'</td></tr>');});
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
@@ -12434,8 +12434,8 @@ function showSOPs() {
 
 function printSOP(p, shopName) {
   const win=window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+p.title+' SOP</title><style>body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:750px;margin:0 auto}.hdr{border-bottom:2px solid #1A1410;padding-bottom:12px;margin-bottom:20px}.shop{font-size:20px;font-weight:700}.pos{font-size:14px;color:#555;margin-top:3px}h2{font-size:18px;margin-bottom:14px;color:#1A1410}li{font-size:13px;line-height:1.8;margin-bottom:6px;padding-left:4px}ul{padding-left:20px}.sig{margin-top:40px;border-top:1px solid #999;padding-top:6px;font-size:11px;color:#777;display:inline-block;min-width:200px;margin-right:40px}.ftr{margin-top:28px;font-size:10px;color:#bbb;border-top:1px solid #eee;padding-top:10px;display:flex;justify-content:space-between}@media print{body{padding:20px}}</style><scr'+'ipt></scr'+'ipt></head><body>');
-  win.document.write('<div class="hdr"><div class="shop">'+shopName+'</div><div class="pos">'+p.icon+' '+p.title+' — Standard Operating Procedure</div></div>');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+escHtml(p.title)+' SOP</title><style>body{font-family:Arial,sans-serif;padding:36px;color:#111;max-width:750px;margin:0 auto}.hdr{border-bottom:2px solid #1A1410;padding-bottom:12px;margin-bottom:20px}.shop{font-size:20px;font-weight:700}.pos{font-size:14px;color:#555;margin-top:3px}h2{font-size:18px;margin-bottom:14px;color:#1A1410}li{font-size:13px;line-height:1.8;margin-bottom:6px;padding-left:4px}ul{padding-left:20px}.sig{margin-top:40px;border-top:1px solid #999;padding-top:6px;font-size:11px;color:#777;display:inline-block;min-width:200px;margin-right:40px}.ftr{margin-top:28px;font-size:10px;color:#bbb;border-top:1px solid #eee;padding-top:10px;display:flex;justify-content:space-between}@media print{body{padding:20px}}</style><scr'+'ipt></scr'+'ipt></head><body>');
+  win.document.write('<div class="hdr"><div class="shop">'+escHtml(shopName)+'</div><div class="pos">'+escHtml(p.icon)+' '+escHtml(p.title)+' — Standard Operating Procedure</div></div>');
   win.document.write('<h2>Position Responsibilities</h2><ul>');
   p.duties.forEach(d=>win.document.write('<li>'+d+'</li>'));
   win.document.write('</ul><div style="margin-top:32px"><span class="sig">Employee Name (print)</span><span class="sig">Signature &amp; Date</span><span class="sig">Supervisor Sign-Off</span></div>');
@@ -12561,7 +12561,7 @@ function printAllSOPs(positions, shopName) {
   win.document.write('<div class="shop-hdr"><div class="shop-name">'+shopName+'</div><div style="font-size:12px;color:#555;margin-top:3px">Standard Operating Procedures — All Positions</div></div>');
   positions.forEach((p,i)=>{
     if(i>0) win.document.write('<div class="page-break"></div>');
-    win.document.write('<div class="pos-hdr"><span class="pos-icon">'+p.icon+'</span><span class="pos-title">'+p.title+'</span></div><ul>');
+    win.document.write('<div class="pos-hdr"><span class="pos-icon">'+escHtml(p.icon)+'</span><span class="pos-title">'+escHtml(p.title)+'</span></div><ul>');
     p.duties.forEach(d=>win.document.write('<li>'+d+'</li>'));
     win.document.write('</ul><div style="margin-top:20px"><span class="sig">Employee Name</span><span class="sig">Signature &amp; Date</span></div>');
   });
@@ -21665,7 +21665,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>CRM</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — CRM Pipeline</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Customer</th><th>Project</th><th>Value</th><th>Stage</th><th>Source</th><th>Date</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.proj+'</td><td>$'+(x.val||0)+'</td><td>'+x.stage+'</td><td>'+x.source+'</td><td>'+x.date+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.name)+'</td><td>'+escHtml(x.proj)+'</td><td>$'+(x.val||0)+'</td><td>'+escHtml(x.stage)+'</td><td>'+escHtml(x.source)+'</td><td>'+escHtml(x.date)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdCRMExport=function(){
@@ -22317,7 +22317,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Purchase Orders</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone & Design — Purchase Orders</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>PO #</th><th>Vendor</th><th>Material</th><th>Amount</th><th>Expected</th><th>Status</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.num+'</td><td>'+x.vendor+'</td><td>'+x.mat+'</td><td>$'+x.amt+'</td><td>'+x.exp+'</td><td>'+x.status+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.num)+'</td><td>'+escHtml(x.vendor)+'</td><td>'+escHtml(x.mat)+'</td><td>$'+x.amt+'</td><td>'+escHtml(x.exp)+'</td><td>'+escHtml(x.status)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdPOExport=function(){
@@ -22444,7 +22444,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Receiving Log</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone & Design — Receiving Log</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Material</th><th>Qty</th><th>Value</th><th>Vendor</th><th>Condition</th><th>Date</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.mat+'</td><td>'+x.qty+'</td><td>$'+x.val+'</td><td>'+x.vendor+'</td><td>'+x.cond+'</td><td>'+x.date+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.mat)+'</td><td>'+x.qty+'</td><td>$'+x.val+'</td><td>'+escHtml(x.vendor)+'</td><td>'+escHtml(x.cond)+'</td><td>'+escHtml(x.date)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdRecvExport=function(){
@@ -22720,7 +22720,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>SMS Log</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone & Design — SMS Log</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>To</th><th>Phone</th><th>Message</th><th>Date</th><th>Status</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.to+'</td><td>'+x.phone+'</td><td>'+x.msg+'</td><td>'+x.date+'</td><td>'+x.status+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.to)+'</td><td>'+escHtml(x.phone)+'</td><td>'+escHtml(x.msg)+'</td><td>'+escHtml(x.date)+'</td><td>'+escHtml(x.status)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdSMSRender=function(){
@@ -23047,7 +23047,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Sintered Catalog</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Sintered Stone Catalog</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Product</th><th>Brand</th><th>Thickness</th><th>Finish</th><th>$/sqft</th><th>Status</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.brand+'</td><td>'+x.thickness+'</td><td>'+x.finish+'</td><td>$'+x.price+'</td><td>'+(x.available?'In Stock':'Order')+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.name)+'</td><td>'+escHtml(x.brand)+'</td><td>'+escHtml(x.thickness)+'</td><td>'+escHtml(x.finish)+'</td><td>$'+x.price+'</td><td>'+(x.available?'In Stock':'Order')+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdSintExport=function(){
@@ -23566,7 +23566,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var avg=data.reduce(function(a,r){return a+r.rating;},0)/data.length;
     w.document.write('<html><head><title>Reviews - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}.review{border-left:3px solid #16c762;padding:10px 14px;margin-bottom:12px;background:#f8fafc}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h2 style="color:#16c762">Customer Review Summary</h2><p style="color:#64748b">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'<br>Avg: '+avg.toFixed(1)+'/5 &bull; '+data.length+' reviews</p>');
-    data.forEach(function(r){w.document.write('<div class="review"><strong>'+r.customer+'</strong> ('+r.source+', '+r.date+') — '+r.rating+'/5<br><em>"'+r.text+'"</em></div>');});
+    data.forEach(function(r){w.document.write('<div class="review"><strong>'+escHtml(r.customer)+'</strong> ('+escHtml(r.source)+', '+escHtml(r.date)+') — '+escHtml(r.rating)+'/5<br><em>"'+escHtml(r.text)+'"</em></div>');});
     w.document.write('</body></html>');
     w.document.close();w.print();
   };
@@ -23709,7 +23709,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Contractors</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Contractor Directory</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Tier</th><th>YTD</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.contact+'</td><td>'+x.phone+'</td><td>'+x.tier+'</td><td>$'+(x.ytd||0)+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.name)+'</td><td>'+escHtml(x.contact)+'</td><td>'+escHtml(x.phone)+'</td><td>'+escHtml(x.tier)+'</td><td>$'+(x.ytd||0)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   render();
@@ -24085,7 +24085,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Equipment</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Equipment Register</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Equipment</th><th>Make/Model</th><th>Value</th><th>Next Service</th><th>Status</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.make+'</td><td>$'+x.val.toLocaleString()+'</td><td>'+x.maint+'</td><td>'+x.status+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.name)+'</td><td>'+escHtml(x.make)+'</td><td>$'+x.val.toLocaleString()+'</td><td>'+escHtml(x.maint)+'</td><td>'+escHtml(x.status)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdEquipmentExport=function(){
@@ -24214,7 +24214,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Employee Directory</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Employee Directory</h1><p>Confidential &bull; '+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Name</th><th>Role</th><th>Dept</th><th>Phone</th><th>Start</th><th>Certifications</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.role+'</td><td>'+x.dept+'</td><td>'+x.phone+'</td><td>'+x.start+'</td><td>'+(x.certs||[]).join(', ')+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.name)+'</td><td>'+escHtml(x.role)+'</td><td>'+escHtml(x.dept)+'</td><td>'+escHtml(x.phone)+'</td><td>'+escHtml(x.start)+'</td><td>'+escHtml((x.certs||[]).join(', '))+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdEmployeesExport=function(){
@@ -24457,7 +24457,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Subcontractors</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Subcontractors</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Company</th><th>Trade</th><th>Phone</th><th>Rate</th><th>YTD</th><th>Ins Exp</th><th>Status</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.name+'</td><td>'+x.trade+'</td><td>'+x.phone+'</td><td>$'+x.rate+'/day</td><td>$'+(x.ytd||0)+'</td><td>'+x.ins_exp+'</td><td>'+x.status+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.name)+'</td><td>'+escHtml(x.trade)+'</td><td>'+escHtml(x.phone)+'</td><td>$'+x.rate+'/day</td><td>$'+(x.ytd||0)+'</td><td>'+escHtml(x.ins_exp)+'</td><td>'+escHtml(x.status)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdSubRender=render;
@@ -24722,7 +24722,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>IT Report</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — IT Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<h2>Open Tickets</h2><table><tr><th>ID</th><th>User</th><th>Category</th><th>Priority</th><th>Description</th><th>Status</th></tr>');
-    t.forEach(function(x){w.document.write('<tr><td>'+x.id+'</td><td>'+x.user+'</td><td>'+x.cat+'</td><td>'+x.priority+'</td><td>'+x.desc+'</td><td>'+x.status+'</td></tr>');});
+    t.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.id)+'</td><td>'+escHtml(x.user)+'</td><td>'+escHtml(x.cat)+'</td><td>'+escHtml(x.priority)+'</td><td>'+escHtml(x.desc)+'</td><td>'+escHtml(x.status)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   render();
@@ -25103,7 +25103,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Bulletin Board — Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}@media print{button{display:none}}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone & Design — Bulletin Board</h1><p>Printed: '+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Category</th><th>Title</th><th>Content</th><th>Author</th><th>Date</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.cat+'</td><td>'+x.title+'</td><td>'+x.body+'</td><td>'+x.author+'</td><td>'+x.date+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.cat)+'</td><td>'+escHtml(x.title)+'</td><td>'+escHtml(x.body)+'</td><td>'+escHtml(x.author)+'</td><td>'+escHtml(x.date)+'</td></tr>');});
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
@@ -25231,7 +25231,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>Waste Log</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Waste Log</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Job</th><th>Material</th><th>Weight</th><th>Type</th><th>Disposal Cost</th><th>Date</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.job+'</td><td>'+x.material+'</td><td>'+x.lbs+' lbs</td><td>'+x.type+'</td><td>$'+x.cost+'</td><td>'+x.date+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.job)+'</td><td>'+escHtml(x.material)+'</td><td>'+x.lbs+' lbs</td><td>'+escHtml(x.type)+'</td><td>$'+x.cost+'</td><td>'+escHtml(x.date)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   render();
@@ -25411,7 +25411,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>NPS Report</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone & Design — NPS Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Customer</th><th>Score</th><th>Comment</th><th>Date</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.customer+'</td><td>'+x.score+'</td><td>'+x.comment+'</td><td>'+x.date+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.customer)+'</td><td>'+x.score+'</td><td>'+escHtml(x.comment)+'</td><td>'+escHtml(x.date)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   render();
@@ -25549,7 +25549,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write('<html><head><title>AP Report</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone — Accounts Payable</h1><p>'+new Date().toLocaleDateString()+'</p>');
     w.document.write('<table><tr><th>Vendor</th><th>Description</th><th>Amount</th><th>Due</th><th>Status</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+x.vendor+'</td><td>'+x.desc+'</td><td>$'+x.amt+'</td><td>'+x.due+'</td><td>'+x.status+'</td></tr>');});
+    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.vendor)+'</td><td>'+escHtml(x.desc)+'</td><td>$'+x.amt+'</td><td>'+escHtml(x.due)+'</td><td>'+escHtml(x.status)+'</td></tr>');});
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   render();
@@ -28866,7 +28866,7 @@ function mfPrintToday(){
   var win=window.open('','_blank');
   win.document.write('<!DOCTYPE html><html><head><title>Install Manifest</title><style>body{font-family:Arial,sans-serif;padding:28px;max-width:750px;margin:0 auto}.hdr{border-bottom:3px solid #0A3D1F;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between}.stop{border:1px solid #ddd;border-left:4px solid #0A3D1F;border-radius:6px;padding:14px;margin-bottom:14px}.num{display:inline-block;background:#0A3D1F;color:#fff;border-radius:6px;padding:4px 10px;font-weight:700;margin-right:8px}.sig{border-top:1px solid #999;padding-top:5px;font-size:11px;color:#777;min-width:180px;display:inline-block;margin-right:30px;margin-top:28px}@media print{body{padding:16px}}</style><scr'+'ipt></scr'+'ipt></head><body>');
   win.document.write('<div class="hdr"><div><div style="font-size:20px;font-weight:700">'+shopName+'</div><div style="font-size:13px;color:#555">Install Manifest — '+new Date(fd+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</div></div><div style="font-size:13px;text-align:right">'+list.length+' stops</div></div>');
-  list.forEach(function(s,i){win.document.write('<div class="stop"><span class="num">'+(i+1)+'</span><strong>'+s.customer+'</strong>'+(s.time?' · '+s.time:'')+(s.crew?' · '+s.crew:'')+(s.sqft?' · '+s.sqft+'sqft':'')+'<br><div style="margin-top:6px">'+s.address+(s.phone?' · '+s.phone:'')+'</div>'+(s.material?'<div>'+s.material+'</div>':'')+(s.notes?'<div style="color:#dc2626;font-weight:700;margin-top:4px">NOTES: '+s.notes+'</div>':'')+'<div><span class="sig">Customer Signature</span><span class="sig">Installer Sign-Off</span></div></div>');});
+  list.forEach(function(s,i){win.document.write('<div class="stop"><span class="num">'+(i+1)+'</span><strong>'+escHtml(s.customer)+'</strong>'+(s.time?' · '+escHtml(s.time):'')+(s.crew?' · '+escHtml(s.crew):'')+(s.sqft?' · '+s.sqft+'sqft':'')+'<br><div style="margin-top:6px">'+escHtml(s.address)+(s.phone?' · '+escHtml(s.phone):'')+'</div>'+(s.material?'<div>'+escHtml(s.material)+'</div>':'')+(s.notes?'<div style="color:#dc2626;font-weight:700;margin-top:4px">NOTES: '+escHtml(s.notes)+'</div>':'')+'<div><span class="sig">Customer Signature</span><span class="sig">Installer Sign-Off</span></div></div>');});
   win.document.write('<scr'+'ipt>window.onload=function(){window.print();}<\/script></body></html>');win.document.close();
 }
 
