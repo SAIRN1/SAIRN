@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [[ \"$CLAUDE_TOOL_INPUT_FILE_PATH\" == *.html ]]; then echo '--- auto node --check on edited HTML ---'; python -c \"import re; c=open('$CLAUDE_TOOL_INPUT_FILE_PATH').read(); [print(m.group(0)[:50]) for m in re.finditer(r'<script(?![^>]*src)[^>]*>', c)]\" | wc -l; fi",
+            "command": "python tools/html_script_check.py",
             "timeout": 30
           }
         ]
