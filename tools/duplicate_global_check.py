@@ -25,6 +25,25 @@ Known limitation: only catches the two declaration styles actually used
 throughout this file (`function NAME(...)` and `window.NAME = function`).
 Arrow-function-assigned globals (`const NAME = () => {}`) or object-
 method-shorthand globals are not tracked.
+
+CONFIRMED REAL GAP (found via a deliberate-orphan test, not theoretical):
+the brace-depth scanner skips strings and comments but does NOT recognize
+JS regex literals -- a pattern like `/\{2,4\}/` or `.replace(/\{/g,...)`
+contains literal `{`/`}` characters that get miscounted as real braces,
+which can drift the running depth away from 0 for the rest of that
+script block. Confirmed on this file: a deliberately duplicated function
+name added near the end of the LAST script block (which starts around
+line 29742) was NOT detected -- the scanner's last correctly-tracked
+depth-0 function in that block was `taxExport` (~line 30144), meaning
+something between there and the block's end throws the depth count off
+and everything after is scanned at the wrong depth, at least in that one
+block. This means a "0 duplicates" result from this tool is reliable for
+the portions of the file where depth tracking stays accurate, but is NOT
+a complete guarantee across the whole file until real regex-literal
+detection is added. Flagged, not yet fixed -- proper regex-vs-division
+disambiguation in JS requires more context than a simple char scanner
+has (the same reason writing a JS lexer/tokenizer is real work, not a
+one-line fix).
 """
 import sys, os, re
 from collections import defaultdict
