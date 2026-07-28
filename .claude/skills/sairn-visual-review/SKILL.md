@@ -7,6 +7,16 @@ description: 'The missing layer — Guardian checks source code, adversarial-rev
 
 Everything else checks whether the code is correct. This checks whether a real person looking at the real screen would trust it, understand it, and enjoy using it. Different question, different method — this one requires actually seeing it, not reading it.
 
+## Advanced Checks (added 2026-07-27)
+
+**Outcome verification, not just appearance.** After clicking anything, confirm an OBSERVABLE change actually matches the stated intent — not just "didn't crash." This is the visual-layer version of tonight's `invDelete` bug: the button said "Delete," a confirm dialog appeared, but the item never actually left the list. A visual check that specifically asks "did the list actually shrink/change after this click, not just did the page stay alive" would have caught this before the code-level trace did.
+
+**Real WCAG contrast ratios, not subjective judgment.** Compute actual contrast ratio (foreground vs. background) for text — 4.5:1 minimum for normal text, 3:1 for large text (18pt+) and UI components, per WCAG AA. "Looks readable to me" isn't a defensible standard for something called world-class; a number is.
+
+**Screenshot-diff baseline.** Save each pass's screenshots as the new baseline. On the next visual-review pass, diff against the prior baseline — flag any panel whose appearance changed unexpectedly, even if that panel wasn't the one being worked on. Catches silent regressions from unrelated fixes, same spirit as `checkblocks.py`/`div_balance_check.py` for code.
+
+**Loading-state / layout-shift check.** Does content flash, jump, or reflow while data loads? A KPI tile popping in after the page settles, shifting everything below it, reads as broken even if the final state is correct.
+
 ## Method
 
 1. Launch the app via Playwright (already established for functional verification).
