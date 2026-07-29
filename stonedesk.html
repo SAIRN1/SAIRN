@@ -27606,7 +27606,6 @@ function sbNav(id) {
     if(id==='remnant'){if(typeof remRender==='function')remRender();if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();}
     if(id==='inventory'&&typeof renderInventory==='function')renderInventory();
     if(id==='receiving'&&typeof rcvRender==='function')rcvRender();
-    if(id==='manifest'&&typeof mfRender==='function')mfRender();
     if(id==='sms'&&typeof window.sdSMSRender==='function')window.sdSMSRender();
     if(id==='aiquote'&&typeof window.sdAIQRender==='function')window.sdAIQRender();
     if(id==='sintered'&&typeof sintSetMat==='function')sintSetMat(sintCurrent||'quartz');
@@ -29004,49 +29003,15 @@ function recRenderLog(){
 }
 
 // ================================================================
-// 7. DELIVERY MANIFEST
+// 7. DELIVERY MANIFEST — orphaned duplicate removed (canonical is
+// panel-manifest / sdManifestAdd/sdManifestAI/sdManifestExport/
+// sdManifestPrint below, mfst- prefixed ids, key sd_manifest). This block
+// never had a host panel, mf-form/mf-cust/mf-date-filter/mf-manifest-list/
+// mf-kpi-*/etc never existed, mfCreateManifest/mfSaveStop/mfPrintToday had
+// zero callers. Own distinct storage key (sd_manifest_stops), no overlap
+// with the canonical sd_manifest -- no collision risk, same shape as the
+// Care Guide AI duplicate. See STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
-var mfStops=sdLoad('sd_manifest_stops',[]);
-function mfCreateManifest(){document.getElementById('mf-form').style.display='block';var d=document.getElementById('mf-date');if(d)d.value=new Date().toISOString().split('T')[0];}
-function mfSaveStop(){
-  var cust=((document.getElementById('mf-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
-  var stop={id:'MF'+Date.now(),customer:cust,address:((document.getElementById('mf-addr')||{}).value||'').trim(),phone:((document.getElementById('mf-phone')||{}).value||'').trim(),date:(document.getElementById('mf-date')||{}).value||new Date().toISOString().split('T')[0],time:(document.getElementById('mf-time')||{}).value||'08:00',duration:parseFloat((document.getElementById('mf-duration')||{}).value)||2,crew:((document.getElementById('mf-crew')||{}).value||'').trim(),sqft:parseFloat((document.getElementById('mf-sqft')||{}).value)||0,material:((document.getElementById('mf-mat')||{}).value||'').trim(),notes:((document.getElementById('mf-notes')||{}).value||'').trim(),status:'scheduled',createdAt:new Date().toISOString()};
-  mfStops.unshift(stop);sdStore('sd_manifest_stops',mfStops);document.getElementById('mf-form').style.display='none';mfRender();showToast('Added to manifest');
-}
-function mfComplete(id){var s=mfStops.find(function(x){return x.id===id;});if(!s)return;s.status='complete';s.completedAt=new Date().toISOString();sdStore('sd_manifest_stops',mfStops);mfRender();showToast('Complete');}
-function mfDelete(id){if(!confirm('Remove?'))return;mfStops=mfStops.filter(function(x){return x.id!==id;});sdStore('sd_manifest_stops',mfStops);mfRender();}
-function mfRender(){
-  var df=document.getElementById('mf-date-filter');var today=new Date().toISOString().split('T')[0];if(df&&!df.value)df.value=today;
-  var fd=df?df.value:today;
-  var list=mfStops.filter(function(s){return s.date===fd;}).sort(function(a,b){return a.time.localeCompare(b.time);});
-  var day=mfStops.filter(function(s){return s.date===fd;});
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('mf-kpi-today',day.length);sv('mf-kpi-sqft',day.reduce(function(s,x){return s+x.sqft;},0));sv('mf-kpi-crews',[...new Set(day.map(function(s){return s.crew;}).filter(Boolean))].length);sv('mf-kpi-done',day.filter(function(s){return s.status==='complete';}).length);
-  var el=document.getElementById('mf-manifest-list');if(!el)return;
-  el.innerHTML=list.length?list.map(function(s,i){var done=s.status==='complete';return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(done?'#16a34a':'var(--a)')+';border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;'+(done?'opacity:.7':'')+'">'+
-    '<div style="background:'+(done?'#16a34a':'var(--a)')+';color:#fff;border-radius:8px;padding:8px 10px;text-align:center;min-width:52px;flex-shrink:0"><div style="font-size:18px;font-weight:900;line-height:1">'+(i+1)+'</div><div style="font-size:10px">'+(s.time||'')+'</div></div>'+
-    '<div style="flex:1"><div style="font-size:14px;font-weight:800;margin-bottom:4px">'+escHtml(s.customer)+(s.crew?' <span style="font-size:11px;color:var(--muted);font-weight:400">- '+escHtml(s.crew)+'</span>':'')+'</div>'+
-    '<div style="font-size:12px;color:var(--muted)">'+escHtml(s.address)+(s.phone?' · '+escHtml(s.phone):'')+'</div>'+
-    (s.material?'<div style="font-size:12px;color:var(--muted)">'+escHtml(s.material)+(s.sqft?' · '+s.sqft+' sqft':'')+'</div>':'')+
-    (s.notes?'<div style="font-size:12px;color:#dc2626;font-weight:600;margin-top:4px">'+escHtml(s.notes)+'</div>':'')+
-    '</div>'+
-    '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
-      (!done?'<button onclick="mfComplete(\''+s.id+'\')" style="padding:5px 12px;background:#16a34a;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Done</button>':'')+
-      '<a href="https://maps.google.com/?q='+encodeURIComponent(s.address)+'" target="_blank" style="padding:5px 12px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid rgba(27,58,107,0.2);border-radius:7px;font-size:11px;text-decoration:none;text-align:center">Map</a>'+
-      '<button onclick="mfDelete(\''+s.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:10px;cursor:pointer">x</button>'+
-    '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No installs for this date.</div>';
-}
-function mfPrintToday(){
-  var df=document.getElementById('mf-date-filter');var fd=df?df.value:new Date().toISOString().split('T')[0];
-  var list=mfStops.filter(function(s){return s.date===fd;}).sort(function(a,b){return a.time.localeCompare(b.time);});
-  if(!list.length){showToast('No installs for this date');return;}
-  var shopName=localStorage.getItem('fab_shop_name')||'Your Stone Shop';
-  var win=window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>Install Manifest</title><style>body{font-family:Arial,sans-serif;padding:28px;max-width:750px;margin:0 auto}.hdr{border-bottom:3px solid #0A3D1F;padding-bottom:12px;margin-bottom:20px;display:flex;justify-content:space-between}.stop{border:1px solid #ddd;border-left:4px solid #0A3D1F;border-radius:6px;padding:14px;margin-bottom:14px}.num{display:inline-block;background:#0A3D1F;color:#fff;border-radius:6px;padding:4px 10px;font-weight:700;margin-right:8px}.sig{border-top:1px solid #999;padding-top:5px;font-size:11px;color:#777;min-width:180px;display:inline-block;margin-right:30px;margin-top:28px}@media print{body{padding:16px}}</style><scr'+'ipt></scr'+'ipt></head><body>');
-  win.document.write('<div class="hdr"><div><div style="font-size:20px;font-weight:700">'+shopName+'</div><div style="font-size:13px;color:#555">Install Manifest — '+new Date(fd+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</div></div><div style="font-size:13px;text-align:right">'+list.length+' stops</div></div>');
-  list.forEach(function(s,i){win.document.write('<div class="stop"><span class="num">'+(i+1)+'</span><strong>'+escHtml(s.customer)+'</strong>'+(s.time?' · '+escHtml(s.time):'')+(s.crew?' · '+escHtml(s.crew):'')+(s.sqft?' · '+s.sqft+'sqft':'')+'<br><div style="margin-top:6px">'+escHtml(s.address)+(s.phone?' · '+escHtml(s.phone):'')+'</div>'+(s.material?'<div>'+escHtml(s.material)+'</div>':'')+(s.notes?'<div style="color:#dc2626;font-weight:700;margin-top:4px">NOTES: '+escHtml(s.notes)+'</div>':'')+'<div><span class="sig">Customer Signature</span><span class="sig">Installer Sign-Off</span></div></div>');});
-  win.document.write('<scr'+'ipt>window.onload=function(){window.print();}<\/script></body></html>');win.document.close();
-}
 
 // ================================================================
 // 8. SMS NOTIFICATIONS — orphaned duplicate removed (canonical is
@@ -29409,7 +29374,6 @@ document.addEventListener('DOMContentLoaded',function(){
     try{tsRender();}catch(e){}
     try{remRender();}catch(e){}
     try{recRenderLog();}catch(e){}
-    try{mfRender();}catch(e){}
     try{aiqRenderHistory();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
     try{rfRender();}catch(e){}
