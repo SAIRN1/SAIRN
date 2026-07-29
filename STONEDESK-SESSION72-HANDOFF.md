@@ -3,28 +3,75 @@
 Written mid-session, updated repeatedly as work continued rather than left
 to go stale — first drafted after the storage-collision-risk batch (SMS/
 Contractor Portal/Purchase Orders), now rolled forward through the four
-key-collision traces, a real structural layout bug (panel-wrap), and a
-final adversarial-review confirmation pass. Claims below are independently
-verified against the actual repo and live site, not assumed from memory —
-same standard as STONEDESK-SESSION71-HANDOFF.md.
+key-collision traces, a real structural layout bug (panel-wrap), a final
+adversarial-review confirmation pass, and an AI Instant Quote pricing
+reform that pass directly caught a misdirected fix on. Claims below are
+independently verified against the actual repo and live site, not assumed
+from memory — same standard as STONEDESK-SESSION71-HANDOFF.md.
 
 **BUG-FIXING PHASE: CLOSED.** All 32 items from SESSION71's list, all 4
-original key collisions, the panel-wrap structural bug, and the one
-fabrication finding surfaced by this session's own confirmation pass are
-now resolved, fixed, or explicitly deferred as named product decisions
+original key collisions, the panel-wrap structural bug, the fabrication
+finding surfaced by this session's own confirmation pass, and the AI
+Instant Quote pricing-fabrication bug that same pass caught are now
+resolved, fixed, or explicitly deferred as named product decisions
 (§4 items 1-2). What remains open is feature-scope work (build/delete
 calls) and lower-priority research items, not bugs.
+
+## 0. AI Instant Quote pricing reform (`aff007a`)
+
+User asked to compare AI Instant Quote's pricing model (tier-based retail/
+contractor/builder/designer, linear-foot input, complexity/waste
+multipliers) against the real Quote Builder's. Finding: none of the three
+were new ideas — all three already existed in the canonical `calc()`/
+`TIERS`/`PROJECTS`/`MATERIALS`, more precisely than the AI tool's prompt-
+string version.
+
+First attempt reformed `aiqGenerate()` — real math, real validation,
+extraction-only/narrative-only AI split. A same-session adversarial-review
+pass (all 4 personas) then caught that `aiqGenerate()` has **zero callers
+anywhere in the file** — the real "Generate AI Quote" button calls a
+completely different, separate function, `sdAIQGenerate()`, which still
+had the exact anti-pattern the reform was meant to remove: one AI prompt
+asked Claude to both extract *and* compute *and* write the full itemized
+quote, with "the total" pulled out by regex-scanning the AI's own prose
+for dollar signs and grabbing whichever one appeared last — not a real
+computation, feeding this panel's own visible KPI tiles too. Its offline
+fallback also showed a fully invented sample quote ($2,210, fake line
+items) labeled "AI offline."
+
+Fixed: redirected the same reform onto the real `sdAIQGenerate()` —
+extraction-only JSON call → drives the actual canonical Quote Builder
+fields and calls the real `calc()` (identical math to manual entry, now
+wrapped in `try/finally` so an in-progress manual quote can never be left
+corrupted if `calc()` throws) → narrative-only call around the real
+number. If the narrative call fails after the real total is already
+computed, shows that real number plainly instead of an invented fallback.
+Deleted the now-doubly-confirmed orphan (`aiqGenerate`/`aiqHistory`/
+`aiqRenderHistory`, plus its boot-time call) — duplicated a feature that
+already has a working canonical version, same standard as every other
+deletion this session.
+
+Verified: checkblocks 118/118, div_balance 4537/4537, nav_panel 61/61, no
+new key collisions. The live `sairn.vercel.app/api/claude` demo endpoint
+was genuinely slow/unresponsive during local testing (confirmed via
+network inspection — a real request sat "pending," no CORS/console
+errors, an external service issue, not a code bug), so the
+pricing-correctness claim was verified directly and independent of that
+endpoint: simulated the real-math step with a fixed input (kitchen_std/
+gran_mid/15ft) alongside an independent manual entry of the identical
+inputs into the real Quote Builder — both produced exactly $1,800,
+byte-for-byte. Deploy live-verified separately after push.
 
 ## 1. Verified current state
 
 - `main` HEAD (local and `origin/main`, confirmed matching):
-  **`ed6ce8ea2fc773b409b6773094093afc1e052034`**
-- 19 commits so far this session (17 code changes + 2 prior handoff-doc
-  updates) pushed and live-verified individually (see §2); this edit is
-  the third handoff update, commit 20. No unpushed local work otherwise.
+  **`aff007ad670d7b7eb39d553d8466f65194eca37b`**
+- 23 commits so far this session (18 code changes + 5 prior handoff-doc
+  updates) pushed and live-verified individually (see §0/§2); this edit
+  is the sixth handoff update. No unpushed local work otherwise.
 - Local checks re-run fresh at this HEAD:
   - `checkblocks.py`: 118/118 clean
-  - `div_balance_check.py`: 4543/4543 balanced, gap 0
+  - `div_balance_check.py`: 4537/4537 balanced, gap 0
   - `nav_panel_check.py`: 61/61 panels, PASS
   - `key_collision_check.py`: 4 collisions reported —
     `sd_quote_history`, `sd_slab_tracker`, `stonedesk:ai_memories`,
@@ -365,7 +412,7 @@ and `sd_slab_tracker` still reported, and confirm via §3 above that this
 is expected, not a regression; and `panel_nesting_check.py` — expect the
 26-panel split note to be gone), and live-verify against
 `sairn.vercel.app/stonedesk` before trusting any specific claim above —
-including this one. All 22 commits this session (17 code changes + 5
+including this one. All 24 commits this session (18 code changes + 6
 handoff-doc updates, this one included) were individually pushed and
 live-verified at the time (real `curl` against the live endpoint, not
 assumed from a clean `git push`).
