@@ -29035,44 +29035,11 @@ function mfPrintToday(){
 }
 
 // ================================================================
-// 8. SMS NOTIFICATIONS
+// 8. SMS NOTIFICATIONS — orphaned duplicate removed (canonical is
+// panel-sms / sdSMS* below; this block never had a host panel, its
+// smsRenderLog() clobbered the real #sms-log render on every boot,
+// and smsSend() had zero callers). See STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
-var smsLog=sdLoad('sd_sms_log',[]);
-var SMS_TEMPLATES=[
-  {id:'quote_sent',label:'Quote Sent',enabled:true,message:'Hi {name}, your countertop quote from {shop} is ready! We\'ll be in touch shortly to review. Questions? Just reply here.'},
-  {id:'approved',label:'Job Approved',enabled:true,message:'Hi {name}, great news — your project with {shop} is approved! We\'ll contact you soon to schedule your template appointment.'},
-  {id:'templated',label:'Template Scheduled',enabled:true,message:'Hi {name}, your template appointment with {shop} is scheduled. Our team will take precise measurements. We\'ll confirm your arrival window 24 hours before.'},
-  {id:'fabricating',label:'In Fabrication',enabled:true,message:'Hi {name}, your {shop} countertops are being fabricated now. We\'ll reach out soon to schedule your installation date.'},
-  {id:'install_tomorrow',label:'Day Before Install',enabled:true,message:'Hi {name}, reminder — your {shop} installation is TOMORROW! Please ensure the area is clear and water is off under the sink. Questions? Reply here.'},
-  {id:'complete',label:'Job Complete',enabled:true,message:'Hi {name}, your new countertops from {shop} are installed! We hope you love them. If you have any questions, reply here anytime.'}
-];
-function smsRenderTemplates(){
-  var el=document.getElementById('sms-templates-list');if(!el)return;
-  el.innerHTML=SMS_TEMPLATES.map(function(t){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px">'+
-    '<div style="flex:1"><div style="font-size:13px;font-weight:700;margin-bottom:4px">'+t.label+'</div>'+
-    '<div style="font-size:12px;color:var(--muted);line-height:1.6">'+escHtml(t.message)+'</div>'+
-    '<div style="font-size:10px;color:var(--a);margin-top:4px">{name} = customer · {shop} = your shop name</div></div>'+
-  '</div>';}).join('');
-}
-async function smsSend(){
-  var to=((document.getElementById('sms-to')||{}).value||'').trim();
-  var msg=((document.getElementById('sms-message')||{}).value||'').trim();
-  if(!to||!msg){showToast('Phone and message required');return;}
-  var shopName=localStorage.getItem('fab_shop_name')||'Your Shop';
-  var custName=((document.getElementById('sms-cust-name')||{}).value||'').trim();
-  var finalMsg=msg.replace(/{name}/g,custName).replace(/{shop}/g,shopName);
-  window.location.href='sms:'+to+'?body='+encodeURIComponent(finalMsg);
-  smsLog.unshift({id:'SMS'+Date.now(),to:to,name:custName,message:finalMsg,status:'manual',ts:new Date().toISOString()});
-  if(smsLog.length>500)smsLog=smsLog.slice(0,500);sdStore('sd_sms_log',smsLog);smsRenderLog();showToast('SMS opened');
-}
-function smsSaveConfig(){showToast('Twilio config must be set in Vercel env vars — contact support@sairn.com');}
-function smsRenderLog(){
-  var el=document.getElementById('sms-log');if(!el)return;
-  el.innerHTML=smsLog.length?smsLog.slice(0,30).map(function(s){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;gap:10px">'+
-    '<span style="font-size:20px">&#128241;</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(s.name||s.to)+'</div><div style="font-size:11px;color:var(--muted)">'+escHtml((s.message||'').slice(0,80))+'</div></div>'+
-    '<div style="font-size:10px;color:var(--muted);text-align:right">'+sdAgo(s.ts)+'</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:24px">No SMS sent yet.</div>';
-}
-(function(){var smt=document.getElementById('sms-message');if(smt)smt.addEventListener('input',function(){var c=document.getElementById('sms-char-count');if(c)c.textContent=this.value.length+'/160';});})();
 
 // ================================================================
 // 9. AI INSTANT QUOTE
@@ -29480,7 +29447,6 @@ document.addEventListener('DOMContentLoaded',function(){
     try{poRender();}catch(e){}
     try{recRenderLog();}catch(e){}
     try{mfRender();}catch(e){}
-    try{smsRenderLog();}catch(e){}
     try{aiqRenderHistory();}catch(e){}
     try{cgRenderHistory();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
