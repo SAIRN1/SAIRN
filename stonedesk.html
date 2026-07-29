@@ -5228,8 +5228,37 @@ function sdInvExport(){
     {id:'SL-007',stone:'Porcelain Dekton Sirius',vendor:'Cosentino',size:'126x63',thickness:'1.2cm',finish:'Matte',status:'Available',location:'Bay E-1',cost:440,job:'',notes:'Sintered surface'},
     {id:'SL-008',stone:'Emerald Pearl',vendor:'Nordic Stone',size:'108x54',thickness:'3cm',finish:'Polished',status:'Available',location:'Bay B-5',cost:380,job:'',notes:''}
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_slabs')||'null')||SEED;}catch(e){return SEED;}}
-  function save(d){try{localStorage.setItem('sd_slabs',JSON.stringify(d));}catch(e){}}
+  // Moved off the shared 'sd_slabs' key (interim collision fix -- see the
+  // SLAB RESERVATION/CONSUMPTION ENGINE comment further down for full
+  // history). This panel and that engine are two real, live, differently-
+  // shaped systems that used to overwrite the same key; whichever wrote
+  // last silently clobbered the other. No merge, no behavior change to
+  // either system -- just a distinct key so they stop colliding. Whether
+  // they should become one unified data model is a separate, real product
+  // decision, logged in STONEDESK-SESSION72-HANDOFF.md, not resolved here.
+  function load(){
+    try{
+      var mig=localStorage.getItem('sd_slab_tracker');
+      if(mig)return JSON.parse(mig)||SEED;
+      // One-time carry-forward: if 'sd_slabs' last held this panel's shape
+      // (has .stone, not the engine's .colorName) rather than the engine's,
+      // don't silently drop it -- copy it to the new key once. Also clear
+      // it back out of 'sd_slabs' afterward: stone-shaped records were
+      // never valid data for the reservation/consumption engine anyway
+      // (it reads .colorName/.status:in-stock, neither of which exist on
+      // these objects), so leaving them there only risks the engine
+      // reading stale, wrongly-shaped leftovers instead of correctly
+      // starting from its own empty default.
+      var old=JSON.parse(localStorage.getItem('sd_slabs')||'null');
+      if(Array.isArray(old)&&old.length&&old[0]&&typeof old[0].stone!=='undefined'){
+        localStorage.setItem('sd_slab_tracker',JSON.stringify(old));
+        try{localStorage.removeItem('sd_slabs');}catch(e2){}
+        return old;
+      }
+    }catch(e){}
+    return SEED;
+  }
+  function save(d){try{localStorage.setItem('sd_slab_tracker',JSON.stringify(d));}catch(e){}}
   var data=load();
   var STATUS_COLOR={Available:'#16c762',Allocated:'#f59e0b',Cut:'#6366f1',Remnant:'#94a3b8'};
   window.sdSlabsRender=function(){
@@ -26930,6 +26959,21 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
 // separate, working inventory list -- reconciling the two into
 // one data model is a real feature project, not a mechanical fix,
 // and is intentionally out of scope here.
+//
+// UPDATE (STONEDESK-SESSION72): re-verified this reasoning still held --
+// both systems are still real and live, and the "reconcile into one data
+// model" question is still correctly out of scope for a mechanical fix.
+// But the shared 'sd_slabs' key itself was a live risk, not just a
+// theoretical one: panel-slabs (1) is reachable (real Add/Edit/Delete
+// buttons), and both (1) and (2) each overwrite the *entire* key on every
+// write -- using panel-slabs would have silently clobbered (2)'s real
+// reservation/consumption data. Fixed the collision without touching the
+// merge question: panel-slabs now writes to its own 'sd_slab_tracker' key
+// (with a one-time carry-forward of any pre-existing sd_slabs data that
+// matched its shape). This module keeps 'sd_slabs' unchanged. The "should
+// these become one system" question is logged as its own separate backlog
+// item in STONEDESK-SESSION72-HANDOFF.md -- still not resolved, and still
+// shouldn't be conflated with this narrower fix.
 // ============================================================
 var sdSlabs = [];
 var _slabLoaded = false;
