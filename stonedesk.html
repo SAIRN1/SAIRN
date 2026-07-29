@@ -28848,48 +28848,17 @@ async function jcAIAnalyze(){
 }
 
 // ================================================================
-// 3. TIMESHEETS
+// 3. TIMESHEETS — orphaned duplicate removed (canonical is the manual
+// hours-logging panel below -- sdTSLog/sdTSRender, ts-emp/ts-date/ts-in/
+// ts-out/ts-job/ts-rate/ts-tbody ids, key sd_timesheets, nav-dispatched).
+// This block never had a host panel -- ts-clockin-form/ts-active/ts-log/
+// ts-kpi-*/ts-task never existed, tsClockIn/tsClockOut/tsConfirmClockIn/
+// tsExportCSV had zero callers. Own distinct storage keys (sd_ts_entries/
+// sd_ts_active), no overlap with sd_timesheets. One id was shared with
+// the canonical form (ts-emp, read by tsConfirmClockIn) but since that
+// function had no callers, it was dormant, not a live risk like the CRM
+// duplicate's shared ids were. See STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
-var tsEntries=sdLoad('sd_ts_entries',[]);
-var tsActive=sdLoad('sd_ts_active',[]);
-function tsClockIn(){document.getElementById('ts-clockin-form').style.display='block';}
-function tsClockOut(){
-  if(!tsActive.length){showToast('No one clocked in');return;}
-  tsActive.forEach(function(a){a.end=new Date().toISOString();a.duration=new Date(a.end)-new Date(a.start);tsEntries.unshift(a);});
-  tsActive=[];sdStore('sd_ts_active',tsActive);sdStore('sd_ts_entries',tsEntries);tsRender();showToast('Clocked out');
-}
-function tsConfirmClockIn(){
-  var emp=((document.getElementById('ts-emp')||{}).value||'').trim();if(!emp){showToast('Enter name');return;}
-  var entry={id:'TS'+Date.now(),employee:emp,job:((document.getElementById('ts-job')||{}).value||'').trim(),task:(document.getElementById('ts-task')||{}).value||'',start:new Date().toISOString(),end:null,duration:null};
-  tsActive.push(entry);sdStore('sd_ts_active',tsActive);document.getElementById('ts-clockin-form').style.display='none';tsRender();showToast(emp+' clocked in');
-}
-function tsRender(){
-  var today=new Date().toDateString();
-  var weekStart=new Date();weekStart.setDate(weekStart.getDate()-weekStart.getDay());
-  var todayHrs=tsEntries.filter(function(e){return new Date(e.start).toDateString()===today;}).reduce(function(s,e){return s+(e.duration||0);},0)/3600000;
-  var weekHrs=tsEntries.filter(function(e){return new Date(e.start)>=weekStart;}).reduce(function(s,e){return s+(e.duration||0);},0)/3600000;
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('ts-kpi-today',todayHrs.toFixed(1)+'h');sv('ts-kpi-week',weekHrs.toFixed(1)+'h');sv('ts-kpi-clocked',tsActive.length);sv('ts-kpi-labor','$0');
-  var act=document.getElementById('ts-active');
-  if(act)act.innerHTML=tsActive.length?'<div style="background:rgba(22,163,74,0.06);border:1.5px solid rgba(22,163,74,0.2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:6px">Currently Clocked In</div>'+tsActive.map(function(a){return '<div style="font-size:12px;padding:5px 0;border-bottom:1px solid rgba(22,163,74,0.1);display:flex;gap:12px"><span style="font-weight:600;flex:1">'+escHtml(a.employee)+'</span><span style="color:var(--muted)">'+escHtml(a.job||'')+'</span><span style="color:#16a34a;font-weight:600">'+sdFmtHrs(Date.now()-new Date(a.start).getTime())+' elapsed</span></div>';}).join('')+'</div>':'';
-  var logEl=document.getElementById('ts-log');if(!logEl)return;
-  var search=((document.getElementById('ts-search')||{}).value||'').toLowerCase();
-  var list=tsEntries.filter(function(e){return !search||(e.employee+e.job).toLowerCase().includes(search);});
-  logEl.innerHTML=list.length?'<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+
-    list.slice(0,50).map(function(e){return '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr auto;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12px">'+
-      '<span style="font-weight:600">'+escHtml(e.employee)+'</span><span>'+escHtml(e.job||'')+'</span><span style="color:var(--muted)">'+escHtml(e.task||'')+'</span>'+
-      '<span style="color:var(--muted)">'+new Date(e.start).toLocaleString()+'</span>'+
-      '<span style="font-weight:600">'+sdFmtHrs(e.duration||0)+'</span>'+
-      '<button onclick="tsDel(\''+e.id+'\')" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:10px">x</button>'+
-    '</div>';}).join('')+'</div>':'<div style="text-align:center;color:var(--muted);padding:24px">No timesheet entries yet.</div>';
-}
-function tsDel(id){tsEntries=tsEntries.filter(function(e){return e.id!==id;});sdStore('sd_ts_entries',tsEntries);tsRender();}
-function tsExportCSV(){
-  if(!tsEntries.length){showToast('No entries');return;}
-  var rows=[['Employee','Job','Task','Start','End','Hours']].concat(tsEntries.map(function(e){return [e.employee,e.job,e.task,new Date(e.start).toLocaleString(),e.end?new Date(e.end).toLocaleString():'',((e.duration||0)/3600000).toFixed(2)];}));
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Timesheets_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
-}
 
 // ================================================================
 // 4. REMNANT YARD
@@ -29349,7 +29318,6 @@ document.addEventListener('DOMContentLoaded',function(){
   setTimeout(function(){
     try{crmRender();}catch(e){}
     try{jcRender();}catch(e){}
-    try{tsRender();}catch(e){}
     try{remRender();}catch(e){}
     try{aiqRenderHistory();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
