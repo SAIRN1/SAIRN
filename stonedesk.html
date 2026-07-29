@@ -20501,9 +20501,15 @@ function renderExecEmployees(){
   }
   el.innerHTML=bizEmp.map(e=>'<span class="emp-chip"><span class="emp-chip-dot"></span>'+escHtml(e.name||e)+'</span>').join('');
   if(tbl){
+    // No real active/inactive field exists anywhere in this data (checked
+    // both fab_biz_data._employees, read here, and the separate sd_employees
+    // schema used by the real Employee Directory panel) -- the Status
+    // column used to show a hardcoded "Active" badge for every employee,
+    // always, with nothing behind it. Dropped rather than faked; add back
+    // if a real status field ever exists. STONEDESK-SESSION72 fabrication fix.
     tbl.innerHTML='<table style="width:100%;font-size:12px;border-collapse:collapse">'+
-      '<tr style="background:var(--surface-2)"><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Name</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Title</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Status</th></tr>'+
-      bizEmp.map(e=>'<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px;font-weight:600">'+escHtml(e.name||e)+'</td><td style="padding:8px 12px;color:var(--muted)">'+escHtml(e.title||'—')+'</td><td style="padding:8px 12px"><span class="item-urgency green">Active</span></td></tr>').join('')+
+      '<tr style="background:var(--surface-2)"><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Name</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Title</th></tr>'+
+      bizEmp.map(e=>'<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px;font-weight:600">'+escHtml(e.name||e)+'</td><td style="padding:8px 12px;color:var(--muted)">'+escHtml(e.title||'—')+'</td></tr>').join('')+
     '</table>';
   }
 }
