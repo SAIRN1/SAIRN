@@ -5686,7 +5686,7 @@ window.sdRMExport=function(){
     var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
     var jobs=(typeof sdJobs!=='undefined')?sdJobs:[];
     var customers=(typeof sdCustomers!=='undefined')?sdCustomers:[];
-    var leads=(typeof crmLeads!=='undefined')?crmLeads:[];
+    var leads=(typeof sdCRMGetLeads==='function')?sdCRMGetLeads():[];
     var remakes=(typeof sdRemakes!=='undefined')?sdRemakes:[];
     var nps=(typeof npsFeedback!=='undefined')?npsFeedback:[];
     var finJobs=(typeof sdFinJobs!=='undefined')?sdFinJobs:[];
@@ -5720,11 +5720,10 @@ window.sdRMExport=function(){
 
     var topCustomers=customers.filter(function(c){return c.quote;}).sort(function(a,b){return (b.quote||0)-(a.quote||0);}).slice(0,5);
 
-    var stageOrder=['new','contacted','quoted','site_visit','approved'];
-    var stageLabels={new:'New Lead',contacted:'Contacted',quoted:'Quoted',site_visit:'Site Visit',approved:'Approved'};
+    var stageOrder=['New Lead','Contacted','Quote Sent','Hot'];
     var pipeline=stageOrder.map(function(s){
-      var atStage=leads.filter(function(l){return l.stage===s;});
-      return {stage:stageLabels[s],count:atStage.length,value:atStage.reduce(function(sum,l){return sum+(l.value||0);},0)};
+      var atStage=leads.filter(function(l){return l.stage===s&&!l.won&&!l.lost;});
+      return {stage:s,count:atStage.length,value:atStage.reduce(function(sum,l){return sum+(l.val||0);},0)};
     });
 
     return {revMTD:revMTD,arOutstanding:arOutstanding,jobsCompletedMTD:jobsCompletedMTD,margin:margin,
@@ -21813,6 +21812,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }).join('');
   }
   window.sdCRMRender=render;
+  window.sdCRMGetLeads=load;
   window.sdCRMAdd=function(){
     var name=document.getElementById('crm-name').value.trim();
     if(!name){showToast('Enter customer name');return;}
@@ -21855,25 +21855,6 @@ document.addEventListener('DOMContentLoaded', function() {
   render();
 })();
 </script>
-<!-- Quarantined (live risk fix, build/delete decision still open -- see
-     STONEDESK-SESSION72-HANDOFF.md): this fragment belongs to the second,
-     unbuilt sd_crm_leads pipeline system (crmSaveLead/crmRender/etc). It
-     was showing unconditionally (display:flex, nothing ever hid it --
-     crmAddLead(), the only thing that would legitimately reveal it, has
-     zero callers) right below the real Add Lead sidebar form, and its
-     Save Lead button reads the SAME ids (crm-name/crm-proj/crm-val/
-     crm-source) as that real form -- a user filling in the real form and
-     clicking this button instead would silently save into sd_crm_leads,
-     invisible to the real kanban/table, with no error. Hidden by default
-     until that system gets real UI (crm-pipeline-board etc) or is
-     removed outright. -->
-<div id="crm-form" style="display:none;gap:10px;margin-top:8px">
-<div id="crm-list-view" style="display:none" data-auto-container="missing-dom-fix"></div>
-<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">crm-referrer</label><input type="text" id="crm-referrer" class="form-control"></div>
-<div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">crm-followup</label><input type="text" id="crm-followup" class="form-control"></div>
-      <button class="q-btn primary" onclick="crmSaveLead()">Save Lead</button>
-      <button class="q-btn" onclick="document.getElementById('crm-form').style.display='none'">Cancel</button>
-    </div>
   </div>
 
 <!-- PANEL: JOB COSTING -->
@@ -28825,73 +28806,6 @@ function sdMarkdown(t){
 }
 
 // ================================================================
-// 1. CRM LEAD PIPELINE
-// ================================================================
-var crmLeads=sdLoad('sd_crm_leads',[]);
-var crmView='pipeline';
-var CRM_STAGES=[
-  {id:'new',label:'New Lead',color:'#6b7280'},
-  {id:'contacted',label:'Contacted',color:'#0891b2'},
-  {id:'quoted',label:'Quoted',color:'#ca8a04'},
-  {id:'site_visit',label:'Site Visit',color:'#7c3aed'},
-  {id:'approved',label:'Approved',color:'#16a34a'},
-  {id:'won',label:'Won',color:'#16a34a'},
-  {id:'lost',label:'Lost',color:'#dc2626'}
-];
-function crmAddLead(){document.getElementById('crm-form').style.display='block';var f=document.getElementById('crm-followup');if(f)f.value=new Date(Date.now()+3*86400000).toISOString().split('T')[0];}
-function crmSetView(v,btn){crmView=v;document.querySelectorAll('#panel-crm .vendor-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.getElementById('crm-pipeline-board').style.display=v==='pipeline'?'flex':'none';document.getElementById('crm-list-view').style.display=v==='list'?'block':'none';crmRender();}
-function crmSaveLead(){
-  var name=(document.getElementById('crm-name')||{}).value||'';name=name.trim();if(!name){showToast('Name required');return;}
-  var lead={id:'CRM'+Date.now(),name:name,phone:(document.getElementById('crm-phone')||{}).value||'',email:(document.getElementById('crm-email')||{}).value||'',project:(document.getElementById('crm-proj')||{}).value||'',value:parseFloat((document.getElementById('crm-val')||{}).value)||0,source:(document.getElementById('crm-source')||{}).value||'',referrer:(document.getElementById('crm-referrer')||{}).value||'',followup:(document.getElementById('crm-followup')||{}).value||'',stage:(document.getElementById('crm-stage')||{}).value||'new',notes:(document.getElementById('crm-notes')||{}).value||'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
-  crmLeads.unshift(lead);sdStore('sd_crm_leads',crmLeads);document.getElementById('crm-form').style.display='none';crmRender();showToast('Lead saved');
-}
-function crmAdvance(id,stage){var l=crmLeads.find(function(x){return x.id===id;});if(!l)return;l.stage=stage;l.updatedAt=new Date().toISOString();sdStore('sd_crm_leads',crmLeads);crmRender();showToast(l.name+' moved to '+stage);}
-function crmDelete(id){if(!confirm('Delete this lead?'))return;crmLeads=crmLeads.filter(function(x){return x.id!==id;});sdStore('sd_crm_leads',crmLeads);crmRender();}
-function crmRender(){
-  var pipeline=document.getElementById('crm-pipeline-board');if(!pipeline)return;
-  var total=crmLeads.filter(function(l){return !['won','lost'].includes(l.stage);}).reduce(function(s,l){return s+l.value;},0);
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('crm-kpi-new',crmLeads.filter(function(l){return l.stage==='new';}).length);
-  sv('crm-kpi-contacted',crmLeads.filter(function(l){return l.stage==='contacted';}).length);
-  sv('crm-kpi-quoted',crmLeads.filter(function(l){return l.stage==='quoted';}).length);
-  sv('crm-kpi-won',crmLeads.filter(function(l){return l.stage==='won';}).length);
-  sv('crm-kpi-revenue',sdFmt(total));
-  if(crmView==='pipeline'){
-    pipeline.innerHTML=CRM_STAGES.map(function(st){
-      var leads=crmLeads.filter(function(l){return l.stage===st.id;});
-      return '<div style="min-width:175px;flex-shrink:0;background:var(--card);border:1px solid var(--border);border-top:3px solid '+st.color+';border-radius:12px;overflow:hidden">'+
-        '<div style="padding:9px 12px;background:'+st.color+';color:#fff;display:flex;justify-content:space-between;align-items:center">'+
-        '<span style="font-size:12px;font-weight:700">'+st.label+'</span>'+
-        '<span style="font-size:11px;background:rgba(255,255,255,0.2);padding:1px 7px;border-radius:100px">'+leads.length+'</span></div>'+
-        '<div style="padding:8px;min-height:80px">'+
-        (leads.length?leads.map(function(l){
-          var overdue=l.followup&&new Date(l.followup)<new Date();
-          var opts=CRM_STAGES.filter(function(s){return s.id!==st.id;}).map(function(s){return '<option value="'+s.id+'">'+s.label+'</option>';}).join('');
-          return '<div style="background:var(--bg);border:1.5px solid '+(overdue?'#dc2626':'var(--border)')+';border-radius:8px;padding:8px;font-size:11px;margin-bottom:5px">'+
-            '<div style="font-weight:700;margin-bottom:2px">'+escHtml(l.name)+'</div>'+
-            '<div style="color:var(--muted)">'+escHtml(l.project||'')+(l.value?' · '+sdFmt(l.value):'')+'</div>'+
-            '<div style="display:flex;gap:4px;margin-top:5px">'+
-            (st.id!=='won'&&st.id!=='lost'?'<select onchange="crmAdvance(\''+l.id+'\',this.value)" style="font-size:9px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);outline:none;flex:1"><option value="">Move to...</option>'+opts+'</select>':'')+
-            '<button onclick="crmDelete(\''+l.id+'\')" style="padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:10px">x</button>'+
-            '</div></div>';
-        }).join(''):'<div style="color:var(--muted);font-size:11px;text-align:center;padding:14px;opacity:.5">Empty</div>')+
-        '</div></div>';
-    }).join('');
-  } else {
-    var listEl=document.getElementById('crm-list-view');if(!listEl)return;
-    listEl.innerHTML=crmLeads.length?crmLeads.map(function(l){
-      var st=CRM_STAGES.find(function(s){return s.id===l.stage;})||CRM_STAGES[0];
-      var opts=CRM_STAGES.map(function(s){return '<option value="'+s.id+'"'+(s.id===l.stage?' selected':'')+'>'+s.label+'</option>';}).join('');
-      return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+st.color+';border-radius:10px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'+
-        '<div style="flex:1"><div style="font-weight:700;font-size:14px">'+escHtml(l.name)+'</div><div style="font-size:12px;color:var(--muted)">'+escHtml(l.project||'')+' · '+escHtml(l.source||'')+(l.value?' · '+sdFmt(l.value):'')+'</div></div>'+
-        '<select onchange="crmAdvance(\''+l.id+'\',this.value)" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+opts+'</select>'+
-        '<button onclick="crmDelete(\''+l.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:12px;cursor:pointer">x</button>'+
-        '</div>';
-    }).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No leads yet.</div>';
-  }
-}
-
-// ================================================================
 // 2. JOB COSTING
 // ================================================================
 var jcJobs=sdLoad('sd_jc_jobs',[]);
@@ -29384,7 +29298,6 @@ function piExport(){
 // ================================================================
 document.addEventListener('DOMContentLoaded',function(){
   setTimeout(function(){
-    try{crmRender();}catch(e){}
     try{jcRender();}catch(e){}
     try{remRender();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
@@ -29755,8 +29668,6 @@ function bbExport(){
 }
 
 
-// -- Missing export + AI functions ------------------------------
-function crmExport(){var rows=[['Name','Phone','Email','Project','Value','Source','Stage','Date']].concat(crmLeads.map(function(l){return[l.name,l.phone,l.email,l.project,l.value,l.source,l.stage,new Date(l.createdAt).toLocaleDateString()];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Leads_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
 </script>
 <script>
 // itaLoad/itaSave/ITA_USERS_KEY/ITA_AUDIT_KEY were called throughout this
