@@ -6667,7 +6667,13 @@ window.sdSafetyExport=function(){
   <div id="tm-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;align-items:center;justify-content:center">
     <div id="tm-detail-body" style="background:var(--surface);border-radius:16px;padding:28px;max-width:700px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)"></div>
   </div>
-</div><!-- /app -->
+<!-- panel-wrap's real closing div used to be here (mislabeled "/app"),
+     closing it thousands of lines too early -- every panel after this
+     point (35 of them) ended up as a direct flex-row sibling of the
+     sidebar instead of nested inside panel-wrap's flex-column, and
+     rendered at roughly half the intended width. Relocated to the real
+     end of all panel content, right before app-body's own closing tag --
+     see there for the actual closing tag. STONEDESK-SESSION72 panel-nesting fix. -->
 
 <script>
 
@@ -26540,8 +26546,9 @@ async function sdRunEmailScan() {
 })();
 </script>
   </div>
-</div><!-- /panel-wrap -->
-</div><!-- /app-body -->
+</div><!-- /panel-wrap (label now correct -- see STONEDESK-SESSION72 panel-nesting fix) -->
+</div><!-- /app-body (label now correct -- see STONEDESK-SESSION72 panel-nesting fix) -->
+</div><!-- /app (relocated here from ~line 6667; #app now correctly wraps the topbar + the full app-body, sidebar + all 61 panels via panel-wrap) -->
 
 <script>
 // Field Quote JS for stonedesk
