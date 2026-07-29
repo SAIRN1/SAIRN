@@ -17617,52 +17617,20 @@ var VENDORS={
 var _activeVendor='gmr';
 
 // == SCHEDULE / INSTALL TRACKER ================================
-function schedAddJob(){
-  document.getElementById('sched-form').style.display='block';
-  document.getElementById('sj-template').value=new Date().toISOString().split('T')[0];
-  // Default target = 10 days out
-  var t=new Date();t.setDate(t.getDate()+10);
-  document.getElementById('sj-target').value=t.toISOString().split('T')[0];
-  document.getElementById('sched-form').scrollIntoView({behavior:'smooth'});
-}
-
-function schedSave(){
-  var name=document.getElementById('sj-name').value.trim();
-  if(!name){showToast('Customer name required');return;}
-  var templateDate=document.getElementById('sj-template').value;
-  var targetDate=document.getElementById('sj-target').value;
-  var job={
-    id:'JOB'+Date.now(),
-    customer:name,
-    jobNum:document.getElementById('sj-jobnum').value.trim()||('J-'+Date.now().toString().slice(-5)),
-    material:document.getElementById('sj-mat').value.trim(),
-    templateDate:templateDate,
-    targetDate:targetDate,
-    stage:document.getElementById('sj-stage').value,
-    sqft:parseFloat(document.getElementById('sj-sqft').value)||0,
-    installer:document.getElementById('sj-installer').value.trim(),
-    address:document.getElementById('sj-address').value.trim(),
-    volume:document.getElementById('sj-volume').value,
-    notes:document.getElementById('sj-notes').value.trim(),
-    reservedSlabId:(document.getElementById('sj-slab-id')||{}).value||null, // sj-slab-id/-chip never exist in markup (dead picker removed 2026-07-27) -- guarded so job save never throws
-    createdAt:new Date().toISOString(),
-    installedAt:null
-  };
-  // If a slab was picked, mark it reserved in slab inventory immediately
-  if(job.reservedSlabId && typeof sdSlabs!=='undefined'){
-    var rs=sdSlabs.find(function(s){return s.id===job.reservedSlabId;});
-    if(rs){ rs.status='reserved'; rs.reservedFor=name; if(typeof saveSlabs==='function') saveSlabs(); if(typeof slabSyncOne==='function') slabSyncOne(rs); }
-  }
-  var sjSlabIdEl=document.getElementById('sj-slab-id'); if(sjSlabIdEl) sjSlabIdEl.value='';
-  var sjSlabChipEl=document.getElementById('sj-slab-chip'); if(sjSlabChipEl) sjSlabChipEl.textContent='';
-  sdJobs.unshift(job);saveSD4();
-  document.getElementById('sched-form').style.display='none';
-  renderSchedule();runSchedAlerts();
-  if(typeof fmAutoReoptimize==='function' && job.address && job.installer){
-    if(job.templateDate) fmAutoReoptimize(job.installer.trim(), job.templateDate);
-    if(job.targetDate && job.targetDate!==job.templateDate) fmAutoReoptimize(job.installer.trim(), job.targetDate);
-  }
-}
+// schedAddJob()/schedSave() (an entire orphaned "Add Job" form -- sj-name/
+// sj-template/sj-target/sj-jobnum/sj-mat/sj-stage/sj-sqft/sj-installer/
+// sj-address/sj-volume/sj-notes/sched-form, none of which ever existed in
+// HTML) removed, not fixed. Real job creation already happens via
+// intakeAccept() (client intake -> customer + sdJobs record, same schema)
+// same pattern as every other duplicate in this batch: a real intake/add
+// flow already exists, so no reason to build a second, more crash-prone
+// path to the same outcome. Zero callers anywhere; every .value read in
+// schedSave() was unguarded (would have thrown immediately on the first
+// missing field if ever wired up) -- a worse landmine than most orphans
+// this session, now removed rather than left dormant. Also removed the
+// paired document-level change listener for #sj-installer (custom-name
+// toggle for the missing sj-installer-custom-wrap). See
+// STONEDESK-SESSION72-HANDOFF.md.
 
 function schedDaysFromTemplate(job){
   if(!job.templateDate) return 0;
@@ -27871,13 +27839,6 @@ async function schedAIOptimize(){
     if(sel){var cur=sel.value;sel.innerHTML='<option value="">All Crew</option>'+crews.map(function(c){return '<option'+(c===cur?' selected':'')+'>'+escHtml(c)+'</option>';}).join('');}
   };
 })();
-
-document.addEventListener('change',function(e){
-  if(e.target&&e.target.id==='sj-installer'){
-    var w=document.getElementById('sj-installer-custom-wrap');
-    if(w)w.style.display=e.target.value==='__custom__'?'':'none';
-  }
-});
 
 async function remakeAIAnalyze(){
   var el=document.getElementById('remake-ai-result');
