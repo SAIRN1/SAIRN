@@ -256,11 +256,46 @@ pass before commit, and live-verified against `sairn.vercel.app/stonedesk`
      Not decided tonight — flagged as a real multi-session undertaking
      for whoever picks this up next.
 2. **Two-CRM-system split** — the live shared-id risk (stray `#crm-form`)
-   is fixed (`188bd25`). Still open: whether to build out the real UI for
-   the richer `sd_crm_leads` pipeline system (7 stages including won/
-   lost, phone/email/referrer/followup/notes, overdue highlighting) or
-   delete it and keep only the simpler working `sd_crm` kanban.
-   **Decision needed: build vs. delete.**
+   is fixed (`188bd25`). **Real, re-verified scope, explicitly deferred to
+   next session, not decided tonight** — same rigor as the Vendor Ordering
+   Catalog estimate above:
+   - **Sizing: MEDIUM-LARGE, one piece** (not two like Vendor — no missing
+     "checkout"-equivalent gap; `crmSaveLead`/`crmAdvance`/`crmDelete`/
+     `crmRender`/`crmExport` is already a complete, coherent feature set —
+     create/move/delete/view/export — just unwired). ~17-18 containers/
+     fields needed, all within the *existing* `panel-crm` — no new panel
+     or nav entry required, unlike Vendor. Only 5 functions need
+     execution-testing (lower logic-risk than Vendor's ~10), but the
+     container/field count is comparable or larger because building this
+     properly means a fully **separate** form (~8-9 new fields: name/
+     phone/email/project/value/source/referrer/followup/stage/notes) —
+     reusing the real Add Lead sidebar's ids would recreate the exact
+     shared-id collision just fixed in `188bd25`. Also needed: a
+     `crm-pipeline-board` container, 5 KPI tiles (`crm-kpi-new/contacted/
+     quoted/won/revenue` — genuinely missing but *not* caught by
+     `missing_dom_target_check.py`, a real tooling blind spot: the tool
+     can't see ids accessed through a local `sv(id,v)` forwarding helper,
+     since the literal id string appears at the call site, not at the
+     actual `getElementById(id)` line it scans for — worth fixing the
+     checker itself, logged separately below), 2 view-toggle buttons
+     (can reuse the existing `.vendor-tab` CSS pattern from elsewhere in
+     the app), and a stage-value realignment (the real form's `#crm-stage`
+     uses text values like `'New Lead'`; `CRM_STAGES` uses slugs like
+     `'new'` — incompatible, needs its own select). `crm-list-view`
+     already exists from an earlier session's auto-fix — just needs the
+     toggle wired to reveal it.
+   - **Delete-path consequence, not a clean removal:** the real,
+     already-verified Executive Dashboard "Pipeline Funnel" section
+     (`exec-pipeline`, built and tested this session as part of the
+     Executive Ops Suite work) reads `crmLeads` directly, and its
+     `stageOrder` matches `CRM_STAGES`' slug values exactly — this was
+     clearly designed to work together. It currently always shows zero
+     at every stage (nothing can write to `crmLeads` today). **Delete**
+     would leave that dashboard section permanently, by-design empty,
+     with no path to ever reflect real data. **Build** would make it
+     start showing real pipeline data for the first time. This is a real
+     tradeoff to weigh, not a side effect to ignore.
+   - **Decision needed: build vs. delete.** Not decided tonight.
 3. **sd_slabs / sd_slab_tracker unification** — new item, split out of
    the collision fix above per instruction. The Slab Tracker panel and
    the reservation/consumption engine are two real, live, conceptually-
@@ -293,9 +328,22 @@ pass before commit, and live-verified against `sairn.vercel.app/stonedesk`
    the tool's own detection gap is unfixed and will keep producing this
    class of false positive on future runs — worth fixing the tool
    itself at some point, not urgent.
-9. **SESSION69 items carried forward unchanged, not touched this
-   session**: `#rm-causes` empty widget, Persona 2/3 partial coverage,
-   58/61 panels with WCAG contrast failures.
+9. **`missing_dom_target_check.py` has a real blind spot, found while
+   scoping the CRM item above**: it can't see ids accessed through a
+   local id-forwarding helper (e.g. `function sv(id,v){var e=document.
+   getElementById(id);...}`) — the literal id string appears at the
+   *call site* (`sv('crm-kpi-new', ...)`), not at the actual
+   `getElementById(id)` line the checker's static scan matches against.
+   Confirmed concretely: 5 genuinely-missing CRM KPI tile ids
+   (`crm-kpi-new/contacted/quoted/won/revenue`) were invisible to the
+   checker for exactly this reason. This isn't CRM-specific — any code
+   using the same forwarding-helper pattern elsewhere in the file could
+   have missing targets the checker silently can't report. Worth fixing
+   the checker itself (or at minimum re-sweeping manually for this
+   pattern) before trusting its "311 missing" count as complete.
+10. **SESSION69 items carried forward unchanged, not touched this
+    session**: `#rm-causes` empty widget, Persona 2/3 partial coverage,
+    58/61 panels with WCAG contrast failures.
 
 **All 32 items from SESSION71's original list are now resolved** (24 built
 or deleted outright; the Vendor Ordering Catalog and CRM split clusters
@@ -317,7 +365,7 @@ and `sd_slab_tracker` still reported, and confirm via §3 above that this
 is expected, not a regression; and `panel_nesting_check.py` — expect the
 26-panel split note to be gone), and live-verify against
 `sairn.vercel.app/stonedesk` before trusting any specific claim above —
-including this one. All 20 commits this session (17 code changes + 3
+including this one. All 22 commits this session (17 code changes + 5
 handoff-doc updates, this one included) were individually pushed and
 live-verified at the time (real `curl` against the live endpoint, not
 assumed from a clean `git push`).
@@ -326,3 +374,67 @@ assumed from a clean `git push`).
 session is closed.** What's left (§4) is two named feature-scope
 decisions (Vendor Ordering Catalog, CRM pipeline split) and a handful of
 lower-priority research/backlog items — no known live defects.
+
+## 6. Final session summary
+
+**Bug-fixing phase: fully closed.** Two real feature decisions (Vendor
+Ordering Catalog, CRM pipeline split) are scoped and explicitly deferred
+to a fresh session — not decided tonight, not forgotten either.
+
+**Everything fixed tonight, in order (22 commits: 17 code changes + 5
+handoff-doc updates):**
+
+*Storage-collision-risk cleanup (SESSION71 bucket, orphan vs. canonical):*
+- `c2c22fd` SMS duplicate removed · `5a09f33` Contractor Portal duplicate
+  removed · `283d5a7` Purchase Orders duplicate removed
+
+*Real feature builds (logic real and pre-verified, containers missing):*
+- `2052470` Executive Ops Suite built (7 containers) · `73f3ebf` crew
+  weather bar built in topbar, gated on the existing `is-exec` role system
+
+*Live/latent bug fixes found during the above:*
+- `2d74658` floating-cart crash (unguarded `scrollIntoView`) null-guarded
+- `188bd25` stray always-visible `#crm-form` fragment quarantined —
+  shared DOM ids with the real Add Lead form, a live data-loss risk
+
+*Remaining SESSION71 orphan-duplicate cleanup (closes all 32 items):*
+- `9606f16` Care Guide AI · `faa33cc` Delivery Manifest · `fc7d84d`
+  Receiving · `62538d8` Timesheets clock-in/out · `e09dc42` an entire
+  orphaned "Add Job" form (bigger than its original SESSION71 description
+  — corrected, not just deleted) · `81ff897` Personalization Panel stub
+
+*All 4 original SESSION70/71 key collisions individually traced:*
+- `1128c5b` `sd_quote_history` — real schema-mismatch bug between two
+  cooperating panels, fixed (plus a third bug found in the same trace:
+  a KPI check for a status value, `'Won'`, that's never actually written)
+- `9d90f1b` `sd_slabs` — real shared-key overwrite risk between two live
+  systems, fixed by moving one to its own key (merge question deferred)
+- `stonedesk:ai_memories` / `stonedesk:business_profile` — traced and
+  confirmed benign cache-sync false positives, not touched
+
+*Found after the original cleanup, via fresh scanner re-runs and a final
+adversarial-review confirmation pass — not part of the original 32, but
+real bugs, not scope creep:*
+- `88f4a04` **panel-wrap structural bug** — 35 of 61 panels were rendering
+  at roughly half width due to a closing `</div>` misplaced ~20,000 lines
+  early. Confirmed with live pixel measurements before fixing, not
+  assumed from the scanner's "safe, still visible" framing.
+- `ed6ce8e` **fabricated "Active" employee badge** — found by this
+  session's own `sairn-adversarial-reviewer` pass (Persona 4/Auditor) on
+  its own Executive Ops Suite build; removed rather than faked a
+  placeholder.
+
+**What's still open, all explicitly logged, none of it a defect:**
+Vendor Ordering Catalog and CRM pipeline split (both scoped, both
+deferred — §4 items 1-2); `sd_slabs`/`sd_slab_tracker` data-model
+unification; a newly-found third quote-history store
+(`stonedesk_quote_history`) not yet examined; `saveSDProfile()`'s
+zero-caller status; a pre-existing duplicate DOM id (`sairn-toast`); two
+real tool-limitation findings (`duplicate_global_check.py`'s nested-scope
+blind spot, `missing_dom_target_check.py`'s id-forwarding-helper blind
+spot); and the carried-forward SESSION69 items.
+
+Every single fix above went through the full cycle — edit, local checks,
+local-server + Chrome verification, commit, push, live-verify against
+`sairn.vercel.app/stonedesk` — individually, not batched. Nothing in this
+session was pushed on "looks right."
