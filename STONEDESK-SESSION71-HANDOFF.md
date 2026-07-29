@@ -202,3 +202,10 @@ this session's work happen immediately after this file is committed;
 if you're reading this and that hasn't clearly happened (no live-verify
 note appended below), treat this session's fixes as **committed but not
 yet confirmed live**.
+
+**Live-verify note, appended after push:** pushed as `4c3f563`
+(`f5b83cc..4c3f563 main -> main`). Curled `sairn.vercel.app/stonedesk`
+(HTTP 200) ~20s after push: 66 `data-auto-container="missing-dom-fix"`
+markers present, 5 "Retargeted from the dead ... legacy chat" comments
+present (matching the 5 userInput/messages retargets), `sh-question-input`
+present, `tavtr` present. Live site reflects this session's commits.
