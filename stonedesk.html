@@ -14252,6 +14252,10 @@ var HANDOFF_KEY = 'sairn_handoff_context';
 
 // == RECEIVER: check if we arrived with context =================
 function checkIncomingHandoff() {
+  // Retargeted from the dead #userInput/#chatArea/#messages/sendToClaudeAndRender
+  // legacy chat (never built in markup) to the real, working AI widget
+  // (#ai-input/#ai-chat/sdAIQuick) -- this cross-app SAIRN NEXUS handoff was
+  // silently no-oping on every incoming handoff before this fix.
   var ctx = null;
   try { ctx = JSON.parse(sessionStorage.getItem(HANDOFF_KEY)); } catch(e) {}
   if (!ctx || !ctx.situation) return;
@@ -14259,32 +14263,31 @@ function checkIncomingHandoff() {
   // Clear it so it doesn't re-inject on refresh
   sessionStorage.removeItem(HANDOFF_KEY);
 
-  // Pre-fill the user input
-  var inp = document.getElementById('userInput');
+  // Auto-send if context is specific enough -- sdAIQuick fills #ai-input,
+  // sends, and renders both sides of the exchange into #ai-chat itself, so
+  // no separate banner/pre-fill is needed in this path.
+  if (ctx.autoSend && ctx.situation.length > 20) {
+    setTimeout(function() {
+      if (typeof sdAIQuick === 'function') sdAIQuick(ctx.situation);
+    }, 800);
+    return;
+  }
+
+  // Otherwise just pre-fill the real input for the user to review/edit before sending
+  var inp = document.getElementById('ai-input');
   if (inp) {
     inp.value = ctx.situation;
     inp.style.borderColor = 'rgba(99,102,241,0.5)';
     setTimeout(function(){ inp.style.borderColor = ''; }, 3000);
   }
 
-  // Show a context banner
+  // Show a context banner at the top of the real chat area
   var banner = document.createElement('div');
   banner.style.cssText = 'background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:10px 14px;margin:8px 16px;font-size:12px;color:rgba(240,240,255,0.65);line-height:1.5;display:flex;align-items:flex-start;gap:10px';
   banner.innerHTML = '<span style="font-size:16px;flex-shrink:0">↩️</span><div><strong style="color:#16C762">Context from SAIRN NEXUS:</strong> ' + ctx.situation.slice(0, 200) + (ctx.situation.length > 200 ? '...' : '') + '</div>';
 
-  var chatArea = document.getElementById('chatArea') || document.getElementById('messages');
+  var chatArea = document.getElementById('ai-chat');
   if (chatArea) chatArea.insertBefore(banner, chatArea.firstChild);
-
-  // Auto-send if context is specific enough
-  if (ctx.autoSend && ctx.situation.length > 20) {
-    setTimeout(function() {
-      addMessage('user', ctx.situation);
-      chatHistory.push({ role: 'user', content: ctx.situation });
-      var inp2 = document.getElementById('userInput');
-      if (inp2) inp2.value = '';
-      sendToClaudeAndRender();
-    }, 800);
-  }
 }
 
 // == SENDER: "Continue in [App]" buttons after AI responses ======
@@ -16786,10 +16789,13 @@ function custFollowUpAI(id){
   var c=sdCustomers.find(function(x){return x.id===id;});if(!c)return;
   custCloseDetail();sbNav('ai');
   setTimeout(function(){
-    var input=document.getElementById('userInput');
+    // Retargeted from the dead #userInput/sendMessage() legacy chat (never
+    // built in markup -- see DEAD CODE FLAG comment near panel-ai) to the
+    // real, working AI widget's sdAIQuick(), which fills #ai-input and
+    // sends via #ai-chat.
     var sl={quoted:'waiting for quote approval',approved:'approved',templated:'templated',fabricating:'in fabrication',scheduled:'scheduled for install',complete:'completed'};
     var ctx='Customer: '+c.name+', Project: '+(c.project||'unknown')+', Status: '+(sl[c.status]||c.status)+', Quote: $'+(c.quote||0).toLocaleString()+(c.material?', Material: '+c.material:'');
-    if(input){input.value='Write a short warm professional follow-up message for this customer. '+ctx+'. Under 5 sentences, human tone, clear next step.';sendMessage();}
+    if(typeof sdAIQuick==='function')sdAIQuick('Write a short warm professional follow-up message for this customer. '+ctx+'. Under 5 sentences, human tone, clear next step.');
   },400);
 }
 
@@ -19223,11 +19229,9 @@ function vendorSpendAI() {
   var vendorDiscounts = Object.entries(sdPricingRules.vendorDiscounts).filter(function(e){return e[1]>0;}).map(function(e){return VENDORS[e[0]].name+' '+e[1]+'% off';}).join(', ');
   sbNav('ai');
   setTimeout(function(){
-    var input=document.getElementById('userInput');
-    if(input){
-      input.value='Analyze my stone shop purchasing. YTD spend: $'+ytd.toLocaleString()+'. Active vendor discounts: '+(vendorDiscounts||'none yet')+'. Product-level deals: '+deals+'. I have 145 products across GMR Stone, Granquartz, Braxton-Bragg, BB Industries, and Slab Suppliers. What should my purchasing strategy be? Where should I consolidate to get better volume discounts? What should I negotiate next with each vendor?';
-      sendMessage();
-    }
+    // Retargeted from the dead #userInput/sendMessage() legacy chat to the
+    // real, working sdAIQuick() -- see custFollowUpAI for the same fix.
+    if(typeof sdAIQuick==='function')sdAIQuick('Analyze my stone shop purchasing. YTD spend: $'+ytd.toLocaleString()+'. Active vendor discounts: '+(vendorDiscounts||'none yet')+'. Product-level deals: '+deals+'. I have 145 products across GMR Stone, Granquartz, Braxton-Bragg, BB Industries, and Slab Suppliers. What should my purchasing strategy be? Where should I consolidate to get better volume discounts? What should I negotiate next with each vendor?');
   },400);
   document.getElementById('vendor-spend-modal').style.display='none';
 }
@@ -20037,8 +20041,9 @@ function tariffAIStrategy(){
   var mat=(document.getElementById('tariff-material')||{}).value||'quartz_india';
   sbNav('ai');
   setTimeout(function(){
-    var input=document.getElementById('userInput');
-    if(input){input.value='My stone shop spends $'+spend.toLocaleString()+'/month on slabs, primarily '+mat.replace(/_/g,' ')+'. Given 2025-2026 US tariffs (50% on Indian quartz and Brazilian granite, 10% on Brazilian quartzite, 15% on European stone), give me a specific purchasing strategy: (1) What materials should I switch to, (2) Which US distributors carry good alternatives, (3) How do I renegotiate with my current supplier, (4) What is my projected monthly savings if I follow your advice?';sendMessage();}
+    // Retargeted from the dead #userInput/sendMessage() legacy chat to the
+    // real, working sdAIQuick() -- see custFollowUpAI for the same fix.
+    if(typeof sdAIQuick==='function')sdAIQuick('My stone shop spends $'+spend.toLocaleString()+'/month on slabs, primarily '+mat.replace(/_/g,' ')+'. Given 2025-2026 US tariffs (50% on Indian quartz and Brazilian granite, 10% on Brazilian quartzite, 15% on European stone), give me a specific purchasing strategy: (1) What materials should I switch to, (2) Which US distributors carry good alternatives, (3) How do I renegotiate with my current supplier, (4) What is my projected monthly savings if I follow your advice?');
   },400);
 }
 
@@ -20048,8 +20053,9 @@ function finAIJobAdvice(){
   var cust=(document.getElementById('fj-customer')||{}).value||'this job';
   sbNav('ai');
   setTimeout(function(){
-    var input=document.getElementById('userInput');
-    if(input){input.value='My stone fabrication job for '+cust+' is quoted at $'+quote.toLocaleString()+' with a '+margin+'% gross margin. Industry average for stone countertop fabrication is 35-45% gross margin. Am I priced right? What should I change — raise the quote, reduce material cost, cut labor hours, or reduce consumables? Give me 3 specific actions to improve this job\'s profitability.';sendMessage();}
+    // Retargeted from the dead #userInput/sendMessage() legacy chat to the
+    // real, working sdAIQuick() -- see custFollowUpAI for the same fix.
+    if(typeof sdAIQuick==='function')sdAIQuick('My stone fabrication job for '+cust+' is quoted at $'+quote.toLocaleString()+' with a '+margin+'% gross margin. Industry average for stone countertop fabrication is 35-45% gross margin. Am I priced right? What should I change — raise the quote, reduce material cost, cut labor hours, or reduce consumables? Give me 3 specific actions to improve this job\'s profitability.');
   },400);
 }
 
