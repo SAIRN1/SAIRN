@@ -16018,17 +16018,13 @@ document.addEventListener('click', function(e) {
   }
 }, true);
 
-// == PERSONALIZATION PANEL ==================================
-var st = document.createElement('style');
-st.textContent =
-  '#sairn-pers-panel{position:fixed;top:100px;left:16px;z-index:800;background:#0A0A20;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:16px;width:280px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}';
-document.head.appendChild(st);
-
-// Show personalization status next to profile button on click
-var profBtn = document.getElementById('sairn-profile-btn');
-if (profBtn) {
-  profBtn.title = 'Profile + ' + learned.sessions + ' sessions learned';
-}
+// == PERSONALIZATION PANEL == removed (sairn-profile-btn/sairn-pers-panel
+// duplicate cleanup, last of SESSION71's 32 items): sairn-profile-btn
+// never existed in HTML, and the popup this CSS rule was styling
+// (#sairn-pers-panel) was never built beyond this one rule -- no
+// element, no toggle, no content-population function anywhere. The
+// `learned` session/usage tracking above this is untouched and runs
+// independent of either. See STONEDESK-SESSION72-HANDOFF.md.
 
 // Install when ready
 if (typeof window.addMsg === 'function') installLearningHook();
