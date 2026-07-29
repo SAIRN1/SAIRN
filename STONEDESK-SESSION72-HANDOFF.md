@@ -213,10 +213,48 @@ pass before commit, and live-verified against `sairn.vercel.app/stonedesk`
 1. **Vendor Ordering Catalog** — real ~120KB catalog + working logic
    (5 vendors, ~643 products, cart, price comparison, auto-reorder), no
    host panel or nav entry at all. Live risk (floating-cart crash)
-   already fixed independent of this. Rough sizing: new panel + nav
-   entry + ~6 container/section builds, comparable in shape to the Exec
-   Ops Suite build but ~2-3x the container count and needs the panel
-   shell itself. **Decision needed: build vs. delete vs. leave scoped.**
+   already fixed independent of this. **Real multi-session scope,
+   explicitly deferred to next session, not decided tonight** — full,
+   re-verified estimate (superseding the earlier "~6 containers, 2-3x
+   Exec Ops Suite" figure, which undercounted before Pricing Manager and
+   Spend Report were found):
+   - **Piece 1 — wire existing logic to a new panel: LARGE.** Not the
+     2-3x originally logged. Real surface area: 1 new panel + nav entry,
+     main catalog view (tab bar, category tabs, product grid, cart
+     summary — ~5 containers), a Pricing Manager modal (3 sub-sections:
+     vendor discounts, category discounts, per-product overrides, feeding
+     a real 3-tier effective-price calculation the cart already uses) and
+     a Spend Report modal (1-2 containers) — both genuinely part of this
+     same system and not previously counted — plus a tariff-alerts
+     section. ~9-10 containers total across 3 separate UI surfaces (main
+     panel + 2 modals), roughly **4-6x** the Exec Ops Suite build's
+     effort (7 containers, one surface, logic pre-tested by execution
+     before building). One correction that shrinks scope slightly: the
+     compare modal self-creates via JS when missing (same pattern as the
+     toast notifications) — no hand-built markup needed there, just its
+     trigger reachable. Real risk not present in the Exec Suite case:
+     none of this system's ~10 functions have ever been execution-tested
+     — real chance of hidden bugs surfacing once wired, same as
+     `sj-installer` turned out much bigger than its original description
+     once actually inspected (see §3).
+   - **Piece 2 — build the missing checkout/submit step: MEDIUM-LARGE,
+     genuine new feature, no reuse.** Confirmed by direct search: no
+     `cartSubmit`/`placeOrder`/`checkoutCart`/`sendOrder` function and no
+     `mailto:`/`fetch` call to transmit an order exists anywhere, real or
+     orphaned. `renderCart()` stops at a line-item display with a remove
+     button — there is no finalize/submit step today. Needs building from
+     scratch: a real "place order" action (likely a generate-and-print/
+     email-to-vendor flow, matching the app's established honest-about-
+     limitations pattern — same spirit as the existing PO and SMS
+     systems, not a fake "processed" claim), a new persisted
+     order-history data model (nothing currently persists a placed
+     order), and clearing the cart on submit. Comparable in shape to
+     building a small version of the existing Purchase Orders panel.
+   - Sized qualitatively (S/M/L), not in hours — no real wall-clock basis
+     exists to convert to hours honestly for either piece.
+   - **Decision needed: build (both pieces) vs. delete vs. leave scoped.**
+     Not decided tonight — flagged as a real multi-session undertaking
+     for whoever picks this up next.
 2. **Two-CRM-system split** — the live shared-id risk (stray `#crm-form`)
    is fixed (`188bd25`). Still open: whether to build out the real UI for
    the richer `sd_crm_leads` pipeline system (7 stages including won/
