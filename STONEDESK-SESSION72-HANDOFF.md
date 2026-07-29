@@ -2,18 +2,26 @@
 
 Written mid-session, updated repeatedly as work continued rather than left
 to go stale — first drafted after the storage-collision-risk batch (SMS/
-Contractor Portal/Purchase Orders), now rolled forward to cover the full
-session through the four original key-collision traces. Claims below are
-independently verified against the actual repo and live site, not assumed
-from memory — same standard as STONEDESK-SESSION71-HANDOFF.md.
+Contractor Portal/Purchase Orders), now rolled forward through the four
+key-collision traces, a real structural layout bug (panel-wrap), and a
+final adversarial-review confirmation pass. Claims below are independently
+verified against the actual repo and live site, not assumed from memory —
+same standard as STONEDESK-SESSION71-HANDOFF.md.
+
+**BUG-FIXING PHASE: CLOSED.** All 32 items from SESSION71's list, all 4
+original key collisions, the panel-wrap structural bug, and the one
+fabrication finding surfaced by this session's own confirmation pass are
+now resolved, fixed, or explicitly deferred as named product decisions
+(§4 items 1-2). What remains open is feature-scope work (build/delete
+calls) and lower-priority research items, not bugs.
 
 ## 1. Verified current state
 
 - `main` HEAD (local and `origin/main`, confirmed matching):
-  **`9d90f1b6aae6fd4c577f48647e56eec5628b07ad`**
-- All 16 commits this session (15 code changes + this handoff doc) pushed
-  and live-verified individually (see §2) — no unpushed local work as of
-  writing this.
+  **`ed6ce8ea2fc773b409b6773094093afc1e052034`**
+- 19 commits so far this session (17 code changes + 2 prior handoff-doc
+  updates) pushed and live-verified individually (see §2); this edit is
+  the third handoff update, commit 20. No unpushed local work otherwise.
 - Local checks re-run fresh at this HEAD:
   - `checkblocks.py`: 118/118 clean
   - `div_balance_check.py`: 4543/4543 balanced, gap 0
@@ -34,9 +42,11 @@ from memory — same standard as STONEDESK-SESSION71-HANDOFF.md.
     the start of SESSION71). Confirmed zero of this session's touched
     ids appear in this list — the remaining 311 is app-wide backlog
     outside this session's scope, not leftover work.
-  - `panel_nesting_check.py`: 0/61 trapped, unchanged from baseline. The
-    "26 panels split between two safe shell parents" note is unchanged,
-    pre-existing, its own separate open item.
+  - `panel_nesting_check.py`: 0/61 trapped. The "26 panels split between
+    two safe shell parents" note is **gone as of this update** — traced,
+    confirmed real (not cosmetic — measured 35 panels rendering at ~half
+    width, not just a structural technicality), and fixed. See §3/§2
+    commit `88f4a04`.
 - One pre-existing duplicate DOM id (`sairn-toast`, appears twice) noted
   in passing, not introduced this session, not yet investigated.
 - **New, not previously known**: a third, separate quote-history store —
@@ -104,6 +114,29 @@ from memory — same standard as STONEDESK-SESSION71-HANDOFF.md.
     sj-installer). Closes all 32 items from SESSION71's list.
 15. `1128c5b` — Fixed the `sd_quote_history` schema mismatch (see §3).
 16. `9d90f1b` — Fixed the `sd_slabs` shared-key overwrite risk (see §3).
+17. `b2cceaa` — Second handoff update, rolling forward through commit 16.
+18. `88f4a04` — Fixed the real structural bug behind "26 panels split
+    between app-body/panel-wrap": `.panel-wrap`'s closing div was
+    misplaced ~20,000 lines too early, so 35 of 61 panels rendered as
+    direct flex-row siblings of the sidebar instead of nested in the
+    content column — measured at roughly half the intended width before
+    the fix (259px vs. 519px in a 1272px-viewport test), confirmed full
+    1052px width after, sampled across 7 panels spanning the whole
+    affected range. One real hiccup mid-fix: the first attempt broke
+    `div_balance_check` (+2) because the explanatory comment itself
+    contained the literal text `</div>` twice in prose, which the
+    naive checker correctly counted as real tags — fixed the wording,
+    confirmed net-zero relocation.
+19. `ed6ce8e` — Removed a fabricated "Active" employee-status badge in
+    the Executive Ops Suite, found by this session's own
+    `sairn-adversarial-reviewer` confirmation pass (Persona 4/Auditor),
+    not part of the original 32-item list. `renderExecEmployees()`
+    (pre-existing code, only became visible for the first time via this
+    session's own container build in commit 4) hardcoded "Active" for
+    every employee row with no backing field in either employee data
+    source in the app. Dropped the Status column entirely rather than
+    faking a placeholder — matches the "never invent a replacement
+    number" standard used on every other fix this session.
 
 Every commit verified with `checkblocks`/`div_balance_check`/`nav_panel_check`
 (+ `key_collision_check` where relevant) plus a real local-server + Chrome
@@ -210,27 +243,48 @@ pass before commit, and live-verified against `sairn.vercel.app/stonedesk`
    collision (see §3), just noted so it isn't rediscovered as if new.
 6. **1 pre-existing duplicate DOM id** (`sairn-toast`, appears twice) —
    noticed in passing, not otherwise investigated.
-7. **26 panels split between two safe shell parents**, `duplicate_
-   global_check.py`'s nested-function-scope false-positive pattern (now
-   confirmed benign, but the tool itself still isn't scope-aware), and
-   the SESSION69 items (`#rm-causes` empty widget, Persona 2/3 partial
-   coverage, 58/61 panels with WCAG contrast failures) — all carried
-   forward unchanged, not touched this session.
+7. ~~26 panels split between two safe shell parents~~ — **RESOLVED**,
+   commit `88f4a04`. Was real, not cosmetic (measured ~half-width
+   rendering on 35 panels); fixed by relocating `.panel-wrap`'s
+   misplaced closing div.
+8. **`duplicate_global_check.py`'s nested-function-scope false-positive
+   pattern** — the tool itself still isn't scope-aware (flags `sv` at 3
+   separate function closures as one "global" duplicate). Confirmed
+   benign both times it came up this session (`sv`, and the `sd_quote_
+   history`/`sd_slab_tracker` echoes in `key_collision_check.py`), but
+   the tool's own detection gap is unfixed and will keep producing this
+   class of false positive on future runs — worth fixing the tool
+   itself at some point, not urgent.
+9. **SESSION69 items carried forward unchanged, not touched this
+   session**: `#rm-causes` empty widget, Persona 2/3 partial coverage,
+   58/61 panels with WCAG contrast failures.
 
 **All 32 items from SESSION71's original list are now resolved** (24 built
 or deleted outright; the Vendor Ordering Catalog and CRM split clusters
 had their live risks fixed with the bigger build/delete call deliberately
 deferred, per instruction, to items 1-2 above). The four original key
 collisions are now all individually traced, with two real fixes shipped
-and two confirmed as benign false positives.
+and two confirmed as benign false positives. The panel-wrap structural
+bug (not part of the original 32, found during the post-cleanup scanner
+re-run) is fixed. The one fabrication finding surfaced by the closing
+`sairn-adversarial-reviewer` confirmation pass is fixed. **Bug-fixing
+phase closed** — everything left open in this section is feature-scope
+product work or lower-priority research, not defects.
 
 ## 5. Standard verification reminder for whoever reads this next
 
 Verify `main` HEAD and `origin/main` match, re-run the local checks
 (including `key_collision_check.py` — expect to see `sd_quote_history`
 and `sd_slab_tracker` still reported, and confirm via §3 above that this
-is expected, not a regression), and live-verify against
+is expected, not a regression; and `panel_nesting_check.py` — expect the
+26-panel split note to be gone), and live-verify against
 `sairn.vercel.app/stonedesk` before trusting any specific claim above —
-including this one. All 16 commits this session (15 code changes + this
-handoff doc) were individually pushed and live-verified at the time (real
-`curl` against the live endpoint, not assumed from a clean `git push`).
+including this one. All 20 commits this session (17 code changes + 3
+handoff-doc updates, this one included) were individually pushed and
+live-verified at the time (real `curl` against the live endpoint, not
+assumed from a clean `git push`).
+
+**Status for whoever picks this up next: the bug-fixing phase of this
+session is closed.** What's left (§4) is two named feature-scope
+decisions (Vendor Ordering Catalog, CRM pipeline split) and a handful of
+lower-priority research/backlog items — no known live defects.
