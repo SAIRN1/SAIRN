@@ -28962,45 +28962,23 @@ function remExport(){
 // Note: the line-item PO builder (multi-line desc/qty/unit/price with a
 // computed total, delivery date/ship-to/terms fields, and a per-line-item
 // print layout) is more complete than the canonical single-amount PO --
-// worth a product look later, but not rebuilt here. `poPOs` below is kept
-// as a read-only var: the separate (also-orphaned, also out of scope here)
-// Receiving duplicate still references it. See STONEDESK-SESSION72-HANDOFF.md.
+// worth a product look later, but not rebuilt here. See
+// STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
-var poPOs=sdLoad('sd_pos',[]);
 
 // ================================================================
-// 6. RECEIVING
+// 6. RECEIVING — orphaned duplicate removed (canonical is
+// panel-receiving / sdRecvLog below, recv- prefixed ids, key
+// sd_receiving). This block never had a host panel, rec-form/
+// rec-supplier/rec-po/rec-log/rec-items-container never existed,
+// recReceive/recSave/recAddItem had zero callers. Own distinct storage
+// key (sd_rec_log), no overlap with the canonical sd_receiving -- no
+// collision risk. Its recSave() previously read the now-also-deleted
+// poPOs var (from the Purchase Orders fix above) to mark a linked PO
+// received; that path was already confirmed unreachable (recSave had no
+// callers), so removing both together drops no live behavior. See
+// STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
-var recLog=sdLoad('sd_rec_log',[]);
-var recItems=[];
-function recReceive(){recItems=[{name:'',qty:1,unit:'slab',condition:'ok',notes:''}];document.getElementById('rec-form').style.display='block';var d=document.getElementById('rec-date');if(d)d.value=new Date().toISOString().split('T')[0];recRenderItems();var sel=document.getElementById('rec-po');if(sel){sel.innerHTML='<option value="">No PO</option>';poPOs.filter(function(p){return p.status==='open';}).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.num+' - '+p.supplier;sel.appendChild(o);});}}
-function recAddItem(){recItems.push({name:'',qty:1,unit:'slab',condition:'ok',notes:''});recRenderItems();}
-function recRenderItems(){
-  var c=document.getElementById('rec-items-container');if(!c)return;
-  c.innerHTML=recItems.map(function(item,i){return '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center">'+
-    '<input value="'+escHtml(item.name)+'" placeholder="Material / item" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="recItems['+i+'].name=this.value">'+
-    '<input type="number" value="'+item.qty+'" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="recItems['+i+'].qty=parseFloat(this.value)||1">'+
-    '<input value="'+escHtml(item.unit)+'" placeholder="slab" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="recItems['+i+'].unit=this.value">'+
-    '<select style="font-size:11px;padding:5px 6px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="recItems['+i+'].condition=this.value"><option value="ok">OK</option><option value="damaged">Damaged</option><option value="wrong">Wrong Item</option><option value="short">Short</option></select>'+
-    '<button onclick="recItems.splice('+i+',1);recRenderItems()" style="padding:4px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">x</button>'+
-  '</div>';}).join('');
-}
-function recSave(){
-  var supplier=((document.getElementById('rec-supplier')||{}).value||'').trim();if(!supplier){showToast('Supplier required');return;}
-  var poId=(document.getElementById('rec-po')||{}).value||'';
-  if(poId){var p=poPOs.find(function(x){return x.id===poId;});if(p){p.status='received';sdStore('sd_pos',poPOs);}}
-  var rec={id:'REC'+Date.now(),poId:poId,supplier:supplier,date:(document.getElementById('rec-date')||{}).value||'',receivedBy:((document.getElementById('rec-by')||{}).value||'').trim(),condition:(document.getElementById('rec-condition')||{}).value||'ok',items:JSON.parse(JSON.stringify(recItems)),notes:((document.getElementById('rec-notes')||{}).value||'').trim(),createdAt:new Date().toISOString()};
-  recLog.unshift(rec);sdStore('sd_rec_log',recLog);document.getElementById('rec-form').style.display='none';recRenderLog();showToast('Delivery logged');
-}
-function recRenderLog(){
-  var el=document.getElementById('rec-log');if(!el)return;
-  var cc={ok:'#16a34a',minor:'#ca8a04',damage:'#dc2626',short:'#dc2626'};
-  el.innerHTML=recLog.length?recLog.map(function(r){return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(cc[r.condition]||'#6b7280')+';border-radius:10px;padding:14px;margin-bottom:8px">'+
-    '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:700">'+escHtml(r.supplier)+'</span><span style="font-size:11px;color:var(--muted)">'+new Date(r.createdAt).toLocaleDateString()+'</span></div>'+
-    '<div style="font-size:12px;color:var(--muted)">'+r.items.map(function(i){return i.qty+'x '+escHtml(i.name)+(i.condition!=='ok'?' ('+i.condition+')':'');}).join(' | ')+'</div>'+
-    (r.notes?'<div style="font-size:11px;color:#dc2626;margin-top:4px">'+escHtml(r.notes)+'</div>':'')+
-  '</div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No deliveries logged yet.</div>';
-}
 
 // ================================================================
 // 7. DELIVERY MANIFEST — orphaned duplicate removed (canonical is
@@ -29373,7 +29351,6 @@ document.addEventListener('DOMContentLoaded',function(){
     try{jcRender();}catch(e){}
     try{tsRender();}catch(e){}
     try{remRender();}catch(e){}
-    try{recRenderLog();}catch(e){}
     try{aiqRenderHistory();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
     try{rfRender();}catch(e){}
