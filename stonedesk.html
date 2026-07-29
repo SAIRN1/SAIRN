@@ -21839,7 +21839,19 @@ document.addEventListener('DOMContentLoaded', function() {
   render();
 })();
 </script>
-<div id="crm-form" style="display:flex;gap:10px;margin-top:8px">
+<!-- Quarantined (live risk fix, build/delete decision still open -- see
+     STONEDESK-SESSION72-HANDOFF.md): this fragment belongs to the second,
+     unbuilt sd_crm_leads pipeline system (crmSaveLead/crmRender/etc). It
+     was showing unconditionally (display:flex, nothing ever hid it --
+     crmAddLead(), the only thing that would legitimately reveal it, has
+     zero callers) right below the real Add Lead sidebar form, and its
+     Save Lead button reads the SAME ids (crm-name/crm-proj/crm-val/
+     crm-source) as that real form -- a user filling in the real form and
+     clicking this button instead would silently save into sd_crm_leads,
+     invisible to the real kanban/table, with no error. Hidden by default
+     until that system gets real UI (crm-pipeline-board etc) or is
+     removed outright. -->
+<div id="crm-form" style="display:none;gap:10px;margin-top:8px">
 <div id="crm-list-view" style="display:none" data-auto-container="missing-dom-fix"></div>
 <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">crm-referrer</label><input type="text" id="crm-referrer" class="form-control"></div>
 <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">crm-followup</label><input type="text" id="crm-followup" class="form-control"></div>
