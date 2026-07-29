@@ -29146,42 +29146,14 @@ async function sintAIAdvisor(){
 }
 
 // ================================================================
-// 11. CARE GUIDE AI
+// 11. CARE GUIDE AI — orphaned duplicate removed (canonical is
+// panel-careguide / sdCareGenerate/sdCarePrint/sdCareEmail below; this
+// block never had a host panel, cg-mat/cg-result/cg-history/etc never
+// existed, cgGenerate/cgPrint had zero callers). Unlike the SMS/CP/PO/CRM
+// duplicates, this one used its own distinct storage key (sd_cg_history,
+// vs the canonical sd_care_guides) so there was no collision risk --
+// pure dead weight. See STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
-var cgHistory=sdLoad('sd_cg_history',[]);
-async function cgGenerate(){
-  var mat=((document.getElementById('cg-mat')||{}).value||'').trim();if(!mat){showToast('Material required');return;}
-  var cust=((document.getElementById('cg-cust')||{}).value||'').trim();
-  var app=(document.getElementById('cg-app')||{}).value||'countertops';
-  var finish=(document.getElementById('cg-finish')||{}).value||'Polished';
-  var sealed=(document.getElementById('cg-sealed')||{}).value||'na';
-  var notes=((document.getElementById('cg-notes')||{}).value||'').trim();
-  var shopName=localStorage.getItem('fab_shop_name')||'Your Stone Shop';
-  var loading=document.getElementById('cg-loading');var result=document.getElementById('cg-result');var btn=document.getElementById('cg-print-btn');
-  if(loading)loading.style.display='block';if(result)result.style.display='none';if(btn)btn.style.display='none';
-  var txt=await sdClaude('You are a stone care expert writing a friendly, comprehensive customer care guide. Use clear headers. Write for a homeowner, not a fabricator. Warm, reassuring tone.','Material: '+mat+'. Application: '+app+'. Finish: '+finish+'. Sealer: '+sealed+'. Shop: '+shopName+'. Customer: '+(cust||'Valued Customer')+'.'+(notes?'\nNotes: '+notes:'')+'\n\nCover: (1) Daily cleaning dos and donts, (2) Stain prevention and emergency spill response, (3) Heat resistance facts for THIS material, (4) Scratch resistance and cutting board guidance, (5) Annual maintenance/sealing if needed, (6) What voids warranty, (7) Contact: "Questions? Contact '+shopName+'".',1200);
-  if(loading)loading.style.display='none';
-  if(!txt){if(result){result.innerHTML='<div style="color:#dc2626">Generation failed.</div>';result.style.display='block';}return;}
-  var entry={id:'CG'+Date.now(),customer:cust,material:mat,guide:txt,ts:new Date().toISOString()};
-  cgHistory.unshift(entry);if(cgHistory.length>50)cgHistory=cgHistory.slice(0,50);sdStore('sd_cg_history',cgHistory);
-  if(result){
-    result.innerHTML='<div style="border-bottom:3px solid #0A3D1F;padding-bottom:14px;margin-bottom:20px"><div style="font-size:22px;font-weight:700;color:#0A3D1F">'+shopName+'</div><div style="font-size:16px;font-weight:600;margin-top:4px">Care Guide — '+escHtml(mat)+'</div>'+(cust?'<div style="font-size:13px;color:#555;margin-top:2px">For: '+escHtml(cust)+'</div>':'')+
-    '<div style="font-size:11px;color:#888;margin-top:2px">'+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})+'</div></div>'+
-    '<div style="font-size:14px;line-height:1.9;color:#111">'+sdMarkdown(txt)+'</div>'+
-    '<div style="border-top:1px solid #eee;margin-top:20px;padding-top:12px;font-size:12px;color:#888;display:flex;justify-content:space-between"><span>'+shopName+'</span><span>StoneDesk Care Guide</span></div>';
-    result.style.display='block';
-  }
-  if(btn)btn.style.display='inline-flex';
-  cgRenderHistory();
-}
-function cgPrint(){var r=document.getElementById('cg-result');if(!r)return;var w=window.open('','_blank');w.document.write('<html><head><style>body{font-family:Arial,sans-serif;padding:36px;max-width:750px;margin:0 auto;color:#111;line-height:1.7}@media print{body{padding:20px}}</style><scr'+'ipt></scr'+'ipt></head><body>'+r.innerHTML+'<scr'+'ipt>window.onload=function(){window.print();}<\/script></body></html>');w.document.close();}
-function cgRenderHistory(){
-  var el=document.getElementById('cg-history');if(!el)return;
-  el.innerHTML=cgHistory.length?cgHistory.slice(0,10).map(function(h){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'+
-    '<span style="font-size:18px">&#128214;</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(h.customer||'Customer')+'</div><div style="font-size:11px;color:var(--muted)">'+escHtml(h.material)+' · '+sdAgo(h.ts)+'</div></div>'+
-    '<button onclick="var r=document.getElementById(\'cg-result\');r.innerHTML=sdMarkdown(cgHistory.find(function(x){return x.id===\''+h.id+'\';}).guide);r.style.display=\'block\'" style="padding:4px 10px;font-size:11px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid rgba(27,58,107,0.2);border-radius:6px;cursor:pointer">View</button>'+
-  '</div>';}).join(''):'';
-}
 
 // ================================================================
 // 12. VEIN MATCHING AI
@@ -29439,7 +29411,6 @@ document.addEventListener('DOMContentLoaded',function(){
     try{recRenderLog();}catch(e){}
     try{mfRender();}catch(e){}
     try{aiqRenderHistory();}catch(e){}
-    try{cgRenderHistory();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
     try{rfRender();}catch(e){}
   },1000);
