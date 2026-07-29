@@ -2195,6 +2195,16 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     </div>
     <div class="topbar-nav"><!-- nav hidden; sidebar below --></div>
     <div class="topbar-right">
+      <!-- Crew weather status -- exec-only, same is-exec role gate as the
+           Executive Suite (renderExecContent). Not shown/fetched for
+           sales/install roles; geolocation is only requested once is-exec
+           is granted, via sairnLoadWeather()'s own gate below. -->
+      <span id="sairn-weather-bar" class="exec-only" style="font-size:11px;color:rgba(255,255,255,0.85);margin-right:10px;white-space:nowrap">
+        <span id="sairn-wx-icon"></span>
+        <span id="sairn-wx-temp" style="display:none"></span>
+        <span id="sairn-wx-desc"></span>
+        <span id="sairn-wx-status" style="font-weight:700;margin-left:6px"></span>
+      </span>
       <span id="tavtr" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;font-size:11px;font-weight:700;margin-right:6px" data-auto-container="missing-dom-fix"></span>
       <span id="role-badge-display" class="role-badge sales"></span><span id="user-label">Sales</span>
       <span id="user-chip" data-auto-container="missing-dom-fix">0</span>
@@ -12308,6 +12318,11 @@ window.sairnToast = function(msg) {
 async function sairnLoadWeather() {
   const bar = document.getElementById('sairn-weather-bar');
   if (!bar) return;
+  // Exec-only feature -- reuses the same is-exec role gate as the
+  // Executive Suite (renderExecContent) rather than a new role check.
+  // Don't request geolocation for sales/install roles who can't even
+  // see the bar (it's CSS-hidden via .exec-only for them anyway).
+  if (!document.body.classList.contains('is-exec')) return;
   try {
     if (!navigator.geolocation) { document.getElementById('sairn-wx-desc').textContent='Location unavailable'; return; }
     navigator.geolocation.getCurrentPosition(async pos => {
@@ -12335,6 +12350,11 @@ async function sairnLoadWeather() {
     }, () => { document.getElementById('sairn-wx-desc').textContent = 'Location denied'; });
   } catch(e) {}
 }
+// Exposed so the exec role-gate call sites (applyExecRole/setExecRoleAndClose/
+// the sd_exec_role boot restore, all outside this IIFE) can re-trigger a
+// fetch the moment is-exec is actually granted -- login-time DOMContentLoaded
+// below only covers a role already restored before this fires.
+window.sairnLoadWeather = sairnLoadWeather;
 
 
 // ---- INIT ----
@@ -20191,6 +20211,7 @@ function applyExecRole(user){
     document.body.classList.add('is-exec');
     setRoleBadge(stored);
     renderExecContent();
+    if(typeof window.sairnLoadWeather==='function') window.sairnLoadWeather();
   } else if(user&&user.role==='admin'){
     // Admin gets to pick exec role — show picker if not yet set
     if(!stored){
@@ -20221,6 +20242,7 @@ function setExecRoleAndClose(role){
     document.body.classList.add('is-exec');
     setRoleBadge(role);
     renderExecContent();
+    if(typeof window.sairnLoadWeather==='function') window.sairnLoadWeather();
   }
   var el=document.getElementById('exec-role-picker');
   if(el) el.remove();
@@ -20893,6 +20915,7 @@ function toggleThread(id){commsToggle(id);}
         sdExecRole=stored;
         document.body.classList.add('is-exec');
         setRoleBadge(stored);
+        if(typeof window.sairnLoadWeather==='function') window.sairnLoadWeather();
       }
     },700);
   });
