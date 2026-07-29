@@ -5780,6 +5780,37 @@ window.sdRMExport=function(){
             <button onclick="execSend()" style="padding:8px 16px;background:#1B3A6B;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Send</button>
           </div>
 </div>
+
+<!-- Executive Ops Suite -- gated on document.body.classList 'is-exec', same
+     role system that already gates .exec-only/.exec-only-block elsewhere in
+     this panel. renderExecContent() (script above, ~line 20386) toggles
+     these two containers on every render; default state below (denied
+     visible, content hidden) matches that logic for the moment before the
+     first render call fires. -->
+<div id="exec-access-denied" style="text-align:center;padding:50px 20px;color:var(--muted);margin-top:18px;background:var(--card);border:1px solid var(--border);border-radius:10px">
+  <div style="font-size:34px;margin-bottom:10px">🔒</div>
+  <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Executive Operations Suite</div>
+  <div style="font-size:13px">Select an executive role (CEO / CFO / CTO / Admin) to unlock the operations dashboard below.</div>
+</div>
+<div id="exec-content" style="display:none;margin-top:18px">
+  <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:12px">Operations Suite</div>
+  <div id="exec-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+      <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px">Team</div>
+      <div id="exec-employee-list" style="margin-bottom:10px"></div>
+      <div id="exec-employee-table"></div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+      <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px">Open Remakes</div>
+      <div id="exec-remakes-summary"></div>
+    </div>
+  </div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px">Open Jobs</div>
+    <div id="exec-jobs-table"></div>
+  </div>
+</div>
 </div>
 
   <!-- == COMMUNICATIONS == -->
