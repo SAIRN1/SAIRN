@@ -27539,7 +27539,6 @@ function sbNav(id) {
     if(id==='timesheet'&&typeof window.sdTSRender==='function')window.sdTSRender();
     if(id==='remnant'){if(typeof remRender==='function')remRender();if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();}
     if(id==='inventory'&&typeof renderInventory==='function')renderInventory();
-    if(id==='po'&&typeof poRender==='function')poRender();
     if(id==='receiving'&&typeof rcvRender==='function')rcvRender();
     if(id==='manifest'&&typeof mfRender==='function')mfRender();
     if(id==='sms'&&typeof window.sdSMSRender==='function')window.sdSMSRender();
@@ -28890,70 +28889,19 @@ function remExport(){
 }
 
 // ================================================================
-// 5. PURCHASE ORDERS
+// 5. PURCHASE ORDERS — orphaned duplicate removed (canonical is panel-po /
+// sdPOCreate/sdPORender below; this block never had a host panel, po-list/
+// po-form/etc never existed, poCreate/poSave had zero callers, and its
+// line-item schema {supplier,deliveryDate,shipTo,terms,lines,total} was
+// incompatible with the canonical {vendor,amt,exp} schema sharing sd_pos).
+// Note: the line-item PO builder (multi-line desc/qty/unit/price with a
+// computed total, delivery date/ship-to/terms fields, and a per-line-item
+// print layout) is more complete than the canonical single-amount PO --
+// worth a product look later, but not rebuilt here. `poPOs` below is kept
+// as a read-only var: the separate (also-orphaned, also out of scope here)
+// Receiving duplicate still references it. See STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
 var poPOs=sdLoad('sd_pos',[]);
-var poLines=[];
-function poCreate(){poLines=[{desc:'',qty:1,unit:'slab',price:0}];document.getElementById('po-form').style.display='block';poRenderLines();var d=document.getElementById('po-delivery-date');if(d)d.value=new Date(Date.now()+7*86400000).toISOString().split('T')[0];}
-function poAddLine(){poLines.push({desc:'',qty:1,unit:'each',price:0});poRenderLines();}
-function poRenderLines(){
-  var c=document.getElementById('po-lines-container');if(!c)return;
-  c.innerHTML=poLines.map(function(l,i){return '<div style="display:grid;grid-template-columns:3fr 1fr 1fr 1fr auto;gap:8px;margin-bottom:6px">'+
-    '<input value="'+escHtml(l.desc)+'" placeholder="Description" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="poLines['+i+'].desc=this.value">'+
-    '<input type="number" value="'+l.qty+'" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="poLines['+i+'].qty=parseFloat(this.value)||1;poCalcTotal()">'+
-    '<input value="'+escHtml(l.unit)+'" placeholder="unit" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="poLines['+i+'].unit=this.value">'+
-    '<input type="number" value="'+l.price+'" step="0.01" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="poLines['+i+'].price=parseFloat(this.value)||0;poCalcTotal()">'+
-    '<button onclick="poLines.splice('+i+',1);poRenderLines()" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">x</button>'+
-  '</div>';}).join('')+'<div style="text-align:right;font-size:13px;font-weight:700;margin-top:6px">Total: <span id="po-line-total" style="color:var(--a)">'+sdFmt(poLines.reduce(function(s,l){return s+(l.qty*l.price);},0))+'</span></div>';
-}
-function poCalcTotal(){var t=poLines.reduce(function(s,l){return s+(l.qty*l.price);},0);var e=document.getElementById('po-line-total');if(e)e.textContent=sdFmt(t);}
-function poSave(){
-  var supplier=((document.getElementById('po-supplier')||{}).value||'').trim();if(!supplier){showToast('Supplier required');return;}
-  var total=poLines.reduce(function(s,l){return s+(l.qty*l.price);},0);
-  var po={id:'PO'+Date.now(),num:'PO-'+String(poPOs.length+1).padStart(4,'0'),supplier:supplier,contact:((document.getElementById('po-contact')||{}).value||'').trim(),deliveryDate:(document.getElementById('po-delivery-date')||{}).value||'',shipTo:((document.getElementById('po-ship-to')||{}).value||'').trim(),terms:(document.getElementById('po-terms')||{}).value||'',lines:JSON.parse(JSON.stringify(poLines)),total:total,notes:((document.getElementById('po-notes')||{}).value||'').trim(),status:'open',createdAt:new Date().toISOString()};
-  poPOs.unshift(po);sdStore('sd_pos',poPOs);document.getElementById('po-form').style.display='none';poRender();showToast('PO '+po.num+' saved');
-}
-function poReceive(id){var p=poPOs.find(function(x){return x.id===id;});if(!p)return;p.status='received';p.receivedAt=new Date().toISOString();sdStore('sd_pos',poPOs);poRender();showToast('PO received');}
-function poDelete(id){if(!confirm('Delete PO?'))return;poPOs=poPOs.filter(function(x){return x.id!==id;});sdStore('sd_pos',poPOs);poRender();}
-function poPrint(){
-  // Print the current PO form if a PO is being edited
-  var id=document.getElementById('po-edit-id')&&document.getElementById('po-edit-id').value;
-  if(id){poPrintById(id);return;}
-  // Fallback: print the most recent PO
-  if(typeof poPOs!=='undefined'&&poPOs.length>0){poPrintById(poPOs[poPOs.length-1].id);}
-  else{window.print();}
-}
-function poPrintById(id){
-  var p=poPOs.find(function(x){return x.id===id;});if(!p)return;
-  var shopName=localStorage.getItem('fab_shop_name')||'Your Shop';
-  var win=window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>'+p.num+'</title><style>body{font-family:Arial,sans-serif;padding:36px;max-width:750px;margin:0 auto;color:#111}table{width:100%;border-collapse:collapse}th{background:#0A3D1F;color:#fff;padding:8px 12px;text-align:left;font-size:12px}td{padding:8px 12px;border-bottom:1px solid #eee;font-size:12px}.hdr{display:flex;justify-content:space-between;border-bottom:3px solid #0A3D1F;padding-bottom:14px;margin-bottom:24px}@media print{body{padding:16px}}</style><scr'+'ipt></scr'+'ipt></head><body>');
-  win.document.write('<div class="hdr"><div><div style="font-size:20px;font-weight:700">'+shopName+'</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700">PURCHASE ORDER</div><div>'+p.num+'</div><div>'+new Date(p.createdAt).toLocaleDateString()+'</div></div></div>');
-  win.document.write('<p><strong>Supplier:</strong> '+escHtml(p.supplier)+(p.contact?' — '+escHtml(p.contact):'')+'</p>');
-  win.document.write('<table><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Total</th></tr>');
-  p.lines.forEach(function(l){win.document.write('<tr><td>'+escHtml(l.desc)+'</td><td>'+l.qty+'</td><td>'+escHtml(l.unit)+'</td><td>$'+l.price.toFixed(2)+'</td><td>$'+(l.qty*l.price).toFixed(2)+'</td></tr>');});
-  win.document.write('</table><p style="text-align:right;font-size:15px;font-weight:700;margin-top:12px">TOTAL: $'+p.total.toFixed(2)+'</p>');
-  if(p.notes)win.document.write('<p><strong>Notes:</strong> '+escHtml(p.notes)+'</p>');
-  win.document.write('<scr'+'ipt>window.onload=function(){window.print();}<\/script></body></html>');win.document.close();
-}
-function poRender(){
-  var el=document.getElementById('po-list');if(!el)return;
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('po-kpi-open',poPOs.filter(function(p){return p.status==='open';}).length);
-  sv('po-kpi-pending',poPOs.filter(function(p){return p.status==='sent';}).length);
-  sv('po-kpi-received',poPOs.filter(function(p){return p.status==='received';}).length);
-  sv('po-kpi-value',sdFmt(poPOs.filter(function(p){return p.status==='open';}).reduce(function(s,p){return s+p.total;},0)));
-  var sc={open:'#ca8a04',sent:'#0891b2',received:'#16a34a'};
-  el.innerHTML=poPOs.length?poPOs.map(function(p){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'+
-    '<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:14px;font-weight:700">'+escHtml(p.num)+'</span><span style="font-size:11px;font-weight:700;background:'+(sc[p.status]||'#6b7280')+';color:#fff;padding:1px 8px;border-radius:100px">'+p.status+'</span></div>'+
-    '<div style="font-size:12px;color:var(--muted)">'+escHtml(p.supplier)+(p.deliveryDate?' · Exp: '+new Date(p.deliveryDate).toLocaleDateString():'')+'</div></div>'+
-    '<div style="font-size:16px;font-weight:800;color:var(--a)">'+sdFmt(p.total)+'</div>'+
-    '<div style="display:flex;gap:6px">'+
-      (p.status==='open'?'<button onclick="poReceive(\''+p.id+'\')" style="padding:5px 10px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Received</button>':'')+
-      '<button onclick="poPrintById(\''+p.id+'\')" style="padding:5px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid rgba(27,58,107,0.2);border-radius:6px;font-size:11px;cursor:pointer">Print</button>'+
-      '<button onclick="poDelete(\''+p.id+'\')" style="padding:5px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">x</button>'+
-    '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No purchase orders yet.</div>';
-}
 
 // ================================================================
 // 6. RECEIVING
@@ -29422,7 +29370,6 @@ document.addEventListener('DOMContentLoaded',function(){
     try{jcRender();}catch(e){}
     try{tsRender();}catch(e){}
     try{remRender();}catch(e){}
-    try{poRender();}catch(e){}
     try{recRenderLog();}catch(e){}
     try{mfRender();}catch(e){}
     try{aiqRenderHistory();}catch(e){}
