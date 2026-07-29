@@ -22999,12 +22999,12 @@ document.addEventListener('DOMContentLoaded', function() {
       <textarea id="aiq-desc" rows="5" placeholder="Describe in plain English: dimensions, material preference, edge profiles, cutouts, any special requirements. Example: 45 sq ft Calacatta Gold kitchen with 3cm mitered waterfall island, 2 undermount sink cutouts, eased edge..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;margin-bottom:10px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Quality Tier</label>
+          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Pricing Tier</label>
           <select id="aiq-tier" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px">
-            <option value="budget">Budget (Entry Level)</option>
-            <option value="mid" selected>Mid-Range (Standard)</option>
-            <option value="premium">Premium (High-End)</option>
-            <option value="luxury">Luxury (Ultra-Premium)</option>
+            <option value="retail" selected>Retail (standard pricing)</option>
+            <option value="contractor">Contractor (10% discount)</option>
+            <option value="builder">Builder (15% volume discount)</option>
+            <option value="designer">Designer (8% trade discount)</option>
           </select>
         </div>
         <div>
@@ -23079,30 +23079,98 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("aiq-desc").value=desc;
     sdAIQGenerate();
   };
-  window.sdAIQGenerate=function(){
+  // Reformed (STONEDESK-SESSION72, redirected here from an orphaned twin
+  // -- aiqGenerate() -- that was mistakenly reformed first before an
+  // adversarial-review pass caught that this is the actual live function
+  // the "Generate AI Quote" button calls). Previously asked one AI call to
+  // both extract project details AND compute the full itemized quote AND
+  // write the narrative, then pulled "the total" out of the AI's own prose
+  // by regex-matching every dollar figure and grabbing whichever one
+  // appeared last -- not a real computation, a heuristic guess at what the
+  // AI meant. The catch-fallback also showed a fully invented sample quote
+  // ($2,210 with fake line items) labeled "AI offline." Now: Claude only
+  // (1) extracts structured inputs, and (2) writes the narrative around a
+  // REAL number computed by driving the actual canonical Quote Builder
+  // fields and calling the real calc() -- identical math to manual entry.
+  // Note: this form's "Margin Target" selector has no equivalent lever in
+  // calc()'s real pricing model (which is cost/tier-based, not
+  // margin-target-based) -- not incorporated into the number, rather than
+  // faking that it is honored.
+  window.sdAIQGenerate=async function(){
     var cust=(document.getElementById("aiq-cust").value||"").trim()||"Customer";
     var type=document.getElementById("aiq-type").value;
     var desc=document.getElementById("aiq-desc").value.trim();
-    var tier=document.getElementById("aiq-tier").value;
-    var margin=document.getElementById("aiq-margin").value;
+    var tierSel=document.getElementById("aiq-tier");
+    var tierVal=(tierSel&&TIERS[tierSel.value])?tierSel.value:"retail";
     if(!desc){showToast("Describe the project first.");return;}
     var out=document.getElementById("aiq-out");
     out.innerHTML="<div style='color:var(--muted);text-align:center;padding:20px'>🤖 Claude is pricing your project...</div>";
-    fetch("https://sairn.vercel.app/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({app_id:"stonedesk",is_demo:true,messages:[{role:"user",content:"You are an expert stone fabrication estimator at Pinnacle Stone & Design in Cleveland, OH. Generate a professional detailed quote for: "+type+". Quality tier: "+tier+". Target margin: "+margin+"%. Project details: "+desc+". Provide: (1) Line items with costs (material, fabrication labor, edge work, cutouts, install, delivery), (2) Material qty estimate in sq ft, (3) Price range (low/mid/high), (4) Any scope clarifications needed, (5) Bold the TOTAL. Format clearly with line breaks between sections."}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      var txt=r.content||r.completion||"Quote generated.";
-      out.innerHTML=txt.replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
+    try{
+      // Step 1: extraction only -- no pricing math in this prompt at all.
+      var projectKeys=Object.keys(PROJECTS);
+      var materialKeys=Object.keys(MATERIALS);
+      var extractSystem='Extract stone countertop project details into strict JSON only -- no markdown fences, no commentary, just the JSON object. Return exactly this shape: {"project_type":"<one of: '+projectKeys.join(', ')+'>","material":"<one of: '+materialKeys.join(', ')+'>","total_linear_feet":<number -- your best estimate of total countertop run length in feet; if only square footage or a room description is given, estimate a reasonable linear footage for that size and layout>}. If unclear, choose the closest reasonable match from the allowed lists -- never invent a value outside them.';
+      var extractRaw=await sdClaude(extractSystem,'Project type selected in form: '+type+'. Customer description: '+desc,300);
+      var extracted=null;
+      try{extracted=JSON.parse((extractRaw||'').replace(/```json|```/g,'').trim());}catch(e){}
+      if(!extracted||projectKeys.indexOf(extracted.project_type)===-1||materialKeys.indexOf(extracted.material)===-1){
+        out.innerHTML='<div style="color:#dc2626;padding:12px">Could not confidently extract project type and material from that description. Try including the material type and an approximate size.</div>';
+        return;
+      }
+      var totalLF=Math.max(parseFloat(extracted.total_linear_feet)||0,1);
+
+      // Step 2: real math. Drives the actual canonical Quote Builder
+      // fields and calls the real calc() -- identical to manual entry,
+      // not a second pricing model. Original field values are saved and
+      // restored in a finally block (even if calc() throws) so an
+      // in-progress manual quote in the Quote Builder panel is never
+      // left corrupted.
+      var fieldIds=['project-type','material','thickness','finish','runA','runB','runC','runD','island','edge','sink-type','bs','removal','delivery'];
+      var saved={};fieldIds.forEach(function(id){var e=document.getElementById(id);if(e)saved[id]=e.value;});
+      var savedTier=currentTier;
+      var setVal=function(id,v){var e=document.getElementById(id);if(e)e.value=v;};
+      var realTotal=null;
+      try{
+        setVal('project-type',extracted.project_type);
+        setVal('material',extracted.material);
+        setVal('thickness','1.0');setVal('finish','0');
+        setVal('runA',Math.round(totalLF*12));
+        setVal('runB',0);setVal('runC',0);setVal('runD',0);setVal('island',0);
+        setVal('edge','0');setVal('sink-type','0');setVal('bs','0');setVal('removal','0');setVal('delivery','0');
+        currentTier=tierVal;
+        calc();
+        realTotal=(lastCalc&&lastCalc.total)?lastCalc.total:null;
+      }finally{
+        fieldIds.forEach(function(id){if(saved[id]!==undefined)setVal(id,saved[id]);});
+        currentTier=savedTier;
+        calc();
+      }
+      if(!realTotal){
+        out.innerHTML='<div style="color:#dc2626;padding:12px">Pricing calculation failed for the extracted inputs.</div>';
+        return;
+      }
+
+      // Step 3: narrative only -- Claude explains the REAL number,
+      // doesn't compute or adjust it.
+      var shopName=localStorage.getItem('fab_shop_name')||'Your Stone Shop';
+      var narrativeSystem='You are a stone countertop estimator at '+shopName+'. You are given a REAL, already-computed quote total and the inputs behind it -- do not recompute, adjust, or second-guess that number, just write a clear, friendly customer-facing summary around it. Output: CUSTOMER SUMMARY, DETECTED DIMENSIONS, MATERIAL RECOMMENDATION, TOTAL (state the exact figure given, do not alter it), QUESTIONS (max 2, only if key details were unclear).';
+      var narrativeInput='Customer description: '+desc+'\nComputed and final (do not change): Project type: '+PROJECTS[extracted.project_type].name+'. Material: '+MATERIALS[extracted.material].name+'. Estimated linear feet: '+totalLF.toFixed(1)+'. Pricing tier: '+TIERS[tierVal].label+' ('+TIERS[tierVal].note+'). TOTAL PRICE: '+fmt(realTotal)+'.';
+      var narrativeTxt=await sdClaude(narrativeSystem,narrativeInput,900);
+
+      if(narrativeTxt){
+        out.innerHTML=narrativeTxt.replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
+      }else{
+        // Narrative call failed but the real total was already computed --
+        // show that real number plainly rather than an invented fallback.
+        out.innerHTML="<strong>Real computed quote (AI narrative unavailable):</strong><br><br>Project: "+escHtml(PROJECTS[extracted.project_type].name)+"<br>Material: "+escHtml(MATERIALS[extracted.material].name)+"<br>Linear feet: "+totalLF.toFixed(1)+"<br>Tier: "+escHtml(TIERS[tierVal].label)+"<br><br><strong>TOTAL: "+fmt(realTotal)+"</strong>";
+      }
       document.getElementById("aiq-actions").style.display="flex";
-      var amtMatch=txt.match(/\$[\d,]+/g);
-      var amts=(amtMatch||[]).map(function(a){return parseInt(a.replace(/[$,]/g,""));}).filter(function(a){return a>100;});
-      var amt=amts.length?amts[amts.length-1]:2500;
       var d=load();
-      d.push({id:Date.now(),customer:cust,type:type,tier:tier,amount:amt,date:new Date().toISOString().slice(0,10),accepted:false,desc:desc});
+      d.push({id:Date.now(),customer:cust,type:type,tier:tierVal,amount:realTotal,date:new Date().toISOString().slice(0,10),accepted:false,desc:desc});
       save(d);updateKPIs();
-    }).catch(function(){
-      out.innerHTML="<strong>Sample Quote (AI offline)</strong><br><br>Material (est 45 sqft @ $18/sqft): $810<br>Fabrication: $720<br>Edge Work (eased): $135<br>Sink Cutout x1: $120<br>Installation & Delivery: $350<br>Miscellaneous: $75<br><br><strong>TOTAL ESTIMATE: $2,210</strong><br><em>Valid 30 days. 50% deposit required.</em>";
-    });
+    }catch(e){
+      out.innerHTML="<div style='color:#dc2626;padding:12px'>Something went wrong generating this quote. Please try again.</div>";
+    }
   };
   window.sdAIQSendToQuote=function(){showPanel("quote");showToast("Navigate to Quote Builder and build your formal quote.");};
   window.sdAIQExport=function(){
@@ -28993,42 +29061,17 @@ function remExport(){
 // ================================================================
 
 // ================================================================
-// 9. AI INSTANT QUOTE
+// 9. AI INSTANT QUOTE — orphaned duplicate removed (canonical is
+// panel-aiquote's real, wired sdAIQGenerate() below, reformed in this
+// same commit to use real calc()/TIERS/PROJECTS/MATERIALS math). This
+// block (aiqGenerate/aiqHistory/aiqRenderHistory) had zero callers --
+// its "Generate" path was never wired to the actual button (which calls
+// sdAIQGenerate()), so it was reformed by mistake earlier in this same
+// session before that was discovered (adversarial review caught it).
+// Its target containers (#aiq-result/#aiq-loading) never existed in
+// HTML either. Deleted rather than left dormant, same standard as every
+// other orphan this session. See STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
-var aiqHistory=sdLoad('sd_aiq_history',[]);
-async function aiqGenerate(){
-  var input=document.getElementById('aiq-input');var tier=document.getElementById('aiq-tier');
-  var text=(input?input.value.trim():'');if(!text){showToast('Paste a customer message first');return;}
-  var tierVal=tier?tier.value:'retail';
-  var loading=document.getElementById('aiq-loading');var result=document.getElementById('aiq-result');
-  if(loading)loading.style.display='block';if(result)result.style.display='none';
-  var shopName=localStorage.getItem('fab_shop_name')||'Your Stone Shop';
-  var tiers={retail:'full retail',contractor:'8% contractor discount',builder:'12% builder discount',designer:'8% designer discount'};
-  var system='You are an expert stone countertop estimator at '+shopName+'. Extract project details from the customer message and generate a complete quote. Pricing: Granite entry $60/sqft, mid $85/sqft, premium $120/sqft. Marble $110/sqft. Quartzite $130/sqft. Quartz standard $75/sqft, premium $95/sqft. Dekton/Sintered $125/sqft. Add sink cutout $350 kitchen/$150 bath, edge upgrades per LF. Apply 15% waste. Tier: '+tiers[tierVal]+'. Output: CUSTOMER SUMMARY, DETECTED DIMENSIONS, MATERIAL RECOMMENDATION, LINE ITEM BREAKDOWN, TOTAL RANGE, QUESTIONS (max 2 if unclear).';
-  var txt=await sdClaude(system,'Customer message: '+text,1200);
-  if(loading)loading.style.display='none';
-  if(!txt){if(result){result.innerHTML='<div style="color:#dc2626;padding:12px">Generation failed. Try again.</div>';result.style.display='block';}return;}
-  var entry={id:'AIQ'+Date.now(),input:text.slice(0,200),output:txt,tier:tierVal,ts:new Date().toISOString()};
-  aiqHistory.unshift(entry);if(aiqHistory.length>50)aiqHistory=aiqHistory.slice(0,50);sdStore('sd_aiq_history',aiqHistory);
-  if(result){
-    result.innerHTML='<div style="background:linear-gradient(135deg,#f0fef4,#dcfce7);border:1.5px solid #bbf7d0;border-radius:14px;padding:20px;margin-bottom:14px">'+
-      '<div style="font-size:14px;font-weight:800;color:#0a3d1f;margin-bottom:10px">&#9889; AI Quote Generated</div>'+
-      '<div style="font-size:13px;line-height:1.9">'+sdMarkdown(txt)+'</div></div>'+
-      '<div style="display:flex;gap:10px">'+
-      '<button onclick="if(navigator.clipboard)navigator.clipboard.writeText(document.getElementById(\'aiq-result\').innerText).then(function(){showToast(\'Copied!\');})" style="padding:10px 20px;background:rgba(27,58,107,0.1);border:1px solid rgba(27,58,107,0.2);border-radius:8px;font-size:12px;font-weight:600;color:var(--a);cursor:pointer">Copy Quote</button>'+
-      '<button onclick="if(typeof showPanel===\'function\')showPanel(\'quote\')" style="padding:10px 20px;background:var(--a);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Open Quote Builder</button>'+
-      '</div>';
-    result.style.display='block';
-  }
-  aiqRenderHistory();
-}
-function aiqRenderHistory(){
-  var el=document.getElementById('aiq-history');if(!el)return;
-  el.innerHTML=aiqHistory.length?aiqHistory.slice(0,10).map(function(h){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'+
-    '<span style="font-size:18px">&#9889;</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(h.input.slice(0,60))+'...</div><div style="font-size:10px;color:var(--muted)">'+sdAgo(h.ts)+' · '+h.tier+'</div></div>'+
-    '<button onclick="var r=document.getElementById(\'aiq-result\');r.innerHTML=sdMarkdown(aiqHistory.find(function(x){return x.id===\''+h.id+'\';}).output);r.style.display=\'block\'" style="padding:3px 8px;font-size:10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid rgba(27,58,107,0.2);border-radius:5px;cursor:pointer">View</button>'+
-  '</div>';}).join(''):'';
-}
 
 // ================================================================
 // 10. SINTERED / PORCELAIN MODE
@@ -29344,7 +29387,6 @@ document.addEventListener('DOMContentLoaded',function(){
     try{crmRender();}catch(e){}
     try{jcRender();}catch(e){}
     try{remRender();}catch(e){}
-    try{aiqRenderHistory();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
     try{rfRender();}catch(e){}
   },1000);
