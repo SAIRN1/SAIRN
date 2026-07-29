@@ -29304,35 +29304,13 @@ function revRenderLog(){
 }
 
 // ================================================================
-// 15. CONTRACTOR PORTAL
+// 15. CONTRACTOR PORTAL — orphaned duplicate removed (canonical is
+// panel-contractor / sdConRender/sdConAdd below; this block never had a
+// host panel, cp-list/cp-form/etc never existed, cpSave had zero callers).
+// Note: this block's PIN-based login-invite concept (SMS/email invite,
+// jobCount) is not present in the canonical pricing-tier tracker -- worth
+// a product look later, but not rebuilt here. See STONEDESK-SESSION72-HANDOFF.md.
 // ================================================================
-var cpContractors=sdLoad('sd_contractors',[]);
-function cpSave(){
-  var co=((document.getElementById('cp-company')||{}).value||'').trim();if(!co){showToast('Company name required');return;}
-  var c={id:'CP'+Date.now(),company:co,contact:((document.getElementById('cp-contact')||{}).value||'').trim(),email:((document.getElementById('cp-email')||{}).value||'').trim(),phone:((document.getElementById('cp-phone')||{}).value||'').trim(),tier:(document.getElementById('cp-tier')||{}).value||'contractor',pin:((document.getElementById('cp-pin')||{}).value||'').trim(),notes:((document.getElementById('cp-notes')||{}).value||'').trim(),addedAt:new Date().toISOString(),jobCount:0};
-  cpContractors.unshift(c);sdStore('sd_contractors',cpContractors);document.getElementById('cp-form').style.display='none';cpRender();showToast('Contractor added');
-}
-function cpDelete(id){if(!confirm('Remove?'))return;cpContractors=cpContractors.filter(function(x){return x.id!==id;});sdStore('sd_contractors',cpContractors);cpRender();}
-function cpSharePortalLink(){var url='https://sairn.vercel.app/stonedesk';if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){showToast('Portal link copied');});}
-function cpSendPortalInvite(id){
-  var c=cpContractors.find(function(x){return x.id===id;});if(!c)return;
-  var msg='Hi '+c.contact+', you have contractor portal access at https://sairn.vercel.app/stonedesk. Log in with your email and PIN '+c.pin+' to submit jobs, check status, and download invoices.';
-  if(c.phone){window.location.href='sms:'+c.phone+'?body='+encodeURIComponent(msg);}
-  else if(c.email){window.location.href='mailto:'+c.email+'?subject=Contractor Portal Access&body='+encodeURIComponent(msg);}
-  else{if(navigator.clipboard)navigator.clipboard.writeText(msg).then(function(){showToast('Invite copied');});}
-}
-function cpRender(){
-  var el=document.getElementById('cp-list');if(!el)return;
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('cp-kpi-contractors',cpContractors.length);sv('cp-kpi-jobs',cpContractors.reduce(function(s,c){return s+c.jobCount;},0));sv('cp-kpi-pending',0);sv('cp-kpi-revenue','$0');
-  el.innerHTML=cpContractors.length?cpContractors.map(function(c){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'+
-    '<div style="width:44px;height:44px;border-radius:10px;background:rgba(27,58,107,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">&#128119;</div>'+
-    '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+escHtml(c.company)+'</div><div style="font-size:12px;color:var(--muted)">'+escHtml(c.contact)+(c.email?' · '+escHtml(c.email):'')+'</div><div style="font-size:11px;color:var(--muted)">'+c.tier+' pricing</div></div>'+
-    '<div style="display:flex;gap:6px">'+
-      '<button onclick="cpSendPortalInvite(\''+c.id+'\')" style="padding:5px 10px;background:rgba(22,163,74,0.1);color:#16a34a;border:1px solid rgba(22,163,74,0.2);border-radius:6px;font-size:11px;cursor:pointer">Send Invite</button>'+
-      '<button onclick="cpDelete(\''+c.id+'\')" style="padding:5px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">x</button>'+
-    '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:32px">No contractor partners yet.</div>';
-}
 
 // ================================================================
 // 16. REFERRAL TRACKER
@@ -29450,7 +29428,6 @@ document.addEventListener('DOMContentLoaded',function(){
     try{aiqRenderHistory();}catch(e){}
     try{cgRenderHistory();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
-    try{cpRender();}catch(e){}
     try{rfRender();}catch(e){}
   },1000);
 });
