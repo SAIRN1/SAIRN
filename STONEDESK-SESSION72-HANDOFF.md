@@ -1,164 +1,236 @@
 # StoneDesk — Session 72 Handoff
 
-Written mid-session (not a stopping point) because a specific backlog item
-needed to be logged now, per instruction, rather than left to be
-rediscovered later. Claims below are independently verified against the
-actual repo and live site, not assumed from memory — same standard as
-STONEDESK-SESSION71-HANDOFF.md.
+Written mid-session, updated repeatedly as work continued rather than left
+to go stale — first drafted after the storage-collision-risk batch (SMS/
+Contractor Portal/Purchase Orders), now rolled forward to cover the full
+session through the four original key-collision traces. Claims below are
+independently verified against the actual repo and live site, not assumed
+from memory — same standard as STONEDESK-SESSION71-HANDOFF.md.
 
 ## 1. Verified current state
 
 - `main` HEAD (local and `origin/main`, confirmed matching):
-  **`2d74658e4f32fd3df11a6d716a57e392daea297c`**
-- All commits this session pushed and live-verified individually (see §2)
-  — no unpushed local work as of writing this.
+  **`9d90f1b6aae6fd4c577f48647e56eec5628b07ad`**
+- All 16 commits this session (15 code changes + this handoff doc) pushed
+  and live-verified individually (see §2) — no unpushed local work as of
+  writing this.
 - Local checks re-run fresh at this HEAD:
   - `checkblocks.py`: 118/118 clean
-  - `div_balance_check.py`: 4588/4588 balanced, gap 0
+  - `div_balance_check.py`: 4543/4543 balanced, gap 0
   - `nav_panel_check.py`: 61/61 panels, PASS
-  - `key_collision_check.py`: 4 collisions — same 4 as SESSION71
-    (`sd_quote_history`, `sd_slabs`, `stonedesk:ai_memories`,
-    `stonedesk:business_profile`), still not individually traced, unchanged
-    by this session. The 3 collisions this session *did* resolve
-    (`sd_sms_log`, `sd_contractors`, `sd_pos`) are confirmed gone.
+  - `key_collision_check.py`: 4 collisions reported —
+    `sd_quote_history`, `sd_slab_tracker`, `stonedesk:ai_memories`,
+    `stonedesk:business_profile`. **This is not the same 4 as before** —
+    see §3, all four original SESSION70/71 collisions have now been
+    individually traced and resolved or explained; what's left is two
+    real fixes' own false-positive echoes plus two confirmed-benign
+    cache-sync pairs. Detail below.
+  - `duplicate_global_check.py`: 1 duplicate name (`sv`, at 3 separate
+    function-scoped closures — `revUpdateKPIs()`/`rfRender()`/
+    `piUpdateComparison()`) — confirmed false positive, pre-existing,
+    not touched this session. The tool's depth-0 detection doesn't
+    distinguish nested-function scope from true global scope.
+  - `missing_dom_target_check.py`: 311 missing targets (down from 398 at
+    the start of SESSION71). Confirmed zero of this session's touched
+    ids appear in this list — the remaining 311 is app-wide backlog
+    outside this session's scope, not leftover work.
+  - `panel_nesting_check.py`: 0/61 trapped, unchanged from baseline. The
+    "26 panels split between two safe shell parents" note is unchanged,
+    pre-existing, its own separate open item.
 - One pre-existing duplicate DOM id (`sairn-toast`, appears twice) noted
-  in passing during this session's id-uniqueness checks — not introduced
-  by this session, not yet investigated, flagged here so it doesn't need
-  rediscovering.
+  in passing, not introduced this session, not yet investigated.
+- **New, not previously known**: a third, separate quote-history store —
+  `stonedesk_quote_history` (underscore prefix, distinct from `sd_quote_
+  history`) — referenced around lines 7143-7268 and 19905. Found while
+  tracing the `sd_quote_history` collision. Not touched, not currently
+  reported by `key_collision_check.py` (different key, not a same-key
+  collision), flagging so it isn't rediscovered from scratch. See §4.
 
 ## 2. Commits this session, in order (all pushed, all live-verified)
 
-1. `c2c22fd` — Removed the orphaned SMS duplicate system (`smsSend`/
-   `smsRenderLog`/`smsRenderTemplates`/`smsSaveConfig`, targeting
-   `sms-message`/`sms-char-count`/`sms-cust-name`/`sms-templates-list` —
-   none of which existed in HTML). Its `smsRenderLog()` ran on every boot
-   and overwrote the real `panel-sms`'s `#sms-log` render with a different
-   template using the same `sd_sms_log` data — a live cosmetic clobber,
-   not just a reconnection risk. Canonical: `panel-sms`/`sdSMS*`.
+1. `c2c22fd` — Removed the orphaned SMS duplicate system. Canonical:
+   `panel-sms`/`sdSMS*`.
 2. `5a09f33` — Removed the orphaned Contractor Portal duplicate
-   (`cpSave`/`cpRender`/`cpSendPortalInvite`/`cpSharePortalLink`, targeting
-   `cp-list`/`cp-company`/`cp-pin` — none existed in HTML), which shared
-   `sd_contractors` with the real `panel-contractor` under an incompatible
-   schema. Canonical: `panel-contractor`/`sdConRender`/`sdConAdd`. Not
-   ported: the orphaned block's PIN-based login/invite concept has no
-   equivalent in the canonical pricing-tier tracker — noted in-file, not
-   rebuilt.
-3. `283d5a7` — Removed the orphaned Purchase Orders duplicate (`poCreate`/
-   `poSave`/`poRender`/`poReceive`/`poDelete`/`poPrint`/`poPrintById`,
-   targeting `po-list`/`po-form`/`po-supplier` — none existed in HTML),
-   which shared `sd_pos` with the real `panel-po` under an incompatible
-   schema. Also removed the dead nav-dispatch hook (`id==='po'`) and its
-   boot-time render call. Canonical: `panel-po`/`sdPOCreate`/`sdPORender`.
-   Kept `var poPOs` (still read by the separate, also-orphaned Receiving
-   duplicate — out of scope, not touched, see §4 item 3). Not ported: the
-   orphaned block's multi-line-item PO builder (per-line desc/qty/unit/
-   price, delivery/ship-to/terms fields, per-line print layout) is more
-   complete than the canonical single-amount PO — noted in-file.
-4. `2052470` — Built out the Executive Ops Suite (§4 item "second
-   exec-dashboard layer" from SESSION71, now resolved): added the 7
-   missing containers (`exec-access-denied`/`exec-content`/`exec-kpis`/
-   `exec-employee-list`/`exec-employee-table`/`exec-jobs-table`/
-   `exec-remakes-summary`) into `panel-executive`. This was NOT a
-   duplicate like items 1-3 — `renderExecContent()` was real, reachable
-   (fires on every nav to the Executive panel), gated on the existing
-   `is-exec` role system, and computed live from real data
-   (`sdJobs`/`sdCustomers`/`sdRemakes`/`sdInventory`/`fab_biz_data`), but
-   silently no-op'd on its first null-guard because its containers were
-   never built — exec users saw nothing from this ops view, every time,
-   with no error. Sits alongside the existing financial dashboard
-   (`sdExecRender`) and private exec channel — two distinct views,
-   confirmed neither replaced (both render correctly, verified locally).
-5. `2d74658` — Null-guarded `#floating-cart`'s `scrollIntoView` call (was
-   crashing on click with no guard against `vendor-cart-summary` not
-   existing). See §4 item 1 below for the full context — this fix was
-   deliberately separated from the rest of that system.
+   (shared `sd_contractors` with the real panel under an incompatible
+   schema). Canonical: `panel-contractor`/`sdConRender`/`sdConAdd`.
+3. `283d5a7` — Removed the orphaned Purchase Orders duplicate (shared
+   `sd_pos` under an incompatible schema). Canonical: `panel-po`.
+4. `2052470` — Built the Executive Ops Suite: added the 7 missing
+   containers `renderExecContent()` already expected. Real, reachable,
+   gated on `is-exec`; sits alongside the financial dashboard, neither
+   replaced.
+5. `2d74658` — Null-guarded `#floating-cart`'s `scrollIntoView` (crash
+   fix, independent of the larger Vendor Ordering Catalog decision).
+6. `82e13e3` — First cut of this handoff doc.
+7. `73f3ebf` — Built the crew weather bar in `topbar-right`. Gated on
+   the existing `is-exec` role system (reused, not reinvented) — both
+   visually (`.exec-only` class) and functionally (`sairnLoadWeather()`
+   itself checks `is-exec` before requesting geolocation, so non-exec
+   roles never get the permission prompt). Verified both scoped-in
+   (cfo) and scoped-out (sales) roles in the same browser session.
+8. `188bd25` — Quarantined the stray `#crm-form` fragment (default
+   `display:none` now). It belonged to the second, unbuilt `sd_crm_leads`
+   pipeline system but was showing unconditionally and its Save Lead
+   button read the *same* DOM ids as the real Add Lead sidebar form —
+   a live shared-id data-loss risk (not just dormant), fixed independent
+   of the bigger build/delete call on that pipeline system (still open,
+   see §4).
+9. `9606f16` — Removed the orphaned Care Guide AI duplicate
+   (`cgGenerate`/`cgPrint`/`cgRenderHistory`). Own distinct storage key,
+   no collision risk, pure dead weight. Canonical: `panel-careguide`.
+10. `faa33cc` — Removed the orphaned Delivery Manifest duplicate
+    (`mfStops`/`mfRender`/etc). Own distinct storage key. Canonical:
+    `panel-manifest`/`sdManifestAdd` (`mfst-` prefixed ids).
+11. `fc7d84d` — Removed the orphaned Receiving duplicate (`recLog`/
+    `recSave`/`recRenderLog`/etc), and the now-unused `poPOs` var it was
+    the only remaining reader of. Canonical: `panel-receiving`/`sdRecvLog`.
+12. `62538d8` — Removed the orphaned Timesheets clock-in/out duplicate
+    (`tsEntries`/`tsRender`/etc). One id (`ts-emp`) was shared with the
+    real form, but the function reading it had zero callers — dormant,
+    not a live risk like the CRM case. Canonical: the manual hours-log
+    panel (`sdTSLog`/`sdTSRender`).
+13. `e09dc42` — Removed an entire orphaned "Add Job" form (`schedAddJob`/
+    `schedSave`) plus its paired `#sj-installer` change listener. This
+    was filed in SESSION71 as a small mini-feature (`sj-installer-
+    custom-wrap`) but turned out to be much bigger on inspection: a
+    whole unreachable Add Job form with almost every `.value` read
+    unguarded (would have crashed on the first missing field if ever
+    wired up) — correction logged, not just a deletion. Real job
+    creation already happens via `intakeAccept()`, same schema, no
+    reason to keep a second, more crash-prone path.
+14. `81ff897` — Removed the unbuilt Personalization Panel stub
+    (`sairn-profile-btn`/`sairn-pers-panel`). Smallest, lowest-risk item
+    in the whole 32; original description held up this time (unlike
+    sj-installer). Closes all 32 items from SESSION71's list.
+15. `1128c5b` — Fixed the `sd_quote_history` schema mismatch (see §3).
+16. `9d90f1b` — Fixed the `sd_slabs` shared-key overwrite risk (see §3).
 
 Every commit verified with `checkblocks`/`div_balance_check`/`nav_panel_check`
-plus a real local-server + Chrome pass before commit, and live-verified
-against `sairn.vercel.app/stonedesk` (fresh `curl`, not assumed) after push.
-Full detail in each commit message.
+(+ `key_collision_check` where relevant) plus a real local-server + Chrome
+pass before commit, and live-verified against `sairn.vercel.app/stonedesk`
+(fresh `curl`, not assumed) after push. Full detail in each commit message.
 
 ## 3. What was CORRECTED, not just added
 
-- Nothing this session required correcting a *prior* claim — SESSION71's
-  32-item list and the 4 unresolved key collisions both held up under
-  re-verification, unchanged. The one thing worth naming as a near-miss:
-  the Purchase Orders fix initially risked breaking the separate, also-
-  orphaned Receiving duplicate (`recSave`/`recReceive`, which reads the
-  `poPOs` variable) — caught before editing by checking `poPOs`'s
-  full reference list first, not after. Resolved by keeping the `var
-  poPOs` declaration in place while removing only the actual duplicate
-  CRUD/render functions. That Receiving duplicate itself remains
-  unexamined and out of scope (§4 item 3).
+- **`sj-installer-custom-wrap`** (commit 13/`e09dc42`) was filed in
+  SESSION71 as a small, standalone mini-feature. Re-verification showed
+  it was actually two small pieces of a much larger orphaned system (an
+  entire "Add Job" form, `schedAddJob`/`schedSave`) with a worse crash
+  profile than most orphans this session — corrected and logged, not
+  silently fixed as if the original description were right.
+- **All 4 original SESSION70/71 key collisions are now individually
+  traced** (this was explicitly still-open going into this update):
+  - **`sd_quote_history`** (fixed, `1128c5b`) — a *real bug*, not a
+    dormant-vs-canonical situation like the 32-item batch. Both writers
+    are real and reachable: `panel-quote`'s `sdQuoteSaveHistory()`
+    (create) and `panel-history`'s full quote-history manager (search/
+    filter/sort/status-update/CSV/print — the canonical, richer system).
+    They disagreed on field names (`stone`/`total` vs. `project`/
+    `amount`) and id type (string `'Q-'+Date.now()` vs. numeric,
+    `parseInt`-compared) — every quote saved from panel-quote showed up
+    in panel-history with a blank project and $0 amount, and could never
+    have its status updated. A *third* bug found in the same trace:
+    panel-quote's own KPI tiles checked `status==='Won'`, a value that
+    is never actually written anywhere (real vocabulary is Approved/
+    Pending/Declined/Expired) — Win Rate and Won Revenue had always read
+    0%/$0 regardless of real approved quotes. All three fixed together,
+    verified with a full round-trip test (save → correct display in the
+    other panel → status update → correct KPI recompute).
+  - **`sd_slabs`** (fixed, `9d90f1b`) — SESSION67's `550a766` reasoning
+    (two real, differently-shaped systems; reconciling them is a real
+    feature project, not a mechanical fix) was re-verified against
+    current code and **still holds** — both systems are still genuinely
+    live (the Slab Tracker panel is reachable with real Add/Edit/Delete;
+    the reservation/consumption engine is still deeply cross-referenced
+    by Quote/POS/Schedule/Customers, confirmed via fresh grep, not
+    assumed). But the *shared key itself* was a live risk, not just
+    theoretical — both writers overwrite the entire key on every save,
+    so using the Slab Tracker panel would silently clobber the engine's
+    real reservation data. Fixed the collision without touching the
+    merge question: Slab Tracker now writes to its own `sd_slab_tracker`
+    key (with a one-time carry-forward + cleanup of any pre-existing
+    `sd_slabs` data that matched its shape). The "should these become one
+    system" question is intentionally still open — see §4.
+  - **`stonedesk:ai_memories`** (no fix needed) — traced and confirmed a
+    false positive: `syncSDMemoriesFromSupabase()` (sync-down, boot-time
+    only, called exactly once) and `writeSDMemory()` (local write, real
+    caller, fires after AI chat exchanges) are a standard cache-then-
+    append pattern, not competing writers — no realistic race, since the
+    sync only ever happens once before any local writes occur.
+  - **`stonedesk:business_profile`** (no fix needed) — same cache/sync
+    pattern, and *even less* of a concern than ai_memories: `saveSDProfile()`
+    has zero callers anywhere in the file. Only one writer (boot-time
+    sync-down) is actually active today. Worth a small separate note
+    (not a bug): `saveSDProfile()` looks like an intended write-path for
+    a business-profile-edit UI that was never built or lost its caller —
+    flagged for later, not fixed now since there's no collision to fix
+    when one side never fires.
+  - The two collisions `key_collision_check.py` reports *now*
+    (`sd_quote_history`, `sd_slab_tracker`) are the tool's own mechanical
+    false-positive echo of these fixes — same class as the pre-existing
+    `sv` finding in `duplicate_global_check.py`. In both cases the "two
+    writers" are the same object shape written to the same key from two
+    different variable names (a normal save + a one-time migration path,
+    or a create-function + a manage-function that agree on schema) — not
+    a real conflict. Confirmed, not just asserted: traced both writers'
+    actual field shapes in each case.
 
 ## 4. Open items, prioritized
 
-1. **Vendor Ordering Catalog — real working logic and data exist, needs a
-   new panel + nav wiring to surface it. Not a bug, a genuine feature
-   backlog item.** `VENDORS` object (~120KB, 5 real stone-industry
-   vendors — GMR, GranQuartz, Braxton-Bragg, BB Industries, Slab
-   Suppliers — ~643 real product/SKU/price entries) plus full logic:
-   per-vendor tabs, category filters, cross-vendor price-comparison
-   badges, a cart (`cartAdd`/`cartUpdate`/`renderCart`), a low-stock
-   auto-reorder builder (`vendorBuildAutoOrder`), and a compare modal.
-   None of it is reachable — every onclick that would call into it is
-   generated *inside* `renderVendor()`'s own output, which never runs
-   because its containers (`vendor-products`, `vendor-cart-summary`,
-   `vendor-tariff-alerts`, `cart-total`, `vendor-tabs`, `vcat-tabs`) were
-   never built, and there is no host panel or nav entry at all — bigger
-   gap than the Executive Ops Suite fix above, which only needed
-   containers inside an already-existing panel. Distinct feature from the
-   real "Vendor Management" panel (`panel-vendors`, a vendor contact/
-   spend/rating directory) — no overlap, just a shared word. **Rough
-   sizing: new panel + nav entry, ~6 container/section builds (vendor tab
-   bar, category tab bar, product grid, cart summary section, tariff
-   alerts section, compare modal), all matching logic that already
-   exists and already computes correctly — comparable in shape to the
-   Executive Ops Suite build (`2052470`) but roughly 2-3x the container
-   count and needs the panel shell itself, which that fix didn't.** The
-   one live risk from this system (the floating-cart's unguarded
-   `scrollIntoView`) is already fixed independently (`2d74658`) — that
-   fix does not depend on this backlog item being picked up.
-2. **31 remaining items from SESSION71's original 32**, prioritized by
-   the same triage order (storage-collision risk done — sms-message/
-   cp-list/po-list resolved this session; whole-feature build/delete
-   calls next — exec-dashboard layer done, vendor ordering catalog now
-   scoped above; then low-urgency silent duplicates last):
-   - Unbuilt weather bar (5): `sairn-weather-bar`, `sairn-wx-desc`,
-     `sairn-wx-icon`, `sairn-wx-status`, `sairn-wx-temp` — real
-     geolocation → Open-Meteo → crew go/no-go logic, zero HTML footprint.
-   - Two-CRM-system split (4): `crm-email`, `crm-notes`, `crm-phone`,
-     `crm-pipeline-board` — working `sd_crm_leads` pipeline system whose
-     form/board ids were never built, alongside the older working CRM
-     (`sd_crm`).
-   - Other orphaned duplicate systems, remaining 6 of original 8 (2
-     resolved this session — `cp-list`/`po-list`): `cg-history`,
-     `mf-date-filter`, `mf-manifest-list`, `rec-log`, `ts-active`,
-     `ts-log`. Note: `rec-log`/`recSave`/`recReceive` (the orphaned
-     Receiving duplicate mentioned in §3) belongs in this bucket —
-     confirmed this session to also reference the real `poPOs` variable,
-     not yet otherwise examined.
-   - Small unbuilt mini-features (2): `sj-installer-custom-wrap`,
-     `sairn-profile-btn`.
-3. **4 key collisions from SESSION70/71, still not individually traced**:
-   `sd_quote_history`, `sd_slabs`, `stonedesk:ai_memories`,
-   `stonedesk:business_profile`. Confirmed unchanged this session, not
-   part of the 32-item list above (separate, older open item). `sd_slabs`
-   still a known, deliberate defer since SESSION67 (`550a766`).
-4. **1 pre-existing duplicate DOM id** (`sairn-toast`, appears twice) —
-   noticed in passing this session while confirming the new exec-suite
-   ids were unique, not otherwise investigated.
-5. **26 panels split between two safe shell parents**, `duplicate_global_
-   check.py`'s regex-literal detection gap, and the SESSION69 items
-   (`#rm-causes` empty widget, Persona 2/3 partial coverage, 58/61 panels
-   with WCAG contrast failures) — all carried forward unchanged, not
-   touched this session.
+1. **Vendor Ordering Catalog** — real ~120KB catalog + working logic
+   (5 vendors, ~643 products, cart, price comparison, auto-reorder), no
+   host panel or nav entry at all. Live risk (floating-cart crash)
+   already fixed independent of this. Rough sizing: new panel + nav
+   entry + ~6 container/section builds, comparable in shape to the Exec
+   Ops Suite build but ~2-3x the container count and needs the panel
+   shell itself. **Decision needed: build vs. delete vs. leave scoped.**
+2. **Two-CRM-system split** — the live shared-id risk (stray `#crm-form`)
+   is fixed (`188bd25`). Still open: whether to build out the real UI for
+   the richer `sd_crm_leads` pipeline system (7 stages including won/
+   lost, phone/email/referrer/followup/notes, overdue highlighting) or
+   delete it and keep only the simpler working `sd_crm` kanban.
+   **Decision needed: build vs. delete.**
+3. **sd_slabs / sd_slab_tracker unification** — new item, split out of
+   the collision fix above per instruction. The Slab Tracker panel and
+   the reservation/consumption engine are two real, live, conceptually-
+   overlapping systems (both about "a slab of stone in inventory") that
+   no longer collide on storage, but still represent two separate data
+   models for what might reasonably be one concept. Whether to unify
+   them is a genuine product/data-model decision (which becomes
+   canonical, how existing data migrates, whether the Slab Tracker's
+   CRUD UI gets rebuilt against the engine's schema or vice versa) —
+   **not started, not scoped in detail yet**, flagging so it isn't lost.
+4. **Third quote-history store** — `stonedesk_quote_history` (note the
+   underscore, distinct from `sd_quote_history`), found while tracing
+   item above, referenced ~lines 7143-7268/19905. Not examined — unknown
+   whether it's live, orphaned, or a genuine third consumer. **Needs its
+   own research pass before any decision.**
+5. **`saveSDProfile()` has zero callers** — likely an intended profile-
+   edit UI that was never built or lost its caller. Not urgent, not a
+   collision (see §3), just noted so it isn't rediscovered as if new.
+6. **1 pre-existing duplicate DOM id** (`sairn-toast`, appears twice) —
+   noticed in passing, not otherwise investigated.
+7. **26 panels split between two safe shell parents**, `duplicate_
+   global_check.py`'s nested-function-scope false-positive pattern (now
+   confirmed benign, but the tool itself still isn't scope-aware), and
+   the SESSION69 items (`#rm-causes` empty widget, Persona 2/3 partial
+   coverage, 58/61 panels with WCAG contrast failures) — all carried
+   forward unchanged, not touched this session.
+
+**All 32 items from SESSION71's original list are now resolved** (24 built
+or deleted outright; the Vendor Ordering Catalog and CRM split clusters
+had their live risks fixed with the bigger build/delete call deliberately
+deferred, per instruction, to items 1-2 above). The four original key
+collisions are now all individually traced, with two real fixes shipped
+and two confirmed as benign false positives.
 
 ## 5. Standard verification reminder for whoever reads this next
 
-Verify `main` HEAD and `origin/main` match, re-run the local checks, and
-live-verify against `sairn.vercel.app/stonedesk` before trusting any
-specific claim above — including this one. All 5 commits this session
-were individually pushed and live-verified at the time (real `curl`
-against the live endpoint, not assumed from a clean `git push`), not
-batched into one push-and-verify-at-the-end like SESSION71.
+Verify `main` HEAD and `origin/main` match, re-run the local checks
+(including `key_collision_check.py` — expect to see `sd_quote_history`
+and `sd_slab_tracker` still reported, and confirm via §3 above that this
+is expected, not a regression), and live-verify against
+`sairn.vercel.app/stonedesk` before trusting any specific claim above —
+including this one. All 16 commits this session (15 code changes + this
+handoff doc) were individually pushed and live-verified at the time (real
+`curl` against the live endpoint, not assumed from a clean `git push`).
