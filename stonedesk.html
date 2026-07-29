@@ -5432,7 +5432,7 @@ function sdInvExport(){
 })();
 </script>
 </div>
-<div class="order-cart" id="floating-cart" onclick="document.getElementById('vendor-cart-summary').scrollIntoView({behavior:'smooth'})">
+<div class="order-cart" id="floating-cart" onclick="var vcs=document.getElementById('vendor-cart-summary');if(vcs)vcs.scrollIntoView({behavior:'smooth'})">
     🛒 <span id="cart-count">0</span> items — <span id="cart-float-total">$0.00</span>
     <div id="cart-items" style="display:none" data-auto-container="missing-dom-fix"></div>
   </div>
