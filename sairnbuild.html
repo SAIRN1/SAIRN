@@ -252,6 +252,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-company" onclick="nav('company')"><span class="sico">&#127970;</span>Company Profile</button>
       <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
+      <button class="sb" id="sb-market" onclick="nav('market')"><span class="sico">&#128225;</span>Market Intelligence</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -1018,6 +1019,27 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="card">
     <div class="ch"><span class="ct">Sub Spend</span><div class="pa" style="margin-left:auto"><button class="btn bo bs" onclick="csv('reports_subspend')">Export CSV</button></div></div>
     <div class="cb" id="rp-subspend"></div>
+  </div>
+</div>
+
+<!-- MARKET INTELLIGENCE -->
+<div class="panel" id="panel-market">
+  <div class="ph"><div><div class="ptitle">Market Intelligence</div><div class="psub">Live housing and material-cost signals, scoped to what a GC actually needs to reprice bids and set client expectations</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="mktRefresh()">&#8635; Refresh Data</button><button class="btn bp bs" onclick="mktBriefing()">Claude Briefing</button></div></div>
+  <div class="note" id="mkt-updated">Click Refresh Data to load live signals from FRED (Federal Reserve Economic Data).</div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Housing Starts</div><div class="kval" id="mkt-v-starts">--</div><div class="kt" id="mkt-c-starts">Demand signal</div></div>
+    <div class="kpi"><div class="klbl">Building Permits</div><div class="kval" id="mkt-v-permits">--</div><div class="kt" id="mkt-c-permits">Forward demand</div></div>
+    <div class="kpi"><div class="klbl">Fed Funds Rate</div><div class="kval" id="mkt-v-fedfunds">--</div><div class="kt" id="mkt-c-fedfunds">Financing conditions</div></div>
+    <div class="kpi"><div class="klbl">Lumber PPI</div><div class="kval" id="mkt-v-lumber">--</div><div class="kt" id="mkt-c-lumber">Material cost trend</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Market Signals</span></div><div class="cb" id="mkt-signals"><div style="color:var(--muted);text-align:center;padding:12px;">Refresh to load signals</div></div></div>
+    <div class="card"><div class="ch"><span class="ct">Residential Remodel Context</span></div><div class="cb" id="mkt-context"><div style="color:var(--muted);text-align:center;padding:12px;">Refresh to load context</div></div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Claude Intelligence Briefing</span></div>
+    <div class="cb" id="mkt-briefing"><div style="color:var(--muted);font-style:italic">Click "Claude Briefing" above for a plain-language read on what current conditions mean for Pinnacle Industries.</div></div>
   </div>
 </div>
 
@@ -5334,6 +5356,127 @@ function rReports(){
   $('rp-subspend').innerHTML=names.length?names.map(function(n){
     return '<div class="srow"><span class="slbl">'+H(n)+'</span><span class="sval">'+fmt(spend[n])+'</span></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No PO or cleared-check spend on file</div>';
+}
+
+// ── MARKET INTELLIGENCE ───────────────────────────────────────────────────
+// Real external data, not fabricated -- same FRED series (housing starts,
+// permits, fed funds, lumber PPI) and the same /api/bridge proxy pattern
+// already live in StoneDesk's panel-market, verified there before reuse.
+// FRED_KEY is the exact same value already committed in stonedesk.html in
+// this repo and already served publicly on sairn.vercel.app -- reusing it
+// here adds no new exposure, it's already public. Deliberately narrower
+// than StoneDesk's version: skips CPI/existing-home-sales (less relevant
+// to a GC), the homebuyer.com mortgage-rate sub-call (a second undocumented
+// third-party dependency), and canvas sparkline charts (cosmetic, not core
+// value) -- Fed Funds Rate already covers "financing-rate context" for
+// this persona without needing a second live mortgage feed.
+var FRED_KEY='98624aabc8e81d3127eefb39201f247a';
+var FRED_BASE='https://api.stlouisfed.org/fred/series/observations';
+var MKT_SERIES=[['starts','HOUST','K'],['permits','PERMIT','K'],['fedfunds','FEDFUNDS','%'],['lumber','WPU0811','']];
+var MKT_STATE={data:{}};
+async function mktFredFetch(seriesId,limit){
+  var url=FRED_BASE+'?series_id='+seriesId+'&api_key='+FRED_KEY+'&file_type=json&sort_order=desc&limit='+(limit||13);
+  var res=await fetch('https://sairn.vercel.app/api/bridge',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({source_app:'sairnbuild',target_app:'market_intel',data_type:'proxy_get',payload:{url:url}})
+  });
+  return res.json();
+}
+function mktChg(vals){
+  if(!vals||vals.length<2)return{pct:0,dir:'flat'};
+  var c=vals[vals.length-1],p=vals[vals.length-2];
+  if(isNaN(c)||isNaN(p)||p===0)return{pct:0,dir:'flat'};
+  var pct=((c-p)/Math.abs(p))*100;
+  return{pct:pct,dir:pct>0.05?'up':pct<-0.05?'down':'flat'};
+}
+function mktSetKpi(key,value,change,dir){
+  var v=$('mkt-v-'+key),c=$('mkt-c-'+key);
+  if(v)v.textContent=value;
+  // innerHTML, not textContent -- the up/down arrow is an HTML entity, same
+  // convention as every other visible symbol in this file (Reviews' star
+  // rating, sidebar icons). textContent would print the literal "&#9650;"
+  // text instead of decoding it; caught and fixed before this shipped.
+  if(c){c.innerHTML=change;c.className='kt'+(dir==='down'?' d':'');}
+}
+async function mktRefresh(){
+  $('mkt-updated').textContent='Fetching live market data...';
+  MKT_SERIES.forEach(function(s){var v=$('mkt-v-'+s[0]);if(v)v.textContent='...';});
+  var data={};
+  await Promise.all(MKT_SERIES.map(function(s){
+    return mktFredFetch(s[1],13).then(function(r){
+      if(r&&r.observations){
+        data[s[0]]=r.observations.filter(function(o){return o.value!=='.';}).map(function(o){return parseFloat(o.value);}).reverse();
+      }
+    }).catch(function(e){console.warn('FRED '+s[1],e.message);});
+  }));
+  MKT_STATE.data=data;
+  var anyData=false;
+  MKT_SERIES.forEach(function(s){
+    var vals=data[s[0]];
+    if(!vals||!vals.length){mktSetKpi(s[0],'--','No data available','flat');return;}
+    anyData=true;
+    var ch=mktChg(vals);
+    var invert=s[0]==='fedfunds'||s[0]==='lumber';
+    var dir=invert?(ch.dir==='up'?'down':ch.dir==='down'?'up':ch.dir):ch.dir;
+    var arrow=dir==='up'?'&#9650; ':dir==='down'?'&#9660; ':'';
+    var last=vals[vals.length-1];
+    mktSetKpi(s[0],last.toFixed(2)+(s[2]||''),arrow+Math.abs(ch.pct).toFixed(1)+'% MoM',dir);
+  });
+  if(anyData){
+    $('mkt-updated').textContent='Live data from FRED - updated '+new Date().toLocaleTimeString();
+  }else{
+    $('mkt-updated').textContent='Could not reach FRED right now - try Refresh again in a moment. No data shown is fabricated.';
+  }
+  mktRenderSignals(data);
+  mktRenderContext(data);
+}
+function mktRenderSignals(data){
+  var out=[];
+  var lumberCh=data.lumber?mktChg(data.lumber):null;
+  if(lumberCh&&lumberCh.dir==='up')out.push({t:'Lumber PPI trending up '+lumberCh.pct.toFixed(1)+'% MoM - reprice open bids using current material costs, not last quarter\'s.',l:'Watch',c:'bw'});
+  if(lumberCh&&lumberCh.dir==='down')out.push({t:'Lumber PPI trending down '+Math.abs(lumberCh.pct).toFixed(1)+'% MoM - a window to lock in material pricing on upcoming POs.',l:'Opportunity',c:'bg'});
+  var startsCh=data.starts?mktChg(data.starts):null;
+  if(startsCh&&startsCh.dir==='up')out.push({t:'Housing starts rising - broader new-construction demand is strengthening.',l:'Positive',c:'bg'});
+  if(startsCh&&startsCh.dir==='down')out.push({t:'Housing starts falling - new-construction demand is softening; remodel work tends to hold up better in this environment.',l:'Watch',c:'bw'});
+  var fedCh=data.fedfunds?mktChg(data.fedfunds):null;
+  if(fedCh&&fedCh.dir==='up')out.push({t:'Fed funds rate rising - financing/construction-loan costs are getting more expensive for clients.',l:'Watch',c:'bw'});
+  if(fedCh&&fedCh.dir==='down')out.push({t:'Fed funds rate easing - financing conditions are improving, which tends to support remodel spending.',l:'Positive',c:'bg'});
+  $('mkt-signals').innerHTML=out.length?out.map(function(o){
+    return '<div class="srow"><span class="slbl">'+H(o.t)+'</span><span class="badge '+o.c+'">'+H(o.l)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No signals - not enough data returned yet</div>';
+}
+function mktRenderContext(data){
+  var startsCh=data.starts?mktChg(data.starts):null;
+  var fedCh=data.fedfunds?mktChg(data.fedfunds):null;
+  var newConst=startsCh?(startsCh.dir==='up'?'Strengthening':startsCh.dir==='down'?'Softening':'Steady'):'--';
+  var financing=fedCh?(fedCh.dir==='down'?'Improving':fedCh.dir==='up'?'Tightening':'Stable'):'--';
+  $('mkt-context').innerHTML=
+    '<div class="srow"><span class="slbl">New Construction Demand</span><span class="sval">'+newConst+'</span></div>'+
+    '<div class="srow"><span class="slbl">Remodel Demand</span><span class="sval">Historically resilient in soft new-construction markets</span></div>'+
+    '<div class="srow"><span class="slbl">Financing Conditions</span><span class="sval">'+financing+'</span></div>';
+}
+async function mktBriefing(){
+  if(!Object.keys(MKT_STATE.data).length){toast('Refresh market data first');return;}
+  $('mkt-briefing').innerHTML='<div style="color:var(--muted);font-style:italic">Generating briefing...</div>';
+  var sys='You are the SAIRNbuild Market Intelligence assistant for Pinnacle Industries LLC, '+
+    'a residential/light-commercial general contractor in the Cleveland/Westlake OH area. '+
+    'Given the housing-starts, building-permits, fed-funds-rate, and lumber-PPI data below, '+
+    'write a short (under 180 words) plain-language briefing on what current conditions mean '+
+    'for this GC: bid pricing, client financing conversations, and material cost timing. '+
+    'Plain ASCII only, no Unicode box characters.';
+  var msgs=[{role:'user',content:'Latest data points (most recent last): '+JSON.stringify(MKT_STATE.data)}];
+  try{
+    var res=await fetch(PROXY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,messages:msgs})
+    });
+    if(!res.ok)throw new Error('Claude error '+res.status);
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    $('mkt-briefing').innerHTML='<div style="white-space:pre-wrap;line-height:1.6">'+H(text||'No response text returned.')+'</div>';
+  }catch(e){
+    $('mkt-briefing').innerHTML='<div style="color:var(--danger)">Could not reach Claude. Check your connection and try again.</div>';
+  }
 }
 
 function csv(type){
