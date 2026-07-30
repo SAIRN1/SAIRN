@@ -143,13 +143,13 @@ unchanged (`dashboard`, `jobs`, `jobcost`, `changeorders`).
 ### Safety (1)
 | Panel | id | Purpose | Status |
 |---|---|---|---|
-| Safety & Incidents | `safety` | Incident log (date, job, description, OSHA-reportable flag, corrective action) and toolbox-talk tracking. A GC carries this liability directly; StoneDesk's own Safety panel (`panel-safety`) is the closest direct precedent. | New |
+| Safety & Incidents | `safety` | Incident log (date, job, description, OSHA-reportable flag, corrective action) and toolbox-talk tracking. **Correction, 2026-07-30:** StoneDesk's `panel-safety` was checked, not assumed, before building this — it is stone-shop-specific (silica exposure, wet/dry cut violations) with several KPI tiles hardcoded in the HTML rather than computed, so it was not used as a precedent. Built from this row's own field list instead. | **Built, live** |
 
 ### Client (2)
 | Panel | id | Purpose | Status |
 |---|---|---|---|
-| Client Portal | `clientportal` | Shared view for the homeowner/client: job status, photos, approved change orders, selections status. Communication log lives here rather than as a separate panel, folding in what would otherwise be a duplicate of this. | New |
-| Warranty | `warranty` | Post-completion callback tracking: claim, job reference, trade responsible, status, cost. Direct reuse of StoneDesk's proven Warranty panel shape. | New |
+| Client Portal | `clientportal` | Shared view for the homeowner/client: job status, photos, approved change orders, selections status. Communication log lives here rather than as a separate panel, folding in what would otherwise be a duplicate of this. Deliberately never surfaces cost/margin/committed spend — homeowner-facing only. | **Built, live** |
+| Warranty | `warranty` | Post-completion callback tracking: claim, job reference, trade responsible, status, cost. StoneDesk's `panel-warranty` was verified (not assumed) as a genuine computed-KPI precedent before reuse — unlike the Check Register claim corrected above, this one held up. | **Built, live** |
 
 ### Documents (1)
 | Panel | id | Purpose | Status |
