@@ -571,7 +571,7 @@ textarea{resize:vertical;min-height:80px;}
       <div class="fg"><label>Attorney</label><input id="co-atty" value="Miller Law Group (440) 222-8800"></div>
     </div></div>
     <div class="card"><div class="ch"><span class="ct">SAIRN Integration Status</span></div><div class="cb">
-      <div class="srow"><span class="slbl">StoneDesk</span><span class="sval"><span class="badge bg">Synced</span></span></div>
+      <div class="srow"><span class="slbl">StoneDesk</span><span class="sval"><span class="badge bx" id="co-sd-status">Not Synced</span></span></div>
       <div class="srow"><span class="slbl">SAIRNgrounds</span><span class="sval"><span class="badge bx">Not Connected</span></span></div>
       <div class="srow"><span class="slbl">SAIRNbuild</span><span class="sval"><span class="badge bx">Not Connected</span></span></div>
       <div class="srow"><span class="slbl">SAIRNcode</span><span class="sval"><span class="badge bx">Not Connected</span></span></div>
@@ -771,6 +771,8 @@ function seed(){
 function init(){
   seed();rDash();rEmps();rTS();rPay();rInvs();rExps();rAP();rAR();rVends();rBud();rTax();rHire();rTrain();rPerf();rBenKPIs();
   $('tsweek').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  renderSyncStatus();
+  var lastSync=ld('sb_sync',null);if(lastSync)$('co-sync').textContent=lastSync;
 }
 
 function pbar(pct,color){return '<div class="pbar"><div class="pfill" style="width:'+pct+'%;'+(color?'background:'+color:'')+'"></div></div>';}
@@ -1058,17 +1060,33 @@ function saveCo(){
   st('sb_co',{name:$('co-name').value,dba:$('co-dba').value,entity:$('co-entity').value,state:$('co-state').value,ein:$('co-ein').value,founded:$('co-founded').value,industry:$('co-industry').value,addr:$('co-addr').value,city:$('co-city').value,st2:$('co-st').value,zip:$('co-zip').value,phone:$('co-phone').value,email:$('co-email').value,web:$('co-web').value,owner:$('co-owner').value,hr:$('co-hr').value,ctrl:$('co-ctrl').value});
   toast('Company profile saved');
 }
+function renderSyncStatus(){
+  var el=$('co-sd-status');if(!el)return;
+  var synced=!!ld('sb_sync',null);
+  el.className='badge '+(synced?'bg':'bx');
+  el.textContent=synced?'Synced':'Not Synced';
+}
 function syncSupabase(){
-  syncEmps(ld('sb_emps',[]));
-  var now=new Date().toLocaleString();st('sb_sync',now);$('co-sync').textContent=now;
-  toast('Synced to Supabase - StoneDesk can now read employee and company data');
+  syncEmps(ld('sb_emps',[])).then(function(ok){
+    if(ok){
+      var now=new Date().toLocaleString();st('sb_sync',now);$('co-sync').textContent=now;
+      renderSyncStatus();
+      toast('Synced to Supabase - StoneDesk can now read employee and company data');
+    }else{
+      toast('Sync failed - check connection and try again');
+    }
+  });
 }
 function syncEmps(emps){
   try{if(typeof supabase!=='undefined'){
     var _s=supabase.createClient(SB_URL,SB_KEY);
     var pl=emps.map(function(e){return{employee_id:e.id,first_name:e.fn,last_name:e.ln,role:e.role,department:e.dept,employment_type:e.type,hourly_rate:e.rate,start_date:e.start,phone:e.phone,email:e.email,status:e.status,source_app:'sairnbiz',updated_at:new Date().toISOString()};});
-    _s.from('employees').upsert(pl,{onConflict:'employee_id'}).then(function(r){if(r&&r.error)console.warn('Supabase:',r.error.message);});
+    return _s.from('employees').upsert(pl,{onConflict:'employee_id'}).then(function(r){
+      if(r&&r.error){console.warn('Supabase:',r.error.message);return false;}
+      return true;
+    }).catch(function(e){console.warn('Supabase skipped:',e.message);return false;});
   }}catch(e){console.warn('Supabase skipped:',e.message);}
+  return Promise.resolve(false);
 }
 
 function genReport(type){
