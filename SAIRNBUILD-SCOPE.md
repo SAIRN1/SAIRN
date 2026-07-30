@@ -560,3 +560,17 @@ push (`node --check`, div balance, duplicate ids, nav/panel reconciliation);
 `sairn_dead_button_audit.py` clean on A/C2/D1; every fix live-verified against
 the deployed URL rather than assumed from a clean push; and any unique
 constraint probe-verified before client code depends on it.
+
+**Mobile verification — completed 2026-07-30 across all 37 panels, not just
+the original 4.** `resize_window` did not actually change this session's
+browser tab viewport (`window.innerWidth` stayed desktop-width regardless),
+so verification used a same-origin `<iframe>` sized to 390x844 to get a
+genuinely narrow viewport, then drove it via the page's own JS (`nav(id)`,
+`toggleNav()`) rather than simulated clicks. Checked objectively, not by
+eyeballing screenshots: `document.documentElement.scrollWidth` against
+`window.innerWidth` on all 37 panels (zero overflow on any), every one of
+the 37 modals' `.mbox` bounding rect against the viewport (zero overflow),
+and every `.btn` element's rendered height against the 40px floor (zero
+violations across 170 buttons). Off-canvas drawer nav confirmed to slide
+correctly and list every current panel including the two added same
+session (AI Assistant, Schedule).
