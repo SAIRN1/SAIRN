@@ -4,12 +4,22 @@ sairn_dead_button_audit.py -- non-functional-button audit for SAIRN apps.
 
 Usage:  python3 sairn_dead_button_audit.py stonedesk.html [sairnbiz.html ...]
 
-Bakes in the two Session 77 corrections:
+Bakes in the two Session 77 corrections plus one from Session 78:
   1. Comments are stripped before ANY counting. A `function foo()` written
      inside an explanatory comment is not a definition.
   2. A toast-only function body is NOT a finding until its callers are
      enumerated. Zero callers -> orphan (delete). Callers -> live button
      (wire up or relabel). Opposite fixes, so never guess.
+  3. Section D is scope-aware, not name-based. Two same-named definitions
+     only count as a real collision (D1) if they sit at the same depth
+     inside the same enclosing function/IIFE -- tracked via a brace-depth
+     scope stack, the same push/pop pattern already used successfully by
+     tools/duplicate_global_check.py elsewhere in this repo. Same name in
+     different scopes is D2, informational only. `window.NAME = IDENT;`
+     (a bare-identifier alias/re-export, e.g. the idiomatic
+     `window.foo = foo;` pattern used throughout this codebase) is not
+     counted as a second definition at all -- only `window.NAME = function
+     ...`/`=> ...` (an actual new function literal) is.
 """
 import re
 import sys
@@ -113,6 +123,134 @@ def mask_scripts(src):
     return ''.join(out)
 
 
+FUNC_DECL_RE = re.compile(r'function\s+([A-Za-z_$][\w$]*)\s*\(')
+FUNC_ANON_RE = re.compile(r'function\s*\(')
+VAR_FUNC_RE = re.compile(
+    r'\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?'
+    r'(?:function\b|\([^()]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)')
+# Session 78 correction: the original `\(` alternative matched ANY
+# assignment starting with '(' -- including plain parenthesized
+# expressions like `var _v = (window.sd_jobs && ...)`, not just arrow
+# functions. Now requires an actual `=>` after the (non-nested)
+# parenthesized param list, or a single bare-identifier arrow param.
+WINDOW_ASSIGN_RE = re.compile(r'window\.([A-Za-z_$][\w$]*)\s*=\s*')
+FUNC_LITERAL_RHS_RE = re.compile(r'(?:async\s*)?function\b|\([^()]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>')
+
+
+def find_scoped_definitions(src):
+    """Single pass over comment-stripped src. Tracks brace depth and a
+    scope stack the same way this repo's tools/duplicate_global_check.py
+    already does (push a pending scope marker when a function signature is
+    seen, resolve it on the next '{', pop on the matching '}') -- reused
+    here rather than reinvented, since that approach already works on this
+    exact codebase.
+
+    Returns: dict name -> list of (scope_id, line). scope_id 0 is
+    top-level/global; every function/IIFE body gets its own id, valid for
+    definitions written directly inside it (not further nested).
+
+    `window.NAME = IDENT;` (a bare identifier on the right, e.g. the
+    idiomatic `window.foo = foo;` export/alias pattern used throughout
+    this codebase) is deliberately NOT counted as a definition site -- it
+    re-exports an existing definition under the same name, it doesn't
+    create a second one. Only `window.NAME = function...`/`=> ...`
+    (a real function literal on the right) counts. Without this, nearly
+    every exported function in the file would falsely show as
+    "duplicated" by its own export line.
+    """
+    n = len(src)
+    i = 0
+    depth = 0
+    scope_stack = [[0, None]]   # [scope_id, pending_open_depth_or_None]... see below
+    # Simpler model: stack of active scope ids with the depth at which
+    # each was opened (the depth value that exists WHILE inside it).
+    active = [0]                # active[-1] = current innermost scope id
+    entry_depth = {0: -1}       # scope_id -> depth value just before it opened
+    pending_scope_id = None     # a scope id waiting for its opening '{'
+    next_id = 1
+    defs = collections.defaultdict(list)
+
+    def cur_line(pos):
+        return src.count('\n', 0, pos) + 1
+
+    while i < n:
+        c = src[i]
+        if c == '\n':
+            i += 1
+            continue
+
+        if pending_scope_id is None:
+            m = FUNC_DECL_RE.match(src, i)
+            if m:
+                defs[m.group(1)].append((active[-1], cur_line(m.start())))
+                pending_scope_id = next_id
+                next_id += 1
+                i = m.end()
+                continue
+            m = VAR_FUNC_RE.match(src, i)
+            if m:
+                defs[m.group(1)].append((active[-1], cur_line(m.start())))
+                # only var/let/const = function(...) opens a new scope here;
+                # `= (` (arrow-with-parenthesized-params, e.g. `(x) => {`)
+                # also matched by VAR_FUNC_RE's trailing \( alt -- the
+                # scope for that gets picked up by the generic arrow check
+                # below when its '{' is reached, so only pre-arm a pending
+                # scope for the `function` spelling here.
+                if src[m.end() - 1] not in '(':
+                    pending_scope_id = next_id
+                    next_id += 1
+                i = m.end()
+                continue
+            m = WINDOW_ASSIGN_RE.match(src, i)
+            if m:
+                rest = src[m.end():m.end() + 60].lstrip()
+                if FUNC_LITERAL_RHS_RE.match(rest):
+                    defs[m.group(1)].append((active[-1], cur_line(m.start())))
+                    if re.match(r'(?:async\s*)?function\b', rest):
+                        pending_scope_id = next_id
+                        next_id += 1
+                # else: bare-identifier alias (window.foo = foo;) or a
+                # non-function RHS (string/number/object literal) -- not a
+                # new definition, skip.
+                i = m.end()
+                continue
+            m = FUNC_ANON_RE.match(src, i)
+            if m:
+                # anonymous function expression / IIFE not already caught
+                # above (e.g. `(function(){...})()`, callback args)
+                pending_scope_id = next_id
+                next_id += 1
+                i = m.end()
+                continue
+
+        if c == '{':
+            depth += 1
+            if pending_scope_id is not None:
+                active.append(pending_scope_id)
+                entry_depth[pending_scope_id] = depth - 1
+                pending_scope_id = None
+            i += 1
+            continue
+        if c == '}':
+            if len(active) > 1 and entry_depth.get(active[-1]) == depth - 1:
+                active.pop()
+            depth -= 1
+            i += 1
+            continue
+        # arrow-function body opening: `... ) => {` or `x => {`
+        if c == '=' and src[i:i + 2] == '=>':
+            j = i + 2
+            while j < n and src[j] in ' \t\r\n':
+                j += 1
+            if j < n and src[j] == '{':
+                pending_scope_id = next_id
+                next_id += 1
+            i += 2
+            continue
+        i += 1
+    return defs
+
+
 def audit(path):
     with open(path, encoding='utf-8', errors='replace') as fh:
         raw = fh.read()
@@ -174,11 +312,26 @@ def audit(path):
     findings['C1. LIVE toast-only function (wire up or relabel)'] = live
     findings['C2. ORPHAN toast-only function, zero callers (delete)'] = orphan
 
-    # D. duplicate definitions, comment-free
-    findings['D. DUPLICATE definitions (later silently wins)'] = [
-        f'{n}  x{len(v)}  lines {v}'
-        for n, v in sorted(defined.items()) if len(v) > 1 and n not in ('load', 'save', 'render', 's', 'sv')
-    ]
+    # D. duplicate definitions, scope-aware (correction 3, Session 78):
+    # only a REAL collision if both definitions sit at the same depth
+    # inside the same enclosing function/IIFE. Two save() in two
+    # different closures are not a collision -- no hardcoded name
+    # blocklist needed once scope is actually tracked.
+    scoped_defs = find_scoped_definitions(src)
+    d1, d2 = [], []
+    for name, sites in sorted(scoped_defs.items()):
+        by_scope = collections.defaultdict(list)
+        for scope_id, line in sites:
+            by_scope[scope_id].append(line)
+        same_scope_hits = {sid: lines for sid, lines in by_scope.items() if len(lines) > 1}
+        if same_scope_hits:
+            for sid, lines in same_scope_hits.items():
+                d1.append(f'{name}  x{len(lines)} in the SAME scope  lines {lines}')
+        elif len(by_scope) > 1:
+            d2.append(name)
+    findings['D1. DUPLICATE, SAME scope (later silently wins -- real, fix)'] = d1
+    findings['D2. same name, DIFFERENT scopes (informational, count only)'] = \
+        [f'{len(d2)} names reused across unrelated scopes (not listed -- not a collision)'] if d2 else []
 
     # E. placeholder copy, excluding input placeholder= and CSS class names
     place = []
