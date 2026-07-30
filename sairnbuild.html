@@ -212,6 +212,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <aside id="aside">
       <div class="ss">Overview</div>
       <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <div class="ss">Sales &amp; Bidding</div>
+      <button class="sb" id="sb-bids" onclick="nav('bids')"><span class="sico">&#128188;</span>Bids &amp; Proposals</button>
       <div class="ss">Jobs</div>
       <button class="sb" id="sb-jobs" onclick="nav('jobs')"><span class="sico">&#127959;</span>Job Board</button>
       <button class="sb" id="sb-changeorders" onclick="nav('changeorders')"><span class="sico">&#128221;</span>Change Orders</button>
@@ -238,6 +240,37 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
     <div class="card"><div class="ch"><span class="ct">Crew (from SAIRNbiz)</span></div><div class="cb" id="d-crew"></div></div>
   </div>
+</div>
+
+<!-- BIDS & PROPOSALS -->
+<div class="panel" id="panel-bids">
+  <div class="ph"><div><div class="ptitle">Bids &amp; Proposals</div><div class="psub">Lead through proposal to accepted bid &mdash; the funnel that feeds Job Board</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('bids')">Export CSV</button><button class="btn bp bs" onclick="openBidModal()">+ New Bid</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open Bids</div><div class="kval" id="b-open">0</div><div class="kt">Lead, estimating or sent</div></div>
+    <div class="kpi"><div class="klbl">Pipeline Value</div><div class="kval" id="b-pipeline">$0</div><div class="kt">Open bids, total</div></div>
+    <div class="kpi"><div class="klbl">Win Rate</div><div class="kval" id="b-winrate">0%</div><div class="kt" id="b-winrate-sub">Won vs decided</div></div>
+    <div class="kpi"><div class="klbl">Avg Won Size</div><div class="kval" id="b-avgwon">$0</div><div class="kt">Per won bid</div></div>
+    <div class="kpi"><div class="klbl">Lost</div><div class="kval" id="b-lost">0</div><div class="kt">Declined by client</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <input id="bsrch" placeholder="Search client, project type..." oninput="rBidsTbl()">
+      <select id="bstage" onchange="rBidsTbl()" style="width:180px;">
+        <option value="">All Stages</option>
+        <option value="lead">Lead</option>
+        <option value="estimating">Estimating</option>
+        <option value="sent">Sent</option>
+        <option value="won">Won</option>
+        <option value="lost">Lost</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Client</th><th>Project Type</th><th>Source</th><th>Stage</th><th>Total</th><th>Actions</th></tr></thead>
+    <tbody id="btbody"></tbody></table></div>
+  </div></div>
+  <div class="note">Estimating line items group by <strong>phase</strong> or <strong>cost type</strong> &mdash; a fixed template is exactly the rigidity competitors in this space are criticized for; this stays user-selectable per bid, not baked into one structure.</div>
+  <div class="card"><div class="ch"><span class="ct">Trade Bid Comparison</span><button class="btn bo bs" onclick="openSubBidModal()" style="margin-left:auto">+ Log Sub Bid</button></div><div class="cb" id="b-subbids"></div></div>
+  <div class="note" style="margin-top:0">Sub-bid logging and side-by-side comparison is real and working. Automated subcontract-document generation from an awarded bid is <strong>not yet built</strong> &mdash; awarding a sub bid here marks it awarded, it does not yet generate a subcontract or PO. Stated plainly rather than implied.</div>
 </div>
 
 <!-- JOB BOARD -->
@@ -365,6 +398,54 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="bidmodal">
+  <div class="mbox" style="width:640px;max-width:94vw;">
+    <div class="mtitle">Add / Edit Bid</div>
+    <div class="fr"><div class="fg"><label>Client Name</label><input id="bm-client" placeholder="Client name"></div><div class="fg"><label>Client Phone</label><input id="bm-phone" placeholder="(440) 555-0100"></div></div>
+    <div class="fr"><div class="fg"><label>Project Type</label><input id="bm-type" placeholder="Kitchen remodel"></div><div class="fg"><label>Source</label><select id="bm-source">
+      <option value="referral">Referral</option><option value="repeat">Repeat client</option><option value="web">Web</option><option value="walk_in">Walk-in</option><option value="other">Other</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Stage</label><select id="bm-stage" onchange="bidStageChanged()">
+      <option value="lead">Lead</option><option value="estimating">Estimating</option><option value="sent">Sent</option><option value="won">Won</option><option value="lost">Lost</option>
+    </select></div><div class="fg"><label>Markup %</label><input id="bm-markup" type="number" placeholder="18"></div></div>
+    <div class="fr" id="bm-sentrow"><div class="fg"><label>Sent Date</label><input id="bm-sent" type="date"></div><div class="fg"><label>Decided Date</label><input id="bm-decided" type="date"></div></div>
+    <div class="fg" id="bm-lostrow" style="display:none"><label>Lost Reason</label><input id="bm-lostreason" placeholder="Only if stage = Lost"></div>
+    <div class="fg"><label>Notes</label><input id="bm-notes" placeholder="Optional"></div>
+
+    <div class="mtitle" style="font-size:14px;margin-top:18px;">Line Items <span style="font-weight:400;color:var(--muted);font-size:12px;">&mdash; group by</span>
+      <select id="bm-groupby" onchange="renderBidLineDraft()" style="width:auto;display:inline-block;font-size:12px;padding:4px 8px;margin-left:6px;">
+        <option value="phase">Phase</option><option value="cost_type">Cost Type</option>
+      </select>
+    </div>
+    <div class="fr"><div class="fg"><label>Phase</label><input id="bli-phase" placeholder="Demo / Framing / Finish"></div><div class="fg"><label>Cost Type</label><select id="bli-costtype">
+      <option value="labour">Labour</option><option value="material">Material</option><option value="sub">Subcontractor</option><option value="other">Other</option>
+    </select></div></div>
+    <div class="fg"><label>Description</label><input id="bli-desc" placeholder="Demo existing cabinetry"></div>
+    <div class="fr"><div class="fg"><label>Qty</label><input id="bli-qty" type="number" placeholder="1"></div><div class="fg"><label>Unit Cost ($)</label><input id="bli-cost" type="number" placeholder="2400"></div></div>
+    <button class="btn bo bs" onclick="addBidLineDraft()" style="margin-bottom:10px;">+ Add Line</button>
+    <div id="bm-lines"></div>
+    <div style="text-align:right;font-size:13px;color:var(--text);margin:6px 0 14px;">Subtotal: <strong id="bm-subtotal">$0</strong> &nbsp;+&nbsp; Markup: <strong id="bm-markupval">$0</strong> &nbsp;=&nbsp; Total: <strong id="bm-total" style="color:var(--p);font-size:15px;">$0</strong></div>
+
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeBidModal()">Cancel</button>
+      <button class="btn bp" onclick="saveBid()">Save Bid</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="subbidmodal">
+  <div class="mbox">
+    <div class="mtitle">Log Sub Bid</div>
+    <div class="fg"><label>Job (optional &mdash; leave blank if pre-award)</label><select id="sbm-job"><option value="">Not tied to a job yet</option></select></div>
+    <div class="fr"><div class="fg"><label>Cost Code / Trade</label><input id="sbm-code" placeholder="04-Electrical"></div><div class="fg"><label>Subcontractor</label><input id="sbm-sub" placeholder="Kessler Electric"></div></div>
+    <div class="fg"><label>Bid Amount ($)</label><input id="sbm-amount" type="number" placeholder="18500"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSubBidModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSubBid()">Save Sub Bid</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="comodal">
   <div class="mbox">
     <div class="mtitle">Add / Edit Change Order</div>
@@ -481,6 +562,7 @@ function nav(id){
   if(id==='jobs')rJobs();
   if(id==='jobcost')rCost();
   if(id==='changeorders')rCO();
+  if(id==='bids')rBids();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -528,6 +610,45 @@ function seed(){
     {id:'CO-004',job_id:'J-2602',description:'Additional soundproofing between units',amount:8900,labour_hrs:31,status:'draft',requested_by:'Field',sent_at:'',accepted_at:'',reason:''},
     {id:'CO-005',job_id:'J-2603',description:'Reroute HVAC around new beam',amount:5600,labour_hrs:18,status:'rejected',requested_by:'Field',sent_at:'2026-06-18',accepted_at:'',reason:'Client declined - reverting to original layout'}
   ]);
+  // Bids: every stage represented per the seed-plan convention (every state
+  // renders). B-101 (won) carries real line items grouped across two phases
+  // and two cost types, so the group-by toggle and the computed subtotal/
+  // markup/total have something real to prove, not just an empty table.
+  st('bld_bids',[
+    {id:'B-101',client:'Hartley Residence',phone:'(440) 555-0142',type:'Full kitchen remodel',source:'referral',stage:'won',markup:18,
+      lines:[{phase:'Demo',cost_type:'labour',desc:'Demo existing cabinetry and flooring',qty:1,cost:2400},
+             {phase:'Demo',cost_type:'other',desc:'Dumpster + disposal',qty:1,cost:650},
+             {phase:'Finish',cost_type:'material',desc:'Cabinetry package',qty:1,cost:38500},
+             {phase:'Finish',cost_type:'sub',desc:'Countertop fabrication (Pinnacle Stone)',qty:1,cost:12500},
+             {phase:'Finish',cost_type:'labour',desc:'Install labour',qty:80,cost:65}],
+      sent:'2026-04-22',decided:'2026-05-01',lostreason:'',notes:'Became job J-2601'},
+    {id:'B-102',client:'Delgado Property Group',phone:'(440) 555-0188',type:'Two-unit interior rebuild',source:'repeat',stage:'won',markup:16,
+      lines:[{phase:'Structure',cost_type:'sub',desc:'Framing + structural',qty:1,cost:58000},
+             {phase:'Structure',cost_type:'labour',desc:'GC oversight',qty:120,cost:70}],
+      sent:'2026-04-01',decided:'2026-04-15',lostreason:'',notes:'Became job J-2602'},
+    {id:'B-103',client:'Reyes Residence',phone:'(440) 555-0341',type:'Primary bath remodel',source:'web',stage:'sent',markup:20,
+      lines:[{phase:'Demo',cost_type:'labour',desc:'Demo existing bath',qty:1,cost:1800},
+             {phase:'Finish',cost_type:'material',desc:'Tile + fixtures package',qty:1,cost:14200}],
+      sent:'2026-07-20',decided:'',lostreason:'',notes:'Awaiting client decision'},
+    {id:'B-104',client:'Carrigan Residence',phone:'(440) 555-0466',type:'Basement finish',source:'referral',stage:'estimating',markup:18,
+      lines:[{phase:'Framing',cost_type:'labour',desc:'Framing + drywall',qty:1,cost:9800}],
+      sent:'',decided:'',lostreason:'',notes:'Pricing electrical sub bids before sending'},
+    {id:'B-105',client:'Okonkwo Residence',phone:'(440) 555-0559',type:'Deck + patio addition',source:'walk_in',stage:'lead',markup:18,lines:[],
+      sent:'',decided:'',lostreason:'',notes:'Initial call logged, site visit not yet scheduled'},
+    {id:'B-106',client:'Whitcombe Residence',phone:'(440) 555-0271',type:'Whole-house renovation',source:'web',stage:'lost',markup:15,
+      lines:[{phase:'Structure',cost_type:'sub',desc:'Full structural package',qty:1,cost:210000}],
+      sent:'2026-06-10',decided:'2026-06-24',lostreason:'Went with a lower bid from a competitor',notes:''}
+  ]);
+  // Sub bids: two trade packages, each with multiple competing bids so the
+  // side-by-side comparison has something real to compare -- one already
+  // awarded (J-2601 electrical), one still open (J-2602 plumbing).
+  st('bld_sub_bids',[
+    {id:'SB-01',job_id:'J-2601',cost_code:'Electrical rough-in',sub:'Kessler Electric',amount:8200,awarded:true},
+    {id:'SB-02',job_id:'J-2601',cost_code:'Electrical rough-in',sub:'Voltline Electric',amount:9100,awarded:false},
+    {id:'SB-03',job_id:'J-2601',cost_code:'Electrical rough-in',sub:'Bright Path Electrical',amount:8650,awarded:false},
+    {id:'SB-04',job_id:'J-2602',cost_code:'Plumbing rough-in',sub:'Delgado Plumbing Co',amount:14200,awarded:false},
+    {id:'SB-05',job_id:'J-2602',cost_code:'Plumbing rough-in',sub:'Rocky River Mechanical',amount:13400,awarded:false}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -548,7 +669,216 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();}
+
+// ── BIDS & PROPOSALS ─────────────────────────────────────────────────────
+var BSTAGE={lead:{l:'Lead',c:'bx'},estimating:{l:'Estimating',c:'bw'},sent:{l:'Sent',c:'bb'},won:{l:'Won',c:'bg'},lost:{l:'Lost',c:'br'}};
+function bldBids(){return ld('bld_bids',[]);}
+function bldSubBids(){return ld('bld_sub_bids',[]);}
+function bidLineTotal(li){return (li.qty||0)*(li.cost||0);}
+function bidSubtotal(b){return (b.lines||[]).reduce(function(s,li){return s+bidLineTotal(li);},0);}
+function bidMarkupVal(b){return Math.round(bidSubtotal(b)*((b.markup||0)/100));}
+function bidTotal(b){return bidSubtotal(b)+bidMarkupVal(b);}
+
+function rBids(){fillJobSelects();rBidsTbl();rSubBids();}
+
+// Same scope discipline as every other panel: KPIs describe exactly the
+// filtered rows, table and export both read from the same scope function,
+// so none of the three can quietly disagree with the other two.
+function bidScope(){
+  var q=(($('bsrch')||{}).value||'').toLowerCase(),sf=(($('bstage')||{}).value||'');
+  return bldBids().filter(function(b){
+    var hit=!q||(b.client||'').toLowerCase().indexOf(q)!==-1||(b.type||'').toLowerCase().indexOf(q)!==-1;
+    return hit&&(!sf||b.stage===sf);
+  });
+}
+
+function rBidsTbl(){
+  var list=bidScope();
+  var open=list.filter(function(b){return b.stage==='lead'||b.stage==='estimating'||b.stage==='sent';});
+  var won=list.filter(function(b){return b.stage==='won';});
+  var lost=list.filter(function(b){return b.stage==='lost';});
+  var pipeline=open.reduce(function(s,b){return s+bidTotal(b);},0);
+  var decided=won.length+lost.length;
+  var winRate=decided>0?Math.round(won.length/decided*100):0;
+  var avgWon=won.length>0?Math.round(won.reduce(function(s,b){return s+bidTotal(b);},0)/won.length):0;
+  $('b-open').textContent=open.length;
+  $('b-pipeline').textContent=fmt(pipeline);
+  $('b-winrate').textContent=winRate+'%';
+  $('b-winrate-sub').textContent=decided?(won.length+' won of '+decided+' decided'):'No bids decided yet';
+  $('b-avgwon').textContent=fmt(avgWon);
+  $('b-lost').textContent=lost.length;
+
+  var tb=$('btbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No bids match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(b){
+      var s=BSTAGE[b.stage]||{l:b.stage,c:'bx'};
+      return '<tr><td><strong>'+H(b.client)+'</strong></td>'+
+        '<td>'+H(b.type||'')+'</td>'+
+        '<td>'+H((b.source||'').replace('_',' '))+'</td>'+
+        '<td><span class="badge '+s.c+'">'+H(s.l)+'</span></td>'+
+        '<td><strong>'+fmt(bidTotal(b))+'</strong></td>'+
+        '<td><button class="btn bo bs" onclick="editBid(\''+H(b.id)+'\')">Edit</button>'+
+        (b.stage==='won'?' <button class="btn bp bs" onclick="convertBidToJob(\''+H(b.id)+'\')">Convert to Job</button>':'')+
+        '</td></tr>';
+    }).join('');
+  }
+}
+
+// ── Bid line-item draft (in-memory while the modal is open) ────────────────
+var bidLineDraft=[],bideid=null;
+function addBidLineDraft(){
+  var phase=$('bli-phase').value.trim()||'General';
+  var costType=$('bli-costtype').value;
+  var desc=$('bli-desc').value.trim();
+  var qty=parseFloat($('bli-qty').value)||0;
+  var cost=parseFloat($('bli-cost').value)||0;
+  if(!desc){toast('Line description required');return;}
+  if(qty<=0||cost<=0){toast('Qty and unit cost must both be greater than 0');return;}
+  bidLineDraft.push({phase:phase,cost_type:costType,desc:desc,qty:qty,cost:cost});
+  ['bli-phase','bli-desc','bli-qty','bli-cost'].forEach(function(f){$(f).value='';});
+  renderBidLineDraft();
+}
+function removeBidLineDraft(idx){bidLineDraft.splice(idx,1);renderBidLineDraft();}
+function renderBidLineDraft(){
+  var groupBy=($('bm-groupby')||{}).value||'phase';
+  var groups={};
+  bidLineDraft.forEach(function(li,idx){
+    var key=groupBy==='phase'?(li.phase||'General'):(KIND[li.cost_type]||li.cost_type);
+    if(!groups[key])groups[key]=[];
+    groups[key].push({li:li,idx:idx});
+  });
+  var html=Object.keys(groups).map(function(key){
+    var rows=groups[key].map(function(x){
+      return '<div class="srow"><span class="slbl">'+H(x.li.desc)+' <span style="color:var(--muted)">('+x.li.qty+' &times; '+fmt(x.li.cost)+')</span></span>'+
+        '<span class="sval">'+fmt(bidLineTotal(x.li))+' <button class="btn bo bs" onclick="removeBidLineDraft('+x.idx+')" style="padding:2px 8px;margin-left:6px;">&times;</button></span></div>';
+    }).join('');
+    return '<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">'+H(key)+'</div>'+rows+'</div>';
+  }).join('')||'<div style="color:var(--muted);font-size:13px;">No line items yet</div>';
+  $('bm-lines').innerHTML=html;
+  var subtotal=bidLineDraft.reduce(function(s,li){return s+bidLineTotal(li);},0);
+  var markupPct=parseFloat(($('bm-markup')||{}).value)||0;
+  var markupVal=Math.round(subtotal*(markupPct/100));
+  $('bm-subtotal').textContent=fmt(subtotal);
+  $('bm-markupval').textContent=fmt(markupVal);
+  $('bm-total').textContent=fmt(subtotal+markupVal);
+}
+function bidStageChanged(){
+  var stage=$('bm-stage').value;
+  $('bm-lostrow').style.display=stage==='lost'?'block':'none';
+}
+
+function openBidModal(){
+  bideid=null;bidLineDraft=[];
+  ['bm-client','bm-phone','bm-type','bm-sent','bm-decided','bm-lostreason','bm-notes'].forEach(function(f){$(f).value='';});
+  $('bm-source').value='referral';$('bm-stage').value='lead';$('bm-markup').value='18';
+  bidStageChanged();renderBidLineDraft();
+  $('bidmodal').classList.add('on');
+}
+function closeBidModal(){$('bidmodal').classList.remove('on');}
+function editBid(id){
+  var b=bldBids().find(function(x){return x.id===id;});if(!b)return;
+  bideid=id;bidLineDraft=(b.lines||[]).map(function(li){return Object.assign({},li);});
+  $('bm-client').value=b.client||'';$('bm-phone').value=b.phone||'';$('bm-type').value=b.type||'';
+  $('bm-source').value=b.source||'referral';$('bm-stage').value=b.stage||'lead';$('bm-markup').value=b.markup||0;
+  $('bm-sent').value=b.sent||'';$('bm-decided').value=b.decided||'';$('bm-lostreason').value=b.lostreason||'';
+  $('bm-notes').value=b.notes||'';
+  bidStageChanged();renderBidLineDraft();
+  $('bidmodal').classList.add('on');
+}
+function saveBid(){
+  var client=$('bm-client').value.trim();
+  if(!client){toast('Client name required');return;}
+  var stage=$('bm-stage').value;
+  if(stage==='sent'&&!$('bm-sent').value){toast('A sent bid needs a sent date');return;}
+  if((stage==='won'||stage==='lost')&&!$('bm-decided').value){toast('A won or lost bid needs a decided date');return;}
+  if(stage==='lost'&&!$('bm-lostreason').value.trim()){toast('A lost bid needs a reason -- that is the whole point of tracking it');return;}
+  var bids=bldBids();
+  var existing=bideid?bids.find(function(x){return x.id===bideid;}):null;
+  var rec={
+    id:bideid||('B-'+Date.now()),
+    client:client,phone:$('bm-phone').value.trim(),type:$('bm-type').value.trim(),
+    source:$('bm-source').value,stage:stage,markup:parseFloat($('bm-markup').value)||0,
+    lines:bidLineDraft.slice(),
+    sent:$('bm-sent').value,decided:$('bm-decided').value,
+    lostreason:stage==='lost'?$('bm-lostreason').value.trim():'',
+    notes:$('bm-notes').value.trim()
+  };
+  if(existing){Object.assign(existing,rec);}else{bids.push(rec);}
+  st('bld_bids',bids);
+  closeBidModal();rBids();
+  toast('Saved - '+rec.client);
+}
+
+// A won bid becomes a real Job Board entry -- the funnel this panel exists
+// to run. Marks the bid converted (idempotent: a bid already converted
+// cannot be converted a second time into a duplicate job) rather than
+// silently allowing it to be clicked twice.
+function convertBidToJob(id){
+  var b=bldBids().find(function(x){return x.id===id;});if(!b)return;
+  if(b.converted_job_id){toast('Already converted to job '+b.converted_job_id);return;}
+  var js=jobs();
+  var newId='J-'+(2600+js.length+1);
+  js.push({id:newId,address:b.notes||b.type||b.client,client:b.client,phone:b.phone,value:bidTotal(b),stage:'awarded',start:'',target:'',permit:'',blocked:'',notes:'Converted from bid '+b.id});
+  st('bld_jobs',js);
+  var bids=bldBids();
+  var rec=bids.find(function(x){return x.id===id;});
+  rec.converted_job_id=newId;
+  st('bld_bids',bids);
+  rBids();
+  toast('Converted to job '+newId+' - see Job Board');
+}
+
+// ── Trade Bid Comparison (sub bids) ─────────────────────────────────────
+function openSubBidModal(){
+  fillJobSelects();
+  ['sbm-code','sbm-sub','sbm-amount'].forEach(function(f){$(f).value='';});
+  $('sbm-job').value='';
+  $('subbidmodal').classList.add('on');
+}
+function closeSubBidModal(){$('subbidmodal').classList.remove('on');}
+function saveSubBid(){
+  var code=$('sbm-code').value.trim(),sub=$('sbm-sub').value.trim();
+  var amount=parseFloat($('sbm-amount').value)||0;
+  if(!code||!sub){toast('Cost code and subcontractor both required');return;}
+  if(amount<=0){toast('Bid amount must be greater than 0');return;}
+  var list=bldSubBids();
+  list.push({id:'SB-'+Date.now(),job_id:$('sbm-job').value||'',cost_code:code,sub:sub,amount:amount,awarded:false});
+  st('bld_sub_bids',list);
+  closeSubBidModal();rSubBids();
+  toast('Sub bid logged - '+sub);
+}
+// Awarding one bid in a cost-code group un-awards any other bid already
+// marked in that same group -- a cost code can have exactly one awarded
+// sub at a time, not silently two.
+function awardSubBid(id){
+  var list=bldSubBids();
+  var target=list.find(function(x){return x.id===id;});if(!target)return;
+  list.forEach(function(x){if(x.job_id===target.job_id&&x.cost_code===target.cost_code)x.awarded=(x.id===id);});
+  st('bld_sub_bids',list);
+  rSubBids();
+  toast('Awarded to '+target.sub);
+}
+function rSubBids(){
+  var list=bldSubBids();
+  var groups={};
+  list.forEach(function(sb){
+    var key=(sb.job_id?jobLabel(sb.job_id):'Unassigned')+' — '+sb.cost_code;
+    if(!groups[key])groups[key]=[];
+    groups[key].push(sb);
+  });
+  var keys=Object.keys(groups);
+  if(!keys.length){$('b-subbids').innerHTML='<div style="color:var(--muted);text-align:center;padding:12px;">No sub bids logged yet</div>';return;}
+  $('b-subbids').innerHTML=keys.map(function(key){
+    var rows=groups[key].slice().sort(function(a,b){return a.amount-b.amount;}).map(function(sb){
+      return '<div class="srow"'+(sb.awarded?' style="background:var(--pt);border-radius:6px;padding:6px 8px;"':'')+'>'+
+        '<span class="slbl">'+H(sb.sub)+(sb.awarded?' <span class="badge bg">Awarded</span>':'')+'</span>'+
+        '<span class="sval">'+fmt(sb.amount)+(sb.awarded?'':' <button class="btn bp bs" onclick="awardSubBid(\''+sb.id+'\')" style="padding:2px 8px;margin-left:6px;">Award</button>')+'</span></div>';
+    }).join('');
+    return '<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">'+H(key)+'</div>'+rows+'</div>';
+  }).join('');
+}
 
 var KIND={labour:'Labour',material:'Material',sub:'Subcontractor',other:'Other'};
 function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j?(j.client||j.address||id):id;}
@@ -569,6 +899,8 @@ function fillJobSelects(){
   if(cf){var keepF=cf.value;cf.innerHTML='<option value="">All Jobs</option>'+opts;cf.value=keepF;}
   var cm=$('com-job');
   if(cm){var keepCm=cm.value;cm.innerHTML=opts;cm.value=keepCm;}
+  var sb=$('sbm-job');
+  if(sb){var keepSb=sb.value;sb.innerHTML='<option value="">Not tied to a job yet</option>'+opts;sb.value=keepSb;}
 }
 
 function rCost(){
@@ -963,6 +1295,11 @@ function csv(type){
     if(!colist.length){toast('No change orders in scope to export');return;}
     rows=[['Job','Description','Amount','Labour hrs','Requested By','Status','Sent','Accepted','Rejection Reason']];
     colist.forEach(function(c){rows.push([jobLabel(c.job_id),c.description,c.amount,c.labour_hrs,c.requested_by,(COSTATUS[c.status]||{l:c.status}).l,c.sent_at,c.accepted_at,c.reason]);});
+  } else if(type==='bids'){
+    var blist=bidScope();
+    if(!blist.length){toast('No bids in scope to export');return;}
+    rows=[['Client','Phone','Project Type','Source','Stage','Subtotal','Markup %','Total','Sent','Decided','Lost Reason']];
+    blist.forEach(function(b){rows.push([b.client,b.phone,b.type,b.source,(BSTAGE[b.stage]||{l:b.stage}).l,bidSubtotal(b),b.markup,bidTotal(b),b.sent,b.decided,b.lostreason]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
