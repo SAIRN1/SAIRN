@@ -243,6 +243,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Client</div>
       <button class="sb" id="sb-clientportal" onclick="nav('clientportal')"><span class="sico">&#128101;</span>Client Portal</button>
       <button class="sb" id="sb-warranty" onclick="nav('warranty')"><span class="sico">&#128737;&#65039;</span>Warranty</button>
+      <div class="ss">Documents</div>
+      <button class="sb" id="sb-documents" onclick="nav('documents')"><span class="sico">&#128193;</span>Documents</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -880,6 +882,29 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- DOCUMENTS -->
+<div class="panel" id="panel-documents">
+  <div class="ph"><div><div class="ptitle">Documents</div><div class="psub">Plans, specs, and permits per job &mdash; superseded versions stay visible, never overwritten</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('documents')">Export CSV</button><button class="btn bp bs" onclick="openDocModal()">+ New Document</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Documents</div><div class="kval" id="doc-total">0</div><div class="kt">Selected scope</div></div>
+    <div class="kpi"><div class="klbl">Total Versions</div><div class="kval" id="doc-versions">0</div><div class="kt">Across all documents</div></div>
+    <div class="kpi"><div class="klbl">Superseded</div><div class="kval" id="doc-superseded">0</div><div class="kt">Older versions kept on file</div></div>
+    <div class="kpi"><div class="klbl">Permits on File</div><div class="kval" id="doc-permits">0</div><div class="kt">Category = Permit</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="docjob" onchange="rDocsTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="doccat" onchange="rDocsTbl()" style="width:180px;">
+        <option value="">All Categories</option>
+        <option value="plans">Plans</option><option value="specs">Specs</option><option value="permit">Permit</option><option value="other">Other</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Name</th><th>Job</th><th>Category</th><th>Current Version</th><th>Last Updated</th><th>Total Versions</th><th>Actions</th></tr></thead>
+    <tbody id="doctbody"></tbody></table></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1325,6 +1350,47 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="docmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Document</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="docm-job"></select></div><div class="fg"><label>Category</label><select id="docm-category">
+      <option value="plans">Plans</option><option value="specs">Specs</option><option value="permit">Permit</option><option value="other">Other</option>
+    </select></div></div>
+    <div class="fg"><label>Document Name</label><input id="docm-name" placeholder="Kitchen Floor Plan"></div>
+    <div id="docm-v1wrap">
+      <div class="mtitle" style="font-size:14px;margin-top:10px;">Initial Version</div>
+      <div class="fr"><div class="fg"><label>Uploaded By</label><input id="docm-by" placeholder="Architect"></div><div class="fg"><label>Uploaded Date</label><input id="docm-date" type="date"></div></div>
+      <div class="fg"><label>Note</label><input id="docm-note" placeholder="Initial issue for permit"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDocModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDoc()">Save Document</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="docvmodal">
+  <div class="mbox">
+    <div class="mtitle" id="docvm-title">Add New Version</div>
+    <div class="fr"><div class="fg"><label>Uploaded By</label><input id="docvm-by" placeholder="Architect"></div><div class="fg"><label>Uploaded Date</label><input id="docvm-date" type="date"></div></div>
+    <div class="fg"><label>Note</label><input id="docvm-note" placeholder="What changed in this version"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDocVersionModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDocVersion()">Save New Version</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="dochistmodal">
+  <div class="mbox">
+    <div class="mtitle" id="dochist-title">Version History</div>
+    <div id="dochist-list"></div>
+    <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDocHistoryModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -1446,6 +1512,7 @@ function nav(id){
   if(id==='safety')rSafety();
   if(id==='clientportal')rClientPortal();
   if(id==='warranty')rWarranty();
+  if(id==='documents')rDocs();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1756,6 +1823,28 @@ function seed(){
     {id:'WAR-01',job_id:'J-2605',claim_desc:'Grout haze noticed along mudroom floor seams after final clean',trade_responsible:'In-house crew',filed_date:daysAgo(15),status:'resolved',cost:180,resolved_date:daysAgo(8),notes:'Re-cleaned and resealed at no charge'},
     {id:'WAR-02',job_id:'J-2604',claim_desc:'Cabinet door in kitchen not closing flush after settling',trade_responsible:'ABC Cabinetry',filed_date:daysAgo(4),status:'open',cost:0,resolved_date:'',notes:''}
   ]);
+  // Documents: DOC-01 and DOC-04 each carry real multi-version history so
+  // "superseded versions stay visible" has something genuine to prove --
+  // v1 is never deleted or overwritten when v2/v3 is added, just no longer
+  // the current one. DOC-02/DOC-03 are single-version, proving that state
+  // renders correctly too (nothing superseded yet).
+  st('bld_documents',[
+    {id:'DOC-01',job_id:'J-2601',name:'Kitchen Floor Plan',category:'plans',versions:[
+      {v:1,uploaded_at:'2026-05-01',uploaded_by:'Architect',note:'Initial issue for permit'},
+      {v:2,uploaded_at:'2026-06-10',uploaded_by:'Architect',note:'Revised per structural RFI response - beam size updated'}
+    ]},
+    {id:'DOC-02',job_id:'J-2601',name:'Electrical Spec Sheet',category:'specs',versions:[
+      {v:1,uploaded_at:'2026-05-01',uploaded_by:'Kessler Electric',note:'Initial submission'}
+    ]},
+    {id:'DOC-03',job_id:'J-2601',name:'Building Permit WL-26-0412',category:'permit',versions:[
+      {v:1,uploaded_at:'2026-05-04',uploaded_by:'City of Westlake',note:'Issued permit'}
+    ]},
+    {id:'DOC-04',job_id:'J-2602',name:'Structural Steel Shop Drawings',category:'specs',versions:[
+      {v:1,uploaded_at:'2026-04-20',uploaded_by:'Midwest Steel Fab',note:'Initial shop drawings'},
+      {v:2,uploaded_at:'2026-05-02',uploaded_by:'Midwest Steel Fab',note:'Revised per structural engineer comments'},
+      {v:3,uploaded_at:'2026-05-10',uploaded_by:'Midwest Steel Fab',note:'Final approved set'}
+    ]}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1776,7 +1865,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -2769,8 +2858,8 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // explicitly optional) are declared once; adding a new panel's job
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
-var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob','safjob','warjob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job','warm-job','cp-job'];
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob','safjob','warjob','docjob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job','warm-job','cp-job','docm-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job','chkm-job','eqm-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -4406,6 +4495,136 @@ function saveWarranty(){
   toast('Saved warranty claim');
 }
 
+// ── DOCUMENTS ─────────────────────────────────────────────────────────────
+var DOCCAT={plans:'Plans',specs:'Specs',permit:'Permit',other:'Other'};
+function bldDocuments(){return ld('bld_documents',[]);}
+// Current version is computed from the highest version number on record,
+// never stored as its own flag -- a stored "is_current" per version could
+// disagree with the version list itself the moment a new one is added and
+// the old flag isn't cleared. This can't drift because there is nothing
+// to keep in sync.
+function docCurrent(doc){
+  var vs=doc.versions||[];
+  return vs.reduce(function(best,v){return(!best||v.v>best.v)?v:best;},null);
+}
+function rDocs(){fillJobSelects();rDocsTbl();}
+function docScope(){
+  var jf=(($('docjob')||{}).value||''),cf=(($('doccat')||{}).value||'');
+  return bldDocuments().filter(function(d){return(!jf||d.job_id===jf)&&(!cf||d.category===cf);});
+}
+function rDocsTbl(){
+  var list=docScope();
+  var all=bldDocuments();
+  var totalVersions=all.reduce(function(s,d){return s+(d.versions||[]).length;},0);
+  var superseded=totalVersions-all.length;
+  var permits=all.filter(function(d){return d.category==='permit';});
+  $('doc-total').textContent=list.length;
+  $('doc-versions').textContent=totalVersions;
+  $('doc-superseded').textContent=Math.max(0,superseded);
+  $('doc-permits').textContent=permits.length;
+  var tb=$('doctbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No documents match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(d){
+      var cur=docCurrent(d);
+      var n=(d.versions||[]).length;
+      return '<tr><td><strong>'+H(d.name)+'</strong></td>'+
+        '<td>'+H(jobLabel(d.job_id))+'</td>'+
+        '<td>'+H(DOCCAT[d.category]||d.category)+'</td>'+
+        '<td>'+(cur?'v'+cur.v:'--')+'</td>'+
+        '<td>'+(cur&&cur.uploaded_at?fdate(cur.uploaded_at):'--')+'</td>'+
+        '<td>'+n+(n>1?' <span class="badge bx">'+(n-1)+' superseded</span>':'')+'</td>'+
+        '<td><button class="btn bo bs" onclick="openDocHistoryModal(\''+H(d.id)+'\')">History</button> '+
+        '<button class="btn bo bs" onclick="openDocVersionModal(\''+H(d.id)+'\')">+ Version</button> '+
+        '<button class="btn bo bs" onclick="editDocFamily(\''+H(d.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+var docmeid=null;
+function openDocModal(){
+  if(!jobs().length){toast('Add a job first - a document must belong to one');return;}
+  docmeid=null;fillJobSelects();
+  ['docm-name','docm-by','docm-note'].forEach(function(f){$(f).value='';});
+  $('docm-category').value='plans';
+  $('docm-date').value=new Date().toISOString().slice(0,10);
+  $('docm-v1wrap').style.display='block';
+  $('docmodal').classList.add('on');
+}
+function closeDocModal(){$('docmodal').classList.remove('on');}
+// Editing a document family only ever touches name/category/job -- never
+// the version list. Versions are added through +Version, never edited in
+// place, which is the whole point of "superseded, not overwritten."
+function editDocFamily(id){
+  var d=bldDocuments().find(function(x){return x.id===id;});if(!d)return;
+  docmeid=id;fillJobSelects();
+  $('docm-job').value=d.job_id||'';$('docm-category').value=d.category||'plans';
+  $('docm-name').value=d.name||'';
+  $('docm-v1wrap').style.display='none';
+  $('docmodal').classList.add('on');
+}
+function saveDoc(){
+  var name=$('docm-name').value.trim();
+  if(!name){toast('Document name required');return;}
+  var job=$('docm-job').value;
+  if(!job){toast('Job required');return;}
+  var list=bldDocuments();
+  if(docmeid){
+    var existing=list.find(function(x){return x.id===docmeid;});
+    if(!existing){toast('Document no longer exists');return;}
+    existing.job_id=job;existing.category=$('docm-category').value;existing.name=name;
+    st('bld_documents',list);
+    closeDocModal();rDocs();
+    toast('Saved - '+name);
+    return;
+  }
+  var rec={
+    id:'DOC-'+String(Date.now()).slice(-5),
+    job_id:job,name:name,category:$('docm-category').value,
+    versions:[{v:1,uploaded_at:$('docm-date').value||new Date().toISOString().slice(0,10),uploaded_by:$('docm-by').value.trim(),note:$('docm-note').value.trim()}]
+  };
+  list.push(rec);
+  st('bld_documents',list);
+  closeDocModal();rDocs();
+  toast('Saved - '+name);
+}
+var docvTargetId=null;
+function openDocVersionModal(docId){
+  var d=bldDocuments().find(function(x){return x.id===docId;});if(!d)return;
+  docvTargetId=docId;
+  $('docvm-title').textContent='New Version - '+d.name;
+  $('docvm-by').value='';$('docvm-note').value='';
+  $('docvm-date').value=new Date().toISOString().slice(0,10);
+  $('docvmodal').classList.add('on');
+}
+function closeDocVersionModal(){$('docvmodal').classList.remove('on');docvTargetId=null;}
+function saveDocVersion(){
+  if(!docvTargetId)return;
+  var list=bldDocuments();
+  var d=list.find(function(x){return x.id===docvTargetId;});
+  if(!d){toast('Document no longer exists');return;}
+  var cur=docCurrent(d);
+  var nextV=(cur?cur.v:0)+1;
+  d.versions.push({v:nextV,uploaded_at:$('docvm-date').value||new Date().toISOString().slice(0,10),uploaded_by:$('docvm-by').value.trim(),note:$('docvm-note').value.trim()});
+  st('bld_documents',list);
+  closeDocVersionModal();rDocs();
+  toast('Saved version '+nextV);
+}
+function openDocHistoryModal(docId){
+  var d=bldDocuments().find(function(x){return x.id===docId;});if(!d)return;
+  $('dochist-title').textContent='Version History - '+d.name;
+  var cur=docCurrent(d);
+  var sorted=(d.versions||[]).slice().sort(function(a,b){return b.v-a.v;});
+  $('dochist-list').innerHTML=sorted.map(function(v){
+    var isCurrent=cur&&v.v===cur.v;
+    return '<div class="srow"><span class="slbl"><strong>v'+v.v+'</strong>'+(isCurrent?' <span class="badge bg" style="margin-left:4px;">Current</span>':' <span class="badge bx" style="margin-left:4px;">Superseded</span>')+
+      '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+(v.uploaded_at?fdate(v.uploaded_at):'')+(v.uploaded_by?' &middot; '+H(v.uploaded_by):'')+'</div>'+
+      (v.note?'<div style="font-size:12px;color:var(--text);margin-top:2px">'+H(v.note)+'</div>':'')+
+      '</span></div>';
+  }).join('');
+  $('dochistmodal').classList.add('on');
+}
+function closeDocHistoryModal(){$('dochistmodal').classList.remove('on');}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -4534,6 +4753,11 @@ function csv(type){
     if(!warlist.length){toast('No warranty claims in scope to export');return;}
     rows=[['Job','Claim','Trade Responsible','Filed','Status','Cost','Resolved','Notes']];
     warlist.forEach(function(w){rows.push([jobLabel(w.job_id),w.claim_desc,w.trade_responsible,w.filed_date,(WARSTATUS[w.status]||{l:w.status}).l,w.cost,w.resolved_date,w.notes]);});
+  } else if(type==='documents'){
+    var doclist=docScope();
+    if(!doclist.length){toast('No documents in scope to export');return;}
+    rows=[['Name','Job','Category','Current Version','Last Updated','Total Versions','Superseded']];
+    doclist.forEach(function(d){var cur=docCurrent(d);var n=(d.versions||[]).length;rows.push([d.name,jobLabel(d.job_id),DOCCAT[d.category]||d.category,cur?'v'+cur.v:'',cur?cur.uploaded_at:'',n,Math.max(0,n-1)]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
