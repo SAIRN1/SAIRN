@@ -107,7 +107,17 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
    the phone media query: a wide table can overflow a narrow desktop window
    or a split-screen pane too, and a rule that only exists below 768px would
    leave that broken. */
-.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),
+    linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,
+    linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),
+    linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;
+  background-repeat:no-repeat;
+  background-color:#fff;
+  background-size:24px 100%,24px 100%,10px 100%,10px 100%;
+  background-attachment:local,local,scroll,scroll;
+}
 .tw table{min-width:640px;}
 /* Off-canvas sidebar toggle. Hidden at desktop width; the media query below
    is what reveals it, so desktop is untouched. */
