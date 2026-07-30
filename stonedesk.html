@@ -301,6 +301,62 @@ body.is-exec .sb-exec{display:flex}
 
 /* == PANELS == */
 .panel{display:none;flex:1;overflow:hidden}
+/* Shared table-scroll wrapper. Mobile audit found 11 panels (quote,
+   history, warranty, slabs, crm, jobcost, timesheet, remnant, po, ap,
+   tax) whose tables overflowed with no scroll container at all -- and
+   since .panel itself is overflow-x:hidden (see FIX note below), that
+   content wasn't just visually cut off, it was unreachable. One class,
+   applied at each of those 11 render sites, same scroll+shadow pattern
+   already verified working in SAIRNbuild's .tw. Background matches
+   --card (#fff) since every one of these tables sits on a white card. */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right,var(--card) 30%,rgba(255,255,255,0)),
+    linear-gradient(to right,rgba(255,255,255,0),var(--card) 70%) 100% 0,
+    linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),
+    linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;
+  background-repeat:no-repeat;
+  background-color:var(--card);
+  background-size:24px 100%,24px 100%,10px 100%,10px 100%;
+  background-attachment:local,local,scroll,scroll;
+}
+/* .tw's own overflow-x:auto is a no-op unless something actually caps its
+   width -- verified empirically (not assumed) against all 11 sites before
+   writing this: several of these panels put .tw inside a CSS Grid
+   two-column layout (grid-template-columns:1fr 260px/300px/320px) where
+   the 1fr track's default min-width:auto refuses to shrink below the
+   table's min-content size, and separately .panel.active is itself a
+   column flexbox, so ITS direct child inherits the same min-width:auto
+   floor. Both let the whole content column blow out past the viewport,
+   silently (panel's own overflow-x:hidden clips it from view instead of
+   erroring), which is why simply wrapping the table in .tw alone
+   (verified first, before adding this block) did not fix anything -- .tw
+   just grew to match its already-oversized container.
+   Three rules, in order of what each neutralizes:
+   1) stack any inline two-column grid using this app's 1fr+fixed-column
+      convention to a single column, so there's no competing fixed track
+      squeezing the table's column down to near-zero width instead of
+      giving it the room to scroll;
+   2) give .tw a hard viewport-relative cap (vw, not % of a
+      potentially-still-oversized ancestor) so it scrolls regardless of
+      any remaining ancestor min-width:auto quirks;
+   3) min-width:0 on .panel.active's own direct child, the actual flex
+      item, so it stops being held open by its content's min-content size.
+   Confirmed via Playwright at 390px: all 11 tables now genuinely scroll
+   within .tw where their content requires it (twScrollWidth > twClientWidth
+   -- warranty/slabs/remnant/jobcost/timesheet/po) and fit natively without
+   needing to where it doesn't (crm/ap/tax, whose real content width was
+   already under 390px once freed from the grid squeeze).
+   NOT claimed fixed by this: quote and a few others still carry a small
+   (8-109px) panel-level overflow from OTHER elements unrelated to the
+   table itself (quote's is `.quote-container`/`.sticky-right`, a
+   class-based two-column layout this attribute selector can't reach) --
+   flagged, not silently absorbed into this table-scoped fix. */
+@media(max-width:768px){
+  [style*="grid-template-columns:1fr"]{grid-template-columns:1fr!important}
+  .tw{max-width:calc(100vw - 32px)!important;min-width:0}
+  .panel.active>div{min-width:0}
+}
 /* FIX (user-reported: "bottom of the page cut off"): .panel had
    overflow:hidden with no scroll fallback. Panels that don't have their
    own dedicated scrollable inner wrapper (History, Admin, Business,
@@ -2964,9 +3020,11 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 
           <div class="q-card">
             <div class="q-card-title">Internal Breakdown</div>
+            <div class="tw">
             <table class="li-table" id="line-items">
               <tr><td colspan="2" style="color:var(--muted);text-align:center;padding:12px">Enter dimensions to see breakdown</td></tr>
             </table>
+            </div>
           </div>
 
           <div class="q-card">
@@ -3283,6 +3341,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
         <option value="amt-desc">Highest Value</option><option value="amt-asc">Lowest Value</option>
       </select>
     </div>
+    <div class="tw">
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#f8f9fa">
         <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--muted)">Customer</th>
@@ -3294,6 +3353,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       </tr></thead>
       <tbody id="hist-tbody"></tbody>
     </table>
+    </div>
     <div id="hist-empty" style="display:none;padding:32px;text-align:center;color:var(--muted)">No quotes match your search.</div>
   </div>
   <div>
@@ -4711,7 +4771,7 @@ window.sdPhotosExport=function(){
         +'</tr>';
     });
     html+='</tbody></table>';
-    document.getElementById('warr-list').innerHTML=html;
+    document.getElementById('warr-list').innerHTML='<div class="tw">'+html+'</div>';
   };
   window.sdWarrantyAdd=function(){
     var job=prompt('Job number:','J-2024-099');
@@ -5478,7 +5538,7 @@ function sdInvExport(){
         +'</tr>';
     });
     html+='</tbody></table>';
-    document.getElementById('slabs-list').innerHTML=html;
+    document.getElementById('slabs-list').innerHTML='<div class="tw">'+html+'</div>';
   };
   window.sdSlabsAdd=function(){
     var id='SL-'+String(data.length+1).padStart(3,'0');
@@ -22040,6 +22100,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
     <div style="font-weight:700;margin-bottom:12px;color:var(--text)">All Leads</div>
+    <div class="tw">
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#f8f9fa">
         <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Lead</th>
@@ -22050,6 +22111,7 @@ document.addEventListener('DOMContentLoaded', function() {
       </tr></thead>
       <tbody id="crm-tbody"></tbody>
     </table>
+    </div>
   </div>
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
@@ -22181,6 +22243,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="kpi"><div class="kpi-val" id="jc-margin">0%</div><div class="kpi-label">Avg Margin</div></div>
 </div>
 <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+  <div class="tw">
   <table style="width:100%;border-collapse:collapse;font-size:13px">
     <thead><tr style="background:#f8f9fa">
       <th style="padding:10px;text-align:left;border-bottom:2px solid var(--border)">Job / Customer</th>
@@ -22194,6 +22257,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </tr></thead>
     <tbody id="jc-tbody"></tbody>
   </table>
+  </div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
@@ -22365,6 +22429,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
       <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:12px">Time Log</div>
+      <div class="tw">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#f8f9fa">
           <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Employee</th>
@@ -22377,6 +22442,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </tr></thead>
         <tbody id="ts-tbody"></tbody>
       </table>
+      </div>
     </div>
   </div>
   <div>
@@ -22632,7 +22698,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'</tr>';
     });
     html+='</tbody></table>';
-    document.getElementById('rem-list').innerHTML=html;
+    document.getElementById('rem-list').innerHTML='<div class="tw">'+html+'</div>';
   };
   window.sdRemnantAdd=function(){
     var stone=prompt('Stone name:');
@@ -22716,6 +22782,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="kpi"><div class="kpi-val" id="po-vendors">0</div><div class="kpi-label">Active Vendors</div></div>
 </div>
 <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+  <div class="tw">
   <table style="width:100%;border-collapse:collapse;font-size:13px">
     <thead><tr style="background:#f8f9fa">
       <th style="padding:10px;text-align:left;border-bottom:2px solid var(--border)">PO #</th>
@@ -22727,6 +22794,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </tr></thead>
     <tbody id="po-tbody"></tbody>
   </table>
+  </div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
@@ -25990,6 +26058,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
       <div style="font-weight:700;margin-bottom:12px;color:var(--text)">AP Aging</div>
       <div id="ap-aging" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px"></div>
+      <div class="tw">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr style="background:#f8f9fa">
           <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Vendor</th>
@@ -26000,6 +26069,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </tr></thead>
         <tbody id="ap-tbody"></tbody>
       </table>
+      </div>
     </div>
   </div>
   <div>
@@ -26136,6 +26206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <input id="tax-rate" type="number" step="0.01" placeholder="Rate %" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
         <button class="q-btn primary" style="font-size:12px" onclick="if(typeof taxAddEntry==='function')taxAddEntry();">+ Add</button>
       </div>
+      <div class="tw">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr style="background:#f8f9fa">
           <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Jurisdiction</th>
@@ -26145,6 +26216,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </tr></thead>
         <tbody id="tax-table"></tbody>
       </table>
+      </div>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
       <div style="font-weight:700;margin-bottom:10px;color:var(--text)">1099 Contractor Tracker</div>
