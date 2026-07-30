@@ -233,6 +233,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-deliveries" onclick="nav('deliveries')"><span class="sico">&#128666;</span>Deliveries</button>
       <button class="sb" id="sb-timesheet" onclick="nav('timesheet')"><span class="sico">&#9203;</span>Timesheet</button>
       <button class="sb" id="sb-checkregister" onclick="nav('checkregister')"><span class="sico">&#127974;</span>Check Register</button>
+      <div class="ss">Subs &amp; Vendors</div>
+      <button class="sb" id="sb-subs" onclick="nav('subs')"><span class="sico">&#128119;</span>Subcontractors</button>
+      <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -715,6 +718,45 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- SUBCONTRACTORS -->
+<div class="panel" id="panel-subs">
+  <div class="ph"><div><div class="ptitle">Subcontractors</div><div class="psub">Roster, rate basis, compliance on file, and prequalification status</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('subs')">Export CSV</button><button class="btn bp bs" onclick="openSubModal()">+ New Subcontractor</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Subs</div><div class="kval" id="sub-total">0</div><div class="kt">On roster</div></div>
+    <div class="kpi"><div class="klbl">Eligible to Bid</div><div class="kval" id="sub-eligible">0</div><div class="kt" id="sub-eligible-sub">Prequalified + compliant</div></div>
+    <div class="kpi"><div class="klbl">Prequal Pending</div><div class="kval" id="sub-pending">0</div><div class="kt" id="sub-pending-sub">Not started or in progress</div></div>
+    <div class="kpi"><div class="klbl">Disqualified</div><div class="kval" id="sub-disqualified">0</div><div class="kt" id="sub-disqualified-sub">Not eligible to bid</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="subprequal" onchange="rSubsTbl()" style="flex:1;">
+        <option value="">All Prequal Statuses</option>
+        <option value="not_started">Not Started</option><option value="in_progress">In Progress</option>
+        <option value="qualified">Qualified</option><option value="disqualified">Disqualified</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Company</th><th>Trade</th><th>Rate</th><th>W-9</th><th>COI Expiry</th><th>Licence Expiry</th><th>Prequal</th><th>Eligible to Bid</th><th>Actions</th></tr></thead>
+    <tbody id="subtbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- COMPLIANCE -->
+<div class="panel" id="panel-compliance">
+  <div class="ph"><div><div class="ptitle">Compliance</div><div class="psub">The expiry board &mdash; every insurance certificate and licence, days until expiry</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('compliance')">Export CSV</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Expiring Soon</div><div class="kval" id="cp-expiring">0</div><div class="kt" id="cp-expiring-sub">Within 30 days</div></div>
+    <div class="kpi"><div class="klbl">Expired</div><div class="kval" id="cp-expired">0</div><div class="kt" id="cp-expired-sub">COI or licence lapsed</div></div>
+    <div class="kpi"><div class="klbl">Missing W-9</div><div class="kval" id="cp-now9">0</div><div class="kt" id="cp-now9-sub">On file</div></div>
+    <div class="kpi"><div class="klbl">Eligible to Bid</div><div class="kval" id="cp-eligible">0</div><div class="kt">Compliant + prequalified</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Company</th><th>Trade</th><th>COI Expiry</th><th>COI Days</th><th>Licence Expiry</th><th>Licence Days</th><th>W-9</th><th>Status</th></tr></thead>
+    <tbody id="cptbody"></tbody></table></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1037,6 +1079,36 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="submodal">
+  <div class="mbox" style="width:640px;max-width:94vw;">
+    <div class="mtitle">Add / Edit Subcontractor</div>
+    <div class="fr"><div class="fg"><label>Company</label><input id="subm-company" placeholder="Kessler Electric"></div><div class="fg"><label>Trade</label><input id="subm-trade" placeholder="Electrical"></div></div>
+    <div class="fr"><div class="fg"><label>Contact Name</label><input id="subm-contact" placeholder="Optional"></div><div class="fg"><label>Phone</label><input id="subm-phone" placeholder="(440) 555-0100"></div></div>
+    <div class="fg"><label>Email</label><input id="subm-email" placeholder="Optional"></div>
+    <div class="fr"><div class="fg"><label>Rate Basis</label><select id="subm-ratebasis">
+      <option value="hourly">Hourly</option><option value="flat">Flat / Per Job</option><option value="sqft">Per Sq Ft</option>
+    </select></div><div class="fg"><label>Rate ($)</label><input id="subm-rate" type="number" placeholder="85"></div></div>
+    <div class="fg"><label><input type="checkbox" id="subm-w9" style="width:auto;margin-right:6px;">W-9 on File</label></div>
+    <div class="fr"><div class="fg"><label>COI Expiry</label><input id="subm-coiexp" type="date"></div><div class="fg"><label>Licence #</label><input id="subm-licno" placeholder="Optional"></div></div>
+    <div class="fg"><label>Licence Expiry</label><input id="subm-licexp" type="date"></div>
+    <div class="mtitle" style="font-size:14px;margin-top:10px;">Prequalification <span style="font-weight:400;color:var(--muted);font-size:12px;">&mdash; gates bid eligibility, not just roster listing</span></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="subm-prequal">
+      <option value="not_started">Not Started</option><option value="in_progress">In Progress</option>
+      <option value="qualified">Qualified</option><option value="disqualified">Disqualified</option>
+    </select></div><div class="fg"><label>Financial Capacity</label><select id="subm-fincap">
+      <option value="unknown">Unknown</option><option value="strong">Strong</option><option value="adequate">Adequate</option><option value="weak">Weak</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Safety Record</label><select id="subm-safety">
+      <option value="unknown">Unknown</option><option value="clean">Clean</option><option value="minor_incidents">Minor Incidents</option><option value="major_incidents">Major Incidents</option>
+    </select></div><div class="fg"><label><input type="checkbox" id="subm-refs" style="width:auto;margin-right:6px;">References Checked</label></div></div>
+    <div class="fg"><label>Notes</label><input id="subm-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSubModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSub()">Save Subcontractor</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -1151,6 +1223,8 @@ function nav(id){
   if(id==='deliveries')rDv();
   if(id==='timesheet')rTs();
   if(id==='checkregister')rChk();
+  if(id==='subs')rSubs();
+  if(id==='compliance')rCompliance();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1388,6 +1462,24 @@ function seed(){
     {id:'CHK-04',job_id:'J-2602',check_no:'1060',payee:'Midwest Steel Fab',amount:42000,category:'sub',status:'cleared',issued_at:'2026-05-05',cleared_at:'2026-05-12',memo:'Structural steel package - final payment'},
     {id:'CHK-05',job_id:'J-2603',check_no:'1063',payee:'Kessler Electric',amount:950,category:'sub',status:'voided',issued_at:daysAgo(3),cleared_at:'',memo:'Voided - reissued as check 1064 (wrong amount)'}
   ]);
+  // Subcontractors: every prequal status and every eligibility-blocking
+  // reason seeded once, real (not decorative). SUB-01 is the only fully
+  // eligible sub -- qualified, current COI/licence, W-9 on file. SUB-02's
+  // COI expires in 12 days via daysAgo(-12) (same helper, negative n =
+  // future -- reused rather than adding a second "daysAhead" that would just
+  // be this function with an inverted sign). SUB-03's COI is already expired
+  // (daysAgo(20)) despite being otherwise qualified, proving the compliance
+  // half of eligibility gates independently of the prequal half. SUB-04 is
+  // missing its W-9 and still mid-prequalification. SUB-05 is disqualified
+  // outright (safety history) despite clean paperwork -- proving prequal
+  // gates independently of compliance, not just the reverse.
+  st('bld_subs',[
+    {id:'SUB-01',company:'Kessler Electric',trade:'Electrical',contact:'Tom Kessler',phone:'(440) 555-0810',email:'tom@kesslerelectric.example',rate_basis:'hourly',rate:85,w9_on_file:true,coi_expiry:'2027-01-15',licence_no:'OH-EL-44210',licence_expiry:'2027-03-01',prequal_status:'qualified',financial_capacity:'strong',safety_record:'clean',references_checked:true,notes:''},
+    {id:'SUB-02',company:'ABC Cabinetry',trade:'Cabinetry / Millwork',contact:'Priya Anand',phone:'(440) 555-0822',email:'priya@abccabinetry.example',rate_basis:'flat',rate:0,w9_on_file:true,coi_expiry:daysAgo(-12),licence_no:'',licence_expiry:'',prequal_status:'qualified',financial_capacity:'adequate',safety_record:'clean',references_checked:true,notes:''},
+    {id:'SUB-03',company:'Midwest Steel Fab',trade:'Structural Steel',contact:'Ray Holloway',phone:'(440) 555-0833',email:'ray@midweststeelfab.example',rate_basis:'flat',rate:0,w9_on_file:true,coi_expiry:daysAgo(20),licence_no:'OH-ST-11750',licence_expiry:'2027-06-01',prequal_status:'qualified',financial_capacity:'strong',safety_record:'clean',references_checked:true,notes:'COI lapsed - not eligible to bid until renewed, despite otherwise qualifying'},
+    {id:'SUB-04',company:'Delgado Plumbing Co',trade:'Plumbing',contact:'Ana Delgado',phone:'(440) 555-0844',email:'ana@delgadoplumbing.example',rate_basis:'hourly',rate:78,w9_on_file:false,coi_expiry:'2026-11-01',licence_no:'OH-PL-29310',licence_expiry:'2026-12-15',prequal_status:'in_progress',financial_capacity:'unknown',safety_record:'unknown',references_checked:false,notes:'Awaiting W-9 and reference checks'},
+    {id:'SUB-05',company:'Bright Path Electrical',trade:'Electrical',contact:'Owen Marsh',phone:'(440) 555-0855',email:'owen@brightpathelectrical.example',rate_basis:'hourly',rate:80,w9_on_file:true,coi_expiry:'2027-02-01',licence_no:'OH-EL-50120',licence_expiry:'2027-02-01',prequal_status:'disqualified',financial_capacity:'adequate',safety_record:'major_incidents',references_checked:true,notes:'Disqualified - OSHA violation history'}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1408,7 +1500,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -3428,6 +3520,162 @@ function saveChk(){
   toast('Saved - '+rec.payee);
 }
 
+// ── SUBCONTRACTORS ────────────────────────────────────────────────────────
+var PREQUAL={not_started:{l:'Not Started',c:'bx'},in_progress:{l:'In Progress',c:'bw'},qualified:{l:'Qualified',c:'bg'},disqualified:{l:'Disqualified',c:'br'}};
+var FINCAP={unknown:'Unknown',strong:'Strong',adequate:'Adequate',weak:'Weak'};
+var SAFETY={unknown:'Unknown',clean:'Clean',minor_incidents:'Minor Incidents',major_incidents:'Major Incidents'};
+function bldSubs(){return ld('bld_subs',[]);}
+// Signed days until a compliance date: positive = days remaining, negative =
+// already expired, null = no date on file (treated as "not applicable," not
+// as expired -- a sub with no state licence at all should not be blocked by
+// a licence_expiry check that was never relevant to them).
+function complianceDaysUntil(dateStr){
+  if(!dateStr)return null;
+  var d=new Date(dateStr+'T00:00:00');
+  if(isNaN(d))return null;
+  return Math.round((d.getTime()-Date.now())/86400000);
+}
+// The actual prequalification gate the scope's competitive gap-closer
+// requires: eligible to bid needs BOTH halves current -- prequalified AND
+// compliant -- so a clean-paperwork sub that failed prequal (SUB-05) and a
+// prequalified sub with a lapsed COI (SUB-03) are both correctly blocked,
+// not just one direction of the check.
+function eligibleToBid(s){
+  if(s.prequal_status!=='qualified'||!s.w9_on_file)return false;
+  var coi=complianceDaysUntil(s.coi_expiry);
+  if(coi===null||coi<0)return false;
+  var lic=complianceDaysUntil(s.licence_expiry);
+  if(lic!==null&&lic<0)return false;
+  return true;
+}
+function rSubs(){rSubsTbl();}
+function subScope(){
+  var pf=(($('subprequal')||{}).value||'');
+  return bldSubs().filter(function(s){return!pf||s.prequal_status===pf;});
+}
+function rSubsTbl(){
+  var list=subScope();
+  var all=bldSubs();
+  var eligible=all.filter(eligibleToBid);
+  var pending=all.filter(function(s){return s.prequal_status==='not_started'||s.prequal_status==='in_progress';});
+  var disqualified=all.filter(function(s){return s.prequal_status==='disqualified';});
+  $('sub-total').textContent=all.length;
+  $('sub-eligible').textContent=eligible.length;
+  $('sub-pending').textContent=pending.length;
+  $('sub-pending-sub').className='kt'+(pending.length?' d':'');
+  $('sub-disqualified').textContent=disqualified.length;
+  $('sub-disqualified-sub').className='kt'+(disqualified.length?' d':'');
+  var tb=$('subtbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No subcontractors match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(s){
+      var pq=PREQUAL[s.prequal_status]||{l:s.prequal_status,c:'bx'};
+      var elig=eligibleToBid(s);
+      var coi=complianceDaysUntil(s.coi_expiry);
+      var lic=complianceDaysUntil(s.licence_expiry);
+      return '<tr><td><strong>'+H(s.company)+'</strong></td>'+
+        '<td>'+H(s.trade)+'</td>'+
+        '<td>'+(s.rate?fmt(s.rate)+(s.rate_basis==='hourly'?'/hr':s.rate_basis==='sqft'?'/sqft':''):'--')+'</td>'+
+        '<td>'+(s.w9_on_file?'<span class="badge bg">On File</span>':'<span class="badge br">Missing</span>')+'</td>'+
+        '<td>'+(s.coi_expiry?fdate(s.coi_expiry)+(coi!==null&&coi<0?' <span class="badge br">Expired</span>':coi!==null&&coi<=30?' <span class="badge bw">'+coi+'d</span>':''):'--')+'</td>'+
+        '<td>'+(s.licence_expiry?fdate(s.licence_expiry)+(lic!==null&&lic<0?' <span class="badge br">Expired</span>':lic!==null&&lic<=30?' <span class="badge bw">'+lic+'d</span>':''):'--')+'</td>'+
+        '<td><span class="badge '+pq.c+'">'+pq.l+'</span></td>'+
+        '<td>'+(elig?'<span class="badge bg">Eligible</span>':'<span class="badge br">Not Eligible</span>')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editSub(\''+H(s.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+var submeid=null;
+function openSubModal(){
+  submeid=null;
+  ['subm-company','subm-trade','subm-contact','subm-phone','subm-email','subm-rate','subm-coiexp','subm-licno','subm-licexp','subm-notes'].forEach(function(f){$(f).value='';});
+  $('subm-ratebasis').value='hourly';$('subm-w9').checked=false;
+  $('subm-prequal').value='not_started';$('subm-fincap').value='unknown';$('subm-safety').value='unknown';
+  $('subm-refs').checked=false;
+  $('submodal').classList.add('on');
+}
+function closeSubModal(){$('submodal').classList.remove('on');}
+function editSub(id){
+  var s=bldSubs().find(function(x){return x.id===id;});if(!s)return;
+  submeid=id;
+  $('subm-company').value=s.company||'';$('subm-trade').value=s.trade||'';
+  $('subm-contact').value=s.contact||'';$('subm-phone').value=s.phone||'';$('subm-email').value=s.email||'';
+  $('subm-ratebasis').value=s.rate_basis||'hourly';$('subm-rate').value=s.rate||'';
+  $('subm-w9').checked=!!s.w9_on_file;
+  $('subm-coiexp').value=s.coi_expiry||'';$('subm-licno').value=s.licence_no||'';$('subm-licexp').value=s.licence_expiry||'';
+  $('subm-prequal').value=s.prequal_status||'not_started';
+  $('subm-fincap').value=s.financial_capacity||'unknown';$('subm-safety').value=s.safety_record||'unknown';
+  $('subm-refs').checked=!!s.references_checked;
+  $('subm-notes').value=s.notes||'';
+  $('submodal').classList.add('on');
+}
+function saveSub(){
+  var company=$('subm-company').value.trim();
+  if(!company){toast('Company name required');return;}
+  var trade=$('subm-trade').value.trim();
+  if(!trade){toast('Trade required');return;}
+  var list=bldSubs();
+  var existing=submeid?list.find(function(x){return x.id===submeid;}):null;
+  var rec={
+    id:submeid||('SUB-'+String(Date.now()).slice(-5)),
+    company:company,trade:trade,
+    contact:$('subm-contact').value.trim(),phone:$('subm-phone').value.trim(),email:$('subm-email').value.trim(),
+    rate_basis:$('subm-ratebasis').value,rate:parseFloat($('subm-rate').value)||0,
+    w9_on_file:$('subm-w9').checked,
+    coi_expiry:$('subm-coiexp').value,licence_no:$('subm-licno').value.trim(),licence_expiry:$('subm-licexp').value,
+    prequal_status:$('subm-prequal').value,financial_capacity:$('subm-fincap').value,
+    safety_record:$('subm-safety').value,references_checked:$('subm-refs').checked,
+    notes:$('subm-notes').value.trim()
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(submeid){var i=list.findIndex(function(x){return x.id===submeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_subs',list);
+  closeSubModal();rSubs();rCompliance();
+  toast('Saved - '+rec.company);
+}
+
+// ── COMPLIANCE ────────────────────────────────────────────────────────────
+// Read-only board derived entirely from bld_subs -- deliberately no separate
+// storage. Duplicating COI/licence dates into a second table is exactly the
+// kind of drift this file avoids everywhere else (Job Costing vs Dashboard
+// margin, Draws vs Lien Waivers): one source of truth, rendered two ways.
+function rCompliance(){rComplianceTbl();}
+function rComplianceTbl(){
+  var list=bldSubs();
+  var expiring=0,expired=0,noW9=0;
+  var eligible=list.filter(eligibleToBid).length;
+  var tb=$('cptbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No subcontractors on file</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(s){
+      var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
+      var worst=[coi,lic].filter(function(d){return d!==null;});
+      var isExpired=worst.some(function(d){return d<0;});
+      var isExpiring=!isExpired&&worst.some(function(d){return d<=30;});
+      if(isExpired)expired++;else if(isExpiring)expiring++;
+      if(!s.w9_on_file)noW9++;
+      var status=isExpired?{l:'Expired',c:'br'}:isExpiring?{l:'Expiring Soon',c:'bw'}:{l:'Current',c:'bg'};
+      return '<tr><td><strong>'+H(s.company)+'</strong></td>'+
+        '<td>'+H(s.trade)+'</td>'+
+        '<td>'+(s.coi_expiry?fdate(s.coi_expiry):'--')+'</td>'+
+        '<td>'+(coi===null?'--':coi)+'</td>'+
+        '<td>'+(s.licence_expiry?fdate(s.licence_expiry):'--')+'</td>'+
+        '<td>'+(lic===null?'--':lic)+'</td>'+
+        '<td>'+(s.w9_on_file?'<span class="badge bg">On File</span>':'<span class="badge br">Missing</span>')+'</td>'+
+        '<td><span class="badge '+status.c+'">'+status.l+'</span></td></tr>';
+    }).join('');
+  }
+  $('cp-expiring').textContent=expiring;
+  $('cp-expiring-sub').className='kt'+(expiring?' d':'');
+  $('cp-expired').textContent=expired;
+  $('cp-expired-sub').className='kt'+(expired?' d':'');
+  $('cp-now9').textContent=noW9;
+  $('cp-now9-sub').className='kt'+(noW9?' d':'');
+  $('cp-now9-sub').textContent=noW9?'Not on file':'All on file';
+  $('cp-eligible').textContent=eligible;
+}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -3526,6 +3774,16 @@ function csv(type){
     if(!chklist.length){toast('No checks in scope to export');return;}
     rows=[['Job','Check #','Payee','Category','Amount','Issued','Status','Cleared','Memo']];
     chklist.forEach(function(c){rows.push([c.job_id?jobLabel(c.job_id):'Overhead',c.check_no,c.payee,KIND[c.category]||c.category,c.amount,c.issued_at,(CHKSTATUS[c.status]||{l:c.status}).l,c.cleared_at,c.memo]);});
+  } else if(type==='subs'){
+    var sublist=subScope();
+    if(!sublist.length){toast('No subcontractors in scope to export');return;}
+    rows=[['Company','Trade','Contact','Phone','Email','Rate Basis','Rate','W-9 On File','COI Expiry','Licence #','Licence Expiry','Prequal Status','Financial Capacity','Safety Record','References Checked','Eligible to Bid','Notes']];
+    sublist.forEach(function(s){rows.push([s.company,s.trade,s.contact,s.phone,s.email,s.rate_basis,s.rate,s.w9_on_file?'Yes':'No',s.coi_expiry,s.licence_no,s.licence_expiry,(PREQUAL[s.prequal_status]||{l:s.prequal_status}).l,FINCAP[s.financial_capacity]||s.financial_capacity,SAFETY[s.safety_record]||s.safety_record,s.references_checked?'Yes':'No',eligibleToBid(s)?'Yes':'No',s.notes]);});
+  } else if(type==='compliance'){
+    var cplist=bldSubs();
+    if(!cplist.length){toast('No subcontractors to export');return;}
+    rows=[['Company','Trade','COI Expiry','COI Days','Licence Expiry','Licence Days','W-9 On File','Eligible to Bid']];
+    cplist.forEach(function(s){rows.push([s.company,s.trade,s.coi_expiry,complianceDaysUntil(s.coi_expiry),s.licence_expiry,complianceDaysUntil(s.licence_expiry),s.w9_on_file?'Yes':'No',eligibleToBid(s)?'Yes':'No']);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
