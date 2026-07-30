@@ -1117,6 +1117,11 @@ function genReport(type){
     $('rtitle').textContent='Tax Summary - '+new Date().toLocaleDateString();
     $('rbody').innerHTML='<table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Est. Amount</th><th>YTD Paid</th><th>Status</th></tr></thead><tbody>'+$('txtbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Est. Total Liability:</strong> '+$('tx-q3').textContent+' &nbsp;&nbsp; <strong>Next Filing Due:</strong> '+$('tx-next').textContent+'</div>';
   }
+  else if(type==='ap'){
+    var bills=ld('sb_ap',[]);
+    $('rtitle').textContent='AP Aging Report - '+new Date().toLocaleDateString();
+    $('rbody').innerHTML='<table><thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Balance</th><th>Status</th></tr></thead><tbody>'+bills.map(function(b){return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td>'+H(b.status)+'</td></tr>';}).join('')+'</tbody></table>';
+  }
   else{$('rtitle').textContent='Report: '+type;$('rbody').innerHTML='<p style="color:var(--muted);padding:24px;text-align:center;">Generated - '+new Date().toLocaleString()+'</p>';}
   $('rout').scrollIntoView({behavior:'smooth'});
 }
