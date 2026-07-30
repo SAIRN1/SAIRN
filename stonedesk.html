@@ -2321,7 +2321,6 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
         <button class="sb-btn" id="sb-po"        onclick="sbNav('po')">       <span class="sb-icon">&#128203;</span><span class="sb-text">Purchase Orders</span></button>
         <button class="sb-btn" id="sb-receiving" onclick="sbNav('receiving')"><span class="sb-icon">&#128230;</span><span class="sb-text">Receiving</span></button>
         <button class="sb-btn" id="sb-stoneyard" onclick="sbNav('stoneyard')"><span class="sb-icon">&#127981;</span><span class="sb-text">Stone Yard Contacts</span></button>
-        <button class="sb-btn" id="sb-templates" onclick="sbNav('templates')"><span class="sb-icon">&#128190;</span><span class="sb-text">Template / DXF Files</span></button>
       </div>
     </div>
 
@@ -2398,7 +2397,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
         <button class="sb-btn" id="sb-contractor" onclick="sbNav('contractor')"><span class="sb-icon">&#127968;</span><span class="sb-text">Contractor Portal</span></button>
         <button class="sb-btn" id="sb-bidboard"   onclick="sbNav('bidboard')"> <span class="sb-icon">&#127919;</span><span class="sb-text">Bid Board</span></button>
         <button class="sb-btn" id="sb-business"   onclick="sbNav('business')"> <span class="sb-icon">&#128208;</span><span class="sb-text">Business Intel</span></button>
-        <button class="sb-btn" id="sb-template"   onclick="sbNav('template')"> <span class="sb-icon">&#128196;</span><span class="sb-text">Doc Templates</span></button>
+        <button class="sb-btn" id="sb-template"   onclick="sbNav('template')"> <span class="sb-icon">&#128208;</span><span class="sb-text">Template / DXF Files</span></button>
         <button class="sb-btn" id="sb-agreements" onclick="sbNav('agreements')"><span class="sb-icon">&#128221;</span><span class="sb-text">Service Agreements</span></button>
         <button class="sb-btn" id="sb-doc-scan"   onclick="sbNav('doc-scan')"> <span class="sb-icon">&#128269;</span><span class="sb-text">Doc Scanner</span></button>
       </div>
@@ -6882,7 +6881,10 @@ window.sdSafetyExport=function(){
           <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin:0">&#128208; Template Manager</h2>
           <p style="font-size:12px;color:var(--muted);margin:4px 0 0">Upload and track digital templates from LT-2D3D, Proliner, Flexijet and more</p>
         </div>
-        <button class="btn-primary" onclick="tmOpenUpload()">+ Upload Template File</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-primary" onclick="tmOpenUpload()">+ Upload Template File</button>
+          <button class="q-btn" onclick="tmExport()">&#128229; Export</button>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
         <div class="kpi"><div class="kpi-val" id="tm-kpi-total">0</div><div class="kpi-label">Total Templates</div></div>
@@ -7031,7 +7033,54 @@ var TM_JOBTYPE={kitchen:'Kitchen',bath:'Bathroom',shower:'Shower/Vert',fireplace
 
 function tmLoad(){
   try{var r=localStorage.getItem(TM_KEY);if(r)tmRecords=JSON.parse(r);}catch(e){}
+  tmMigrateLegacyRecords();
   tmRender();tmUpdateKPIs();
+}
+
+// One-time migration of the retired tmpl* module's data (key
+// sd_template_records) into this module's key (sd_templates). Runs on load.
+//
+// Idempotent: guarded by a done-flag, and additionally skips any legacy id
+// already present, so a re-run cannot duplicate rows.
+// Non-destructive: the legacy key is deliberately LEFT IN PLACE rather than
+// deleted, so this is reversible if the mapping below turns out wrong for a
+// real dataset. Nothing is ever removed from sd_template_records.
+function tmMigrateLegacyRecords(){
+  var FLAG='sd_templates_migrated_from_tmpl';
+  try{
+    if(localStorage.getItem(FLAG)==='1')return;
+    var raw=localStorage.getItem('sd_template_records');
+    if(!raw){localStorage.setItem(FLAG,'1');return;}
+    var legacy=JSON.parse(raw);
+    if(!Array.isArray(legacy)||!legacy.length){localStorage.setItem(FLAG,'1');return;}
+    // cncStatus (pending/programmed/running/complete) -> this module's
+    // 5-state workflow. 'running' folds to reviewed: it is past programming
+    // but not yet off the machine, and inventing a 6th state to hold it
+    // would defeat the point of consolidating.
+    var STATUS={pending:'received',programmed:'reviewed',running:'reviewed',complete:'sent_cnc'};
+    var have={};tmRecords.forEach(function(r){if(r&&r.id)have[r.id]=1;});
+    var added=0;
+    legacy.forEach(function(o){
+      if(!o)return;
+      var id='tmpl_'+(o.id||('x'+Math.random().toString(36).slice(2,9)));
+      if(have[id])return;
+      var files=[];
+      if(o.dxfName)files.push({name:o.dxfName,type:'dxf'});
+      if(o.photo)files.push({name:'template-photo',type:'photo',data:o.photo});
+      tmRecords.push({
+        id:id,custName:o.customer||'',jobId:o.job||'',jobType:'other',
+        device:o.method||'other',notes:o.notes||'',sqft:0,edge:'',cutouts:'',
+        flags:[],templater:o.tech||'',date:o.date||'',
+        status:STATUS[o.cncStatus]||'received',files:files,
+        createdAt:o.createdAt||new Date().toISOString(),
+        statusLog:[{status:STATUS[o.cncStatus]||'received',ts:o.createdAt||new Date().toISOString(),by:'migrated from Template & DXF File Manager'}]
+      });
+      added++;
+    });
+    if(added)tmSave();
+    localStorage.setItem(FLAG,'1');
+    if(added&&typeof notify==='function')notify(added+' template record'+(added===1?'':'s')+' migrated from the retired DXF manager','');
+  }catch(e){}
 }
 function tmSave(){localStorage.setItem(TM_KEY,JSON.stringify(tmRecords));}
 tmLoad();
@@ -7225,6 +7274,25 @@ function tmViewDetail(id){
   document.getElementById('tm-detail-modal').style.display='flex';
 }
 function tmCloseDetailModal(){document.getElementById('tm-detail-modal').style.display='none';}
+
+// CSV export, ported from the retired tmpl* module (its one unique
+// capability) and remapped onto this module's richer schema -- including the
+// device and flags columns tmpl* had no equivalent for.
+function tmExport(){
+  if(!tmRecords.length){notify('No template records to export','');return;}
+  var LBL={received:'Received',reviewed:'Reviewed',sent_cnc:'Sent to CNC',issues:'Issues Found',remeasure:'Needs Re-Measure'};
+  var rows=[['Customer','Job ID','Job Type','Device','Templater','Date','Sq Ft','Edge','Cutouts','Status','Flags','Files','Notes','Created']];
+  tmRecords.forEach(function(r){
+    rows.push([r.custName||'',r.jobId||'',r.jobType||'',r.device||'',r.templater||'',r.date||'',
+      r.sqft||0,r.edge||'',r.cutouts||'',(LBL[r.status]||r.status||''),
+      (r.flags||[]).join(' / '),(r.files||[]).map(function(f){return f&&f.name?f.name:'';}).filter(Boolean).join(' / '),
+      r.notes||'',r.createdAt?new Date(r.createdAt).toLocaleDateString():'']);
+  });
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='stonedesk-templates-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  notify('Templates exported','');
+}
 
 function tmUpdateKPIs(){
   function s(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
@@ -25732,57 +25800,15 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="wst-list"></div>
 </div>
 
-<!-- PANEL: TEMPLATE / DXF FILE MANAGER -->
-<div class="panel" id="panel-templates" style="overflow-y:auto">
-<div style="padding:20px;max-width:1100px;margin:0 auto">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-    <h2 style="font-size:20px;font-weight:800;color:var(--text)">&#128190; Template & DXF File Manager</h2>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="q-btn primary" onclick="tmplAdd()">+ Add Template File</button><button class="q-btn" onclick="tmplExport()">&#128229; Export</button></div>
-  </div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:18px">Attach DXF files, template photos, and measurement notes to every job. Find any job's template in seconds. Never lose a file again.</p>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-    <div class="kpi"><div class="kpi-val" id="tmpl-kpi-total">0</div><div class="kpi-label">Template Records</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="tmpl-kpi-dxf">0</div><div class="kpi-label">DXF Files</div></div>
-    <div class="kpi"><div class="kpi-val" id="tmpl-kpi-photos">0</div><div class="kpi-label">Photo Templates</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:#ca8a04" id="tmpl-kpi-pending">0</div><div class="kpi-label">Awaiting CNC</div></div>
-  </div>
-  <div id="tmpl-form" style="display:none;background:var(--card);border:1.5px solid var(--a);border-radius:12px;padding:18px;margin-bottom:16px">
-    <div style="font-size:14px;font-weight:700;margin-bottom:12px">Add Template Record</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-      <div class="fg"><label>Customer</label><input id="tmpl-cust" placeholder="Customer name"></div>
-      <div class="fg"><label>Job #</label><input id="tmpl-job" placeholder="Job number"></div>
-      <div class="fg"><label>Template Date</label><input id="tmpl-date" type="date"></div>
-      <div class="fg"><label>Templater</label><input id="tmpl-tech" placeholder="Who took the template"></div>
-      <div class="fg"><label>Template Method</label>
-        <select id="tmpl-method">
-          <option>Digital — LT55 / Prodim</option><option>Digital — Laser</option>
-          <option>Manual — Luan board</option><option>Manual — Paper</option><option>CNC direct</option>
-        </select>
-      </div>
-      <div class="fg"><label>CNC Status</label>
-        <select id="tmpl-cnc">
-          <option value="pending">Pending CNC programming</option><option value="programmed">Programmed</option>
-          <option value="running">On machine</option><option value="complete">Complete</option>
-        </select>
-      </div>
-      <div class="fg"><label>DXF File (attach)</label><input type="file" id="tmpl-dxf" accept=".dxf,.dwg,.pdf,.ai" style="font-size:12px"></div>
-      <div class="fg"><label>Template Photo</label><input type="file" id="tmpl-photo" accept="image/*" style="font-size:12px"></div>
-    </div>
-    <div class="fg"><label>Notes / Special Instructions</label><textarea id="tmpl-notes" style="width:100%;height:60px;resize:vertical" placeholder="Cooktop location, sink orientation, special edge details, customer notes from template visit..."></textarea></div>
-    <div style="display:flex;gap:10px;margin-top:10px">
-      <button class="q-btn primary" onclick="tmplSave()">Save Template</button>
-      <button class="q-btn" onclick="document.getElementById('tmpl-form').style.display='none'">Cancel</button>
-    </div>
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-    <input id="tmpl-search" placeholder="&#128269; Search customer or job..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" oninput="tmplRender()">
-    <select id="tmpl-filter-cnc" onchange="tmplRender()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none">
-      <option value="">All CNC Status</option><option value="pending">Pending</option><option value="programmed">Programmed</option><option value="running">On Machine</option><option value="complete">Complete</option>
-    </select>
-  </div>
-  <div id="tmpl-list"></div>
-</div>
-</div>
+<!-- panel-templates (Template & DXF File Manager, tmpl* module) removed
+     2026-07-30. It was a second, thinner implementation of the SAME feature
+     already provided by panel-template / the tm* module (Template Manager,
+     key sd_templates), which is retained as canonical. Both were fully live
+     and reachable -- this was a genuine feature duplicate, not a dead orphan,
+     so it was retired by explicit product decision rather than as cleanup.
+     tmpl*'s only unique capability (CSV export) was ported to tmExport();
+     any real sd_template_records data is migrated into sd_templates on load
+     by tmMigrateLegacyRecords(). See STONEDESK-SESSION78-HANDOFF.md. -->
 
 <!-- PANEL: CUSTOMER NPS / SATISFACTION -->
 <div class="panel" id="panel-nps">
@@ -27975,7 +28001,6 @@ function sbNav(id) {
     if(id==='employees'&&typeof window.sdEmpRender==='function')window.sdEmpRender();
     if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();if(typeof window.sdITRender==='function')window.sdITRender();}
     if(id==='template'&&typeof tmRender==='function'){tmRender();if(typeof tmUpdateKPIs==='function')tmUpdateKPIs();}
-    if(id==='templates'&&typeof tmplRender==='function')tmplRender();
     if(id==='business'&&typeof calcBiz==='function')calcBiz();
   }, 50);
   // Auto-expand the section containing this panel
@@ -29695,56 +29720,29 @@ function bltnRender(){
 // Zero external triggers into this parallel wstEvents/sd_waste_events
 // system existed anywhere in the file (no button called wstLog() at all).
 // ================================================================
-// TEMPLATE / DXF FILE MANAGER
+// TEMPLATE / DXF FILE MANAGER (tmpl* module) -- RETIRED 2026-07-30.
+// Canonical is the tm* module (panel-template, key sd_templates), which is
+// materially richer: statusLog[] audit trail, a 5-state workflow
+// (received/reviewed/sent_cnc/issues/remeasure), measuring-device tracking,
+// drag-and-drop multi-file upload, a detail modal, and real cross-feature
+// integration (auto-advances a matching Schedule job Measuring->Templated).
+//
+// IMPORTANT -- this was NOT a dead orphan. Unlike the rem*/panel-remnant
+// duplicate removed earlier, BOTH template modules were fully live and
+// reachable: both had sidebar buttons, both were dispatched in sbNav, all
+// 15/15 tm-* and 14/14 tmpl-* DOM targets existed, and both rendered and
+// opened their add-forms without throwing (verified on production first).
+// Retiring one was therefore a product decision, taken explicitly, not a
+// mechanical cleanup. Deleted: tmplRecords, tmplAdd, tmplExport, tmplSave,
+// tmplUpdateCNC, tmplDelete, tmplRender, plus panel-templates and the
+// sb-templates sidebar entry.
+//
+// Nothing was lost: tmpl*'s one unique capability (CSV export) is ported to
+// tmExport(), and any real sd_template_records data is migrated into
+// sd_templates by tmMigrateLegacyRecords() on load -- idempotent, and it
+// leaves the legacy key in place rather than deleting it, so the migration
+// is reversible. See STONEDESK-SESSION78-HANDOFF.md.
 // ================================================================
-var tmplRecords=sdLoad('sd_template_records',[]);
-function tmplAdd(){document.getElementById('tmpl-form').style.display='block';var d=document.getElementById('tmpl-date');if(d)d.value=new Date().toISOString().split('T')[0];}
-function tmplExport(){
-  if(!tmplRecords.length){showToast('No template records to export');return;}
-  var rows=[['Customer','Job','Date','Tech','Method','CNC Status','DXF File','Notes','Added']];
-  tmplRecords.forEach(function(r){rows.push([r.customer||'',r.job||'',r.date||'',r.tech||'',r.method||'',r.cncStatus||'',r.dxfName||'',r.notes||'',r.createdAt?new Date(r.createdAt).toLocaleDateString():'']);});
-  var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='stonedesk-templates-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
-  showToast('Templates exported');
-}
-function tmplSave(){
-  var cust=((document.getElementById('tmpl-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
-  var go=function(photoData,dxfName){
-    var rec={id:'TMPL'+Date.now(),customer:cust,job:((document.getElementById('tmpl-job')||{}).value||'').trim(),date:(document.getElementById('tmpl-date')||{}).value||'',tech:((document.getElementById('tmpl-tech')||{}).value||'').trim(),method:(document.getElementById('tmpl-method')||{}).value||'',cncStatus:(document.getElementById('tmpl-cnc')||{}).value||'pending',dxfName:dxfName,photo:photoData,notes:((document.getElementById('tmpl-notes')||{}).value||'').trim(),createdAt:new Date().toISOString()};
-    tmplRecords.unshift(rec);sdStore('sd_template_records',tmplRecords);document.getElementById('tmpl-form').style.display='none';tmplRender();showToast('Template saved');
-  };
-  var dxfF=document.getElementById('tmpl-dxf');var photoF=document.getElementById('tmpl-photo');
-  var dxfName=dxfF&&dxfF.files[0]?dxfF.files[0].name:'';
-  if(photoF&&photoF.files[0]){var fr=new FileReader();fr.onload=function(e){go(e.target.result,dxfName);};fr.readAsDataURL(photoF.files[0]);}else go('',dxfName);
-}
-function tmplUpdateCNC(id,status){var r=tmplRecords.find(function(x){return x.id===id;});if(!r)return;r.cncStatus=status;sdStore('sd_template_records',tmplRecords);tmplRender();}
-function tmplDelete(id){if(!confirm('Delete template record?'))return;tmplRecords=tmplRecords.filter(function(x){return x.id!==id;});sdStore('sd_template_records',tmplRecords);tmplRender();}
-function tmplRender(){
-  var search=((document.getElementById('tmpl-search')||{}).value||'').toLowerCase();
-  var cncF=(document.getElementById('tmpl-filter-cnc')||{}).value||'';
-  var list=tmplRecords.filter(function(r){return(!search||(r.customer+r.job).toLowerCase().includes(search))&&(!cncF||r.cncStatus===cncF);});
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('tmpl-kpi-total',tmplRecords.length);sv('tmpl-kpi-dxf',tmplRecords.filter(function(r){return r.dxfName;}).length);sv('tmpl-kpi-photos',tmplRecords.filter(function(r){return r.photo;}).length);sv('tmpl-kpi-pending',tmplRecords.filter(function(r){return r.cncStatus==='pending';}).length);
-  var cncColor={pending:'#ca8a04',programmed:'#0891b2',running:'#7c3aed',complete:'#16a34a'};
-  var el=document.getElementById('tmpl-list');if(!el)return;
-  el.innerHTML=list.length?list.map(function(r){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start">'+
-    (r.photo?'<img src="'+r.photo+'" style="width:80px;height:70px;object-fit:cover;border-radius:8px;flex-shrink:0">':'<div style="width:80px;height:70px;background:rgba(0,0,0,0.06);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">&#128190;</div>')+
-    '<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-      '<span style="font-size:14px;font-weight:700">'+escHtml(r.customer)+'</span>'+
-      (r.job?'<span style="font-size:11px;color:var(--muted)">'+escHtml(r.job)+'</span>':'')+
-      '<span style="font-size:10px;font-weight:700;background:'+(cncColor[r.cncStatus]||'#6b7280')+';color:#fff;padding:2px 8px;border-radius:100px">'+escHtml(r.cncStatus)+'</span>'+
-    '</div>'+
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(r.method||'')+(r.tech?' · '+escHtml(r.tech):'')+(r.date?' · '+escHtml(r.date):'')+'</div>'+
-    (r.dxfName?'<div style="font-size:11px;background:rgba(27,58,107,0.1);color:var(--a);padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:4px">&#128190; '+escHtml(r.dxfName)+'</div>':'')+
-    (r.notes?'<div style="font-size:12px;color:var(--muted)">'+escHtml(r.notes)+'</div>':'')+
-    '</div>'+
-    '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
-      '<select onchange="tmplUpdateCNC(\''+r.id+'\',this.value)" style="font-size:10px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+
-        ['pending','programmed','running','complete'].map(function(s){return '<option value="'+s+'"'+(s===r.cncStatus?' selected':'')+'>'+s+'</option>';}).join('')+
-      '</select>'+
-      '<button onclick="tmplDelete(\''+r.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:10px;cursor:pointer">Delete</button>'+
-    '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No template records yet.</div>';
-}
 
 // ================================================================
 // CUSTOMER NPS
