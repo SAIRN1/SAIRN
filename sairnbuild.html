@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNbuild - Construction Operations</title>
+<style>
+:root{--p:#F59E0B;--pd:#B45309;--pt:#FFFBEB;--pb:#FCD34D;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* PIN */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;}
+.pdot.on{background:var(--p);border-color:var(--p);}
+.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;}
+.pkey:hover{background:var(--pt);border-color:var(--p);}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--pd);}
+.bs{padding:6px 12px;font-size:12px;}
+.krow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:13px;color:var(--muted);}
+.sval{font-size:14px;font-weight:700;}
+.pbar{background:var(--border);border-radius:99px;height:8px;overflow:hidden;margin-top:4px;}
+.pfill{height:100%;background:var(--p);border-radius:99px;}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;font-family:inherit;}
+input:focus,select:focus{border-color:var(--p);}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.fg{margin-bottom:14px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+.note{background:var(--pt);border:1px solid var(--pb);border-radius:10px;padding:12px 14px;font-size:12px;color:#78350F;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNbuild</div>
+    <div class="gsub">Construction Operations &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="BLD-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNbuild</div>
+    <div class="pdots">
+      <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
+      <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+    </div>
+    <div class="ppad">
+      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
+      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
+      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
+      <button class="pkey" onclick="pk('C')" style="color:var(--muted)">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')" style="color:var(--danger)">&#8592;</button>
+    </div>
+    <div class="perr" id="perr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="hlogo">SAIRNbuild</div>
+    <div class="hbadge">Jobs + Margin</div>
+    <div class="hr">
+      <span class="huser" id="huser">Owner</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div class="wrap">
+    <aside>
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <div class="ss">Jobs</div>
+      <button class="sb" id="sb-jobs" onclick="nav('jobs')"><span class="sico">&#127959;</span>Job Board</button>
+      <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
+    </aside>
+    <main>
+
+<!-- DASHBOARD -->
+<div class="panel on" id="panel-dashboard">
+  <div class="ph"><div><div class="ptitle">Operations Dashboard</div><div class="psub">Every active job, stage and margin &middot; Pinnacle Industries LLC</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('jobs')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Active Jobs</div><div class="kval" id="k-active">0</div><div class="kt" id="k-active-sub">In progress</div></div>
+    <div class="kpi"><div class="klbl">Contract Value</div><div class="kval" id="k-contract">$0</div><div class="kt" id="k-contract-sub">Active jobs</div></div>
+    <div class="kpi"><div class="klbl">Committed Cost</div><div class="kval" id="k-committed">$0</div><div class="kt" id="k-committed-sub">Against active</div></div>
+    <div class="kpi"><div class="klbl">Projected Margin</div><div class="kval" id="k-margin">0%</div><div class="kt" id="k-margin-sub">Across active jobs</div></div>
+    <div class="kpi"><div class="klbl">Blocked</div><div class="kval" id="k-blocked">0</div><div class="kt" id="k-blocked-sub">Needs attention</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Jobs by Stage</span></div><div class="cb" id="d-stages"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Margin by Job</span></div><div class="cb" id="d-margin"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Crew (from SAIRNbiz)</span></div><div class="cb" id="d-crew"></div></div>
+  </div>
+</div>
+
+<!-- JOB BOARD -->
+<div class="panel" id="panel-jobs">
+  <div class="ph"><div><div class="ptitle">Job Board</div><div class="psub">Address, client, contract value, stage and dates</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('jobs')">Export CSV</button><button class="btn bp bs" onclick="openJobModal()">+ Add Job</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Jobs</div><div class="kval" id="j-total">0</div><div class="kt">All stages</div></div>
+    <div class="kpi"><div class="klbl">In Progress</div><div class="kval" id="j-progress">0</div><div class="kt">On site now</div></div>
+    <div class="kpi"><div class="klbl">Blocked</div><div class="kval" id="j-blocked">0</div><div class="kt" id="j-blocked-sub">Awaiting action</div></div>
+    <div class="kpi"><div class="klbl">Complete</div><div class="kval" id="j-complete">0</div><div class="kt">Closed out</div></div>
+    <div class="kpi"><div class="klbl">Avg Contract</div><div class="kval" id="j-avg">$0</div><div class="kt">Per job</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <input id="jsrch" placeholder="Search address, client, permit..." oninput="rJobsTbl()">
+      <select id="jstage" onchange="rJobsTbl()" style="width:200px;">
+        <option value="">All Stages</option>
+        <option value="awarded">Awarded</option>
+        <option value="in_progress">In Progress</option>
+        <option value="blocked">Blocked</option>
+        <option value="punch">Punch / Close-out</option>
+        <option value="complete">Complete</option>
+      </select>
+    </div>
+    <table><thead><tr><th>Address</th><th>Client</th><th>Stage</th><th>Contract</th><th>Committed</th><th>Margin</th><th>Target End</th><th>Actions</th></tr></thead>
+    <tbody id="jtbody"></tbody></table>
+  </div></div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<div class="modal" id="jobmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Job</div>
+    <div class="fg"><label>Address</label><input id="jm-address" placeholder="1234 Center Ridge Rd, Westlake OH"></div>
+    <div class="fr"><div class="fg"><label>Client Name</label><input id="jm-client" placeholder="Client name"></div><div class="fg"><label>Client Phone</label><input id="jm-phone" placeholder="(440) 555-0100"></div></div>
+    <div class="fr"><div class="fg"><label>Contract Value ($)</label><input id="jm-value" type="number" placeholder="85000"></div><div class="fg"><label>Stage</label><select id="jm-stage">
+      <option value="awarded">Awarded</option><option value="in_progress">In Progress</option><option value="blocked">Blocked</option><option value="punch">Punch / Close-out</option><option value="complete">Complete</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Start Date</label><input id="jm-start" type="date"></div><div class="fg"><label>Target End</label><input id="jm-target" type="date"></div></div>
+    <div class="fr"><div class="fg"><label>Permit #</label><input id="jm-permit" placeholder="Optional"></div><div class="fg"><label>Blocked Reason</label><input id="jm-blocked" placeholder="Only if stage = Blocked"></div></div>
+    <div class="fg"><label>Notes</label><input id="jm-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeJobModal()">Cancel</button>
+      <button class="btn bp" onclick="saveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairnbuild';
+var DATA_API='https://sairn.vercel.app/api/sd-data';
+var PROXY='https://sairn.vercel.app/api/claude';
+
+// Client-side prefix allowlist. FORMAT CHECK ONLY -- this is NOT auth. Real
+// validation is server-side in api/_lib/license.js against the license_keys
+// table (existence, status==='active', trial/Stripe entitlement). A key can
+// pass this gate and still be rejected by the server, which is exactly what
+// happens today: no BLD- row is provisioned yet, so every /api/sd-data call
+// returns 401 INVALID_LICENSE. That is correct, expected behaviour -- see
+// SAIRNBUILD-SCOPE.md SS4a. Never treat passing this list as authenticated.
+var VALID=['BLD-','DEMO-','SAIRN-'];
+var PINS={owner:'1234',pm:'2345',office:'3456'};
+
+var pbuf='',prole='owner',jeid=null;
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+
+// ── LICENSE IDENTITY — single source of truth ────────────────────────────
+// ONE resolver, used everywhere. StoneDesk had this logic copy-pasted across
+// six call sites in three spellings before it was consolidated; that is the
+// mistake this exists to prevent. Never inline the key lookup at a call site.
+function bldLicenseKey(){ return localStorage.getItem('bld_license_key') || ''; }
+
+// sdData()-equivalent. All server data access goes through /api/sd-data with
+// the license key as a bearer token. NO client-side Supabase: the anon key is
+// locked out of every table by design, and both StoneDesk and SAIRNbiz had to
+// abandon direct client calls for exactly that reason.
+function bldData(action,resource,payload){
+  var lic=bldLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  return fetch(DATA_API,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('bldData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      return d.data;
+    });
+  }).catch(function(e){console.warn('bldData network error:',e.message);return null;});
+}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key format. Try BLD-PINNACLE-2026';return;}
+  localStorage.setItem('bld_license_key',k);
+  $('gate').style.display='none';$('pin').classList.add('on');
+}
+function pk(k){$('perr').textContent='';
+  if(k==='C'){pbuf='';dots();return;}
+  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
+  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+}
+function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+function chkPin(){
+  var match=null;
+  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
+  if(match){
+    prole=match;st('bld_role',prole);
+    $('pin').classList.remove('on');$('app').classList.add('on');
+    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
+    init();
+  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+}
+function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+function nav(id){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='dashboard')rDash();
+  if(id==='jobs')rJobs();
+}
+
+// ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
+// Seeds ONLY when the key is genuinely absent. ld() checks for null
+// explicitly rather than falsiness: JSON.parse('[]') is truthy, but a
+// `|| SEED` guard would treat a legitimately-emptied list as missing and
+// silently re-seed it. That exact trap was found live in StoneDesk's remnant
+// module. Guarded additionally by bld_seeded.
+function seed(){
+  if(ld('bld_seeded',false))return;
+  st('bld_jobs',[
+    {id:'J-2601',address:'1420 Center Ridge Rd, Westlake OH',client:'Hartley Residence',phone:'(440) 555-0142',value:186500,stage:'in_progress',start:'2026-05-04',target:'2026-08-14',permit:'WL-26-0412',blocked:'',notes:'Full kitchen + primary bath remodel'},
+    {id:'J-2602',address:'88 Lake Rd, Rocky River OH',client:'Delgado Property Group',phone:'(440) 555-0188',value:242000,stage:'in_progress',start:'2026-04-18',target:'2026-09-02',permit:'RR-26-0233',blocked:'',notes:'Two-unit interior rebuild'},
+    {id:'J-2603',address:'315 Moore Rd, Avon Lake OH',client:'Whitfield Residence',phone:'(440) 555-0315',value:98750,stage:'blocked',start:'2026-06-01',target:'2026-08-29',permit:'AL-26-0117',blocked:'Failed rough electrical - re-inspection 8/6',notes:'Addition, 480 sqft'},
+    {id:'J-2604',address:'27 Bradley Rd, Bay Village OH',client:'Okafor Residence',phone:'(440) 555-0227',value:74200,stage:'punch',start:'2026-03-10',target:'2026-07-25',permit:'BV-26-0088',blocked:'',notes:'Basement finish - punch list open'},
+    {id:'J-2605',address:'902 Dover Center Rd, Westlake OH',client:'Sandoval Residence',phone:'(440) 555-0902',value:131400,stage:'complete',start:'2026-01-15',target:'2026-05-30',permit:'WL-26-0051',blocked:'',notes:'Kitchen + mudroom, closed out'},
+    {id:'J-2606',address:'55 Wolf Rd, Bay Village OH',client:'Ferreira Residence',phone:'(440) 555-0055',value:164000,stage:'awarded',start:'2026-08-10',target:'2026-12-05',permit:'',blocked:'',notes:'Awarded, mobilizing August'}
+  ]);
+  // Cost rows drive Margin. Deliberately mixed: J-2601 comfortably under,
+  // J-2602 OVER on labour -- so a genuinely negative margin renders, and the
+  // conditional danger colouring has something real to prove.
+  st('bld_costs',[
+    {id:'C-01',job_id:'J-2601',cost_code:'01-Labour',kind:'labour',budget:52000,committed:41800,actual:39200,vendor:'In-house crew'},
+    {id:'C-02',job_id:'J-2601',cost_code:'02-Materials',kind:'material',budget:44000,committed:38900,actual:38900,vendor:'Builders FirstSource'},
+    {id:'C-03',job_id:'J-2601',cost_code:'03-Countertops',kind:'material',budget:12500,committed:11200,actual:0,vendor:'Pinnacle Stone & Design'},
+    {id:'C-04',job_id:'J-2601',cost_code:'04-Subs',kind:'sub',budget:31000,committed:28400,actual:24100,vendor:'Various'},
+    {id:'C-05',job_id:'J-2602',cost_code:'01-Labour',kind:'labour',budget:68000,committed:91500,actual:88300,vendor:'In-house crew'},
+    {id:'C-06',job_id:'J-2602',cost_code:'02-Materials',kind:'material',budget:71000,committed:69800,actual:66200,vendor:'Builders FirstSource'},
+    {id:'C-07',job_id:'J-2602',cost_code:'04-Subs',kind:'sub',budget:54000,committed:57600,actual:51000,vendor:'Various'},
+    {id:'C-08',job_id:'J-2603',cost_code:'01-Labour',kind:'labour',budget:29000,committed:18200,actual:17400,vendor:'In-house crew'},
+    {id:'C-09',job_id:'J-2603',cost_code:'04-Subs',kind:'sub',budget:22000,committed:14900,actual:14900,vendor:'Kessler Electric'},
+    {id:'C-10',job_id:'J-2604',cost_code:'01-Labour',kind:'labour',budget:21000,committed:20100,actual:20100,vendor:'In-house crew'},
+    {id:'C-11',job_id:'J-2604',cost_code:'02-Materials',kind:'material',budget:26000,committed:25400,actual:25400,vendor:'Builders FirstSource'},
+    {id:'C-12',job_id:'J-2605',cost_code:'01-Labour',kind:'labour',budget:38000,committed:37100,actual:37100,vendor:'In-house crew'},
+    {id:'C-13',job_id:'J-2605',cost_code:'02-Materials',kind:'material',budget:47000,committed:45900,actual:45900,vendor:'Builders FirstSource'}
+  ]);
+  st('bld_seeded',true);
+  toast('Demo data loaded - Pinnacle Industries LLC');
+}
+
+var STAGE={awarded:{l:'Awarded',c:'bx'},in_progress:{l:'In Progress',c:'bb'},blocked:{l:'Blocked',c:'br'},punch:{l:'Punch / Close-out',c:'bw'},complete:{l:'Complete',c:'bg'}};
+var ACTIVE=['awarded','in_progress','blocked','punch'];
+
+function jobs(){return ld('bld_jobs',[]);}
+function costs(){return ld('bld_costs',[]);}
+function committedFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.committed||0);},0);}
+function marginPct(j){var c=committedFor(j.id);return j.value>0?Math.round((j.value-c)/j.value*100):0;}
+
+function init(){seed();rDash();rJobs();}
+
+function rDash(){
+  var js=jobs();
+  var act=js.filter(function(j){return ACTIVE.indexOf(j.stage)!==-1;});
+  var contract=act.reduce(function(s,j){return s+(j.value||0);},0);
+  var committed=act.reduce(function(s,j){return s+committedFor(j.id);},0);
+  var margin=contract>0?Math.round((contract-committed)/contract*100):0;
+  var blocked=js.filter(function(j){return j.stage==='blocked';});
+  $('k-active').textContent=act.length;
+  $('k-contract').textContent=fmt(contract);
+  $('k-committed').textContent=fmt(committed);
+  $('k-margin').textContent=margin+'%';
+  $('k-blocked').textContent=blocked.length;
+  // Conditional severity colouring -- a bad number must not render in the
+  // "good" green. SAIRNbiz shipped a -40% net margin in green because the
+  // class was hardcoded; that is the bug this avoids.
+  $('k-margin-sub').className='kt'+(margin<10?' d':'');
+  $('k-margin-sub').textContent=margin<10?'Below 10% target':'Across active jobs';
+  $('k-blocked-sub').className='kt'+(blocked.length?' d':'');
+  $('k-blocked-sub').textContent=blocked.length?'Needs attention':'Nothing blocked';
+  $('k-committed-sub').className='kt'+(committed>contract?' d':'');
+  $('k-committed-sub').textContent=committed>contract?'Over contract value':'Against active';
+
+  var byStage={};js.forEach(function(j){byStage[j.stage]=(byStage[j.stage]||0)+1;});
+  $('d-stages').innerHTML=Object.keys(byStage).map(function(s){
+    var pct=Math.round(byStage[s]/js.length*100);
+    return '<div class="srow"><span class="slbl">'+H((STAGE[s]||{l:s}).l)+'</span><span class="sval">'+byStage[s]+' job'+(byStage[s]===1?'':'s')+'</span></div><div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div>';
+  }).join('')||'<div style="color:var(--muted);text-align:center;padding:12px;">No jobs yet</div>';
+
+  $('d-margin').innerHTML=act.length?act.map(function(j){
+    var m=marginPct(j);
+    var col=m<0?'var(--danger)':m<10?'var(--warn)':'var(--ok)';
+    return '<div class="srow"><span class="slbl">'+H(j.client)+'</span><span class="sval" style="color:'+col+'">'+m+'%</span></div>'+
+      '<div class="pbar"><div class="pfill" style="width:'+Math.max(0,Math.min(100,m))+'%;background:'+col+'"></div></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No active jobs</div>';
+
+  var att=[];
+  blocked.forEach(function(j){att.push({t:H(j.client)+' - '+H(j.blocked||'blocked'),b:'Blocked',c:'br'});});
+  act.forEach(function(j){var m=marginPct(j);if(m<10)att.push({t:H(j.client)+' margin at '+m+'%',b:m<0?'Losing':'Thin',c:m<0?'br':'bw'});});
+  js.filter(function(j){return j.stage==='punch';}).forEach(function(j){att.push({t:H(j.client)+' in close-out',b:'Punch',c:'bw'});});
+  $('d-attention').innerHTML=att.length?att.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
+
+  rCrew();
+}
+
+// Crew comes from SAIRNbiz's employees roster via /api/sd-data -- it is
+// deliberately NOT seeded locally. Seeding fake crew would fabricate a
+// cross-app sync that has not happened. Until a BLD- license row exists this
+// returns null and the panel says so honestly.
+function rCrew(){
+  var el=$('d-crew');
+  el.innerHTML='<div style="color:var(--muted);text-align:center;padding:12px;">Loading crew from SAIRNbiz&hellip;</div>';
+  bldData('read','employees',{}).then(function(rows){
+    if(rows===null){
+      el.innerHTML='<div class="note" style="margin:0">Crew is read live from SAIRNbiz and is <strong>not</strong> stored here. No validated license is provisioned for SAIRNbuild yet, so this read returns 401 and the list is genuinely empty &mdash; not hidden, not seeded. See SAIRNBUILD-SCOPE.md &sect;4a.</div>';
+      return;
+    }
+    if(!rows.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:12px;">No active crew on the SAIRNbiz roster</div>';return;}
+    el.innerHTML=rows.map(function(e){
+      return '<div class="srow"><span class="slbl">'+H((e.first_name||'')+' '+(e.last_name||''))+'</span><span class="sval" style="font-size:12px;color:var(--muted)">'+H(e.role||'')+'</span></div>';
+    }).join('');
+  });
+}
+
+function rJobs(){
+  var js=jobs();
+  $('j-total').textContent=js.length;
+  $('j-progress').textContent=js.filter(function(j){return j.stage==='in_progress';}).length;
+  var bl=js.filter(function(j){return j.stage==='blocked';}).length;
+  $('j-blocked').textContent=bl;
+  $('j-blocked-sub').className='kt'+(bl?' d':'');
+  $('j-blocked-sub').textContent=bl?'Awaiting action':'None blocked';
+  $('j-complete').textContent=js.filter(function(j){return j.stage==='complete';}).length;
+  $('j-avg').textContent=js.length?fmt(Math.round(js.reduce(function(s,j){return s+(j.value||0);},0)/js.length)):'$0';
+  rJobsTbl();
+}
+
+function rJobsTbl(){
+  var q=(($('jsrch')||{}).value||'').toLowerCase();
+  var sf=(($('jstage')||{}).value||'');
+  var list=jobs().filter(function(j){
+    var hit=!q||((j.address||'')+(j.client||'')+(j.permit||'')).toLowerCase().indexOf(q)!==-1;
+    return hit&&(!sf||j.stage===sf);
+  });
+  var tb=$('jtbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No jobs match</td></tr>';return;}
+  tb.innerHTML=list.map(function(j){
+    var s=STAGE[j.stage]||{l:j.stage,c:'bx'};
+    var c=committedFor(j.id);
+    var m=marginPct(j);
+    var mcol=m<0?'var(--danger)':m<10?'#B45309':'var(--ok)';
+    return '<tr><td><strong>'+H(j.address)+'</strong>'+(j.permit?'<div style="font-size:11px;color:var(--muted)">Permit '+H(j.permit)+'</div>':'')+'</td>'+
+      '<td>'+H(j.client)+'</td>'+
+      '<td><span class="badge '+s.c+'">'+H(s.l)+'</span>'+(j.stage==='blocked'&&j.blocked?'<div style="font-size:11px;color:var(--danger);margin-top:3px">'+H(j.blocked)+'</div>':'')+'</td>'+
+      '<td><strong>'+fmt(j.value)+'</strong></td>'+
+      '<td>'+fmt(c)+'</td>'+
+      '<td><strong style="color:'+mcol+'">'+m+'%</strong></td>'+
+      '<td>'+fdate(j.target)+'</td>'+
+      '<td><button class="btn bo bs" onclick="editJob(\''+H(j.id)+'\')">Edit</button></td></tr>';
+  }).join('');
+}
+
+function openJobModal(){
+  jeid=null;
+  ['jm-address','jm-client','jm-phone','jm-value','jm-start','jm-target','jm-permit','jm-blocked','jm-notes'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('jm-stage').value='awarded';
+  $('jobmodal').classList.add('on');
+}
+function closeJobModal(){$('jobmodal').classList.remove('on');}
+function editJob(id){
+  var j=jobs().find(function(x){return x.id===id;});if(!j)return;
+  jeid=id;
+  $('jm-address').value=j.address||'';$('jm-client').value=j.client||'';$('jm-phone').value=j.phone||'';
+  $('jm-value').value=j.value||'';$('jm-stage').value=j.stage||'awarded';
+  $('jm-start').value=j.start||'';$('jm-target').value=j.target||'';
+  $('jm-permit').value=j.permit||'';$('jm-blocked').value=j.blocked||'';$('jm-notes').value=j.notes||'';
+  $('jobmodal').classList.add('on');
+}
+function saveJob(){
+  var addr=$('jm-address').value.trim();
+  if(!addr){toast('Address required');return;}
+  var js=jobs();
+  var existing=jeid?js.find(function(x){return x.id===jeid;}):null;
+  var rec={
+    id:jeid||('J-'+String(Date.now()).slice(-4)),
+    address:addr,client:$('jm-client').value.trim(),phone:$('jm-phone').value.trim(),
+    value:parseFloat($('jm-value').value)||0,stage:$('jm-stage').value,
+    start:$('jm-start').value,target:$('jm-target').value,
+    permit:$('jm-permit').value.trim(),blocked:$('jm-blocked').value.trim(),
+    notes:$('jm-notes').value.trim()
+  };
+  // Carry forward any field the form does not expose, so editing a job can
+  // never silently drop data it did not render. SAIRNbiz's saveEmp() wiped
+  // employee benefits exactly this way.
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(jeid){var i=js.findIndex(function(x){return x.id===jeid;});if(i>-1)js[i]=rec;else js.push(rec);}
+  else js.push(rec);
+  st('bld_jobs',js);
+  closeJobModal();rJobs();rDash();
+  toast('Saved - '+rec.address);
+}
+
+function csv(type){
+  var rows=[],fn='sairnbuild-'+type+'.csv';
+  if(type==='jobs'){
+    rows=[['Job ID','Address','Client','Phone','Stage','Contract','Committed','Margin %','Start','Target End','Permit','Blocked Reason','Notes']];
+    jobs().forEach(function(j){rows.push([j.id,j.address,j.client,j.phone,(STAGE[j.stage]||{l:j.stage}).l,j.value,committedFor(j.id),marginPct(j),j.start,j.target,j.permit,j.blocked,j.notes]);});
+  } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
+  var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
+  toast('Exported - '+fn);
+}
+
+(function(){
+  var k=bldLicenseKey();
+  if(k){$('gate').style.display='none';$('pin').classList.add('on');}
+})();
+</script>
+</body>
+</html>

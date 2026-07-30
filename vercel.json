@@ -1,5 +1,5 @@
 {
-  "buildCommand": "mkdir -p dist && cp stonedesk.html dist/stonedesk.html && cp sairnbiz.html dist/sairnbiz.html && cp sairncode.html dist/sairncode.html && cp sairnvet.html dist/sairnvet.html && cp stonedesk.html dist/index.html",
+  "buildCommand": "mkdir -p dist && cp stonedesk.html dist/stonedesk.html && cp sairnbiz.html dist/sairnbiz.html && cp sairncode.html dist/sairncode.html && cp sairnvet.html dist/sairnvet.html && cp sairnbuild.html dist/sairnbuild.html && cp stonedesk.html dist/index.html",
   "outputDirectory": "dist",
   "routes": [
     {
@@ -17,6 +17,10 @@
     {
       "src": "/sairnvet$",
       "dest": "/sairnvet.html"
+    },
+    {
+      "src": "/sairnbuild$",
+      "dest": "/sairnbuild.html"
     }
   ]
 }
