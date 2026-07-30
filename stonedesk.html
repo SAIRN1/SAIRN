@@ -6349,7 +6349,7 @@ window.sdRMExport=function(){
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdSafetyAdd()">+ Log Incident</button>
     <button class="q-btn" onclick="sdSafetyAI()">🤖 AI Safety Audit</button>
-    <button class="q-btn" onclick="sdSafetyExport()">📊 Export CSV</button>
+    <button class="q-btn" onclick="safetyExport()">📊 Export CSV</button>
     <button class="q-btn" onclick="sdSafetyPrint()">🖨️ Print</button>
   </div>
 </div>
@@ -6375,9 +6375,132 @@ window.sdRMExport=function(){
     <div id="safe-ppe-list"><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Safety goggles (ANSI Z87.1)</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>N95/N100 respirator (silica)</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Hearing protection (105dB+)</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Cut-resistant gloves</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Steel-toe boots</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>Hard hat (overhead work)</div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text)"><span style="color:#16c762;font-size:14px">&#10003;</span>High-vis vest (delivery/yard)</div></div>
   </div>
 </div>
-<div id="safe-list"></div>
-<div style="font-weight:700;font-size:14px;color:var(--text);margin:18px 0 10px" data-auto-container="missing-dom-fix">Training Records</div>
-<div id="safe-training-list" data-auto-container="missing-dom-fix"></div>
+<!-- Safety 5-tab system: Training / Daily Checklist / Incidents / Equipment / ECP -->
+<div class="fm-tabs" style="margin-top:8px">
+  <button class="fm-tab active" id="stab-training" onclick="safetySetTab('training',this)">Training</button>
+  <button class="fm-tab" id="stab-checklist" onclick="safetySetTab('checklist',this)">Daily Checklist</button>
+  <button class="fm-tab" id="stab-incidents" onclick="safetySetTab('incidents',this)">Incidents</button>
+  <button class="fm-tab" id="stab-equipment" onclick="safetySetTab('equipment',this)">Equipment</button>
+  <button class="fm-tab" id="stab-ecp" onclick="safetySetTab('ecp',this)">Exposure Control Plan</button>
+</div>
+
+<div id="safety-tab-training" style="display:block">
+  <div style="display:flex;justify-content:flex-end;margin:12px 0">
+    <button class="q-btn primary" onclick="safetyAddTraining()">+ Add Training Record</button>
+  </div>
+  <div id="safe-form-training" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Add Training Record</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <input id="st-employee" placeholder="Employee name *" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+      <select id="st-type" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <option value="silica_initial">Silica Safety — Initial</option>
+        <option value="silica_annual">Silica Annual Refresher</option>
+        <option value="wet_methods">Wet Methods</option>
+        <option value="respirator">Respirator Fit Test</option>
+        <option value="osha10">OSHA 10-Hour</option>
+        <option value="first_aid">First Aid/CPR</option>
+        <option value="forklift">Forklift</option>
+        <option value="ppe">PPE</option>
+        <option value="emergency">Emergency Response</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px">Completed</label><input id="st-date" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+      <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px">Expires</label><input id="st-expiry" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <input id="st-trainer" placeholder="Trainer" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+      <input id="st-cert" placeholder="Cert #" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    </div>
+    <textarea id="st-notes" placeholder="Notes" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;min-height:50px"></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="q-btn primary" onclick="safetySaveTraining()">Save Record</button>
+      <button class="q-btn" onclick="document.getElementById('safe-form-training').style.display='none'">Cancel</button>
+    </div>
+  </div>
+  <div id="safe-training-list"></div>
+</div>
+
+<div id="safety-tab-checklist" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0;flex-wrap:wrap;gap:8px">
+    <div style="font-weight:700;font-size:14px;color:var(--text)">Daily Safety Checklist — <span id="safe-checklist-date"></span></div>
+    <button class="q-btn primary" onclick="safetySubmitChecklist()">Submit Checklist</button>
+  </div>
+  <div id="safe-checklist-items"></div>
+  <div style="font-weight:700;font-size:14px;color:var(--text);margin:18px 0 10px">Recent Submissions</div>
+  <div id="safe-checklist-history-list"></div>
+</div>
+
+<div id="safety-tab-incidents" style="display:none">
+  <div style="display:flex;justify-content:flex-end;margin:12px 0">
+    <button class="q-btn primary" onclick="safetyLogIncident()">+ Log Incident (Detailed)</button>
+  </div>
+  <div id="safe-incident-form" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Log Incident</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px">Date/Time</label><input id="inc-datetime" type="datetime-local" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+      <input id="inc-employee" placeholder="Employee involved" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);align-self:end">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <select id="inc-type" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <option value="near_miss">Near Miss</option>
+        <option value="first_aid">First Aid</option>
+        <option value="recordable">OSHA Recordable</option>
+        <option value="lost_time">Lost Time</option>
+        <option value="property">Property Damage</option>
+        <option value="exposure">Silica/Chemical Exposure</option>
+        <option value="equipment">Equipment Failure</option>
+      </select>
+      <select id="inc-osha" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <option value="no">Not OSHA Reportable</option>
+        <option value="yes">OSHA Reportable</option>
+      </select>
+    </div>
+    <textarea id="inc-desc" placeholder="Description *" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;min-height:50px"></textarea>
+    <textarea id="inc-cause" placeholder="Root cause (optional)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;min-height:40px;margin-top:8px"></textarea>
+    <textarea id="inc-actions" placeholder="Corrective actions taken (optional)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;min-height:40px;margin-top:8px"></textarea>
+    <input id="inc-witnesses" placeholder="Witnesses" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;margin-top:8px">
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="q-btn primary" onclick="safetySaveIncident()">Save Incident</button>
+      <button class="q-btn" onclick="safetyAIRootCause()">🤖 AI Root Cause Analysis</button>
+      <button class="q-btn" onclick="document.getElementById('safe-incident-form').style.display='none'">Cancel</button>
+    </div>
+  </div>
+  <div id="safe-list"></div>
+</div>
+
+<div id="safety-tab-equipment" style="display:none">
+  <div style="display:flex;justify-content:flex-end;margin:12px 0">
+    <button class="q-btn primary" onclick="safetyAddInspection()">+ Log Inspection</button>
+  </div>
+  <div id="safe-inspection-list"></div>
+</div>
+
+<div id="safety-tab-ecp" style="display:none">
+  <div style="font-size:13px;color:var(--muted);margin:12px 0">Written Exposure Control Plan — OSHA 29 CFR 1910.1053</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <input id="ecp-shop" placeholder="Shop name" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    <input id="ecp-owner" placeholder="Owner/Operator" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px">Plan Date</label><input id="ecp-date" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+    <div><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px">Next Review</label><input id="ecp-review" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+  </div>
+  <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px">Engineering Controls</label>
+  <textarea id="ecp-controls" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;min-height:60px;margin-bottom:8px"></textarea>
+  <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px">Work Practice Controls</label>
+  <textarea id="ecp-practices" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;min-height:60px;margin-bottom:8px"></textarea>
+  <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px">Respiratory Protection / PPE</label>
+  <textarea id="ecp-ppe" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;min-height:60px;margin-bottom:8px"></textarea>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+    <button class="q-btn primary" onclick="ecpSave()">Save ECP</button>
+    <button class="q-btn" onclick="ecpGenerate()">🤖 AI-Generate Full ECP</button>
+    <button class="q-btn" onclick="safetyGenerateAttestation()">📄 STOP Act Attestation</button>
+    <button class="q-btn" onclick="ecpPrint()">🖨️ Print</button>
+  </div>
+  <div id="ecp-save-status" style="margin-top:10px;font-size:13px"></div>
+</div>
+
 <div id="safe-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
 <script>
@@ -6463,7 +6586,6 @@ window.sdSafetyExport=function(){
 };
 </script>
 </div>
-<div id="ecp-save-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
 
   <!-- ============================================================ -->
   <!-- SLAB NESTING & YIELD OPTIMIZER PANEL                         -->
