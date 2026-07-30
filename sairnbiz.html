@@ -1102,6 +1102,16 @@ function genReport(type){
     $('rtitle').textContent='P&L Statement YTD 2026';
     $('rbody').innerHTML='<table><thead><tr><th>Category</th><th>Amount</th><th>% Revenue</th></tr></thead><tbody><tr><td><strong>Total Revenue</strong></td><td><strong>'+fmt(rev)+'</strong></td><td>'+pct(rev)+'</td></tr><tr><td>COGS</td><td>'+fmt(cogs)+'</td><td>'+pct(cogs)+'</td></tr><tr><td><strong>Gross Profit</strong></td><td><strong>'+fmt(gp)+'</strong></td><td>'+pct(gp)+'</td></tr><tr><td>Operating Expenses</td><td>'+fmt(opex)+'</td><td>'+pct(opex)+'</td></tr><tr><td><strong>Net Income</strong></td><td><strong>'+fmt(net)+'</strong></td><td>'+pct(net)+'</td></tr></tbody></table>';
   }
+  else if(type==='payroll'){
+    rPay();
+    $('rtitle').textContent='Payroll Summary - '+new Date().toLocaleDateString();
+    $('rbody').innerHTML='<table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>'+$('pytbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Gross Payroll:</strong> '+$('py-gross').textContent+' &nbsp;&nbsp; <strong>Total Labor Cost:</strong> '+$('py-total').textContent+' &nbsp;&nbsp; <strong>YTD Payroll:</strong> '+$('py-ytd').textContent+'</div>';
+  }
+  else if(type==='tax'){
+    rTax();
+    $('rtitle').textContent='Tax Summary - '+new Date().toLocaleDateString();
+    $('rbody').innerHTML='<table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Est. Amount</th><th>YTD Paid</th><th>Status</th></tr></thead><tbody>'+$('txtbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Est. Total Liability:</strong> '+$('tx-q3').textContent+' &nbsp;&nbsp; <strong>Next Filing Due:</strong> '+$('tx-next').textContent+'</div>';
+  }
   else{$('rtitle').textContent='Report: '+type;$('rbody').innerHTML='<p style="color:var(--muted);padding:24px;text-align:center;">Generated - '+new Date().toLocaleString()+'</p>';}
   $('rout').scrollIntoView({behavior:'smooth'});
 }
