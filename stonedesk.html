@@ -58,6 +58,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
   display:flex;align-items:center;justify-content:center;z-index:1000;
   flex-direction:column;gap:24px;
 }
+#trial-expired-screen{
+  position:fixed;inset:0;
+  background:linear-gradient(135deg,#1B3A6B 0%,#2a5298 50%,#1B3A6B 100%);
+  align-items:center;justify-content:center;z-index:1001;
+  flex-direction:column;gap:24px;
+}
 .auth-glow{
   position:absolute;top:20%;left:50%;transform:translateX(-50%);
   width:600px;height:600px;border-radius:50%;
@@ -2165,6 +2171,22 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     <div class="auth-error" id="auth-error" style="margin-top:10px"></div>
     <button class="auth-btn" onclick="doLogin()" style="margin-top:14px">Sign In to StoneDesk&#8482;</button>
     <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Demo PIN: 1234</div>
+  </div>
+</div>
+
+<div id="trial-expired-screen" style="display:none">
+  <div class="auth-glow"></div>
+  <div class="auth-logo">StoneDesk&#8482;</div>
+  <div class="auth-tag">Stone Fabrication Intelligence Platform</div>
+  <div class="auth-box" style="text-align:center">
+    <div style="font-size:36px;margin-bottom:10px">&#9203;</div>
+    <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px">Your 30-day trial has ended</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px">
+      Thanks for trying StoneDesk. Your trial started on <strong id="trial-start-display" style="color:#fff">—</strong>
+      and access to the full app is now paused. Email us to unlock unlimited access — no data has been lost.
+    </div>
+    <a class="auth-btn" style="display:block;text-decoration:none;box-sizing:border-box" href="mailto:michael@sairn.com?subject=StoneDesk%20trial%20upgrade">Email michael@sairn.com to Upgrade</a>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Your trial data is safe and will be here when you upgrade.</div>
   </div>
 </div>
 
@@ -26737,7 +26759,33 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     return document.querySelector('input[type=password],input[type=number][maxlength="4"]');
   }
 
+  // 30-day trial gate, keyed off a real timestamp written on first-ever
+  // login (never a fabricated countdown). Checked on every successful
+  // login, before the app is revealed.
+  function checkTrialGate() {
+    var TRIAL_KEY = 'sd_trial_start';
+    var TRIAL_DAYS = 30;
+    var startMs = parseInt(localStorage.getItem(TRIAL_KEY), 10);
+    if (!startMs || isNaN(startMs)) {
+      startMs = Date.now();
+      try { localStorage.setItem(TRIAL_KEY, String(startMs)); } catch(e) {}
+    }
+    var daysElapsed = Math.floor((Date.now() - startMs) / 86400000);
+    if (daysElapsed < TRIAL_DAYS) return true;
+    var scr = document.getElementById('trial-expired-screen');
+    if (scr) {
+      scr.style.cssText = 'display:flex!important';
+      var dEl = document.getElementById('trial-start-display');
+      if (dEl) dEl.textContent = new Date(startMs).toLocaleDateString();
+    }
+    var authScr = document.getElementById('auth-screen');
+    if (authScr) authScr.style.cssText = 'display:none!important';
+    return false;
+  }
+  window.checkTrialGate = checkTrialGate;
+
   function showApp() {
+    if (!checkTrialGate()) return;
     // Hide ALL possible login containers
     ['login','auth-screen','login-screen','auth-gate','ls','auth-box'].forEach(function(id) {
       var el = document.getElementById(id);
