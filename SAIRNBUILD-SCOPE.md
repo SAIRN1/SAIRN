@@ -1,5 +1,16 @@
 # SAIRNbuild — Scope
 
+**Decisions FINALIZED 2026-07-30.** The four open items in §6 are resolved and
+folded into the body below. §6 is retained as a decision record rather than
+deleted, so the reasoning survives.
+
+| # | Decision |
+|---|---|
+| 1 | Supabase table prefix: **`bld_*`** |
+| 2 | Licence prefix: **`BLD-`**, with one real `license_keys` row provisioned *before* the gate is written |
+| 3 | Build order: **Dashboard → Job Board → Job Costing → Change Orders**, then the rest |
+| 4 | **Bids & Proposals deferred out of v1** — v1 is 16 panels, not 17 |
+
 **Status: scope only. No code exists.** `sairnbuild.html` has never existed in
 this repo's history — confirmed via `git ls-tree -r origin/main -- '*.html'`,
 which returns exactly four files (`stonedesk.html`, `sairnbiz.html`,
@@ -83,7 +94,7 @@ panel per real job-to-be-done). Nav ids are the `sbNav(id)` /
 | Job Costing | `jobcost` | Budget vs committed vs actual per cost code, per job. The margin-truth panel. |
 | Draw Requests | `draws` | Progress billing: % complete per line, retainage, what has been requested vs received. |
 | Purchase Orders | `po` | Material and sub POs issued against a job and a cost code. |
-| Bids & Proposals | `bids` | Outgoing proposals with win/loss outcome, so the win rate is real rather than felt. |
+| ~~Bids & Proposals~~ | ~~`bids`~~ | **DEFERRED out of v1.** A genuinely separate workflow from running active jobs; keeps v1 tight around the core job-costing loop. Revisit as a v2 increment. |
 
 ### Subs & Vendors
 | Panel | id | Purpose |
@@ -99,8 +110,15 @@ panel per real job-to-be-done). Nav ids are the `sbNav(id)` /
 | Reports | `reports` | Job P&L, WIP schedule, change-order log, compliance expiry, sub spend. |
 | Settings | `settings` | PINs/roles, cost-code list, default retainage %, markup defaults. |
 
-**17 panels.** Comparable to SAIRNbiz's 20. Anything beyond this list is a
-later increment, not v1.
+**16 panels in v1** (17 listed, Bids deferred). Comparable to SAIRNbiz's 20.
+Anything beyond this list is a later increment, not v1.
+
+**Build order (decided):** `dashboard` → `jobs` → `jobcost` → `changeorders`
+first. Those four are the persona's top-ranked pains and together exercise the
+whole stack end to end — a `bld_*` table, the `/api/sd-data` read+write
+branches, the licence gate, and a computed-not-hardcoded KPI. Only once that
+loop is proven live do the remaining 12 get built; each is then additive against
+a pattern that already works, rather than 16 panels all half-wired at once.
 
 ---
 
@@ -128,24 +146,23 @@ SAIRNbuild follows the same rule:
 |---|---|---|---|
 | `business_profiles` | `license_hash` + `app_id='sairnbuild'` | SAIRNbuild | Reuses the existing shared table, no new table needed. |
 | `ai_memories` | `license_hash` + `app_id='sairnbuild'` | SAIRNbuild | Same. |
-| `sb_jobs` | `license_hash` | SAIRNbuild | App-owned. |
-| `sb_change_orders` | `license_hash` | SAIRNbuild | App-owned. |
-| `sb_costs` | `license_hash` | SAIRNbuild | App-owned. |
-| `sb_draws` | `license_hash` | SAIRNbuild | App-owned. |
-| `sb_subs` | `license_hash` | SAIRNbuild | App-owned. |
-| `sb_daily_logs` | `license_hash` | SAIRNbuild | App-owned. |
+| `bld_jobs` | `license_hash` | SAIRNbuild | App-owned. |
+| `bld_change_orders` | `license_hash` | SAIRNbuild | App-owned. |
+| `bld_costs` | `license_hash` | SAIRNbuild | App-owned. |
+| `bld_draws` | `license_hash` | SAIRNbuild | App-owned. |
+| `bld_subs` | `license_hash` | SAIRNbuild | App-owned. |
+| `bld_daily_logs` | `license_hash` | SAIRNbuild | App-owned. |
 | `employees` | `customer_email` | **SAIRNbiz (read-only here)** | Cross-app. SAIRNbuild reads its own crew from the roster SAIRNbiz already maintains — it must NOT write it. |
 
-**Naming collision to resolve before any table is created:** SAIRNbiz's
-*localStorage* keys are already `sb_*` (`sb_emps`, `sb_invs`, `sb_jobs`, …).
-The `sb_*` Supabase table prefix proposed above would read as SAIRNbiz's.
-Two options, needs a decision, do not guess:
-- **(a)** use `bld_*` for SAIRNbuild's Supabase tables (`bld_jobs`, `bld_costs`),
-  leaving `sb_*` to mean SAIRNbiz; or
-- **(b)** keep `sb_*` for SAIRNbuild tables on the grounds that SAIRNbiz has no
-  Supabase tables of its own (it only writes `employees`), so there is no
-  actual collision — only an apparent one.
-This doc proposes **(a) `bld_*`** as the safer read, but flags it as open.
+**Prefix DECIDED: `bld_*`.** SAIRNbiz's *localStorage* keys are already `sb_*`
+(`sb_emps`, `sb_invs`, `sb_jobs`, …), so an `sb_*` Supabase table would read as
+SAIRNbiz's even though SAIRNbiz owns no Supabase tables of its own. `bld_*`
+removes the ambiguity outright and keeps one prefix per app.
+
+Applies to **localStorage keys too**, not just Supabase tables — `bld_jobs`,
+`bld_costs`, `bld_seeded`. Using one prefix on the server and another on the
+client is exactly the kind of split that produced the `sd_remnant` /
+`sd_remnants` confusion in StoneDesk (two keys, one letter apart, two modules).
 
 ### Key fields per table
 
@@ -218,7 +235,53 @@ any client code relies on it.
 |---|---|
 | `sairnbuild.html` | Single-file app, amber `#F59E0B`, per the reference architecture. |
 | `sbldData()` helper | The `sdData()`-equivalent: `POST /api/sd-data` with `Authorization: Bearer <license_key>`, returns `null` on any failure. **Copy the shape, not the identity logic** — and take the lesson from this session directly: define **one** resolver (`sbldLicenseKey()`) used everywhere, never inline the key lookup at each call site. StoneDesk had that logic copy-pasted in six places across three spellings before it was consolidated. |
-| Licence gate | Prefix allowlist for the format check only, with an inline comment that it is **not** auth. Must include whatever prefix the real `license_keys` rows use — SAIRNbiz shipped with `SD-` missing and could not accept its own working licence. Verify against a real row before shipping. |
+| Licence gate | Prefix allowlist **must include `'BLD-'`** (decided), with an inline comment that the list is a format check and **not** auth. See §4a — the row must exist and be verified *before* this is written. |
+
+### 4a. Licence provisioning — MUST happen before the gate is written
+
+**Prefix DECIDED: `BLD-`.** Consistent with the existing convention
+(`SD-` StoneDesk, `SB-` SAIRNbiz) and unambiguous against `bld_*` tables.
+
+**Order of operations, deliberately in this sequence** so the SAIRNbiz
+`SD-`/allowlist mismatch cannot repeat:
+
+1. **Provision the row first.** One row in `public.license_keys`:
+
+   | Column | Value | Consumed by |
+   |---|---|---|
+   | `key` | `BLD-PINNACLE-2026` | `license.js` looks up by raw `key` |
+   | `status` | `active` | compared `.trim().toLowerCase()` |
+   | `customer_email` | `demo@pinnaclestone.example` *(or the tenant email of record)* | tenant identity; scopes the `employees` read |
+   | `app_id` | `sairnbuild` | read, not gated on by `sd-data` |
+   | `plan` | as appropriate | Pattern 13 `plan_tier` |
+   | `trial_ends_at` | future date, or `null` | `null` is treated as not-expired |
+   | `stripe_subscription_id` | optional | set → bypasses the trial gate entirely |
+
+2. **Verify it validates, before writing any client code.** `anon` cannot read
+   or insert `license_keys` (both return `42501` — confirmed by probe, service
+   role only by design), so verification goes through the deployed endpoint,
+   whose error codes are an exact oracle:
+
+   ```
+   curl -s -X POST https://sairn.vercel.app/api/sd-data \
+     -H 'Content-Type: application/json' \
+     -H 'Authorization: Bearer BLD-PINNACLE-2026' \
+     -d '{"action":"read","resource":"profile","payload":{}}'
+   ```
+
+   `401 INVALID_LICENSE` → row absent · `403 LICENSE_INACTIVE` → status not
+   active · `402 TRIAL_EXPIRED` → trial past and no Stripe sub · **`200` → good,
+   proceed.** Confirmed as of 2026-07-30 that `BLD-PINNACLE-2026` and
+   `BLD-INDUSTRIES-2026` both currently return `401` — the row does **not** yet
+   exist and still needs creating.
+
+3. **Only then** add `'BLD-'` to the client allowlist, and re-verify the key is
+   accepted through the real UI gate — not just server-side. SAIRNbiz's gate
+   silently returned early without setting `sb_lic`, which made an
+   authentication failure look like a frozen-tab problem for several rounds.
+
+**Provisioning is not something I can do** — it requires the service-role key or
+Supabase dashboard access. This step is Michael's.
 
 ### Explicitly NOT built
 Direct client-side Supabase calls. The anon/publishable key is locked out of
@@ -241,8 +304,10 @@ PO points at Pinnacle Stone, which is the cross-app narrative made concrete.
 
 ### Seed content
 - **6 jobs** across stages: 2 in progress, 1 blocked on inspection, 1 in
-  close-out/punch, 1 complete, 1 bidding. Real Westlake/Rocky River/Avon Lake
-  addresses matching the existing apps' geography.
+  close-out/punch, 1 complete, 1 awarded-not-started. Real Westlake/Rocky
+  River/Avon Lake addresses matching the existing apps' geography. (Originally
+  "1 bidding" — changed, since Bids is deferred out of v1 and a `bidding`
+  stage with no panel behind it would be a dead state.)
 - **5 subcontractors** with deliberately varied compliance state: 3 current,
   **1 COI expiring in 12 days**, **1 expired** — so the Compliance panel has
   something true to show. An all-green board demonstrates nothing.
@@ -274,17 +339,26 @@ PO points at Pinnacle Stone, which is the cross-app narrative made concrete.
 
 ---
 
-## 6. Open decisions — not mine to make
+## 6. Decision record — RESOLVED 2026-07-30
 
-1. **Supabase table prefix**: `bld_*` (proposed) vs `sb_*`. §3.
-2. **Licence prefix** for SAIRNbuild rows in `license_keys` — and a real row
-   provisioned before the gate is written, so the allowlist can be verified
-   against something that actually validates.
-3. **Build order.** Recommended: Dashboard → Job Board → Job Costing → Change
-   Orders first. Those four are the persona's top pains and prove the data model
-   end to end; the remaining 13 are additive once the pattern holds.
-4. Whether **Bids & Proposals** belongs in v1 or is deferred — it is the one
-   panel that is a genuinely separate workflow from running active jobs.
+Retained rather than deleted, so the reasoning is auditable later.
+
+| # | Decision | Resolution | Where it lives now |
+|---|---|---|---|
+| 1 | Supabase table prefix | **`bld_*`** — removes the visual collision with SAIRNbiz's `sb_*` localStorage keys outright; one prefix per app. Extended to cover client-side keys too, so server and client never diverge. | §3 |
+| 2 | Licence prefix + provisioned row | **`BLD-`**, row provisioned and endpoint-verified **before** the gate is written. Full column spec and the verification curl are in §4a. | §4a |
+| 3 | Build order | **Dashboard → Job Board → Job Costing → Change Orders**, then the remaining 12. Proves the whole stack on the four highest-pain panels before breadth. | §2 |
+| 4 | Bids & Proposals | **Deferred out of v1.** v1 is 16 panels. Also changed one seed job from `bidding` to `awarded-not-started`, since a stage with no panel behind it would be a dead state. | §2, §5 |
+
+### Still genuinely open — and blocking
+**The `BLD-PINNACLE-2026` row does not exist yet.** Verified 2026-07-30: both
+`BLD-PINNACLE-2026` and `BLD-INDUSTRIES-2026` return `401 INVALID_LICENSE`, and
+`anon` can neither read nor insert `license_keys` (`42501` on both, service role
+only by design). Creating it needs the service-role key or dashboard access, so
+it is Michael's step, and it **gates the licence gate** — §4a step 1.
+
+Everything else in this scope can be built without it; only the gate and any
+end-to-end sync test are blocked.
 
 ## 7. Verification standard for the build
 
