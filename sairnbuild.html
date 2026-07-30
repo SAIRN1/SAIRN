@@ -223,6 +223,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-inspections" onclick="nav('inspections')"><span class="sico">&#127959;&#65039;</span>Inspections</button>
       <button class="sb" id="sb-selections" onclick="nav('selections')"><span class="sico">&#127912;</span>Selections</button>
       <button class="sb" id="sb-dailylogs" onclick="nav('dailylogs')"><span class="sico">&#128221;</span>Daily Logs</button>
+      <button class="sb" id="sb-timeline" onclick="nav('timeline')"><span class="sico">&#128197;</span>Project Timeline</button>
       <div class="ss">Money</div>
       <button class="sb" id="sb-jobcost" onclick="nav('jobcost')"><span class="sico">&#128200;</span>Job Costing</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
@@ -472,6 +473,30 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- PROJECT TIMELINE -->
+<div class="panel" id="panel-timeline">
+  <div class="ph"><div><div class="ptitle">Project Timeline</div><div class="psub">Multi-week task view with real dependency logic &mdash; distinct from the day-to-day crew Schedule</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('timeline')">Export CSV</button><button class="btn bp bs" onclick="openTaskModal()">+ New Task</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Tasks</div><div class="kval" id="tl-total">0</div><div class="kt">Across all jobs</div></div>
+    <div class="kpi"><div class="klbl">In Progress</div><div class="kval" id="tl-progress">0</div><div class="kt">Currently active</div></div>
+    <div class="kpi"><div class="klbl">Complete</div><div class="kval" id="tl-complete">0</div><div class="kt">Finished</div></div>
+    <div class="kpi"><div class="klbl">Shifted by Dependency</div><div class="kval" id="tl-shifted">0</div><div class="kt" id="tl-shifted-sub">Pushed later than planned</div></div>
+    <div class="kpi"><div class="klbl">Overdue</div><div class="kval" id="tl-overdue">0</div><div class="kt" id="tl-overdue-sub">Not complete, past effective end</div></div>
+  </div>
+  <div class="note"><strong>Effective</strong> dates are computed, not typed in: a task with a dependency can never show an effective start earlier than its dependency's effective end, and marking a dependency <strong>complete</strong> late shifts every task downstream of it automatically. Cyclical dependencies (A depends on B depends on A) are detected and treated as no dependency rather than freezing the page.</div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="tljob" onchange="rTimelineTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="tlstatus" onchange="rTimelineTbl()" style="width:180px;">
+        <option value="">All Statuses</option><option value="not_started">Not Started</option><option value="in_progress">In Progress</option><option value="complete">Complete</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Task</th><th>Depends On</th><th>Planned</th><th>Effective</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="tltbody"></tbody></table></div>
+  </div></div>
+</div>
+
 <!-- JOB COSTING -->
 <div class="panel" id="panel-jobcost">
   <div class="ph"><div><div class="ptitle">Job Costing</div><div class="psub">Budget vs committed vs actual, per cost code, per job</div></div>
@@ -686,6 +711,23 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="taskmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Task</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="tm-job" onchange="taskJobChanged()"></select></div><div class="fg"><label>Status</label><select id="tm-status">
+      <option value="not_started">Not Started</option><option value="in_progress">In Progress</option><option value="complete">Complete</option>
+    </select></div></div>
+    <div class="fg"><label>Task Name</label><input id="tm-name" placeholder="Rough electrical"></div>
+    <div class="fr"><div class="fg"><label>Planned Start</label><input id="tm-start" type="date"></div><div class="fg"><label>Duration (days)</label><input id="tm-duration" type="number" placeholder="5"></div></div>
+    <div class="fg"><label>Depends On</label><select id="tm-dep"><option value="">No dependency</option></select></div>
+    <div class="fg" id="tm-actualrow"><label>Actual Completion Date</label><input id="tm-actual" type="date"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTaskModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="comodal">
   <div class="mbox">
     <div class="mtitle">Add / Edit Change Order</div>
@@ -809,6 +851,7 @@ function nav(id){
   if(id==='inspections')rInspections();
   if(id==='selections')rSelections();
   if(id==='dailylogs')rLogs();
+  if(id==='timeline')rTimeline();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -950,6 +993,20 @@ function seed(){
     {id:'DL-02',job_id:'J-2601',log_date:daysAgo(3),weather:'Overcast, 74F',crew:3,photos:4,work:'Demo complete, framing started',delays:''},
     {id:'DL-03',job_id:'J-2602',log_date:daysAgo(12),weather:'Rain, 68F',crew:5,photos:8,work:'Structural post relocation, unit B',delays:'Rain delayed exterior work by half a day'}
   ]);
+  // Tasks: a real 3-hop dependency chain on J-2601 so the "completion
+  // shifts dependents" mechanic has something genuine to prove, not a
+  // 2-task toy example. TSK-01 (Demo) is complete but finished 3 days late
+  // (actual 05-12 vs planned end 05-09) -- that slip should cascade: TSK-02
+  // (Framing, depends on TSK-01) effective-shifts 2 days, and TSK-03 (Rough
+  // Electrical, depends on TSK-02) effective-shifts 1 day on top of that,
+  // a multi-hop cascade, not just a single shifted task. Plus one
+  // independent task on J-2602 for scope diversity.
+  st('bld_tasks',[
+    {id:'TSK-01',job_id:'J-2601',name:'Demo existing cabinetry and flooring',start:'2026-05-04',duration:5,dependency_id:'',status:'complete',actual:'2026-05-12'},
+    {id:'TSK-02',job_id:'J-2601',name:'Framing',start:'2026-05-10',duration:10,dependency_id:'TSK-01',status:'in_progress',actual:''},
+    {id:'TSK-03',job_id:'J-2601',name:'Rough Electrical',start:'2026-05-21',duration:5,dependency_id:'TSK-02',status:'not_started',actual:''},
+    {id:'TSK-04',job_id:'J-2602',name:'Structural post relocation - unit B',start:'2026-05-20',duration:8,dependency_id:'',status:'complete',actual:'2026-05-27'}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -970,7 +1027,167 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();}
+
+// ── PROJECT TIMELINE ─────────────────────────────────────────────────────
+// Real dependency logic, not a static calendar: a task's EFFECTIVE start/end
+// is computed from its dependency chain every render, never stored, so it
+// can never drift from what the chain actually implies. Memoized per render
+// pass (not across renders -- state can change between renders) with cycle
+// detection, since a self-referential or circular dependency chain would
+// otherwise recurse forever and freeze the page.
+function bldTasks(){return ld('bld_tasks',[]);}
+function taskById(id){return bldTasks().find(function(t){return t.id===id;});}
+function computeTaskDates(cache,visiting){
+  return function(t){
+    if(cache[t.id])return cache[t.id];
+    if(visiting[t.id]){
+      // Cycle detected: treat as no dependency rather than recursing forever.
+      var s=new Date(t.start+'T00:00:00');
+      var e=new Date(s.getTime()+(t.duration||1)*86400000);
+      cache[t.id]={start:s,end:e,cyclic:true};
+      return cache[t.id];
+    }
+    visiting[t.id]=true;
+    var start=new Date(t.start+'T00:00:00');
+    if(t.dependency_id){
+      var dep=taskById(t.dependency_id);
+      if(dep){
+        var depDates=computeTaskDates(cache,visiting)(dep);
+        if(depDates.end>start)start=depDates.end;
+      }
+    }
+    var end;
+    if(t.status==='complete'&&t.actual){
+      // A completed task's real end is what actually happened, not the plan
+      // -- this is the specific mechanic that makes "completion shifts
+      // dependents" real rather than cosmetic.
+      end=new Date(t.actual+'T00:00:00');
+      if(end<start)end=start;
+    } else {
+      end=new Date(start.getTime()+(t.duration||1)*86400000);
+    }
+    delete visiting[t.id];
+    // A node deeper in this same call stack may already have written a
+    // cyclic:true cache entry for t.id (this exact node, re-entered while
+    // still "visiting") before this call unwinds back to finish normally.
+    // Without this guard the normal-path write below silently overwrites
+    // that marker, so the one node that actually IS the cycle's entry
+    // point ends up reporting cyclic:false -- caught by testing an actual
+    // circular chain (TSK-01 -> TSK-03 -> TSK-02 -> TSK-01) directly,
+    // not assumed safe from reading the logic.
+    if(cache[t.id]&&cache[t.id].cyclic)return cache[t.id];
+    cache[t.id]={start:start,end:end,cyclic:false};
+    return cache[t.id];
+  };
+}
+function allTaskDates(){
+  var cache={};
+  var fn=computeTaskDates(cache,{});
+  bldTasks().forEach(function(t){fn(t);});
+  return cache;
+}
+function fmtD(d){return isNaN(d)?'--':d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+function rTimeline(){fillJobSelects();taskJobChanged();rTimelineTbl();}
+function taskScope(){
+  var jf=(($('tljob')||{}).value||''),sf=(($('tlstatus')||{}).value||'');
+  return bldTasks().filter(function(t){return(!jf||t.job_id===jf)&&(!sf||t.status===sf);});
+}
+function rTimelineTbl(){
+  var list=taskScope();
+  var dates=allTaskDates();
+  var progress=list.filter(function(t){return t.status==='in_progress';});
+  var complete=list.filter(function(t){return t.status==='complete';});
+  var shifted=list.filter(function(t){
+    var d=dates[t.id];if(!d)return false;
+    var planned=new Date(t.start+'T00:00:00');
+    return d.start.getTime()>planned.getTime();
+  });
+  var overdue=list.filter(function(t){
+    var d=dates[t.id];if(!d)return false;
+    return t.status!=='complete'&&d.end.getTime()<Date.now();
+  });
+  $('tl-total').textContent=list.length;
+  $('tl-progress').textContent=progress.length;
+  $('tl-complete').textContent=complete.length;
+  $('tl-shifted').textContent=shifted.length;
+  $('tl-shifted-sub').className='kt'+(shifted.length?' d':'');
+  $('tl-overdue').textContent=overdue.length;
+  $('tl-overdue-sub').className='kt'+(overdue.length?' d':'');
+  var STATUS={not_started:{l:'Not Started',c:'bx'},in_progress:{l:'In Progress',c:'bw'},complete:{l:'Complete',c:'bg'}};
+  var tb=$('tltbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No tasks match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(t){
+      var d=dates[t.id]||{start:new Date(NaN),end:new Date(NaN)};
+      var planned=new Date(t.start+'T00:00:00');
+      var isShifted=d.start.getTime()>planned.getTime();
+      var s=STATUS[t.status]||{l:t.status,c:'bx'};
+      var dep=t.dependency_id?taskById(t.dependency_id):null;
+      return '<tr><td>'+H(jobLabel(t.job_id))+'</td>'+
+        '<td><strong>'+H(t.name)+'</strong>'+(d.cyclic?' <span style="color:var(--danger);font-size:11px">(circular dependency ignored)</span>':'')+'</td>'+
+        '<td>'+(dep?H(dep.name):'--')+'</td>'+
+        '<td>'+fmtD(planned)+' &rarr; '+fmtD(new Date(planned.getTime()+(t.duration||1)*86400000))+'</td>'+
+        '<td'+(isShifted?' style="color:var(--danger);font-weight:700"':'')+'>'+fmtD(d.start)+' &rarr; '+fmtD(d.end)+(isShifted?' (shifted)':'')+'</td>'+
+        '<td><span class="badge '+s.c+'">'+H(s.l)+'</span></td>'+
+        '<td><button class="btn bo bs" onclick="editTask(\''+H(t.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+// Dependency options are scoped to the selected job -- a task depending on
+// a different job's task would be meaningless -- and exclude whichever task
+// is currently being edited, so a task can never depend on itself.
+function taskJobChanged(){
+  var sel=$('tm-dep');if(!sel)return;
+  var job=($('tm-job')||{}).value||'';
+  var keep=sel.value;
+  var opts=bldTasks().filter(function(t){return t.job_id===job&&t.id!==taskeid;})
+    .map(function(t){return '<option value="'+H(t.id)+'">'+H(t.name)+'</option>';}).join('');
+  sel.innerHTML='<option value="">No dependency</option>'+opts;
+  sel.value=keep;
+}
+function openTaskModal(){
+  if(!jobs().length){toast('Add a job first - a task must belong to one');return;}
+  taskeid=null;fillJobSelects();
+  ['tm-name'].forEach(function(f){$(f).value='';});
+  $('tm-status').value='not_started';$('tm-start').value=new Date().toISOString().slice(0,10);
+  $('tm-duration').value='';$('tm-actual').value='';
+  taskJobChanged();
+  $('taskmodal').classList.add('on');
+}
+function closeTaskModal(){$('taskmodal').classList.remove('on');}
+var taskeid=null;
+function editTask(id){
+  var t=taskById(id);if(!t)return;
+  taskeid=id;fillJobSelects();
+  $('tm-job').value=t.job_id||'';taskJobChanged();
+  $('tm-dep').value=t.dependency_id||'';
+  $('tm-status').value=t.status||'not_started';
+  $('tm-name').value=t.name||'';$('tm-start').value=t.start||'';
+  $('tm-duration').value=t.duration||'';$('tm-actual').value=t.actual||'';
+  $('taskmodal').classList.add('on');
+}
+function saveTask(){
+  var name=$('tm-name').value.trim();
+  if(!name){toast('Task name required');return;}
+  var job=$('tm-job').value;
+  if(!job){toast('Job required');return;}
+  var start=$('tm-start').value;
+  if(!start){toast('Planned start required');return;}
+  var duration=parseFloat($('tm-duration').value)||0;
+  if(duration<=0){toast('Duration must be greater than 0 days');return;}
+  var status=$('tm-status').value;
+  if(status==='complete'&&!$('tm-actual').value){toast('A complete task needs an actual completion date');return;}
+  var list=bldTasks();
+  var existing=taskeid?list.find(function(x){return x.id===taskeid;}):null;
+  var rec={id:taskeid||('TSK-'+Date.now()),job_id:job,name:name,start:start,duration:duration,
+    dependency_id:$('tm-dep').value||'',status:status,actual:status==='complete'?$('tm-actual').value:''};
+  if(existing){Object.assign(existing,rec);}else{list.push(rec);}
+  st('bld_tasks',list);
+  closeTaskModal();rTimeline();
+  toast('Saved task');
+}
 
 // ── SELECTIONS ────────────────────────────────────────────────────────────
 var SELCAT={paint:'Paint',flooring:'Flooring',fixtures:'Fixtures',appliances:'Appliances',other:'Other'};
@@ -1670,8 +1887,8 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // explicitly optional) are declared once; adding a new panel's job
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
-var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job'];
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -2129,6 +2346,16 @@ function csv(type){
     if(!loglist.length){toast('No daily logs in scope to export');return;}
     rows=[['Job','Date','Weather','Crew','Photos','Work Performed','Delays']];
     loglist.forEach(function(l){rows.push([jobLabel(l.job_id),l.log_date,l.weather,l.crew,l.photos,l.work,l.delays]);});
+  } else if(type==='timeline'){
+    var tlist=taskScope();
+    if(!tlist.length){toast('No tasks in scope to export');return;}
+    var tdates=allTaskDates();
+    rows=[['Job','Task','Depends On','Planned Start','Duration (days)','Effective Start','Effective End','Status']];
+    tlist.forEach(function(t){
+      var d=tdates[t.id]||{start:new Date(NaN),end:new Date(NaN)};
+      var dep=t.dependency_id?taskById(t.dependency_id):null;
+      rows.push([jobLabel(t.job_id),t.name,dep?dep.name:'',t.start,t.duration,fmtD(d.start),fmtD(d.end),t.status]);
+    });
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
