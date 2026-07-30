@@ -1088,14 +1088,23 @@ function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals
 // at the top of this file when the app shell was first built but never
 // actually called anywhere until this panel; wired up here rather than
 // declaring a second constant.
-var fpImg64=null,fpLastResult='',fpSavedId=null;
+var fpImg64=null,fpImgType='image/jpeg',fpLastResult='',fpSavedId=null;
 function bldPhotoAnalyses(){return ld('bld_photo_analyses',[]);}
 function fpJobChanged(){$('fp-analyze-btn').disabled=!(fpImg64&&$('fp-job').value);}
+// Real bug found and fixed here (2026-07-30): media_type was hardcoded to
+// image/jpeg regardless of the actual captured file, which the live proxy
+// correctly rejected with a 400 the moment a real (non-JPEG) photo was
+// tested end to end -- caught by testing the genuine deployed call, not
+// assumed safe from a mocked response. A phone camera or file picker can
+// hand back PNG/HEIC/WebP just as easily as JPEG, so this used the real
+// file's own MIME type, with a JPEG fallback only for the rare case a
+// browser reports no type at all.
 function fpFileChosen(input){
   var file=input.files&&input.files[0];if(!file)return;
   var reader=new FileReader();
   reader.onload=function(e){
     fpImg64=e.target.result.split(',')[1];
+    fpImgType=file.type||'image/jpeg';
     $('fp-img').src=e.target.result;
     $('fp-preview').style.display='block';
     $('fp-upload-label').innerHTML='<strong>Photo captured</strong> - tap Analyze to continue';
@@ -1122,7 +1131,7 @@ async function fpAnalyze(){
     'material pricing, not a final number. Plain ASCII only, no Unicode '+
     'box characters. Keep it under 200 words -- the crew is waiting.';
   var msgs=[{role:'user',content:[
-    {type:'image',source:{type:'base64',media_type:'image/jpeg',data:fpImg64}},
+    {type:'image',source:{type:'base64',media_type:fpImgType,data:fpImg64}},
     {type:'text',text:'Analyze this site condition for a cost/scope estimate.'}
   ]}];
   try{
