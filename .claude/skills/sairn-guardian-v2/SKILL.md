@@ -298,8 +298,26 @@ Guardian v2 blocks the push if any of these fail:
 - Check 22 (API keys in HTML)
 - Check 25 (unescaped user content)
 - Check 26 (unescaped AI-generated content)
+- `vercel.json` config check (see below) — a `buildCommand` over Vercel's
+  256-char schema limit doesn't just fail loudly, it takes the whole
+  production site down while looking like nothing happened.
 
 All others are warnings that must be fixed but don't hard-block if minor.
+
+**`vercel.json` config check, added 2026-07-30 after a real incident.**
+Adding one more app's `cp` line to `buildCommand` pushed it from 296 chars
+over Vercel's 256-char schema ceiling. The deploy failed (state `ERROR`),
+but Vercel's default behavior on a failed production deploy is to keep
+serving the *last successful* build rather than erroring the site —
+so every push after that point (several StoneDesk mobile fixes, a
+SAIRNbuild fix) reported a clean commit and a clean local Guardian pass,
+while production silently stayed on old code. It was only caught because
+a post-push spot-check queried the Vercel API directly instead of trusting
+`git push`'s own success. Run `python tools/vercel_config_check.py` before
+every push that touches `vercel.json` — it checks `buildCommand` length
+against the 256-char limit and cross-checks every route's destination
+file actually appears in `buildCommand` (the Iron Law's file/route
+pairing, checked mechanically instead of just by convention).
 
 **After pushing a fix, live-verify that specific thing against the deployed
 site — not a full-site scan, just what changed.** Added 2026-07-26, following
