@@ -98,12 +98,35 @@ this series.
    nav ever existed for it, confirmed via grep, no live product ask.
    If QuickBooks integration becomes a real ask, it's a fresh feature
    scope, not a "finish this" job — nothing usable was left behind.
-4. **Vendor Ordering Catalog / CRM pipeline split** — carried forward
-   unchanged from `STONEDESK-SESSION72-HANDOFF.md` §4 items 1 (Vendor)
-   and the CRM item is now resolved (`855e360` retargeted the Exec
-   Dashboard's Pipeline Funnel to the real `sd_crm` data and deleted the
-   `crmLeads` orphan). Vendor Ordering Catalog itself: still untouched,
-   still real multi-session scope, not re-estimated this session.
+4. **Vendor Ordering Catalog** — CRM pipeline split (the other half of
+   this item in `STONEDESK-SESSION72-HANDOFF.md` §4) is now resolved
+   (`855e360` retargeted the Exec Dashboard's Pipeline Funnel to the
+   real `sd_crm` data and deleted the `crmLeads` orphan). Vendor
+   Ordering Catalog itself: still untouched — **re-verified fresh this
+   session, not carried forward from memory, with one real correction:**
+   - Confirmed real, substantial, and separate from `panel-vendors`
+     ("Vendor Management" — contact/spend tracking, a different,
+     already-live feature that happens to share the word "vendor."
+     Don't conflate the two again.)
+   - `VENDORS` object: 5 vendors, real per-vendor product lists,
+     cross-vendor price-comparison logic, cart-quantity tracking
+     (`sdCart`), inventory cross-referencing — all real, working code.
+   - Confirmed again: `vendor-products` (the product-grid container)
+     has zero host panel, zero nav entry, anywhere. No `cartSubmit`/
+     `placeOrder`/`checkoutCart`/`sendOrder` exists — still no checkout
+     step, same as `STONEDESK-SESSION72`'s original finding.
+   - **Correction:** a fresh regex re-count of the `VENDORS` product
+     entries found **~141**, not the **~643** figure carried in
+     `STONEDESK-SESSION72-HANDOFF.md`. Not resolved which is right —
+     could be an undercount (nested structure the regex missed) or the
+     643 figure could have been wrong originally. Flagging the
+     discrepancy rather than repeating either number with confidence.
+     **Get a real count before doing any further scoping.**
+   - **Decision (explicit, this session):** quarantine — do not build
+     or delete before Sunday. Revisit and make the real build/delete/
+     scope call once the deadline pressure is off, with a proper
+     product-count audit as the first step, same rigor as every other
+     decision this session got.
 5. **`sd_slabs`/`sd_slab_tracker` unification**, **third quote-history
    store** (`stonedesk_quote_history`), **`saveSDProfile()` zero-caller
    status**, **`sairn-toast` duplicate DOM id** — carried forward
