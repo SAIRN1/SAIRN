@@ -193,18 +193,43 @@ touched tonight.
 formally on record as an accepted risk (above), which is a legitimate
 rubric disposition, not a loophole around "clean."
 
-**Coverage gaps, disclosed rather than glossed over:** true pixel/
-screenshot visual review was not achieved — the screenshot tool failed
-4 consecutive times (`Script injection timed out`) across a fresh
-reload and multiple panels, a persistent tool failure, not a skipped
-step. Mobile viewport (390×844) was also not genuinely achieved —
-`resize_window` reported success but `document.documentElement.
-clientWidth` still read 1912 afterward. All findings came from direct
-DOM/computed-style/contrast-math inspection instead, which is rigorous
-for contrast and outcome-verification but cannot judge spacing/
-alignment/genuine visual polish. Whoever picks this up next should
-re-attempt real screenshots + a real narrow viewport before calling
-visual coverage complete.
+**Coverage gap, formally logged, not silently dropped:** pixel-level
+screenshot review and the mobile viewport (390×844) check could not be
+completed this session, despite repeated, systematically-diagnosed
+attempts — not a skipped step.
+
+- **First attempt:** screenshot failed 4/4 (`Script injection timed
+  out`), `resize_window` reported success but `clientWidth` never
+  moved off 1912. Diagnosed: `window.outerWidth`/`outerHeight` read
+  `0`, a signature of a tab whose window wasn't the real, focused OS
+  window — later confirmed literally true: the tracked tab had drifted
+  to this very Claude chat's own browser tab, not the app.
+- **Second attempt**, on a freshly-created, correctly-targeted tab:
+  screenshot succeeded (proving the fix), but resize still didn't
+  apply (`outerWidth` stuck at 1914, matching full-screen) — window
+  was maximized, a plausible separate cause on Windows.
+- **Third attempt**, on a confirmed-unmaximized window (`outerWidth:
+  1058`, a real non-full-screen value, both before and after the
+  resize call): resize *still* silently no-op'd (`clientWidth` stuck
+  at 1034), and screenshot failed again with a *different* error this
+  time — `CDP Page.captureScreenshot timed out after 30000ms, renderer
+  may be frozen` — while `javascript_exec` on the same tab succeeded
+  immediately before and after, ruling out a genuinely frozen page.
+
+Two distinct, unrelated-looking CDP-level failure modes on the same
+action across one session, surviving three different window states
+(unfocused, maximized, confirmed-normal) — this reads as environment-
+specific (this machine's Chrome/CDP/extension interaction), not a
+StoneDesk code issue and not something fixable by retrying again in
+the same environment. **Logged as a known gap for a future session run
+from a different environment** — real DOM/computed-style/contrast-math
+inspection was substituted instead this session (see above), which
+caught 2 real bugs (the `.auth-btn` contrast defect, the toggle-button
+entity/`textContent` bug) but cannot judge spacing/alignment/genuine
+visual polish or confirm a real narrow-viewport layout. Do not assume
+this gap is closed just because the substitute method found real bugs
+— it isn't the same check, and the rubric's own screenshot-baseline/
+layout-shift checks were never actually run.
 
 ## 6. Standard verification reminder for whoever reads this next
 
