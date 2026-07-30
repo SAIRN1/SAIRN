@@ -26759,7 +26759,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     return document.querySelector('input[type=password],input[type=number][maxlength="4"]');
   }
 
-  // 30-day trial gate, keyed off a real timestamp written on first-ever
+  // (deploy re-trigger, 2026-07-29) 30-day trial gate, keyed off a real timestamp written on first-ever
   // login (never a fabricated countdown). Checked on every successful
   // login, before the app is revealed.
   function checkTrialGate() {
