@@ -3568,6 +3568,22 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   };
 })();
 </script>
+<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px">
+  <div style="font-weight:700;margin-bottom:4px;color:var(--text)">📐 Pricing Formula Backtest</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Upload a CSV of real past jobs (project_type, material, run_a_in, run_b_in, run_c_in, island_in, edge_val, sinks, actual_total) to check the quote formula's accuracy against what those jobs actually closed at.</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <input type="file" accept=".csv" style="font-size:13px" onchange="loadCSV(this)">
+    <button class="q-btn" onclick="loadSampleStressData()">Load Sample Data</button>
+  </div>
+  <div id="stress-results" style="display:none">
+    <div id="stress-metrics" class="stress-metrics"></div>
+    <div style="overflow-x:auto;margin-top:12px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <tbody id="stress-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 </div>
 
 
@@ -4109,9 +4125,13 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     <option value="value">Highest Value</option>
     <option value="name">Name A-Z</option>
   </select>
+  <button class="q-btn" id="cust-view-btn" onclick="custToggleView()">&#128193; Pipeline View</button>
   <span style="font-size:12px;color:var(--muted);margin-left:auto">Lifetime Value: <strong id="cust-ltv" style="color:var(--text)">$0</strong></span>
 </div>
 <div id="cust-list"></div>
+<div id="cust-kanban" style="display:none;gap:12px;flex-wrap:wrap">
+  <div id="cust-kanban-cols" style="display:flex;gap:12px;width:100%"></div>
+</div>
 <div id="cust-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
 <script>
@@ -17232,51 +17252,12 @@ function warrAskClaude() {
 }
 
 
-// == QUICKBOOKS INTEGRATION =====================================
-function qboConnect() {
-  const clientId = document.getElementById('qbo-client-id').value.trim();
-  const secret = document.getElementById('qbo-client-secret').value.trim();
-  const companyId = document.getElementById('qbo-company-id').value.trim();
-  if (!clientId || !secret || !companyId) { qboLog('Please fill in all QuickBooks credentials'); return; }
-  sdQBOConfig = { clientId, secret, companyId, sync: document.getElementById('qbo-sync').value, connectedAt: new Date().toISOString() };
-  localStorage.setItem('sd_qbo', JSON.stringify(sdQBOConfig));
-  qboSetStatus(true, 'Connected to QuickBooks Online', 'Company ID: ' + companyId);
-  qboLog('✅ QuickBooks credentials saved. Ready to sync.');
-}
-
-function qboSetStatus(connected, text, sub) {
-  const box = document.getElementById('qbo-status-box');
-  const dot = document.getElementById('qbo-dot');
-  const textEl = document.getElementById('qbo-status-text');
-  const subEl = document.getElementById('qbo-status-sub');
-  if (!box) return;
-  box.className = 'qbo-status ' + (connected ? 'connected' : 'disconnected');
-  if (dot) { dot.className = 'qbo-dot ' + (connected ? 'on' : 'off'); }
-  if (textEl) textEl.textContent = text;
-  if (subEl) subEl.textContent = sub;
-}
-
-function qboTestSync() {
-  if (!sdQBOConfig.clientId) { qboLog('Connect QuickBooks first'); return; }
-  qboLog('🔄 Testing connection... (In production, this calls QBO OAuth API)');
-  setTimeout(() => qboLog('✅ Test connection successful — ' + sdCustomers.length + ' customers, ' + quoteHistory.length + ' quotes ready to sync'), 1200);
-}
-
-function qboExportInvoices() {
-  if (!sdQBOConfig.clientId) { qboLog('Connect QuickBooks first'); return; }
-  const invoices = sdCustomers.filter(c => c.status === 'approved' && c.quote > 0);
-  if (!invoices.length) { qboLog('No approved quotes to export'); return; }
-  qboLog('📤 Exporting ' + invoices.length + ' invoice(s) to QuickBooks...');
-  // In production: POST to /api/qbo/invoices with OAuth token
-  setTimeout(() => {
-    qboLog('✅ ' + invoices.length + ' invoice(s) exported: ' + invoices.map(i => i.name).join(', '));
-  }, 1500);
-}
-
-function qboLog(msg) {
-  const el = document.getElementById('qbo-log');
-  if (el) el.textContent = msg;
-}
+// == QUICKBOOKS INTEGRATION -- deleted 2026-07-29: no panel/nav entry ever
+// existed for this (qbo-client-id/qbo-status-box/qbo-log etc were never
+// built anywhere), no live product ask -- started, never given UI, no
+// caller anywhere in the file besides itself. sdQBOConfig/sd_qbo storage
+// left in place (harmless, part of the shared loadSD3Data() loader).
+// ================================================================
 
 // == ALERT & NOTIFICATION SETTINGS =============================
 function saveAlertSettings() {
@@ -17352,9 +17333,6 @@ function testAlertSMS() {
       renderPhotos();
       renderWarranties();
       loadAlertSettingsUI();
-      if (sdQBOConfig.clientId) {
-        qboSetStatus(true, 'Connected to QuickBooks Online', 'Company ID: ' + sdQBOConfig.companyId);
-      }
       runAlertScan();
     }, 500);
   });
