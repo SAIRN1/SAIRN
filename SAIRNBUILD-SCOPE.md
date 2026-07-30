@@ -135,10 +135,10 @@ unchanged (`dashboard`, `jobs`, `jobcost`, `changeorders`).
 ### Subs & Vendors (4)
 | Panel | id | Purpose | Status |
 |---|---|---|---|
-| Subcontractors | `subs` | Sub roster with trade, rate basis, and current COI / W-9 / licence expiry. | New |
-| Compliance | `compliance` | The expiry board: every insurance certificate and licence with days-until-expiry. | New |
-| Suppliers | `suppliers` | Material vendors, terms, and spend-to-date by supplier. | New |
-| Equipment | `equipment` | Owned and rented equipment per job: utilization, maintenance due, rental cost accrual. | New |
+| Subcontractors | `subs` | Sub roster with trade, rate basis, and current COI / W-9 / licence expiry, plus the prequalification workflow from SS2a (financial capacity, safety record, references) gating bid eligibility. | **Built, live** |
+| Compliance | `compliance` | The expiry board: every insurance certificate and licence with days-until-expiry. Computed entirely from `bld_subs`, no separate table. | **Built, live** |
+| Suppliers | `suppliers` | Material vendors, terms, and spend-to-date by supplier. Spend computed live from Purchase Orders. | **Built, live** |
+| Equipment | `equipment` | Owned and rented equipment per job: utilization, maintenance due, rental cost accrual computed live. | **Built, live** |
 
 ### Safety (1)
 | Panel | id | Purpose | Status |
