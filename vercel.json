@@ -1,5 +1,5 @@
 {
-  "buildCommand": "mkdir -p dist && cp stonedesk.html dist/stonedesk.html && cp sairnbiz.html dist/sairnbiz.html && cp sairncode.html dist/sairncode.html && cp sairnvet.html dist/sairnvet.html && cp sairnbuild.html dist/sairnbuild.html && cp sairnscape.html dist/sairnscape.html && cp stonedesk.html dist/index.html",
+  "buildCommand": "mkdir -p dist && for f in stonedesk sairnbiz sairncode sairnvet sairnbuild sairnscape; do cp $f.html dist/$f.html; done && cp stonedesk.html dist/index.html",
   "outputDirectory": "dist",
   "routes": [
     {
