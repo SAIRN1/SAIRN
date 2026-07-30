@@ -7610,7 +7610,6 @@ function sdSelRole(el) {
 // see Guardian Check 10 finding for history if this needs to be revisited
 
 function selectAuthTab() {} // stub — no longer used
-function doRegister()    {} // stub — registration handled via Admin PIN setup
 
 
 // Safety stubs for missing functions
@@ -27003,7 +27002,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   window.sdSelRole      = selRole;
   window.selectRole     = selRole;
   window.selectAuthTab  = function() {};
-  window.doRegister     = function() {};
+  window.doRegister     = function() {}; // stub — registration handled via Admin PIN setup
 
   function findPinInput() {
     var ids = ['pin-in','pin-input','sd-pin-input','sairn-pin','auth-password'];
