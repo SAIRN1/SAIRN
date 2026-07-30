@@ -224,6 +224,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-selections" onclick="nav('selections')"><span class="sico">&#127912;</span>Selections</button>
       <button class="sb" id="sb-dailylogs" onclick="nav('dailylogs')"><span class="sico">&#128221;</span>Daily Logs</button>
       <button class="sb" id="sb-timeline" onclick="nav('timeline')"><span class="sico">&#128197;</span>Project Timeline</button>
+      <button class="sb" id="sb-fieldphoto" onclick="nav('fieldphoto')"><span class="sico">&#128248;</span>Field Photo Analysis</button>
       <div class="ss">Money</div>
       <button class="sb" id="sb-jobcost" onclick="nav('jobcost')"><span class="sico">&#128200;</span>Job Costing</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
@@ -494,6 +495,44 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     </div>
     <div class="tw"><table><thead><tr><th>Job</th><th>Task</th><th>Depends On</th><th>Planned</th><th>Effective</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="tltbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- FIELD PHOTO ANALYSIS -->
+<div class="panel" id="panel-fieldphoto">
+  <div class="ph"><div><div class="ptitle">Field Photo Analysis</div><div class="psub">Photograph a site condition, Claude suggests the cost/scope impact &mdash; minutes, not days</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('fieldphoto')">Export CSV</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Analyses</div><div class="kval" id="fp-total">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">This Week</div><div class="kval" id="fp-week">0</div><div class="kt">Last 7 days</div></div>
+    <div class="kpi"><div class="klbl">Change Orders Created</div><div class="kval" id="fp-cos">0</div><div class="kt">From an analysis</div></div>
+    <div class="kpi"><div class="klbl">RFIs Created</div><div class="kval" id="fp-rfis">0</div><div class="kt">From an analysis</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Job</label><select id="fp-job" onchange="fpJobChanged()"></select></div>
+    <div class="fg" style="margin-top:10px">
+      <label>Site Photo</label>
+      <div id="fp-upload-zone" onclick="document.getElementById('fp-file').click()" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px">
+        <div id="fp-upload-label">Tap to photograph the site condition</div>
+      </div>
+      <input type="file" id="fp-file" accept="image/*" capture="environment" style="display:none" onchange="fpFileChosen(this)">
+      <div id="fp-preview" style="display:none;margin-top:10px"><img id="fp-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--border)"></div>
+    </div>
+    <button class="btn bp" id="fp-analyze-btn" onclick="fpAnalyze()" disabled style="margin-top:12px">Analyze Photo</button>
+    <div id="fp-result-wrap" style="display:none;margin-top:16px">
+      <div class="mtitle" style="font-size:14px">Claude's Suggestion</div>
+      <div id="fp-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+      <div class="note" style="margin-top:10px"><strong>Starting estimate, not a priced quote.</strong> Confidence depends entirely on what the photo shows and what materials/finishes have been recorded in Selections &mdash; treat this as a first pass pending real material pricing, not a number to hand a client.</div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn bo bs" onclick="fpSave()">Save Analysis</button>
+        <button class="btn bo bs" onclick="fpCreateCO()">Create Change Order from This</button>
+        <button class="btn bo bs" onclick="fpCreateRFI()">Create RFI from This</button>
+      </div>
+    </div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Analysis History</span></div><div class="cb">
+    <div class="tw"><table><thead><tr><th>Job</th><th>Date</th><th>Summary</th><th>Follow-up</th></tr></thead>
+    <tbody id="fptbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -852,6 +891,7 @@ function nav(id){
   if(id==='selections')rSelections();
   if(id==='dailylogs')rLogs();
   if(id==='timeline')rTimeline();
+  if(id==='fieldphoto')rFieldPhoto();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1007,6 +1047,16 @@ function seed(){
     {id:'TSK-03',job_id:'J-2601',name:'Rough Electrical',start:'2026-05-21',duration:5,dependency_id:'TSK-02',status:'not_started',actual:''},
     {id:'TSK-04',job_id:'J-2602',name:'Structural post relocation - unit B',start:'2026-05-20',duration:8,dependency_id:'',status:'complete',actual:'2026-05-27'}
   ]);
+  // Photo analysis history: pre-written text standing in for a past real
+  // Claude response (the seed can't call the live API), one of which
+  // already spawned a Change Order, so the follow-up KPIs have something
+  // real to show rather than starting at zero on every fresh load.
+  st('bld_photo_analyses',[
+    {id:'FP-seed-01',job_id:'J-2603',date:'2026-07-25',
+      summary:'Unexpected water staining on subfloor near the addition footing, likely a drainage issue',
+      full:'Site condition: water staining and minor subfloor softness near the new addition footing, consistent with grading directing runoff toward the foundation rather than away from it.\n\nSuggested scope (rough ranges, not final pricing):\n- Subfloor section replacement (approx 40 sqft): $600-900\n- Regrade + extend downspout away from foundation: $800-1,200\n- Waterproofing membrane at footing: $400-650\nRough total: $1,800-2,750\n\nThis is a starting estimate from a photo, pending real material pricing and an in-person confirmation of the extent of the damage.',
+      spawned_co:true,spawned_rfi:false}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1027,7 +1077,126 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();}
+
+// ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
+// The photo -> Claude -> structured-output pattern required for every
+// SAIRNbuild panel per sairn-app-scaffold, generalized from StoneDesk's
+// real Field Sketch Quote (camera-capture input, multimodal proxy call
+// through sairn.vercel.app/api/claude, app-specific output). Output shape
+// here is cost/scope suggestions, not a priced quote -- PROXY was declared
+// at the top of this file when the app shell was first built but never
+// actually called anywhere until this panel; wired up here rather than
+// declaring a second constant.
+var fpImg64=null,fpLastResult='',fpSavedId=null;
+function bldPhotoAnalyses(){return ld('bld_photo_analyses',[]);}
+function fpJobChanged(){$('fp-analyze-btn').disabled=!(fpImg64&&$('fp-job').value);}
+function fpFileChosen(input){
+  var file=input.files&&input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    fpImg64=e.target.result.split(',')[1];
+    $('fp-img').src=e.target.result;
+    $('fp-preview').style.display='block';
+    $('fp-upload-label').innerHTML='<strong>Photo captured</strong> - tap Analyze to continue';
+    $('fp-analyze-btn').disabled=!$('fp-job').value;
+  };
+  reader.readAsDataURL(file);
+}
+async function fpAnalyze(){
+  if(!fpImg64){toast('Take a photo first');return;}
+  var job=$('fp-job').value;
+  if(!job){toast('Select a job first');return;}
+  var jobRec=jobs().find(function(j){return j.id===job;});
+  $('fp-result-wrap').style.display='block';
+  $('fp-result').textContent='Reading the photo...';
+  fpSavedId=null;
+  var sys='You are the SAIRNbuild Field Intelligence Engine. A PM or crew '+
+    'member is standing on a jobsite and has photographed a site condition '+
+    '(unexpected framing issue, damage, a scope question). Job: '+
+    (jobRec?(jobRec.client||jobRec.address):job)+'. '+
+    'Read the photo and produce a starting cost/scope estimate: a short '+
+    'description of what you see, itemized line items with rough dollar '+
+    'ranges (not exact prices), a rough total range, and a one-line '+
+    'confidence caveat that this is a starting estimate pending real '+
+    'material pricing, not a final number. Plain ASCII only, no Unicode '+
+    'box characters. Keep it under 200 words -- the crew is waiting.';
+  var msgs=[{role:'user',content:[
+    {type:'image',source:{type:'base64',media_type:'image/jpeg',data:fpImg64}},
+    {type:'text',text:'Analyze this site condition for a cost/scope estimate.'}
+  ]}];
+  try{
+    var res=await fetch(PROXY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,messages:msgs})
+    });
+    if(!res.ok)throw new Error('Claude error '+res.status);
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    fpLastResult=text||'No response text returned.';
+    $('fp-result').textContent=fpLastResult;
+  }catch(e){
+    fpLastResult='';
+    $('fp-result').textContent='Could not connect to Claude. Check your connection and try again.';
+  }
+}
+function fpSave(){
+  if(!fpLastResult){toast('Nothing to save yet - analyze a photo first');return;}
+  var job=$('fp-job').value;if(!job){toast('Select a job first');return;}
+  var list=bldPhotoAnalyses();
+  var rec={id:'FP-'+Date.now(),job_id:job,date:new Date().toISOString().slice(0,10),
+    summary:fpLastResult.slice(0,140).replace(/\n/g,' '),full:fpLastResult,spawned_co:false,spawned_rfi:false};
+  list.push(rec);
+  st('bld_photo_analyses',list);
+  fpSavedId=rec.id;
+  rFieldPhoto();
+  toast('Analysis saved');
+}
+// Auto-saves first if the current result hasn't been saved yet, so a
+// Change Order/RFI can never be spawned from an analysis that isn't on
+// record anywhere -- otherwise the CO/RFI would reference work with no
+// traceable source, exactly the kind of paper trail this panel exists to
+// create in the first place.
+function fpEnsureSaved(){
+  if(fpSavedId)return fpSavedId;
+  fpSave();
+  return fpSavedId;
+}
+function fpCreateCO(){
+  if(!fpLastResult){toast('Nothing to act on yet - analyze a photo first');return;}
+  var id=fpEnsureSaved();if(!id)return;
+  var rec=bldPhotoAnalyses().find(function(x){return x.id===id;});
+  if(rec){rec.spawned_co=true;st('bld_photo_analyses',bldPhotoAnalyses().map(function(x){return x.id===id?rec:x;}));rFieldPhoto();}
+  openCOModal({job_id:$('fp-job').value,desc:'From field photo analysis: '+fpLastResult.slice(0,160).replace(/\n/g,' ')});
+}
+function fpCreateRFI(){
+  if(!fpLastResult){toast('Nothing to act on yet - analyze a photo first');return;}
+  var id=fpEnsureSaved();if(!id)return;
+  var rec=bldPhotoAnalyses().find(function(x){return x.id===id;});
+  if(rec){rec.spawned_rfi=true;st('bld_photo_analyses',bldPhotoAnalyses().map(function(x){return x.id===id?rec:x;}));rFieldPhoto();}
+  openRfiModal({job_id:$('fp-job').value,desc:'From field photo analysis: '+fpLastResult.slice(0,160).replace(/\n/g,' ')});
+}
+function rFieldPhoto(){
+  fillJobSelects();
+  var jf=$('fp-job');if(jf&&!jf.value){var js=jobs();if(js.length)jf.value=js[0].id;}
+  var list=bldPhotoAnalyses();
+  var weekAgo=Date.now()-7*86400000;
+  var thisWeek=list.filter(function(a){var d=new Date(a.date+'T00:00:00');return!isNaN(d)&&d.getTime()>=weekAgo;});
+  var cos=list.filter(function(a){return a.spawned_co;});
+  var rfis=list.filter(function(a){return a.spawned_rfi;});
+  $('fp-total').textContent=list.length;
+  $('fp-week').textContent=thisWeek.length;
+  $('fp-cos').textContent=cos.length;
+  $('fp-rfis').textContent=rfis.length;
+  var tb=$('fptbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No analyses saved yet</td></tr>';}
+  else{
+    tb.innerHTML=list.slice().reverse().map(function(a){
+      var followup=(a.spawned_co?'CO created':'')+(a.spawned_co&&a.spawned_rfi?', ':'')+(a.spawned_rfi?'RFI created':'')||'--';
+      return '<tr><td>'+H(jobLabel(a.job_id))+'</td><td>'+fdate(a.date)+'</td><td>'+H(a.summary)+'</td><td>'+H(followup)+'</td></tr>';
+    }).join('');
+  }
+}
 
 // ── PROJECT TIMELINE ─────────────────────────────────────────────────────
 // Real dependency logic, not a static calendar: a task's EFFECTIVE start/end
@@ -1548,12 +1717,17 @@ function rRfisTbl(){
     }).join('');
   }
 }
-function openRfiModal(){
+// Same optional-prefill pattern as openCOModal above, same reason.
+function openRfiModal(prefill){
   if(!jobs().length){toast('Add a job first - an RFI must belong to one');return;}
   rfieid=null;fillJobSelects();
   ['rm-question','rm-response'].forEach(function(f){$(f).value='';});
   $('rm-askedto').value='Architect';$('rm-status').value='open';
   $('rm-asked').value=new Date().toISOString().slice(0,10);$('rm-respdate').value='';
+  if(prefill){
+    if(prefill.job_id)$('rm-job').value=prefill.job_id;
+    if(prefill.desc)$('rm-question').value=prefill.desc;
+  }
   $('rfimodal').classList.add('on');
 }
 function closeRfiModal(){$('rfimodal').classList.remove('on');}
@@ -1888,7 +2062,7 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
 var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -1990,11 +2164,19 @@ function rCOTbl(){
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No change orders in scope</div>';
 }
 
-function openCOModal(){
+// prefill is optional -- {job_id, desc} -- so Field Photo Analysis can spawn
+// a Change Order directly from an analysis result without duplicating this
+// whole modal-reset flow. Every existing call site still works unchanged;
+// omitting prefill is the same as calling openCOModal() always was.
+function openCOModal(prefill){
   if(!jobs().length){toast('Add a job first - a change order must belong to one');return;}
   coeid=null;fillJobSelects();
   ['com-desc','com-amount','com-hrs','com-by','com-sent','com-accepted','com-reason'].forEach(function(f){var el=$(f);if(el)el.value='';});
   $('com-status').value='draft';
+  if(prefill){
+    if(prefill.job_id)$('com-job').value=prefill.job_id;
+    if(prefill.desc)$('com-desc').value=prefill.desc;
+  }
   $('comodal').classList.add('on');
 }
 function closeCOModal(){$('comodal').classList.remove('on');}
@@ -2356,6 +2538,11 @@ function csv(type){
       var dep=t.dependency_id?taskById(t.dependency_id):null;
       rows.push([jobLabel(t.job_id),t.name,dep?dep.name:'',t.start,t.duration,fmtD(d.start),fmtD(d.end),t.status]);
     });
+  } else if(type==='fieldphoto'){
+    var fplist=bldPhotoAnalyses();
+    if(!fplist.length){toast('No photo analyses to export');return;}
+    rows=[['Job','Date','Summary','Full Analysis','Change Order Created','RFI Created']];
+    fplist.forEach(function(a){rows.push([jobLabel(a.job_id),a.date,a.summary,a.full,a.spawned_co?'Yes':'No',a.spawned_rfi?'Yes':'No']);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
