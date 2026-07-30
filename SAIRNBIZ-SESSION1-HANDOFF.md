@@ -86,30 +86,92 @@ invoice/tax data than the canonical git-tracked root copy.
 **Supabase schema mismatch — `syncEmps()` has likely never actually
 succeeded in production.** Discovered while live-verifying the
 sync-status-badge fix: calling the real `syncSupabase()` against the
-live Supabase project triggers a genuine, reproducible failure:
+live Supabase project triggers a genuine, reproducible failure.
+
+**UPDATE (Session 79) — real schema pulled, payload fixed, but this item
+is NOT closed. Three stacked blockers, only the first is fixed.**
+
+### How the live schema was actually obtained
+
+The PostgREST OpenAPI/schema endpoint (`/rest/v1/`) rejects the
+publishable key outright — `{"message":"Secret API key required"}` — so
+the schema could not be read directly. It was enumerated instead by
+exploiting PostgREST's own error ordering: body-column validation
+against the schema cache happens **before** the row-level permission
+check, so a single-column `POST` returns `PGRST204` when the column is
+absent and `42501` when it is present-but-permission-blocked. Since
+`anon` has no INSERT privilege here, such a probe can never write
+anything — making column existence safely enumerable one name at a
+time, with zero writes to production.
+
+### The real `employees` table
 
 ```
-Supabase: Could not find the 'department' column of 'employees' in the schema cache
+EXISTS:  id, employee_id, status, source_app, updated_at, data
+MISSING: first_name, last_name, role, department, employment_type,
+         hourly_rate, start_date, phone, email
 ```
 
-This is a real infrastructure gap, not a bug in SAIRNbiz's own logic —
-`syncEmps()`'s payload (`employee_id, first_name, last_name, role,
-department, employment_type, hourly_rate, start_date, phone, email,
-status, source_app, updated_at`) does not match the actual `employees`
-table schema currently live in the Supabase project at `SB_URL`
-(`ejrlrrkvhtllxbbypdjb.supabase.co`). Deliberately **not fixed blind**
-— the real schema of that table isn't known from SAIRNbiz's code alone,
-and guessing risks either papering over the symptom (silently dropping
-the `department` field) or breaking whatever else already depends on
-that table's current real shape. Needs someone to look at the actual
-Supabase dashboard schema for `employees` before `syncEmps()`'s payload
-is touched again.
+**9 of the 13 columns `syncEmps()` sent do not exist** — the original
+"just the `department` column" diagnosis was far too narrow. ~50
+plausible alternate spellings were probed (`name`/`full_name`/`dept`/
+`rate`/`hire_date`/`emp_type`/`job_title`/etc) and none exist, so these
+columns are genuinely absent, **not renamed**. The live table is a
+JSONB-style sync table: business key `employee_id`, payload in `data`.
 
-**Downstream implication:** before this session's badge fix, this
-failure was invisible — the old hardcoded "Synced" badge and
-fire-and-forget upsert meant a user would never know sync was silently
-failing every time. The gap is now *visible* (badge/toast honestly
-report "Not Synced"/"Sync failed") even though it isn't yet *fixed*.
+### Blocker 1 — payload shape: FIXED (`16fbb31`)
+
+Chose option (b), reshape the payload, over (a), add 9 columns via
+migration: smaller (code-only, no migration, no secret key) and more
+correct (9 wide columns would duplicate what `data` already provides).
+Same 9 values, now nested into `data`. Live-verified the fix advanced
+past this blocker — the error changed, which is the proof it worked.
+
+### Blocker 2 — no unique constraint for ON CONFLICT: NOT FIXED
+
+Newly revealed *because* blocker 1 was fixed. Live console now reports:
+
+```
+Supabase: there is no unique or exclusion constraint matching the ON CONFLICT specification
+```
+
+`syncEmps()` calls `.upsert(pl,{onConflict:'employee_id'})`, which
+requires a UNIQUE constraint on `employees.employee_id`. There isn't
+one. Fixing this is `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE
+(employee_id)` — a **DB migration requiring dashboard or secret-key
+access**, which this session did not have and did not ask for.
+
+### Blocker 3 — `anon` role has no privileges: NOT FIXED, and a security decision
+
+Every probe against the table returned `42501 permission denied for
+table employees`, hint `GRANT SELECT ON public.employees TO anon;`.
+A plain single-column INSERT (no `Prefer` header, bypassing upsert)
+also returned `42501` — so `anon` lacks INSERT, not just SELECT.
+Blocker 2's error (a Postgres *planning*-stage failure, 42P10) fires
+before the permission check, which is why 3 is currently hidden behind 2.
+
+**This one is not a mechanical fix and was deliberately not attempted.**
+`syncEmps()` runs client-side with the publishable key, which is in the
+public page source of the deployed app. Granting `anon` write access to
+an employee table holding names, pay rates, phone numbers and emails
+would let anyone with that public key write to it. That is a real
+security decision about how cross-app sync should be authorized at all
+(service-role via a server endpoint? RLS with authenticated users?
+a bridge function?) — an architecture call, not a config tweak.
+
+### Net status of this item
+
+Code side is correct and verified. Sync still cannot succeed. Both
+remaining blockers are Supabase-side and need dashboard access plus, for
+blocker 3, a deliberate authorization-model decision. **Do not mark this
+item closed on the strength of `16fbb31` alone.**
+
+**Downstream implication (unchanged, still holds):** before this
+session's badge fix, this failure was invisible — the old hardcoded
+"Synced" badge and fire-and-forget upsert meant a user would never know
+sync was silently failing every time. The gap is now *visible*
+(badge/toast honestly report "Not Synced"/"Sync failed"), re-confirmed
+live in Session 79, even though it isn't yet *fixed*.
 
 ## 5. Standard verification reminder
 
