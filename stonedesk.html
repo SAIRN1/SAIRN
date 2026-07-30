@@ -29720,6 +29720,14 @@ function bltnRender(){
 // ================================================================
 var tmplRecords=sdLoad('sd_template_records',[]);
 function tmplAdd(){document.getElementById('tmpl-form').style.display='block';var d=document.getElementById('tmpl-date');if(d)d.value=new Date().toISOString().split('T')[0];}
+function tmplExport(){
+  if(!tmplRecords.length){showToast('No template records to export');return;}
+  var rows=[['Customer','Job','Date','Tech','Method','CNC Status','DXF File','Notes','Added']];
+  tmplRecords.forEach(function(r){rows.push([r.customer||'',r.job||'',r.date||'',r.tech||'',r.method||'',r.cncStatus||'',r.dxfName||'',r.notes||'',r.createdAt?new Date(r.createdAt).toLocaleDateString():'']);});
+  var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='stonedesk-templates-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  showToast('Templates exported');
+}
 function tmplSave(){
   var cust=((document.getElementById('tmpl-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var go=function(photoData,dxfName){
