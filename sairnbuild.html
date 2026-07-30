@@ -375,7 +375,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="">All</option><option value="theirs">Ball: Them</option><option value="ours">Ball: Us</option><option value="closed">Closed</option>
       </select>
     </div>
-    <div class="tw"><table><thead><tr><th>Job</th><th>Question</th><th>Asked To</th><th>Asked</th><th>Ball</th><th>Days Open</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Question</th><th>Asked To</th><th>Asked</th><th>Ball</th><th>Days Open</th><th>Document</th><th>Actions</th></tr></thead>
     <tbody id="rtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -398,7 +398,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="">All Statuses</option><option value="submitted">Submitted</option><option value="under_review">Under Review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="resubmit">Resubmit</option>
       </select>
     </div>
-    <div class="tw"><table><thead><tr><th>Job</th><th>Item</th><th>Submitted By</th><th>Submitted</th><th>Status</th><th>Ball</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Item</th><th>Submitted By</th><th>Submitted</th><th>Status</th><th>Ball</th><th>Document</th><th>Actions</th></tr></thead>
     <tbody id="smtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -444,7 +444,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="">All Results</option><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option>
       </select>
     </div>
-    <div class="tw"><table><thead><tr><th>Job</th><th>Type</th><th>Scheduled</th><th>Result</th><th>Re-inspection</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Type</th><th>Scheduled</th><th>Result</th><th>Re-inspection</th><th>Document</th><th>Actions</th></tr></thead>
     <tbody id="instbody"></tbody></table></div>
   </div></div>
 </div>
@@ -1003,6 +1003,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     </select></div></div>
     <div class="fg"><label>Response</label><input id="rm-response" placeholder="Leave blank until answered"></div>
     <div class="fg" id="rm-respdaterow"><label>Response Date</label><input id="rm-respdate" type="date"></div>
+    <div class="fg"><label>Referenced Document (optional)</label><select id="rm-docref"></select></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeRfiModal()">Cancel</button>
       <button class="btn bp" onclick="saveRfi()">Save RFI</button>
@@ -1019,6 +1020,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="fg"><label>Item</label><input id="smm-item" placeholder="Kitchen cabinet shop drawings"></div>
     <div class="fr"><div class="fg"><label>Submitted By</label><input id="smm-by" placeholder="Sub or vendor name"></div><div class="fg"><label>Submitted Date</label><input id="smm-submitted" type="date"></div></div>
     <div class="fg"><label>Notes</label><input id="smm-notes" placeholder="Optional"></div>
+    <div class="fg"><label>Referenced Document (optional)</label><select id="smm-docref"></select></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeSubmittalModal()">Cancel</button>
       <button class="btn bp" onclick="saveSubmittal()">Save Submittal</button>
@@ -1050,6 +1052,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="fg"><label>Inspection Type</label><input id="im-type" placeholder="Rough Electrical / Framing / Final"></div>
     <div class="fr"><div class="fg"><label>Scheduled Date</label><input id="im-scheduled" type="date"></div><div class="fg" id="im-reinsprow"><label>Re-inspection Date</label><input id="im-reinsp" type="date"></div></div>
     <div class="fg"><label>Notes</label><input id="im-notes" placeholder="Optional"></div>
+    <div class="fg"><label>Referenced Document (optional)</label><select id="im-docref"></select></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeInspModal()">Cancel</button>
       <button class="btn bp" onclick="saveInsp()">Save Inspection</button>
@@ -1603,17 +1606,25 @@ function seed(){
   // response yet), ours (response is in, still needs review/close), and
   // closed -- so the computed ball field has something real of each kind
   // to prove, not just the "theirs" case.
+  // ref_doc_id/ref_doc_v link two of these to real bld_documents rows
+  // (seeded further down) -- RFI-01 to DOC-01's CURRENT version (the beam
+  // question was against the revised plan) and RFI-02 to DOC-01's now-
+  // SUPERSEDED v1 (the footing question predated the beam revision), so
+  // both cases in docRefCell()/docRefPlain() render on a real record, not
+  // just in the standalone Documents panel.
   st('bld_rfis',[
-    {id:'RFI-01',job_id:'J-2601',asked_to:'Architect',question:'Confirm beam size at kitchen opening',asked:'2026-07-10',status:'open',response:'',respdate:''},
-    {id:'RFI-02',job_id:'J-2601',asked_to:'Engineer',question:'Verify footing depth meets frost line at addition',asked:'2026-07-05',status:'open',response:'42 inches, per revised structural detail S-4',respdate:'2026-07-12'},
+    {id:'RFI-01',job_id:'J-2601',asked_to:'Architect',question:'Confirm beam size at kitchen opening',asked:'2026-07-10',status:'open',response:'',respdate:'',ref_doc_id:'DOC-01',ref_doc_v:2},
+    {id:'RFI-02',job_id:'J-2601',asked_to:'Engineer',question:'Verify footing depth meets frost line at addition',asked:'2026-07-05',status:'open',response:'42 inches, per revised structural detail S-4',respdate:'2026-07-12',ref_doc_id:'DOC-01',ref_doc_v:1},
     {id:'RFI-03',job_id:'J-2602',asked_to:'Owner',question:'Confirm paint colour for unit B common hallway',asked:'2026-06-20',status:'closed',response:'Benjamin Moore Revere Pewter',respdate:'2026-06-24'}
   ]);
   // Submittals: same discipline -- ours (under review), theirs (resubmit
-  // requested), and both closed outcomes (approved, rejected).
+  // requested), and both closed outcomes (approved, rejected). SM-03 links
+  // to DOC-04's final v3 -- the approval genuinely was against that exact
+  // version.
   st('bld_submittals',[
     {id:'SM-01',job_id:'J-2601',item:'Kitchen cabinet shop drawings',submitted_by:'ABC Cabinetry',submitted:'2026-07-18',status:'under_review',notes:''},
     {id:'SM-02',job_id:'J-2601',item:'Window schedule',submitted_by:'Andersen Dealer Direct',submitted:'2026-07-08',status:'resubmit',notes:'Missing egress calculations for bedroom windows'},
-    {id:'SM-03',job_id:'J-2602',item:'Structural steel shop drawings',submitted_by:'Midwest Steel Fab',submitted:'2026-05-02',status:'approved',notes:''},
+    {id:'SM-03',job_id:'J-2602',item:'Structural steel shop drawings',submitted_by:'Midwest Steel Fab',submitted:'2026-05-02',status:'approved',notes:'',ref_doc_id:'DOC-04',ref_doc_v:3},
     {id:'SM-04',job_id:'J-2602',item:'Elevator cab specifications',submitted_by:'Rocky River Elevator Co',submitted:'2026-05-15',status:'rejected',notes:'Cab dimensions do not meet accessibility clearance'}
   ]);
   // Punch list: every status seeded, plus one deliberately old open item so
@@ -1627,7 +1638,7 @@ function seed(){
   // Inspections: pending, pass and fail all seeded, the fail carrying a real
   // re-inspection date so the reinspection KPI has something to count.
   st('bld_inspections',[
-    {id:'INS-01',job_id:'J-2601',type:'Rough Electrical',scheduled:'2026-08-06',result:'pending',reinsp:'',notes:''},
+    {id:'INS-01',job_id:'J-2601',type:'Rough Electrical',scheduled:'2026-08-06',result:'pending',reinsp:'',notes:'',ref_doc_id:'DOC-02',ref_doc_v:1},
     {id:'INS-02',job_id:'J-2601',type:'Framing',scheduled:'2026-06-12',result:'pass',reinsp:'',notes:''},
     {id:'INS-03',job_id:'J-2603',type:'Rough Electrical',scheduled:'2026-07-28',result:'fail',reinsp:'2026-08-06',notes:'Failed on missing arc-fault breaker in primary bedroom circuit'},
     {id:'INS-04',job_id:'J-2605',type:'Final',scheduled:'2026-05-28',result:'pass',reinsp:'',notes:''}
@@ -2409,7 +2420,7 @@ function rInspTbl(){
   $('ins-total').textContent=list.length;
   var RESULT={pending:{l:'Pending',c:'bw'},pass:{l:'Pass',c:'bg'},fail:{l:'Fail',c:'br'}};
   var tb=$('instbody');
-  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No inspections match</td></tr>';}
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No inspections match</td></tr>';}
   else{
     tb.innerHTML=list.map(function(i){
       var r=RESULT[i.result]||{l:i.result,c:'bx'};
@@ -2418,6 +2429,7 @@ function rInspTbl(){
         '<td>'+(i.scheduled?fdate(i.scheduled):'--')+'</td>'+
         '<td><span class="badge '+r.c+'">'+H(r.l)+'</span></td>'+
         '<td>'+(i.reinsp?fdate(i.reinsp):'--')+'</td>'+
+        '<td>'+docRefCell(i.ref_doc_id,i.ref_doc_v)+'</td>'+
         '<td><button class="btn bo bs" onclick="editInsp(\''+H(i.id)+'\')">Edit</button></td></tr>';
     }).join('');
   }
@@ -2427,6 +2439,7 @@ function openInspModal(){
   ineid=null;fillJobSelects();
   ['im-type','im-notes'].forEach(function(f){$(f).value='';});
   $('im-result').value='pending';$('im-scheduled').value=new Date().toISOString().slice(0,10);$('im-reinsp').value='';
+  $('im-docref').value='';
   $('inspmodal').classList.add('on');
 }
 function closeInspModal(){$('inspmodal').classList.remove('on');}
@@ -2437,6 +2450,7 @@ function editInsp(id){
   $('im-job').value=i.job_id||'';$('im-result').value=i.result||'pending';
   $('im-type').value=i.type||'';$('im-scheduled').value=i.scheduled||'';
   $('im-reinsp').value=i.reinsp||'';$('im-notes').value=i.notes||'';
+  $('im-docref').value=i.ref_doc_id?(i.ref_doc_id+'|'+i.ref_doc_v):'';
   $('inspmodal').classList.add('on');
 }
 function saveInsp(){
@@ -2446,10 +2460,12 @@ function saveInsp(){
   if(!job){toast('Job required');return;}
   var result=$('im-result').value;
   if(result==='fail'&&!$('im-reinsp').value){toast('A failed inspection needs a re-inspection date');return;}
+  var docRef=($('im-docref').value||'').split('|');
   var list=bldInsp();
   var existing=ineid?list.find(function(x){return x.id===ineid;}):null;
   var rec={id:ineid||('INS-'+Date.now()),job_id:job,type:type,scheduled:$('im-scheduled').value,
-    result:result,reinsp:result==='fail'?$('im-reinsp').value:'',notes:$('im-notes').value.trim()};
+    result:result,reinsp:result==='fail'?$('im-reinsp').value:'',notes:$('im-notes').value.trim(),
+    ref_doc_id:docRef[0]||'',ref_doc_v:docRef[1]?parseInt(docRef[1],10):null};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
   st('bld_inspections',list);
   closeInspModal();rInspections();
@@ -2498,7 +2514,7 @@ function rRfisTbl(){
   $('r-avgdays').textContent=avgDays;
   $('r-closed').textContent=closed.length;
   var tb=$('rtbody');
-  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No RFIs match</td></tr>';}
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No RFIs match</td></tr>';}
   else{
     tb.innerHTML=list.map(function(r){
       var ball=rfiBall(r);
@@ -2510,6 +2526,7 @@ function rRfisTbl(){
         '<td>'+(r.asked?fdate(r.asked):'--')+'</td>'+
         '<td><span class="badge '+ballClass+'">'+ballLabel+'</span></td>'+
         '<td>'+rfiDaysOpen(r)+'</td>'+
+        '<td>'+docRefCell(r.ref_doc_id,r.ref_doc_v)+'</td>'+
         '<td><button class="btn bo bs" onclick="editRfi(\''+H(r.id)+'\')">Edit</button></td></tr>';
     }).join('');
   }
@@ -2521,6 +2538,7 @@ function openRfiModal(prefill){
   ['rm-question','rm-response'].forEach(function(f){$(f).value='';});
   $('rm-askedto').value='Architect';$('rm-status').value='open';
   $('rm-asked').value=new Date().toISOString().slice(0,10);$('rm-respdate').value='';
+  $('rm-docref').value='';
   if(prefill){
     if(prefill.job_id)$('rm-job').value=prefill.job_id;
     if(prefill.desc)$('rm-question').value=prefill.desc;
@@ -2535,6 +2553,7 @@ function editRfi(id){
   $('rm-job').value=r.job_id||'';$('rm-askedto').value=r.asked_to||'Architect';
   $('rm-question').value=r.question||'';$('rm-asked').value=r.asked||'';
   $('rm-status').value=r.status||'open';$('rm-response').value=r.response||'';$('rm-respdate').value=r.respdate||'';
+  $('rm-docref').value=r.ref_doc_id?(r.ref_doc_id+'|'+r.ref_doc_v):'';
   $('rfimodal').classList.add('on');
 }
 function saveRfi(){
@@ -2544,10 +2563,12 @@ function saveRfi(){
   if(!job){toast('Job required');return;}
   var status=$('rm-status').value;
   if(status==='closed'&&!$('rm-response').value.trim()){toast('Cannot close an RFI with no response on record');return;}
+  var docRef=($('rm-docref').value||'').split('|');
   var list=bldRfis();
   var existing=rfieid?list.find(function(x){return x.id===rfieid;}):null;
   var rec={id:rfieid||('RFI-'+Date.now()),job_id:job,asked_to:$('rm-askedto').value,question:q,
-    asked:$('rm-asked').value,status:status,response:$('rm-response').value.trim(),respdate:$('rm-respdate').value};
+    asked:$('rm-asked').value,status:status,response:$('rm-response').value.trim(),respdate:$('rm-respdate').value,
+    ref_doc_id:docRef[0]||'',ref_doc_v:docRef[1]?parseInt(docRef[1],10):null};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
   st('bld_rfis',list);
   closeRfiModal();rRfis();
@@ -2584,7 +2605,7 @@ function rSubmittalsTbl(){
   $('sm-rejected').textContent=rejected.length;
   $('sm-total').textContent=list.length;
   var tb=$('smtbody');
-  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No submittals match</td></tr>';}
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No submittals match</td></tr>';}
   else{
     tb.innerHTML=list.map(function(sm){
       var s=SMSTATUS[sm.status]||{l:sm.status,c:'bx'};
@@ -2597,6 +2618,7 @@ function rSubmittalsTbl(){
         '<td>'+(sm.submitted?fdate(sm.submitted):'--')+'</td>'+
         '<td><span class="badge '+s.c+'">'+H(s.l)+'</span></td>'+
         '<td><span class="badge '+ballClass+'">'+ballLabel+'</span></td>'+
+        '<td>'+docRefCell(sm.ref_doc_id,sm.ref_doc_v)+'</td>'+
         '<td><button class="btn bo bs" onclick="editSubmittal(\''+H(sm.id)+'\')">Edit</button></td></tr>';
     }).join('');
   }
@@ -2606,6 +2628,7 @@ function openSubmittalModal(){
   smeid=null;fillJobSelects();
   ['smm-item','smm-by','smm-notes'].forEach(function(f){$(f).value='';});
   $('smm-status').value='submitted';$('smm-submitted').value=new Date().toISOString().slice(0,10);
+  $('smm-docref').value='';
   $('submittalmodal').classList.add('on');
 }
 function closeSubmittalModal(){$('submittalmodal').classList.remove('on');}
@@ -2616,6 +2639,7 @@ function editSubmittal(id){
   $('smm-job').value=sm.job_id||'';$('smm-status').value=sm.status||'submitted';
   $('smm-item').value=sm.item||'';$('smm-by').value=sm.submitted_by||'';
   $('smm-submitted').value=sm.submitted||'';$('smm-notes').value=sm.notes||'';
+  $('smm-docref').value=sm.ref_doc_id?(sm.ref_doc_id+'|'+sm.ref_doc_v):'';
   $('submittalmodal').classList.add('on');
 }
 function saveSubmittal(){
@@ -2623,10 +2647,12 @@ function saveSubmittal(){
   if(!item){toast('Item required');return;}
   var job=$('smm-job').value;
   if(!job){toast('Job required');return;}
+  var docRef=($('smm-docref').value||'').split('|');
   var list=bldSubmittals();
   var existing=smeid?list.find(function(x){return x.id===smeid;}):null;
   var rec={id:smeid||('SM-'+Date.now()),job_id:job,item:item,submitted_by:$('smm-by').value.trim(),
-    submitted:$('smm-submitted').value,status:$('smm-status').value,notes:$('smm-notes').value.trim()};
+    submitted:$('smm-submitted').value,status:$('smm-status').value,notes:$('smm-notes').value.trim(),
+    ref_doc_id:docRef[0]||'',ref_doc_v:docRef[1]?parseInt(docRef[1],10):null};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
   st('bld_submittals',list);
   closeSubmittalModal();rSubmittals();
@@ -2888,6 +2914,52 @@ function fillJobSelects(){
     var el=$(id);if(!el)return;
     var keep=el.value;el.innerHTML='<option value="">Not tied to a job yet</option>'+opts;el.value=keep;
   });
+  fillDocRefSelects();
+}
+
+// ── Document version cross-reference (SS2a gap-closer) ───────────────────
+// RFIs/Submittals/Inspections can each optionally point at a specific
+// document VERSION, not just "the plans" -- the whole point being that a
+// question or approval references a concrete, dated version, not a moving
+// target. Deliberately lists every version of every document (not just
+// current ones, and not filtered to the record's own job): referencing an
+// older, superseded version on purpose is a real, legitimate case ("this
+// RFI was about what changed between v1 and v2"), so narrowing the list
+// would remove exactly the capability this feature exists to add.
+var DOC_REF_SELECTS=['rm-docref','smm-docref','im-docref'];
+function fillDocRefSelects(){
+  var opts=[];
+  bldDocuments().forEach(function(d){
+    var cur=docCurrent(d);
+    (d.versions||[]).slice().sort(function(a,b){return b.v-a.v;}).forEach(function(v){
+      var isCurrent=cur&&v.v===cur.v;
+      opts.push('<option value="'+H(d.id+'|'+v.v)+'">'+H(d.name)+' v'+v.v+(isCurrent?'':' (superseded)')+' - '+H(jobLabel(d.job_id))+'</option>');
+    });
+  });
+  var html='<option value="">Not tied to a document</option>'+opts.join('');
+  DOC_REF_SELECTS.forEach(function(id){
+    var el=$(id);if(!el)return;
+    var keep=el.value;el.innerHTML=html;el.value=keep;
+  });
+}
+// Renders as "DocName v#" (plus a Superseded badge if it's not the current
+// version) or '--' if nothing is referenced or the referenced doc/version
+// was since deleted -- never throws on a stale reference.
+function docRefCell(docId,v){
+  if(!docId)return'--';
+  var d=bldDocuments().find(function(x){return x.id===docId;});
+  if(!d)return'--';
+  var cur=docCurrent(d);
+  var isCurrent=cur&&cur.v===v;
+  return H(d.name)+' v'+v+(isCurrent?'':' <span class="badge bx" style="margin-left:4px;">Superseded</span>');
+}
+// Plain-text equivalent of docRefCell for CSV export -- no HTML markup.
+function docRefPlain(docId,v){
+  if(!docId)return'';
+  var d=bldDocuments().find(function(x){return x.id===docId;});
+  if(!d)return'';
+  var cur=docCurrent(d);
+  return d.name+' v'+v+(cur&&cur.v===v?'':' (superseded)');
 }
 
 function rCost(){
@@ -4651,13 +4723,13 @@ function csv(type){
   } else if(type==='rfis'){
     var rlist=rfiScope();
     if(!rlist.length){toast('No RFIs in scope to export');return;}
-    rows=[['Job','Question','Asked To','Asked','Status','Ball','Days Open','Response','Response Date']];
-    rlist.forEach(function(r){rows.push([jobLabel(r.job_id),r.question,r.asked_to,r.asked,r.status,rfiBall(r),rfiDaysOpen(r),r.response,r.respdate]);});
+    rows=[['Job','Question','Asked To','Asked','Status','Ball','Days Open','Response','Response Date','Referenced Document']];
+    rlist.forEach(function(r){rows.push([jobLabel(r.job_id),r.question,r.asked_to,r.asked,r.status,rfiBall(r),rfiDaysOpen(r),r.response,r.respdate,docRefPlain(r.ref_doc_id,r.ref_doc_v)]);});
   } else if(type==='submittals'){
     var smlist=submittalScope();
     if(!smlist.length){toast('No submittals in scope to export');return;}
-    rows=[['Job','Item','Submitted By','Submitted','Status','Ball','Notes']];
-    smlist.forEach(function(sm){rows.push([jobLabel(sm.job_id),sm.item,sm.submitted_by,sm.submitted,(SMSTATUS[sm.status]||{l:sm.status}).l,submittalBall(sm),sm.notes]);});
+    rows=[['Job','Item','Submitted By','Submitted','Status','Ball','Notes','Referenced Document']];
+    smlist.forEach(function(sm){rows.push([jobLabel(sm.job_id),sm.item,sm.submitted_by,sm.submitted,(SMSTATUS[sm.status]||{l:sm.status}).l,submittalBall(sm),sm.notes,docRefPlain(sm.ref_doc_id,sm.ref_doc_v)]);});
   } else if(type==='punchlist'){
     var pllist=punchScope();
     if(!pllist.length){toast('No punch list items in scope to export');return;}
@@ -4666,8 +4738,8 @@ function csv(type){
   } else if(type==='inspections'){
     var inslist=inspScope();
     if(!inslist.length){toast('No inspections in scope to export');return;}
-    rows=[['Job','Type','Scheduled','Result','Re-inspection','Notes']];
-    inslist.forEach(function(i){rows.push([jobLabel(i.job_id),i.type,i.scheduled,i.result,i.reinsp,i.notes]);});
+    rows=[['Job','Type','Scheduled','Result','Re-inspection','Notes','Referenced Document']];
+    inslist.forEach(function(i){rows.push([jobLabel(i.job_id),i.type,i.scheduled,i.result,i.reinsp,i.notes,docRefPlain(i.ref_doc_id,i.ref_doc_v)]);});
   } else if(type==='selections'){
     var sellist=selScope();
     if(!sellist.length){toast('No selections in scope to export');return;}
