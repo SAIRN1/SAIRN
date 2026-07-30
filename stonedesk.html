@@ -4049,6 +4049,18 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   render();
 })();
 </script>
+<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px">
+  <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Project Intake Web Form</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <input id="intake-link-field" readonly style="flex:1;min-width:200px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    <button class="q-btn" onclick="intakeCopyLink()">📋 Copy</button>
+    <button class="q-btn" onclick="intakeShareLink()">📤 Share</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(1,1fr);gap:10px;margin-bottom:12px;max-width:180px">
+    <div class="kpi"><div class="kpi-val" id="int-kpi-total">0</div><div class="kpi-label">Submissions</div></div>
+  </div>
+  <div id="intake-list"></div>
+</div>
 </div><div id="intake-analyze-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;" data-auto-container="missing-dom-fix">
   <div style="background:var(--card);border-radius:12px;max-width:480px;width:92%;max-height:85vh;overflow-y:auto;padding:20px 24px;">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text)">📷 Photo Analysis</div>
@@ -4880,6 +4892,14 @@ window.sdPhotosExport=function(){
     <option value="">All Crew</option>
   </select>
 </div>
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px">
+  <div class="kpi"><div class="kpi-val" id="sched-total">0</div><div class="kpi-label">Total Jobs</div></div>
+  <div class="kpi"><div class="kpi-val" id="sched-green">0</div><div class="kpi-label">On Track</div></div>
+  <div class="kpi"><div class="kpi-val" id="sched-yellow">0</div><div class="kpi-label">At Risk</div></div>
+  <div class="kpi"><div class="kpi-val" id="sched-red">0</div><div class="kpi-label">Overdue</div></div>
+  <div class="kpi"><div class="kpi-val" id="sched-avg">—</div><div class="kpi-label">Avg Install</div></div>
+  <div class="kpi"><div class="kpi-val" id="sched-crews">0</div><div class="kpi-label">Crews</div></div>
+</div>
 <div id="sched-list"></div>
 <div id="sched-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
 </div>
@@ -5484,6 +5504,7 @@ function sdInvExport(){
 </div>
 <div class="order-cart" id="floating-cart" onclick="var vcs=document.getElementById('vendor-cart-summary');if(vcs)vcs.scrollIntoView({behavior:'smooth'})">
     🛒 <span id="cart-count">0</span> items — <span id="cart-float-total">$0.00</span>
+    <span id="cart-total" style="display:none">$0.00</span>
     <div id="cart-items" style="display:none" data-auto-container="missing-dom-fix"></div>
   </div>
 
@@ -7218,108 +7239,14 @@ function aiQuickPrompt(text) {
   sendMessage();
 }
 
-// -- HISTORY v2 -------------------------------------------------
-function histRender() {
-  var list = document.getElementById('history-list');
-  if (!list) return;
-  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
-  var srch = (document.getElementById('hist-search') ? document.getElementById('hist-search').value : '').toLowerCase();
-  var statusFilter = document.getElementById('hist-filter-status') ? document.getElementById('hist-filter-status').value : '';
-  var sort = document.getElementById('hist-sort') ? document.getElementById('hist-sort').value : 'newest';
-
-  var filtered = quotes.filter(function(q) {
-    if (statusFilter && (q.status || 'Open') !== statusFilter) return false;
-    if (srch && !((q.client||'').toLowerCase().includes(srch) || (q.project||'').toLowerCase().includes(srch) || (q.quoteNum||'').toString().includes(srch))) return false;
-    return true;
-  });
-
-  filtered.sort(function(a, b) {
-    if (sort === 'newest') return new Date(b.date||0) - new Date(a.date||0);
-    if (sort === 'oldest') return new Date(a.date||0) - new Date(b.date||0);
-    var av = parseFloat((a.total||'0').toString().replace(/[^0-9.]/g,'')) || 0;
-    var bv = parseFloat((b.total||'0').toString().replace(/[^0-9.]/g,'')) || 0;
-    return sort === 'highest' ? bv - av : av - bv;
-  });
-
-  // Update KPIs
-  var totalVal = quotes.reduce(function(s,q){return s+(parseFloat((q.total||'0').toString().replace(/[^0-9.]/g,''))||0);},0);
-  function sk(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
-  sk('hist-kpi-total', quotes.length);
-  sk('hist-kpi-open', quotes.filter(function(q){return (!q.status||q.status==='Open');}).length);
-  sk('hist-kpi-approved', quotes.filter(function(q){return q.status==='Approved';}).length);
-  sk('hist-kpi-value', '$' + totalVal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
-
-  if (!filtered.length) {
-    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">📜</div><div style="font-size:15px;font-weight:700">No quotes found</div></div>';
-    return;
-  }
-
-  var statusColors = { Open: '#16C762', Approved: '#16a34a', Declined: '#dc2626' };
-  list.innerHTML = filtered.map(function(q, idx) {
-    var st = q.status || 'Open';
-    var sc = statusColors[st] || '#6B7280';
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
-      '<div style="font-size:13px;font-weight:800;color:var(--muted);min-width:60px">#' + (q.quoteNum || (idx+1)) + '</div>' +
-      '<div style="flex:1;min-width:140px"><div style="font-size:14px;font-weight:700;color:var(--text)">' + (q.client||'—') + '</div>' +
-        '<div style="font-size:12px;color:var(--muted)">' + (q.project||'') + '</div></div>' +
-      '<div style="font-size:15px;font-weight:800;color:var(--text);min-width:80px;text-align:right">' + (q.total||'—') + '</div>' +
-      '<div style="min-width:70px;text-align:center"><div style="background:' + sc + ';color:#fff;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;display:inline-block">' + st + '</div></div>' +
-      '<div style="font-size:12px;color:var(--muted);min-width:80px">' + (q.date||'') + '</div>' +
-      '<div style="display:flex;gap:6px">' +
-        '<button class="q-btn" onclick="histReopen(' + idx + ')" title="Reopen in Quote Builder">↩ Reopen</button>' +
-        '<button class="q-btn" onclick="histMakeInvoice(' + idx + ')" title="Create Invoice from this quote" style="color:#16C762">🧾</button>' +
-        '<button class="q-btn" onclick="histDelete(' + idx + ')" title="Delete" style="color:#dc2626">🗑️</button>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-function histReopen(idx) {
-  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
-  var q = quotes[idx]; if (!q) return;
-  // Seed quote builder fields. Real ids are client-name/project-type (confirmed
-  // in the Quote Builder panel markup) -- this previously read 'client'/
-  // 'projectType', which never existed, so Reopen silently wrote into nothing
-  // and the Quote Builder's real fields (and calc(), bound to their input/
-  // change events) never got the reopened quote's data or re-fired.
-  if (q.client) { var el = document.getElementById('client-name'); if(el) el.value = q.client; }
-  if (q.project) { var el2 = document.getElementById('project-type'); if(el2) el2.value = q.project; }
-  sbNav('quote');
-  notify('Quote loaded into Quote Builder', '');
-}
-
-function histMakeInvoice(idx) {
-  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
-  var q = quotes[idx]; if (!q) return;
-  sbNav('invoices');
-  setTimeout(function() {
-    invCreateNew();
-    document.getElementById('inv2-cust').value = q.client || '';
-    document.getElementById('inv2-desc').value = (q.project||'') + (q.quoteNum ? ' — Quote #' + q.quoteNum : '');
-    document.getElementById('inv2-amount').value = (q.total||'').toString().replace(/[^0-9.]/g,'');
-    invCalcBalance();
-  }, 300);
-}
-
-function histDelete(idx) {
-  if (!confirm('Delete this quote from history?')) return;
-  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
-  quotes.splice(idx, 1);
-  localStorage.setItem('stonedesk_quote_history', JSON.stringify(quotes));
-  histRender();
-}
-
-function histExportCSV() {
-  var quotes = JSON.parse(localStorage.getItem('stonedesk_quote_history') || '[]');
-  if (!quotes.length) { notify('No quotes to export', 'warn'); return; }
-  var rows = [['Quote #','Client','Project','Total','Status','Date']];
-  quotes.forEach(function(q,i){ rows.push([q.quoteNum||i+1, q.client, q.project, q.total, q.status||'Open', q.date]); });
-  var csv = rows.map(function(r){return r.map(function(c){return '"'+(c||'')+'"';}).join(',');}).join('\n');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'stonedesk-quotes-' + new Date().toISOString().split('T')[0] + '.csv';
-  a.click();
-}
+// -- HISTORY v2 -- orphaned duplicate removed (canonical is panel-history /
+// window.sdHistoryRender, dispatched on nav id==='history'; hist-search/
+// hist-sort in the real panel already call sdHistoryRender() directly).
+// history-list/hist-filter-status were never built (confirmed: histRender
+// always early-returned before reaching its own KPI-set code, so no
+// display-clobber risk existed either); histReopen/histMakeInvoice/
+// histDelete/histExportCSV were only reachable via buttons histRender
+// itself generated, so removed with it.
 
 // -- INIT ON PANEL SHOW -----------------------------------------
 (function() {
@@ -7335,7 +7262,7 @@ function histExportCSV() {
     if (id === 'comms') { renderComms(); commsUpdateKPIs(); commsUpdateSidebarBadge(); }
   };
   // Init on load
-  setTimeout(function() { invUpdateKPIs(); histRender(); aiLoadDashKPIs(); }, 800);
+  setTimeout(function() { invUpdateKPIs(); aiLoadDashKPIs(); }, 800);
 })();
 
 // ==================================================================
@@ -22009,6 +21936,12 @@ document.addEventListener('DOMContentLoaded', function() {
   render();
 })();
 </script>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px">
+  <div class="kpi"><div class="kpi-val" id="jc-kpi-jobs">0</div><div class="kpi-label">Jobs Costed</div></div>
+  <div class="kpi"><div class="kpi-val" id="jc-kpi-margin">0%</div><div class="kpi-label">Avg Margin</div></div>
+  <div class="kpi"><div class="kpi-val" id="jc-kpi-over">0</div><div class="kpi-label">Over Budget</div></div>
+  <div class="kpi"><div class="kpi-val" id="jc-kpi-variance">$0</div><div class="kpi-label">Total Variance</div></div>
+</div>
 <div id="jc-ai-result" style="margin-top:16px"></div>
 <div id="jc-list" data-auto-container="missing-dom-fix"></div>
   <button class="q-btn" style="margin-top:10px;background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.3);color:#7c3aed" onclick="jcAIAnalyze()">&#129504; Claude — Analyze My Job Margins</button>
@@ -24109,6 +24042,12 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div id="rf-list"></div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0">
+  <div class="kpi"><div class="kpi-val" id="rf-kpi-total">0</div><div class="kpi-label">Total</div></div>
+  <div class="kpi"><div class="kpi-val" id="rf-kpi-revenue">$0</div><div class="kpi-label">Revenue</div></div>
+  <div class="kpi"><div class="kpi-val" id="rf-kpi-conversion">0%</div><div class="kpi-label">Conversion</div></div>
+  <div class="kpi"><div class="kpi-val" id="rf-kpi-top-source">—</div><div class="kpi-label">Top Source</div></div>
+</div>
 <div style="margin:6px 0;" data-auto-container="missing-dom-fix"><label style="display:block;font-size:11px;color:#888;">rf-source-chart</label><input type="text" id="rf-source-chart" class="form-control"></div>
 <div id="rf-top-referrers" data-auto-container="missing-dom-fix"></div>
 </div>
@@ -24988,6 +24927,10 @@ document.addEventListener('DOMContentLoaded', function() {
   render();
 })();
 </script>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">
+  <div class="kpi"><div class="kpi-val" id="ita-kpi-users">0</div><div class="kpi-label">Users</div></div>
+  <div class="kpi"><div class="kpi-val" id="ita-kpi-storage">0 KB</div><div class="kpi-label">Storage Used</div></div>
+</div>
 <div id="ita-audit-log" style="max-height:300px;overflow-y:auto"></div>
 <div id="ita-users-list" data-auto-container="missing-dom-fix"></div>
 <div id="ita-storage-detail" data-auto-container="missing-dom-fix"></div>
@@ -25933,8 +25876,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var out=document.getElementById('tax-ai-out');
     out.style.display='block';out.textContent='Calculating...';
     var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
-    var bills=(typeof apBills!=='undefined')?apBills:[];
-    var profit=invoices.reduce(function(s,i){return s+(i.amount||0);},0)-bills.reduce(function(s,b){return s+(b.amount||0);},0);
+    var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
+    var profit=invoices.reduce(function(s,i){return s+(i.amount||0);},0)-bills.reduce(function(s,b){return s+(b.amt||0);},0);
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Give a quick tax overview for a stone fabrication company. Actual tracked data: revenue minus expenses (profit) of $'+Math.round(profit).toLocaleString()+' this period ('+invoices.length+' invoices, '+bills.length+' bills on file -- if this looks sparse, say more data is needed rather than guessing). Cover: estimated annual liability, quarterly payment schedule, 1099 obligations, and top 3 deductions to maximize.'}]})
     }).then(function(r){return r.json();}).then(function(r){
@@ -25944,10 +25887,10 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdTaxAdd1099=function(){showToast('1099 contractor tracking — contact your accountant to add contractor records.');};
   window.sdTaxPrint=function(){
     var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
-    var bills=(typeof apBills!=='undefined')?apBills:[];
+    var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
     var entries=(typeof taxEntries!=='undefined')?taxEntries:[];
     var salesTaxYTD=entries.reduce(function(s,e){return s+(e.tax||0);},0);
-    var profit=invoices.reduce(function(s,i){return s+(i.amount||0);},0)-bills.reduce(function(s,b){return s+(b.amount||0);},0);
+    var profit=invoices.reduce(function(s,i){return s+(i.amount||0);},0)-bills.reduce(function(s,b){return s+(b.amt||0);},0);
     var w=window.open('','_blank');
     w.document.write('<html><head><title>Tax Report</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>Pinnacle Stone & Design — Tax Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
@@ -25962,6 +25905,12 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 })();
 </script>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+  <div class="kpi"><div class="kpi-val" id="tax-kpi-revenue">$0</div><div class="kpi-label">Revenue</div></div>
+  <div class="kpi"><div class="kpi-val" id="tax-kpi-expenses">$0</div><div class="kpi-label">Expenses</div></div>
+  <div class="kpi"><div class="kpi-val" id="tax-kpi-profit">$0</div><div class="kpi-label">Net Profit</div></div>
+  <div class="kpi"><div class="kpi-val" id="tax-kpi-tax-est">$0</div><div class="kpi-label">Est. Tax</div></div>
+</div>
 <div id="tax-ai-result" style="margin-bottom:16px"></div>
 <div id="tax-entries" data-auto-container="missing-dom-fix"></div>
 <div id="tax-total-row" data-auto-container="missing-dom-fix"></div>
@@ -29307,367 +29256,34 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
 // ============================================================
-// TIER 3 — EQUIPMENT MAINTENANCE LOG
+// TIER 3 — EQUIPMENT MAINTENANCE LOG — orphaned duplicate removed
+// (canonical is panel-equipment / window.sdEqRender, dispatched on nav
+// id==='equipment'). Zero external triggers into this parallel eqLoad/
+// sd_equipment_v1 system existed anywhere in the file; its KPI-set calls
+// were also unguarded (would have thrown if ever reached).
 // ============================================================
-var EQ_KEY = 'sd_equipment_v1';
-function eqLoad(){try{return JSON.parse(localStorage.getItem(EQ_KEY)||'[]');}catch(e){return[];}}
-function eqSaveAll(d){localStorage.setItem(EQ_KEY,JSON.stringify(d));}
-function eqShowAdd(){document.getElementById('eq-add-form').style.display='block';}
-function eqSave(){
-  var name=document.getElementById('eq-name').value.trim();
-  if(!name){showToast('Machine name required');return;}
-  var rec={id:Date.now(),name:name,type:document.getElementById('eq-type').value,serial:document.getElementById('eq-serial').value,lastDate:document.getElementById('eq-last-date').value,serviceType:document.getElementById('eq-service-type').value,cost:parseFloat(document.getElementById('eq-cost').value)||0,nextDate:document.getElementById('eq-next-date').value,notes:document.getElementById('eq-notes').value};
-  var d=eqLoad();d.push(rec);eqSaveAll(d);
-  ['eq-name','eq-serial','eq-service-type','eq-cost','eq-notes'].forEach(function(i){document.getElementById(i).value='';});
-  ['eq-last-date','eq-next-date'].forEach(function(i){document.getElementById(i).value='';});
-  document.getElementById('eq-add-form').style.display='none';
-  eqRender();
-}
-function eqRender(){
-  var d=eqLoad();var today=new Date();var overdue=0;var dueSoon=0;var ytdCost=0;var curYear=today.getFullYear();
-  d.forEach(function(r){
-    if(r.nextDate){var nd=new Date(r.nextDate);if(nd<today)overdue++;else if((nd-today)/(1000*60*60*24)<=30)dueSoon++;}
-    if(r.lastDate&&r.lastDate.startsWith(curYear+''))ytdCost+=r.cost||0;
-  });
-  document.getElementById('eq-kpi-total').textContent=d.length;
-  document.getElementById('eq-kpi-overdue').textContent=overdue;
-  document.getElementById('eq-kpi-due-soon').textContent=dueSoon;
-  document.getElementById('eq-kpi-cost').textContent='$'+ytdCost.toLocaleString();
-  var el=document.getElementById('eq-list');
-  if(!d.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No equipment logged yet. Add your first machine.</div>';return;}
-  el.innerHTML=d.slice().reverse().map(function(r){
-    var today2=new Date();var status='';var statusColor='#16C762';
-    if(r.nextDate){var nd=new Date(r.nextDate);if(nd<today2){status='OVERDUE';statusColor='#ef4444';}else if((nd-today2)/(1000*60*60*24)<=30){status='DUE SOON';statusColor='#f59e0b';}}
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center">'+
-      '<div>'+
-        '<div style="font-size:14px;font-weight:700">'+r.name+' <span style="font-size:11px;color:var(--muted);font-weight:400">'+r.type+'</span>'+(r.serial?' <span style="font-size:10px;color:var(--muted)">SN: '+r.serial+'</span>':'')+'</div>'+
-        '<div style="font-size:12px;color:var(--muted);margin-top:3px">'+(r.serviceType?'Last: '+r.serviceType:'')+(r.lastDate?' on '+r.lastDate:'')+(r.cost?' | $'+r.cost.toLocaleString():'')+'</div>'+
-        (r.nextDate?'<div style="font-size:12px;margin-top:3px">Next due: <strong style="color:'+statusColor+'">'+r.nextDate+(status?' — '+status:'')+'</strong></div>':'')+
-        (r.notes?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+r.notes+'</div>':'')+
-      '</div>'+
-      '<button class="q-btn" style="color:#ef4444" onclick="eqDelete('+r.id+')">&#128465;</button>'+
-    '</div>';
-  }).join('');
-}
-function eqDelete(id){var d=eqLoad().filter(function(r){return r.id!==id;});eqSaveAll(d);eqRender();}
-function eqExport(){
-  var d=eqLoad();if(!d.length){showToast('No equipment to export');return;}
-  var rows=[['Name','Type','Serial','Last Date','Service','Cost','Next Due','Notes']].concat(d.map(function(r){return[r.name,r.type,r.serial,r.lastDate,r.serviceType,r.cost,r.nextDate,r.notes];}));
-  var csv=rows.map(function(r){return r.map(function(c){return'"'+(c||'')+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='equipment_log.csv';a.click();
-}
-
+// TIER 3 — EMPLOYEE DIRECTORY + SKILLS MATRIX — orphaned duplicate removed
+// (canonical is panel-employees / window.sdEmpRender, dispatched on nav
+// id==='employees'). Zero external triggers into this parallel
+// empDirLoad/sd_emp_directory_v1 system existed anywhere in the file.
 // ============================================================
-// TIER 3 — EMPLOYEE DIRECTORY + SKILLS MATRIX
+// TIER 3 — STONE YARD CONTACT DIRECTORY — orphaned duplicate removed
+// (canonical is panel-stoneyard / window.sdYardRender, dispatched on nav
+// id==='stoneyard'). Zero external triggers into this parallel syLoad/
+// sd_stoneyard_v1 system existed anywhere in the file.
 // ============================================================
-var EMP_DIR_KEY = 'sd_emp_directory_v1';
-function empDirLoad(){try{return JSON.parse(localStorage.getItem(EMP_DIR_KEY)||'[]');}catch(e){return[];}}
-function empDirSaveAll(d){localStorage.setItem(EMP_DIR_KEY,JSON.stringify(d));}
-function empShowAdd(){document.getElementById('emp-add-form').style.display='block';}
-function empSave(){
-  var name=document.getElementById('emp-fullname').value.trim();
-  if(!name){showToast('Name required');return;}
-  var rec={id:Date.now(),name:name,role:document.getElementById('emp-role').value,phone:document.getElementById('emp-phone').value,machines:document.getElementById('emp-machines').value,certs:document.getElementById('emp-certs').value,hireDate:document.getElementById('emp-hire-date').value,emergency:document.getElementById('emp-emergency').value,status:document.getElementById('emp-status').value};
-  var d=empDirLoad();d.push(rec);empDirSaveAll(d);
-  ['emp-fullname','emp-role','emp-phone','emp-machines','emp-certs','emp-hire-date','emp-emergency'].forEach(function(i){document.getElementById(i).value='';});
-  document.getElementById('emp-add-form').style.display='none';
-  empRender();
-}
-function empRender(){
-  var d=empDirLoad();var search=(document.getElementById('emp-search')||{}).value||'';
-  var filtered=d.filter(function(r){var s=search.toLowerCase();return!s||(r.name+r.role+r.machines+r.certs).toLowerCase().indexOf(s)>-1;});
-  var active=d.filter(function(r){return r.status==='Active';}).length;
-  var certs=d.reduce(function(a,r){return a+(r.certs?r.certs.split(',').length:0);},0);
-  var skills=d.reduce(function(a,r){return a+(r.machines?r.machines.split(',').length:0);},0);
-  document.getElementById('emp-kpi-total').textContent=d.length;
-  document.getElementById('emp-kpi-active').textContent=active;
-  document.getElementById('emp-kpi-certs').textContent=certs;
-  document.getElementById('emp-kpi-skills').textContent=skills;
-  var el=document.getElementById('emp-list');
-  if(!filtered.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No employees found.</div>';return;}
-  var statusColor={'Active':'#16C762','Part-Time':'#3b82f6','On Leave':'#f59e0b','Inactive':'#9ca3af'};
-  el.innerHTML=filtered.slice().reverse().map(function(r){
-    var sc=statusColor[r.status]||'#9ca3af';
-    var machines=r.machines?r.machines.split(',').map(function(m){return'<span style="background:rgba(22,199,98,0.1);color:#16C762;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">'+m.trim()+'</span>';}).join(' '):'';
-    var certs=r.certs?r.certs.split(',').map(function(c){return'<span style="background:rgba(59,130,246,0.1);color:#3b82f6;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">'+c.trim()+'</span>';}).join(' '):'';
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:flex-start">'+
-      '<div style="flex:1">'+
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-          '<span style="font-size:14px;font-weight:700">'+r.name+'</span>'+
-          '<span style="font-size:11px;color:var(--muted)">'+r.role+'</span>'+
-          '<span style="font-size:10px;font-weight:700;color:'+sc+'">'+r.status+'</span>'+
-        '</div>'+
-        (r.phone?'<div style="font-size:12px;color:var(--muted);margin-bottom:4px">&#128222; '+r.phone+(r.emergency?' &nbsp;|&nbsp; Emergency: '+r.emergency:'')+'</div>':'')+
-        (machines?'<div style="margin-bottom:4px">'+machines+'</div>':'')+
-        (certs?'<div>'+certs+'</div>':'')+
-        (r.hireDate?'<div style="font-size:11px;color:var(--muted);margin-top:4px">Hired: '+r.hireDate+'</div>':'')+
-      '</div>'+
-      '<button class="q-btn" style="color:#ef4444" onclick="empDelete('+r.id+')">&#128465;</button>'+
-    '</div>';
-  }).join('');
-}
-function empDelete(id){var d=empDirLoad().filter(function(r){return r.id!==id;});empDirSaveAll(d);empRender();}
-
-// ============================================================
-// TIER 3 — STONE YARD CONTACT DIRECTORY
-// ============================================================
-var SY_KEY = 'sd_stoneyard_v1';
-function syLoad(){try{return JSON.parse(localStorage.getItem(SY_KEY)||'[]');}catch(e){return[];}}
-function sySaveAll(d){localStorage.setItem(SY_KEY,JSON.stringify(d));}
-function syShowAdd(){document.getElementById('sy-add-form').style.display='block';}
-function sySave(){
-  var company=document.getElementById('sy-company').value.trim();
-  if(!company){showToast('Company name required');return;}
-  var rec={id:Date.now(),company:company,rep:document.getElementById('sy-rep').value,phone:document.getElementById('sy-phone').value,email:document.getElementById('sy-email').value,materials:document.getElementById('sy-materials').value,lead:parseInt(document.getElementById('sy-lead').value)||0,pricing:document.getElementById('sy-pricing').value,status:document.getElementById('sy-status').value,notes:document.getElementById('sy-notes').value};
-  var d=syLoad();d.push(rec);sySaveAll(d);
-  ['sy-company','sy-rep','sy-phone','sy-email','sy-materials','sy-lead','sy-pricing','sy-notes'].forEach(function(i){document.getElementById(i).value='';});
-  document.getElementById('sy-add-form').style.display='none';
-  syRender();
-}
-function syRender(){
-  var d=syLoad();var search=(document.getElementById('sy-search')||{}).value||'';
-  var filtered=d.filter(function(r){var s=search.toLowerCase();return!s||(r.company+r.rep+r.materials).toLowerCase().indexOf(s)>-1;});
-  var preferred=d.filter(function(r){return r.status==='Preferred';}).length;
-  var contacts=d.reduce(function(a,r){return a+(r.rep?1:0);},0);
-  var avgLead=d.length?Math.round(d.reduce(function(a,r){return a+(r.lead||0);},0)/d.length):0;
-  document.getElementById('sy-kpi-suppliers').textContent=d.length;
-  document.getElementById('sy-kpi-contacts').textContent=contacts;
-  document.getElementById('sy-kpi-preferred').textContent=preferred;
-  document.getElementById('sy-kpi-avg-lead').textContent=avgLead+'d';
-  var el=document.getElementById('sy-list');
-  if(!filtered.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No suppliers added yet.</div>';return;}
-  var statusColor={'Preferred':'#16C762','Active':'#3b82f6','Backup':'#f59e0b','Inactive':'#9ca3af'};
-  el.innerHTML=filtered.slice().reverse().map(function(r){
-    var sc=statusColor[r.status]||'#9ca3af';
-    var mats=r.materials?r.materials.split(',').map(function(m){return'<span style="background:rgba(22,199,98,0.1);color:#16C762;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">'+m.trim()+'</span>';}).join(' '):'';
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:flex-start">'+
-      '<div style="flex:1">'+
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-          '<span style="font-size:14px;font-weight:700">'+r.company+'</span>'+
-          '<span style="font-size:10px;font-weight:700;color:'+sc+'">'+r.status+'</span>'+
-          (r.lead?'<span style="font-size:11px;color:var(--muted)">Lead: '+r.lead+'d</span>':'')+
-        '</div>'+
-        (r.rep?'<div style="font-size:12px;color:var(--muted)">Rep: '+r.rep+(r.phone?' | '+r.phone:'')+(r.email?' | '+r.email:'')+'</div>':'')+
-        (mats?'<div style="margin:4px 0">'+mats+'</div>':'')+
-        (r.pricing?'<div style="font-size:11px;color:var(--muted)">Pricing: '+r.pricing+'</div>':'')+
-        (r.notes?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+r.notes+'</div>':'')+
-      '</div>'+
-      '<button class="q-btn" style="color:#ef4444" onclick="syDelete('+r.id+')">&#128465;</button>'+
-    '</div>';
-  }).join('');
-}
-function syDelete(id){var d=syLoad().filter(function(r){return r.id!==id;});sySaveAll(d);syRender();}
-
-// ============================================================
-// TIER 3 — SUBCONTRACTOR MANAGEMENT
-// ============================================================
-var SUB_KEY = 'sd_subcontractors_v1';
-function subLoad(){try{return JSON.parse(localStorage.getItem(SUB_KEY)||'[]');}catch(e){return[];}}
-function subSaveAll(d){localStorage.setItem(SUB_KEY,JSON.stringify(d));}
-function subShowAdd(){document.getElementById('sub-add-form').style.display='block';}
-function subSave(){
-  var name=document.getElementById('sub-name').value.trim();
-  if(!name){showToast('Name required');return;}
-  var rec={id:Date.now(),name:name,contact:document.getElementById('sub-contact').value,phone:document.getElementById('sub-phone').value,specialty:document.getElementById('sub-specialty').value,rateType:document.getElementById('sub-rate-type').value,rate:parseFloat(document.getElementById('sub-rate').value)||0,avail:document.getElementById('sub-avail').value,license:document.getElementById('sub-license').value,insExp:document.getElementById('sub-ins-exp').value,notes:document.getElementById('sub-notes').value,activeJobs:0};
-  var d=subLoad();d.push(rec);subSaveAll(d);
-  ['sub-name','sub-contact','sub-phone','sub-rate','sub-license','sub-ins-exp','sub-notes'].forEach(function(i){document.getElementById(i).value='';});
-  document.getElementById('sub-add-form').style.display='none';
-  subRender();
-}
-function subRender(){
-  var d=subLoad();var search=(document.getElementById('sub-search')||{}).value||'';
-  var filtered=d.filter(function(r){var s=search.toLowerCase();return!s||(r.name+r.contact+r.specialty).toLowerCase().indexOf(s)>-1;});
-  var avail=d.filter(function(r){return r.avail==='Available';}).length;
-  var activeJobs=d.reduce(function(a,r){return a+(r.activeJobs||0);},0);
-  var avgRate=d.length?Math.round(d.reduce(function(a,r){return a+(r.rate||0);},0)/d.length):0;
-  document.getElementById('sub-kpi-total').textContent=d.length;
-  document.getElementById('sub-kpi-available').textContent=avail;
-  document.getElementById('sub-kpi-active-jobs').textContent=activeJobs;
-  document.getElementById('sub-kpi-avg-rate').textContent='$'+avgRate+'/hr';
-  var el=document.getElementById('sub-list');
-  if(!filtered.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No subcontractors added yet.</div>';return;}
-  var availColor={'Available':'#16C762','Booked':'#ef4444','Weekends Only':'#f59e0b','Inactive':'#9ca3af'};
-  el.innerHTML=filtered.slice().reverse().map(function(r){
-    var ac=availColor[r.avail]||'#9ca3af';
-    var insWarn='';if(r.insExp){var exp=new Date(r.insExp);var daysLeft=(exp-new Date())/(1000*60*60*24);if(daysLeft<0)insWarn='<span style="color:#ef4444;font-size:10px;font-weight:700"> EXPIRED</span>';else if(daysLeft<30)insWarn='<span style="color:#f59e0b;font-size:10px;font-weight:700"> EXPIRING SOON</span>';}
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:flex-start">'+
-      '<div style="flex:1">'+
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-          '<span style="font-size:14px;font-weight:700">'+r.name+'</span>'+
-          '<span style="font-size:11px;color:var(--muted)">'+r.specialty+'</span>'+
-          '<span style="font-size:10px;font-weight:700;color:'+ac+'">'+r.avail+'</span>'+
-        '</div>'+
-        (r.contact?'<div style="font-size:12px;color:var(--muted)">'+r.contact+(r.phone?' | '+r.phone:'')+'</div>':'')+
-        '<div style="font-size:12px;margin-top:3px">Rate: <strong>$'+r.rate+'/'+r.rateType+'</strong></div>'+
-        (r.license?'<div style="font-size:11px;color:var(--muted);margin-top:3px">License: '+r.license+(r.insExp?' | Ins. Exp: '+r.insExp+insWarn:'')+'</div>':'')+
-        (r.notes?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+r.notes+'</div>':'')+
-      '</div>'+
-      '<button class="q-btn" style="color:#ef4444" onclick="subDelete('+r.id+')">&#128465;</button>'+
-    '</div>';
-  }).join('');
-}
-function subDelete(id){var d=subLoad().filter(function(r){return r.id!==id;});subSaveAll(d);subRender();}
+// TIER 3 — SUBCONTRACTOR MANAGEMENT — orphaned duplicate removed
+// (canonical is panel-subcontractor / window.sdSubRender, dispatched on
+// nav id==='subcontractor'). Zero external triggers into this parallel
+// subLoad/sd_subcontractors_v1 system existed anywhere in the file.
 
 
 // ============================================================
-// TIER 4 — THE BID BOARD
+// TIER 4 — THE BID BOARD — orphaned duplicate removed (canonical is
+// panel-bidboard / window.sdBidRender, dispatched on nav id==='bidboard').
+// Zero external triggers into this parallel bbLoad/sd_bidboard_v1 system
+// existed anywhere in the file.
 // ============================================================
-var BB_KEY = 'sd_bidboard_v1';
-var BB_CLAIMED_KEY = 'sd_bidboard_claimed_v1';
-var bbCalYear, bbCalMonth;
-
-function bbLoad(){try{return JSON.parse(localStorage.getItem(BB_KEY)||'[]');}catch(e){return[];}}
-function bbSaveAll(d){localStorage.setItem(BB_KEY,JSON.stringify(d));}
-function bbClaimedLoad(){try{return JSON.parse(localStorage.getItem(BB_CLAIMED_KEY)||'[]');}catch(e){return[];}}
-function bbClaimedSave(d){localStorage.setItem(BB_CLAIMED_KEY,JSON.stringify(d));}
-
-function bbShowPost(){document.getElementById('bb-post-form').style.display='block';document.getElementById('bb-calendar-view').style.display='none';}
-function bbShowCalendar(){
-  document.getElementById('bb-calendar-view').style.display='block';
-  document.getElementById('bb-post-form').style.display='none';
-  var now=new Date();bbCalYear=now.getFullYear();bbCalMonth=now.getMonth();
-  bbRenderCal();
-}
-
-function bbPostSlot(){
-  var date=document.getElementById('bb-date').value;
-  if(!date){showToast('Date required');return;}
-  var slot={
-    id:'BB'+Date.now(),
-    date:date,
-    type:document.getElementById('bb-type').value,
-    jobType:document.getElementById('bb-job-type').value,
-    sqft:parseInt(document.getElementById('bb-sqft').value)||0,
-    rate:document.getElementById('bb-rate').value,
-    priority:document.getElementById('bb-priority').value,
-    notes:document.getElementById('bb-notes').value,
-    status:'Open',
-    posted:new Date().toISOString()
-  };
-  var d=bbLoad();d.push(slot);bbSaveAll(d);
-  ['bb-date','bb-sqft','bb-rate','bb-notes'].forEach(function(i){document.getElementById(i).value='';});
-  document.getElementById('bb-post-form').style.display='none';
-  bbRender();
-  showToast('Slot posted to Bid Board');
-}
-
-function bbClaim(id){
-  var contractor=prompt('Contractor name claiming this slot:');
-  if(!contractor)return;
-  var d=bbLoad();
-  var slot=d.find(function(s){return s.id===id;});
-  if(!slot)return;
-  slot.status='Claimed';
-  slot.claimedBy=contractor;
-  slot.claimedAt=new Date().toISOString();
-  bbSaveAll(d);
-  var claimed=bbClaimedLoad();
-  claimed.unshift(JSON.parse(JSON.stringify(slot)));
-  bbClaimedSave(claimed);
-  bbRender();
-  showToast('Slot claimed by '+contractor);
-}
-
-function bbDeleteSlot(id){
-  var d=bbLoad().filter(function(s){return s.id!==id;});
-  bbSaveAll(d);
-  bbRender();
-}
-
-function bbRender(){
-  var d=bbLoad();var claimed=bbClaimedLoad();
-  var open=d.filter(function(s){return s.status==='Open';});
-  var thisMonth=new Date().getMonth();
-  var claimedMonth=claimed.filter(function(s){
-    return s.claimedAt&&new Date(s.claimedAt).getMonth()===thisMonth;
-  });
-  var estRev=open.reduce(function(a,s){
-    var r=parseFloat((s.rate||'0').replace(/[^0-9.]/g,''))||0;
-    return a+(r*(s.sqft||0));
-  },0);
-  var contractors=bbClaimedLoad().map(function(s){return s.claimedBy;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).length;
-
-  document.getElementById('bb-kpi-open').textContent=open.length;
-  document.getElementById('bb-kpi-claimed').textContent=claimedMonth.length;
-  document.getElementById('bb-kpi-contractors').textContent=contractors;
-  document.getElementById('bb-kpi-revenue').textContent='$'+estRev.toLocaleString();
-
-  var priorityColor={'Standard':'#3b82f6','Rush Premium':'#ef4444','Discounted Fill':'#f59e0b'};
-  var el=document.getElementById('bb-slots-list');
-  if(!open.length){
-    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px">No open slots. Post your first capacity slot above.</div>';
-  } else {
-    el.innerHTML=open.map(function(s){
-      var pc=priorityColor[s.priority]||'#3b82f6';
-      return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+pc+';border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:flex-start">'+
-        '<div style="flex:1">'+
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-            '<span style="font-size:15px;font-weight:800">'+s.date+'</span>'+
-            '<span style="font-size:11px;background:rgba(22,199,98,0.1);color:#16C762;padding:2px 8px;border-radius:4px;font-weight:700">'+s.type+'</span>'+
-            '<span style="font-size:10px;font-weight:700;color:'+pc+'">'+s.priority+'</span>'+
-          '</div>'+
-          '<div style="font-size:12px;color:var(--muted)">'+s.jobType+(s.sqft?' | '+s.sqft+' sqft':'')+(s.rate?' | '+s.rate:'')+'</div>'+
-          (s.notes?'<div style="font-size:11px;color:var(--muted);margin-top:4px">'+s.notes+'</div>':'')+
-        '</div>'+
-        '<div style="display:flex;gap:6px;flex-shrink:0">'+
-          '<button class="q-btn primary" style="font-size:11px" onclick="bbClaim(' + s.id + ')">Claim</button>'+
-          '<button class="q-btn" style="color:#ef4444;font-size:11px" onclick="bbDeleteSlot(' + s.id + ')">&#128465;</button>'+
-        '</div>'+
-      '</div>';
-    }).join('');
-  }
-
-  var cel=document.getElementById('bb-claimed-list');
-  if(!claimed.length){
-    cel.innerHTML='<div style="color:var(--muted);padding:12px;font-size:12px">No slots claimed yet.</div>';
-  } else {
-    cel.innerHTML=claimed.slice(0,10).map(function(s){
-      return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid #16C762;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center">'+
-        '<div>'+
-          '<span style="font-size:13px;font-weight:700">'+s.date+'</span>'+
-          '<span style="font-size:11px;color:var(--muted);margin-left:8px">'+s.type+' | '+s.jobType+'</span>'+
-          '<div style="font-size:11px;color:#16C762;margin-top:2px">Claimed by: <strong>'+s.claimedBy+'</strong>'+(s.claimedAt?' on '+s.claimedAt.slice(0,10):'')+'</div>'+
-        '</div>'+
-        '<span style="font-size:10px;font-weight:700;color:#16C762;background:rgba(22,199,98,0.1);padding:3px 8px;border-radius:4px">CLAIMED</span>'+
-      '</div>';
-    }).join('');
-  }
-}
-
-function bbRenderCal(){
-  var title=document.getElementById('bb-cal-title');
-  var grid=document.getElementById('bb-cal-grid');
-  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  title.textContent=months[bbCalMonth]+' '+bbCalYear;
-  var slots=bbLoad();
-  var slotDates={};
-  slots.forEach(function(s){if(s.date)slotDates[s.date]=(slotDates[s.date]||0)+1;});
-  var firstDay=new Date(bbCalYear,bbCalMonth,1).getDay();
-  var daysInMonth=new Date(bbCalYear,bbCalMonth+1,0).getDate();
-  var days=['Su','Mo','Tu','We','Th','Fr','Sa'];
-  var html=days.map(function(d){return '<div style="font-size:10px;font-weight:700;color:var(--muted);padding:4px 0">'+d+'</div>';}).join('');
-  for(var i=0;i<firstDay;i++)html+='<div></div>';
-  for(var d2=1;d2<=daysInMonth;d2++){
-    var dateStr=bbCalYear+'-'+String(bbCalMonth+1).padStart(2,'0')+'-'+String(d2).padStart(2,'0');
-    var hasSlot=slotDates[dateStr]||0;
-    var today=new Date();var isToday=(d2===today.getDate()&&bbCalMonth===today.getMonth()&&bbCalYear===today.getFullYear());
-    html+='<div style="padding:6px 2px;border-radius:6px;font-size:12px;cursor:pointer;'+(isToday?'font-weight:800;':'')+(hasSlot?'background:rgba(22,199,98,0.15);color:#16C762;font-weight:700;':'')+'" title="'+dateStr+(hasSlot?' — '+hasSlot+' slot(s)':'')+'">'+d2+(hasSlot?'<div style="font-size:9px">'+hasSlot+'</div>':'')+'</div>';
-  }
-  grid.innerHTML=html;
-}
-
-function bbCalPrev(){if(bbCalMonth===0){bbCalMonth=11;bbCalYear--;}else{bbCalMonth--;}bbRenderCal();}
-function bbCalNext(){if(bbCalMonth===11){bbCalMonth=0;bbCalYear++;}else{bbCalMonth++;}bbRenderCal();}
-
-function bbExport(){
-  var d=bbLoad().concat(bbClaimedLoad());
-  if(!d.length){showToast('No slots to export');return;}
-  var rows=[['Date','Type','Job Type','Sqft','Rate','Priority','Status','Claimed By','Notes']].concat(d.map(function(s){return[s.date,s.type,s.jobType,s.sqft,s.rate,s.priority,s.status,s.claimedBy||'',s.notes||''];}));
-  var csv=rows.map(function(r){return r.map(function(c){return'"'+(c||'')+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='bid_board.csv';a.click();
-}
-
-
 </script>
 <script>
 // itaLoad/itaSave/ITA_USERS_KEY/ITA_AUDIT_KEY were called throughout this
@@ -29772,54 +29388,10 @@ function dmgRender(){
 }
 
 // ================================================================
-// TRAINING & CERTIFICATIONS
-// ================================================================
-var trnRecords=sdLoad('sd_training_records',[]);var trnFilter='all';
-function trnAddRecord(){document.getElementById('trn-form').style.display='block';}
-function trnSave(){
-  var emp=((document.getElementById('trn-emp')||{}).value||'').trim();if(!emp){showToast('Employee required');return;}
-  var type=(document.getElementById('trn-type')||{}).value||'';
-  var custom=((document.getElementById('trn-custom')||{}).value||'').trim();
-  var certName=type==='Custom'?custom:type;
-  var rec={id:'TRN'+Date.now(),employee:emp,certName:certName,completed:(document.getElementById('trn-completed')||{}).value||'',expires:(document.getElementById('trn-expires')||{}).value||'',instructor:((document.getElementById('trn-instructor')||{}).value||'').trim(),certNum:((document.getElementById('trn-cert-num')||{}).value||'').trim(),hours:parseFloat((document.getElementById('trn-hours')||{}).value)||0,notes:((document.getElementById('trn-notes')||{}).value||'').trim(),createdAt:new Date().toISOString()};
-  trnRecords.unshift(rec);sdStore('sd_training_records',trnRecords);document.getElementById('trn-form').style.display='none';trnRender();showToast('Training record saved');
-}
-function trnSetFilter(f,btn){trnFilter=f;document.querySelectorAll('#panel-training .vendor-tab').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');trnRender();}
-function trnDelete(id){trnRecords=trnRecords.filter(function(x){return x.id!==id;});sdStore('sd_training_records',trnRecords);trnRender();}
-function trnRender(){
-  var today=new Date();var in30=new Date(Date.now()+30*86400000);
-  function status(r){if(!r.expires)return 'noexp';var d=new Date(r.expires);if(d<today)return 'expired';if(d<=in30)return 'expiring';return 'current';}
-  var expired=trnRecords.filter(function(r){return status(r)==='expired';});
-  var expiring=trnRecords.filter(function(r){return status(r)==='expiring';});
-  var current=trnRecords.filter(function(r){return status(r)==='current'||status(r)==='noexp';});
-  var emps=[...new Set(trnRecords.map(function(r){return r.employee;}))];
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('trn-kpi-total',trnRecords.length);sv('trn-kpi-current',current.length);sv('trn-kpi-expired',expired.length);sv('trn-kpi-expiring',expiring.length);sv('trn-kpi-employees',emps.length);
-  var search=((document.getElementById('trn-search')||{}).value||'').toLowerCase();
-  var list=trnRecords.filter(function(r){
-    if(search&&!(r.employee+r.certName).toLowerCase().includes(search))return false;
-    if(trnFilter==='all')return true;
-    return status(r)===trnFilter;
-  });
-  var sc={current:'#16a34a',expiring:'#ca8a04',expired:'#dc2626',noexp:'#6b7280'};
-  var sl={current:'Current',expiring:'Expiring Soon',expired:'EXPIRED',noexp:'No Expiry'};
-  var el=document.getElementById('trn-list');if(!el)return;
-  el.innerHTML=list.length?'<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+
-    list.map(function(r){var st=status(r);return '<div style="display:grid;grid-template-columns:1.5fr 2fr 1fr 1fr 1fr auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px">'+
-      '<span style="font-weight:600">'+escHtml(r.employee)+'</span>'+
-      '<span>'+escHtml(r.certName)+'</span>'+
-      '<span style="color:var(--muted)">'+escHtml(r.completed||'—')+'</span>'+
-      '<span style="font-weight:600;color:'+(sc[st]||'#6b7280')+'">'+escHtml(r.expires||'No exp')+'</span>'+
-      '<span style="font-size:10px;font-weight:700;background:'+(sc[st]||'#6b7280')+';color:#fff;padding:2px 8px;border-radius:100px">'+sl[st]+'</span>'+
-      '<button onclick="trnDelete(\''+r.id+'\')" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:10px">x</button>'+
-    '</div>';}).join('')+'</div>':'<div style="text-align:center;color:var(--muted);padding:32px">No training records found.</div>';
-}
-function trnExport(){
-  var rows=[['Employee','Certification','Completed','Expires','Instructor','Cert #','Hours']].concat(trnRecords.map(function(r){return[r.employee,r.certName,r.completed,r.expires,r.instructor,r.certNum,r.hours];}));
-  var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Training_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
-}
-
+// TRAINING & CERTIFICATIONS — orphaned duplicate removed (canonical is
+// panel-training / sdTrainAdd/sdTrainAI/sdTrainPrint/sdTrainingExport).
+// Zero external triggers into this parallel trnRecords/sd_training_records
+// system existed anywhere in the file.
 // ================================================================
 // SHOP BULLETIN BOARD
 // ================================================================
@@ -29854,41 +29426,10 @@ function bltnRender(){
 }
 
 // ================================================================
-// MATERIAL WASTE TRACKER
-// ================================================================
-var wstEvents=sdLoad('sd_waste_events',[]);
-function wstLog(){document.getElementById('wst-form').style.display='block';var d=document.getElementById('wst-date');if(d)d.value=new Date().toISOString().split('T')[0];}
-function wstSave(){
-  var job=((document.getElementById('wst-job')||{}).value||'').trim();if(!job){showToast('Job required');return;}
-  var evt={id:'WST'+Date.now(),date:(document.getElementById('wst-date')||{}).value||'',job:job,material:((document.getElementById('wst-mat')||{}).value||'').trim(),cause:(document.getElementById('wst-cause')||{}).value||'',sqft:parseFloat((document.getElementById('wst-sqft')||{}).value)||0,cost:parseFloat((document.getElementById('wst-cost')||{}).value)||0,labor:parseFloat((document.getElementById('wst-labor')||{}).value)||0,fault:(document.getElementById('wst-fault')||{}).value||'',salvage:(document.getElementById('wst-salvage')||{}).value||'no',notes:((document.getElementById('wst-notes')||{}).value||'').trim(),createdAt:new Date().toISOString()};
-  wstEvents.unshift(evt);sdStore('sd_waste_events',wstEvents);document.getElementById('wst-form').style.display='none';wstRender();showToast('Waste event logged');
-  if(evt.salvage==='remnant')showToast('Remember to add to Remnant Yard panel!');
-}
-function wstDelete(id){wstEvents=wstEvents.filter(function(x){return x.id!==id;});sdStore('sd_waste_events',wstEvents);wstRender();}
-function wstRender(){
-  var yr=new Date().getFullYear();var ytd=wstEvents.filter(function(e){return e.date&&e.date.startsWith(yr+'');});
-  var totalCost=ytd.reduce(function(s,e){return s+(e.cost+e.labor);},0);
-  var totalSqft=ytd.reduce(function(s,e){return s+e.sqft;},0);
-  var causes={};ytd.forEach(function(e){causes[e.cause]=(causes[e.cause]||0)+1;});
-  var topCause=Object.entries(causes).sort(function(a,b){return b[1]-a[1];})[0];
-  var totalJobSqft=(typeof sdJobs!=='undefined'?sdJobs:[]).reduce(function(s,j){return s+(j.sqft||0);},0);
-  var pct=totalJobSqft>0?((totalSqft/totalJobSqft)*100).toFixed(1):0;
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('wst-kpi-events',ytd.length);sv('wst-kpi-cost',sdFmt(totalCost));sv('wst-kpi-sqft',totalSqft.toFixed(1));sv('wst-kpi-pct',pct+'%');sv('wst-kpi-top',topCause?topCause[0].split(' ')[0]:'—');
-  var faultColor={shop:'#dc2626',employee:'#ca8a04',material:'#0891b2',customer:'#16a34a',other:'#6b7280'};
-  var el=document.getElementById('wst-list');if(!el)return;
-  el.innerHTML=wstEvents.length?'<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+
-    wstEvents.slice(0,50).map(function(e){return '<div style="display:grid;grid-template-columns:1fr 1.5fr 1.5fr 1fr 1fr 1fr auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px">'+
-      '<span style="color:var(--muted)">'+escHtml(e.date||'')+'</span>'+
-      '<span style="font-weight:600">'+escHtml(e.job)+'</span>'+
-      '<span>'+escHtml(e.cause.split('—')[0].trim())+'</span>'+
-      '<span>'+e.sqft+' sqft</span>'+
-      '<span style="color:#dc2626;font-weight:600">'+sdFmt(e.cost+e.labor)+'</span>'+
-      '<span style="font-size:10px;font-weight:700;background:'+(faultColor[e.fault]||'#6b7280')+';color:#fff;padding:2px 7px;border-radius:100px">'+escHtml(e.fault)+'</span>'+
-      '<button onclick="wstDelete(\''+e.id+'\')" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:10px">x</button>'+
-    '</div>';}).join('')+'</div>':'<div style="text-align:center;color:var(--muted);padding:32px">No waste events logged yet.</div>';
-}
-
+// MATERIAL WASTE TRACKER — orphaned duplicate removed (canonical is
+// panel-waste / window.sdWasteRender, dispatched on nav id==='waste').
+// Zero external triggers into this parallel wstEvents/sd_waste_events
+// system existed anywhere in the file (no button called wstLog() at all).
 // ================================================================
 // TEMPLATE / DXF FILE MANAGER
 // ================================================================
@@ -29974,47 +29515,10 @@ function npsRender(){
 }
 
 // ================================================================
-// ACCOUNTS PAYABLE
-// ================================================================
-var apBills=sdLoad('sd_ap_bills',[]);var apFilter='all';
-function apAdd(){document.getElementById('ap-form').style.display='block';var d=document.getElementById('ap-bill-date');if(d)d.value=new Date().toISOString().split('T')[0];var due=document.getElementById('ap-due-date');if(due){var dt=new Date();dt.setDate(dt.getDate()+30);due.value=dt.toISOString().split('T')[0];}}
-function apSave(){
-  var vendor=((document.getElementById('ap-vendor')||{}).value||'').trim();if(!vendor){showToast('Vendor required');return;}
-  var bill={id:'AP'+Date.now(),vendor:vendor,invNum:((document.getElementById('ap-inv-num')||{}).value||'').trim(),cat:(document.getElementById('ap-cat')||{}).value||'',amount:parseFloat((document.getElementById('ap-amount')||{}).value)||0,billDate:(document.getElementById('ap-bill-date')||{}).value||'',dueDate:(document.getElementById('ap-due-date')||{}).value||'',terms:(document.getElementById('ap-terms')||{}).value||'Net 30',po:((document.getElementById('ap-po')||{}).value||'').trim(),notes:((document.getElementById('ap-notes')||{}).value||'').trim(),status:'open',paidDate:'',createdAt:new Date().toISOString()};
-  apBills.unshift(bill);sdStore('sd_ap_bills',apBills);document.getElementById('ap-form').style.display='none';apRender();showToast('Bill added');
-}
-function apMarkPaid(id){var b=apBills.find(function(x){return x.id===id;});if(!b)return;b.status='paid';b.paidDate=new Date().toISOString().split('T')[0];sdStore('sd_ap_bills',apBills);apRender();showToast('Marked paid');}
-function apDelete(id){if(!confirm('Delete bill?'))return;apBills=apBills.filter(function(x){return x.id!==id;});sdStore('sd_ap_bills',apBills);apRender();}
-function apSetFilter(f,btn){apFilter=f;document.querySelectorAll('#panel-ap .vendor-tab').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');apRender();}
-function apRender(){
-  var today=new Date().toISOString().split('T')[0];var weekEnd=new Date(Date.now()+7*86400000).toISOString().split('T')[0];
-  var month=new Date().toISOString().slice(0,7);
-  var open=apBills.filter(function(b){return b.status==='open';});
-  var overdue=open.filter(function(b){return b.dueDate&&b.dueDate<today;});
-  var dueWeek=open.filter(function(b){return b.dueDate&&b.dueDate>=today&&b.dueDate<=weekEnd;});
-  var totalOwed=open.reduce(function(s,b){return s+b.amount;},0);
-  var paidMonth=apBills.filter(function(b){return b.status==='paid'&&b.paidDate&&b.paidDate.startsWith(month);}).reduce(function(s,b){return s+b.amount;},0);
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('ap-kpi-open',open.length);sv('ap-kpi-overdue',overdue.length);sv('ap-kpi-due-week',dueWeek.length);sv('ap-kpi-total-owed',sdFmt(totalOwed));sv('ap-kpi-paid-month',sdFmt(paidMonth));
-  var list=apFilter==='all'?apBills:apFilter==='overdue'?overdue:apFilter==='due-week'?dueWeek:apFilter==='open'?open:apBills.filter(function(b){return b.status==='paid';});
-  var el=document.getElementById('ap-list');if(!el)return;
-  el.innerHTML=list.length?list.map(function(b){var isOverdue=b.status==='open'&&b.dueDate&&b.dueDate<today;return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(b.status==='paid'?'#16a34a':isOverdue?'#dc2626':'var(--a)')+';border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'+
-    '<div style="flex:1"><div style="font-size:14px;font-weight:700;margin-bottom:3px">'+escHtml(b.vendor)+(b.invNum?' <span style="font-size:11px;color:var(--muted);font-weight:400">#'+escHtml(b.invNum)+'</span>':'')+'</div>'+
-    '<div style="font-size:12px;color:var(--muted)">'+escHtml(b.cat)+(b.terms?' · '+b.terms:'')+(b.dueDate?' · Due: <strong style="color:'+(isOverdue?'#dc2626':'var(--text)')+'">'+b.dueDate+'</strong>':'')+(isOverdue?' <span style="color:#dc2626;font-weight:700;font-size:11px">OVERDUE</span>':'')+'</div>'+
-    (b.notes?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+escHtml(b.notes)+'</div>':'')+
-    '</div>'+
-    '<div style="font-size:16px;font-weight:800;color:'+(b.status==='paid'?'#16a34a':'#dc2626')+'">'+sdFmt(b.amount)+'</div>'+
-    '<div style="display:flex;gap:6px">'+
-      (b.status==='open'?'<button onclick="apMarkPaid(\''+b.id+'\')" style="padding:5px 10px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Pay</button>':'')+
-      '<button onclick="apDelete(\''+b.id+'\')" style="padding:5px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">x</button>'+
-    '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No bills found.</div>';
-}
-function apExport(){
-  var rows=[['Vendor','Invoice #','Category','Amount','Bill Date','Due Date','Status','Paid Date']].concat(apBills.map(function(b){return[b.vendor,b.invNum,b.cat,b.amount,b.billDate,b.dueDate,b.status,b.paidDate];}));
-  var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_AP_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
-}
-
+// ACCOUNTS PAYABLE — orphaned duplicate removed (canonical is panel-ap /
+// window.sdAPRender, dispatched on nav id==='ap'). Zero external triggers
+// into this parallel apBills/sd_ap_bills system existed anywhere in the
+// file.
 // ================================================================
 // TAX & REPORTING
 // ================================================================
@@ -30032,7 +29536,8 @@ function taxAddEntry(){
 function taxClearEntries(){if(!confirm('Clear all tax entries?'))return;taxEntries=[];sdStore('sd_tax_entries',taxEntries);taxRender();}
 function taxRender(){
   var invTotal=sd_invoices?sd_invoices.reduce(function(s,i){return s+i.amount;},0):0;
-  var expTotal=apBills?apBills.reduce(function(s,b){return s+b.amount;},0):0;
+  var apBillsReal=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
+  var expTotal=apBillsReal.reduce(function(s,b){return s+(b.amt||0);},0);
   var profit=invTotal-expTotal;var taxEst=Math.max(0,profit*0.28);
   function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
   sv('tax-kpi-revenue',sdFmt(invTotal));sv('tax-kpi-expenses',sdFmt(expTotal));sv('tax-kpi-profit',sdFmt(profit));sv('tax-kpi-tax-est',sdFmt(taxEst));
@@ -30072,8 +29577,9 @@ function taxRender(){
   if(qEl){var qLabels=['Q1 (Jan-Mar)','Q2 (Apr-Jun)','Q3 (Jul-Sep)','Q4 (Oct-Dec)'];var qDue=['Apr 15','Jun 15','Sep 15','Jan 15'];var qEst=Math.max(0,profit*0.28/4);qEl.innerHTML=qLabels.map(function(q,i){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">'+q+'</div><div style="font-size:18px;font-weight:800;color:#ca8a04">'+sdFmt(qEst)+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Due '+qDue[i]+'</div></div>';}).join('');}
 }
 function taxExport(){
-  var invs=sd_invoices||[];var bills=apBills||[];
-  var rows=[['Type','Date','Description','Amount']].concat(invs.map(function(i){return['Revenue',i.date,i.customer+' — '+i.desc,i.amount];})).concat(bills.map(function(b){return['Expense',b.billDate,b.vendor+' — '+b.cat,-b.amount];}));
+  var invs=sd_invoices||[];
+  var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
+  var rows=[['Type','Date','Description','Amount']].concat(invs.map(function(i){return['Revenue',i.date,i.customer+' — '+i.desc,i.amount];})).concat(bills.map(function(b){return['Expense',b.due,b.vendor+' — '+(b.category||''),-(b.amt||0)];}));
   var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_TaxReport_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
