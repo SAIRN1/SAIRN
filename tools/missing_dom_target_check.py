@@ -26,11 +26,24 @@ Known limitation: only resolves STRING-LITERAL targets on both sides.
 be resolved statically and are silently skipped, not flagged as missing
 -- this mirrors the same limitation already accepted in this session's
 manual traces and in key_collision_check.py.
+
+Also resolves the local id-forwarding helper `sv(id, v)` -- confirmed
+(STONEDESK-SESSION72-HANDOFF.md) to be defined identically at 14 separate
+function-scoped closures throughout the file, every one of them
+`function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}`.
+A call site `sv('some-id', value)` is therefore exactly as much a real
+reference to `id="some-id"` as a direct `getElementById('some-id')` call
+would be, but the original version of this checker only matched literal
+`getElementById(...)` text, so all 58 sv() call sites were an invisible
+blind spot -- flagged but not fixed in that handoff. Same string-literal-
+only limitation applies: `sv(someVariable, v)` cannot be resolved
+statically and is silently skipped, same as `getElementById(someVariable)`.
 """
 import sys, re
 from collections import defaultdict
 
 GET_BY_ID_RE = re.compile(r'getElementById\s*\(\s*[\'"]([^\'"]+)[\'"]\s*\)')
+SV_CALL_RE = re.compile(r'\bsv\s*\(\s*[\'"]([^\'"]+)[\'"]')
 ID_ATTR_RE = re.compile(r'\bid\s*=\s*[\'"]([^\'"]+)[\'"]')
 
 
@@ -46,13 +59,18 @@ def main():
         existing_ids.add(m.group(1))
 
     calls = defaultdict(list)  # id -> [line, ...]
+    sv_call_count = 0
     for i, line_text in enumerate(lines, 1):
         for m in GET_BY_ID_RE.finditer(line_text):
             calls[m.group(1)].append(i)
+        for m in SV_CALL_RE.finditer(line_text):
+            calls[m.group(1)].append(i)
+            sv_call_count += 1
 
     missing = {tid: lns for tid, lns in calls.items() if tid not in existing_ids}
 
-    print("TOTAL_GETELEMENTBYID_CALLS:%d" % sum(len(v) for v in calls.values()))
+    print("TOTAL_GETELEMENTBYID_CALLS:%d" % (sum(len(v) for v in calls.values()) - sv_call_count))
+    print("TOTAL_SV_FORWARD_CALLS:%d" % sv_call_count)
     print("DISTINCT_TARGETS:%d" % len(calls))
     print("EXISTING_IDS_IN_FILE:%d" % len(existing_ids))
     print("MISSING_TARGETS:%d" % len(missing))

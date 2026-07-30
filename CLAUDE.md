@@ -77,6 +77,16 @@ arrived here through this file rather than a trigger word:
 - No narration before or after actions — act, then report only the result
 - No "let me check / good news / confirmed" commentary
 - On error: state what failed and what's needed, nothing more
+- Enforcement note (2026-07-29): silent output style stays active — do not
+  swap to caveman or any other style to fix narration drift. No skill or
+  hook can mechanically block narration text before it reaches the user;
+  Claude Code hooks only fire on tool calls/lifecycle events (PreToolUse,
+  PostToolUse, Stop, SessionStart, etc.), never on the assistant's own
+  free text. Compliance has to be self-checked by the model against this
+  injected rule every turn — same limitation the existing no-narration
+  feedback memory already runs into. Caveman would add nothing (same
+  instruction-based category) and has its own documented risk of
+  net-negative token cost on an already-terse baseline like this one.
 
 ## Push Protocol — standing rule, both directions, no exceptions
 1. **Before pushing:** run full Check 0 + all 26 sairn-guardian-v2 checks
