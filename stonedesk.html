@@ -189,22 +189,33 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
   transition:width .2s ease;
 }
 .sidebar.collapsed{width:52px}
-/* Mobile: no @media rule existed for .sidebar at all (confirmed via grep
-   before writing this) -- the 220px sidebar consumed roughly half of a
-   real 390px viewport on every one of the 61 panels, found during the
-   sairn-visual-review full pass. Applies the exact same icon-rail rules
-   already used for the desktop .collapsed state to the base .sidebar
-   below 768px, so mobile gets the narrow rail by default with zero JS/
-   toggle-state changes -- purely additive CSS, no risk to desktop or to
-   sbToggle()'s existing behavior. */
+/* Mobile: replaced the icon-rail-only collapse (Playwright mobile audit)
+   with a real off-canvas drawer -- 52px still consumed real width from an
+   already-cramped 390px viewport with no way to see labels at all. Same
+   transform+scrim pattern already verified working in SAIRNbuild
+   (toggleNav/closeNav over #aside/#scrim): hidden off-screen by default,
+   slides in on hamburger tap, dismissed by scrim tap or by picking a
+   panel. Reused rather than reinvented. */
+.sb-navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0}
+#sb-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40}
+#sb-scrim.on{display:block}
 @media (max-width:768px){
-  .sidebar{width:52px}
-  .sidebar .sb-label{opacity:0}
-  .sidebar .sb-text,.sidebar .sb-label,.sidebar .sb-section-hdr span:first-child,.sidebar .sb-caret{display:none}
-  .sidebar .sb-section-hdr{justify-content:center;padding:8px}
-  .sidebar .sb-btn{padding:8px;justify-content:center}
-  .sidebar .sb-search-wrap{display:none}
-  .sidebar.collapsed{width:0;border-right:none;overflow:hidden}
+  /* .topbar-nav is display:none unconditionally elsewhere (it held a now-
+     removed top nav; the sidebar replaced it) -- override just here so the
+     hamburger button placed inside it can actually render. */
+  .topbar-nav{display:flex}
+  .sb-navtog{display:flex;align-items:center;justify-content:center}
+  .sidebar{
+    position:fixed;top:0;bottom:0;left:0;width:250px;z-index:50;
+    transform:translateX(-100%);transition:transform .22s ease;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  .sidebar.mobile-open{transform:translateX(0)}
+  .sidebar .sb-label{opacity:1}
+  .sidebar .sb-text,.sidebar .sb-label,.sidebar .sb-section-hdr span:first-child,.sidebar .sb-caret{display:initial}
+  .sidebar .sb-section-hdr{justify-content:space-between;padding:8px 14px}
+  .sidebar .sb-btn{padding:7px 14px 7px 22px;justify-content:flex-start;min-height:44px}
+  .sidebar.collapsed{width:250px;border-right:1px solid rgba(232,133,10,0.2);overflow:visible}
 }
 .sidebar::-webkit-scrollbar{width:4px}
 .sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
@@ -2260,7 +2271,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       </div>
       <div class="topbar-name"><span style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px">S</span><span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85)">tone</span><span style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px">D</span><span style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85)">esk</span><sup style="font-size:9px;color:rgba(255,255,255,0.6);vertical-align:super;margin-left:1px">™</sup></div>
     </div>
-    <div class="topbar-nav"><!-- nav hidden; sidebar below --></div>
+    <div class="topbar-nav"><button class="sb-navtog" id="sb-navtog" onclick="toggleSidebar()" aria-label="Toggle navigation">&#9776;</button></div>
     <div class="topbar-right">
       <!-- Crew weather status -- exec-only, same is-exec role gate as the
            Executive Suite (renderExecContent). Not shown/fetched for
@@ -2281,6 +2292,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 
   <!-- LEFT SIDEBAR -->
   <div class="app-body">
+  <div id="sb-scrim" onclick="closeSidebar()"></div>
   <nav class="sidebar" id="app-sidebar">
 
     <!-- Search -->
@@ -27971,6 +27983,7 @@ document.addEventListener('click', function(e) {
 });
 
 function sbNav(id) {
+  closeSidebar(); // picking a panel on phone must dismiss the drawer, or the menu covers it
   showPanel(id);
   document.querySelectorAll('.sb-btn').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.getElementById('sb-'+id);
@@ -28023,6 +28036,23 @@ function sbNav(id) {
   // Auto-expand the section containing this panel
   var section = SB_PANEL_SECTION[id];
   if (section) sbExpandSection(section);
+}
+
+// Mobile off-canvas drawer -- separate from sbToggle()'s desktop
+// collapsed/expanded state below, same split SAIRNbuild uses between its
+// desktop sidebar and its phone-width toggleNav()/closeNav().
+function toggleSidebar() {
+  var sidebar = document.getElementById('app-sidebar');
+  var scrim = document.getElementById('sb-scrim');
+  if (!sidebar) return;
+  var open = sidebar.classList.toggle('mobile-open');
+  if (scrim) scrim.classList.toggle('on', open);
+}
+function closeSidebar() {
+  var sidebar = document.getElementById('app-sidebar');
+  var scrim = document.getElementById('sb-scrim');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+  if (scrim) scrim.classList.remove('on');
 }
 
 function sbToggle() {
