@@ -19565,7 +19565,7 @@ function safetyUpdateKPIs() {
   // markup gets built).
   var incDates=sdSafetyData.incidents.map(function(i){return new Date(i.datetime);});
   var lastInc=incDates.length?Math.max.apply(null,incDates):null;
-  var daysSince=lastInc?Math.floor((new Date()-lastInc)/(1000*60*60*24)):365;
+  var daysSince=lastInc?Math.max(0,Math.floor((new Date()-lastInc)/(1000*60*60*24))):365;
   s('safe-kpi1',daysSince);
   s('safe-kpi2',incidents);
   s('safe-kpi3','--');
@@ -23889,8 +23889,9 @@ document.addEventListener('DOMContentLoaded', function() {
   updateKPIs();
 })();
 </script>
-</div><div id="sa-result" style="display:none"></div>
+<div id="sa-result" style="display:none"></div>
 <div id="sa-runs-container" data-auto-container="missing-dom-fix"></div>
+</div>
 
 <!-- PANEL: REVIEW AUTOMATION -->
 <div class="panel" id="panel-reviews">
@@ -28831,7 +28832,7 @@ async function miGenerateBriefing(){
     miRenderOutlook(text);
     miSaveBriefingData(text);
   }catch(e){ce.innerHTML='<div style="color:#dc2626">Error: '+e.message+'</div>';}
-  finally{if(btn){btn.textContent='&#129504; Claude Briefing';btn.disabled=false;}}
+  finally{if(btn){btn.innerHTML='&#129504; Claude Briefing';btn.disabled=false;}}
 }
 
 function miRenderOutlook(txt){
