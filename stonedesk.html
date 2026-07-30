@@ -880,6 +880,23 @@ textarea#userInput::placeholder{color:var(--muted)}
 .inv-row:last-child{border:none}
 .inv-level{height:8px;border-radius:4px;flex:1;background:var(--border);overflow:hidden;min-width:80px}
 .inv-fill{height:100%;border-radius:4px}
+/* Inventory row grid + action buttons. Both were inline-styled inside
+   renderInventory()'s template string, which meant (a) the column widths
+   could not be overridden by any media query, and (b) the +/-/x buttons
+   rendered at 18-22px -- 1,500 elements below the WCAG 2.5.8 AA 24px
+   floor, the single largest touch-target failure found in the mobile
+   audit. Defined once here so the phone override below is possible at
+   all; desktop values are unchanged from the previous inline styles. */
+.inv-grid{display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px}
+.inv-step-btn{border:none;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;padding:3px 7px;display:inline-flex;align-items:center;justify-content:center}
+.inv-step-btn.inv-del{font-size:11px;font-weight:400;padding:3px 6px}
+@media(max-width:768px){
+  /* 3 x 44px + 2 x 4px flex gap = 140px, so the Actions track widens to
+     148px to hold real touch targets rather than clipping them. */
+  .inv-grid{grid-template-columns:1fr 80px 120px 120px 80px 148px}
+  .inv-step-btn{min-width:44px;min-height:44px;font-size:18px;padding:0}
+  .inv-step-btn.inv-del{font-size:16px}
+}
 .vendor-tab{padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;background:none;border:1px solid var(--border);color:var(--muted);transition:all .15s}
 .vendor-tab.active{background:var(--a);color:#fff;border-color:var(--a)}
 .vendor-logo{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
@@ -18760,13 +18777,13 @@ function renderInventory(){
   if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px">No items match.</div>';return;}
   var vNames={gmr:'GMR',granquartz:'GranQuartz',braxton:'Braxton-Bragg',bbindustries:'BB Industries',tenax:'Tenax',akemi:'Akemi',integra:'Integra',weha:'Weha',aardwolf:'Aardwolf',abaco:'Abaco',grainger:'Grainger',other:'Other'};
   el.innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+
-    '<div style="display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px;padding:10px 14px;background:var(--surface-2);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">'+
+    '<div class="inv-grid" style="padding:10px 14px;background:var(--surface-2);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">'+
     '<span>Item</span><span>Status</span><span>Stock Level</span><span>Qty / Min</span><span>Unit Cost</span><span>Actions</span></div>'+
     list.map(item=>{
       var color=invLevelColor(item);
       var fillColor=color==='red'?'#dc2626':color==='yellow'?'#ca8a04':'#16a34a';
       var pct=Math.min(100,Math.round((item.qty/Math.max(1,item.min*2))*100));
-      return '<div class="inv-row" style="display:grid;grid-template-columns:1fr 80px 120px 120px 80px 100px;align-items:center">'+
+      return '<div class="inv-row inv-grid" style="align-items:center">'+
         '<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+escHtml(item.name)+'</div>'+
           '<div style="font-size:11px;color:var(--muted)">'+escHtml(vNames[item.vendor]||item.vendor||'')+(item.sku?' · '+escHtml(item.sku):'')+'</div></div>'+
         '<span class="item-urgency '+color+'">'+
@@ -18775,9 +18792,9 @@ function renderInventory(){
         '<div style="font-size:12px">'+item.qty+' '+item.unit+' <span style="color:var(--muted)">(min '+item.min+')</span></div>'+
         '<div style="font-size:12px">$' + (item.cost||0).toFixed(2)+'</div>'+
         '<div style="display:flex;gap:4px">'+
-          '<button onclick="invUpdateQty(\'' + item.id + '\',1)" style="padding:3px 7px;background:rgba(22,163,74,0.12);color:#16a34a;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">+</button>'+
-          '<button onclick="invUpdateQty(\'' + item.id + '\',-1)" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;font-size:13px;cursor:pointer;font-weight:700">−</button>'+
-          '<button onclick="invDelete(\'' + item.id + '\')" style="padding:3px 6px;background:rgba(100,100,100,0.1);color:var(--muted);border:none;border-radius:5px;font-size:11px;cursor:pointer">×</button>'+
+          '<button class="inv-step-btn" onclick="invUpdateQty(\'' + item.id + '\',1)" style="background:rgba(22,163,74,0.12);color:#16a34a">+</button>'+
+          '<button class="inv-step-btn" onclick="invUpdateQty(\'' + item.id + '\',-1)" style="background:rgba(220,38,38,0.1);color:#dc2626">−</button>'+
+          '<button class="inv-step-btn inv-del" onclick="invDelete(\'' + item.id + '\')" style="background:rgba(100,100,100,0.1);color:var(--muted)">×</button>'+
         '</div>'+
       '</div>';
     }).join('')+'</div>';
