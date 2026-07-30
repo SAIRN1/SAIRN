@@ -154,13 +154,13 @@ unchanged (`dashboard`, `jobs`, `jobcost`, `changeorders`).
 ### Documents (1)
 | Panel | id | Purpose | Status |
 |---|---|---|---|
-| Documents | `documents` | Plans, specs, and permit file library per job — the one place drawings live, referenced by RFIs/Submittals/Inspections rather than each keeping its own copy. | New |
+| Documents | `documents` | Plans, specs, and permit file library per job — the one place drawings live, referenced by RFIs/Submittals/Inspections rather than each keeping its own copy. Version control implemented per SS2a: current version computed (never stored) from the highest version number on record, superseded versions kept visible, and RFIs/Submittals/Inspections reference a specific document version. | **Built, live** |
 
 ### Growth (2)
 | Panel | id | Purpose | Status |
 |---|---|---|---|
-| Reviews | `reviews` | Post-job client reviews/testimonials — direct reuse of StoneDesk's proven Reviews panel (`panel-reviews`), genuinely relevant here since referral/repeat business is a real residential-remodel revenue channel. | New |
-| Referrals | `referrals` | Referral-source tracking — direct reuse of StoneDesk's proven Referral panel (`panel-referral`). | New |
+| Reviews | `reviews` | Post-job client reviews/testimonials — StoneDesk's `panel-reviews` was verified (not assumed) as a genuine computed-KPI precedent before reuse. | **Built, live** |
+| Referrals | `referrals` | Referral-source tracking — StoneDesk's `panel-referral` likewise verified as a real precedent before reuse. | **Built, live** |
 
 ### Company (6)
 | Panel | id | Purpose | Status |
