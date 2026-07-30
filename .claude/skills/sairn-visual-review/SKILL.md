@@ -17,6 +17,16 @@ Everything else checks whether the code is correct. This checks whether a real p
 
 **Loading-state / layout-shift check.** Does content flash, jump, or reflow while data loads? A KPI tile popping in after the page settles, shifting everything below it, reads as broken even if the final state is correct.
 
+## Environment Requirement (added 2026-07-30)
+
+This skill depends on the browser window actually being the real, focused, on-screen OS window — not just a tab that exists. Confirmed twice in one session (`STONEDESK-SESSION73-HANDOFF.md` §5) that when that precondition is silently false, the screenshot and resize APIs don't error clearly — they either fail opaquely or report success while doing nothing:
+
+**Failure mode 1 — unfocused/wrong window.** The tracked tab had drifted to an unrelated window (in this case, the chat client's own tab, not the app under review). Signature: `window.outerWidth`/`outerHeight` read `0`. Screenshot failed outright (`Script injection timed out`), 4/4 attempts, until the tab was re-created and correctly targeted.
+
+**Failure mode 2 — resize silently no-ops.** Even on a correctly-targeted, confirmed-non-maximized window (`outerWidth` reading a real, plausible value both before and after), `resize_window` reported success but `clientWidth` never moved — stuck at the pre-resize value across two separate attempts, one on a maximized window (a plausible cause) and one on a window already confirmed non-maximized (ruling that explanation out for the second case). Screenshot then failed with a *different*, CDP-level error (`Page.captureScreenshot timed out after 30000ms, renderer may be frozen`) — while a plain JS execution on the same tab succeeded immediately before and after, which rules out a genuinely frozen page and points at something environment-specific in the CDP/extension pairing itself.
+
+**What this means in practice:** don't treat a clean tool-call return as proof the check actually ran. Before trusting any screenshot or resize result, verify `outerWidth`/`outerHeight`/`clientWidth` read real, non-zero, expected values first. If resize doesn't visibly change `clientWidth`, or screenshot fails more than twice with different error signatures, stop and log it as an environment gap rather than retrying indefinitely or silently substituting a different check and presenting it as equivalent coverage — a DOM/computed-style inspection can catch some of the same bugs (contrast math, missing elements) but is not the same check as an actual rendered-pixel review, and the gap should stay visible in whatever this pass reports.
+
 ## Method
 
 1. Launch the app via Playwright (already established for functional verification).

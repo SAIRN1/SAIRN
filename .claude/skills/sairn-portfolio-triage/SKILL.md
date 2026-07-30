@@ -27,6 +27,19 @@ python tools/panel_nesting_check.py <app>.html
 python tools/key_collision_check.py <app>.html
 ```
 
+## Scanner Portability (added 2026-07-30)
+
+"Reusable, not StoneDesk-specific" above was aspirational, not verified, the first time these scanners were written — and it turned out to be false for two of the four until fixed in `ce43609`. **Before trusting a raw count from any scanner on a second app, confirm it was actually validated against a second app, not just written generically and assumed to generalize.** A scanner tuned against one codebase's specific conventions can look general-purpose while silently encoding assumptions from the app it was built against.
+
+Two confirmed, real failures from this exact mistake:
+
+- **`panel_nesting_check.py` — identical-100%-trapped false positive.** `SAFE_PARENTS` was hardcoded to StoneDesk's own container class names (`div#.app-body`, `div#.panel-wrap`). Run against `sairnbiz.html` (`main#main`) and `sairncode.html` (`div#.container`) — both structurally fine apps — every single panel in both came back "trapped," 20/20 and 20/20. A 100%-failure result across two unrelated apps, especially an *identical* shape of failure, is itself the tell that the scanner is broken, not that both apps independently have the same total-failure bug. Fixed by generalizing to "a parent shared by 2+ panels is safe" instead of a hardcoded class list.
+- **`duplicate_global_check.py` — silent undercount, not a crash.** No regex-literal awareness in the brace-depth scanner meant a line like `.replace(/'/g,'&#39;')` desynced string-tracking for the rest of the block, silently dropping every function declared after that point from the count. This one is more dangerous than the panel_nesting failure precisely because it didn't fail loudly — `sairnbiz.html` reported 2 global functions when the real count was 52, a plausible-looking low number, not an obvious 0 or a crash. It was only caught because a re-run for an unrelated fix happened to also affect `stonedesk.html`'s own count (513→685), which was the actual tell — a scanner's number changing on a file nobody touched is a bug-fix signal, not a data-drift signal.
+
+**The practical rule:** the first time any scanner (old or newly written) runs against a *second* app, don't just record the number — sanity-check it. A suspiciously round, suspiciously total (0%, 100%), or suspiciously low count deserves the same "does this look believable" gut-check as a fabricated KPI would (see `sairn-guardian-v2` Check 0b) before it gets reported as the app's real baseline.
+
+**Third example, found live the first time this rule was applied (2026-07-30):** `key_collision_check.py` and `missing_dom_target_check.py` both returned a literal `0` against `sairnbiz.html` on first run — `TOTAL_KEY_WRITES:0` and `TOTAL_GETELEMENTBYID_CALLS:0`. Both are blind zeros, not clean zeros: SAIRNbiz routes storage and DOM access through wrapper functions (`st(k,v){localStorage.setItem(k,JSON.stringify(v))}`, `ld(k,d){...localStorage.getItem(k)...}`, `$(s){return document.getElementById(s);}`) instead of StoneDesk's direct `localStorage.setItem('literal_key', ...)`/`document.getElementById('literal_id')` calls — both scanners' regexes only match the direct-call form, so they never even see SAIRNbiz's 16+ real `st('sb_...', ...)` writes. This is exactly the failure this section warns about, caught only because a `0` against a 52-function, 20-panel app was suspicious enough to grep-verify by hand before reporting it as a real result. Neither scanner has been generalized to recognize wrapper-function indirection yet — treat their output as StoneDesk-only-reliable until that's fixed, and manually grep for an app's actual storage/DOM-access convention before trusting a `0` from either.
+
 ## Output format
 
 A simple table, one row per app checked:
