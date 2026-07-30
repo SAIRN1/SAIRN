@@ -841,7 +841,9 @@ function editEmp(id){
 }
 function saveEmp(){
   var emps=ld('sb_emps',[]);
+  var existing=eid?emps.find(function(x){return x.id===eid;}):null;
   var r={id:eid||('E'+String(Date.now()).slice(-4)),fn:$('efn').value.trim(),ln:$('eln').value.trim(),role:$('erole').value.trim(),dept:$('edept2').value,type:$('etype').value,rate:parseFloat($('ehr').value)||0,start:$('estart').value,phone:$('ephone').value.trim(),email:$('eemail').value.trim(),status:$('estatus').value,ec:$('eec').value.trim(),notes:$('enotes').value.trim()};
+  if(existing&&existing.ben)r.ben=existing.ben;
   if(!r.fn||!r.ln){toast('Name required');return;}
   if(eid){var i=emps.findIndex(function(x){return x.id===eid;});if(i>-1)emps[i]=r;else emps.push(r);}else emps.push(r);
   st('sb_emps',emps);closeEmpModal();rEmps();syncEmps(emps);toast('Saved - '+r.fn+' '+r.ln);
